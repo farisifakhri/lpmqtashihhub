@@ -3,7 +3,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Registration } from '@/types/domain';
 import {
   CheckSquare,
   Users,
@@ -14,7 +13,7 @@ import {
   FileSignature,
 } from 'lucide-react';
 
-const MOCK_INTERNAL_ITEMS: (Registration & { assignedToMe: boolean; taskType: string })[] = [
+const MOCK_INTERNAL_ITEMS = [
   {
     id: 'reg-101',
     registrationNumber: 'REG/LPMQ/2026/09/0014',
@@ -69,7 +68,7 @@ const MOCK_INTERNAL_ITEMS: (Registration & { assignedToMe: boolean; taskType: st
   },
 ];
 
-export const InternalDashboard: React.FC = () => {
+export const InternalDashboard = () => {
   const { currentUser } = useAuth();
   // CODING_BASELINE_PROMPT.md §33: Tugas Saya adalah filter berdasarkan assignment, bukan status lifecycle
   const [filterMyTasksOnly, setFilterMyTasksOnly] = useState(false);

@@ -1,13 +1,12 @@
 import React from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { UserRole } from '@/types/domain';
 import { ShieldCheck, UserCircle, RefreshCw, QrCode } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-export const Navbar: React.FC = () => {
+export const Navbar = () => {
   const { currentUser, setRole, availableRoles } = useAuth();
 
-  const getRoleBadgeLabel = (role: UserRole) => {
+  const getRoleBadgeLabel = (role) => {
     switch (role) {
       case 'PUBLISHER':
         return 'Penerbit';
@@ -68,7 +67,7 @@ export const Navbar: React.FC = () => {
               <select
                 id="role-select"
                 value={currentUser.role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
+                onChange={(e) => setRole(e.target.value)}
                 className="bg-white text-neutral-800 text-xs font-semibold rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gold-400 cursor-pointer"
                 aria-label="Pilih Peran Pengguna"
               >

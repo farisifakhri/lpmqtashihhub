@@ -6,11 +6,11 @@ Repositori resmi sistem layanan pentashihan mushaf Al-Qur'an Kementerian Agama R
 
 Sistem mengadopsi pola modular monolith yang memisahkan client frontend dan server backend:
 
-- **Frontend**: React + Vite + TypeScript, Tailwind CSS, React Router, Vitest.
+- **Frontend**: React + Vite + JSX (JavaScript), Tailwind CSS, React Router, Vitest.
   - Sesuai dengan [ADR-001](docs/adr/ADR-001-frontend-stack-react-vite.md)
   - Panduan desain & token: [DESIGN.md](DESIGN.MD)
   - Arsitektur & catatan teknis: [IMPLEMENTATION.md](IMPLENTATION.MD)
-- **Backend**: Node.js + Express (TypeScript), Prisma ORM, PostgreSQL (dalam pengembangan berikutnya).
+- **Backend**: Node.js + Express, Prisma ORM, PostgreSQL (dalam pengembangan berikutnya).
 - **Format Layanan**:
   - **Portal Penerbit**: Pengajuan naskah Al-Qur'an, pemantauan status, billing PNBP, riwayat revisi, unduh tanda tashih resmi.
   - **Aplikasi Internal**: Pengolahan verifikasi kelengkapan naskah, pembagian Tim Distribusi, pentashihan bertahap (Awal, Perbaikan, Dumi), penyusunan Berita Acara Tashih, dan penetapan Surat Tanda Tashih oleh Kepala LPMQ.
@@ -22,15 +22,14 @@ Sistem mengadopsi pola modular monolith yang memisahkan client frontend dan serv
 lpmq/
 ├── docs/                     # SRS v2.1, Backlog, ERD, dan ADR
 │   └── adr/                  # Architectural Decision Records
-├── frontend/                 # Aplikasi Frontend (React + Vite + TypeScript)
+├── frontend/                 # Aplikasi Frontend (React + Vite + JSX)
 │   ├── src/
 │   │   ├── app/              # Router, App context, Design tokens
 │   │   ├── components/       # Komponen UI formal (Button, Badge, Card, dll.) & layout
 │   │   ├── features/         # Modul fitur (auth, registrations, verification, tashih, dll.)
-│   │   ├── types/            # Definisi domain model TypeScript
 │   │   └── index.css         # Styling Tailwind dengan konfigurasi token LPMQ
 │   ├── package.json
-│   └── vite.config.ts
+│   └── vite.config.js
 ├── backend/                  # (Sprint berikutnya) API Modular Monolith Node.js
 ├── CODING_BASELINE_PROMPT.md # Aturan & standar agen pengembang
 ├── DESIGN.MD                 # Panduan Desain UI/UX & Design Tokens

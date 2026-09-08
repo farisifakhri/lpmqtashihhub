@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { ShieldCheck, CheckCircle2, Award, Calendar, Building2, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export const PublicDocumentVerification: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
+export const PublicDocumentVerification = () => {
+  const { token } = useParams();
 
   // Mock document data for verification
   const documentData = {

@@ -4,14 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-interface ModulePlaceholderProps {
-  title: string;
-  moduleName: string;
-  sprintTarget: string;
-  description: string;
-}
-
-export const ModulePlaceholder: React.FC<ModulePlaceholderProps> = ({
+export const ModulePlaceholder = ({
   title,
   moduleName,
   sprintTarget,

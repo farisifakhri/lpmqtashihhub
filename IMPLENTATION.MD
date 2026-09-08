@@ -50,7 +50,7 @@ Untuk mencegah ini terulang:
 
 | Layer | Keputusan | Status |
 |---|---|---|
-| Frontend | React + Vite + TypeScript (lihat `docs/adr/ADR-001-frontend-stack-react-vite.md`) | Final |
+| Frontend | React + Vite + JSX (lihat `docs/adr/ADR-001-frontend-stack-react-vite.md`) | Final |
 | State frontend | React Router + Context / Zustand | Final |
 | Backend | Node.js + Express, kontrak OpenAPI | Final |
 | Database | PostgreSQL | Final |

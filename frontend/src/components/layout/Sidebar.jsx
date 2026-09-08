@@ -15,17 +15,11 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export const Sidebar: React.FC = () => {
+export const Sidebar = () => {
   const { currentUser } = useAuth();
   const isPublisher = currentUser.role === 'PUBLISHER';
 
-  interface MenuItem {
-    label: string;
-    path: string;
-    icon: React.ReactNode;
-  }
-
-  const getMenuItems = (): MenuItem[] => {
+  const getMenuItems = () => {
     if (isPublisher) {
       return [
         {
@@ -57,7 +51,7 @@ export const Sidebar: React.FC = () => {
     }
 
     // Menu Internal LPMQ
-    const baseInternal: MenuItem[] = [
+    const baseInternal = [
       {
         label: 'Dashboard Petugas',
         path: '/internal',

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { StatusBadge } from './StatusBadge';
-import { RegistrationStatusCode, TOKENS } from '@/app/tokens';
+import { TOKENS } from '@/app/tokens';
 
 describe('StatusBadge Component (LPMQ Official State Machine)', () => {
-  const allStatuses: RegistrationStatusCode[] = [
+  const allStatuses = [
     'DRAFT',
     'READY_FOR_VERIFICATION',
     'IN_VERIFICATION',

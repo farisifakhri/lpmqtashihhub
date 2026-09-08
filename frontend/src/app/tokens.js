@@ -117,8 +117,4 @@ export const TOKENS = {
     REVISION: { label: 'Tashih Perbaikan Naskah', step: 2 },
     DUMI: { label: 'Tashih Naskah Dumi (Final)', step: 3 },
   },
-} as const;
-
-export type RegistrationStatusCode = keyof typeof TOKENS.registrationStatus;
-export type PaymentStatusCode = keyof typeof TOKENS.paymentStatus;
-export type TashihStageCode = keyof typeof TOKENS.tashihStages;
+};

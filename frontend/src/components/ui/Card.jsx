@@ -2,14 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'billing' | 'subtle';
-  title?: string;
-  subtitle?: string;
-  headerAction?: React.ReactNode;
-}
-
-export const Card: React.FC<CardProps> = ({
+export const Card = ({
   children,
   className,
   variant = 'default',

@@ -2,12 +2,7 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'gold';
-  icon?: React.ReactNode;
-}
-
-export const Badge: React.FC<BadgeProps> = ({
+export const Badge = ({
   className,
   variant = 'default',
   icon,

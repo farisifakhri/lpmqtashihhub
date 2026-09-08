@@ -1,13 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
-import { User, UserRole } from '@/types/domain';
 
-interface AuthContextType {
-  currentUser: User;
-  setRole: (role: UserRole) => void;
-  availableRoles: UserRole[];
-}
-
-const DEFAULT_USERS_BY_ROLE: Record<UserRole, User> = {
+const DEFAULT_USERS_BY_ROLE = {
   PUBLISHER: {
     id: 'usr-pub-01',
     name: 'Ahmad Fauzi',
@@ -67,17 +60,17 @@ const DEFAULT_USERS_BY_ROLE: Record<UserRole, User> = {
   },
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentRole, setCurrentRole] = useState<UserRole>('PUBLISHER');
+export const AuthProvider = ({ children }) => {
+  const [currentRole, setCurrentRole] = useState('PUBLISHER');
 
-  const setRole = (role: UserRole) => {
+  const setRole = (role) => {
     setCurrentRole(role);
   };
 
   const currentUser = DEFAULT_USERS_BY_ROLE[currentRole];
-  const availableRoles: UserRole[] = [
+  const availableRoles = [
     'PUBLISHER',
     'ADMIN',
     'VERIFICATOR',
@@ -93,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');

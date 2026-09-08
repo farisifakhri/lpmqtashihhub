@@ -1,5 +1,5 @@
 import React from 'react';
-import { TOKENS, RegistrationStatusCode } from '@/app/tokens';
+import { TOKENS } from '@/app/tokens';
 import {
   FileEdit,
   Inbox,
@@ -14,13 +14,7 @@ import {
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-interface StatusBadgeProps {
-  status: RegistrationStatusCode;
-  className?: string;
-  showIcon?: boolean;
-}
-
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
+export const StatusBadge = ({
   status,
   className,
   showIcon = true,

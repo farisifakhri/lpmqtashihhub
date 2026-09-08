@@ -2,11 +2,10 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
-import { Registration } from '@/types/domain';
 import { PlusCircle, CreditCard, Clock, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const MOCK_REGISTRATIONS: Registration[] = [
+const MOCK_REGISTRATIONS = [
   {
     id: 'reg-001',
     registrationNumber: 'REG/LPMQ/2026/09/0014',
@@ -55,7 +54,7 @@ const MOCK_REGISTRATIONS: Registration[] = [
   },
 ];
 
-export const PublisherDashboard: React.FC = () => {
+export const PublisherDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header Halaman */}

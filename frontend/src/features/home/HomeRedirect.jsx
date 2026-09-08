@@ -3,7 +3,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
 import { InternalDashboard } from '@/features/internal/InternalDashboard';
 
-export const HomeRedirect: React.FC = () => {
+export const HomeRedirect = () => {
   const { currentUser } = useAuth();
 
   if (currentUser.role === 'PUBLISHER') {
