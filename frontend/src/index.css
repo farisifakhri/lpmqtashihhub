@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-700 font-sans antialiased min-h-screen;
+    margin: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-neutral-900 font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Komponen kartu sesuai DESIGN.md §4: latar putih, radius ±8px, border 1px neutral-200 */
+  .lpmq-card {
+    @apply bg-white rounded-lg border border-neutral-200 shadow-sm p-6;
+  }
+
+  /* Kartu ringkasan tarif/billing dengan latar emas muda */
+  .lpmq-billing-card {
+    @apply bg-gold-50 rounded-lg border border-gold-400 p-6 shadow-sm;
+  }
+
+  /* Tombol aksi formal dengan target sentuh min 44px */
+  .lpmq-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+}
