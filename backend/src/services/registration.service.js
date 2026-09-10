@@ -1,5 +1,9 @@
 import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
+import { assertManuscriptAccess } from './file-access.service.js';
+import { ownedFile } from './storage.service.js';
+import { fail, registration as lockRegistration, audit } from './workflow-utils.js';
+import { statusLabel, roleLabel } from '../utils/user-messages.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -50,12 +54,12 @@ export const TRANSITION_POLICY = {
   },
   WAITING_VERIFICATION_APPROVAL: {
     AWAITING_PAYMENT: {
-      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
-      description: 'Verifikasi disetujui, penerbitan tagihan PNBP',
+      allowedRoles: ['KEPALA_LPMQ'],
+      description: 'Kepala LPMQ menyetujui hasil verifikasi untuk dilanjutkan ke pembayaran',
     },
-    REVISION_REQUIRED: {
-      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
-      description: 'Persetujuan verifikasi ditolak, diperlukan perbaikan ulang',
+    IN_VERIFICATION: {
+      allowedRoles: ['KEPALA_LPMQ'],
+      description: 'Kepala LPMQ mengembalikan draf surat hasil verifikasi kepada verifikator untuk diperbaiki',
     },
   },
   AWAITING_PAYMENT: {
@@ -321,7 +325,7 @@ export const submitRegistration = async (id, user, req) => {
   }
 
   if (reg.status !== 'DRAFT' && reg.status !== 'REVISION_REQUIRED') {
-    const error = new Error(`Pengajuan berstatus ${reg.status} tidak dapat disubmit.`);
+    const error = new Error(`Pengajuan berstatus "${statusLabel(reg.status)}" belum dapat diajukan ulang. Pengajuan hanya dapat dikirim saat masih draf atau setelah petugas meminta perbaikan kepada penerbit.`);
     error.statusCode = 400;
     throw error;
   }
@@ -352,6 +356,9 @@ export const submitRegistration = async (id, user, req) => {
     sla_dummy_days: reg.service_type.duration_dummy,
   };
 
+  const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
+  const submitStatus = hasVerifiedPayment ? 'WAITING_DISTRIBUTION' : 'READY_FOR_VERIFICATION';
+
   // Optimistic concurrency update: cegah race condition submit paralel
   const updated = await prisma.$transaction(async (tx) => {
     const updateResult = await tx.registration.updateMany({
@@ -360,8 +367,8 @@ export const submitRegistration = async (id, user, req) => {
         status: reg.status,
       },
       data: {
-        status: 'READY_FOR_VERIFICATION',
-        fee_sla_snapshot: feeSlaSnapshot,
+        status: submitStatus,
+        fee_sla_snapshot: reg.fee_sla_snapshot || feeSlaSnapshot,
       },
     });
 
@@ -377,7 +384,7 @@ export const submitRegistration = async (id, user, req) => {
       data: {
         registration_id: id,
         from_status: reg.status,
-        to_status: 'READY_FOR_VERIFICATION',
+        to_status: submitStatus,
         actor_id: user.id,
         notes: 'Pengajuan disubmit untuk verifikasi',
       },
@@ -406,7 +413,10 @@ export const submitRegistration = async (id, user, req) => {
   return updated;
 };
 
-export const transitionStatus = async (id, toStatus, notes, user, req) => {
+export const transitionStatus = async (id, toStatus, notes, user, req, expectedFromStatus) => {
+  if (['READY_FOR_VERIFICATION', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS', 'READY_FOR_STT', 'STT_ISSUED'].includes(toStatus)) {
+    fail(400, 'Gunakan aksi submit, pembayaran, distribusi, sidang, atau dokumen resmi untuk transisi ini.');
+  }
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: { publisher: true },
@@ -419,12 +429,16 @@ export const transitionStatus = async (id, toStatus, notes, user, req) => {
   }
 
   const fromStatus = reg.status;
+  if (expectedFromStatus && expectedFromStatus !== fromStatus) fail(409, 'Status pengajuan telah berubah sejak halaman dimuat.');
+  if (fromStatus === 'TASHIH_IN_PROGRESS' || (toStatus === 'CANCELLED' && await prisma.paymentRecord.count({ where: { registration_id: id } }))) {
+    fail(400, 'Transisi ini memerlukan keputusan domain; pembatalan setelah billing belum tersedia.');
+  }
   const policyForFrom = TRANSITION_POLICY[fromStatus];
   const rule = policyForFrom ? policyForFrom[toStatus] : null;
 
   if (!rule) {
     const error = new Error(
-      `Transisi status ilegal: tidak diperbolehkan berpindah dari ${fromStatus} ke ${toStatus}.`
+      `Pengajuan tidak dapat diubah dari "${statusLabel(fromStatus)}" ke "${statusLabel(toStatus)}". Ikuti tahapan pada detail pengajuan; muat ulang halaman jika status baru saja berubah.`
     );
     error.statusCode = 400;
     throw error;
@@ -433,13 +447,18 @@ export const transitionStatus = async (id, toStatus, notes, user, req) => {
   const isSuperadmin = user.roles.includes('SUPERADMIN');
 
   // Pengecekan Otorisasi Role Spesifik
-  const hasAllowedRole = isSuperadmin || user.roles.some((r) => rule.allowedRoles.includes(r));
+  // Persetujuan Kepala LPMQ tidak diwariskan kepada administrator teknis.
+  const hasAllowedRole = (isSuperadmin && fromStatus !== 'WAITING_VERIFICATION_APPROVAL') || user.roles.some((r) => rule.allowedRoles.includes(r));
   if (!hasAllowedRole) {
     const error = new Error(
-      `Akses ditolak: role [${user.roles.join(', ')}] tidak memiliki wewenang untuk transisi ${fromStatus} -> ${toStatus}. Diperlukan salah satu dari: [${rule.allowedRoles.join(', ')}].`
+      `Perubahan dari "${statusLabel(fromStatus)}" ke "${statusLabel(toStatus)}" hanya dapat dilakukan oleh ${rule.allowedRoles.map(roleLabel).join(' atau ')}. Hubungi petugas tersebut untuk melanjutkan pengajuan.`
     );
     error.statusCode = 403;
     throw error;
+  }
+
+  if (fromStatus === 'WAITING_VERIFICATION_APPROVAL' && toStatus === 'IN_VERIFICATION' && !notes?.trim()) {
+    fail(400, 'Alasan pengembalian draf kepada verifikator wajib diisi.');
   }
 
   // Pengecekan Kepemilikan Penerbit
@@ -480,6 +499,16 @@ export const transitionStatus = async (id, toStatus, notes, user, req) => {
         notes: notes || rule.description || null,
       },
     });
+
+    if (toStatus === 'IN_VERIFICATION' && fromStatus === 'READY_FOR_VERIFICATION') {
+      await tx.verificationAssignment.create({ data: { registration_id: id, verifier_id: user.id, status: 'IN_PROGRESS' } });
+    }
+    if (['AWAITING_PAYMENT', 'REVISION_REQUIRED'].includes(toStatus)) {
+      await tx.verificationAssignment.updateMany({
+        where: { registration_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
+        data: { status: 'COMPLETED', completed_at: new Date(), decision: toStatus === 'AWAITING_PAYMENT' ? 'APPROVED' : 'REVISION_REQUIRED', notes },
+      });
+    }
 
     return tx.registration.findUnique({
       where: { id },
@@ -526,7 +555,7 @@ export const listRegistrations = async ({
       };
     } else if (user.roles.includes('PENTASHIH')) {
       where.assignments = {
-        some: { assignee_id: user.id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
+        some: { assignee_id: user.id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } },
       };
     }
   }
@@ -622,6 +651,14 @@ export const getDetail = async (id, user) => {
     throw error;
   }
 
+  try { await assertManuscriptAccess(reg, user); }
+  catch (error) {
+    if (error.statusCode !== 403) throw error;
+    reg.manuscript_files = [];
+  }
+  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
+    reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
+  }
   return reg;
 };
 
@@ -646,26 +683,25 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     throw error;
   }
 
-  const manuscript = await prisma.manuscriptFile.create({
+  const manuscript = await prisma.$transaction(async tx => {
+    const current = await lockRegistration(tx, registrationId);
+    await assertManuscriptAccess(current, user, true, tx);
+    const file = await ownedFile(tx, data.file_id, user);
+    const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: data.type }, orderBy: { version: 'desc' } });
+    const created = await tx.manuscriptFile.create({
     data: {
       registration_id: registrationId,
       type: data.type,
       file_id: data.file_id,
-      version: data.version || 1,
-      checksum: data.checksum || null,
-      file_size: data.file_size || null,
-      mime_type: data.mime_type || null,
+      version: (last?.version || 0) + 1,
+      checksum: file.checksum,
+      file_size: file.file_size,
+      mime_type: file.mime_type,
     },
-  });
-
-  await logAudit({
-    actorId: user.id,
-    action: 'ADD_MANUSCRIPT_FILE',
-    subjectType: 'ManuscriptFile',
-    subjectId: manuscript.id,
-    afterJson: manuscript,
-    req,
-  });
+    });
+    await audit(tx, user, 'ADD_MANUSCRIPT_FILE', 'ManuscriptFile', created.id, created);
+    return created;
+  }, { isolationLevel: 'ReadCommitted' });
 
   return manuscript;
 };
@@ -691,6 +727,7 @@ export const listManuscriptFiles = async (registrationId, user) => {
     throw error;
   }
 
+  await assertManuscriptAccess(reg, user);
   return prisma.manuscriptFile.findMany({
     where: { registration_id: registrationId },
     orderBy: { created_at: 'desc' },

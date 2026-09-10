@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import app from './src/app.js';
 import { prisma } from './src/config/database.js';
 import bcrypt from 'bcryptjs';
+import { runWorkflowTests } from './tests/workflow.integration.js';
 
 const PORT = 5005;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
@@ -355,7 +356,7 @@ async function runTests() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${verifikatorToken}`,
           },
-          body: JSON.stringify({ to_status: 'WAITING_VERIFICATION_APPROVAL', notes: 'Selesai verifikasi - A' }),
+          body: JSON.stringify({ from_status: 'IN_VERIFICATION', to_status: 'WAITING_VERIFICATION_APPROVAL', notes: 'Selesai verifikasi - A' }),
         });
 
         const req2 = fetch(`${BASE_URL}/registrations/${validRegId}/status`, {
@@ -364,7 +365,7 @@ async function runTests() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${verifikatorToken}`,
           },
-          body: JSON.stringify({ to_status: 'REVISION_REQUIRED', notes: 'Minta revisi - B' }),
+          body: JSON.stringify({ from_status: 'IN_VERIFICATION', to_status: 'REVISION_REQUIRED', notes: 'Minta revisi - B' }),
         });
 
         const [res1, res2] = await Promise.all([req1, req2]);
@@ -375,7 +376,19 @@ async function runTests() {
       });
 
       console.log('\n--- Kategori J: Berkas Naskah & Verifikasi Publik QR ---');
-      await test('Unggah metadata berkas naskah mushaf (COVER) berhasil', async () => {
+      await test('Unggah berkas privat lalu tautkan naskah COVER', async () => {
+        const draft = await fetch(`${BASE_URL}/registrations`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publisherToken}` },
+          body: JSON.stringify({ service_type_id: selectedService.id, title: 'Naskah Unggah Privat' }),
+        });
+        assert.equal(draft.status, 201);
+        validRegId = (await draft.json()).data.id;
+        const upload = await fetch(`${BASE_URL}/uploads`, {
+          method: 'POST', headers: { 'Content-Type': 'application/pdf', Authorization: `Bearer ${publisherToken}` },
+          body: Buffer.from('%PDF-1.4\n%%EOF'),
+        });
+        assert.equal(upload.status, 201);
+        const stored = (await upload.json()).data;
         const res = await fetch(`${BASE_URL}/registrations/${validRegId}/manuscripts`, {
           method: 'POST',
           headers: {
@@ -384,9 +397,7 @@ async function runTests() {
           },
           body: JSON.stringify({
             type: 'COVER',
-            file_id: 'storage/uploads/mushaf_cover_sample.pdf',
-            version: 1,
-            mime_type: 'application/pdf',
+            file_id: stored.id,
           }),
         });
         assert.strictEqual(res.status, 201);
@@ -406,6 +417,8 @@ async function runTests() {
         const res = await fetch(`${BASE_URL}/public/verify-document/token-qr-fiktif-99999`);
         assert.strictEqual(res.status, 404);
       });
+
+      await runWorkflowTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, dokumentatorToken, adminToken, serviceId: selectedService.id });
 
       console.log('\n========================================');
       console.log(`Ringkasan Pengujian: Total ${totalTests} | Lolos: ${passedTests} | Gagal: ${failedTests}`);

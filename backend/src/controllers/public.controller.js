@@ -23,7 +23,7 @@ export const verifyDocumentByQrToken = async (req, res, next) => {
       },
     });
 
-    if (!doc) {
+    if (!doc || doc.status === 'DRAFT' || doc.status === 'SIGNED') {
       return res.status(404).json({
         success: false,
         message: 'Dokumen tanda tashih tidak ditemukan atau QR Token tidak valid.',
@@ -40,7 +40,7 @@ export const verifyDocumentByQrToken = async (req, res, next) => {
       publisher_name: doc.registration.publisher.legal_name,
       service_name: doc.registration.service_type.name,
       service_kind: doc.registration.service_type.service_kind,
-      status: isExpired ? 'EXPIRED' : doc.status,
+      status: doc.status === 'REVOKED' ? 'REVOKED' : isExpired ? 'EXPIRED' : doc.status,
       issued_at: doc.issued_at,
       valid_until: doc.valid_until,
       is_valid: doc.status === 'ISSUED' && !isExpired,
@@ -49,7 +49,7 @@ export const verifyDocumentByQrToken = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'Dokumen terverifikasi resmi oleh Lajnah Pentashihan Mushaf Al-Qur\'an (LPMQ).',
+      message: publicData.is_valid ? 'Dokumen aktif dan terdaftar di LPMQ.' : 'Dokumen terdaftar tetapi tidak berlaku.',
       data: publicData,
     });
   } catch (error) {

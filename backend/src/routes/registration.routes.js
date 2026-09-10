@@ -3,6 +3,7 @@ import registrationController from '../controllers/registration.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
+import { registrationRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 import {
   createRegistrationSchema,
   transitionStatusSchema,
@@ -13,10 +14,11 @@ const router = Router();
 
 // Semua endpoint pengajuan memerlukan otentikasi
 router.use(authenticate);
+router.use(authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ', 'DOKUMENTATOR'));
 
 // Daftar & Pembuatan Pengajuan
 router.get('/', registrationController.listRegistrations);
-router.post('/', validate(createRegistrationSchema), registrationController.createDraft);
+router.post('/', authorize('ADMIN_PENERBIT'), registrationRateLimiter, validate(createRegistrationSchema), registrationController.createDraft);
 router.get('/:id', registrationController.getDetail);
 
 // Berkas Naskah Mushaf (Manuscript Files)
@@ -28,7 +30,7 @@ router.post(
 );
 
 // Aksi workflow submit & transisi status (didukung PATCH dan POST)
-router.post('/:id/submit', registrationController.submitRegistration);
+router.post('/:id/submit', authorize('ADMIN_PENERBIT'), registrationController.submitRegistration);
 
 const transitionRoles = [
   'SUPERADMIN',

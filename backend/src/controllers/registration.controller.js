@@ -31,7 +31,7 @@ export const transitionStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { to_status, notes } = req.body;
-    const result = await registrationService.transitionStatus(id, to_status, notes, req.user, req);
+    const result = await registrationService.transitionStatus(id, to_status, notes, req.user, req, req.body.from_status);
     res.status(200).json({
       success: true,
       message: `Status berhasil diubah menjadi ${to_status}.`,

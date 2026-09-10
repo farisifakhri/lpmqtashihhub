@@ -34,6 +34,7 @@ export const createRegistrationSchema = {
 
 export const transitionStatusSchema = {
   body: z.object({
+    from_status: z.string().max(64).optional(),
     to_status: z.enum([
       'DRAFT',
       'READY_FOR_VERIFICATION',
@@ -57,11 +58,6 @@ export const transitionStatusSchema = {
 export const createManuscriptFileSchema = {
   body: z.object({
     type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'DUMMY', 'MASTER_COMPLETED']),
-    file_id: z.string().min(1, 'File ID / path penyimpanan berkas naskah wajib diisi'),
-    version: z.number().int().positive().optional().default(1),
-    checksum: z.string().optional(),
-    file_size: z.number().int().nonnegative().optional(),
-    mime_type: z.string().optional(),
-  }),
+    file_id: z.string().uuid('Gunakan ID hasil endpoint unggah berkas.'),
+  }).strict(),
 };
-

@@ -8,7 +8,7 @@ export const authenticate = async (req, res, next) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
         success: false,
-        message: 'Akses ditolak. Token otentikasi tidak ditemukan.',
+        message: 'Anda belum masuk ke aplikasi. Silakan masuk terlebih dahulu untuk melanjutkan.',
       });
     }
 
@@ -28,7 +28,7 @@ export const authenticate = async (req, res, next) => {
     if (!user || user.status !== 'ACTIVE') {
       return res.status(401).json({
         success: false,
-        message: 'Pengguna tidak ditemukan atau akun sedang dinonaktifkan.',
+        message: 'Akun tidak tersedia atau sudah tidak aktif. Hubungi administrator untuk memeriksa akses akun Anda.',
       });
     }
 
@@ -51,10 +51,14 @@ export const authenticate = async (req, res, next) => {
         message: 'Sesi Anda telah kedaluwarsa. Silakan login kembali.',
       });
     }
-    return res.status(401).json({
-      success: false,
-      message: 'Token otentikasi tidak valid.',
-    });
+    if (error.name === 'JsonWebTokenError' || error.name === 'NotBeforeError') {
+      return res.status(401).json({
+        success: false,
+        message: 'Sesi masuk Anda tidak valid. Silakan masuk kembali untuk melanjutkan.',
+      });
+    }
+    // Gangguan database tidak berarti kredensial pengguna salah.
+    next(error);
   }
 };
 

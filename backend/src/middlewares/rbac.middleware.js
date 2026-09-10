@@ -1,9 +1,11 @@
+import { roleLabel } from '../utils/user-messages.js';
+
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user || !req.user.roles) {
       return res.status(403).json({
         success: false,
-        message: 'Akses ditolak. Pengguna belum memiliki otorisasi.',
+        message: 'Akses akun Anda belum dapat diperiksa. Silakan masuk kembali untuk melanjutkan.',
       });
     }
 
@@ -17,7 +19,7 @@ export const authorize = (...allowedRoles) => {
     if (!hasPermission) {
       return res.status(403).json({
         success: false,
-        message: 'Akses ditolak. Anda tidak memiliki izin untuk tindakan ini.',
+        message: `Tindakan ini hanya tersedia untuk ${allowedRoles.map(roleLabel).join(' atau ')}. Gunakan akun yang sesuai atau hubungi petugas yang berwenang.`,
       });
     }
 

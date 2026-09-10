@@ -10,6 +10,8 @@ jobs:
   backend-test:
     name: Backend Lint, Schema & Integration Test
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
 
     services:
       mysql:
@@ -63,7 +65,9 @@ jobs:
           DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
           JWT_SECRET: "test_jwt_secret_key_ci_environment_32chars"
           NODE_ENV: test
-        run: npm test
+        run: |
+          npm run test:unit
+          npm test
 
   frontend-test:
     name: Frontend Test & Build

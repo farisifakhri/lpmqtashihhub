@@ -1,11 +1,21 @@
 import app from './app.js';
 import { ENV } from './config/env.js';
 import { prisma } from './config/database.js';
+import { markOverdue } from './services/sla.service.js';
 
 const startServer = async () => {
   try {
     // Verifikasi koneksi basis data
     await prisma.$connect();
+    let checkingSla = false;
+    const checkSla = async () => {
+      if (checkingSla) return;
+      checkingSla = true;
+      try { await markOverdue(); } catch (error) { console.error('Pemeriksaan SLA gagal:', error.message); }
+      finally { checkingSla = false; }
+    };
+    void checkSla();
+    setInterval(checkSla, 60_000).unref();
     console.log('✅ Database MySQL (Laragon) berhasil terhubung via Prisma.');
 
     app.listen(ENV.PORT, () => {

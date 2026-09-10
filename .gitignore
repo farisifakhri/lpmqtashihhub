@@ -45,3 +45,4 @@ storage/
 !docs/*.xlsx
 !docs/*.docx
 !docs/*.png
+backend/storage/

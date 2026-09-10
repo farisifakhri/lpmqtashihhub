@@ -5,6 +5,7 @@ import publisherRoutes from './publisher.routes.js';
 import registrationRoutes from './registration.routes.js';
 import publicRoutes from './public.routes.js';
 import systemRoutes from './system.routes.js';
+import workflowRoutes from './workflow.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -53,6 +54,7 @@ router.get('/health', getHealth);
 
 // Domain Routes
 router.use('/auth', authRoutes);
+router.use(workflowRoutes);
 router.use('/master', masterRoutes);
 router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);

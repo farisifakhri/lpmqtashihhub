@@ -1,5 +1,7 @@
 # Implementation Baseline
 
+Implementasi backend awal pembayaran, distribusi, sidang, unggahan privat, enum status, dan SLA beserta batas dokumen draf dijelaskan di [kontrak API workflow](docs/api/workflow.md). Penetapan dokumen, delegasi Kepala LPMQ, dan pemisahan tanggung jawab PusdokQ/arsiparis tetap menunggu keputusan stakeholder. Reviu distributor mengikuti baseline; lampiran audit yang menyebut ketua kelompok belum digunakan sebagai pengganti SOP.
+
 ## 1. Tujuan
 
 Dokumen ini mengatur urutan implementasi MVP agar tim tidak mengubah keputusan bisnis yang belum disahkan menjadi perilaku permanen di dalam kode.
