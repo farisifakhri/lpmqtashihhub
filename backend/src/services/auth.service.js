@@ -60,6 +60,7 @@ export const login = async ({ email, password, req }) => {
       email: user.email,
       nip: user.nip,
       roles,
+      publisherId: user.publisher ? user.publisher.id : null,
       publisher: user.publisher,
     },
   };

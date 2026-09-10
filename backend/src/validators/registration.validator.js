@@ -1,14 +1,35 @@
 import { z } from 'zod';
 
 export const createRegistrationSchema = {
-  body: z.object({
-    publisher_id: z.string().uuid().optional(), // Diisi jika admin membuat atas nama penerbit
-    service_type_id: z.string().uuid('ID Layanan tidak valid'),
-    title: z.string().min(3, 'Judul mushaf wajib diisi'),
-    registration_type: z.enum(['NEW', 'EXTENSION']).default('NEW'),
-    previous_registration_id: z.string().uuid().optional().nullable(),
-    addons: z.array(z.string().uuid()).optional().default([]),
-  }),
+  body: z
+    .object({
+      publisher_id: z.string().uuid().optional(), // Diisi jika admin membuat atas nama penerbit
+      service_type_id: z.string().uuid('ID Layanan tidak valid'),
+      title: z.string().min(3, 'Judul mushaf wajib diisi'),
+      registration_type: z.enum(['NEW', 'EXTENSION']).default('NEW'),
+      previous_registration_id: z.string().uuid('ID Pengajuan sebelumnya tidak valid').optional().nullable(),
+      addons: z.array(z.string().uuid('ID Addon tidak valid')).optional(),
+      addon_ids: z.array(z.string().uuid('ID Addon tidak valid')).optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (data.registration_type === 'EXTENSION') {
+        if (!data.previous_registration_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Pengajuan perpanjangan (EXTENSION) wajib menyertakan previous_registration_id.',
+            path: ['previous_registration_id'],
+          });
+        }
+      } else if (data.registration_type === 'NEW') {
+        if (data.previous_registration_id) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Pengajuan baru (NEW) tidak boleh menyertakan previous_registration_id.',
+            path: ['previous_registration_id'],
+          });
+        }
+      }
+    }),
 };
 
 export const transitionStatusSchema = {
@@ -32,3 +53,15 @@ export const transitionStatusSchema = {
     notes: z.string().optional(),
   }),
 };
+
+export const createManuscriptFileSchema = {
+  body: z.object({
+    type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'DUMMY', 'MASTER_COMPLETED']),
+    file_id: z.string().min(1, 'File ID / path penyimpanan berkas naskah wajib diisi'),
+    version: z.number().int().positive().optional().default(1),
+    checksum: z.string().optional(),
+    file_size: z.number().int().nonnegative().optional(),
+    mime_type: z.string().optional(),
+  }),
+};
+

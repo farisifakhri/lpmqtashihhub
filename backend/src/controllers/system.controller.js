@@ -15,7 +15,8 @@ export const getHealth = async (req, res, next) => {
     dbLatency = Date.now() - dbCheckStart;
     dbStatus = 'CONNECTED';
   } catch (err) {
-    dbError = err.message;
+    dbStatus = 'DISCONNECTED';
+    dbError = process.env.NODE_ENV === 'development' ? err.message : 'Database service unavailable';
   }
 
   const isHealthy = dbStatus === 'CONNECTED';
@@ -253,10 +254,10 @@ export const getModuleDiagnostics = async (req, res, next) => {
         moduleData = {
           module_code: 'PAY-01',
           name: 'Billing PNBP & Riwayat Pembayaran',
-          sprint: 'Sprint 3',
+          sprint: 'Sprint 3 (Planned)',
           tables: [
-            { name: 'payment_records', row_count: payRecords, status: 'READY' },
-            { name: 'registrations (Menunggu Bayar)', row_count: awaitingPay, status: 'READY' },
+            { name: 'payment_records', row_count: payRecords, status: 'SCHEMA_READY' },
+            { name: 'registrations (Menunggu Bayar)', row_count: awaitingPay, status: 'SCHEMA_READY' },
           ],
           endpoints: [
             { method: 'GET', path: '/api/v1/registrations?status=AWAITING_PAYMENT', desc: 'Daftar Tagihan PNBP' },
@@ -287,11 +288,11 @@ export const getModuleDiagnostics = async (req, res, next) => {
         moduleData = {
           module_code: 'DIS-01',
           name: 'Distribusi & Penugasan Tim Pentashih',
-          sprint: 'Sprint 3',
+          sprint: 'Sprint 3 (Planned)',
           tables: [
-            { name: 'distribution_teams', row_count: teamsCount, status: 'READY' },
-            { name: 'assignments', row_count: assignmentsCount, status: 'READY' },
-            { name: 'registrations (Siap Distribusi)', row_count: waitingDist, status: 'READY' },
+            { name: 'distribution_teams', row_count: teamsCount, status: 'SCHEMA_READY' },
+            { name: 'assignments', row_count: assignmentsCount, status: 'SCHEMA_READY' },
+            { name: 'registrations (Siap Distribusi)', row_count: waitingDist, status: 'SCHEMA_READY' },
           ],
           endpoints: [
             { method: 'GET', path: '/api/v1/master/distribution-teams', desc: 'Daftar Tim SK Aktif' },
@@ -323,11 +324,11 @@ export const getModuleDiagnostics = async (req, res, next) => {
         moduleData = {
           module_code: 'TSH-01',
           name: 'Sidang & Catatan Tashih Naskah',
-          sprint: 'Sprint 4',
+          sprint: 'Sprint 4 (Planned)',
           tables: [
-            { name: 'tashih_reviews', row_count: reviewsCount, status: 'READY' },
-            { name: 'assignments', row_count: assignmentsCount, status: 'READY' },
-            { name: 'registrations (Dalam Sidang)', row_count: inTashih, status: 'READY' },
+            { name: 'tashih_reviews', row_count: reviewsCount, status: 'SCHEMA_READY' },
+            { name: 'assignments', row_count: assignmentsCount, status: 'SCHEMA_READY' },
+            { name: 'registrations (Dalam Sidang)', row_count: inTashih, status: 'SCHEMA_READY' },
           ],
           endpoints: [
             { method: 'GET', path: '/api/v1/registrations?status=TASHIH_IN_PROGRESS', desc: 'Naskah Sedang Ditashih' },
@@ -360,10 +361,10 @@ export const getModuleDiagnostics = async (req, res, next) => {
         moduleData = {
           module_code: upperCode === 'DOC-01' ? 'DOC-01' : 'DOC-02',
           name: 'Pengesahan Berita Acara & Surat Tanda Tashih',
-          sprint: 'Sprint 5',
+          sprint: 'Sprint 5 (Planned)',
           tables: [
-            { name: 'official_documents', row_count: docCount, status: 'READY' },
-            { name: 'registrations (Siap / Terbit STT)', row_count: readyForStt + sttIssued, status: 'READY' },
+            { name: 'official_documents', row_count: docCount, status: 'SCHEMA_READY' },
+            { name: 'registrations (Siap / Terbit STT)', row_count: readyForStt + sttIssued, status: 'SCHEMA_READY' },
           ],
           endpoints: [
             { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_STT', desc: 'Naskah Siap Penetapan STT' },

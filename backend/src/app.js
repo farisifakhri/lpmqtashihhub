@@ -5,11 +5,28 @@ import morgan from 'morgan';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
+import { ENV } from './config/env.js';
+
 const app = express();
 
 // Security & utility middlewares
 app.use(helmet());
-app.use(cors({ origin: true, credentials: true }));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Izinkan request tanpa origin (seperti mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    if (ENV.ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Akses diblokir oleh kebijakan CORS untuk origin: ${origin}`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+};
+
+app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

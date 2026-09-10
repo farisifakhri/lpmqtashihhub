@@ -77,10 +77,39 @@ export const getDetail = async (req, res, next) => {
   }
 };
 
+export const addManuscriptFile = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await registrationService.addManuscriptFile(id, req.body, req.user, req);
+    res.status(201).json({
+      success: true,
+      message: 'Berkas naskah mushaf berhasil diunggah/ditambahkan.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const listManuscriptFiles = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await registrationService.listManuscriptFiles(id, req.user);
+    res.status(200).json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
   transitionStatus,
   listRegistrations,
   getDetail,
+  addManuscriptFile,
+  listManuscriptFiles,
 };

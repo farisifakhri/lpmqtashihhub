@@ -33,7 +33,10 @@ export const LoginPage = () => {
     }
   };
 
+  const isDevMode = Boolean(import.meta.env.DEV);
+
   const handleQuickLogin = async (acc) => {
+    if (!isDevMode) return;
     setEmail(acc.email);
     setPassword('password123');
     setError('');
@@ -198,36 +201,39 @@ export const LoginPage = () => {
                 </button>
               </form>
 
-              {/* Divider Sesuai Referensi "Or continue with" */}
-              <div className="relative my-5 text-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-neutral-200/80" />
-                </div>
-                <div className="relative inline-block bg-white px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                  Atau Masuk Cepat Akun Uji Coba (1-Klik)
-                </div>
-              </div>
+              {/* Panel Uji Coba Cepat hanya tampil di environment development */}
+              {isDevMode && (
+                <>
+                  <div className="relative my-5 text-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-neutral-200/80" />
+                    </div>
+                    <div className="relative inline-block bg-white px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+                      Mode Dev: Masuk Cepat Akun Uji Coba (1-Klik)
+                    </div>
+                  </div>
 
-              {/* Pilihan Akun Uji Coba Cepat (Grid Sleek) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {seedAccounts.slice(0, 6).map((acc) => (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    onClick={() => handleQuickLogin(acc)}
-                    disabled={isLoading}
-                    title={`${acc.label} (${acc.email})`}
-                    className="p-2.5 rounded-xl border border-neutral-200/70 hover:border-primary-500 hover:bg-primary-50/40 active:scale-[0.98] transition-all text-left group flex flex-col justify-between"
-                  >
-                    <div className="text-[11px] font-bold text-neutral-800 group-hover:text-primary-700 truncate">
-                      {acc.label}
-                    </div>
-                    <div className="text-[10px] text-neutral-400 font-mono truncate mt-0.5">
-                      {acc.email.split('@')[0]}
-                    </div>
-                  </button>
-                ))}
-              </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {seedAccounts.slice(0, 6).map((acc) => (
+                      <button
+                        key={acc.role}
+                        type="button"
+                        onClick={() => handleQuickLogin(acc)}
+                        disabled={isLoading}
+                        title={`${acc.label} (${acc.email})`}
+                        className="p-2.5 rounded-xl border border-neutral-200/70 hover:border-primary-500 hover:bg-primary-50/40 active:scale-[0.98] transition-all text-left group flex flex-col justify-between"
+                      >
+                        <div className="text-[11px] font-bold text-neutral-800 group-hover:text-primary-700 truncate">
+                          {acc.label}
+                        </div>
+                        <div className="text-[10px] text-neutral-400 font-mono truncate mt-0.5">
+                          {acc.email.split('@')[0]}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Footer Bawah */}

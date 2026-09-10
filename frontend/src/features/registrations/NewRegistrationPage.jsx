@@ -126,7 +126,10 @@ export const NewRegistrationPage = () => {
         title: formData.title,
         service_type_id: formData.service_type_id,
         registration_type: formData.registration_type,
-        previous_registration_id: formData.previous_registration_id || undefined,
+        ...(formData.registration_type === 'EXTENSION' && formData.previous_registration_id
+          ? { previous_registration_id: formData.previous_registration_id }
+          : {}),
+        addons: formData.selectedAddons,
         addon_ids: formData.selectedAddons,
       };
 

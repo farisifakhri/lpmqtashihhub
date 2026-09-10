@@ -1,36 +1,147 @@
 import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 
-// Matriks transisi status resmi (IMPLEMENTATION.md §4 & SRS v2.2 §6.2)
-const ALLOWED_TRANSITIONS = {
-  DRAFT: ['READY_FOR_VERIFICATION', 'CANCELLED'],
-  READY_FOR_VERIFICATION: ['IN_VERIFICATION', 'CANCELLED'],
-  IN_VERIFICATION: ['REVISION_REQUIRED', 'WAITING_VERIFICATION_APPROVAL'],
-  REVISION_REQUIRED: ['READY_FOR_VERIFICATION', 'CANCELLED'],
-  WAITING_VERIFICATION_APPROVAL: ['AWAITING_PAYMENT', 'REVISION_REQUIRED'],
-  AWAITING_PAYMENT: ['PAYMENT_VERIFICATION'],
-  PAYMENT_VERIFICATION: ['WAITING_DISTRIBUTION'],
-  WAITING_DISTRIBUTION: ['TASHIH_IN_PROGRESS'],
-  TASHIH_IN_PROGRESS: ['READY_FOR_STT', 'REVISION_REQUIRED'],
-  READY_FOR_STT: ['STT_ISSUED'],
-  STT_ISSUED: ['DOCUMENTATION_IN_PROGRESS'],
-  DOCUMENTATION_IN_PROGRESS: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
+// Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
+export const TRANSITION_POLICY = {
+  DRAFT: {
+    READY_FOR_VERIFICATION: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Pengajuan disubmit untuk verifikasi administrasi & dokumen naskah',
+    },
+    CANCELLED: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Draf pengajuan dibatalkan oleh pemohon',
+    },
+  },
+  READY_FOR_VERIFICATION: {
+    IN_VERIFICATION: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Verifikator memulai verifikasi dokumen & naskah',
+    },
+    CANCELLED: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Pengajuan ditarik kembali oleh pemohon',
+    },
+  },
+  IN_VERIFICATION: {
+    REVISION_REQUIRED: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Verifikator meminta revisi kelengkapan dokumen / naskah',
+    },
+    WAITING_VERIFICATION_APPROVAL: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Verifikasi selesai, menunggu persetujuan verifikasi',
+    },
+  },
+  REVISION_REQUIRED: {
+    READY_FOR_VERIFICATION: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah',
+    },
+    CANCELLED: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Pengajuan dibatalkan oleh pemohon',
+    },
+  },
+  WAITING_VERIFICATION_APPROVAL: {
+    AWAITING_PAYMENT: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Verifikasi disetujui, penerbitan tagihan PNBP',
+    },
+    REVISION_REQUIRED: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Persetujuan verifikasi ditolak, diperlukan perbaikan ulang',
+    },
+  },
+  AWAITING_PAYMENT: {
+    PAYMENT_VERIFICATION: {
+      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Penerbit melakukan konfirmasi / unggah bukti bayar PNBP',
+    },
+  },
+  PAYMENT_VERIFICATION: {
+    WAITING_DISTRIBUTION: {
+      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
+      description: 'Pembayaran diverifikasi lunas, naskah masuk antrean distribusi',
+    },
+  },
+  WAITING_DISTRIBUTION: {
+    TASHIH_IN_PROGRESS: {
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      description: 'Distributor menetapkan tim pentashih dan memulai sidang pentashihan',
+    },
+  },
+  TASHIH_IN_PROGRESS: {
+    READY_FOR_STT: {
+      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
+      description: 'Sidang pentashihan selesai dengan rekomendasi penerbitan STT',
+    },
+    REVISION_REQUIRED: {
+      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
+      description: 'Pentashih menemukan koreksi teks mushaf yang harus diperbaiki penerbit',
+    },
+  },
+  READY_FOR_STT: {
+    STT_ISSUED: {
+      allowedRoles: ['KEPALA_LPMQ', 'SUPERADMIN'],
+      description: 'Kepala LPMQ menandatangani dan menerbitkan Surat Tanda Tashih',
+    },
+  },
+  STT_ISSUED: {
+    DOCUMENTATION_IN_PROGRESS: {
+      allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      description: 'Dokumentator memulai proses pencatatan dan dokumentasi arsip mushaf',
+    },
+  },
+  DOCUMENTATION_IN_PROGRESS: {
+    COMPLETED: {
+      allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      description: 'Pendokumentasian arsip tuntas, pengajuan selesai sepenuhnya',
+    },
+  },
+  COMPLETED: {},
+  CANCELLED: {},
 };
 
-const generateRegistrationNo = async () => {
+/**
+ * Pembuatan nomor registrasi berurutan per bulan secara deterministik (REG-YYYYMM-XXXX)
+ */
+const generateRegistrationNo = async (tx) => {
   const dateStr = new Date().toISOString().slice(0, 7).replace('-', '');
-  const count = await prisma.registration.count();
-  const sequence = String(count + 1).padStart(4, '0');
-  return `REG-${dateStr}-${sequence}`;
+  const prefix = `REG-${dateStr}-`;
+
+  const lastReg = await tx.registration.findFirst({
+    where: { registration_no: { startsWith: prefix } },
+    orderBy: { registration_no: 'desc' },
+    select: { registration_no: true },
+  });
+
+  let nextSequence = 1;
+  if (lastReg && lastReg.registration_no) {
+    const parts = lastReg.registration_no.split('-');
+    if (parts.length >= 3) {
+      const lastNum = parseInt(parts[2], 10);
+      if (!isNaN(lastNum)) {
+        nextSequence = lastNum + 1;
+      }
+    }
+  }
+
+  const sequenceStr = String(nextSequence).padStart(4, '0');
+  return `${prefix}${sequenceStr}`;
 };
 
 export const createDraft = async (data, user, req) => {
   let publisherId = user.publisherId;
   let submissionSource = 'PUBLISHER_PORTAL';
 
-  // Jika dibuat oleh ADMIN atas nama penerbit
+  // Jika dibuat oleh SUPERADMIN atas nama penerbit tertentu
   if (user.roles.includes('SUPERADMIN') && data.publisher_id) {
     publisherId = data.publisher_id;
     submissionSource = 'INTERNAL_ADMIN';
@@ -54,64 +165,135 @@ export const createDraft = async (data, user, req) => {
     throw error;
   }
 
-  const regNo = await generateRegistrationNo();
+  const registrationType = data.registration_type || 'NEW';
 
-  const registration = await prisma.$transaction(async (tx) => {
-    const created = await tx.registration.create({
-      data: {
-        registration_no: regNo,
-        publisher_id: publisherId,
-        service_type_id: data.service_type_id,
-        title: data.title,
-        submission_source: submissionSource,
-        registration_type: data.registration_type || 'NEW',
-        previous_registration_id: data.previous_registration_id || null,
-        status: 'DRAFT',
-      },
-    });
-
-    // Simpan relasi addon bila ada
-    if (data.addons && data.addons.length > 0) {
-      const addons = await tx.serviceAddon.findMany({
-        where: { id: { in: data.addons }, status: 'ACTIVE' },
-      });
-
-      for (const add of addons) {
-        await tx.registrationAddon.create({
-          data: {
-            registration_id: created.id,
-            addon_id: add.id,
-            fee_snapshot: add.fee,
-            quantity: 1,
-          },
-        });
-      }
+  // Validasi Pengajuan Perpanjangan (EXTENSION)
+  if (registrationType === 'EXTENSION') {
+    if (!data.previous_registration_id) {
+      const error = new Error('Pengajuan perpanjangan (EXTENSION) wajib menyertakan previous_registration_id.');
+      error.statusCode = 400;
+      throw error;
     }
 
-    // Catat riwayat status awal
-    await tx.statusHistory.create({
-      data: {
-        registration_id: created.id,
-        from_status: 'NONE',
-        to_status: 'DRAFT',
-        actor_id: user.id,
-        notes: 'Draf pengajuan dibuat',
-      },
+    const prevReg = await prisma.registration.findUnique({
+      where: { id: data.previous_registration_id },
+      select: { id: true, publisher_id: true, status: true, registration_no: true },
     });
 
-    return created;
-  });
+    if (!prevReg) {
+      const error = new Error('Pengajuan sebelumnya tidak ditemukan.');
+      error.statusCode = 404;
+      throw error;
+    }
 
-  await logAudit({
-    actorId: user.id,
-    action: 'CREATE_REGISTRATION_DRAFT',
-    subjectType: 'Registration',
-    subjectId: registration.id,
-    afterJson: registration,
-    req,
-  });
+    // Pastikan milik penerbit yang sama
+    if (prevReg.publisher_id !== publisherId && !user.roles.includes('SUPERADMIN')) {
+      const error = new Error('Pengajuan sebelumnya bukan milik penerbit ini.');
+      error.statusCode = 403;
+      throw error;
+    }
 
-  return registration;
+    // Pastikan pengajuan sebelumnya telah memiliki STT yang sah
+    const validPreviousStatuses = ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'];
+    if (!validPreviousStatuses.includes(prevReg.status)) {
+      const error = new Error(
+        `Pengajuan sebelumnya (${prevReg.registration_no}) berstatus "${prevReg.status}" dan belum memiliki Surat Tanda Tashih (STT) yang sah untuk diperpanjang.`
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+  } else if (registrationType === 'NEW') {
+    if (data.previous_registration_id) {
+      const error = new Error('Pengajuan baru (NEW) tidak boleh menyertakan previous_registration_id.');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+
+  // Normalisasi daftar addon
+  const requestedAddonIds = data.addons || data.addon_ids || [];
+
+  // Mekanisme retry loop untuk menangani kemungkinan tabrakan unik nomor registrasi (P2002)
+  const maxRetries = 3;
+  let lastError = null;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const registration = await prisma.$transaction(async (tx) => {
+        const regNo = await generateRegistrationNo(tx);
+
+        const created = await tx.registration.create({
+          data: {
+            registration_no: regNo,
+            publisher_id: publisherId,
+            service_type_id: data.service_type_id,
+            title: data.title,
+            submission_source: submissionSource,
+            registration_type: registrationType,
+            previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
+            status: 'DRAFT',
+          },
+        });
+
+        // Simpan relasi addon bila diminta
+        if (requestedAddonIds.length > 0) {
+          const activeAddons = await tx.serviceAddon.findMany({
+            where: { id: { in: requestedAddonIds }, status: 'ACTIVE' },
+          });
+
+          if (activeAddons.length !== requestedAddonIds.length) {
+            const error = new Error('Satu atau lebih layanan tambahan (add-on) tidak ditemukan atau tidak aktif.');
+            error.statusCode = 400;
+            throw error;
+          }
+
+          for (const add of activeAddons) {
+            await tx.registrationAddon.create({
+              data: {
+                registration_id: created.id,
+                addon_id: add.id,
+                fee_snapshot: add.fee,
+                quantity: 1,
+              },
+            });
+          }
+        }
+
+        // Catat riwayat status awal
+        await tx.statusHistory.create({
+          data: {
+            registration_id: created.id,
+            from_status: 'NONE',
+            to_status: 'DRAFT',
+            actor_id: user.id,
+            notes: 'Draf pengajuan dibuat',
+          },
+        });
+
+        return created;
+      });
+
+      await logAudit({
+        actorId: user.id,
+        action: 'CREATE_REGISTRATION_DRAFT',
+        subjectType: 'Registration',
+        subjectId: registration.id,
+        afterJson: registration,
+        req,
+      });
+
+      return registration;
+    } catch (err) {
+      if (err.code === 'P2002' && attempt < maxRetries) {
+        lastError = err;
+        await new Promise((resolve) => setTimeout(resolve, 25 * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+
+  throw lastError;
 };
 
 export const submitRegistration = async (id, user, req) => {
@@ -121,6 +303,7 @@ export const submitRegistration = async (id, user, req) => {
       service_type: true,
       addons: { include: { addon: true } },
       manuscript_files: true,
+      publisher: true,
     },
   });
 
@@ -143,6 +326,15 @@ export const submitRegistration = async (id, user, req) => {
     throw error;
   }
 
+  // Validasi status verifikasi profil penerbit
+  if (reg.publisher && reg.publisher.verification_status !== 'VERIFIED') {
+    const error = new Error(
+      `Pengajuan tidak dapat disubmit karena status penerbit Anda adalah "${reg.publisher.verification_status}". Hanya penerbit terverifikasi (VERIFIED) yang dapat mengajukan pentashihan.`
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
   // Hitung snapshot tarif dan SLA (BR-04 & BR-05)
   const baseFee = Number(reg.service_type.base_fee);
   const addonsTotal = reg.addons.reduce((sum, item) => sum + Number(item.fee_snapshot), 0);
@@ -160,14 +352,26 @@ export const submitRegistration = async (id, user, req) => {
     sla_dummy_days: reg.service_type.duration_dummy,
   };
 
+  // Optimistic concurrency update: cegah race condition submit paralel
   const updated = await prisma.$transaction(async (tx) => {
-    const res = await tx.registration.update({
-      where: { id },
+    const updateResult = await tx.registration.updateMany({
+      where: {
+        id,
+        status: reg.status,
+      },
       data: {
         status: 'READY_FOR_VERIFICATION',
         fee_sla_snapshot: feeSlaSnapshot,
       },
     });
+
+    if (updateResult.count === 0) {
+      const conflictError = new Error(
+        'Gagal submit pengajuan: terjadi konflik konkuren atau status pengajuan telah berubah.'
+      );
+      conflictError.statusCode = 409;
+      throw conflictError;
+    }
 
     await tx.statusHistory.create({
       data: {
@@ -179,7 +383,14 @@ export const submitRegistration = async (id, user, req) => {
       },
     });
 
-    return res;
+    return tx.registration.findUnique({
+      where: { id },
+      include: {
+        publisher: true,
+        service_type: true,
+        addons: true,
+      },
+    });
   });
 
   await logAudit({
@@ -198,6 +409,7 @@ export const submitRegistration = async (id, user, req) => {
 export const transitionStatus = async (id, toStatus, notes, user, req) => {
   const reg = await prisma.registration.findUnique({
     where: { id },
+    include: { publisher: true },
   });
 
   if (!reg) {
@@ -206,32 +418,76 @@ export const transitionStatus = async (id, toStatus, notes, user, req) => {
     throw error;
   }
 
-  const allowed = ALLOWED_TRANSITIONS[reg.status] || [];
-  if (!allowed.includes(toStatus)) {
+  const fromStatus = reg.status;
+  const policyForFrom = TRANSITION_POLICY[fromStatus];
+  const rule = policyForFrom ? policyForFrom[toStatus] : null;
+
+  if (!rule) {
     const error = new Error(
-      `Transisi status ilegal: tidak diperbolehkan berpindah dari ${reg.status} ke ${toStatus}.`
+      `Transisi status ilegal: tidak diperbolehkan berpindah dari ${fromStatus} ke ${toStatus}.`
     );
     error.statusCode = 400;
     throw error;
   }
 
+  const isSuperadmin = user.roles.includes('SUPERADMIN');
+
+  // Pengecekan Otorisasi Role Spesifik
+  const hasAllowedRole = isSuperadmin || user.roles.some((r) => rule.allowedRoles.includes(r));
+  if (!hasAllowedRole) {
+    const error = new Error(
+      `Akses ditolak: role [${user.roles.join(', ')}] tidak memiliki wewenang untuk transisi ${fromStatus} -> ${toStatus}. Diperlukan salah satu dari: [${rule.allowedRoles.join(', ')}].`
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Pengecekan Kepemilikan Penerbit
+  if (rule.ownershipGuard && !isSuperadmin) {
+    if (reg.publisher_id !== user.publisherId) {
+      const error = new Error('Akses ditolak: Anda tidak memiliki izin untuk pengajuan ini.');
+      error.statusCode = 403;
+      throw error;
+    }
+  }
+
+  // Optimistic concurrency update: pastikan status saat ini masih match
   const updated = await prisma.$transaction(async (tx) => {
-    const res = await tx.registration.update({
-      where: { id },
-      data: { status: toStatus },
+    const updateResult = await tx.registration.updateMany({
+      where: {
+        id,
+        status: fromStatus,
+      },
+      data: {
+        status: toStatus,
+      },
     });
+
+    if (updateResult.count === 0) {
+      const conflictError = new Error(
+        'Gagal melakukan transisi: status pengajuan telah berubah oleh proses lain (konflik transisi).'
+      );
+      conflictError.statusCode = 409;
+      throw conflictError;
+    }
 
     await tx.statusHistory.create({
       data: {
         registration_id: id,
-        from_status: reg.status,
+        from_status: fromStatus,
         to_status: toStatus,
         actor_id: user.id,
-        notes: notes || null,
+        notes: notes || rule.description || null,
       },
     });
 
-    return res;
+    return tx.registration.findUnique({
+      where: { id },
+      include: {
+        publisher: true,
+        service_type: true,
+      },
+    });
   });
 
   await logAudit({
@@ -239,7 +495,7 @@ export const transitionStatus = async (id, toStatus, notes, user, req) => {
     action: 'TRANSITION_REGISTRATION_STATUS',
     subjectType: 'Registration',
     subjectId: id,
-    beforeJson: { status: reg.status },
+    beforeJson: { status: fromStatus },
     afterJson: { status: toStatus, notes },
     req,
   });
@@ -369,10 +625,85 @@ export const getDetail = async (id, user) => {
   return reg;
 };
 
+export const addManuscriptFile = async (registrationId, data, user, req) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (
+    user.roles.includes('ADMIN_PENERBIT') &&
+    !user.roles.includes('SUPERADMIN') &&
+    reg.publisher_id !== user.publisherId
+  ) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk pengajuan ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const manuscript = await prisma.manuscriptFile.create({
+    data: {
+      registration_id: registrationId,
+      type: data.type,
+      file_id: data.file_id,
+      version: data.version || 1,
+      checksum: data.checksum || null,
+      file_size: data.file_size || null,
+      mime_type: data.mime_type || null,
+    },
+  });
+
+  await logAudit({
+    actorId: user.id,
+    action: 'ADD_MANUSCRIPT_FILE',
+    subjectType: 'ManuscriptFile',
+    subjectId: manuscript.id,
+    afterJson: manuscript,
+    req,
+  });
+
+  return manuscript;
+};
+
+export const listManuscriptFiles = async (registrationId, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id: registrationId },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (
+    user.roles.includes('ADMIN_PENERBIT') &&
+    !user.roles.includes('SUPERADMIN') &&
+    reg.publisher_id !== user.publisherId
+  ) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk pengajuan ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  return prisma.manuscriptFile.findMany({
+    where: { registration_id: registrationId },
+    orderBy: { created_at: 'desc' },
+  });
+};
+
 export default {
   createDraft,
   submitRegistration,
   transitionStatus,
   listRegistrations,
   getDetail,
+  addManuscriptFile,
+  listManuscriptFiles,
+  TRANSITION_POLICY,
 };

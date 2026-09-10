@@ -97,7 +97,13 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('lpmq_user', JSON.stringify(userObj));
         }
       } catch (err) {
-        console.warn('Session check failed or offline, keeping current state:', err.message);
+        // Jika token tidak valid / kedaluwarsa (401 / 403), bersihkan sesi lokal
+        if (err?.status === 401 || err?.status === 403) {
+          console.warn('Sesi tidak valid atau telah kedaluwarsa (401/403). Membersihkan sesi lokal.');
+          logout();
+        } else {
+          console.warn('Gagal sinkronisasi sesi dengan server:', err?.message);
+        }
       }
     };
 
@@ -159,26 +165,19 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  // Quick switch role (untuk simulasi / preset demo langsung)
+  // Quick switch role (hanya untuk simulasi development lokal, tidak membuat user mock)
   const setRole = async (targetRole) => {
+    if (!import.meta.env.DEV) {
+      console.warn('Pergantian role demo dinonaktifkan di luar mode development.');
+      return;
+    }
     const seed = SEED_ACCOUNTS.find((s) => s.role === targetRole);
     if (seed) {
-      // Coba login otomatis via API backend
       try {
         await login(seed.email, 'password123');
-      } catch {
-        // Fallback jika backend offline / mock mode
-        const mockObj = {
-          id: `usr-${seed.role.toLowerCase()}`,
-          name: seed.label,
-          email: seed.email,
-          role: seed.role,
-          roles: [seed.role],
-          publisherName: seed.role === 'ADMIN_PENERBIT' ? 'PT Mushaf Nusantara Mandiri' : null,
-          publisherId: seed.role === 'ADMIN_PENERBIT' ? 'pub-01' : null,
-        };
-        setCurrentUser(mockObj);
-        localStorage.setItem('lpmq_user', JSON.stringify(mockObj));
+      } catch (err) {
+        console.error('Gagal berganti ke akun demo:', err.message);
+        throw err;
       }
     }
   };
@@ -206,7 +205,7 @@ export const AuthProvider = ({ children }) => {
         logout,
         setRole,
         availableRoles,
-        seedAccounts: SEED_ACCOUNTS,
+        seedAccounts: import.meta.env.DEV ? SEED_ACCOUNTS : [],
       }}
     >
       {children}

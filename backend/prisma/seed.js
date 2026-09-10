@@ -27,8 +27,20 @@ async function main() {
   }
   console.log('✅ Roles seeded');
 
-  // 2. Users & Passwords (password default: password123)
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // 2. Users & Passwords
+  const isProduction = process.env.NODE_ENV === 'production';
+  let seedPassword = process.env.SEED_DEFAULT_PASSWORD;
+
+  if (isProduction && !seedPassword) {
+    throw new Error('FATAL: SEED_DEFAULT_PASSWORD environment variable wajib ditentukan saat seeding di environment production!');
+  }
+
+  if (!seedPassword) {
+    seedPassword = 'password123';
+    console.warn('⚠️  PERINGATAN: Menggunakan password seed bawaan ("password123") untuk development. Ganti sebelum deployment.');
+  }
+
+  const passwordHash = await bcrypt.hash(seedPassword, 10);
 
   const usersData = [
     {
@@ -85,7 +97,8 @@ async function main() {
   for (const u of usersData) {
     const user = await prisma.user.upsert({
       where: { email: u.email },
-      update: { name: u.name, nip: u.nip, password_hash: passwordHash, status: 'ACTIVE' },
+      // Jangan menimpa password_hash akun yang sudah ada saat re-seed
+      update: { name: u.name, nip: u.nip, status: 'ACTIVE' },
       create: {
         name: u.name,
         email: u.email,
