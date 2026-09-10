@@ -1,0 +1,482 @@
+// Prisma Schema untuk Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ)
+// Berdasarkan ERD v2.2, SRS v2.2, dan SOP Resmi Kementerian Agama RI
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// 1. IDENTITY & ACCESS MODULE
+// -------------------------------------------------------------
+
+model User {
+  id            String      @id @default(uuid())
+  name          String
+  email         String      @unique
+  password_hash String
+  nip           String?     @unique
+  status        String      @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  // Relations
+  roles                    UserRole[]
+  publisher                Publisher?
+  verification_assignments VerificationAssignment[]
+  team_memberships         TeamMember[]
+  teams_led                DistributionTeam[]
+  assignments              Assignment[]
+  document_signatories     DocumentSignatory[]
+  notifications            Notification[]
+  audit_logs               AuditLog[]
+  status_histories         StatusHistory[]
+
+  @@map("users")
+}
+
+model Role {
+  id         String     @id @default(uuid())
+  code       String     @unique // SUPERADMIN, ADMIN_PENERBIT, VERIFIKATOR, DISTRIBUTOR, PENTASHIH, DOKUMENTATOR, KEPALA_LPMQ
+  name       String
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+
+  // Relations
+  users      UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id         String   @id @default(uuid())
+  user_id    String
+  role_id    String
+  created_at DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, role_id])
+  @@map("user_roles")
+}
+
+// -------------------------------------------------------------
+// 2. PUBLISHER MODULE
+// -------------------------------------------------------------
+
+model Publisher {
+  id                  String              @id @default(uuid())
+  user_id             String?             @unique
+  legal_name          String              // Nama Badan Hukum / PT / CV / Yayasan
+  entity_type         String              // PT, CV, YAYASAN, PERORANGAN
+  verification_status String              @default("UNVERIFIED") // UNVERIFIED, VERIFIED, REJECTED
+  address             String?
+  phone               String?
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+
+  // Relations
+  user                User?               @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  documents           PublisherDocument[]
+  registrations       Registration[]
+
+  @@map("publishers")
+}
+
+model PublisherDocument {
+  id            String    @id @default(uuid())
+  publisher_id  String
+  document_type String    // AKTA_PENDIRIAN, NIB, SK_KEMENKUMHAM, NPWP, SURAT_KUASA
+  version       Int       @default(1)
+  file_id       String    // Referensi storage private
+  status        String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes         String?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // Relations
+  publisher     Publisher @relation(fields: [publisher_id], references: [id], onDelete: Cascade)
+
+  @@map("publisher_documents")
+}
+
+// -------------------------------------------------------------
+// 3. MASTER DATA MODULE
+// -------------------------------------------------------------
+
+model MushafCategory {
+  id            String        @id @default(uuid())
+  code          String        @unique // MC, MD, MAV, L
+  name          String        // Mushaf Cetak, Mushaf Digital, Mushaf Audio/Visual, Lainnya
+  display_order Int           @default(0)
+  status        String        @default("ACTIVE") // ACTIVE, INACTIVE
+  created_at    DateTime      @default(now())
+  updated_at    DateTime      @updatedAt
+
+  // Relations
+  service_types ServiceType[]
+
+  @@map("mushaf_categories")
+}
+
+model ServiceType {
+  id                String         @id @default(uuid())
+  category_id       String
+  name              String         // Misal: Mushaf Al-Qur'an 30 Juz
+  service_kind      String         // CETAK, DIGITAL, AUDIO_VISUAL, BRAILLE
+  base_fee          Decimal        @default(0) @db.Decimal(12, 2)
+  fee_unit          String         @default("PER_STT") // PER_STT, PER_ITEM
+  duration_initial  Int            @default(15) // SLA Awal (Hari Kerja)
+  duration_revision Int            @default(7)  // SLA Perbaikan (Hari Kerja)
+  duration_dummy    Int            @default(3)  // SLA Dumi/Perpanjangan (Hari Kerja)
+  effective_from    DateTime       @default(now())
+  effective_to      DateTime?
+  status            String         @default("ACTIVE") // ACTIVE, INACTIVE
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+
+  // Relations
+  category          MushafCategory @relation(fields: [category_id], references: [id])
+  registrations     Registration[]
+
+  @@map("service_types")
+}
+
+model ServiceAddon {
+  id             String              @id @default(uuid())
+  code           String              @unique // TAR-BRAILLE, TAR-PENDEK, TAR-MUSHAF, ADD-MATERI
+  name           String
+  fee            Decimal             @db.Decimal(12, 2)
+  effective_from DateTime            @default(now())
+  effective_to   DateTime?
+  status         String              @default("ACTIVE") // ACTIVE, INACTIVE
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @updatedAt
+
+  // Relations
+  registrations  RegistrationAddon[]
+
+  @@map("service_addons")
+}
+
+model WorkingDay {
+  date           DateTime @id @db.Date
+  is_working_day Boolean  @default(true)
+  description    String?
+  source         String   @default("SKB_3_MENTERI")
+  updated_by     String?
+  updated_at     DateTime @updatedAt
+
+  @@map("working_days")
+}
+
+model DistributionTeam {
+  id             String        @id @default(uuid())
+  name           String        // Misal: Tim Pentashihan Reguler 2026
+  decree_no      String        // Nomor SK Kepala LPMQ
+  year           Int
+  leader_user_id String?
+  active_from    DateTime
+  active_to      DateTime?
+  status         String        @default("ACTIVE") // ACTIVE, INACTIVE
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  // Relations
+  leader         User?         @relation(fields: [leader_user_id], references: [id], onDelete: SetNull)
+  members        TeamMember[]
+  assignments    Assignment[]
+
+  @@map("distribution_teams")
+}
+
+model TeamMember {
+  id           String           @id @default(uuid())
+  team_id      String
+  user_id      String
+  role_in_team String           @default("PENTASHIH") // PENTASHIH, PEMBACA_NASKAH, DISTRIBUTOR
+  status       String           @default("ACTIVE")
+  created_at   DateTime         @default(now())
+
+  // Relations
+  team         DistributionTeam @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([team_id, user_id])
+  @@map("team_members")
+}
+
+// -------------------------------------------------------------
+// 4. REGISTRATION & MANUSCRIPT MODULE
+// -------------------------------------------------------------
+
+model Registration {
+  id                       String                   @id @default(uuid())
+  registration_no          String                   @unique // Misal: REG-2026-09-0001
+  publisher_id             String
+  service_type_id          String
+  title                    String                   // Judul Mushaf / Naskah
+  submission_source        String                   @default("PUBLISHER_PORTAL") // PUBLISHER_PORTAL, INTERNAL_ADMIN
+  registration_type        String                   @default("NEW") // NEW, EXTENSION
+  previous_registration_id String?
+  status                   String                   @default("DRAFT")
+  // Status: DRAFT, READY_FOR_VERIFICATION, IN_VERIFICATION, REVISION_REQUIRED,
+  // WAITING_VERIFICATION_APPROVAL, AWAITING_PAYMENT, PAYMENT_VERIFICATION,
+  // WAITING_DISTRIBUTION, TASHIH_IN_PROGRESS, READY_FOR_STT, STT_ISSUED,
+  // DOCUMENTATION_IN_PROGRESS, COMPLETED, CANCELLED
+  fee_sla_snapshot         Json?                    // Snapshot snapshot tarif & SLA saat submit (BR-04, BR-05)
+  created_at               DateTime                 @default(now())
+  updated_at               DateTime                 @updatedAt
+
+  // Relations
+  publisher                Publisher                @relation(fields: [publisher_id], references: [id])
+  service_type             ServiceType              @relation(fields: [service_type_id], references: [id])
+  previous_registration    Registration?            @relation("RegistrationExtensions", fields: [previous_registration_id], references: [id], onDelete: SetNull)
+  extensions               Registration[]           @relation("RegistrationExtensions")
+  addons                   RegistrationAddon[]
+  manuscript_files         ManuscriptFile[]
+  status_histories         StatusHistory[]
+  verification_assignments VerificationAssignment[]
+  payment_records          PaymentRecord[]
+  assignments              Assignment[]
+  documentation_items      DocumentationItem[]
+  official_documents       OfficialDocument[]
+  notifications            Notification[]
+
+  @@map("registrations")
+}
+
+model RegistrationAddon {
+  id              String       @id @default(uuid())
+  registration_id String
+  addon_id        String
+  fee_snapshot    Decimal      @db.Decimal(12, 2)
+  quantity        Int          @default(1)
+  created_at      DateTime     @default(now())
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  addon           ServiceAddon @relation(fields: [addon_id], references: [id])
+
+  @@unique([registration_id, addon_id])
+  @@map("registration_addons")
+}
+
+model ManuscriptFile {
+  id              String       @id @default(uuid())
+  registration_id String
+  type            String       // COVER, SAMPLE_PAGE_1_5, DUMMY, MASTER_COMPLETED
+  version         Int          @default(1)
+  file_id         String       // Path storage private
+  checksum        String?
+  file_size       Int?
+  mime_type       String?
+  created_at      DateTime     @default(now())
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@map("manuscript_files")
+}
+
+model StatusHistory {
+  id              String       @id @default(uuid())
+  registration_id String
+  from_status     String
+  to_status       String
+  actor_id        String?
+  notes           String?
+  changed_at      DateTime     @default(now())
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  actor           User?        @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@map("status_histories")
+}
+
+// -------------------------------------------------------------
+// 5. VERIFICATION & BILLING MODULE
+// -------------------------------------------------------------
+
+model VerificationAssignment {
+  id              String       @id @default(uuid())
+  registration_id String
+  verifier_id     String
+  status          String       @default("ASSIGNED") // ASSIGNED, IN_PROGRESS, COMPLETED
+  decision        String?      // APPROVED, REVISION_REQUIRED, REJECTED
+  notes           String?
+  assigned_at     DateTime     @default(now())
+  completed_at    DateTime?
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  verifier        User         @relation(fields: [verifier_id], references: [id])
+
+  @@map("verification_assignments")
+}
+
+model PaymentRecord {
+  id              String       @id @default(uuid())
+  registration_id String
+  billing_no      String       @unique
+  amount          Decimal      @db.Decimal(12, 2)
+  status          String       @default("UNPAID") // UNPAID, PAID, VERIFIED, EXPIRED, CANCELLED
+  receipt_file_id String?
+  provider        String       @default("MANUAL") // MANUAL, SIMPONI
+  external_ref    String?      // NTPN / referensi bank
+  sync_status     String       @default("NOT_SYNCED")
+  paid_at         DateTime?
+  verified_at     DateTime?
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@map("payment_records")
+}
+
+// -------------------------------------------------------------
+// 6. DISTRIBUTION & TASHIH MODULE
+// -------------------------------------------------------------
+
+model Assignment {
+  id              String            @id @default(uuid())
+  registration_id String
+  team_id         String?
+  assignee_id     String
+  stage           String            // INITIAL, REVISION, DUMMY
+  iteration       Int               @default(1)
+  due_at          DateTime?
+  status          String            @default("ASSIGNED") // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE
+  created_at      DateTime          @default(now())
+  updated_at      DateTime          @updatedAt
+
+  // Relations
+  registration    Registration      @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  team            DistributionTeam? @relation(fields: [team_id], references: [id], onDelete: SetNull)
+  assignee        User              @relation(fields: [assignee_id], references: [id])
+  reviews         TashihReview[]
+
+  @@map("assignments")
+}
+
+model TashihReview {
+  id            String     @id @default(uuid())
+  assignment_id String
+  result        String     // PASSED, REVISION_REQUIRED, REJECTED
+  notes         String?
+  completed_at  DateTime   @default(now())
+
+  // Relations
+  assignment    Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+
+  @@map("tashih_reviews")
+}
+
+// -------------------------------------------------------------
+// 7. DOCUMENTATION & OFFICIAL DOCUMENTS MODULE
+// -------------------------------------------------------------
+
+model DocumentationItem {
+  id              String       @id @default(uuid())
+  registration_id String
+  item_type       String       // PHYSICAL_EXEMPLAR_TARGET, PHYSICAL_EXEMPLAR_RECEIVED, ARCHIVE_MASTER, NOT_APPLICABLE
+  required        Boolean      @default(true)
+  status          String       @default("PENDING") // PENDING, RECEIVED, WAIVED, NOT_APPLICABLE
+  quantity_target Int          @default(5)
+  quantity_actual Int          @default(0)
+  file_id         String?
+  version         Int          @default(1)
+  checked_by      String?
+  checked_at      DateTime?
+
+  // Relations
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@map("documentation_items")
+}
+
+model OfficialDocument {
+  id              String              @id @default(uuid())
+  registration_id String
+  document_type   String              // BERITA_ACARA_TASHIH, SURAT_TANDA_TASHIH
+  document_no     String              @unique
+  version         Int                 @default(1)
+  status          String              @default("DRAFT") // DRAFT, SIGNED, ISSUED, REVOKED, EXPIRED
+  qr_token        String              @unique @default(uuid())
+  file_id         String?
+  issued_at       DateTime?
+  valid_until     DateTime?           // BR-20: 2 tahun untuk Surat Tanda Tashih
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+
+  // Relations
+  registration    Registration        @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  signatories     DocumentSignatory[]
+
+  @@map("official_documents")
+}
+
+model DocumentSignatory {
+  id                     String           @id @default(uuid())
+  official_document_id   String
+  signer_user_id         String
+  name_position_snapshot String           // Nama dan jabatan saat ttd (misal: Kepala LPMQ)
+  method                 String           @default("DIGITAL") // DIGITAL, BSRE, MANUAL
+  signing_status         String           @default("PENDING") // PENDING, SIGNED, REJECTED
+  signed_at              DateTime?
+  external_signature_id  String?
+
+  // Relations
+  official_document      OfficialDocument @relation(fields: [official_document_id], references: [id], onDelete: Cascade)
+  signer                 User             @relation(fields: [signer_user_id], references: [id])
+
+  @@map("document_signatories")
+}
+
+// -------------------------------------------------------------
+// 8. AUDIT & NOTIFICATION MODULE
+// -------------------------------------------------------------
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  actor_id     String?
+  action       String   // CREATE, UPDATE, STATUS_TRANSITION, APPROVE, REJECT, LOGIN, DOWNLOAD
+  subject_type String   // Registration, PaymentRecord, OfficialDocument, etc.
+  subject_id   String?
+  before_json  Json?
+  after_json   Json?
+  ip_address   String?
+  user_agent   String?
+  created_at   DateTime @default(now())
+
+  // Relations
+  actor        User?    @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
+
+model Notification {
+  id              String        @id @default(uuid())
+  user_id         String
+  registration_id String?
+  type            String        // STATUS_UPDATE, ASSIGNMENT, PAYMENT_CONFIRMED, DOCUMENT_ISSUED
+  title           String
+  payload         Json?
+  read_at         DateTime?
+  created_at      DateTime      @default(now())
+
+  // Relations
+  user            User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  registration    Registration? @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}

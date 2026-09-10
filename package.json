@@ -1,0 +1,13 @@
+{
+  "name": "lpmq-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace runner untuk Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ)",
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "prisma:studio": "npm --prefix backend run prisma:studio"
+  }
+}
