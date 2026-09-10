@@ -6,7 +6,7 @@ const startServer = async () => {
   try {
     // Verifikasi koneksi basis data
     await prisma.$connect();
-    console.log('✅ Koneksi PostgreSQL berhasil terhubung via Prisma.');
+    console.log('✅ Database MySQL (Laragon) berhasil terhubung via Prisma.');
 
     app.listen(ENV.PORT, () => {
       console.log(`🚀 LPMQ Backend Server berjalan di http://localhost:${ENV.PORT}`);
@@ -15,7 +15,7 @@ const startServer = async () => {
     });
   } catch (error) {
     console.error('❌ Gagal menyalakan server atau koneksi database gagal:', error.message);
-    console.log('💡 Catatan: Pastikan PostgreSQL aktif dan DATABASE_URL pada backend/.env sudah sesuai.');
+    console.log('💡 Catatan: Pastikan MySQL di Laragon aktif dan DATABASE_URL pada backend/.env sudah sesuai.');
     
     // Tetap jalankan server HTTP agar endpoint health / info tetap bisa merespon
     app.listen(ENV.PORT, () => {

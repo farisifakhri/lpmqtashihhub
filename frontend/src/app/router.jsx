@@ -2,11 +2,23 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
+import { NewRegistrationPage } from '@/features/registrations/NewRegistrationPage';
+import { LoginPage } from '@/features/auth/LoginPage';
+import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { InternalDashboard } from '@/features/internal/InternalDashboard';
 import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 
 export const router = createBrowserRouter([
+  // Rute Autentikasi Mandiri
+  {
+    path: '/login',
+    element: <LoginPage />,
+  },
+  {
+    path: '/register',
+    element: <RegisterPublisherPage />,
+  },
   {
     path: '/',
     element: <AppLayout />,
@@ -22,14 +34,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'publisher/new-registration',
-        element: (
-          <ModulePlaceholder
-            title="Formulir Pengajuan Pentashihan Baru"
-            moduleName="REG-01/04 Pendaftaran Naskah"
-            sprintTarget="Sprint 2"
-            description="Unggah cover mushaf, halaman 1–5 naskah penanda, pemilihan kategori mushaf, dan rincian varian layanan."
-          />
-        ),
+        element: <NewRegistrationPage />,
       },
       {
         path: 'publisher/registrations',

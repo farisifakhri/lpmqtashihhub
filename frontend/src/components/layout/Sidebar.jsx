@@ -17,7 +17,14 @@ import { clsx } from 'clsx';
 
 export const Sidebar = () => {
   const { currentUser } = useAuth();
-  const isPublisher = currentUser.role === 'PUBLISHER';
+  const role = currentUser?.role || '';
+  const roles = currentUser?.roles || [];
+  const isPublisher =
+    role === 'ADMIN_PENERBIT' ||
+    role === 'PUBLISHER' ||
+    roles.includes('ADMIN_PENERBIT');
+
+  const isAdmin = role === 'SUPERADMIN' || role === 'ADMIN' || roles.includes('SUPERADMIN');
 
   const getMenuItems = () => {
     if (isPublisher) {
@@ -59,7 +66,7 @@ export const Sidebar = () => {
       },
     ];
 
-    if (currentUser.role === 'VERIFICATOR' || currentUser.role === 'ADMIN') {
+    if (role === 'VERIFIKATOR' || role === 'VERIFICATOR' || isAdmin) {
       baseInternal.push({
         label: 'Antrean Verifikasi Naskah',
         path: '/internal/verifications',
@@ -67,7 +74,7 @@ export const Sidebar = () => {
       });
     }
 
-    if (currentUser.role === 'DISTRIBUTOR' || currentUser.role === 'ADMIN') {
+    if (role === 'DISTRIBUTOR' || isAdmin) {
       baseInternal.push({
         label: 'Distribusi & Penugasan Tim',
         path: '/internal/distributions',
@@ -76,9 +83,10 @@ export const Sidebar = () => {
     }
 
     if (
-      currentUser.role === 'TASHIH_MEMBER' ||
-      currentUser.role === 'TASHIH_LEADER' ||
-      currentUser.role === 'ADMIN'
+      role === 'PENTASHIH' ||
+      role === 'TASHIH_MEMBER' ||
+      role === 'TASHIH_LEADER' ||
+      isAdmin
     ) {
       baseInternal.push({
         label: 'Sidang & Review Tashih',
@@ -88,10 +96,12 @@ export const Sidebar = () => {
     }
 
     if (
-      currentUser.role === 'TASHIH_LEADER' ||
-      currentUser.role === 'DOCUMENTATOR' ||
-      currentUser.role === 'HEAD_OF_LPMQ' ||
-      currentUser.role === 'ADMIN'
+      role === 'DOKUMENTATOR' ||
+      role === 'DOCUMENTATOR' ||
+      role === 'TASHIH_LEADER' ||
+      role === 'KEPALA_LPMQ' ||
+      role === 'HEAD_OF_LPMQ' ||
+      isAdmin
     ) {
       baseInternal.push({
         label: 'Dokumen & Berita Acara',
@@ -100,7 +110,7 @@ export const Sidebar = () => {
       });
     }
 
-    if (currentUser.role === 'ADMIN') {
+    if (isAdmin) {
       baseInternal.push({
         label: 'Master Data & Konfigurasi',
         path: '/internal/settings',
