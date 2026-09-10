@@ -40,6 +40,7 @@ export const authenticate = async (req, res, next) => {
       status: user.status,
       roles: user.roles.map((ur) => ur.role.code),
       publisherId: user.publisher ? user.publisher.id : null,
+      publisher: user.publisher || null,
     };
 
     next();

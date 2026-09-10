@@ -77,6 +77,27 @@ async function runTests() {
       console.log('8. Submit Registration (State READY_FOR_VERIFICATION):', submitJson.data?.status === 'READY_FOR_VERIFICATION' ? '✅ PASS' : '❌ FAIL');
       console.log('   Snapshot SLA Days:', submitJson.data?.fee_sla_snapshot?.sla_initial_days, 'HK');
 
+      // 9. System Diagnostics - Health with active DB check
+      const resSysHealth = await fetch('http://localhost:5001/api/v1/system/health');
+      const sysHealthJson = await resSysHealth.json();
+      console.log('9. System Health & DB Ping:', sysHealthJson.database.status === 'CONNECTED' ? '✅ PASS' : '❌ FAIL');
+
+      // 10. System Diagnostics - Module Diagnostics MST-01
+      const resDiag = await fetch('http://localhost:5001/api/v1/system/diagnostics/MST-01', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const diagJson = await resDiag.json();
+      console.log('10. Module Diagnostics (MST-01):', diagJson.success && diagJson.tables.length === 3 ? '✅ PASS' : '❌ FAIL');
+      console.log('    Tables:', diagJson.tables.map(t => `${t.name}: ${t.row_count}`).join(', '));
+
+      // 11. System Diagnostics - Module Diagnostics REG-02
+      const resDiagReg = await fetch('http://localhost:5001/api/v1/system/diagnostics/REG-02', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const diagRegJson = await resDiagReg.json();
+      console.log('11. Module Diagnostics (REG-02):', diagRegJson.success ? '✅ PASS' : '❌ FAIL');
+      console.log('    Registrations count in DB:', diagRegJson.tables[0].row_count);
+
       console.log('\n✨ SEMUA TEST CONTROLLER & DB API BERHASIL 100%! ✨');
     } catch (err) {
       console.error('❌ Test error:', err);

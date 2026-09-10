@@ -12,7 +12,7 @@ export const Navbar = () => {
     switch (role) {
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return 'Penerbit Mushaf';
+        return 'Penerbit / Pemohon';
       case 'SUPERADMIN':
       case 'ADMIN':
         return 'Super Admin Sistem';

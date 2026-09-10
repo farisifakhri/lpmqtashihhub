@@ -4,6 +4,8 @@ import masterRoutes from './master.routes.js';
 import publisherRoutes from './publisher.routes.js';
 import registrationRoutes from './registration.routes.js';
 import publicRoutes from './public.routes.js';
+import systemRoutes from './system.routes.js';
+import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
 
@@ -15,6 +17,11 @@ router.get('/', (req, res) => {
     version: '2.2.0',
     endpoints: {
       health: '/api/v1/health',
+      system: {
+        health: '/api/v1/system/health',
+        tables: '/api/v1/system/tables',
+        diagnostics: '/api/v1/system/diagnostics/:module',
+      },
       master: {
         categories: '/api/v1/master/categories',
         serviceTypes: '/api/v1/master/service-types',
@@ -41,15 +48,8 @@ router.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint
-router.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'UP',
-    system: 'LPMQ Backend API',
-    version: '2.2.0',
-    timestamp: new Date().toISOString(),
-  });
-});
+// Health check endpoint dengan live ping ke MySQL database
+router.get('/health', getHealth);
 
 // Domain Routes
 router.use('/auth', authRoutes);
@@ -57,5 +57,6 @@ router.use('/master', masterRoutes);
 router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);
 router.use('/public', publicRoutes);
+router.use('/system', systemRoutes);
 
 export default router;
