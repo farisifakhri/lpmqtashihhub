@@ -10,6 +10,9 @@ import {
   FileCheck,
   Award,
   XCircle,
+  CreditCard,
+  Clock,
+  CheckCircle2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -32,11 +35,21 @@ export const StatusBadge = ({
         return <Search className={iconClass} aria-hidden="true" />;
       case 'REVISION_REQUIRED':
         return <AlertTriangle className={iconClass} aria-hidden="true" />;
+      case 'WAITING_VERIFICATION_APPROVAL':
+        return <Clock className={iconClass} aria-hidden="true" />;
+      case 'AWAITING_PAYMENT':
+      case 'PAYMENT_VERIFICATION':
+        return <CreditCard className={iconClass} aria-hidden="true" />;
       case 'WAITING_DISTRIBUTION':
         return <Users className={iconClass} aria-hidden="true" />;
       case 'TASHIH_IN_PROGRESS':
         return <BookOpen className={iconClass} aria-hidden="true" />;
+      case 'READY_FOR_STT':
+        return <FileCheck className={iconClass} aria-hidden="true" />;
+      case 'STT_ISSUED':
+        return <CheckCircle2 className={iconClass} aria-hidden="true" />;
       case 'DOCUMENTATION':
+      case 'DOCUMENTATION_IN_PROGRESS':
         return <FileCheck className={iconClass} aria-hidden="true" />;
       case 'COMPLETED':
         return <Award className={iconClass} aria-hidden="true" />;
