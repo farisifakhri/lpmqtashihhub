@@ -638,6 +638,7 @@ enum VerificationDocumentType {
 
 enum VerificationDocumentStatus {
   DRAFT
+  SUBMITTED
   ISSUED
   APPROVED
   SIGNED

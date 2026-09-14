@@ -181,6 +181,15 @@ export const UnifiedDashboard = () => {
         cardHover: 'hover:border-indigo-400 hover:bg-indigo-50/40',
         allowed: isAdmin,
       },
+      {
+        title: 'Manajemen Pengguna',
+        desc: 'Kelola akun user & hak akses multi-role',
+        icon: Users,
+        path: '/internal/users',
+        iconBg: 'bg-gradient-to-br from-emerald-700 to-teal-800 text-white shadow-xs',
+        cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
+        allowed: isAdmin,
+      },
     ];
 
     return items.filter((item) => item.allowed);
@@ -250,35 +259,35 @@ export const UnifiedDashboard = () => {
       <DailyQuranWidget />
 
       {/* 3. Quick Actions Bar (Pintasan Aksi Cepat) */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3.5">
-          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
-            <Compass className="w-4 h-4 text-primary-700" />
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+          <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-emerald-700" />
             <span>Pintasan Aksi Cepat (Quick Actions)</span>
           </h3>
-          <span className="text-[11px] text-neutral-500">
-            {isPublisher ? 'Menu layanan penerbit' : 'Sesuai wewenang tugas operasional Anda'}
+          <span className="text-[11px] text-slate-500 font-medium">
+            {isPublisher ? 'Menu layanan penerbit terdaftar' : 'Sesuai wewenang tugas operasional Anda'}
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
           {quickActions.map((action, idx) => {
             const Icon = action.icon;
             return (
               <Link
                 key={idx}
                 to={action.path}
-                className={`group p-3 rounded-xl border border-neutral-200/80 ${action.cardHover || 'hover:border-primary-400 hover:bg-primary-50/30'} active:scale-[0.98] transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs`}
+                className={`group p-3.5 rounded-xl border border-slate-200/80 ${action.cardHover || 'hover:border-emerald-400 hover:bg-emerald-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-gradient-to-b from-white to-slate-50/40`}
               >
-                <div className="flex items-center gap-2.5 mb-2">
-                  <div className={`w-8 h-8 rounded-lg ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-4 h-4" />
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className={`w-9 h-9 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-4.5 h-4.5" />
                   </div>
-                  <div className="text-xs font-bold text-neutral-800 group-hover:text-primary-800 line-clamp-1">
+                  <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 line-clamp-1">
                     {action.title}
                   </div>
                 </div>
-                <div className="text-[11px] text-neutral-500 group-hover:text-neutral-700 line-clamp-2 leading-snug">
+                <div className="text-[11px] text-slate-500 group-hover:text-slate-700 line-clamp-2 leading-relaxed">
                   {action.desc}
                 </div>
               </Link>
@@ -512,56 +521,56 @@ export const UnifiedDashboard = () => {
       )}
 
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         {/* Header & Filter Controls */}
-        <div className="p-4 sm:p-5 border-b border-neutral-200 space-y-3">
+        <div className="p-5 sm:p-6 border-b border-slate-100 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h3 className="text-sm font-bold text-neutral-900">
+              <h3 className="text-base font-bold text-slate-900">
                 {isPublisher
                   ? 'Daftar Pengajuan Mushaf Terbaru'
                   : 'Antrean Naskah Pentashihan Masuk'}
               </h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Sinkronisasi real-time dengan Basis Data LPMQ ({registrations.length} Naskah Terdaftar)
               </p>
             </div>
 
             {/* Search Input */}
-            <div className="relative min-w-[240px]">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <div className="relative min-w-[260px]">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nomor, judul, penerbit..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-300 rounded-lg outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-700 transition-all text-neutral-800"
+                className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-50/70 border border-slate-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-700 transition-all text-slate-800"
               />
             </div>
           </div>
 
           {/* Filter Status Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-100">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
-                <Filter className="w-3.5 h-3.5" />
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
+                <Filter className="w-3.5 h-3.5 text-emerald-700" />
                 Filter:
               </span>
               <button
                 onClick={() => setStatusFilter('ALL')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'ALL'
-                    ? 'bg-neutral-900 text-white shadow-xs font-bold'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 Semua ({registrations.length})
               </button>
               <button
                 onClick={() => setStatusFilter('VERIFICATION')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'VERIFICATION'
-                    ? 'bg-sky-700 text-white shadow-xs font-bold'
+                    ? 'bg-sky-700 text-white shadow-xs'
                     : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
                 }`}
               >
@@ -569,9 +578,9 @@ export const UnifiedDashboard = () => {
               </button>
               <button
                 onClick={() => setStatusFilter('TASHIH')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'TASHIH'
-                    ? 'bg-amber-600 text-white shadow-xs font-bold'
+                    ? 'bg-amber-600 text-white shadow-xs'
                     : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/60'
                 }`}
               >
@@ -579,9 +588,9 @@ export const UnifiedDashboard = () => {
               </button>
               <button
                 onClick={() => setStatusFilter('COMPLETED')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'COMPLETED'
-                    ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                    ? 'bg-emerald-700 text-white shadow-xs'
                     : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200/60'
                 }`}
               >
@@ -592,10 +601,10 @@ export const UnifiedDashboard = () => {
             {!isPublisher && (
               <button
                 onClick={() => setFilterMyTasksOnly(!filterMyTasksOnly)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                   filterMyTasksOnly
-                    ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-600 shadow-xs font-bold'
-                    : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-600 shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 {filterMyTasksOnly ? '✓ Tugas Saya Saja' : 'Semua Penugasan'}
@@ -606,17 +615,17 @@ export const UnifiedDashboard = () => {
 
         {/* Tabel Data */}
         {loading ? (
-          <div className="py-16 text-center text-neutral-500">
-            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-primary-700" />
-            <p className="text-xs font-medium">Memuat data naskah pentashihan...</p>
+          <div className="py-16 text-center text-slate-500">
+            <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-emerald-700" />
+            <p className="text-xs font-semibold">Memuat data naskah pentashihan...</p>
           </div>
         ) : filteredRegistrations.length === 0 ? (
-          <div className="py-16 text-center text-neutral-500 max-w-sm mx-auto">
-            <div className="w-12 h-12 rounded-full bg-neutral-100 text-neutral-400 flex items-center justify-center mx-auto mb-2.5">
+          <div className="py-16 text-center text-slate-500 max-w-sm mx-auto">
+            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
               <CheckSquare className="w-6 h-6" />
             </div>
-            <p className="text-sm font-bold text-neutral-800">Tidak ada data naskah</p>
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-sm font-bold text-slate-800">Tidak ada data naskah</p>
+            <p className="text-xs text-slate-500 mt-1">
               {searchQuery
                 ? `Tidak ditemukan hasil untuk "${searchQuery}"`
                 : 'Belum ada antrean naskah pada kriteria filter ini.'}
@@ -626,22 +635,22 @@ export const UnifiedDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[760px]">
               <thead>
-                <tr className="bg-neutral-50 text-neutral-600 text-[11px] font-bold uppercase tracking-wider border-b border-neutral-200">
-                  <th className="py-3 px-6">Nomor & Tanggal</th>
-                  <th className="py-3 px-6">Penerbit & Judul Naskah</th>
-                  <th className="py-3 px-6">Profil Layanan</th>
-                  <th className="py-3 px-6">Status Sistem</th>
-                  <th className="py-3 px-6 text-right">Aksi</th>
+                <tr className="bg-slate-50/80 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                  <th className="py-3.5 px-6">Nomor & Tanggal</th>
+                  <th className="py-3.5 px-6">Penerbit & Judul Naskah</th>
+                  <th className="py-3.5 px-6">Profil Layanan</th>
+                  <th className="py-3.5 px-6">Status Sistem</th>
+                  <th className="py-3.5 px-6 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 text-sm">
                 {filteredRegistrations.map((item) => (
-                  <tr key={item.id} className="hover:bg-primary-50/30 transition-colors">
-                    <td className="py-3.5 px-6">
-                      <span className="font-mono text-xs font-bold text-neutral-900 block">
+                  <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors">
+                    <td className="py-4 px-6">
+                      <span className="font-mono text-xs font-bold text-slate-900 block">
                         {item.registration_no || item.registrationNumber}
                       </span>
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[11px] text-slate-400">
                         {new Date(item.created_at || item.submittedAt).toLocaleDateString('id-ID', {
                            day: 'numeric',
                            month: 'short',
@@ -649,27 +658,27 @@ export const UnifiedDashboard = () => {
                         })}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6">
-                      <span className="font-semibold text-neutral-900 block line-clamp-1">
+                    <td className="py-4 px-6">
+                      <span className="font-bold text-slate-900 block line-clamp-1">
                         {item.title || item.mushafTitle}
                       </span>
-                      <span className="text-xs text-primary-700 font-semibold block">
+                      <span className="text-xs text-emerald-800 font-semibold block">
                         {item.publisher?.legal_name || item.publisherName || 'Penerbit Terdaftar'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 text-xs text-neutral-600">
-                      <span className="font-medium text-neutral-800 block">
+                    <td className="py-4 px-6 text-xs text-slate-600">
+                      <span className="font-semibold text-slate-800 block">
                         {item.service_type?.name || item.serviceType || 'Tashih Reguler'}
                       </span>
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[11px] text-slate-400">
                         {item.service_type?.category?.name || 'Mushaf Cetak'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6">
+                    <td className="py-4 px-6">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="py-3.5 px-6 text-right">
-                      <Button variant="outline" size="sm">
+                    <td className="py-4 px-6 text-right">
+                      <Button variant="outline" size="sm" className="text-xs">
                         Buka Berkas
                       </Button>
                     </td>

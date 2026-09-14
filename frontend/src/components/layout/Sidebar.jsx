@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import kemenagLogo from '@/assets/kemenag.png';
+import lpmqLogo from '@/assets/lpmq.jpg';
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
   const { currentUser } = useAuth();
@@ -62,26 +63,26 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     switch (userRole) {
       case 'SUPERADMIN':
       case 'ADMIN':
-        return { label: 'Superadmin', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' };
+        return { label: 'Superadmin', badgeClass: 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold border-rose-700 shadow-2xs' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' };
+        return { label: 'Verifikator', badgeClass: 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold border-sky-700 shadow-2xs' };
       case 'DISTRIBUTOR':
-        return { label: 'Distributor', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' };
+        return { label: 'Distributor', badgeClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold border-amber-600 shadow-2xs' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih', badgeClass: 'bg-primary-50 text-primary-700 border-primary-200' };
+        return { label: 'Pentashih', badgeClass: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold border-emerald-700 shadow-2xs' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', badgeClass: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
+        return { label: 'Dokumentator', badgeClass: 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold border-indigo-700 shadow-2xs' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', badgeClass: 'bg-gold-50 text-gold-700 border-gold-300' };
+        return { label: 'Kepala LPMQ', badgeClass: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 text-white font-bold border-amber-600 shadow-2xs' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit', badgeClass: 'bg-primary-50 text-primary-800 border-primary-200' };
+        return { label: 'Penerbit', badgeClass: 'bg-gradient-to-r from-teal-600 to-emerald-700 text-white font-bold border-teal-700 shadow-2xs' };
       default:
-        return { label: userRole || 'Pengguna', badgeClass: 'bg-neutral-100 text-neutral-800 border-neutral-200' };
+        return { label: userRole || 'Pengguna', badgeClass: 'bg-slate-700 text-white font-bold border-slate-800 shadow-2xs' };
     }
   };
 
@@ -204,6 +205,30 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             icon: <Settings className="w-4 h-4 flex-shrink-0" />,
             description: 'Kategori, layanan, addon',
           },
+          {
+            label: '6. Manajemen Pengguna',
+            path: '/internal/users',
+            icon: <Users className="w-4 h-4 flex-shrink-0" />,
+            description: 'Kelola user & hak akses',
+          },
+        ],
+      });
+
+      internalSections.push({
+        title: 'PORTAL PENERBIT (SUPER ADMIN)',
+        items: [
+          {
+            label: 'Dashboard Penerbit',
+            path: '/publisher',
+            icon: <LayoutDashboard className="w-4 h-4 flex-shrink-0" />,
+            description: 'Perspektif pemohon naskah',
+          },
+          {
+            label: 'Ajukan Naskah Baru',
+            path: '/publisher/new-registration',
+            icon: <FilePlus className="w-4 h-4 flex-shrink-0" />,
+            description: 'Pendaftaran naskah mushaf',
+          },
         ],
       });
     }
@@ -235,7 +260,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       >
         <div className="flex flex-col h-full overflow-hidden">
           
-          {/* 1. Header Brand (Logo Kemenag + App Title) */}
+          {/* 1. Header Brand (Logo Kemenag + LPMQ + App Title) */}
           <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
             <Link
               to={isPublisher ? '/publisher' : '/internal'}
@@ -244,14 +269,19 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 if (window.innerWidth < 1024 && onClose) onClose();
               }}
             >
-              <div className="w-10 h-10 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center p-1.5 shadow-2xs">
-                <img src={kemenagLogo} alt="Logo Kemenag" className="w-full h-full object-contain" />
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center p-1.5 flex-shrink-0">
+                  <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain drop-shadow-2xs" />
+                </div>
+                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200/90 shadow-xs flex items-center justify-center p-1 flex-shrink-0">
+                  <img src={lpmqLogo} alt="Logo LPMQ" className="h-full w-auto object-contain rounded" />
+                </div>
               </div>
               <div>
-                <span className="text-[10px] font-bold tracking-wider uppercase text-primary-700 block">
+                <span className="text-[10px] font-extrabold tracking-wider uppercase text-emerald-800 block">
                   Kemenag RI
                 </span>
-                <span className="text-sm font-bold text-neutral-900 block leading-tight">
+                <span className="text-sm font-black text-slate-900 block leading-tight">
                   LPMQ Tashih Hub
                 </span>
               </div>

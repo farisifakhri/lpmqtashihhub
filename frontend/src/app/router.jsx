@@ -7,8 +7,11 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { InternalDashboard } from '@/features/internal/InternalDashboard';
 import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
+import { VerifikatorInboxPage } from '@/features/verification/VerifikatorInboxPage';
+import { VerificationInspectionPage } from '@/features/verification/VerificationInspectionPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ContentConfiguration } from '@/features/internal/settings/ContentConfiguration';
+import { UserManagementPage } from '@/features/internal/users/UserManagementPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -138,27 +141,16 @@ export const router = createBrowserRouter([
       {
         path: 'internal/verifications',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['VERIFIKATOR', 'SUPERADMIN']}>
-            <ModulePlaceholder
-              moduleCode="VER-01"
-              title="Antrean Verifikasi Administrasi & Naskah"
-              moduleName="VER-01 Verifikasi Naskah"
-              sprintTarget="Sprint 2"
-              description="Pemeriksaan kelengkapan dokumen penerbit, keabsahan cover, format mushaf, dan pengembalian catatan perbaikan (revisi)."
-              targetTables={['verification_assignments', 'registrations', 'manuscript_files', 'status_histories']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=VERIFICATION_ASSIGNED', desc: 'Antrean yang telah ditugaskan Kepala LPMQ' },
-                { method: 'GET', path: '/api/v1/registrations?status=IN_VERIFICATION', desc: 'Berkas sedang diperiksa verifikator' },
-                { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Transisi status (Lanjut / Revisi)' },
-              ]}
-              allowedRoles={['VERIFIKATOR', 'SUPERADMIN']}
-              sopReference="SOP Pendaftaran Mushaf Al-Qur'an - Tahap Verifikasi Dokumen & Naskah (v2.2)"
-              businessRules={[
-                'Verifikator memeriksa cover, halaman Al-Qur\'an 1-5, dan legalitas penerbit',
-                'Verifikator hanya memeriksa pengajuan yang ditugaskan Kepala LPMQ melalui Nota Dinas',
-                'Keputusan revisi mengembalikan naskah ke penerbit dengan status REVISION_REQUIRED',
-              ]}
-            />
+          <ProtectedRoute portalType="internal" allowedRoles={['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <VerifikatorInboxPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/verifications/:id',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <VerificationInspectionPage />
           </ProtectedRoute>
         ),
       },
@@ -238,6 +230,14 @@ export const router = createBrowserRouter([
                 'Dokumentator mencatat tanda terima deposit 5 eksemplar setelah STT terbit',
               ]}
             />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/users',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
+            <UserManagementPage />
           </ProtectedRoute>
         ),
       },

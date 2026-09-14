@@ -52,3 +52,45 @@ export const verificationInboxSchema = {
     limit: z.coerce.number().int().min(1).max(100).default(20),
   }),
 };
+
+const checklistItem = z.object({
+  code: z.enum(['REGISTRATION_DATA', 'DIGITAL_FILES', 'PHYSICAL_MASTER', 'MANUSCRIPT_CONTENT']),
+  result: z.enum(['SESUAI', 'TIDAK_SESUAI', 'TIDAK_BERLAKU']),
+  notes: z.string().trim().max(1000).optional(),
+}).strict().superRefine((item, ctx) => {
+  if (item.result === 'TIDAK_SESUAI' && !item.notes) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['notes'], message: 'Catatan wajib diisi untuk butir yang tidak sesuai.' });
+});
+
+export const verificationDraftSchema = {
+  params: idParams,
+  body: z.object({
+    decision: z.enum(['PASSED', 'REVISION_REQUIRED']),
+    checklist: z.array(checklistItem).length(4),
+    notes: z.string().trim().max(2000).optional(),
+    letter_text: z.string().trim().min(20).max(10000),
+    attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
+  }).strict().superRefine((data, ctx) => {
+    const codes = data.checklist.map(item => item.code);
+    if (new Set(codes).size !== 4) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Keempat butir checklist harus diisi masing-masing satu kali.' });
+    if (data.decision === 'PASSED' && data.checklist.some(item => item.result === 'TIDAK_SESUAI')) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['decision'], message: 'Hasil lolos memerlukan seluruh butir checklist sesuai atau tidak berlaku.' });
+    if (data.decision === 'REVISION_REQUIRED' && !data.checklist.some(item => item.result === 'TIDAK_SESUAI')) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['decision'], message: 'Perbaikan penerbit memerlukan minimal satu butir tidak sesuai.' });
+    if (data.decision === 'REVISION_REQUIRED' && !data.notes) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['notes'], message: 'Alasan perbaikan penerbit wajib diisi.' });
+    if (new Set(data.attachment_file_ids).size !== data.attachment_file_ids.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['attachment_file_ids'], message: 'Lampiran yang sama tidak boleh dipilih dua kali.' });
+  }),
+};
+
+export const assignmentIdSchema = { params: idParams };
+
+export const saveChecklistSchema = {
+  params: idParams,
+  body: z.object({
+    checklist: z.array(checklistItem).min(1).max(4).optional(),
+    decision: z.enum(['PASSED', 'REVISION_REQUIRED']).optional(),
+    notes: z.string().trim().max(2000).optional(),
+    letter_text: z.string().trim().max(10000).optional(),
+    attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
+  }).strict(),
+};
+
+export const verificationDraftIdSchema = { params: z.object({ id: z.string().uuid(), documentId: z.string().uuid() }) };
+export const verificationAttachmentSchema = { params: z.object({ documentId: z.string().uuid(), fileId: z.string().uuid() }) };

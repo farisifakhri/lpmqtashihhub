@@ -186,17 +186,17 @@ export const RegisterPublisherPage = () => {
               
               {/* Header & Logo Clean Putih */}
               <div>
-                <div className="inline-flex items-center gap-3 bg-white py-1 mb-2">
+                <div className="inline-flex items-center gap-4 bg-white py-1 mb-2">
                   <img
                     src={kemenagLogo}
                     alt="Kementerian Agama RI"
-                    className="h-9 w-auto object-contain drop-shadow-xs"
+                    className="h-13 sm:h-15 w-auto object-contain drop-shadow-sm"
                   />
-                  <div className="h-6 w-[1px] bg-neutral-200" />
+                  <div className="h-8 w-[1px] bg-neutral-200" />
                   <img
                     src={lpmqLogo}
                     alt="LPMQ"
-                    className="h-8 w-auto object-contain rounded-md"
+                    className="h-11 sm:h-13 w-auto object-contain rounded-lg shadow-2xs"
                   />
                 </div>
 

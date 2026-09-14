@@ -33,6 +33,8 @@ const fields = {
   receipt_no: 'Nomor tanda terima', condition: 'Kondisi master', verifier_id: 'Verifikator',
   nota_no: 'Nomor Nota Dinas', my_tasks: 'Filter tugas saya', search: 'Pencarian',
   page: 'Halaman', limit: 'Jumlah per halaman',
+  checklist: 'Checklist pemeriksaan', code: 'Butir checklist', letter_text: 'Isi draf surat',
+  attachment_file_ids: 'Lampiran surat', documentId: 'Dokumen verifikasi', fileId: 'Berkas lampiran',
 };
 
 export function validationMessage(issue) {

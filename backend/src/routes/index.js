@@ -7,6 +7,7 @@ import publicRoutes from './public.routes.js';
 import systemRoutes from './system.routes.js';
 import workflowRoutes from './workflow.routes.js';
 import verificationRoutes from './verification.routes.js';
+import userRoutes from './user.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -65,6 +66,7 @@ router.use(verificationRoutes);
 router.use('/master', masterRoutes);
 router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);
+router.use('/users', userRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 

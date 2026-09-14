@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.jpg';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -58,21 +58,17 @@ export const LoginPage = () => {
 
             {/* Badge Kemenag Overlay Atas */}
             <div className="relative z-10 p-5 sm:p-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-xs">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/60 shadow-xs">
                 <ShieldCheck className="w-4 h-4 text-primary-700" />
                 <span className="text-xs font-bold tracking-wide text-neutral-800">
-                  LPMQ Kemenag RI
+                  Lajnah Pentashihan Mushaf Al-Qur'an
                 </span>
               </div>
             </div>
 
             {/* Caption Glassmorphism Bawah */}
-            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-neutral-900/60 via-neutral-900/20 to-transparent pt-12">
+            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-neutral-900/70 via-neutral-900/30 to-transparent pt-12">
               <div className="backdrop-blur-sm bg-white/20 p-4 rounded-2xl border border-white/30 text-white shadow-sm">
-                <p className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5 mb-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-                  Mushaf Standar Indonesia
-                </p>
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
                   Layanan Pentashihan Naskah Al-Qur'an Terpadu & Terverifikasi
                 </h3>
@@ -99,17 +95,17 @@ export const LoginPage = () => {
               
               {/* Logo Area (Clean & Latar Putih Sesuai Permintaan User) */}
               <div className="text-center sm:text-left space-y-3">
-                <div className="inline-flex items-center gap-3 bg-white py-1">
+                <div className="inline-flex items-center gap-4 bg-white py-1">
                   <img
                     src={kemenagLogo}
                     alt="Kementerian Agama RI"
-                    className="h-11 w-auto object-contain drop-shadow-xs"
+                    className="h-14 sm:h-16 w-auto object-contain drop-shadow-sm"
                   />
-                  <div className="h-7 w-[1px] bg-neutral-200" />
+                  <div className="h-9 w-[1px] bg-neutral-200" />
                   <img
                     src={lpmqLogo}
                     alt="LPMQ"
-                    className="h-10 w-auto object-contain rounded-md"
+                    className="h-12 sm:h-14 w-auto object-contain rounded-lg shadow-2xs"
                   />
                 </div>
 

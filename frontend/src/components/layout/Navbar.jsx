@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import kemenagLogo from '@/assets/kemenag.png';
+import lpmqLogo from '@/assets/lpmq.jpg';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const { currentUser, logout } = useAuth();
@@ -51,26 +52,26 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     switch (userRole) {
       case 'SUPERADMIN':
       case 'ADMIN':
-        return { label: 'Super Admin', color: 'bg-rose-50 text-rose-700 border-rose-200' };
+        return { label: 'Super Admin', color: 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold border-rose-700 shadow-2xs' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator Berkas', color: 'bg-sky-50 text-sky-700 border-sky-200' };
+        return { label: 'Verifikator Berkas', color: 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold border-sky-700 shadow-2xs' };
       case 'DISTRIBUTOR':
-        return { label: 'Distributor Tim', color: 'bg-amber-50 text-amber-700 border-amber-200' };
+        return { label: 'Distributor Tim', color: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold border-amber-600 shadow-2xs' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih Naskah', color: 'bg-primary-50 text-primary-700 border-primary-200' };
+        return { label: 'Pentashih Naskah', color: 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold border-emerald-700 shadow-2xs' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', color: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
+        return { label: 'Dokumentator', color: 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold border-indigo-700 shadow-2xs' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', color: 'bg-gold-50 text-gold-700 border-gold-300' };
+        return { label: 'Kepala LPMQ', color: 'bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-500 text-white font-bold border-amber-600 shadow-2xs' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit / Pemohon', color: 'bg-primary-50 text-primary-800 border-primary-200' };
+        return { label: 'Penerbit / Pemohon', color: 'bg-gradient-to-r from-teal-600 to-emerald-700 text-white font-bold border-teal-700 shadow-2xs' };
       default:
-        return { label: userRole || 'Petugas', color: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
+        return { label: userRole || 'Petugas', color: 'bg-slate-700 text-white font-bold border-slate-800 shadow-2xs' };
     }
   };
 
@@ -136,7 +137,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
         <div className="flex items-center justify-between h-16">
           
           {/* Left Side: Sidebar Toggler & Dynamic Breadcrumb */}
-          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
             {/* Sidebar Toggler Button */}
             <button
               type="button"
@@ -147,6 +148,16 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
             >
               {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
+
+            {/* Official Institutional Logos (Kemenag & LPMQ) */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="h-10 w-10 rounded-xl bg-white border border-slate-200/80 shadow-2xs flex items-center justify-center p-1">
+                <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain drop-shadow-2xs" />
+              </div>
+              <div className="h-9 w-9 rounded-xl bg-white border border-slate-200/80 shadow-2xs items-center justify-center p-0.5 hidden sm:flex">
+                <img src={lpmqLogo} alt="Logo LPMQ" className="h-full w-auto object-contain rounded" />
+              </div>
+            </div>
 
             {/* Breadcrumb Navigation */}
             <nav aria-label="Breadcrumb" className="hidden sm:flex items-center text-xs text-neutral-500 min-w-0">
