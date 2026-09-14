@@ -8,29 +8,39 @@
 
 export const TOKENS = {
   colors: {
-    // Primary - Hijau Kemenag
-    primary700: '#0B5E3B', // Header, sidebar aktif, tombol utama
-    primary500: '#1B7A4D', // Aksen tombol, ikon aktif, tab terpilih
-    primary100: '#E3F3EA', // Latar kartu info, hover, badge positif
+    // Primary - Deep Islamic Pine / Sovereign Forest
+    primary900: '#083224',
+    primary800: '#0B3F2D',
+    primary700: '#0E5139', // Header, sidebar aktif, tombol utama
+    primary600: '#116447',
+    primary500: '#167A58', // Aksen tombol, ikon aktif, tab terpilih
+    primary100: '#DDF0E7', // Latar kartu info, hover, badge positif
+    primary50:  '#F0F7F4',
 
-    // Netral
-    neutralWhite: '#FFFFFF', // Latar dominan (±70% luas layar)
-    neutral50: '#F7F8F6',    // Latar halaman
-    neutral200: '#E1E4E0',   // Border/garis pemisah
-    neutral500: '#8A8F8B',   // Teks sekunder, status Draft
-    neutral700: '#2A2E2B',   // Teks isi/body
-    neutral900: '#141615',   // Teks gelap tegas
+    // Netral - Crisp Slate Neutrals
+    neutralWhite: '#FFFFFF', // Latar kartu permukaan utama
+    neutral50: '#F8FAFC',    // Latar halaman aplikasi
+    neutral100: '#F1F5F9',   // Latar tabel/kartu sekunder
+    neutral200: '#E2E8F0',   // Border/garis pemisah
+    neutral300: '#CBD5E1',   // Input border
+    neutral500: '#64748B',   // Teks sekunder, status Draft
+    neutral700: '#334155',   // Teks isi/body
+    neutral900: '#0F172A',   // Teks gelap tegas
+    neutral950: '#020617',   // Heading pekat
 
-    // Aksen Emas
-    accentGold600: '#B8860B', // Aksen dokumen resmi, ikon terverifikasi
-    accentGold400: '#D4AF37', // Highlight nominal tarif/PNBP
-    accentGold50: '#FBF6E7',  // Latar kartu ringkasan tarif/billing
+    // Aksen Emas Sandstone / Imperial Brass
+    accentGold700: '#865714', // Aksen dokumen resmi, ikon terverifikasi
+    accentGold600: '#A97516',
+    accentGold500: '#C99320', // Highlight nominal tarif/PNBP
+    accentGold400: '#DFB045',
+    accentGold100: '#F9F0D3',
+    accentGold50:  '#FDF9EE', // Latar kartu ringkasan tarif/billing
 
     // Status
-    statusWarning: '#C77B2A', // Perlu Perbaikan, Menunggu Pembayaran
-    statusDanger: '#B3261E',  // Ditolak, Dibatalkan
-    statusInfo: '#2E6F95',    // Sedang Diverifikasi / Diproses
-    statusSuccess: '#1B7A4D', // Selesai / Terverifikasi
+    statusWarning: '#D97706', // Perlu Perbaikan, Menunggu Pembayaran
+    statusDanger:  '#E11D48', // Ditolak, Dibatalkan
+    statusInfo:    '#0284C7', // Sedang Diverifikasi / Diproses
+    statusSuccess: '#0E5139', // Selesai / Terverifikasi
   },
 
   typography: {
@@ -57,14 +67,14 @@ export const TOKENS = {
     IN_VERIFICATION: {
       label: 'Sedang Diverifikasi',
       bgClass: 'bg-sky-50',
-      textClass: 'text-[#2E6F95]',
+      textClass: 'text-sky-700',
       borderClass: 'border-sky-200',
       description: 'Verifikator sedang memeriksa kelengkapan administrasi dan naskah',
     },
     REVISION_REQUIRED: {
       label: 'Perlu Perbaikan',
       bgClass: 'bg-amber-50',
-      textClass: 'text-[#C77B2A]',
+      textClass: 'text-amber-700',
       borderClass: 'border-amber-200',
       description: 'Ditemukan kekurangan berkas yang harus diperbaiki penerbit',
     },
@@ -91,16 +101,16 @@ export const TOKENS = {
     },
     WAITING_DISTRIBUTION: {
       label: 'Menunggu Distribusi',
-      bgClass: 'bg-emerald-100',
+      bgClass: 'bg-primary-50',
       textClass: 'text-primary-700',
-      borderClass: 'border-emerald-300',
+      borderClass: 'border-primary-200',
       description: 'Verifikasi & pembayaran lolos, menunggu penugasan tim pentashih',
     },
     TASHIH_IN_PROGRESS: {
       label: 'Proses Tashih Berjalan',
       bgClass: 'bg-primary-100',
-      textClass: 'text-primary-700',
-      borderClass: 'border-primary-500',
+      textClass: 'text-primary-800',
+      borderClass: 'border-primary-300',
       description: 'Tim pentashih sedang memeriksa ayat dan tanda baca mushaf',
     },
     READY_FOR_STT: {
@@ -112,9 +122,9 @@ export const TOKENS = {
     },
     STT_ISSUED: {
       label: 'STT Ditetapkan',
-      bgClass: 'bg-emerald-50',
-      textClass: 'text-emerald-900',
-      borderClass: 'border-emerald-400',
+      bgClass: 'bg-primary-50',
+      textClass: 'text-primary-900',
+      borderClass: 'border-primary-300',
       description: 'Surat Tanda Tashih telah ditetapkan oleh Kepala LPMQ',
     },
     DOCUMENTATION_IN_PROGRESS: {
@@ -133,25 +143,25 @@ export const TOKENS = {
     },
     COMPLETED: {
       label: 'Selesai (Surat Terbit)',
-      bgClass: 'bg-emerald-50',
-      textClass: 'text-emerald-900',
+      bgClass: 'bg-primary-50',
+      textClass: 'text-primary-900',
       borderClass: 'border-gold-400',
       description: 'Seluruh tahapan pentashihan dan dokumentasi telah rampung',
     },
     CANCELLED: {
       label: 'Dibatalkan',
       bgClass: 'bg-rose-50',
-      textClass: 'text-[#B3261E]',
+      textClass: 'text-rose-700',
       borderClass: 'border-rose-200',
       description: 'Pengajuan dibatalkan sebelum proses penagihan/penetapan',
     },
   },
 
   paymentStatus: {
-    UNPAID: { label: 'Belum Dibayar', color: '#C77B2A' },
-    PAID: { label: 'Lunas', color: '#1B7A4D' },
-    EXPIRED: { label: 'Kedaluwarsa', color: '#B3261E' },
-    WAIVED: { label: 'Bebas Tarif', color: '#2E6F95' },
+    UNPAID: { label: 'Belum Dibayar', color: '#D97706' },
+    PAID: { label: 'Lunas', color: '#0E5139' },
+    EXPIRED: { label: 'Kedaluwarsa', color: '#E11D48' },
+    WAIVED: { label: 'Bebas Tarif', color: '#0284C7' },
   },
 
   tashihStages: {

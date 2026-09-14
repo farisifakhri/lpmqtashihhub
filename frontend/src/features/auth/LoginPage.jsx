@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.jpg';
 import quran3dImg from '@/assets/quran-3d.jpg';
 
 export const LoginPage = () => {
-  const { login, currentUser, isLoading, authError, seedAccounts } = useAuth();
+  const { login, isLoading, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -36,15 +36,6 @@ export const LoginPage = () => {
     }
   };
 
-  const isDevMode = Boolean(import.meta.env.DEV);
-
-  // Pilih akun demo untuk mengisi formulir tanpa auto-login langsung
-  const handleSelectAccount = (acc) => {
-    setEmail(acc.email);
-    setPassword('password123');
-    setError('');
-  };
-
   return (
     <div className="min-h-screen bg-[#F0F4F8] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
@@ -52,7 +43,7 @@ export const LoginPage = () => {
       <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-200/30 blur-3xl pointer-events-none" />
       <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-amber-100/40 blur-2xl pointer-events-none" />
 
-      {/* Main Glass Card Container (Sesuai Referensi Gambar) */}
+      {/* Main Glass Card Container (Sesuai Desain yang Sudah Diapprove Stakeholder) */}
       <div className="relative z-10 w-full max-w-5xl bg-white rounded-[32px] sm:rounded-[38px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.08)] border border-white/80 p-3.5 sm:p-5 lg:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           
@@ -140,7 +131,7 @@ export const LoginPage = () => {
                 </div>
               )}
 
-              {/* Form Input Clean Minimalis (Sesuai Desain Referensi) */}
+              {/* Form Input Clean Minimalis */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="sr-only">Email</label>
@@ -196,40 +187,6 @@ export const LoginPage = () => {
                   )}
                 </button>
               </form>
-
-              {/* Panel Uji Coba Cepat hanya tampil di environment development */}
-              {isDevMode && (
-                <>
-                  <div className="relative my-5 text-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-neutral-200/80" />
-                    </div>
-                    <div className="relative inline-block bg-white px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                      Mode Dev: Isi Otomatis Akun Uji Coba
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {seedAccounts.slice(0, 6).map((acc) => (
-                      <button
-                        key={acc.role}
-                        type="button"
-                        onClick={() => handleSelectAccount(acc)}
-                        disabled={isLoading}
-                        title={`Pilih ${acc.label} (${acc.email}) untuk mengisi form`}
-                        className="p-2.5 rounded-xl border border-neutral-200/70 hover:border-primary-500 hover:bg-primary-50/40 active:scale-[0.98] transition-all text-left group flex flex-col justify-between cursor-pointer"
-                      >
-                        <div className="text-[11px] font-bold text-neutral-800 group-hover:text-primary-700 truncate">
-                          {acc.label}
-                        </div>
-                        <div className="text-[10px] text-neutral-400 font-mono truncate mt-0.5">
-                          {acc.email.split('@')[0]}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
             </div>
 
             {/* Footer Bawah */}

@@ -63,25 +63,25 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     switch (userRole) {
       case 'SUPERADMIN':
       case 'ADMIN':
-        return { label: 'Superadmin', badgeClass: 'bg-rose-100 text-rose-800 border-rose-200' };
+        return { label: 'Superadmin', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200' };
+        return { label: 'Verifikator', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' };
       case 'DISTRIBUTOR':
-        return { label: 'Distributor', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200' };
+        return { label: 'Distributor', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
       case 'TASHIH_LEADER':
-        return { label: 'Pentashih', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+        return { label: 'Pentashih', badgeClass: 'bg-primary-50 text-primary-700 border-primary-200' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200' };
+        return { label: 'Dokumentator', badgeClass: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
+        return { label: 'Kepala LPMQ', badgeClass: 'bg-gold-50 text-gold-700 border-gold-300' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit', badgeClass: 'bg-teal-100 text-teal-800 border-teal-200' };
+        return { label: 'Penerbit', badgeClass: 'bg-primary-50 text-primary-800 border-primary-200' };
       default:
         return { label: userRole || 'Pengguna', badgeClass: 'bg-neutral-100 text-neutral-800 border-neutral-200' };
     }
@@ -272,16 +272,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
           {/* 2. User Mini Profile Card (ldksyahid-app style) */}
           {currentUser && (
-            <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/50">
+            <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/70">
               <div className="flex items-center gap-3">
                 {/* Avatar with Live Green Dot Indicator */}
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-primary-700 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                  <div className="w-10 h-10 rounded-full bg-primary-800 text-white font-bold flex items-center justify-center text-sm shadow-xs">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  {/* Live Online Green Dot (from ldksyahid-app side-bar.blade.php) */}
+                  {/* Live Online Green Dot */}
                   <span
-                    className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-2xs"
+                    className="absolute bottom-0 right-0 w-3 h-3 bg-primary-500 rounded-full border-2 border-white shadow-2xs"
                     title="Online"
                   />
                 </div>
@@ -328,7 +328,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group',
                           isActive
                             ? 'bg-primary-700 text-white shadow-xs font-semibold'
-                            : 'text-neutral-700 hover:bg-neutral-100 hover:text-primary-700'
+                            : 'text-neutral-700 hover:bg-neutral-100 hover:text-primary-800'
                         )
                       }
                     >
@@ -337,7 +337,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'transition-colors',
-                              isActive ? 'text-white' : 'text-neutral-400 group-hover:text-primary-600'
+                              isActive ? 'text-white' : 'text-neutral-400 group-hover:text-primary-700'
                             )}
                           >
                             {item.icon}
@@ -363,7 +363,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           <div className="p-4 border-t border-neutral-100 bg-white">
             <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-primary-700 flex-shrink-0" />
                 <span className="text-[11px] font-bold text-neutral-800">Standar Pentashihan</span>
               </div>
               <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">

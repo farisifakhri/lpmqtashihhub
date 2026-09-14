@@ -85,32 +85,32 @@ export const DailyQuranWidget = () => {
   const currentItem = QURAN_HADITH_COLLECTION[currentIndex];
 
   return (
-    <div className="bg-white rounded-2xl border border-teal-100 shadow-sm p-5 sm:p-6 transition-all hover:shadow-md">
+    <div className="bg-gradient-to-br from-white via-amber-50/25 to-white rounded-xl border border-amber-200/80 shadow-sm p-5 sm:p-6 transition-all hover:shadow-md">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-teal-50">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-amber-100/70">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 text-white flex items-center justify-center shadow-xs">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-neutral-900 tracking-tight flex items-center gap-1.5">
               <span>Kutipan Harian Al-Qur'an & Hadis</span>
-              <span className="hidden sm:inline-block text-[11px] font-normal text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+              <span className="hidden sm:inline-block text-[11px] font-medium text-primary-700 bg-primary-50 border border-primary-200/60 px-2 py-0.5 rounded-md">
                 {currentItem.category}
               </span>
             </h3>
-            <p className="text-[11px] text-neutral-400">Inspirasi integritas & pemeliharaan kalam Ilahi</p>
+            <p className="text-[11px] text-neutral-500">Inspirasi integritas & pemeliharaan kalam Ilahi</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-neutral-500">
           <span className="text-[11px] text-neutral-400 hidden xs:inline">
-            Konten berikutnya dalam <span className="font-mono font-bold text-teal-700">{countdown}</span>s
+            Konten berikutnya dalam <span className="font-mono font-bold text-primary-700">{countdown}</span>s
           </span>
           <button
             type="button"
             onClick={nextQuote}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 active:scale-95 rounded-lg border border-teal-200 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 active:scale-95 rounded-lg border border-primary-200 transition-all cursor-pointer"
             title="Segarkan kutipan sekarang"
           >
             <RefreshCw className={`w-3 h-3 ${isFading ? 'animate-spin' : ''}`} />
@@ -123,16 +123,16 @@ export const DailyQuranWidget = () => {
       <div className={`mt-4 transition-opacity duration-300 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
         {/* Source Badge */}
         <div className="mb-2">
-          <span className="inline-block px-3 py-0.5 text-xs font-bold rounded-full bg-teal-700 text-white shadow-xs">
+          <span className="inline-block px-3 py-0.5 text-xs font-bold rounded-md bg-primary-800 text-white shadow-2xs">
             {currentItem.source}
           </span>
         </div>
 
-        {/* Arabic Text (Amiri-like styling) */}
+        {/* Arabic Text */}
         <div className="py-2">
           <p
             dir="rtl"
-            className="text-lg sm:text-2xl font-serif text-neutral-800 leading-[2.2] sm:leading-[2.4] tracking-wide text-right font-medium"
+            className="text-lg sm:text-2xl font-serif text-neutral-900 leading-[2.2] sm:leading-[2.4] tracking-wide text-right font-medium"
             style={{ fontFamily: "'Traditional Arabic', 'Amiri', 'Scheherazade New', serif" }}
           >
             {currentItem.arabic}
@@ -140,7 +140,7 @@ export const DailyQuranWidget = () => {
         </div>
 
         {/* Indonesian Translation */}
-        <div className="mt-2 text-xs sm:text-sm text-neutral-600 leading-relaxed italic border-l-2 border-teal-500 pl-3.5 bg-neutral-50/70 py-2 rounded-r-lg">
+        <div className="mt-2 text-xs sm:text-sm text-neutral-700 leading-relaxed italic border-l-3 border-gold-500 pl-3.5 bg-neutral-50/90 py-2.5 rounded-r-lg">
           "{currentItem.translation}"
         </div>
       </div>

@@ -16,18 +16,51 @@
 }
 
 @layer components {
-  /* Komponen kartu sesuai DESIGN.md §4: latar putih, radius ±8px, border 1px neutral-200 */
+  /* Komponen kartu formal sesuai standar portal kementerian: latar putih, radius 12-16px, border 1px neutral-200 */
   .lpmq-card {
-    @apply bg-white rounded-lg border border-neutral-200 shadow-sm p-6;
+    @apply bg-white rounded-xl border border-neutral-200/90 shadow-sm p-6;
   }
 
   /* Kartu ringkasan tarif/billing dengan latar emas muda */
   .lpmq-billing-card {
-    @apply bg-gold-50 rounded-lg border border-gold-400 p-6 shadow-sm;
+    @apply bg-gold-50 rounded-xl border border-gold-400/80 p-6 shadow-sm;
   }
 
   /* Tombol aksi formal dengan target sentuh min 44px */
   .lpmq-btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-md font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 min-h-[44px] rounded-lg font-semibold text-sm transition-all focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  /* Background motif geometris Islami halus untuk hero/auth */
+  .lpmq-pattern-bg {
+    background-color: #083224;
+    background-image: radial-gradient(rgba(223, 176, 69, 0.08) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0, 12px 12px;
+  }
+
+  .lpmq-light-pattern {
+    background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px);
+    background-size: 16px 16px;
   }
 }
+
+/* Custom crisp scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+

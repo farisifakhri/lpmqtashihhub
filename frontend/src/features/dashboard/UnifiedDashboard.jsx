@@ -13,7 +13,7 @@ import {
   BookOpen,
   Send,
   Sliders,
-  Sparkles,
+  Compass,
   CreditCard,
   PlusCircle,
   Layers,
@@ -105,28 +105,32 @@ export const UnifiedDashboard = () => {
           desc: 'Pendaftaran naskah mushaf perdana ke LPMQ',
           icon: PlusCircle,
           path: '/publisher/new-registration',
-          gradient: 'from-emerald-600 to-teal-600',
+          iconBg: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xs',
+          cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
         },
         {
           title: 'Riwayat Pengajuan',
           desc: 'Pantau tahapan naskah & timeline status',
           icon: Layers,
           path: '/publisher/registrations',
-          gradient: 'from-blue-600 to-cyan-600',
+          iconBg: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xs',
+          cardHover: 'hover:border-blue-400 hover:bg-blue-50/40',
         },
         {
           title: 'Billing PNBP',
           desc: 'Informasi kode billing SIMPONI & bukti bayar',
           icon: CreditCard,
           path: '/publisher/billing',
-          gradient: 'from-amber-500 to-yellow-600',
+          iconBg: 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-xs',
+          cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
         },
         {
           title: 'Arsip Surat Tashih',
           desc: 'Unduh dokumen STT resmi bersertifikat QR',
           icon: Award,
           path: '/publisher/documents',
-          gradient: 'from-teal-600 to-primary-700',
+          iconBg: 'bg-gradient-to-br from-purple-600 to-violet-700 text-white shadow-xs',
+          cardHover: 'hover:border-purple-400 hover:bg-purple-50/40',
         },
       ];
     }
@@ -137,7 +141,8 @@ export const UnifiedDashboard = () => {
         desc: 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
-        gradient: 'from-sky-500 to-blue-600',
+        iconBg: 'bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-xs',
+        cardHover: 'hover:border-sky-400 hover:bg-sky-50/40',
         allowed: isAdmin || userRoles.includes('VERIFIKATOR'),
       },
       {
@@ -145,7 +150,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penugasan berkas ke SK Tim Pentashih',
         icon: Send,
         path: '/internal/distributions',
-        gradient: 'from-emerald-500 to-teal-600',
+        iconBg: 'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-xs',
+        cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
         allowed: isAdmin || userRoles.includes('DISTRIBUTOR'),
       },
       {
@@ -153,7 +159,8 @@ export const UnifiedDashboard = () => {
         desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
-        gradient: 'from-teal-600 to-emerald-700',
+        iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xs',
+        cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
         allowed: isAdmin || userRoles.includes('PENTASHIH'),
       },
       {
@@ -161,7 +168,8 @@ export const UnifiedDashboard = () => {
         desc: 'Berita acara sidang & pengesahan dokumen',
         icon: Award,
         path: '/internal/documents',
-        gradient: 'from-amber-500 to-yellow-600',
+        iconBg: 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white shadow-xs',
+        cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
         allowed: isAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
@@ -169,7 +177,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola kategori, jenis tarif, & addon',
         icon: Sliders,
         path: '/internal/settings',
-        gradient: 'from-indigo-500 to-purple-600',
+        iconBg: 'bg-gradient-to-br from-slate-700 to-indigo-800 text-white shadow-xs',
+        cardHover: 'hover:border-indigo-400 hover:bg-indigo-50/40',
         allowed: isAdmin,
       },
     ];
@@ -225,7 +234,7 @@ export const UnifiedDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* 1. Greeting Hero Card (Sesuai Mockup ldksyahid-app) */}
+      {/* 1. Greeting Hero Card */}
       <GreetingHeroCard
         userName={greetingUserName}
         roleLabel={greetingRoleLabel}
@@ -237,17 +246,17 @@ export const UnifiedDashboard = () => {
         }
       />
 
-      {/* 2. Daily Hadith & Al-Qur'an Widget (Sesuai Mockup ldksyahid-app) */}
+      {/* 2. Daily Hadith & Al-Qur'an Widget */}
       <DailyQuranWidget />
 
       {/* 3. Quick Actions Bar (Pintasan Aksi Cepat) */}
-      <div className="bg-white rounded-2xl border border-neutral-200/80 p-5 shadow-sm">
+      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3.5">
-          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-gold-500" />
+          <h3 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-neutral-800 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-primary-700" />
             <span>Pintasan Aksi Cepat (Quick Actions)</span>
           </h3>
-          <span className="text-[11px] text-neutral-400">
+          <span className="text-[11px] text-neutral-500">
             {isPublisher ? 'Menu layanan penerbit' : 'Sesuai wewenang tugas operasional Anda'}
           </span>
         </div>
@@ -259,17 +268,17 @@ export const UnifiedDashboard = () => {
               <Link
                 key={idx}
                 to={action.path}
-                className="group p-3 rounded-xl border border-neutral-200/70 hover:border-teal-400 hover:bg-teal-50/30 active:scale-[0.98] transition-all flex flex-col justify-between shadow-xs hover:shadow-sm"
+                className={`group p-3 rounded-xl border border-neutral-200/80 ${action.cardHover || 'hover:border-primary-400 hover:bg-primary-50/30'} active:scale-[0.98] transition-all flex flex-col justify-between shadow-2xs hover:shadow-xs`}
               >
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${action.gradient} text-white flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                  <div className={`w-8 h-8 rounded-lg ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
                     <Icon className="w-4 h-4" />
                   </div>
-                  <div className="text-xs font-bold text-neutral-800 group-hover:text-teal-800 line-clamp-1">
+                  <div className="text-xs font-bold text-neutral-800 group-hover:text-primary-800 line-clamp-1">
                     {action.title}
                   </div>
                 </div>
-                <div className="text-[11px] text-neutral-400 group-hover:text-neutral-600 line-clamp-2 leading-snug">
+                <div className="text-[11px] text-neutral-500 group-hover:text-neutral-700 line-clamp-2 leading-snug">
                   {action.desc}
                 </div>
               </Link>
@@ -278,11 +287,12 @@ export const UnifiedDashboard = () => {
         </div>
       </div>
 
-      {/* 4. Statistics Overview Section (Harmonisasi Warna & Role-Based) */}
+      {/* 4. Statistics Overview Section */}
+      {/* 4. Statistics Overview Section */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3.5">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-teal-600" />
+            <Clock className="w-4 h-4 text-primary-700" />
             <h3 className="text-sm font-bold text-neutral-800">
               Ringkasan Data & Beban Kerja Sistem
             </h3>
@@ -291,13 +301,13 @@ export const UnifiedDashboard = () => {
           <div className="flex items-center gap-2">
             {/* Super Admin Perspective Switcher */}
             {isAdmin && (
-              <div className="inline-flex items-center p-1 rounded-xl bg-neutral-100 border border-neutral-200 text-xs font-semibold">
+              <div className="inline-flex items-center p-1 rounded-lg bg-neutral-100 border border-neutral-200 text-xs font-semibold">
                 <button
                   type="button"
                   onClick={() => setAdminViewMode('OPERATIONAL')}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                     adminViewMode === 'OPERATIONAL'
-                      ? 'bg-white text-teal-800 shadow-xs font-bold'
+                      ? 'bg-white text-primary-800 shadow-2xs font-bold'
                       : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
@@ -306,9 +316,9 @@ export const UnifiedDashboard = () => {
                 <button
                   type="button"
                   onClick={() => setAdminViewMode('PUBLISHER')}
-                  className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3 py-1 rounded-md transition-all cursor-pointer ${
                     adminViewMode === 'PUBLISHER'
-                      ? 'bg-white text-teal-800 shadow-xs font-bold'
+                      ? 'bg-white text-primary-800 shadow-2xs font-bold'
                       : 'text-neutral-600 hover:text-neutral-900'
                   }`}
                 >
@@ -322,90 +332,90 @@ export const UnifiedDashboard = () => {
               size="sm"
               onClick={fetchRegistrations}
               disabled={loading}
-              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-primary-700' : ''}`} />}
             >
               Segarkan
             </Button>
           </div>
         </div>
 
-        {/* Grid Kartu Metrik dengan Desain Warna & Sentuhan ldksyahid-app */}
+        {/* Grid Kartu Metrik dengan Palet Warna Kaya & Elegan */}
         {showOperationalCards ? (
           /* Kartu Perspektif Operasional Internal */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Verifikasi Berkas */}
-            <div className="bg-white rounded-2xl border border-sky-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-sky-50/40">
+            <div className="rounded-xl border border-sky-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-sky-50/80 via-white to-blue-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/25">
                   <CheckSquare className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
                   Tahap 1
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-sky-950 tabular-nums">
                   {countVerification}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Verifikasi Berkas</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Pemeriksaan naskah & kelengkapan</div>
+                <div className="text-xs font-bold text-sky-900 mt-1">Verifikasi Berkas</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Pemeriksaan naskah & kelengkapan</div>
               </div>
             </div>
 
             {/* Card 2: Sidang Pentashihan */}
-            <div className="bg-white rounded-2xl border border-teal-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-teal-50/40">
+            <div className="rounded-xl border border-amber-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shadow-amber-500/25">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                   Tahap 2
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-amber-950 tabular-nums">
                   {countTashih}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Sidang Pentashihan</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Telaah lafaz & rasm usmani</div>
+                <div className="text-xs font-bold text-amber-900 mt-1">Sidang Pentashihan</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Telaah lafaz & rasm usmani</div>
               </div>
             </div>
 
             {/* Card 3: Penetapan STT */}
-            <div className="bg-white rounded-2xl border border-amber-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-amber-50/40">
+            <div className="rounded-xl border border-purple-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-purple-50/80 via-white to-violet-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-700 text-white flex items-center justify-center shadow-sm shadow-purple-500/25">
                   <Award className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300">
                   Tahap 3
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-purple-950 tabular-nums">
                   {countSTT}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Penetapan Dokumen STT</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Berita acara & tanda tashih sah</div>
+                <div className="text-xs font-bold text-purple-900 mt-1">Penetapan Dokumen STT</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Berita acara & tanda tashih sah</div>
               </div>
             </div>
 
             {/* Card 4: Total Naskah */}
-            <div className="bg-white rounded-2xl border border-emerald-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-emerald-50/40">
+            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-sm shadow-emerald-600/25">
                   <Users className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
                   Total
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-emerald-950 tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Total Naskah Masuk</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Seluruh berkas dalam antrean</div>
+                <div className="text-xs font-bold text-emerald-900 mt-1">Total Naskah Masuk</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Seluruh berkas dalam antrean</div>
               </div>
             </div>
           </div>
@@ -413,78 +423,78 @@ export const UnifiedDashboard = () => {
           /* Kartu Perspektif Layanan Penerbit & PNBP */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Billing PNBP */}
-            <div className="bg-white rounded-2xl border border-amber-200/80 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-amber-50/40">
+            <div className="rounded-xl border border-gold-400 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-amber-50 via-yellow-50/50 to-white">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-600 text-white flex items-center justify-center shadow-sm shadow-amber-500/25">
                   <CreditCard className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-900 border border-gold-300">
                   SIMPONI
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-xl sm:text-2xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-xl sm:text-2xl font-black text-amber-950 tabular-nums">
                   {formatRupiah(totalBilling)}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Billing PNBP Terdaftar</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Total tarif naskah resmi</div>
+                <div className="text-xs font-bold text-amber-900 mt-1">Billing PNBP Terdaftar</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Total tarif naskah resmi</div>
               </div>
             </div>
 
             {/* Card 2: Sedang Diproses */}
-            <div className="bg-white rounded-2xl border border-teal-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-teal-50/40">
+            <div className="rounded-xl border border-sky-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-sky-50/80 via-white to-blue-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/25">
                   <Clock className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
                   Diproses
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-sky-950 tabular-nums">
                   {inProgressCount}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Sedang Ditashih</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Dalam verifikasi & sidang</div>
+                <div className="text-xs font-bold text-sky-900 mt-1">Sedang Ditashih</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Dalam verifikasi & sidang</div>
               </div>
             </div>
 
             {/* Card 3: STT Terbit */}
-            <div className="bg-white rounded-2xl border border-emerald-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-emerald-50/40">
+            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-sm shadow-emerald-600/25">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
                   Selesai
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-emerald-950 tabular-nums">
                   {completedCount}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Surat Tashih Terbit</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Dokumen sah bersertifikat</div>
+                <div className="text-xs font-bold text-emerald-900 mt-1">Surat Tashih Terbit</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Dokumen sah bersertifikat</div>
               </div>
             </div>
 
             {/* Card 4: Total Pengajuan */}
-            <div className="bg-white rounded-2xl border border-sky-100 p-4 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-200 bg-gradient-to-br from-white to-sky-50/40">
+            <div className="rounded-xl border border-indigo-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/30">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center shadow-sm shadow-indigo-600/25">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border border-indigo-300">
                   Naskah
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-indigo-950 tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-semibold text-neutral-700 mt-1">Total Pengajuan</div>
-                <div className="text-[11px] text-neutral-400 mt-0.5">Semua riwayat pengajuan</div>
+                <div className="text-xs font-bold text-indigo-900 mt-1">Total Pengajuan</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Semua riwayat pengajuan</div>
               </div>
             </div>
           </div>
@@ -502,9 +512,9 @@ export const UnifiedDashboard = () => {
       )}
 
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
-      <div className="bg-white rounded-2xl border border-neutral-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden">
         {/* Header & Filter Controls */}
-        <div className="p-4 sm:p-5 border-b border-neutral-200/80 space-y-3">
+        <div className="p-4 sm:p-5 border-b border-neutral-200 space-y-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <h3 className="text-sm font-bold text-neutral-900">
@@ -525,7 +535,7 @@ export const UnifiedDashboard = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nomor, judul, penerbit..."
-                className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-teal-500 transition-all text-neutral-800"
+                className="w-full pl-9 pr-3 py-1.5 text-xs bg-neutral-50 border border-neutral-300 rounded-lg outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-700 transition-all text-neutral-800"
               />
             </div>
           </div>
@@ -539,9 +549,9 @@ export const UnifiedDashboard = () => {
               </span>
               <button
                 onClick={() => setStatusFilter('ALL')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   statusFilter === 'ALL'
-                    ? 'bg-primary-700 text-white shadow-xs'
+                    ? 'bg-neutral-900 text-white shadow-xs font-bold'
                     : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                 }`}
               >
@@ -549,30 +559,30 @@ export const UnifiedDashboard = () => {
               </button>
               <button
                 onClick={() => setStatusFilter('VERIFICATION')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   statusFilter === 'VERIFICATION'
-                    ? 'bg-primary-700 text-white shadow-xs'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    ? 'bg-sky-700 text-white shadow-xs font-bold'
+                    : 'bg-sky-50 text-sky-800 hover:bg-sky-100 border border-sky-200/60'
                 }`}
               >
                 Verifikasi ({countVerification})
               </button>
               <button
                 onClick={() => setStatusFilter('TASHIH')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   statusFilter === 'TASHIH'
-                    ? 'bg-primary-700 text-white shadow-xs'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    ? 'bg-amber-600 text-white shadow-xs font-bold'
+                    : 'bg-amber-50 text-amber-900 hover:bg-amber-100 border border-amber-200/60'
                 }`}
               >
                 Sidang Tashih ({countTashih})
               </button>
               <button
                 onClick={() => setStatusFilter('COMPLETED')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                   statusFilter === 'COMPLETED'
-                    ? 'bg-primary-700 text-white shadow-xs'
-                    : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    ? 'bg-emerald-700 text-white shadow-xs font-bold'
+                    : 'bg-emerald-50 text-emerald-900 hover:bg-emerald-100 border border-emerald-200/60'
                 }`}
               >
                 STT Terbit ({countSTT})
@@ -582,9 +592,9 @@ export const UnifiedDashboard = () => {
             {!isPublisher && (
               <button
                 onClick={() => setFilterMyTasksOnly(!filterMyTasksOnly)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                   filterMyTasksOnly
-                    ? 'bg-gold-500 text-white border-gold-600 shadow-xs'
+                    ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-600 shadow-xs font-bold'
                     : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
                 }`}
               >
@@ -616,7 +626,7 @@ export const UnifiedDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[760px]">
               <thead>
-                <tr className="bg-neutral-50/80 text-neutral-600 text-[11px] font-bold uppercase tracking-wider border-b border-neutral-200">
+                <tr className="bg-neutral-50 text-neutral-600 text-[11px] font-bold uppercase tracking-wider border-b border-neutral-200">
                   <th className="py-3 px-6">Nomor & Tanggal</th>
                   <th className="py-3 px-6">Penerbit & Judul Naskah</th>
                   <th className="py-3 px-6">Profil Layanan</th>
@@ -626,16 +636,16 @@ export const UnifiedDashboard = () => {
               </thead>
               <tbody className="divide-y divide-neutral-100 text-sm">
                 {filteredRegistrations.map((item) => (
-                  <tr key={item.id} className="hover:bg-teal-50/30 transition-colors">
+                  <tr key={item.id} className="hover:bg-primary-50/30 transition-colors">
                     <td className="py-3.5 px-6">
                       <span className="font-mono text-xs font-bold text-neutral-900 block">
                         {item.registration_no || item.registrationNumber}
                       </span>
                       <span className="text-[11px] text-neutral-400">
                         {new Date(item.created_at || item.submittedAt).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
+                           day: 'numeric',
+                           month: 'short',
+                           year: 'numeric',
                         })}
                       </span>
                     </td>
@@ -643,7 +653,7 @@ export const UnifiedDashboard = () => {
                       <span className="font-semibold text-neutral-900 block line-clamp-1">
                         {item.title || item.mushafTitle}
                       </span>
-                      <span className="text-xs text-teal-700 font-medium block">
+                      <span className="text-xs text-primary-700 font-semibold block">
                         {item.publisher?.legal_name || item.publisherName || 'Penerbit Terdaftar'}
                       </span>
                     </td>
