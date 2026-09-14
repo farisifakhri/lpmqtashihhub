@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -22,7 +22,7 @@ import lpmqLogo from '@/assets/lpmq.jpg';
 import quran3dImg from '@/assets/quran-3d.jpg';
 
 export const RegisterPublisherPage = () => {
-  const { registerPublisher, login, isLoading, authError } = useAuth();
+  const { registerPublisher, login, currentUser, isLoading, authError } = useAuth();
   const navigate = useNavigate();
 
   // Mode: 'LEMBAGA' vs 'PERORANGAN'

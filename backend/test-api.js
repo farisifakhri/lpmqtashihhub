@@ -3,6 +3,7 @@ import app from './src/app.js';
 import { prisma } from './src/config/database.js';
 import bcrypt from 'bcryptjs';
 import { runWorkflowTests } from './tests/workflow.integration.js';
+import { runMasterTests } from './tests/master.integration.js';
 
 const PORT = 5005;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
@@ -417,6 +418,8 @@ async function runTests() {
         const res = await fetch(`${BASE_URL}/public/verify-document/token-qr-fiktif-99999`);
         assert.strictEqual(res.status, 404);
       });
+
+      await runMasterTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken });
 
       await runWorkflowTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, dokumentatorToken, adminToken, serviceId: selectedService.id });
 
