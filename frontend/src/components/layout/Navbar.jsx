@@ -1,39 +1,130 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { ShieldCheck, UserCircle, RefreshCw, QrCode, LogOut, LogIn } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import {
+  Menu,
+  X,
+  Home,
+  ChevronRight,
+  ChevronDown,
+  QrCode,
+  LogOut,
+  User,
+  ShieldCheck,
+  CheckCircle2,
+  ExternalLink,
+} from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import kemenagLogo from '@/assets/kemenag.png';
 
-export const Navbar = () => {
-  const { currentUser, setRole, availableRoles, logout } = useAuth();
+export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
+  const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
-  const getRoleBadgeLabel = (role) => {
-    switch (role) {
-      case 'ADMIN_PENERBIT':
-      case 'PUBLISHER':
-        return 'Penerbit / Pemohon';
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close dropdown on route change
+  useEffect(() => {
+    setProfileDropdownOpen(false);
+  }, [location.pathname]);
+
+  const role = currentUser?.role || '';
+  const isPublisher =
+    role === 'ADMIN_PENERBIT' ||
+    role === 'PUBLISHER' ||
+    currentUser?.roles?.includes('ADMIN_PENERBIT');
+
+  const homePath = isPublisher ? '/publisher' : '/internal';
+
+  const getRoleConfig = (userRole) => {
+    switch (userRole) {
       case 'SUPERADMIN':
       case 'ADMIN':
-        return 'Super Admin Sistem';
+        return { label: 'Super Admin', color: 'bg-rose-50 text-rose-700 border-rose-200' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return 'Verifikator Berkas';
+        return { label: 'Verifikator Berkas', color: 'bg-blue-50 text-blue-700 border-blue-200' };
       case 'DISTRIBUTOR':
-        return 'Distributor Tim';
+        return { label: 'Distributor Tim', color: 'bg-amber-50 text-amber-700 border-amber-200' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return 'Pentashih Naskah';
+      case 'TASHIH_LEADER':
+        return { label: 'Pentashih Naskah', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return 'Dokumentator';
+        return { label: 'Dokumentator', color: 'bg-purple-50 text-purple-700 border-purple-200' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return 'Kepala LPMQ';
+        return { label: 'Kepala LPMQ', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+      case 'ADMIN_PENERBIT':
+      case 'PUBLISHER':
+        return { label: 'Penerbit / Pemohon', color: 'bg-teal-50 text-teal-700 border-teal-200' };
       default:
-        return role;
+        return { label: userRole || 'Petugas', color: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
     }
   };
+
+  const roleConfig = getRoleConfig(role);
+
+  // Dynamic breadcrumb mapping matching ldksyahid-app style
+  const getBreadcrumb = (pathname) => {
+    if (pathname === '/publisher' || pathname === '/publisher/') {
+      return { parent: null, name: 'Dashboard' };
+    }
+    if (pathname.startsWith('/publisher/new-registration')) {
+      return { parent: 'Pengajuan', name: 'Pengajuan Naskah Baru' };
+    }
+    if (pathname.startsWith('/publisher/registrations')) {
+      return { parent: 'Pengajuan', name: 'Daftar Pengajuan Saya' };
+    }
+    if (pathname.startsWith('/publisher/billing')) {
+      return { parent: 'Keuangan', name: 'Billing & PNBP' };
+    }
+    if (pathname.startsWith('/publisher/documents')) {
+      return { parent: 'Dokumen', name: 'Surat Tanda Tashih (STT)' };
+    }
+    if (pathname === '/internal' || pathname === '/internal/') {
+      return { parent: null, name: 'Dashboard Petugas' };
+    }
+    if (pathname.startsWith('/internal/verifications')) {
+      return { parent: 'Verifikasi', name: 'Verifikasi Berkas Naskah' };
+    }
+    if (pathname.startsWith('/internal/distributions')) {
+      return { parent: 'Distribusi', name: 'Distribusi Sidang & SK Tim' };
+    }
+    if (pathname.startsWith('/internal/tashih')) {
+      return { parent: 'Pentashihan', name: 'Sidang & Telaah Tashih' };
+    }
+    if (pathname.startsWith('/internal/documents')) {
+      return { parent: 'Dokumen Resmi', name: 'Berita Acara & STT' };
+    }
+    if (pathname.startsWith('/internal/settings/categories')) {
+      return { parent: 'Master Data', name: 'Kategori Mushaf' };
+    }
+    if (pathname.startsWith('/internal/settings/service-types')) {
+      return { parent: 'Master Data', name: 'Jenis Layanan & Tarif' };
+    }
+    if (pathname.startsWith('/internal/settings/addons')) {
+      return { parent: 'Master Data', name: 'Layanan Tambahan' };
+    }
+    if (pathname.startsWith('/internal/settings')) {
+      return { parent: 'Konfigurasi', name: 'Master Data Sistem' };
+    }
+    return { parent: null, name: 'LPMQ Tashih Hub' };
+  };
+
+  const breadcrumb = getBreadcrumb(location.pathname);
 
   const handleLogout = () => {
     logout();
@@ -41,91 +132,142 @@ export const Navbar = () => {
   };
 
   return (
-    <header className="bg-primary-700 text-white shadow-md sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-white border-b border-neutral-200/90 sticky top-0 z-40 transition-colors shadow-2xs">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Brand & Logo */}
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-3 hover:opacity-95 transition-opacity">
-              <div className="w-10 h-10 rounded-full bg-white/95 flex items-center justify-center p-1 border border-white/20 shadow-xs">
-                <img src={kemenagLogo} alt="Logo Kemenag" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <span className="text-xs tracking-wider uppercase text-emerald-100 font-medium block">
-                  Kementerian Agama RI
-                </span>
-                <span className="text-base font-bold tracking-tight text-white block">
-                  LPMQ — Layanan Pentashihan Al-Qur'an
-                </span>
-              </div>
-            </Link>
+          
+          {/* Left Side: Sidebar Toggler & Dynamic Breadcrumb (ldksyahid-app style) */}
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            {/* Sidebar Toggler Button */}
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="p-2 rounded-lg text-neutral-600 hover:text-primary-700 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
+              aria-label="Toggle Navigation Sidebar"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {/* Breadcrumb Navigation */}
+            <nav aria-label="Breadcrumb" className="hidden sm:flex items-center text-xs text-neutral-500 min-w-0">
+              <ol className="flex items-center gap-1.5 min-w-0 truncate">
+                <li className="flex items-center">
+                  <Link
+                    to={homePath}
+                    className="p-1 rounded text-neutral-500 hover:text-primary-700 hover:bg-neutral-100 transition-colors"
+                    title="Beranda Dashboard"
+                  >
+                    <Home className="w-4 h-4 text-primary-600" />
+                  </Link>
+                </li>
+                {breadcrumb.parent && (
+                  <li className="flex items-center gap-1.5">
+                    <ChevronRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                    <span className="text-neutral-500 whitespace-nowrap">{breadcrumb.parent}</span>
+                  </li>
+                )}
+                <li className="flex items-center gap-1.5 min-w-0">
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-400 flex-shrink-0" />
+                  <span className="font-semibold text-neutral-900 truncate max-w-[240px] md:max-w-md">
+                    {breadcrumb.name}
+                  </span>
+                </li>
+              </ol>
+            </nav>
           </div>
 
-          {/* Center/Right navigation & Role Switcher */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* Link to public QR verification demo */}
+          {/* Right Side: Clean & Uncluttered Navigation & User Profile Dropdown */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            
+            {/* Public QR Demo Link (Subtle, professional pill button) */}
             <Link
               to="/verify-documents/DEMO-QR-TOKEN-2026"
-              className="hidden lg:inline-flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded border border-white/20 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-primary-700 bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200 transition-colors"
               title="Pratinjau Halaman Verifikasi QR Publik"
             >
-              <QrCode className="w-3.5 h-3.5 text-gold-400" />
-              <span>Cek Verifikasi QR</span>
+              <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="hidden md:inline">Cek QR Publik</span>
             </Link>
 
-            {/* Quick Role Switcher for Testing (DESIGN.md §6) */}
+            {/* Profile Menu Dropdown */}
             {currentUser && (
-              <div className="flex items-center gap-2 bg-primary-800/80 px-2.5 py-1.5 rounded-lg border border-primary-500/30">
-                <RefreshCw className="w-3.5 h-3.5 text-emerald-300 hidden sm:inline" />
-                <label htmlFor="role-select" className="text-xs text-emerald-100 font-medium hidden sm:inline">
-                  Peran:
-                </label>
-                <select
-                  id="role-select"
-                  value={currentUser.role}
-                  onChange={(e) => setRole(e.target.value)}
-                  className="bg-white text-neutral-800 text-xs font-semibold rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-gold-400 cursor-pointer"
-                  aria-label="Pilih Peran Pengguna"
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  aria-expanded={profileDropdownOpen}
+                  aria-haspopup="true"
                 >
-                  {availableRoles.map((role) => (
-                    <option key={role} value={role}>
-                      {getRoleBadgeLabel(role)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  {/* User Avatar Circle */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-800 border border-primary-300 flex items-center justify-center font-bold text-xs">
+                      {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    {/* Live Online Indicator Dot (inspired by ldksyahid-app) */}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+                  </div>
 
-            {/* User Profile display or Login button */}
-            {currentUser ? (
-              <div className="flex items-center gap-3 pl-2 border-l border-white/15">
-                <div className="flex items-center gap-2">
-                  <UserCircle className="w-8 h-8 text-emerald-200 flex-shrink-0" />
-                  <div className="hidden md:block text-left">
-                    <div className="text-xs font-bold leading-tight line-clamp-1">{currentUser.name}</div>
-                    <div className="text-[11px] text-emerald-200 leading-tight">
-                      {currentUser.publisherName || currentUser.nip || currentUser.email}
+                  {/* Name & Role Pill (Desktop) */}
+                  <div className="hidden lg:block">
+                    <div className="text-xs font-bold text-neutral-900 leading-tight truncate max-w-[150px]">
+                      {currentUser.name}
+                    </div>
+                    <div className="text-[11px] text-neutral-500 leading-tight">
+                      {roleConfig.label}
                     </div>
                   </div>
-                </div>
 
-                <button
-                  onClick={handleLogout}
-                  className="p-1.5 rounded hover:bg-white/10 text-emerald-100 hover:text-white transition-colors"
-                  title="Keluar dari sesi"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
+                  <ChevronDown className={`w-3.5 h-3.5 text-neutral-400 transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
+
+                {/* Dropdown Menu Box */}
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-200/80 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    {/* User Header Details */}
+                    <div className="px-4 py-3 border-b border-neutral-100">
+                      <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider">Masuk Sebagai</p>
+                      <p className="text-sm font-bold text-neutral-900 truncate mt-0.5">{currentUser.name}</p>
+                      <p className="text-xs text-neutral-500 truncate mt-0.5">
+                        {currentUser.publisherName || currentUser.email}
+                      </p>
+                      <div className="mt-2.5">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${roleConfig.color}`}>
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>{roleConfig.label}</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Standard Info */}
+                    <div className="px-4 py-2.5 bg-neutral-50/70 border-b border-neutral-100 text-[11px] text-neutral-600 flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                      <span>Standar Mushaf Usmani (SOP v2.2)</span>
+                    </div>
+
+                    {/* Action Items */}
+                    <div className="p-1.5 space-y-0.5">
+                      <Link
+                        to="/verify-documents/DEMO-QR-TOKEN-2026"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
+                        <span>Pratinjau Verifikasi QR</span>
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Keluar Sesi (Logout)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-1.5 text-xs bg-gold-400 text-neutral-900 font-bold px-3 py-1.5 rounded hover:bg-gold-500 transition-colors"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Masuk</span>
-              </Link>
             )}
           </div>
         </div>

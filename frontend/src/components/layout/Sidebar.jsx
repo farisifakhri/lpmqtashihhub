@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   FilePlus,
@@ -12,153 +12,370 @@ import {
   BookOpen,
   FolderCheck,
   Settings,
+  ShieldCheck,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import kemenagLogo from '@/assets/kemenag.png';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isOpen = true, onClose }) => {
   const { currentUser } = useAuth();
   const role = currentUser?.role || '';
   const roles = currentUser?.roles || [];
+
   const isPublisher =
     role === 'ADMIN_PENERBIT' ||
     role === 'PUBLISHER' ||
     roles.includes('ADMIN_PENERBIT');
 
-  const isAdmin = role === 'SUPERADMIN' || role === 'ADMIN' || roles.includes('SUPERADMIN');
+  const isAdmin =
+    role === 'SUPERADMIN' ||
+    role === 'ADMIN' ||
+    roles.includes('SUPERADMIN');
 
-  const getMenuItems = () => {
+  const isVerifikator =
+    role === 'VERIFIKATOR' ||
+    role === 'VERIFICATOR' ||
+    roles.includes('VERIFIKATOR');
+
+  const isDistributor =
+    role === 'DISTRIBUTOR' ||
+    roles.includes('DISTRIBUTOR');
+
+  const isPentashih =
+    role === 'PENTASHIH' ||
+    role === 'TASHIH_MEMBER' ||
+    role === 'TASHIH_LEADER' ||
+    roles.includes('PENTASHIH');
+
+  const isDokumentator =
+    role === 'DOKUMENTATOR' ||
+    role === 'DOCUMENTATOR' ||
+    roles.includes('DOKUMENTATOR');
+
+  const isKepala =
+    role === 'KEPALA_LPMQ' ||
+    role === 'HEAD_OF_LPMQ' ||
+    roles.includes('KEPALA_LPMQ');
+
+  const getRoleBadge = (userRole) => {
+    switch (userRole) {
+      case 'SUPERADMIN':
+      case 'ADMIN':
+        return { label: 'Superadmin', badgeClass: 'bg-rose-100 text-rose-800 border-rose-200' };
+      case 'VERIFIKATOR':
+      case 'VERIFICATOR':
+        return { label: 'Verifikator', badgeClass: 'bg-blue-100 text-blue-800 border-blue-200' };
+      case 'DISTRIBUTOR':
+        return { label: 'Distributor', badgeClass: 'bg-amber-100 text-amber-800 border-amber-200' };
+      case 'PENTASHIH':
+      case 'TASHIH_MEMBER':
+      case 'TASHIH_LEADER':
+        return { label: 'Pentashih', badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+      case 'DOKUMENTATOR':
+      case 'DOCUMENTATOR':
+        return { label: 'Dokumentator', badgeClass: 'bg-purple-100 text-purple-800 border-purple-200' };
+      case 'KEPALA_LPMQ':
+      case 'HEAD_OF_LPMQ':
+        return { label: 'Kepala LPMQ', badgeClass: 'bg-indigo-100 text-indigo-800 border-indigo-200' };
+      case 'ADMIN_PENERBIT':
+      case 'PUBLISHER':
+        return { label: 'Penerbit', badgeClass: 'bg-teal-100 text-teal-800 border-teal-200' };
+      default:
+        return { label: userRole || 'Pengguna', badgeClass: 'bg-neutral-100 text-neutral-800 border-neutral-200' };
+    }
+  };
+
+  const roleBadge = getRoleBadge(role);
+
+  // Grouped Navigation Items "Sesuai Alur" (Official Tashih Workflow Stages)
+  const getNavSections = () => {
     if (isPublisher) {
       return [
         {
-          label: 'Dashboard Penerbit',
-          path: '/publisher',
-          icon: <LayoutDashboard className="w-5 h-5" />,
+          title: 'UTAMA',
+          items: [
+            {
+              label: 'Dashboard Penerbit',
+              path: '/publisher',
+              icon: <LayoutDashboard className="w-4 h-4 flex-shrink-0" />,
+              end: true,
+            },
+          ],
         },
         {
-          label: 'Pengajuan Baru',
-          path: '/publisher/new-registration',
-          icon: <FilePlus className="w-5 h-5" />,
-        },
-        {
-          label: 'Daftar Pengajuan Saya',
-          path: '/publisher/registrations',
-          icon: <FileText className="w-5 h-5" />,
-        },
-        {
-          label: 'Billing & PNBP',
-          path: '/publisher/billing',
-          icon: <CreditCard className="w-5 h-5" />,
-        },
-        {
-          label: 'Surat Tanda Tashih',
-          path: '/publisher/documents',
-          icon: <Award className="w-5 h-5" />,
+          title: 'ALUR PENGAJUAN (SOP v2.2)',
+          items: [
+            {
+              label: '1. Pengajuan Baru',
+              path: '/publisher/new-registration',
+              icon: <FilePlus className="w-4 h-4 flex-shrink-0" />,
+              description: 'Pendaftaran naskah baru',
+            },
+            {
+              label: '2. Riwayat Pengajuan',
+              path: '/publisher/registrations',
+              icon: <FileText className="w-4 h-4 flex-shrink-0" />,
+              description: 'Status & perbaikan naskah',
+            },
+            {
+              label: '3. Billing & PNBP',
+              path: '/publisher/billing',
+              icon: <CreditCard className="w-4 h-4 flex-shrink-0" />,
+              description: 'Tagihan & konfirmasi bayar',
+            },
+            {
+              label: '4. Surat Tanda Tashih',
+              path: '/publisher/documents',
+              icon: <Award className="w-4 h-4 flex-shrink-0" />,
+              description: 'Unduh STT resmi & QR',
+            },
+          ],
         },
       ];
     }
 
-    // Menu Internal LPMQ
-    const baseInternal = [
+    // Portal Petugas Internal LPMQ
+    const internalSections = [
       {
-        label: 'Dashboard Petugas',
-        path: '/internal',
-        icon: <LayoutDashboard className="w-5 h-5" />,
+        title: 'UTAMA',
+        items: [
+          {
+            label: 'Dashboard Petugas',
+            path: '/internal',
+            icon: <LayoutDashboard className="w-4 h-4 flex-shrink-0" />,
+            end: true,
+          },
+        ],
       },
     ];
 
-    if (role === 'VERIFIKATOR' || role === 'VERIFICATOR' || isAdmin) {
-      baseInternal.push({
-        label: 'Antrean Verifikasi Naskah',
+    const workflowItems = [];
+
+    if (isVerifikator || isAdmin) {
+      workflowItems.push({
+        label: '1. Verifikasi Berkas',
         path: '/internal/verifications',
-        icon: <CheckSquare className="w-5 h-5" />,
+        icon: <CheckSquare className="w-4 h-4 flex-shrink-0" />,
+        description: 'Kelengkapan dokumen',
       });
     }
 
-    if (role === 'DISTRIBUTOR' || isAdmin) {
-      baseInternal.push({
-        label: 'Distribusi & Penugasan Tim',
+    if (isDistributor || isAdmin) {
+      workflowItems.push({
+        label: '2. Distribusi Sidang',
         path: '/internal/distributions',
-        icon: <Users className="w-5 h-5" />,
+        icon: <Users className="w-4 h-4 flex-shrink-0" />,
+        description: 'SK & penugasan tim',
       });
     }
 
-    if (
-      role === 'PENTASHIH' ||
-      role === 'TASHIH_MEMBER' ||
-      role === 'TASHIH_LEADER' ||
-      isAdmin
-    ) {
-      baseInternal.push({
-        label: 'Sidang & Review Tashih',
+    if (isPentashih || isAdmin) {
+      workflowItems.push({
+        label: '3. Sidang Pentashihan',
         path: '/internal/tashih',
-        icon: <BookOpen className="w-5 h-5" />,
+        icon: <BookOpen className="w-4 h-4 flex-shrink-0" />,
+        description: 'Telaah lafazh naskah',
       });
     }
 
-    if (
-      role === 'DOKUMENTATOR' ||
-      role === 'DOCUMENTATOR' ||
-      role === 'TASHIH_LEADER' ||
-      role === 'KEPALA_LPMQ' ||
-      role === 'HEAD_OF_LPMQ' ||
-      isAdmin
-    ) {
-      baseInternal.push({
-        label: 'Dokumen & Berita Acara',
+    if (isDokumentator || isKepala || isAdmin) {
+      workflowItems.push({
+        label: '4. Pengesahan & STT',
         path: '/internal/documents',
-        icon: <FolderCheck className="w-5 h-5" />,
+        icon: <FolderCheck className="w-4 h-4 flex-shrink-0" />,
+        description: 'Berita acara & terbit STT',
+      });
+    }
+
+    if (workflowItems.length > 0) {
+      internalSections.push({
+        title: 'ALUR PENTASHIHAN (SOP v2.2)',
+        items: workflowItems,
       });
     }
 
     if (isAdmin) {
-      baseInternal.push({
-        label: 'Master Data & Konfigurasi',
-        path: '/internal/settings',
-        icon: <Settings className="w-5 h-5" />,
+      internalSections.push({
+        title: 'SISTEM & KONFIGURASI',
+        items: [
+          {
+            label: '5. Master Data & Sistem',
+            path: '/internal/settings',
+            icon: <Settings className="w-4 h-4 flex-shrink-0" />,
+            description: 'Kategori, layanan, addon',
+          },
+        ],
       });
     }
 
-    return baseInternal;
+    return internalSections;
   };
 
-  const menuItems = getMenuItems();
+  const navSections = getNavSections();
 
   return (
-    <aside className="w-64 bg-white border-r border-neutral-200 flex-shrink-0 min-h-[calc(100vh-4rem)] p-4 flex flex-col justify-between">
-      <div className="space-y-1">
-        <div className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-neutral-500">
-          {isPublisher ? 'Portal Penerbit' : 'Aplikasi Internal LPMQ'}
-        </div>
-        <nav className="space-y-1">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/publisher' || item.path === '/internal'}
-              className={({ isActive }) =>
-                clsx(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary-100 text-primary-700 font-semibold border-l-4 border-primary-700 rounded-l-none'
-                    : 'text-neutral-700 hover:bg-neutral-50 hover:text-primary-700'
-                )
-              }
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-neutral-900/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
-      <div className="pt-4 border-t border-neutral-200">
-        <div className="bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-          <p className="text-xs font-semibold text-neutral-800">Standar Pentashihan</p>
-          <p className="text-[11px] text-neutral-500 mt-0.5">
-            Mushaf Standar Usmani Kemenag RI (SOP v2.1)
-          </p>
+      {/* Sidebar Container */}
+      <aside
+        className={clsx(
+          'fixed lg:static inset-y-0 left-0 z-50 lg:z-0',
+          'w-72 bg-white border-r border-neutral-200/90 flex flex-col justify-between',
+          'transition-all duration-300 ease-in-out shadow-lg lg:shadow-none',
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
+        )}
+      >
+        <div className="flex flex-col h-full overflow-hidden">
+          
+          {/* 1. Header Brand (Logo Kemenag + App Title) */}
+          <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+            <Link
+              to={isPublisher ? '/publisher' : '/internal'}
+              className="flex items-center gap-3 hover:opacity-95 transition-opacity"
+              onClick={() => {
+                if (window.innerWidth < 1024 && onClose) onClose();
+              }}
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center p-1.5 shadow-2xs">
+                <img src={kemenagLogo} alt="Logo Kemenag" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <span className="text-[10px] font-bold tracking-wider uppercase text-primary-700 block">
+                  Kemenag RI
+                </span>
+                <span className="text-sm font-bold text-neutral-900 block leading-tight">
+                  LPMQ Tashih Hub
+                </span>
+              </div>
+            </Link>
+
+            {/* Close Button on Mobile */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 lg:hidden"
+              aria-label="Tutup Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* 2. User Mini Profile Card (ldksyahid-app style) */}
+          {currentUser && (
+            <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/50">
+              <div className="flex items-center gap-3">
+                {/* Avatar with Live Green Dot Indicator */}
+                <div className="relative flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary-700 text-white font-bold flex items-center justify-center text-sm shadow-xs">
+                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  {/* Live Online Green Dot (from ldksyahid-app side-bar.blade.php) */}
+                  <span
+                    className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-2xs"
+                    title="Online"
+                  />
+                </div>
+
+                {/* User Name & Role Pill Badge */}
+                <div className="min-w-0 flex-1">
+                  <h6 className="text-xs font-bold text-neutral-900 truncate leading-snug">
+                    {currentUser.name}
+                  </h6>
+                  <div className="mt-1">
+                    <span
+                      className={clsx(
+                        'inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                        roleBadge.badgeClass
+                      )}
+                    >
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                      <span>{roleBadge.label}</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Navigation Links (Grouped & Ordered "Sesuai Alur") */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
+            {navSections.map((section, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                  {section.title}
+                </div>
+                <nav className="space-y-1">
+                  {section.items.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.end}
+                      onClick={() => {
+                        if (window.innerWidth < 1024 && onClose) onClose();
+                      }}
+                      className={({ isActive }) =>
+                        clsx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group',
+                          isActive
+                            ? 'bg-primary-700 text-white shadow-xs font-semibold'
+                            : 'text-neutral-700 hover:bg-neutral-100 hover:text-primary-700'
+                        )
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <div
+                            className={clsx(
+                              'transition-colors',
+                              isActive ? 'text-white' : 'text-neutral-400 group-hover:text-primary-600'
+                            )}
+                          >
+                            {item.icon}
+                          </div>
+                          <div className="flex-1 truncate">
+                            <span className="block leading-tight">{item.label}</span>
+                            {item.description && !isActive && (
+                              <span className="block text-[10px] text-neutral-400 truncate mt-0.5">
+                                {item.description}
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </NavLink>
+                  ))}
+                </nav>
+              </div>
+            ))}
+          </div>
+
+          {/* 4. Bottom Standard SOP Info Card */}
+          <div className="p-4 border-t border-neutral-100 bg-white">
+            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200/80">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                <span className="text-[11px] font-bold text-neutral-800">Standar Pentashihan</span>
+              </div>
+              <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">
+                Mushaf Standar Usmani Kemenag RI (SOP v2.2)
+              </p>
+            </div>
+          </div>
+
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 };
+
+export default Sidebar;

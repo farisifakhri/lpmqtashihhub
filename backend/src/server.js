@@ -18,7 +18,7 @@ const startServer = async () => {
     setInterval(checkSla, 60_000).unref();
     console.log('✅ Database MySQL (Laragon) berhasil terhubung via Prisma.');
 
-    app.listen(ENV.PORT, () => {
+    app.listen(ENV.PORT, '0.0.0.0', () => {
       console.log(`🚀 LPMQ Backend Server berjalan di http://localhost:${ENV.PORT}`);
       console.log(`📡 API Base URL: http://localhost:${ENV.PORT}/api/v1`);
       console.log(`🩺 Health Check: http://localhost:${ENV.PORT}/api/v1/health`);
@@ -28,7 +28,7 @@ const startServer = async () => {
     console.log('💡 Catatan: Pastikan MySQL di Laragon aktif dan DATABASE_URL pada backend/.env sudah sesuai.');
     
     // Tetap jalankan server HTTP agar endpoint health / info tetap bisa merespon
-    app.listen(ENV.PORT, () => {
+    app.listen(ENV.PORT, '0.0.0.0', () => {
       console.log(`⚠️ LPMQ Backend Server berjalan (mode fallback tanpa DB) di http://localhost:${ENV.PORT}`);
     });
   }

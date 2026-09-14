@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ArrowRight, ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.jpg';
 import quran3dImg from '@/assets/quran-3d.jpg';
 
 export const LoginPage = () => {
-  const { login, isLoading, authError, seedAccounts } = useAuth();
+  const { login, currentUser, isLoading, authError, seedAccounts } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +28,9 @@ export const LoginPage = () => {
     const res = await login(email, password);
     if (res.success) {
       const isPublisher = res.user.roles?.includes('ADMIN_PENERBIT') || res.user.role === 'ADMIN_PENERBIT';
-      navigate(isPublisher ? '/publisher' : '/internal');
+      const defaultTarget = isPublisher ? '/publisher' : '/internal';
+      const redirectTarget = location.state?.from?.pathname || defaultTarget;
+      navigate(redirectTarget, { replace: true });
     } else {
       setError(res.error || 'Autentikasi gagal. Periksa email atau kata sandi Anda.');
     }
@@ -35,18 +38,11 @@ export const LoginPage = () => {
 
   const isDevMode = Boolean(import.meta.env.DEV);
 
-  const handleQuickLogin = async (acc) => {
-    if (!isDevMode) return;
+  // Pilih akun demo untuk mengisi formulir tanpa auto-login langsung
+  const handleSelectAccount = (acc) => {
     setEmail(acc.email);
     setPassword('password123');
     setError('');
-
-    const res = await login(acc.email, 'password123');
-    if (res.success) {
-      navigate(acc.portalPath);
-    } else {
-      setError(res.error || `Gagal login dengan akun ${acc.label}`);
-    }
   };
 
   return (
@@ -209,7 +205,7 @@ export const LoginPage = () => {
                       <div className="w-full border-t border-neutral-200/80" />
                     </div>
                     <div className="relative inline-block bg-white px-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
-                      Mode Dev: Masuk Cepat Akun Uji Coba (1-Klik)
+                      Mode Dev: Isi Otomatis Akun Uji Coba
                     </div>
                   </div>
 
@@ -218,10 +214,10 @@ export const LoginPage = () => {
                       <button
                         key={acc.role}
                         type="button"
-                        onClick={() => handleQuickLogin(acc)}
+                        onClick={() => handleSelectAccount(acc)}
                         disabled={isLoading}
-                        title={`${acc.label} (${acc.email})`}
-                        className="p-2.5 rounded-xl border border-neutral-200/70 hover:border-primary-500 hover:bg-primary-50/40 active:scale-[0.98] transition-all text-left group flex flex-col justify-between"
+                        title={`Pilih ${acc.label} (${acc.email}) untuk mengisi form`}
+                        className="p-2.5 rounded-xl border border-neutral-200/70 hover:border-primary-500 hover:bg-primary-50/40 active:scale-[0.98] transition-all text-left group flex flex-col justify-between cursor-pointer"
                       >
                         <div className="text-[11px] font-bold text-neutral-800 group-hover:text-primary-700 truncate">
                           {acc.label}
