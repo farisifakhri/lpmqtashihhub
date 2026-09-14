@@ -57,31 +57,27 @@ export const SEED_ACCOUNTS = [
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('lpmq_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
-
+  // User cache is never an authority for portal access. Only /auth/me or login is.
+  const [currentUser, setCurrentUser] = useState(null);
   const [token, setTokenState] = useState(getAuthToken());
+  const [isInitializing, setIsInitializing] = useState(Boolean(getAuthToken()));
   const [isLoading, setIsLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
 
   // Sync session on mount with /api/v1/auth/me if token exists
   useEffect(() => {
+    let cancelled = false;
     const initSession = async () => {
+      localStorage.removeItem('lpmq_user');
       const activeToken = getAuthToken();
-      if (!activeToken) return;
+      if (!activeToken) {
+        setIsInitializing(false);
+        return;
+      }
 
       try {
         const res = await authApi.getMe();
-        if (res?.data) {
+        if (!cancelled && getAuthToken() === activeToken && res?.data) {
           const u = res.data;
           const userObj = {
             id: u.id,
@@ -94,20 +90,22 @@ export const AuthProvider = ({ children }) => {
             publisherName: u.publisher?.legal_name,
           };
           setCurrentUser(userObj);
-          localStorage.setItem('lpmq_user', JSON.stringify(userObj));
         }
       } catch (err) {
         // Jika token tidak valid / kedaluwarsa (401 / 403), bersihkan sesi lokal
-        if (err?.status === 401 || err?.status === 403) {
+        if (!cancelled && getAuthToken() === activeToken && (err?.status === 401 || err?.status === 403)) {
           console.warn('Sesi tidak valid atau telah kedaluwarsa (401/403). Membersihkan sesi lokal.');
           logout();
-        } else {
+        } else if (!cancelled) {
           console.warn('Gagal sinkronisasi sesi dengan server:', err?.message);
         }
+      } finally {
+        if (!cancelled && getAuthToken() === activeToken) setIsInitializing(false);
       }
     };
 
     initSession();
+    return () => { cancelled = true; };
   }, []);
 
   const login = async (email, password) => {
@@ -119,6 +117,7 @@ export const AuthProvider = ({ children }) => {
         const { token: receivedToken, user: u } = response.data;
         setAuthToken(receivedToken);
         setTokenState(receivedToken);
+        setIsInitializing(false);
 
         const userObj = {
           id: u.id,
@@ -132,7 +131,7 @@ export const AuthProvider = ({ children }) => {
         };
 
         setCurrentUser(userObj);
-        localStorage.setItem('lpmq_user', JSON.stringify(userObj));
+        localStorage.removeItem('lpmq_user');
         return { success: true, user: userObj };
       }
       throw new Error(response.message || 'Login gagal');
@@ -161,6 +160,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setAuthToken(null);
     setTokenState(null);
+    setIsInitializing(false);
     localStorage.removeItem('lpmq_user');
     setCurrentUser(null);
   };
@@ -197,7 +197,8 @@ export const AuthProvider = ({ children }) => {
       value={{
         currentUser,
         token,
-        isAuthenticated: !!currentUser,
+        isAuthenticated: !!currentUser && !isInitializing,
+        isInitializing,
         isLoading,
         authError,
         login,
