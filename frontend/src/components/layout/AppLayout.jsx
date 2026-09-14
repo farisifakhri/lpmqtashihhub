@@ -5,8 +5,12 @@ import { Sidebar } from './Sidebar';
 import { useAuth } from '@/features/auth/AuthContext';
 
 export const AppLayout = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isInitializing } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  if (isInitializing) {
+    return <div role="status" aria-live="polite">Memverifikasi sesi pengguna...</div>;
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace />;

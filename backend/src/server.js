@@ -26,8 +26,14 @@ const startServer = async () => {
   } catch (error) {
     console.error('❌ Gagal menyalakan server atau koneksi database gagal:', error.message);
     console.log('💡 Catatan: Pastikan MySQL di Laragon aktif dan DATABASE_URL pada backend/.env sudah sesuai.');
-    
-    // Tetap jalankan server HTTP agar endpoint health / info tetap bisa merespon
+
+    // Production must fail startup instead of exposing a seemingly live API.
+    if (ENV.NODE_ENV === 'production') {
+      process.exitCode = 1;
+      return;
+    }
+
+    // Development fallback keeps health available; its database check returns 503.
     app.listen(ENV.PORT, '0.0.0.0', () => {
       console.log(`⚠️ LPMQ Backend Server berjalan (mode fallback tanpa DB) di http://localhost:${ENV.PORT}`);
     });
