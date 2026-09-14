@@ -121,7 +121,6 @@ const ROLE_LABELS = {
   DISTRIBUTOR: 'Distributor Naskah Pentashihan',
   PENTASHIH: 'Pentashih / Pembaca Naskah Al-Qur\'an',
   TASHIH_MEMBER: 'Anggota Tim Pentashih',
-  TASHIH_LEADER: 'Ketua Kelompok Pentashih',
   DOKUMENTATOR: 'Petugas Dokumentator Mushaf',
   DOCUMENTATOR: 'Petugas Dokumentator Mushaf',
   KEPALA_LPMQ: 'Kepala LPMQ Kemenag RI',

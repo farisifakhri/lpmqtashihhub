@@ -71,7 +71,7 @@ notifikasi eksplisit — belum ada di SOP mana pun yang sudah dibaca.
 |---|---|---|---|
 | 1 | Terima draf Surat Pemberitahuan Hasil Verifikasi dari Verifikator | Verifikasi selesai | — |
 | 2 | Setuju & tanda tangan, **atau** tolak & kembalikan dengan catatan | Review draf (SLA 30 menit) | Surat final / draf dikembalikan |
-| 3 | `[BELUM DIKONFIRMASI]` Terima rekomendasi/Berita Acara Tashih dari ketua kelompok tashih | Naskah dumi bersih | — |
+| 3 | `[BELUM DIKONFIRMASI]` Terima hasil reviu Distributor atas rekomendasi Pentashih/pembaca naskah | Naskah dumi bersih | — |
 | 4 | `[BELUM DIKONFIRMASI]` Menetapkan Surat Tanda Tashih | Berdasarkan Berita Acara | Surat Tanda Tashih terbit |
 
 **Catatan risiko operasional** (sudah ditandai sebelumnya di
@@ -100,10 +100,8 @@ Mekanisme delegasi bila berhalangan masih `[KEPUTUSAN TIM]` terbuka.
   tugas Pentashih di luar tashih itu sendiri (mis. baca ulang tahap
   dumi). Satu pool orang, satu role `Pentashih`; yang berbeda hanya
   label tugas/tahap (`assignments.stage`), bukan role pengguna.
-- Tidak ada keterlibatan "ketua kelompok tashih" di langkah reviu ini
-  — ketua kelompok tetap relevan di tempat lain (menandatangani Berita
-  Acara Tashih, lihat `IMPLEMENTATION.md` §3.1), tapi bukan di langkah
-  reviu Distributor ini.
+- Tidak ada role ketua kelompok tashih dalam logika bisnis. Penanda tangan
+  Berita Acara Tashih masih menunggu keputusan SOP lanjutan.
 - **Tidak ada dokumen resmi/surat untuk hasil reviu ini** — cukup
   **notifikasi** (modul `NOTIFICATIONS`) ke Penerbit untuk kasus
   perbaikan/revisi. Jangan tambahkan `document_type` baru untuk ini.

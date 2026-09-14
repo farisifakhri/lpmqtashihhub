@@ -223,7 +223,7 @@ export const router = createBrowserRouter([
               title="Pengesahan Berita Acara & Surat Tanda Tashih"
               moduleName="DOC-02/03 Berita Acara & SK Tashih"
               sprintTarget="Sprint 5"
-              description="Penyusunan Berita Acara oleh Ketua Kelompok Tashih dan penetapan Surat Tanda Tashih oleh Kepala LPMQ."
+              description="Distributor mereviu rekomendasi pentashih; alur Berita Acara dan penetapan STT menunggu keputusan SOP lanjutan."
               targetTables={['official_documents', 'document_signatories', 'documentation_items', 'registrations']}
               apiEndpoints={[
                 { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_STT', desc: 'Naskah siap penetapan STT' },
@@ -233,7 +233,7 @@ export const router = createBrowserRouter([
               allowedRoles={['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}
               sopReference="SOP Dokumentasi & Penetapan STT (v2.2)"
               businessRules={[
-                'Ketua Kelompok Tashih menandatangani Berita Acara Tashih',
+                'Distributor mereviu rekomendasi tiap pentashih atau pembaca naskah sebelum pengajuan dokumen',
                 'Kepala LPMQ menetapkan Surat Tanda Tashih (STT)',
                 'Dokumentator mencatat tanda terima deposit 5 eksemplar setelah STT terbit',
               ]}

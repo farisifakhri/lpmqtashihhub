@@ -1,81 +1,69 @@
 # Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an
 
-Baseline repository untuk pengembangan MVP aplikasi internal LPMQ dan portal penerbit. Kedua antarmuka dipisahkan, tetapi menggunakan backend, basis data, aturan bisnis, dan audit trail yang sama.
+Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan React 18, Vite 5, dan Tailwind CSS. Backend menggunakan Express 4, Prisma 5, dan MySQL 8, dengan autentikasi JWT, RBAC, audit log, serta penyimpanan unggahan privat.
 
-## Status
+## Status implementasi
 
-- Baseline dokumen: v2.2
-- Tahap: Sprint 0 / validasi stakeholder
-- Framework: belum ditetapkan
-- SOP Verifikasi berlaku untuk seluruh kategori; template resmi, sumber kanonik terbaru, delegasi penetapan, dan detail integrasi eksternal masih dikonfirmasi
+Fondasi API, migrasi/seed database, master data, dashboard berbasis peran, dan sebagian alur pengajuan hingga dokumen draf sudah tersedia. Beberapa halaman operasional masih `ModulePlaceholder`, termasuk riwayat pengajuan, billing PNBP, antrean verifikasi, distribusi, pentashihan, dan dokumen. Sistem belum siap dipakai end-to-end untuk SOP Verifikasi final. Penugasan verifikator oleh Kepala LPMQ, pengiriman surat hasil verifikasi, dan serah-terima master fisik masih perlu dilengkapi. Kontrak API saat ini dijelaskan di [docs/api/workflow.md](docs/api/workflow.md); kesenjangan terhadap SOP dicatat di [docs/api/verifikasi-sop-review.md](docs/api/verifikasi-sop-review.md).
 
-Repository ini sengaja belum berisi scaffold framework. Keputusan teknis tidak boleh dikunci sebelum stack, lingkungan deployment, serta kebijakan keamanan instansi disetujui.
+Nomor billing `MANUAL` adalah referensi internal, bukan kode SIMPONI. PDF dokumen resmi masih draf dan belum memakai template final atau tanda tangan elektronik.
 
-## Ruang lingkup MVP
+## Prasyarat
 
-- Portal penerbit untuk profil, pengajuan, revisi, pelacakan, dan dokumen akhir.
-- Aplikasi internal untuk verifikasi, distribusi, pentashihan, dokumentasi, pelaporan, dan audit.
-- Admin dapat membuat pengajuan atas nama penerbit.
-- Pembayaran dicatat manual dengan rancangan adapter untuk SIMPONI.
-- Penugasan tahap awal, perbaikan, dan dumi/perpanjangan.
-- Tim dibentuk dari SK aktif tanpa ketua kelompok pada logika bisnis; distributor mereviu rekomendasi tiap pentashih/pembaca naskah.
-- STT diterbitkan sebelum cross-check dokumentasi; target lima eksemplar dicatat untuk pelaporan dan tidak memblokir penyelesaian.
-- Master kategori mushaf, 17 profil layanan, add-on, tarif, kalender kerja, serta Tim Distribusi.
-- Masa berlaku dan perpanjangan Surat Tanda Tashih.
-- QR verifikasi publik yang tidak membuka file privat.
+- Node.js 20 dan npm.
+- MySQL 8 yang berjalan dan database kosong `lpmq_db` (atau nama lain sesuai `DATABASE_URL`).
+- Kredensial database lokal yang dapat membuat dan mengubah tabel.
 
-## Dokumen utama
+## Menjalankan lokal
 
-| Dokumen | Fungsi |
-|---|---|
-| `DESIGN.md` | Arsitektur, modul, model domain, status, dan batas keamanan |
-| `IMPLEMENTATION.md` | Urutan implementasi, quality gate, dan strategi pengujian |
-| `CODING_BASELINE_PROMPT.md` | Prompt utama untuk agen coding di VS Code |
-| `LICENSE` | Lisensi internal sementara yang harus dikonfirmasi instansi |
+Dari root repository:
 
-## Struktur awal
-
-```text
-.
-├── .vscode/
-├── docs/
-│   └── meeting-notes/
-├── src/
-├── storage/
-├── tests/
-├── CODING_BASELINE_PROMPT.md
-├── DESIGN.md
-├── IMPLEMENTATION.md
-├── LICENSE
-└── README.md
+```sh
+npm ci
+npm --prefix backend ci
+npm --prefix frontend ci
 ```
 
-Folder `src`, `tests`, dan `storage` adalah placeholder sampai keputusan stack disetujui.
+Salin `backend/.env.example` menjadi `backend/.env` dan sesuaikan `DATABASE_URL` serta `JWT_SECRET`. Salin `frontend/.env.example` menjadi `frontend/.env` dan arahkan `VITE_API_BASE_URL` ke `http://localhost:5000/api/v1`. Jangan commit file `.env` atau data asli. Akun seed hanya untuk pengembangan lokal.
 
-## Cara mulai di VS Code
+```sh
+cd backend
+npx prisma generate
+npx prisma migrate deploy
+npm run prisma:seed
+cd ..
+npm run dev
+```
 
-1. Ekstrak paket dan buka folder repository di VS Code.
-2. Baca `README.md`, `DESIGN.md`, dan `IMPLEMENTATION.md`.
-3. Catat hasil rapat stakeholder dalam `docs/meeting-notes/`.
-4. Perbarui bagian **Keputusan terbuka** sebelum memilih framework.
-5. Gunakan `CODING_BASELINE_PROMPT.md` sebagai instruksi awal agen coding.
-6. Commit dokumen baseline sebelum membuat scaffold aplikasi.
+Frontend tersedia di `http://localhost:5173` dan API di `http://localhost:5000/api/v1`. `GET /api/v1/health` memeriksa database dan mengembalikan HTTP 503 saat tidak siap. Dalam development server masih dapat membuka endpoint kesehatan ketika database gagal tersambung; dalam production startup gagal. Siapkan `JWT_SECRET` yang kuat dan konfigurasi origin yang sesuai sebelum menjalankan production.
 
-## Prinsip pengembangan
+## Validasi
 
-- SOP dan keputusan stakeholder adalah sumber aturan bisnis utama.
-- Nilai tarif/SLA disimpan sebagai data berversi, bukan hard-coded.
-- Setiap pengajuan menyimpan snapshot tarif dan SLA yang berlaku saat submit.
-- SLA digunakan untuk target, cross-check, dan pelaporan; keterlambatan tidak memblokir transisi bisnis.
-- Semua perubahan status, assignment, pembayaran, dan dokumen resmi diaudit.
-- File bersifat privat secara default; endpoint publik hanya mengeluarkan metadata yang diizinkan.
-- Tidak ada hard delete untuk data transaksi dan dokumen yang sudah dipakai.
+```sh
+cd backend
+npx prisma validate
+cd ..
+npm --prefix backend run test:unit
+npm --prefix backend test
+npm --prefix frontend test
+npm --prefix frontend run build
+```
 
-## Keputusan terbuka
+Tes backend integrasi membutuhkan database uji yang sudah dimigrasi dan di-seed. CI menjalankan MySQL 8, validasi/migrasi Prisma, seed, tes backend/frontend, dan build. Jangan arahkan tes integrasi ke database produksi karena tes menulis data.
 
-- Framework backend/frontend dan database.
-- Domain resmi yang menjadi sumber SOP kanonik.
-- Mekanisme delegasi bila Kepala LPMQ berhalangan.
-- Template final Berita Acara Tashih dan Surat Tanda Tashih.
-- Aturan pembatalan setelah billing atau pembayaran.
-- Infrastruktur deployment, backup, retensi, antivirus, dan object storage.
+## Struktur proyek
+
+```text
+backend/                 Express API, Prisma schema/migrations/seed, tests
+frontend/                React/Vite UI, API client, component tests
+backend/prisma/          Model dan migrasi MySQL
+backend/src/             Routes, controllers, services, middleware
+frontend/src/            Router, halaman, komponen, konteks autentikasi
+docs/api/                Kontrak workflow dan catatan SOP
+.github/workflows/ci.yml Quality gate CI
+DESIGN.MD                Rancangan arsitektur dan domain
+IMPLEMENTATION.md        Rencana implementasi
+USER_FLOWS.md            Alur pengguna dan keputusan terbuka
+```
+
+SOP dan keputusan stakeholder menjadi sumber aturan bisnis. SLA adalah target pemantauan, bukan pemblokir otomatis. File unggahan privat dan perubahan transaksi harus ditangani sesuai otorisasi serta audit. Alur Berita Acara/STT final, delegasi Kepala LPMQ, integrasi SIMPONI, dan tanda tangan elektronik menunggu keputusan resmi.

@@ -59,7 +59,6 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
         return { label: 'Distributor Tim', color: 'bg-amber-50 text-amber-700 border-amber-200' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-      case 'TASHIH_LEADER':
         return { label: 'Pentashih Naskah', color: 'bg-primary-50 text-primary-700 border-primary-200' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':

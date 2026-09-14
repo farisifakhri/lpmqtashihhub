@@ -3,8 +3,12 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 
 export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, isInitializing } = useAuth();
   const location = useLocation();
+
+  if (isInitializing) {
+    return <div role="status" aria-live="polite">Memverifikasi sesi pengguna...</div>;
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -35,4 +39,3 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
 };
 
 export default ProtectedRoute;
-

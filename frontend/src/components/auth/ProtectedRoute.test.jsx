@@ -6,10 +6,11 @@ import { ProtectedRoute } from './ProtectedRoute';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 
 describe('ProtectedRoute Security Guard', () => {
-  const renderWithRouter = (currentUser, element, initialPath = '/protected') => {
+  const renderWithRouter = (currentUser, element, initialPath = '/protected', isInitializing = false) => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser,
       isLoading: false,
+      isInitializing,
       login: vi.fn(),
       logout: vi.fn(),
     });
@@ -25,6 +26,19 @@ describe('ProtectedRoute Security Guard', () => {
       </MemoryRouter>
     );
   };
+
+  it('menunggu validasi sesi sebelum menampilkan portal atau mengalihkan ke login', () => {
+    renderWithRouter(
+      { role: 'SUPERADMIN', roles: ['SUPERADMIN'] },
+      <ProtectedRoute><div>Konten Rahasia</div></ProtectedRoute>,
+      '/protected',
+      true
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent('Memverifikasi sesi');
+    expect(screen.queryByText('Konten Rahasia')).not.toBeInTheDocument();
+    expect(screen.queryByText('Halaman Login')).not.toBeInTheDocument();
+  });
 
   it('mengalihkan pengguna yang belum login ke /login', () => {
     renderWithRouter(
@@ -149,4 +163,3 @@ describe('ProtectedRoute Security Guard', () => {
     expect(screen.queryByText('Konfigurasi Master Data')).not.toBeInTheDocument();
   });
 });
-
