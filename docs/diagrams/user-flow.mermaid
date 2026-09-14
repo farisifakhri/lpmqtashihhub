@@ -1,0 +1,82 @@
+flowchart TD
+
+    subgraph PENERBIT["👤 PENERBIT"]
+        P1["Login & isi formulir pendaftaran"]
+        P2["Kirim bukti pendaftaran +<br/>naskah master cetak A4 per juz (fisik)"]
+        P3{"Hasil verifikasi?"}
+        P4["Bayar PNBP via kode billing<br/>(maks. 7 hari)"]
+        P5["Konfirmasi pembayaran (NTPN)"]
+        P6["Terima laporan hasil pentashihan"]
+        P7["Perbaiki naskah + rekap perbaikan"]
+        P8["Kirim naskah revisi ke LPMQ"]
+        P9["Cetak mushaf setelah<br/>Surat Tanda Tashih terbit<br/>(hanya jika naskah cetak fisik)"]
+        P10["Kirim s.d. 5 eksemplar<br/>mushaf hasil cetak<br/>(non-blocking, kurang dari 5 tidak apa)"]
+        PEND(["Selesai — terima<br/>surat tanda terima"])
+        PSTOP(["Selesai — tidak lolos verifikasi"])
+    end
+
+    subgraph VERIFIKATOR["🔍 VERIFIKATOR"]
+        V1["Terima & periksa berkas<br/>pendaftaran + naskah master"]
+        V2["Susun draf Surat Pemberitahuan<br/>Hasil Verifikasi + kode billing"]
+        V3["Laporkan draf ke Kepala LPMQ"]
+        V4["Kirim surat ke penerbit"]
+        V5["Cek pembayaran PNBP"]
+        V6["Serahkan naskah ke Distributor"]
+    end
+
+    subgraph KALPMQ["🏛️ KEPALA LPMQ"]
+        K1{"Setuju draf surat<br/>pemberitahuan?"}
+        K2["Tandatangani surat<br/>pemberitahuan hasil verifikasi"]
+        K3["Kembalikan ke verifikator<br/>untuk diperbaiki"]
+        K4["Tetapkan Surat Tanda Tashih<br/>⚠️ perlu konfirmasi SOP Penerbitan"]
+    end
+
+    subgraph DISTRIBUTOR["📦 DISTRIBUTOR"]
+        D1["Buat surat penugasan"]
+        D2["Distribusikan naskah ke<br/>seluruh Pentashih"]
+        D3["Cross-check / ceklis laporan,<br/>berdasarkan rekomendasi Pentashih<br/>(termasuk tugas baca ulang/dumi)"]
+        D4{"Eksekusi rekomendasi<br/>(bukan penilaian ulang)"}
+        D5["Distribusikan ulang ke Pentashih"]
+        D6["Kembalikan untuk revisi/dumi<br/>sesuai rekomendasi<br/>+ kirim notifikasi ke Penerbit"]
+        D7["Proses terbit Tanda Tashih"]
+    end
+
+    subgraph PENTASHIH["📖 PENTASHIH"]
+        T1["Lakukan pentashihan naskah"]
+        T2["Buat laporan hasil pentashihan"]
+    end
+
+    subgraph DOKUMENTATOR["🗂️ DOKUMENTATOR"]
+        O1["Cek kelengkapan dokumen<br/>pendaftaran & pentashihan"]
+        O2["Unduh Surat Tanda Tashih"]
+        O3["Minta penerbit kirim<br/>mushaf hasil cetak"]
+        O4["Terima 5 eksemplar &<br/>dokumentasikan"]
+    end
+
+    subgraph ARSIP["📚 PUSDOKQ / ARSIPARIS  ⚠️ pembagian tugas belum jelas"]
+        A1["Simpan mushaf ke perpustakaan<br/>& ruang arsip pentashihan"]
+        A2["Arsipkan seluruh dokumen<br/>pentashihan"]
+    end
+
+    %% ---- Alur Pendaftaran & Verifikasi ----
+    P1 --> P2 --> V1
+    V1 --> V2 --> V3 --> K1
+    K1 -- "Tidak setuju" --> K3 --> V2
+    K1 -- "Setuju" --> K2 --> V4 --> P3
+    P3 -- "Tidak lolos" --> PSTOP
+    P3 -- "Lolos" --> P4 --> P5 --> V5 --> V6 --> D1
+
+    %% ---- Alur Distribusi & Pentashihan ----
+    D1 --> D2 --> T1 --> T2 --> D3 --> D4
+    D4 -- "Belum dekat deadline,<br/>perlu dibaca ulang" --> D5 --> T1
+    D4 -- "Mendekati deadline" --> D6 --> P6 --> P7 --> P8 --> D2
+    D4 -- "Dumi bersih,<br/>tidak ada temuan" --> D7 --> K4
+
+    %% ---- Alur Dokumentasi ----
+    K4 --> O1 --> O2 --> O3 --> OTYPE{"Jenis naskah?"}
+    OTYPE -- "Cetak fisik" --> P9 --> P10 --> O4
+    OTYPE -- "Digital/audio<br/>(tanpa eksemplar)" --> O4
+    O4 --> A1 --> A2 --> PEND
+
+    classDef warn fill:#FBF6E7,stroke:#B8860B,stroke-width:2px,stroke-dasharray: 4 3;
+    class K4,ARSIP warn;

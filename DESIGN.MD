@@ -1,153 +1,147 @@
-# Panduan Desain UI/UX
+# Design Baseline
 
-**Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an — LPMQ**
-Status: Baseline Sprint 0 · Living document
+## 1. Konteks produk
 
-> Dokumen ini adalah ringkasan yang dapat dieksekusi langsung oleh tim
-> frontend. Rasional lengkap ada di dokumen "Gambaran Desain Aplikasi"
-> (arsip). **Peringatan:** dokumen arsip tersebut disusun sebelum SRS
-> v2.1 dan memakai label status lama — jangan salin timeline/status
-> dari sana. Selalu rujuk state machine di `IMPLEMENTATION.md` §4.
+Sistem melayani dua kanal:
 
-## 1. Prinsip Desain
+1. Portal penerbit untuk data badan hukum, pengajuan, perbaikan, pelacakan, pembayaran, dan dokumen.
+2. Aplikasi internal untuk verifikasi, distribusi, pentashihan, dokumentasi, penetapan, laporan, dan audit.
 
-1. **Formal & Tepercaya** — sistem instansi pemerintah, hindari kesan
-   aplikasi konsumen/playful.
-2. **Kejelasan Status di Atas Segalanya** — setiap layar menampilkan
-   status pengajuan secara konsisten (warna + label + ikon).
-3. **Peran Menentukan Tampilan** — dashboard dan menu menyesuaikan
-   peran aktif, bukan satu tampilan generik.
-4. **Transparansi Biaya & Waktu** — rincian tarif dan SLA ditampilkan
-   eksplisit sebelum konfirmasi.
-5. **Jejak Audit Terlihat oleh Pengguna** — riwayat status, billing,
-   dan dokumen bisa ditelusuri dari UI.
-6. **Konsisten Lintas Modul** — komponen kartu/tabel/badge/form yang
-   sama dipakai berulang di semua modul.
-7. **Bahasa Indonesia & Terminologi Resmi LPMQ** — Tashih, Naskah Dumi,
-   PNBP, Berita Acara Tashih, Surat Tanda Tashih — bukan istilah teknis
-   generik.
+Keduanya berbagi backend dan database. Pemisahan kanal tidak boleh menyebabkan duplikasi aturan bisnis.
 
-## 2. Design Token
+## 2. Arsitektur logis
 
-### 2.1 Warna — Hijau · Putih · Emas (rasio ±30/60/10)
+```mermaid
+flowchart TB
+    P[Portal Penerbit] --> A[Application/API Layer]
+    I[Aplikasi Internal] --> A
+    Q[Verifikasi QR Publik] --> A
+    A --> D[Domain Modules]
+    D --> DB[(Relational Database)]
+    D --> FS[(Private File Storage)]
+    D --> J[Background Jobs]
+    J --> N[Notification Adapter]
+    D -. fase lanjut .-> S[SIMPONI / BSrE]
+```
 
-| Token | Hex | Pemakaian |
-|---|---|---|
-| `color-primary-700` | `#0B5E3B` | Header, sidebar aktif, tombol utama |
-| `color-primary-500` | `#1B7A4D` | Aksen tombol, ikon aktif, tab terpilih |
-| `color-primary-100` | `#E3F3EA` | Latar kartu info, hover, badge positif |
-| `color-neutral-white` | `#FFFFFF` | Latar dominan (±70% luas layar) |
-| `color-neutral-50` | `#F7F8F6` | Latar halaman |
-| `color-neutral-200` | `#E1E4E0` | Border/garis pemisah |
-| `color-neutral-700` | `#2A2E2B` | Teks isi/body |
-| `color-accent-gold-600` | `#B8860B` | Aksen dokumen resmi, ikon "terverifikasi" |
-| `color-accent-gold-400` | `#D4AF37` | Highlight nominal tarif/PNBP |
-| `color-accent-gold-50` | `#FBF6E7` | Latar kartu ringkasan tarif/billing |
-| `color-status-warning` | `#C77B2A` | Perlu Perbaikan, Menunggu Pembayaran |
-| `color-status-danger` | `#B3261E` | Ditolak, Dibatalkan |
-| `color-status-info` | `#2E6F95` | Sedang Diproses |
+## 3. Modul domain
 
-**Aturan pemakaian emas:** dipakai untuk dua makna berbeda — "butuh
-perhatian" (revisi, jatuh tempo) dan "resmi/final" (dokumen terbit).
-Bedakan lewat kombinasi ikon, jangan andalkan warna saja.
-
-### 2.2 Tipografi
-
-| Elemen | Ukuran | Bobot |
-|---|---|---|
-| H1 (judul halaman) | 24–28px | Semi-bold |
-| H2 (sub-judul) | 18–20px | Semi-bold |
-| Body/tabel | 14px | Regular |
-| Label form/caption | 12–13px | Medium |
-| Nominal tarif/PNBP | 20–24px | Bold, angka tabular |
-
-Font sans-serif institusional (Plus Jakarta Sans/Inter) untuk UI.
-Dokumen resmi (Berita Acara, Surat Tanda Tashih) memakai serif formal
-terpisah untuk kesan sertifikat — lihat §5.
-
-### 2.3 Implementasi token
-
-Definisikan sebagai variabel CSS/Tailwind config (`frontend/src/app/tokens.ts`)
-— jangan hardcode hex di komponen. Konsisten dengan prinsip "config
-over hardcode" di `IMPLEMENTATION.md`.
-
-## 3. Status → Warna Badge (acuan wajib: `IMPLEMENTATION.md` §4)
-
-| Status pengajuan | Warna badge |
+| Modul | Tanggung jawab |
 |---|---|
-| DRAFT | Abu-abu netral `#8A8F8B` |
-| READY_FOR_VERIFICATION | Hijau muda (info) |
-| IN_VERIFICATION | Biru keabuan `#2E6F95` |
-| REVISION_REQUIRED | Emas/oranye `#C77B2A` |
-| WAITING_DISTRIBUTION | Hijau utama |
-| TASHIH_IN_PROGRESS | Hijau utama + ikon tahap (awal/perbaikan/dumi) |
-| DOCUMENTATION | Hijau tua + aksen emas |
-| COMPLETED | Hijau tua + aksen emas, badge khusus dokumen resmi |
-| CANCELLED | Merah `#B3261E` |
+| Identity & Access | Pengguna, role, permission, session, akun aktif |
+| Publisher | Profil penerbit dan dokumen badan hukum |
+| Master Data | Kategori, layanan, SLA, add-on, tarif, kalender, Tim Distribusi |
+| Registration | Pengajuan baru/perpanjangan, metadata, sampel naskah, penerimaan master fisik |
+| Verification | Assignment verifikator, checklist, BA, persetujuan Kepala LPMQ, Tugas Saya |
+| Billing | Snapshot kalkulasi, billing, bukti pembayaran, status rekonsiliasi |
+| Distribution | Tim berbasis SK, anggota, assignment tahap awal/perbaikan/dumi, reviu distributor |
+| Tashih | Progres dan rekomendasi per pentashih/pembaca naskah |
+| Documentation | STT, checklist, eksemplar/N/A, tanda terima, penilaian, versi, masa berlaku |
+| Public Verification | Token QR, metadata publik, status aktif/kedaluwarsa |
+| Audit & Notification | Audit append-only dan notifikasi pengguna |
 
-Status pembayaran (`payment_records.status`) dan tahap tashih
-(`assignments.stage`) punya badge terpisah dari status pengajuan —
-jangan gabungkan jadi satu badge/timeline tunggal.
+## 4. Dokumen dan file
 
-## 4. Komponen UI Inti
+### Input penerbit
 
-- **Card**: latar putih, radius ±8px, border 1px `color-neutral-200`.
-- **Badge Status**: bentuk pil, selalu disertai label teks (bukan
-  warna saja) untuk aksesibilitas.
-- **Button**: Primary (hijau), Secondary/Outline (border hijau),
-  Danger (merah), Aksen Emas (terbatas untuk aksi dokumen resmi, mis.
-  "Tetapkan Surat Tanda Tashih").
-- **Tabel Data**: header hijau muda, zebra striping, kolom status
-  pakai Badge Status.
-- **Form**: label di atas input, dropdown/searchable-select untuk
-  field dari master data (bukan input bebas).
-- **Timeline/Stepper**: horizontal (desktop) / vertikal (mobile).
-  **Update wajib**: render dari state machine `IMPLEMENTATION.md` §4,
-  dengan track terpisah untuk status pembayaran dan tahap tashih —
-  jangan pakai satu stepper linear seperti draft desain lama.
-- **Kartu Ringkasan Tarif/Billing**: latar emas muda, nominal besar.
+- Cover.
+- Halaman Al-Qur'an 1–5 sebagai sampel/penanda naskah.
+- Dokumen badan hukum dan pembayaran sesuai tahapnya.
 
-## 5. Dua Dokumen Resmi — Implikasi ke Layar
+### Keluaran proses
 
-Lihat `IMPLEMENTATION.md` §3.1 untuk detail model data. Untuk UI:
+Berita Acara Tashih bukan syarat upload awal. Dokumen ini dibentuk setelah proses tashih dan minimal berisi:
 
-| Layar | Catatan desain |
-|---|---|
-| **Pratinjau Berita Acara Tashih** | Tampilkan identitas naskah, rincian komponen/tarif/durasi, matriks distribusi & progres tahapan, catatan+rekomendasi verifikator, TTD verifikator (ketua kelompok). Gaya dokumen kerja/laporan — tidak perlu seformal sertifikat. |
-| **Pratinjau Surat Tanda Tashih** | Menyerupai sertifikat: bingkai emas, kop resmi, nomor surat + QR verifikasi, penetapan oleh Kepala LPMQ, referensi eksplisit ke Berita Acara yang mendasarinya. |
-| **Halaman arsip dokumen** | Tampilkan kedua jenis dokumen sebagai entri terpisah namun tertaut (Surat → Berita Acara sumber), bukan satu daftar campur. |
+- identitas naskah;
+- rincian komponen, tarif, dan durasi pengerjaan;
+- matriks distribusi dan progres tahapan kerja;
+- catatan serta rekomendasi verifikator;
+- tanda tangan verifikator/pejabat sesuai SOP;
+- tanda tangan verifikator sesuai format resmi.
 
-**Belum ada wireframe untuk:**
-- Halaman verifikasi QR publik (diakses tanpa login) — beda pola akses
-  dari seluruh sistem berbasis role, perlu layar tersendiri.
-- Form pembuatan pengajuan perpanjangan (`REG-07`) yang menautkan ke
-  dokumen sebelumnya.
-- Indikator dokumen "akan kedaluwarsa"/"kedaluwarsa" di dashboard dan
-  arsip (`DOC-07`).
+Surat Tanda Tashih ditetapkan oleh Kepala LPMQ setelah distributor mereviu rekomendasi pentashih/pembaca naskah. Mekanisme delegasi masih keputusan terbuka.
 
-Ketiganya wajib punya wireframe P0 sebelum sprint terkait mulai (lihat
-Exit Criteria di `IMPLEMENTATION.md`).
+## 5. Model data minimum
 
-## 6. Struktur Navigasi
+Entitas inti:
 
-Sidebar menyesuaikan role aktif; role switcher di header untuk
-pengguna multi-role. Menu ringkas per peran mengikuti RF-terkait di
-SRS §4 — jangan hardcode daftar menu di frontend, ambil dari
-permission efektif pengguna (least privilege, `IMPLEMENTATION.md` §1).
+- `users`, `roles`, `user_roles`
+- `publishers`, `publisher_documents`
+- `mushaf_categories`, `service_types`
+- `service_addons`, `registration_addons`
+- `working_days`
+- `registrations`, `manuscript_files`, `physical_master_receipts`, `status_histories`
+- `verification_assignments`
+- `distribution_teams`, `team_members`
+- `assignments`, `assignment_members`, `tashih_reviews`
+- `payment_records`
+- `documentation_items`, `official_documents`, `document_signatories`, `printed_mushaf_receipts`, `archive_distributions`
+- `notifications`, `audit_logs`
 
-## 7. Desain Responsif & Aksesibilitas
+Constraint penting:
 
-- Breakpoint: Desktop ≥1200px (prioritas), Tablet 768–1199px, Mobile <768px.
-- Tabel → stacked card list di mobile.
-- Kontras WCAG AA minimum (rasio ≥4.5:1) — **verifikasi dengan tool
-  otomatis** (mis. axe/WebAIM) saat implementasi, jangan asumsikan
-  "sudah sesuai" tanpa bukti uji.
-- Status tidak pernah diwakili warna saja.
-- Target sentuh minimum 44×44px di mobile/tablet.
+- Nomor pengajuan dan nomor dokumen unik.
+- `previous_registration_id` nullable, tidak boleh menunjuk dirinya sendiri, dan wajib untuk tipe perpanjangan.
+- Master tarif/SLA menggunakan `effective_from`/`effective_to` dan tidak ditimpa.
+- Snapshot biaya/SLA pada transaksi immutable setelah submit.
+- Satu versi dokumen resmi aktif; versi lama tetap tersimpan.
+- Semua foreign key transaksi menggunakan restrict/soft delete sesuai kebijakan, bukan cascade delete membabi buta.
 
-## 8. Belum Diputuskan
+## 6. Alur status
 
-- Jumlah halaman naskah yang ditampilkan di form upload (3–4 vs 1–5)
-  — lihat `IMPLEMENTATION.md` §7.
-- Resolusi cover yang ditampilkan di halaman verifikasi QR publik
-  (penuh vs terbatas) — SRS v2.1 Bab 16.
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT
+    DRAFT --> READY_FOR_VERIFICATION: ajukan
+    READY_FOR_VERIFICATION --> IN_VERIFICATION: mulai
+    IN_VERIFICATION --> REVISION_REQUIRED: minta perbaikan
+    REVISION_REQUIRED --> READY_FOR_VERIFICATION: ajukan ulang
+    IN_VERIFICATION --> WAITING_VERIFICATION_APPROVAL: ajukan persetujuan
+    WAITING_VERIFICATION_APPROVAL --> IN_VERIFICATION: kembalikan
+    WAITING_VERIFICATION_APPROVAL --> AWAITING_PAYMENT: setujui
+    AWAITING_PAYMENT --> PAYMENT_VERIFICATION: catat pembayaran
+    PAYMENT_VERIFICATION --> WAITING_DISTRIBUTION: konfirmasi
+    WAITING_DISTRIBUTION --> TASHIH_IN_PROGRESS: distribusi
+    TASHIH_IN_PROGRESS --> READY_FOR_STT: rekomendasi distributor
+    READY_FOR_STT --> STT_ISSUED: tetapkan STT
+    STT_ISSUED --> DOCUMENTATION_IN_PROGRESS: mulai dokumentasi
+    DOCUMENTATION_IN_PROGRESS --> COMPLETED: penilaian selesai
+    DRAFT --> CANCELLED: batalkan
+    READY_FOR_VERIFICATION --> CANCELLED: batalkan sebelum proses
+    REVISION_REQUIRED --> CANCELLED: batalkan
+```
+
+## 7. Keamanan minimum
+
+- Default deny RBAC dan policy per resource/penerbit.
+- Scope setiap query portal menggunakan publisher terautentikasi.
+- UUID/ULID bukan pengganti authorization check.
+- File di private storage; unduhan memakai authorization dan URL sementara.
+- Validasi MIME melalui isi file, ukuran, ekstensi, checksum, nama aman, dan scanning sesuai infrastruktur.
+- Token QR acak berentropi tinggi, tidak berurutan, dapat dirotasi/dicabut, dan diberi rate limit.
+- Endpoint QR hanya menampilkan judul, penerbit, nomor Surat Tanda Tashih, status, deskripsi, dan cover yang diizinkan.
+- Audit log append-only untuk login sensitif, permission, status, assignment, tarif, pembayaran, dan dokumen.
+- Secret hanya melalui secret manager/environment dan tidak pernah masuk Git/log.
+
+## 8. Integrasi eksternal
+
+Gunakan port/adapter:
+
+- `BillingGateway` untuk SIMPONI.
+- `DigitalSignatureProvider` untuk BSrE.
+- `NotificationChannel` untuk email/kanal lain.
+- `FileStorage` untuk object storage.
+
+MVP memakai adapter manual/local. Kontrak adapter harus dapat diuji tanpa akses layanan eksternal.
+
+## 9. Keputusan terbuka
+
+| ID | Keputusan | Batas waktu |
+|---|---|---|
+| ADR-001 | Stack backend, UI, database, queue, dan storage | Sebelum scaffold Sprint 0 |
+| ADR-002 | Sumber SOP/domain kanonik dan effective date | Setelah rapat stakeholder |
+| ADR-003 | Delegasi penetapan saat Kepala LPMQ berhalangan | Sebelum Sprint 5 |
+| ADR-004 | Format dan penanda tangan final Berita Acara Tashih | Sebelum Sprint 4 |
+| ADR-005 | Aturan pembatalan setelah billing/pembayaran | Sebelum Sprint 3 |
+| ADR-006 | Retensi, backup, klasifikasi data, dan antivirus | Sebelum deployment staging |
+| ADR-007 | Akun/antrean PusdokQ dan arsiparis atau hanya tujuan serah terima | Sebelum Sprint 5 |

@@ -1,86 +1,213 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '@/api/auth.api';
+import { setAuthToken, getAuthToken } from '@/api/client';
 
-const DEFAULT_USERS_BY_ROLE = {
-  PUBLISHER: {
-    id: 'usr-pub-01',
-    name: 'Ahmad Fauzi',
-    email: 'fauzi@penerbitmushaf.co.id',
-    role: 'PUBLISHER',
-    publisherId: 'pub-01',
-    publisherName: 'PT Penerbit Al-Huda Nusantara',
+export const SEED_ACCOUNTS = [
+  {
+    role: 'ADMIN_PENERBIT',
+    label: 'Penerbit Mushaf',
+    email: 'penerbit@mushafnusantara.com',
+    desc: 'PT Mushaf Nusantara Mandiri (Pemohon)',
+    portalPath: '/publisher',
   },
-  ADMIN: {
-    id: 'usr-adm-01',
-    name: 'Siti Rahmawati, S.Kom',
-    email: 'admin.lpmq@kemenag.go.id',
-    nip: '198805122014022001',
-    role: 'ADMIN',
+  {
+    role: 'SUPERADMIN',
+    label: 'Super Admin',
+    email: 'admin@lpmq.kemenag.go.id',
+    desc: 'Administrator Sistem LPMQ',
+    portalPath: '/internal',
   },
-  VERIFICATOR: {
-    id: 'usr-ver-01',
-    name: 'Drs. H. M. Sholihin, M.Ag',
-    email: 'verifikator.lpmq@kemenag.go.id',
-    nip: '197509152003121002',
-    role: 'VERIFICATOR',
+  {
+    role: 'VERIFIKATOR',
+    label: 'Verifikator Naskah',
+    email: 'verifikator@lpmq.kemenag.go.id',
+    desc: 'Pemeriksa berkas & naskah penanda',
+    portalPath: '/internal',
   },
-  DISTRIBUTOR: {
-    id: 'usr-dis-01',
-    name: 'Rahmat Hidayat, M.Si',
-    email: 'distributor.lpmq@kemenag.go.id',
-    nip: '198203112008011015',
+  {
     role: 'DISTRIBUTOR',
+    label: 'Distributor Naskah',
+    email: 'distributor@lpmq.kemenag.go.id',
+    desc: 'Koordinator sidang & penugasan tim',
+    portalPath: '/internal',
   },
-  TASHIH_MEMBER: {
-    id: 'usr-tsh-01',
-    name: 'K.H. Dr. Lukman Hakim, MA',
-    email: 'pentashih.lpmq@kemenag.go.id',
-    nip: '197108201998031003',
-    role: 'TASHIH_MEMBER',
+  {
+    role: 'PENTASHIH',
+    label: 'Pentashih',
+    email: 'pentashih@lpmq.kemenag.go.id',
+    desc: 'Anggota pembaca/pentashih lafaz ayat',
+    portalPath: '/internal',
   },
-  TASHIH_LEADER: {
-    id: 'usr-tsh-ldr-01',
-    name: 'Prof. Dr. KH. Muchlis M. Hanafi, MA',
-    email: 'ketua.kelompok@kemenag.go.id',
-    nip: '196806121995031002',
-    role: 'TASHIH_LEADER',
+  {
+    role: 'DOKUMENTATOR',
+    label: 'Dokumentator',
+    email: 'dokumentator@lpmq.kemenag.go.id',
+    desc: 'Pemberkasan eksemplar pasca-STT',
+    portalPath: '/internal',
   },
-  DOCUMENTATOR: {
-    id: 'usr-doc-01',
-    name: 'Nurul Aini, S.Sos',
-    email: 'dokumentator.lpmq@kemenag.go.id',
-    nip: '199011042018012002',
-    role: 'DOCUMENTATOR',
+  {
+    role: 'KEPALA_LPMQ',
+    label: 'Kepala LPMQ',
+    email: 'kepala@lpmq.kemenag.go.id',
+    desc: 'Penetapan Surat Tanda Tashih & persetujuan',
+    portalPath: '/internal',
   },
-  HEAD_OF_LPMQ: {
-    id: 'usr-head-01',
-    name: 'Dr. H. Abdul Aziz Sidqi, M.Ag',
-    email: 'kepala.lpmq@kemenag.go.id',
-    nip: '197404102000031001',
-    role: 'HEAD_OF_LPMQ',
-  },
-};
+];
 
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
-  const [currentRole, setCurrentRole] = useState('PUBLISHER');
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('lpmq_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
 
-  const setRole = (role) => {
-    setCurrentRole(role);
+  const [token, setTokenState] = useState(getAuthToken());
+  const [isLoading, setIsLoading] = useState(false);
+  const [authError, setAuthError] = useState(null);
+
+  // Sync session on mount with /api/v1/auth/me if token exists
+  useEffect(() => {
+    const initSession = async () => {
+      const activeToken = getAuthToken();
+      if (!activeToken) return;
+
+      try {
+        const res = await authApi.getMe();
+        if (res?.data) {
+          const u = res.data;
+          const userObj = {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            nip: u.nip,
+            roles: u.roles || [],
+            role: u.roles?.[0] || 'ADMIN_PENERBIT',
+            publisherId: u.publisher?.id,
+            publisherName: u.publisher?.legal_name,
+          };
+          setCurrentUser(userObj);
+          localStorage.setItem('lpmq_user', JSON.stringify(userObj));
+        }
+      } catch (err) {
+        // Jika token tidak valid / kedaluwarsa (401 / 403), bersihkan sesi lokal
+        if (err?.status === 401 || err?.status === 403) {
+          console.warn('Sesi tidak valid atau telah kedaluwarsa (401/403). Membersihkan sesi lokal.');
+          logout();
+        } else {
+          console.warn('Gagal sinkronisasi sesi dengan server:', err?.message);
+        }
+      }
+    };
+
+    initSession();
+  }, []);
+
+  const login = async (email, password) => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const response = await authApi.login({ email, password });
+      if (response.success && response.data) {
+        const { token: receivedToken, user: u } = response.data;
+        setAuthToken(receivedToken);
+        setTokenState(receivedToken);
+
+        const userObj = {
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          nip: u.nip,
+          roles: u.roles || [],
+          role: u.roles?.[0] || 'ADMIN_PENERBIT',
+          publisherId: u.publisher?.id || (u.roles?.includes('ADMIN_PENERBIT') ? u.id : null),
+          publisherName: u.publisher?.legal_name || (u.roles?.includes('ADMIN_PENERBIT') ? u.name : null),
+        };
+
+        setCurrentUser(userObj);
+        localStorage.setItem('lpmq_user', JSON.stringify(userObj));
+        return { success: true, user: userObj };
+      }
+      throw new Error(response.message || 'Login gagal');
+    } catch (err) {
+      setAuthError(err.message || 'Gagal login ke server');
+      return { success: false, error: err.message };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const currentUser = DEFAULT_USERS_BY_ROLE[currentRole];
+  const registerPublisher = async (payload) => {
+    setIsLoading(true);
+    setAuthError(null);
+    try {
+      const response = await authApi.registerPublisher(payload);
+      return response;
+    } catch (err) {
+      setAuthError(err.message || 'Pendaftaran penerbit gagal');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setAuthToken(null);
+    setTokenState(null);
+    localStorage.removeItem('lpmq_user');
+    setCurrentUser(null);
+  };
+
+  // Quick switch role (hanya untuk simulasi development lokal, tidak membuat user mock)
+  const setRole = async (targetRole) => {
+    if (!import.meta.env.DEV) {
+      console.warn('Pergantian role demo dinonaktifkan di luar mode development.');
+      return;
+    }
+    const seed = SEED_ACCOUNTS.find((s) => s.role === targetRole);
+    if (seed) {
+      try {
+        await login(seed.email, 'password123');
+      } catch (err) {
+        console.error('Gagal berganti ke akun demo:', err.message);
+        throw err;
+      }
+    }
+  };
+
   const availableRoles = [
-    'PUBLISHER',
-    'ADMIN',
-    'VERIFICATOR',
+    'ADMIN_PENERBIT',
+    'SUPERADMIN',
+    'VERIFIKATOR',
     'DISTRIBUTOR',
-    'TASHIH_LEADER',
-    'HEAD_OF_LPMQ',
+    'PENTASHIH',
+    'DOKUMENTATOR',
+    'KEPALA_LPMQ',
   ];
 
   return (
-    <AuthContext.Provider value={{ currentUser, setRole, availableRoles }}>
+    <AuthContext.Provider
+      value={{
+        currentUser,
+        token,
+        isAuthenticated: !!currentUser,
+        isLoading,
+        authError,
+        login,
+        registerPublisher,
+        logout,
+        setRole,
+        availableRoles,
+        seedAccounts: import.meta.env.DEV ? SEED_ACCOUNTS : [],
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

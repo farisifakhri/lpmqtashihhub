@@ -1,61 +1,81 @@
-# Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ)
+# Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an
 
-Repositori resmi sistem layanan pentashihan mushaf Al-Qur'an Kementerian Agama Republik Indonesia (Lajnah Pentashihan Mushaf Al-Qur'an — LPMQ).
+Baseline repository untuk pengembangan MVP aplikasi internal LPMQ dan portal penerbit. Kedua antarmuka dipisahkan, tetapi menggunakan backend, basis data, aturan bisnis, dan audit trail yang sama.
 
-## Arsitektur & Teknologi
+## Status
 
-Sistem mengadopsi pola modular monolith yang memisahkan client frontend dan server backend:
+- Baseline dokumen: v2.2
+- Tahap: Sprint 0 / validasi stakeholder
+- Framework: belum ditetapkan
+- SOP Verifikasi berlaku untuk seluruh kategori; template resmi, sumber kanonik terbaru, delegasi penetapan, dan detail integrasi eksternal masih dikonfirmasi
 
-- **Frontend**: React + Vite + JSX (JavaScript), Tailwind CSS, React Router, Vitest.
-  - Sesuai dengan [ADR-001](docs/adr/ADR-001-frontend-stack-react-vite.md)
-  - Panduan desain & token: [DESIGN.md](DESIGN.MD)
-  - Arsitektur & catatan teknis: [IMPLEMENTATION.md](IMPLENTATION.MD)
-- **Backend**: Node.js + Express, Prisma ORM, PostgreSQL (dalam pengembangan berikutnya).
-- **Format Layanan**:
-  - **Portal Penerbit**: Pengajuan naskah Al-Qur'an, pemantauan status, billing PNBP, riwayat revisi, unduh tanda tashih resmi.
-  - **Aplikasi Internal**: Pengolahan verifikasi kelengkapan naskah, pembagian Tim Distribusi, pentashihan bertahap (Awal, Perbaikan, Dumi), penyusunan Berita Acara Tashih, dan penetapan Surat Tanda Tashih oleh Kepala LPMQ.
-  - **Verifikasi Publik**: Pemeriksaan keaslian Surat Tanda Tashih via pemindaian QR code tanpa otentikasi.
+Repository ini sengaja belum berisi scaffold framework. Keputusan teknis tidak boleh dikunci sebelum stack, lingkungan deployment, serta kebijakan keamanan instansi disetujui.
 
-## Struktur Direktori
+## Ruang lingkup MVP
+
+- Portal penerbit untuk profil, pengajuan, revisi, pelacakan, dan dokumen akhir.
+- Aplikasi internal untuk verifikasi, distribusi, pentashihan, dokumentasi, pelaporan, dan audit.
+- Admin dapat membuat pengajuan atas nama penerbit.
+- Pembayaran dicatat manual dengan rancangan adapter untuk SIMPONI.
+- Penugasan tahap awal, perbaikan, dan dumi/perpanjangan.
+- Tim dibentuk dari SK aktif tanpa ketua kelompok pada logika bisnis; distributor mereviu rekomendasi tiap pentashih/pembaca naskah.
+- STT diterbitkan sebelum cross-check dokumentasi; target lima eksemplar dicatat untuk pelaporan dan tidak memblokir penyelesaian.
+- Master kategori mushaf, 17 profil layanan, add-on, tarif, kalender kerja, serta Tim Distribusi.
+- Masa berlaku dan perpanjangan Surat Tanda Tashih.
+- QR verifikasi publik yang tidak membuka file privat.
+
+## Dokumen utama
+
+| Dokumen | Fungsi |
+|---|---|
+| `DESIGN.md` | Arsitektur, modul, model domain, status, dan batas keamanan |
+| `IMPLEMENTATION.md` | Urutan implementasi, quality gate, dan strategi pengujian |
+| `CODING_BASELINE_PROMPT.md` | Prompt utama untuk agen coding di VS Code |
+| `LICENSE` | Lisensi internal sementara yang harus dikonfirmasi instansi |
+
+## Struktur awal
 
 ```text
-lpmq/
-├── docs/                     # SRS v2.1, Backlog, ERD, dan ADR
-│   └── adr/                  # Architectural Decision Records
-├── frontend/                 # Aplikasi Frontend (React + Vite + JSX)
-│   ├── src/
-│   │   ├── app/              # Router, App context, Design tokens
-│   │   ├── components/       # Komponen UI formal (Button, Badge, Card, dll.) & layout
-│   │   ├── features/         # Modul fitur (auth, registrations, verification, tashih, dll.)
-│   │   └── index.css         # Styling Tailwind dengan konfigurasi token LPMQ
-│   ├── package.json
-│   └── vite.config.js
-├── backend/                  # (Sprint berikutnya) API Modular Monolith Node.js
-├── CODING_BASELINE_PROMPT.md # Aturan & standar agen pengembang
-├── DESIGN.MD                 # Panduan Desain UI/UX & Design Tokens
-├── IMPLENTATION.MD           # Catatan arsitektur & state machine resmi
+.
+├── .vscode/
+├── docs/
+│   └── meeting-notes/
+├── src/
+├── storage/
+├── tests/
+├── CODING_BASELINE_PROMPT.md
+├── DESIGN.md
+├── IMPLEMENTATION.md
+├── LICENSE
 └── README.md
 ```
 
-## Menjalankan Frontend
+Folder `src`, `tests`, dan `storage` adalah placeholder sampai keputusan stack disetujui.
 
-1. Masuk ke direktori frontend:
-   ```bash
-   cd frontend
-   ```
-2. Instal dependensi:
-   ```bash
-   npm install
-   ```
-3. Salin file environment:
-   ```bash
-   cp .env.example .env
-   ```
-4. Jalankan server pengembangan:
-   ```bash
-   npm run dev
-   ```
-5. Menjalankan pengujian (Unit Test):
-   ```bash
-   npm test
-   ```
+## Cara mulai di VS Code
+
+1. Ekstrak paket dan buka folder repository di VS Code.
+2. Baca `README.md`, `DESIGN.md`, dan `IMPLEMENTATION.md`.
+3. Catat hasil rapat stakeholder dalam `docs/meeting-notes/`.
+4. Perbarui bagian **Keputusan terbuka** sebelum memilih framework.
+5. Gunakan `CODING_BASELINE_PROMPT.md` sebagai instruksi awal agen coding.
+6. Commit dokumen baseline sebelum membuat scaffold aplikasi.
+
+## Prinsip pengembangan
+
+- SOP dan keputusan stakeholder adalah sumber aturan bisnis utama.
+- Nilai tarif/SLA disimpan sebagai data berversi, bukan hard-coded.
+- Setiap pengajuan menyimpan snapshot tarif dan SLA yang berlaku saat submit.
+- SLA digunakan untuk target, cross-check, dan pelaporan; keterlambatan tidak memblokir transisi bisnis.
+- Semua perubahan status, assignment, pembayaran, dan dokumen resmi diaudit.
+- File bersifat privat secara default; endpoint publik hanya mengeluarkan metadata yang diizinkan.
+- Tidak ada hard delete untuk data transaksi dan dokumen yang sudah dipakai.
+
+## Keputusan terbuka
+
+- Framework backend/frontend dan database.
+- Domain resmi yang menjadi sumber SOP kanonik.
+- Mekanisme delegasi bila Kepala LPMQ berhalangan.
+- Template final Berita Acara Tashih dan Surat Tanda Tashih.
+- Aturan pembatalan setelah billing atau pembayaran.
+- Infrastruktur deployment, backup, retensi, antivirus, dan object storage.

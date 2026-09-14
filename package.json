@@ -1,0 +1,21 @@
+{
+  "name": "lpmq-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace runner untuk Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ)",
+  "scripts": {
+    "dev": "concurrently -n \"backend,frontend\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:frontend": "npm --prefix frontend run build",
+    "build:backend": "npm --prefix backend run build",
+    "test": "concurrently \"npm run test:backend\" \"npm run test:frontend\"",
+    "test:backend": "npm --prefix backend test",
+    "test:frontend": "npm --prefix frontend test",
+    "prisma:studio": "npm --prefix backend run prisma:studio"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}
