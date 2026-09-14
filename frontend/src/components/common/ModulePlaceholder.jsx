@@ -22,7 +22,6 @@ import {
   Clock,
   Layers,
   ChevronRight,
-  Sparkles,
   Sliders,
   Check,
   Building2,
@@ -306,7 +305,7 @@ export const ModulePlaceholder = ({
               }`}
               title="Tampilkan dalam bahasa proses bisnis layanan pentashihan LPMQ"
             >
-              <Sparkles className="w-3.5 h-3.5 text-primary-700" />
+              <BookOpen className="w-3.5 h-3.5 text-primary-700" />
               <span>Bahasa Bisnis</span>
             </button>
             <button

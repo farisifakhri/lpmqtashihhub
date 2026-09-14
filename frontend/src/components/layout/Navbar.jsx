@@ -54,22 +54,22 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
         return { label: 'Super Admin', color: 'bg-rose-50 text-rose-700 border-rose-200' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator Berkas', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+        return { label: 'Verifikator Berkas', color: 'bg-sky-50 text-sky-700 border-sky-200' };
       case 'DISTRIBUTOR':
         return { label: 'Distributor Tim', color: 'bg-amber-50 text-amber-700 border-amber-200' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
       case 'TASHIH_LEADER':
-        return { label: 'Pentashih Naskah', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+        return { label: 'Pentashih Naskah', color: 'bg-primary-50 text-primary-700 border-primary-200' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', color: 'bg-purple-50 text-purple-700 border-purple-200' };
+        return { label: 'Dokumentator', color: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+        return { label: 'Kepala LPMQ', color: 'bg-gold-50 text-gold-700 border-gold-300' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit / Pemohon', color: 'bg-teal-50 text-teal-700 border-teal-200' };
+        return { label: 'Penerbit / Pemohon', color: 'bg-primary-50 text-primary-800 border-primary-200' };
       default:
         return { label: userRole || 'Petugas', color: 'bg-neutral-100 text-neutral-700 border-neutral-200' };
     }
@@ -132,17 +132,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   };
 
   return (
-    <header className="bg-white border-b border-neutral-200/90 sticky top-0 z-40 transition-colors shadow-2xs">
+    <header className="bg-white border-b border-neutral-200 sticky top-0 z-40 transition-colors shadow-xs">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Left Side: Sidebar Toggler & Dynamic Breadcrumb (ldksyahid-app style) */}
+          {/* Left Side: Sidebar Toggler & Dynamic Breadcrumb */}
           <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             {/* Sidebar Toggler Button */}
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="p-2 rounded-lg text-neutral-600 hover:text-primary-700 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              className="p-2 rounded-lg text-neutral-600 hover:text-primary-800 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/20"
               title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
               aria-label="Toggle Navigation Sidebar"
             >
@@ -158,7 +158,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                     className="p-1 rounded text-neutral-500 hover:text-primary-700 hover:bg-neutral-100 transition-colors"
                     title="Beranda Dashboard"
                   >
-                    <Home className="w-4 h-4 text-primary-600" />
+                    <Home className="w-4 h-4 text-primary-700" />
                   </Link>
                 </li>
                 {breadcrumb.parent && (
@@ -177,16 +177,16 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
             </nav>
           </div>
 
-          {/* Right Side: Clean & Uncluttered Navigation & User Profile Dropdown */}
+          {/* Right Side: Clean Navigation & User Profile Dropdown */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             
-            {/* Public QR Demo Link (Subtle, professional pill button) */}
+            {/* Public QR Demo Link */}
             <Link
               to="/verify-documents/DEMO-QR-TOKEN-2026"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-600 hover:text-primary-700 bg-neutral-50 hover:bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-neutral-700 hover:text-primary-800 bg-neutral-100 hover:bg-neutral-200/80 px-3 py-1.5 rounded-lg border border-neutral-200 transition-colors"
               title="Pratinjau Halaman Verifikasi QR Publik"
             >
-              <QrCode className="w-3.5 h-3.5 text-emerald-600" />
+              <QrCode className="w-3.5 h-3.5 text-primary-700" />
               <span className="hidden md:inline">Cek QR Publik</span>
             </Link>
 
@@ -196,17 +196,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                  className="flex items-center gap-2 p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary-500/20 cursor-pointer"
                   aria-expanded={profileDropdownOpen}
                   aria-haspopup="true"
                 >
                   {/* User Avatar Circle */}
                   <div className="relative flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-800 border border-primary-300 flex items-center justify-center font-bold text-xs">
+                    <div className="w-8 h-8 rounded-full bg-primary-800 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                       {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                     </div>
-                    {/* Live Online Indicator Dot (inspired by ldksyahid-app) */}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white" />
+                    {/* Live Online Indicator Dot */}
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary-500 rounded-full border-2 border-white" />
                   </div>
 
                   {/* Name & Role Pill (Desktop) */}
@@ -224,7 +224,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
                 {/* Dropdown Menu Box */}
                 {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-neutral-200/80 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                     {/* User Header Details */}
                     <div className="px-4 py-3 border-b border-neutral-100">
                       <p className="text-xs text-neutral-400 font-medium uppercase tracking-wider">Masuk Sebagai</p>
@@ -241,8 +241,8 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                     </div>
 
                     {/* Standard Info */}
-                    <div className="px-4 py-2.5 bg-neutral-50/70 border-b border-neutral-100 text-[11px] text-neutral-600 flex items-center gap-2">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                    <div className="px-4 py-2.5 bg-neutral-50 border-b border-neutral-100 text-[11px] text-neutral-600 flex items-center gap-2">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-primary-700 flex-shrink-0" />
                       <span>Standar Mushaf Usmani (SOP v2.2)</span>
                     </div>
 
@@ -259,7 +259,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       <button
                         type="button"
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg transition-colors text-left cursor-pointer"
                       >
                         <LogOut className="w-3.5 h-3.5" />
                         <span>Keluar Sesi (Logout)</span>

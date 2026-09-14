@@ -24,9 +24,9 @@ export const Button = ({
     primary:
       'bg-primary-700 text-white hover:bg-primary-800 active:bg-primary-800 focus:ring-primary-500 shadow-sm',
     secondary:
-      'bg-primary-100 text-primary-700 hover:bg-emerald-200 active:bg-emerald-300 focus:ring-primary-500',
+      'bg-primary-100 text-primary-800 hover:bg-primary-200 active:bg-primary-300 focus:ring-primary-500 font-medium',
     outline:
-      'bg-transparent border border-primary-700 text-primary-700 hover:bg-primary-100 active:bg-emerald-200 focus:ring-primary-500',
+      'bg-transparent border border-primary-700 text-primary-700 hover:bg-primary-50 active:bg-primary-100 focus:ring-primary-500 font-medium',
     danger:
       'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:ring-rose-500 shadow-sm',
     gold:
