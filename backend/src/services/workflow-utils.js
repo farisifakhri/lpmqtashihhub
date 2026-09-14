@@ -16,14 +16,17 @@ export async function registration(tx, id) {
   return tx.registration.findUnique({ where: { id } });
 }
 
-export async function audit(tx, user, action, subjectType, subjectId, after) {
+export async function audit(tx, user, action, subjectType, subjectId, after, req = null, before = null) {
   await tx.auditLog.create({ data: {
     actor_id: user.id, action, subject_type: subjectType, subject_id: subjectId,
+    before_json: before === null ? undefined : JSON.parse(JSON.stringify(before)),
     after_json: JSON.parse(JSON.stringify(after)),
+    ip_address: req?.ip || req?.socket?.remoteAddress || null,
+    user_agent: req?.headers?.['user-agent'] || null,
   } });
 }
 
-export async function move(tx, reg, status, user, notes) {
+export async function move(tx, reg, status, user, notes, req = null) {
   const result = await tx.registration.updateMany({
     where: { id: reg.id, status: reg.status }, data: { status },
   });
@@ -31,7 +34,7 @@ export async function move(tx, reg, status, user, notes) {
   await tx.statusHistory.create({ data: {
     registration_id: reg.id, from_status: reg.status, to_status: status, actor_id: user.id, notes,
   } });
-  await audit(tx, user, 'STATUS_TRANSITION', 'Registration', reg.id, { from: reg.status, to: status, notes });
+  await audit(tx, user, 'STATUS_TRANSITION', 'Registration', reg.id, { from: reg.status, to: status, notes }, req, { status: reg.status });
 }
 
 export function requireStatus(reg, statuses) {

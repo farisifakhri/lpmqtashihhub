@@ -6,6 +6,7 @@ import registrationRoutes from './registration.routes.js';
 import publicRoutes from './public.routes.js';
 import systemRoutes from './system.routes.js';
 import workflowRoutes from './workflow.routes.js';
+import verificationRoutes from './verification.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -41,7 +42,12 @@ router.get('/', (req, res) => {
       registrations: {
         list: 'GET /api/v1/registrations',
         createDraft: 'POST /api/v1/registrations',
+        declarePhysicalMaster: 'PUT /api/v1/registrations/:id/physical-master',
+        receivePhysicalMaster: 'POST /api/v1/registrations/:id/physical-master/receive',
+        receipt: 'GET /api/v1/registrations/:id/receipt',
+        assignVerifier: 'POST /api/v1/registrations/:id/verification-assignments',
       },
+      verificationAssignments: 'GET /api/v1/verification-assignments',
       public: {
         verifyDocument: 'GET /api/v1/public/verify-document/:token',
       },
@@ -55,6 +61,7 @@ router.get('/health', getHealth);
 // Domain Routes
 router.use('/auth', authRoutes);
 router.use(workflowRoutes);
+router.use(verificationRoutes);
 router.use('/master', masterRoutes);
 router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);

@@ -624,6 +624,7 @@ export const listRegistrations = async ({
           orderBy: { assigned_at: 'desc' },
           include: { verifier: { select: { id: true, name: true } } },
         },
+        physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
       },
       orderBy: { created_at: 'desc' },
     }),
@@ -655,6 +656,7 @@ export const getDetail = async (id, user) => {
       verification_assignments: {
         include: { verifier: { select: { id: true, name: true, nip: true } } },
       },
+      physical_master_intake: true,
       payment_records: true,
       assignments: {
         include: {
