@@ -66,11 +66,11 @@ export const UnifiedDashboard = () => {
 
   // Kalkulasi Metrik Internal
   const countVerification = registrations.filter((r) =>
-    ['READY_FOR_VERIFICATION', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL'].includes(r.status)
+    ['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED'].includes(r.status)
   ).length;
 
   const countTashih = registrations.filter((r) =>
-    ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
+    ['WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
   ).length;
 
   const countSTT = registrations.filter((r) =>
@@ -79,7 +79,7 @@ export const UnifiedDashboard = () => {
 
   // Kalkulasi Metrik Penerbit / PNBP
   const inProgressCount = registrations.filter((r) =>
-    ['READY_FOR_VERIFICATION', 'IN_VERIFICATION', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
+    ['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
   ).length;
 
   const completedCount = countSTT;
@@ -191,11 +191,11 @@ export const UnifiedDashboard = () => {
     return registrations.filter((item) => {
       // Filter status
       if (statusFilter === 'VERIFICATION') {
-        if (!['READY_FOR_VERIFICATION', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL'].includes(item.status)) {
+        if (!['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED'].includes(item.status)) {
           return false;
         }
       } else if (statusFilter === 'TASHIH') {
-        if (!['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(item.status)) {
+        if (!['WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(item.status)) {
           return false;
         }
       } else if (statusFilter === 'COMPLETED') {
@@ -685,4 +685,3 @@ export const UnifiedDashboard = () => {
 };
 
 export default UnifiedDashboard;
-

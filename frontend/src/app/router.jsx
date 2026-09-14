@@ -147,7 +147,7 @@ export const router = createBrowserRouter([
               description="Pemeriksaan kelengkapan dokumen penerbit, keabsahan cover, format mushaf, dan pengembalian catatan perbaikan (revisi)."
               targetTables={['verification_assignments', 'registrations', 'manuscript_files', 'status_histories']}
               apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_VERIFICATION', desc: 'Antrean berkas baru masuk' },
+                { method: 'GET', path: '/api/v1/registrations?status=VERIFICATION_ASSIGNED', desc: 'Antrean yang telah ditugaskan Kepala LPMQ' },
                 { method: 'GET', path: '/api/v1/registrations?status=IN_VERIFICATION', desc: 'Berkas sedang diperiksa verifikator' },
                 { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Transisi status (Lanjut / Revisi)' },
               ]}
@@ -155,7 +155,7 @@ export const router = createBrowserRouter([
               sopReference="SOP Pendaftaran Mushaf Al-Qur'an - Tahap Verifikasi Dokumen & Naskah (v2.2)"
               businessRules={[
                 'Verifikator memeriksa cover, halaman Al-Qur\'an 1-5, dan legalitas penerbit',
-                'Penerimaan master fisik dicatat beserta nomor tanda terima',
+                'Verifikator hanya memeriksa pengajuan yang ditugaskan Kepala LPMQ melalui Nota Dinas',
                 'Keputusan revisi mengembalikan naskah ke penerbit dengan status REVISION_REQUIRED',
               ]}
             />

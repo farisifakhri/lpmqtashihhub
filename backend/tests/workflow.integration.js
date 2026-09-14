@@ -34,7 +34,13 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const detail = await expect(`/registrations/${reg.id}`, dokumentatorToken);
     assert.deepEqual(detail.manuscript_files, []);
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
-    await expect(`/registrations/${reg.id}/status`, verifikatorToken, 'PATCH', { to_status: 'IN_VERIFICATION' });
+    await expect(`/registrations/${reg.id}/status`, kepala, 'PATCH', { to_status: 'VERIFICATION_ASSIGNED' }, 409);
+    await expect(`/registrations/${reg.id}/status`, adminToken, 'PATCH', { to_status: 'VERIFICATION_ASSIGNED' }, 409);
+    await expect(`/registrations/${reg.id}/status`, verifikatorToken, 'PATCH', { to_status: 'IN_VERIFICATION' }, 409);
+    // Fixture only: later PRs add the Head's assignment and verifier start endpoints.
+    const verifier = await prisma.user.findUnique({ where: { email: 'verifikator@lpmq.kemenag.go.id' } });
+    await prisma.verificationAssignment.create({ data: { registration_id: reg.id, verifier_id: verifier.id, status: 'IN_PROGRESS' } });
+    await prisma.registration.update({ where: { id: reg.id }, data: { status: 'IN_VERIFICATION' } });
     const read = await fetch(`${base}/uploads/${file.id}`, { headers: { Authorization: `Bearer ${verifikatorToken}` } });
     assert.equal(read.status, 200);
     await expect(`/registrations/${reg.id}/status`, verifikatorToken, 'PATCH', { to_status: 'WAITING_VERIFICATION_APPROVAL' });
@@ -43,10 +49,10 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
   await test('SOP: persetujuan Kepala dan pengembalian draf tetap menjadi tugas verifikator', async () => {
     const path = `/registrations/${reg.id}/status`;
     const before = await prisma.verificationAssignment.findMany({ where: { registration_id: reg.id } });
-    await expect(path, verifikatorToken, 'PATCH', { to_status: 'AWAITING_PAYMENT' }, 403);
-    await expect(path, adminToken, 'PATCH', { to_status: 'AWAITING_PAYMENT' }, 403);
+    await expect(path, verifikatorToken, 'PATCH', { to_status: 'VERIFICATION_APPROVED' }, 409);
+    await expect(path, adminToken, 'PATCH', { to_status: 'VERIFICATION_APPROVED' }, 409);
     await expect(path, verifikatorToken, 'PATCH', { to_status: 'IN_VERIFICATION', notes: 'Ditolak sendiri' }, 403);
-    await expect(path, kepala, 'PATCH', { to_status: 'REVISION_REQUIRED', notes: 'Salah tujuan revisi' }, 400);
+    await expect(path, kepala, 'PATCH', { to_status: 'REVISION_REQUIRED', notes: 'Salah tujuan revisi' }, 409);
     await expect(path, kepala, 'PATCH', { to_status: 'IN_VERIFICATION' }, 400);
     await expect(path, kepala, 'PATCH', { to_status: 'IN_VERIFICATION', notes: 'Perbaiki draf surat pemberitahuan' });
     const after = await prisma.verificationAssignment.findMany({ where: { registration_id: reg.id } });
@@ -54,9 +60,12 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST', {}, 400);
     await expect(`/registrations/${reg.id}/manuscripts`, verifikatorToken);
     await expect(path, verifikatorToken, 'PATCH', { to_status: 'WAITING_VERIFICATION_APPROVAL' });
-    await expect(path, kepala, 'PATCH', { to_status: 'AWAITING_PAYMENT' });
+    await expect(path, kepala, 'PATCH', { to_status: 'VERIFICATION_APPROVED' }, 409);
+    await expect(path, verifikatorToken, 'PATCH', { to_status: 'AWAITING_PAYMENT' }, 409);
     const history = await prisma.statusHistory.findFirst({ where: { registration_id: reg.id, from_status: 'WAITING_VERIFICATION_APPROVAL', to_status: 'IN_VERIFICATION' } });
     assert.equal(history.notes, 'Perbaiki draf surat pemberitahuan');
+    // Fixture only: approval and sending require dedicated document actions in PR-VER-04.
+    await prisma.registration.update({ where: { id: reg.id }, data: { status: 'AWAITING_PAYMENT' } });
   });
 
   await test('Workflow: billing concurrent menghasilkan tepat satu tagihan dan nominal snapshot', async () => {
@@ -68,11 +77,15 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(Number(payment.amount), stored.fee_sla_snapshot.total_fee);
     await expect(`/payments/${payment.id}/verify`, verifikatorToken, 'PATCH', {}, 409);
     await expect(`/payments/${payment.id}/confirm`, publisherBToken, 'POST', { receipt_file_id: file.id }, 403);
-    await expect(`/registrations/${reg.id}/status`, adminToken, 'PATCH', { to_status: 'PAYMENT_VERIFICATION' }, 400);
+    await expect(`/registrations/${reg.id}/status`, adminToken, 'PATCH', { to_status: 'PAYMENT_VERIFICATION' }, 409);
     await expect(`/payments/${payment.id}/confirm`, publisherToken, 'POST', { receipt_file_id: file.id });
     const results2 = await Promise.all([call(`/payments/${payment.id}/verify`, verifikatorToken, 'PATCH'), call(`/payments/${payment.id}/verify`, verifikatorToken, 'PATCH')]);
     assert.deepEqual(results2.map(result => result.status).sort(), [200, 409]);
+    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'PAYMENT_VERIFICATION');
+    await expect(`/registrations/${reg.id}/status`, adminToken, 'PATCH', { to_status: 'WAITING_DISTRIBUTION' }, 409);
     assert.equal(await prisma.notification.count({ where: { registration_id: reg.id, type: 'PAYMENT_CONFIRMED' } }), 1);
+    // Fixture only: physical handover/receipt endpoints arrive in PR-VER-06.
+    await prisma.registration.update({ where: { id: reg.id }, data: { status: 'WAITING_DISTRIBUTION' } });
   });
 
   await test('Workflow: distribusi tervalidasi, SLA aktif, dan hasil sidang tidak bisa dilewati', async () => {

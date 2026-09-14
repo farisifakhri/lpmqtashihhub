@@ -12,7 +12,7 @@ Sumber: [SOP Verifikasi Mushaf Al-Quran.xlsx](../SOP%20Verifikasi%20Mushaf%20Al-
 | 4 / B9 | Kepala menyetujui dan menandatangani; bila menolak, mengembalikan draf kepada verifikator | Persetujuan bukan wewenang verifikator. Pengembalian draf memakai IN_VERIFICATION, bukan REVISION_REQUIRED untuk penerbit |
 | 5 / B10 | Verifikator mengirim surat yang disahkan kepada penerbit | Persetujuan dan pengiriman adalah dua kejadian berbeda; endpoint pengiriman belum tersedia |
 | 6 / B11 | Penerbit menerima surat/lampiran dan membayar sesuai kode billing | Billing dan bukti pembayaran sudah tersedia secara manual; integrasi SIMPONI belum tersedia |
-| 7 / B12 | Pemeriksaan pembayaran dan penyerahan naskah kepada distributor | Verifikasi pembayaran memindahkan ke WAITING_DISTRIBUTION |
+| 7 / B12 | Pemeriksaan pembayaran dan penyerahan naskah kepada distributor | Pembayaran terverifikasi dicatat terpisah; penyerahan fisik menuju WAITING_DISTRIBUTOR_RECEIPT menunggu endpoint khusus |
 | 8 / B13 | Distributor menerima naskah untuk pentashihan | Alur berikutnya merujuk SOP pentashihan, bukan ditentukan oleh SOP verifikasi ini |
 
 Diagram dalam workbook juga membedakan naskah tidak lulus yang dikembalikan kepada penerbit dari surat pemberitahuan yang ditolak dan dikembalikan kepada verifikator. Karena itu, persetujuan draf surat tidak boleh disamakan dengan hasil LOLOS/TIDAK_LOLOS naskah. Modul surat yang direncanakan harus menyimpan keduanya secara terpisah dan hanya mengizinkan billing untuk hasil naskah yang lolos.
@@ -21,13 +21,13 @@ Waktu pada kolom H–I: langkah 1–2 masing-masing 30 menit, langkah 3 dua hari
 
 ## Perbaikan yang diterapkan setelah pencocokan
 
-- WAITING_VERIFICATION_APPROVAL → AWAITING_PAYMENT hanya oleh KEPALA_LPMQ.
+- WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED hanya oleh KEPALA_LPMQ; pengiriman ke penerbit merupakan aksi verifikator tersendiri.
 - WAITING_VERIFICATION_APPROVAL → IN_VERIFICATION oleh KEPALA_LPMQ, dengan alasan wajib.
 - Penugasan verifikator semula tetap berlaku saat draf dikembalikan; Kepala tidak menjadi verifikator baru.
 - SUPERADMIN tanpa peran Kepala tidak menjadi pengganti otoritas persetujuan.
 - Kontrak §0 diperbaiki agar tidak mengarahkan perbaikan draf internal ke portal penerbit.
 
-Perubahan ini memperbaiki guard role dan tujuan pengembalian pada workflow yang ada. Surat bernomor, penandatanganan surat hasil verifikasi, lampiran, pengiriman, tracking master fisik, dan SLA per langkah belum selesai. Implementasi saat ini belum bisa dinyatakan memenuhi seluruh SOP verifikasi.
+Fondasi PR-VER-01 menambah status, model data, dan guard sehingga lompatan lama menuju pembayaran atau distribusi tidak lagi tersedia. Surat bernomor, penandatanganan surat hasil verifikasi, lampiran, pengiriman, tracking master fisik, dan SLA per langkah belum selesai. Implementasi saat ini belum bisa dinyatakan memenuhi seluruh SOP verifikasi.
 
 ## Keputusan terbuka — menunggu rapat stakeholder
 

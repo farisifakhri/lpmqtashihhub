@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
 const statusLabels = {
-  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu verifikasi', IN_VERIFICATION: 'Sedang diverifikasi',
+  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu penugasan Kepala LPMQ',
+  VERIFICATION_ASSIGNED: 'Verifikator ditugaskan', IN_VERIFICATION: 'Sedang diverifikasi',
   REVISION_REQUIRED: 'Perlu perbaikan penerbit', WAITING_VERIFICATION_APPROVAL: 'Menunggu persetujuan Kepala LPMQ',
-  AWAITING_PAYMENT: 'Menunggu pembayaran', PAYMENT_VERIFICATION: 'Menunggu verifikasi pembayaran',
+  VERIFICATION_APPROVED: 'Surat disetujui, menunggu pengiriman verifikator',
+  AWAITING_PAYMENT: 'Menunggu pembayaran', PAYMENT_VERIFICATION: 'Menunggu verifikasi pembayaran atau serah-terima master',
+  WAITING_DISTRIBUTOR_RECEIPT: 'Menunggu penerimaan master oleh distributor',
   WAITING_DISTRIBUTION: 'Menunggu distribusi', TASHIH_IN_PROGRESS: 'Sedang ditashih',
   READY_FOR_STT: 'Siap untuk penetapan STT', STT_ISSUED: 'STT telah terbit',
   DOCUMENTATION_IN_PROGRESS: 'Sedang didokumentasikan', COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan',

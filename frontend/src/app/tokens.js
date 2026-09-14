@@ -62,7 +62,14 @@ export const TOKENS = {
       bgClass: 'bg-emerald-50',
       textClass: 'text-emerald-800',
       borderClass: 'border-emerald-200',
-      description: 'Dokumen lengkap, menunggu verifikator mengambil antrean',
+      description: 'Dokumen diterima, menunggu Kepala LPMQ menugaskan verifikator',
+    },
+    VERIFICATION_ASSIGNED: {
+      label: 'Verifikator Ditugaskan',
+      bgClass: 'bg-cyan-50',
+      textClass: 'text-cyan-800',
+      borderClass: 'border-cyan-200',
+      description: 'Nota Dinas Verifikasi telah diterbitkan; menunggu pemeriksaan verifikator terpilih',
     },
     IN_VERIFICATION: {
       label: 'Sedang Diverifikasi',
@@ -85,6 +92,13 @@ export const TOKENS = {
       borderClass: 'border-indigo-200',
       description: 'Menunggu persetujuan hasil verifikasi oleh Kepala LPMQ',
     },
+    VERIFICATION_APPROVED: {
+      label: 'Surat Disetujui',
+      bgClass: 'bg-indigo-50',
+      textClass: 'text-indigo-800',
+      borderClass: 'border-indigo-200',
+      description: 'Menunggu verifikator mengirim surat hasil verifikasi kepada penerbit',
+    },
     AWAITING_PAYMENT: {
       label: 'Menunggu Pembayaran',
       bgClass: 'bg-amber-50',
@@ -97,7 +111,14 @@ export const TOKENS = {
       bgClass: 'bg-blue-50',
       textClass: 'text-blue-800',
       borderClass: 'border-blue-200',
-      description: 'Pembayaran telah dikonfirmasi, menunggu verifikasi bendahara/sistem',
+      description: 'Bukti bayar dikonfirmasi; setelah diverifikasi master menunggu serah-terima fisik',
+    },
+    WAITING_DISTRIBUTOR_RECEIPT: {
+      label: 'Menunggu Distributor',
+      bgClass: 'bg-violet-50',
+      textClass: 'text-violet-800',
+      borderClass: 'border-violet-200',
+      description: 'Master fisik telah diserahkan, menunggu distributor mengonfirmasi penerimaan',
     },
     WAITING_DISTRIBUTION: {
       label: 'Menunggu Distribusi',

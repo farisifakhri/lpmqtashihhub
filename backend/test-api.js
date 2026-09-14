@@ -301,7 +301,7 @@ async function runTests() {
       });
 
       console.log('\n--- Kategori H: TRANSITION_POLICY & Otorisasi Transisi Status ---');
-      await test('Negative: DOKUMENTATOR dilarang memverifikasi naskah (403 Forbidden)', async () => {
+      await test('Negative: pengajuan tanpa assignment tidak dapat langsung diverifikasi', async () => {
         const res = await fetch(`${BASE_URL}/registrations/${validRegId}/status`, {
           method: 'PATCH',
           headers: {
@@ -313,10 +313,10 @@ async function runTests() {
             notes: 'Mencoba verifikasi ilegal sebagai dokumentator',
           }),
         });
-        assert.strictEqual(res.status, 403, 'Role DOKUMENTATOR harus ditolak saat verifikasi');
+        assert.strictEqual(res.status, 409, 'Assignment Kepala LPMQ wajib mendahului pemeriksaan');
       });
 
-      await test('Negative: Transisi status melompati tahap (READY_FOR_VERIFICATION -> STT_ISSUED) ditolak (400)', async () => {
+      await test('Negative: Transisi status melompati tahap (READY_FOR_VERIFICATION -> STT_ISSUED) ditolak (409)', async () => {
         const res = await fetch(`${BASE_URL}/registrations/${validRegId}/status`, {
           method: 'PATCH',
           headers: {
@@ -328,10 +328,10 @@ async function runTests() {
             notes: 'Mencoba loncat status',
           }),
         });
-        assert.strictEqual(res.status, 400);
+        assert.strictEqual(res.status, 409);
       });
 
-      await test('Positive: VERIFIKATOR sah memindahkan status ke IN_VERIFICATION', async () => {
+      await test('Negative: VERIFIKATOR tidak dapat mengambil sendiri pengajuan yang belum ditugaskan', async () => {
         const res = await fetch(`${BASE_URL}/registrations/${validRegId}/status`, {
           method: 'PATCH',
           headers: {
@@ -343,10 +343,13 @@ async function runTests() {
             notes: 'Verifikasi dokumen naskah dimulai',
           }),
         });
-        assert.strictEqual(res.status, 200);
-        const json = await res.json();
-        assert.strictEqual(json.data.status, 'IN_VERIFICATION');
+        assert.strictEqual(res.status, 409);
       });
+
+      // Fixture for legacy status-concurrency tests until the dedicated assignment/start APIs exist.
+      const verifierForFixture = await prisma.user.findUnique({ where: { email: 'verifikator@lpmq.kemenag.go.id' } });
+      await prisma.verificationAssignment.create({ data: { registration_id: validRegId, verifier_id: verifierForFixture.id, status: 'IN_PROGRESS' } });
+      await prisma.registration.update({ where: { id: validRegId }, data: { status: 'IN_VERIFICATION' } });
 
       console.log('\n--- Kategori I: Eliminasi Race Condition Transisi Bersamaan ---');
       await test('Race Condition: Dua transisi paralel bersamaan terproteksi atomic lock (satu 200, satu 409)', async () => {
@@ -374,6 +377,13 @@ async function runTests() {
 
         // Harus ada 1 yang berhasil (200) dan 1 yang tertolak karena status sudah berubah (409 Conflict)
         assert.deepStrictEqual(statuses, [200, 409], 'Salah satu transisi harus 200 dan pasangannya harus 409');
+      });
+
+      await test('Setiap transisi status sah mencatat histori dan audit tepat sekali', async () => {
+        const histories = await prisma.statusHistory.count({ where: { registration_id: validRegId, from_status: 'IN_VERIFICATION' } });
+        const audits = await prisma.auditLog.count({ where: { subject_type: 'Registration', subject_id: validRegId, action: 'TRANSITION_REGISTRATION_STATUS' } });
+        assert.equal(histories, 1);
+        assert.equal(audits, 1);
       });
 
       console.log('\n--- Kategori J: Berkas Naskah & Verifikasi Publik QR ---');

@@ -93,14 +93,17 @@ Constraint penting:
 stateDiagram-v2
     [*] --> DRAFT
     DRAFT --> READY_FOR_VERIFICATION: ajukan
-    READY_FOR_VERIFICATION --> IN_VERIFICATION: mulai
+    READY_FOR_VERIFICATION --> VERIFICATION_ASSIGNED: Kepala menugaskan dan menerbitkan Nota Dinas
+    VERIFICATION_ASSIGNED --> IN_VERIFICATION: verifikator terpilih mulai
     IN_VERIFICATION --> REVISION_REQUIRED: minta perbaikan
     REVISION_REQUIRED --> READY_FOR_VERIFICATION: ajukan ulang
     IN_VERIFICATION --> WAITING_VERIFICATION_APPROVAL: ajukan persetujuan
     WAITING_VERIFICATION_APPROVAL --> IN_VERIFICATION: kembalikan
-    WAITING_VERIFICATION_APPROVAL --> AWAITING_PAYMENT: setujui
+    WAITING_VERIFICATION_APPROVAL --> VERIFICATION_APPROVED: Kepala setujui dan tanda tangan
+    VERIFICATION_APPROVED --> AWAITING_PAYMENT: verifikator kirim surat
     AWAITING_PAYMENT --> PAYMENT_VERIFICATION: catat pembayaran
-    PAYMENT_VERIFICATION --> WAITING_DISTRIBUTION: konfirmasi
+    PAYMENT_VERIFICATION --> WAITING_DISTRIBUTOR_RECEIPT: verifikator serahkan master setelah bayar terverifikasi
+    WAITING_DISTRIBUTOR_RECEIPT --> WAITING_DISTRIBUTION: distributor terima fisik dan tetapkan tenggat
     WAITING_DISTRIBUTION --> TASHIH_IN_PROGRESS: distribusi
     TASHIH_IN_PROGRESS --> READY_FOR_STT: rekomendasi distributor
     READY_FOR_STT --> STT_ISSUED: tetapkan STT

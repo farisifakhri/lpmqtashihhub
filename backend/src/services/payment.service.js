@@ -45,7 +45,8 @@ export const verifyPayment = (id, user) => prisma.$transaction(async tx => {
   const payment = await tx.paymentRecord.findUnique({ where: { id } });
   if (payment.status !== 'PAID' || !payment.receipt_file_id) fail(409, 'Pembayaran belum dapat diverifikasi karena bukti bayar belum dikirim. Minta penerbit mengunggah bukti dan melakukan konfirmasi pembayaran terlebih dahulu.');
   const updated = await tx.paymentRecord.update({ where: { id }, data: { status: 'VERIFIED', verified_at: new Date() } });
-  await move(tx, reg, 'WAITING_DISTRIBUTION', user, 'Pembayaran diverifikasi lunas');
+  // Keep the registration here until a recorded physical handover and distributor receipt.
+  // The payment record is the source of truth for the verified-payment fact.
   await audit(tx, user, 'VERIFY_PAYMENT', 'PaymentRecord', id, updated);
   const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id } });
   if (publisher.user_id) await tx.notification.create({ data: { user_id: publisher.user_id, registration_id: reg.id, type: 'PAYMENT_CONFIRMED', title: 'Pembayaran PNBP telah diverifikasi' } });

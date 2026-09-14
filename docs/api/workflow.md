@@ -2,6 +2,12 @@
 
 Base URL: `/api/v1`. Seluruh endpoint di bawah memerlukan Bearer token. Respons JSON mengikuti `{ "success": true, "data": ... }`; kesalahan memakai HTTP 400 (input), 403 (izin), 404 (tidak tersedia), atau 409 (konflik status).
 
+## Fondasi SOP Verifikasi (PR-VER-01)
+
+State machine kini membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → IN_VERIFICATION → WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED → AWAITING_PAYMENT → PAYMENT_VERIFICATION → WAITING_DISTRIBUTOR_RECEIPT → WAITING_DISTRIBUTION`. Penugasan dan Nota Dinas hanya oleh Kepala LPMQ; persetujuan draf hanya oleh Kepala LPMQ; pengiriman surat dan serah-terima oleh verifikator terpilih; penerimaan fisik oleh distributor. `SUPERADMIN` tidak mewarisi kewenangan Kepala LPMQ. Endpoint status umum menolak aksi yang membutuhkan dokumen atau bukti fisik dengan 409. Endpoint khusus untuk assignment, dokumen, pengiriman, dan handover disiapkan dalam PR berikutnya, sehingga alur baru sengaja belum dapat diselesaikan end-to-end.
+
+Migrasi `20260914000000_verification_foundation` bersifat additive: tiga nilai status baru, metadata intake master fisik, kolom penugasan, dokumen verifikasi berversi, dan tabel serah-terima. Data dan nilai status lama tetap ada. Status `PAYMENT_VERIFICATION` dapat tetap tampil setelah `PaymentRecord.status=VERIFIED`; handover baru akan memindahkannya ke `WAITING_DISTRIBUTOR_RECEIPT`.
+
 Pesan error menjelaskan penyebab dan langkah tindak lanjut dalam Bahasa Indonesia. Validasi mengembalikan ringkasan pada `message` dan detail lengkap pada `errors: [{ field, message }]`. Status HTTP tetap menjadi acuan aplikasi; jangan menggunakan teks pesan sebagai kode kondisi. Berkas terlalu besar memakai 413, dan layanan data yang belum tersedia memakai 503. Kegagalan koneksi saat autentikasi tidak dianggap sebagai sesi masuk yang salah. Detail teknis error dicatat di log server; pesan gangguan umum meminta pengguna memeriksa hasil sebelum mengirim ulang.
 
 ## Pembayaran manual
@@ -10,7 +16,7 @@ Pesan error menjelaskan penyebab dan langkah tindak lanjut dalam Bahasa Indonesi
 |---|---|---|
 | `POST /registrations/:id/payments` | Verifikator / superadmin | `{}`; status harus AWAITING_PAYMENT; nominal dari `fee_sla_snapshot.total_fee`; menghasilkan satu billing aktif dengan awalan MANUAL |
 | `POST /payments/:id/confirm` | Penerbit pemilik | `{ "receipt_file_id": "UUID unggahan", "external_ref": "referensi opsional" }`; menyimpan PAID dan memindahkan pengajuan ke PAYMENT_VERIFICATION |
-| `PATCH /payments/:id/verify` | Verifikator / superadmin | `{}`; memverifikasi bukti, menyimpan VERIFIED, memindahkan ke WAITING_DISTRIBUTION, membuat notifikasi |
+| `PATCH /payments/:id/verify` | Verifikator / superadmin | `{}`; memverifikasi bukti, menyimpan VERIFIED dan notifikasi; registrasi tetap PAYMENT_VERIFICATION sampai serah-terima fisik dicatat oleh endpoint berikutnya |
 
 Nomor billing MANUAL adalah identitas internal aplikasi, bukan kode billing SIMPONI. `external_ref` dicatat manual dan tidak menjadi bukti rekonsiliasi NTPN otomatis. Penolakan/pembatalan pasca-billing belum diaktifkan karena kebijakan resminya belum tersedia.
 
