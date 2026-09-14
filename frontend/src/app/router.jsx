@@ -1,10 +1,11 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
 import { InternalDashboard } from '@/features/internal/InternalDashboard';
 import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
+import { ContentConfiguration } from '@/features/internal/settings/ContentConfiguration';
 
 export const router = createBrowserRouter([
   {
@@ -116,12 +117,53 @@ export const router = createBrowserRouter([
       },
       {
         path: 'internal/settings',
+        element: <Navigate to="/internal/settings/content" replace />,
+      },
+      {
+        path: 'internal/settings/content',
+        element: <ContentConfiguration />,
+      },
+      {
+        path: 'internal/settings/categories',
         element: (
           <ModulePlaceholder
-            title="Master Data & Pengaturan Tarif"
-            moduleName="MST-01/02 Master Data Berversi"
-            sprintTarget="Sprint 1"
-            description="Pengelolaan 17 jenis layanan, SLA hari kerja, tarif PNBP, addon, dan kalender hari libur."
+            title="Konfigurasi Kategori Mushaf"
+            moduleName="MST-02 Kategori Mushaf"
+            sprintTarget="Sprint 2"
+            description="Pengelolaan kategori dan sub-kategori jenis mushaf yang tersedia untuk layanan pentashihan."
+          />
+        ),
+      },
+      {
+        path: 'internal/settings/users',
+        element: (
+          <ModulePlaceholder
+            title="Konfigurasi Pengguna"
+            moduleName="MST-03 Manajemen User"
+            sprintTarget="Sprint 2"
+            description="Kelola akun petugas internal, penerbit terdaftar, dan penetapan hak akses berdasarkan peran."
+          />
+        ),
+      },
+      {
+        path: 'internal/settings/service-managers',
+        element: (
+          <ModulePlaceholder
+            title="Konfigurasi Pengelola Layanan"
+            moduleName="MST-04 Pengelola Layanan"
+            sprintTarget="Sprint 2"
+            description="Penetapan penanggung jawab layanan, Tim Distribusi pentashih, dan kalender hari kerja."
+          />
+        ),
+      },
+      {
+        path: 'internal/settings/security',
+        element: (
+          <ModulePlaceholder
+            title="Konfigurasi PIN & Pemulihan Akun"
+            moduleName="MST-05 Keamanan Akun"
+            sprintTarget="Sprint 2"
+            description="Pengaturan kebijakan PIN, mekanisme pemulihan akun, dan log aktivitas keamanan."
           />
         ),
       },

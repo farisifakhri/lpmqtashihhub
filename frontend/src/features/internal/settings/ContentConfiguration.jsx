@@ -1,0 +1,1078 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/features/auth/AuthContext';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Search,
+  FileText,
+  Clock,
+  Coins,
+  Star,
+  AlertTriangle,
+  ChevronDown,
+  ArrowUpDown,
+  Save,
+  Package,
+} from 'lucide-react';
+
+// ── Mock Data (dari contoh JSON user) ────────────────────────────────────────
+const INITIAL_CONTENT_DATA = [
+  {
+    id: 'mushaf-30juz-std',
+    name: 'Mushaf Al-Qur\'an 30 Juz',
+    category: 'Mushaf Cetak',
+    description: 'Full verification of 30 Juz standard Mushaf text, rasm Usmani, harakat, dabt, and waqf signs.',
+    baseCost: 1000000,
+    costPerUnit: 3500,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 15,
+    durationPer100UnitsDays: 2,
+    revisionDurationDays: 7,
+    dummyDurationDays: 3,
+    isPopular: true,
+    requirementsNote: 'Requires 3 printed dummy manuscripts and softcopy PDF file in vectors.',
+    sortOrder: 0,
+    updatedAt: '2026-08-11T13:14:23.992Z',
+  },
+  {
+    id: 'content-1786457793933',
+    name: 'Al-Qur\'an Audio',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 1000000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 15,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 7,
+    dummyDurationDays: 3,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 1,
+    updatedAt: '2026-08-12T00:44:52.649Z',
+  },
+  {
+    id: 'content-1786495592626',
+    name: 'Al Qur\'an Audio dan Visual',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 2000000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 30,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 15,
+    dummyDurationDays: 7,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 1,
+    updatedAt: '2026-08-12T00:47:02.830Z',
+  },
+  {
+    id: 'content-1786495631932',
+    name: 'Mushaf Al-Qur\'an dan Tafsirnya',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 2000000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 30,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 15,
+    dummyDurationDays: 7,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 1,
+    updatedAt: '2026-08-12T00:47:32.166Z',
+  },
+  {
+    id: 'content-1786495511376',
+    name: 'Buku/media yang memuat bagian juz Al-Qur\'an/surah-surah Al-Qur\'an/Ayat-ayat Al-Qur\'an',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 2,
+    updatedAt: '2026-08-12T00:46:07.568Z',
+  },
+  {
+    id: 'content-1786454305615',
+    name: 'Konten tambahan: Terjemah',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 3,
+    updatedAt: '2026-08-12T00:41:59.002Z',
+  },
+  {
+    id: 'content-1786454348699',
+    name: 'Konten tambahan: Tajwid warna',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 4,
+    updatedAt: '2026-08-11T13:22:46.857Z',
+  },
+  {
+    id: 'content-1786454357111',
+    name: 'Konten tambahan: Kode tajwid',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 5,
+    updatedAt: '2026-08-11T13:22:58.260Z',
+  },
+  {
+    id: 'content-1786454374991',
+    name: 'Konten tambahan: Transliterasi',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 6,
+    updatedAt: '2026-08-11T13:23:05.031Z',
+  },
+  {
+    id: 'content-1786495130499',
+    name: 'Konten tambahan: Waqaf Ibtida\'',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 7,
+    updatedAt: '2026-08-12T00:39:28.500Z',
+  },
+  {
+    id: 'content-1786495230714',
+    name: 'Konten tambahan: Ragam Qira\'at',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 500000,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 7,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 5,
+    dummyDurationDays: 4,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 8,
+    updatedAt: '2026-08-12T00:40:49.108Z',
+  },
+  {
+    id: 'content-1786495676765',
+    name: 'Mushaf Al-Qur\'an Braille',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 0,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 60,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 30,
+    dummyDurationDays: 15,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 8,
+    updatedAt: '2026-08-12T00:48:23.838Z',
+  },
+  {
+    id: 'content-1786495713426',
+    name: 'Mushaf Al-Qur\'an Isyarat',
+    category: 'Mushaf Cetak',
+    description: '',
+    baseCost: 0,
+    costPerUnit: 0,
+    unitLabel: 'per surat tanda tashih',
+    defaultUnitCount: 1,
+    baseDurationDays: 60,
+    durationPer100UnitsDays: 0,
+    revisionDurationDays: 30,
+    dummyDurationDays: 15,
+    isPopular: false,
+    requirementsNote: '',
+    sortOrder: 8,
+    updatedAt: '2026-08-12T00:48:54.294Z',
+  },
+];
+
+const CATEGORY_OPTIONS = [
+  'Mushaf Cetak',
+  'Mushaf Digital',
+  'Audio / Visual',
+  'Aksesibilitas',
+];
+
+const EMPTY_FORM = {
+  name: '',
+  category: 'Mushaf Cetak',
+  description: '',
+  baseCost: 0,
+  costPerUnit: 0,
+  unitLabel: 'per surat tanda tashih',
+  defaultUnitCount: 1,
+  baseDurationDays: 0,
+  durationPer100UnitsDays: 0,
+  revisionDurationDays: 0,
+  dummyDurationDays: 0,
+  isPopular: false,
+  requirementsNote: '',
+  sortOrder: 0,
+};
+
+// ── Utilitas ──────────────────────────────────────────────────────────────────
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+const formatDate = (iso) => {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const generateId = () => `content-${Date.now()}`;
+
+// ── Komponen Utama ────────────────────────────────────────────────────────────
+export const ContentConfiguration = () => {
+  const { currentUser } = useAuth();
+  const [contentItems, setContentItems] = useState(INITIAL_CONTENT_DATA);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({ ...EMPTY_FORM });
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: 'sortOrder', direction: 'asc' });
+  const [formErrors, setFormErrors] = useState({});
+  const modalRef = useRef(null);
+
+  // Tutup modal saat klik di luar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (modalRef.current && !modalRef.current.contains(e.target)) {
+        handleCloseModal();
+      }
+    };
+    if (isModalOpen || deleteConfirm) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isModalOpen, deleteConfirm]);
+
+  // Escape key menutup modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleCloseModal();
+        setDeleteConfirm(null);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // ── Filter & Sort ─────────────────────────────────────────────────────
+  const filteredItems = contentItems
+    .filter((item) => {
+      const matchesSearch =
+        !searchQuery ||
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !filterCategory || item.category === filterCategory;
+      return matchesSearch && matchesCategory;
+    })
+    .sort((a, b) => {
+      const { key, direction } = sortConfig;
+      let aVal = a[key];
+      let bVal = b[key];
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  // ── Modal handlers ────────────────────────────────────────────────────
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setFormData({ ...EMPTY_FORM, sortOrder: contentItems.length });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (item) => {
+    setEditingItem(item);
+    setFormData({ ...item });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingItem(null);
+    setFormData({ ...EMPTY_FORM });
+    setFormErrors({});
+  };
+
+  // ── Validasi form ─────────────────────────────────────────────────────
+  const validateForm = () => {
+    const errors = {};
+    if (!formData.name.trim()) errors.name = 'Nama konten wajib diisi';
+    if (!formData.category) errors.category = 'Kategori wajib dipilih';
+    if (formData.baseDurationDays < 0) errors.baseDurationDays = 'Durasi tidak boleh negatif';
+    if (formData.baseCost < 0) errors.baseCost = 'Biaya tidak boleh negatif';
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // ── Simpan (Tambah / Edit) ────────────────────────────────────────────
+  const handleSave = () => {
+    if (!validateForm()) return;
+
+    const now = new Date().toISOString();
+    if (editingItem) {
+      // Edit
+      setContentItems((prev) =>
+        prev.map((item) =>
+          item.id === editingItem.id
+            ? { ...formData, id: editingItem.id, updatedAt: now }
+            : item
+        )
+      );
+    } else {
+      // Buat baru
+      const newItem = {
+        ...formData,
+        id: generateId(),
+        updatedAt: now,
+      };
+      setContentItems((prev) => [...prev, newItem]);
+    }
+    handleCloseModal();
+  };
+
+  // ── Hapus ─────────────────────────────────────────────────────────────
+  const handleDelete = (id) => {
+    setContentItems((prev) => prev.filter((item) => item.id !== id));
+    setDeleteConfirm(null);
+  };
+
+  // ── Form change handler ───────────────────────────────────────────────
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (formErrors[field]) {
+      setFormErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
+  // ── Statistik ringkasan ───────────────────────────────────────────────
+  const stats = {
+    total: contentItems.length,
+    popular: contentItems.filter((i) => i.isPopular).length,
+    categories: [...new Set(contentItems.map((i) => i.category))].length,
+    freeServices: contentItems.filter((i) => i.baseCost === 0 && i.costPerUnit === 0).length,
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-6">
+      {/* ── Header ──────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary-100 text-primary-700">
+              Role: {currentUser.role}
+            </span>
+            <span className="text-xs text-neutral-500">
+              Master Data & Konfigurasi
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900 mt-1">
+            Konfigurasi Konten Layanan Tashih
+          </h1>
+          <p className="text-sm text-neutral-500">
+            Kelola jenis konten layanan pentashihan, biaya PNBP, satuan, dan durasi hari kerja.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          icon={<Plus className="w-4 h-4" />}
+          onClick={handleOpenCreate}
+        >
+          Tambah Konten Baru
+        </Button>
+      </div>
+
+      {/* ── Ringkasan Statistik ─────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+            <span>Total Konten</span>
+            <Package className="w-4 h-4 text-primary-500" />
+          </div>
+          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.total}</div>
+          <p className="text-[11px] text-neutral-500 mt-1">Jenis layanan terdaftar</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+            <span>Layanan Populer</span>
+            <Star className="w-4 h-4 text-gold-600" />
+          </div>
+          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.popular}</div>
+          <p className="text-[11px] text-neutral-500 mt-1">Ditandai sebagai unggulan</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+            <span>Kategori</span>
+            <FileText className="w-4 h-4 text-status-info" />
+          </div>
+          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.categories}</div>
+          <p className="text-[11px] text-neutral-500 mt-1">Kelompok jenis mushaf</p>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+            <span>Bebas Tarif</span>
+            <Coins className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.freeServices}</div>
+          <p className="text-[11px] text-neutral-500 mt-1">Tanpa biaya PNBP</p>
+        </Card>
+      </div>
+
+      {/* ── Filter & Search Bar ─────────────────────────────────────── */}
+      <Card>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <input
+              type="text"
+              placeholder="Cari nama konten atau kategori..."
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-colors"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="relative">
+            <select
+              className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white cursor-pointer min-w-[180px] transition-colors"
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+            >
+              <option value="">Semua Kategori</option>
+              {CATEGORY_OPTIONS.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* ── Tabel Daftar Konten ─────────────────────────────────────── */}
+        <div className="overflow-x-auto -mx-6">
+          <table className="w-full text-left border-collapse min-w-[900px]">
+            <thead>
+              <tr className="bg-primary-100 text-primary-700 text-xs font-semibold uppercase tracking-wider">
+                <th className="py-3 px-6 w-8">#</th>
+                <th
+                  className="py-3 px-6 cursor-pointer hover:text-primary-800 select-none"
+                  onClick={() => handleSort('name')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Nama Konten
+                    <ArrowUpDown className="w-3 h-3" />
+                  </span>
+                </th>
+                <th
+                  className="py-3 px-6 cursor-pointer hover:text-primary-800 select-none"
+                  onClick={() => handleSort('category')}
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Kategori
+                    <ArrowUpDown className="w-3 h-3" />
+                  </span>
+                </th>
+                <th
+                  className="py-3 px-6 text-right cursor-pointer hover:text-primary-800 select-none"
+                  onClick={() => handleSort('baseCost')}
+                >
+                  <span className="inline-flex items-center gap-1 justify-end">
+                    Biaya Dasar
+                    <ArrowUpDown className="w-3 h-3" />
+                  </span>
+                </th>
+                <th className="py-3 px-6 text-center">Durasi (Hari Kerja)</th>
+                <th className="py-3 px-6 text-center">Status</th>
+                <th className="py-3 px-6 text-center">Terakhir Diubah</th>
+                <th className="py-3 px-6 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200 text-sm">
+              {filteredItems.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-neutral-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="w-8 h-8 text-neutral-300" />
+                      <p className="font-medium">Tidak ada konten ditemukan</p>
+                      <p className="text-xs">Coba ubah kata kunci pencarian atau filter kategori.</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                filteredItems.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-neutral-50 transition-colors group"
+                  >
+                    <td className="py-4 px-6 text-xs text-neutral-500 font-mono">
+                      {index + 1}
+                    </td>
+                    <td className="py-4 px-6">
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0">
+                          <span className="font-semibold text-neutral-900 block text-sm leading-tight">
+                            {item.name}
+                          </span>
+                          {item.description && (
+                            <span className="text-xs text-neutral-500 block mt-0.5 line-clamp-1">
+                              {item.description}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-neutral-400 block mt-0.5 font-mono">
+                            {item.unitLabel} · {item.defaultUnitCount} unit default
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6">
+                      <Badge variant="default">{item.category}</Badge>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <span className="font-bold text-neutral-900 block">
+                        {item.baseCost === 0 ? (
+                          <span className="text-emerald-700">Gratis</span>
+                        ) : (
+                          formatCurrency(item.baseCost)
+                        )}
+                      </span>
+                      {item.costPerUnit > 0 && (
+                        <span className="text-[11px] text-neutral-500 block mt-0.5">
+                          + {formatCurrency(item.costPerUnit)} / unit
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-neutral-800">
+                          <Clock className="w-3 h-3 text-primary-500" />
+                          {item.baseDurationDays} hari
+                        </span>
+                        <span className="text-[10px] text-neutral-500">
+                          Revisi: {item.revisionDurationDays}d · Dumi: {item.dummyDurationDays}d
+                        </span>
+                        {item.durationPer100UnitsDays > 0 && (
+                          <span className="text-[10px] text-neutral-400">
+                            +{item.durationPer100UnitsDays}d / 100 unit
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      {item.isPopular ? (
+                        <Badge variant="gold" icon={<Star className="w-3 h-3" />}>
+                          Populer
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-neutral-400">—</span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-center">
+                      <span className="text-xs text-neutral-500">{formatDate(item.updatedAt)}</span>
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleOpenEdit(item)}
+                          className="p-2 rounded-md hover:bg-primary-100 text-neutral-500 hover:text-primary-700 transition-colors"
+                          title="Edit konten"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(item)}
+                          className="p-2 rounded-md hover:bg-rose-50 text-neutral-500 hover:text-rose-600 transition-colors"
+                          title="Hapus konten"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Jumlah hasil */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100">
+          <p className="text-xs text-neutral-500">
+            Menampilkan {filteredItems.length} dari {contentItems.length} konten layanan
+          </p>
+        </div>
+      </Card>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Modal Form Tambah / Edit Konten
+         ══════════════════════════════════════════════════════════════════ */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-10 pb-10 overflow-y-auto">
+          <div
+            ref={modalRef}
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 animate-in fade-in slide-in-from-top-4"
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+              <div>
+                <h2 className="text-lg font-bold text-neutral-900">
+                  {editingItem ? 'Edit Konten Layanan' : 'Tambah Konten Layanan Baru'}
+                </h2>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {editingItem
+                    ? `Mengubah: ${editingItem.name}`
+                    : 'Isi formulir di bawah untuk menambahkan jenis layanan tashih baru.'}
+                </p>
+              </div>
+              <button
+                onClick={handleCloseModal}
+                className="p-2 rounded-md hover:bg-neutral-100 text-neutral-500 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-5 space-y-5 max-h-[65vh] overflow-y-auto">
+              {/* Nama & Kategori */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                    Nama Konten <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                      formErrors.name
+                        ? 'border-rose-400 bg-rose-50'
+                        : 'border-neutral-200 bg-white'
+                    }`}
+                    placeholder="Contoh: Mushaf Al-Qur'an 30 Juz"
+                  />
+                  {formErrors.name && (
+                    <p className="text-[11px] text-rose-600 mt-1">{formErrors.name}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                    Kategori <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={formData.category}
+                      onChange={(e) => handleChange('category', e.target.value)}
+                      className={`appearance-none w-full px-3 pr-10 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-colors ${
+                        formErrors.category
+                          ? 'border-rose-400 bg-rose-50'
+                          : 'border-neutral-200 bg-white'
+                      }`}
+                    >
+                      {CATEGORY_OPTIONS.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+                  </div>
+                  {formErrors.category && (
+                    <p className="text-[11px] text-rose-600 mt-1">{formErrors.category}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Deskripsi */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Deskripsi
+                </label>
+                <textarea
+                  rows={3}
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white resize-none transition-colors"
+                  placeholder="Deskripsi singkat mengenai jenis layanan ini (opsional)"
+                />
+              </div>
+
+              {/* ── Biaya PNBP ─────────────────────────────────────────── */}
+              <div>
+                <h3 className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-gold-600" />
+                  Biaya PNBP
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Biaya Dasar (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.baseCost}
+                      onChange={(e) =>
+                        handleChange('baseCost', parseInt(e.target.value, 10) || 0)
+                      }
+                      className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors ${
+                        formErrors.baseCost ? 'border-rose-400 bg-rose-50' : 'border-neutral-200'
+                      }`}
+                    />
+                    {formErrors.baseCost && (
+                      <p className="text-[11px] text-rose-600 mt-1">{formErrors.baseCost}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Biaya per Unit (Rp)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.costPerUnit}
+                      onChange={(e) =>
+                        handleChange('costPerUnit', parseInt(e.target.value, 10) || 0)
+                      }
+                      className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Satuan Label
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.unitLabel}
+                      onChange={(e) => handleChange('unitLabel', e.target.value)}
+                      className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                      placeholder="per surat tanda tashih"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Durasi Hari Kerja ──────────────────────────────────── */}
+              <div>
+                <h3 className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-primary-500" />
+                  Durasi Hari Kerja
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Durasi Dasar
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.baseDurationDays}
+                        onChange={(e) =>
+                          handleChange('baseDurationDays', parseInt(e.target.value, 10) || 0)
+                        }
+                        className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors ${
+                          formErrors.baseDurationDays
+                            ? 'border-rose-400 bg-rose-50'
+                            : 'border-neutral-200'
+                        }`}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                        hari
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Durasi Revisi
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.revisionDurationDays}
+                        onChange={(e) =>
+                          handleChange('revisionDurationDays', parseInt(e.target.value, 10) || 0)
+                        }
+                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                        hari
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Durasi Dumi
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.dummyDurationDays}
+                        onChange={(e) =>
+                          handleChange('dummyDurationDays', parseInt(e.target.value, 10) || 0)
+                        }
+                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                        hari
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                      Per 100 Unit
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={formData.durationPer100UnitsDays}
+                        onChange={(e) =>
+                          handleChange('durationPer100UnitsDays', parseInt(e.target.value, 10) || 0)
+                        }
+                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                        hari
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Pengaturan Tambahan ─────────────────────────────────── */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    Jumlah Unit Default
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={formData.defaultUnitCount}
+                    onChange={(e) =>
+                      handleChange('defaultUnitCount', parseInt(e.target.value, 10) || 1)
+                    }
+                    className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    Urutan Tampil (Sort Order)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.sortOrder}
+                    onChange={(e) =>
+                      handleChange('sortOrder', parseInt(e.target.value, 10) || 0)
+                    }
+                    className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Catatan Persyaratan */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                  Catatan Persyaratan
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.requirementsNote}
+                  onChange={(e) => handleChange('requirementsNote', e.target.value)}
+                  className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white resize-none transition-colors"
+                  placeholder="Dokumen atau syarat khusus untuk layanan ini (opsional)"
+                />
+              </div>
+
+              {/* Toggle Populer */}
+              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+                <button
+                  type="button"
+                  onClick={() => handleChange('isPopular', !formData.isPopular)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                    formData.isPopular ? 'bg-primary-700' : 'bg-neutral-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm ${
+                      formData.isPopular ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <div>
+                  <span className="text-sm font-medium text-neutral-800">
+                    Tandai sebagai Layanan Populer
+                  </span>
+                  <p className="text-[11px] text-neutral-500">
+                    Layanan ini akan ditampilkan dengan badge "Populer" di formulir pendaftaran.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-xl">
+              <Button variant="ghost" onClick={handleCloseModal}>
+                Batal
+              </Button>
+              <Button
+                variant="primary"
+                icon={<Save className="w-4 h-4" />}
+                onClick={handleSave}
+              >
+                {editingItem ? 'Simpan Perubahan' : 'Tambah Konten'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          Dialog Konfirmasi Hapus
+         ══════════════════════════════════════════════════════════════════ */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-neutral-900">
+                  Hapus Konten Layanan
+                </h3>
+                <p className="text-sm text-neutral-600 mt-1">
+                  Anda yakin ingin menghapus{' '}
+                  <span className="font-semibold text-neutral-900">
+                    "{deleteConfirm.name}"
+                  </span>
+                  ? Tindakan ini tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
+                Batal
+              </Button>
+              <Button
+                variant="danger"
+                icon={<Trash2 className="w-4 h-4" />}
+                onClick={() => handleDelete(deleteConfirm.id)}
+              >
+                Hapus Konten
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

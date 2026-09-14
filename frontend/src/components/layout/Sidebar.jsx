@@ -103,7 +103,7 @@ export const Sidebar = () => {
     if (currentUser.role === 'ADMIN') {
       baseInternal.push({
         label: 'Master Data & Konfigurasi',
-        path: '/internal/settings',
+        path: '/internal/settings/content',
         icon: <Settings className="w-5 h-5" />,
       });
     }
