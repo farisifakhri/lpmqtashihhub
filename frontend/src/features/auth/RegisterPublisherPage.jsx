@@ -18,7 +18,7 @@ import {
   UserCheck,
 } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.jpg';
+import lpmqLogo from '@/assets/lpmq.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
 
 export const RegisterPublisherPage = () => {

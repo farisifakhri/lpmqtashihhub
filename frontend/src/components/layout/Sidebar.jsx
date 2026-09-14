@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.jpg';
+import lpmqLogo from '@/assets/lpmq.png';
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
   const { currentUser } = useAuth();

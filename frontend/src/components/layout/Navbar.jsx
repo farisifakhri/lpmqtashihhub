@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.jpg';
+import lpmqLogo from '@/assets/lpmq.png';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const { currentUser, logout } = useAuth();

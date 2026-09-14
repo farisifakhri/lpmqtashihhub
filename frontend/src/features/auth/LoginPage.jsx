@@ -3,7 +3,7 @@ import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.jpg';
+import lpmqLogo from '@/assets/lpmq.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
 
 export const LoginPage = () => {
@@ -70,7 +70,7 @@ export const LoginPage = () => {
             <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-neutral-900/70 via-neutral-900/30 to-transparent pt-12">
               <div className="backdrop-blur-sm bg-white/20 p-4 rounded-2xl border border-white/30 text-white shadow-sm">
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
-                  Layanan Pentashihan Naskah Al-Qur'an Terpadu & Terverifikasi
+                  Sistem Informasi Pentashihan Naskah Al-Qur'an (SIPNA) - LPMQ Kementerian Agama RI
                 </h3>
               </div>
             </div>
