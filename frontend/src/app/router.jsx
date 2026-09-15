@@ -9,6 +9,9 @@ import { InternalDashboard } from '@/features/internal/InternalDashboard';
 import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
 import { VerifikatorInboxPage } from '@/features/verification/VerifikatorInboxPage';
 import { VerificationInspectionPage } from '@/features/verification/VerificationInspectionPage';
+import { InternalPaymentQueuePage } from '@/features/verification/InternalPaymentQueuePage';
+import { DistributorHandoverInboxPage } from '@/features/distribution/DistributorHandoverInboxPage';
+import { PublisherBillingPage } from '@/features/billing/PublisherBillingPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ContentConfiguration } from '@/features/internal/settings/ContentConfiguration';
 import { UserManagementPage } from '@/features/internal/users/UserManagementPage';
@@ -80,25 +83,7 @@ export const router = createBrowserRouter([
         path: 'publisher/billing',
         element: (
           <ProtectedRoute portalType="publisher">
-            <ModulePlaceholder
-              moduleCode="PAY-01"
-              title="Billing PNBP & Riwayat Pembayaran"
-              moduleName="PAY-01/02 Pembayaran PNBP"
-              sprintTarget="Sprint 3"
-              description="Informasi kode billing SIMPONI, nominal tarif resmi berdasar snapshot saat pendaftaran, dan unggah bukti transfer."
-              targetTables={['payment_records', 'registrations', 'service_types']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=AWAITING_PAYMENT', desc: 'Daftar tagihan menunggu pembayaran' },
-                { method: 'GET', path: '/api/v1/registrations?status=PAYMENT_VERIFICATION', desc: 'Daftar tagihan dalam verifikasi bukti bayar' },
-              ]}
-              allowedRoles={['ADMIN_PENERBIT', 'SUPERADMIN', 'VERIFIKATOR']}
-              sopReference="SOP Pendaftaran & Pentashihan Mushaf Al-Qur'an (Tarif PNBP PP No. 59/2020)"
-              businessRules={[
-                'Nominal tarif dan durasi SLA disimpan sebagai snapshot permanen saat pengajuan disubmit',
-                'Pembayaran MVP dicatat manual oleh verifikator (SIMPONI adapter di fase lanjut)',
-                'Distribusi naskah dilarang sebelum pembayaran dikonfirmasi lunas (PAYMENT_VERIFIED)',
-              ]}
-            />
+            <PublisherBillingPage />
           </ProtectedRoute>
         ),
       },
@@ -155,28 +140,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'internal/payments',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <InternalPaymentQueuePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'internal/distributions',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'SUPERADMIN']}>
-            <ModulePlaceholder
-              moduleCode="DIS-01"
-              title="Distribusi & Penugasan Tim Pentashih"
-              moduleName="DIS-01 Distribusi Tim Tashih"
-              sprintTarget="Sprint 3"
-              description="Pembagian berkas naskah ke Tim Distribusi pentashih berdasar beban kerja dan jadwal sidang."
-              targetTables={['distribution_teams', 'team_members', 'assignments', 'registrations']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/master/distribution-teams', desc: 'Daftar Tim Distribusi SK Aktif' },
-                { method: 'GET', path: '/api/v1/registrations?status=WAITING_DISTRIBUTION', desc: 'Naskah siap sidang pentashihan' },
-              ]}
-              allowedRoles={['DISTRIBUTOR', 'SUPERADMIN']}
-              sopReference="SOP Pentashihan Master Mushaf Al-Qur'an - Distribusi Naskah (v2.2)"
-              businessRules={[
-                'Tim dipilih dari SK Tim Distribusi aktif yang telah disahkan',
-                'Penugasan mencakup seluruh pentashih dalam tim dengan due date',
-                'Distributor memantau beban kerja antar tim pentashih',
-              ]}
-            />
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage />
           </ProtectedRoute>
         ),
       },

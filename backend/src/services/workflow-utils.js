@@ -5,7 +5,9 @@ export function fail(statusCode, message) {
 }
 
 export function requireRole(user, roles) {
-  if (!user.roles.some(role => roles.includes(role))) fail(403, `Tindakan ini hanya dapat dilakukan oleh ${roles.map(roleLabel).join(' atau ')}. Gunakan akun dengan kewenangan tersebut atau hubungi petugas terkait.`);
+  if (!user?.roles?.some(role => roles.includes(role))) {
+    fail(403, `Tindakan ini hanya dapat dilakukan oleh ${roles.map(roleLabel).join(' atau ')}. Gunakan akun dengan kewenangan tersebut atau hubungi petugas terkait.`);
+  }
 }
 
 export async function registration(tx, id) {
@@ -42,6 +44,15 @@ export function requireStatus(reg, statuses) {
 }
 
 export function requireOwner(reg, user) {
-  requireRole(user, ['ADMIN_PENERBIT']);
-  if (!user.publisherId || reg.publisher_id !== user.publisherId) fail(403, 'Pengajuan bukan milik penerbit Anda.');
+  // SUPERADMIN has access across all tenants
+  if (user?.roles?.includes('SUPERADMIN')) return;
+
+  // ADMIN internal cannot touch publisher submissions
+  if (!user?.roles?.includes('ADMIN_PENERBIT')) {
+    fail(403, 'Tindakan ini khusus untuk akun Penerbit.');
+  }
+
+  if (!user.publisherId || reg.publisher_id !== user.publisherId) {
+    fail(403, 'Pengajuan bukan milik penerbit Anda.');
+  }
 }

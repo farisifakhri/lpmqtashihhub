@@ -75,7 +75,12 @@ export const TRANSITION_POLICY = {
     AWAITING_PAYMENT: {
       allowedRoles: ['VERIFIKATOR'],
       domainAction: true,
-      description: 'Verifikator mengirim surat hasil verifikasi kepada penerbit',
+      description: 'Verifikator mengirim surat hasil verifikasi (lolos) kepada penerbit',
+    },
+    REVISION_REQUIRED: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator mengirim surat hasil verifikasi (perlu perbaikan) kepada penerbit',
     },
   },
   AWAITING_PAYMENT: {
@@ -90,6 +95,11 @@ export const TRANSITION_POLICY = {
       allowedRoles: ['VERIFIKATOR'],
       domainAction: true,
       description: 'Pembayaran terverifikasi dan master fisik diserahkan kepada distributor',
+    },
+    AWAITING_PAYMENT: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator mengembalikan bukti pembayaran yang tidak sesuai kepada penerbit',
     },
   },
   WAITING_DISTRIBUTOR_RECEIPT: {

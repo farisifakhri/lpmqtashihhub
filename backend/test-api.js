@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'test';
 import assert from 'node:assert/strict';
 import app from './src/app.js';
 import { prisma } from './src/config/database.js';
@@ -6,7 +7,10 @@ import { runWorkflowTests } from './tests/workflow.integration.js';
 import { runMasterTests } from './tests/master.integration.js';
 import { runVerificationIntakeTests } from './tests/verification-intake.integration.js';
 import { runVerificationReviewTests } from './tests/verification-review.integration.js';
+import { runVerificationApprovalPaymentTests } from './tests/verification-approval-payment.integration.js';
+import { runHandoverTests } from './tests/handover.integration.js';
 import { runUserManagementTests } from './tests/user-management.integration.js';
+import { runVerificationPerformanceRbacTests } from './tests/verification-performance-rbac.integration.js';
 
 const PORT = 5005;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
@@ -437,7 +441,10 @@ async function runTests() {
       await runWorkflowTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, dokumentatorToken, adminToken, serviceId: selectedService.id });
       await runVerificationIntakeTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runVerificationReviewTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
+      await runVerificationApprovalPaymentTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
+      await runHandoverTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runUserManagementTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken });
+      await runVerificationPerformanceRbacTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken, publisherBToken, serviceId: selectedService.id });
 
       console.log('\n========================================');
       console.log(`Ringkasan Pengujian: Total ${totalTests} | Lolos: ${passedTests} | Gagal: ${failedTests}`);

@@ -94,3 +94,18 @@ export const saveChecklistSchema = {
 
 export const verificationDraftIdSchema = { params: z.object({ id: z.string().uuid(), documentId: z.string().uuid() }) };
 export const verificationAttachmentSchema = { params: z.object({ documentId: z.string().uuid(), fileId: z.string().uuid() }) };
+export const documentIdSchema = { params: idParams };
+export const returnVerificationSchema = {
+  params: idParams,
+  body: z.object({
+    reason: z.string().trim().min(5, 'Alasan pengembalian draf surat hasil verifikasi minimal 5 karakter.').max(1000),
+  }).strict(),
+};
+export const sendVerificationSchema = {
+  params: idParams,
+  body: z.object({
+    channel: z.enum(['IN_APP', 'EMAIL']).default('IN_APP').optional(),
+    notes: z.string().trim().max(1000).optional(),
+  }).strict().optional(),
+};
+

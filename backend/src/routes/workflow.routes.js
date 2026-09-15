@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { emptyAction, confirmPaymentSchema, assignmentSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
+import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, assignmentSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
 import { updateCalendar } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
 import * as distribution from '../services/distribution.service.js';
@@ -25,9 +25,15 @@ router.patch('/notifications/:id/read', authenticate, authorize('ADMIN_PENERBIT'
   return prisma.notification.findUnique({ where: { id: notification.id } });
 }));
 
-router.post('/registrations/:id/payments', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.createPayment(req.params.id, req.user), 201));
-router.post('/payments/:id/confirm', authenticate, authorize('ADMIN_PENERBIT'), validate(confirmPaymentSchema), action(req => payment.confirmPayment(req.params.id, req.body, req.user)));
-router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user)));
+// Pembayaran & Tagihan PNBP (Epic G: PR-VER-05)
+router.get('/payments', authenticate, validate(paymentQuerySchema), action(req => payment.listPayments(req.query, req.user)));
+router.get('/payments/:id', authenticate, action(req => payment.getPaymentDetail(req.params.id, req.user)));
+router.get('/registrations/:id/payment', authenticate, action(req => payment.getRegistrationPayment(req.params.id, req.user)));
+router.post('/registrations/:id/payments', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.createPayment(req.params.id, req.user, req), 201));
+router.post('/payments/:id/confirm', authenticate, authorize('ADMIN_PENERBIT'), validate(confirmPaymentSchema), action(req => payment.confirmPayment(req.params.id, req.body, req.user, req)));
+router.post('/payments/:id/return', authenticate, authorize('VERIFIKATOR'), validate(returnPaymentSchema), action(req => payment.returnPayment(req.params.id, req.body, req.user, req)));
+router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user, req)));
+
 router.post('/registrations/:id/assignments', authenticate, authorize('DISTRIBUTOR'), validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
 router.get('/distribution-teams/:id/workload', authenticate, authorize('DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));

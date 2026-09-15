@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
+import { handoverApi } from '@/api/handover.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { WorkflowStepper } from '@/components/common/WorkflowStepper';
@@ -32,6 +33,7 @@ import {
   FileCode,
   ExternalLink,
   BookOpen,
+  X,
 } from 'lucide-react';
 
 const CHECKLIST_DEFINITIONS = [
@@ -73,6 +75,17 @@ export const VerificationInspectionPage = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [letterTab, setLetterTab] = useState('editor'); // 'editor' | 'preview'
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+
+  // Handover to Distributor State (Langkah 7 SOP - PR-VER-06)
+  const [distributors, setDistributors] = useState([]);
+  const [handoverModalOpen, setHandoverModalOpen] = useState(false);
+  const [selectedDistributorId, setSelectedDistributorId] = useState('');
+  const [handoverCondition, setHandoverCondition] = useState('BAIK');
+  const [handoverVolumeCount, setHandoverVolumeCount] = useState(30);
+  const [handoverNotes, setHandoverNotes] = useState('');
+  const [handoverModalError, setHandoverModalError] = useState(null);
 
   // Form State
   const [checklist, setChecklist] = useState(
@@ -95,6 +108,19 @@ export const VerificationInspectionPage = () => {
       if (res?.data) {
         const data = res.data;
         setDetail(data);
+
+        // Fetch distributors for handover if verifier or admin
+        try {
+          const distRes = await handoverApi.listDistributors();
+          if (distRes?.data && Array.isArray(distRes.data)) {
+            setDistributors(distRes.data);
+            if (distRes.data.length > 0 && !selectedDistributorId) {
+              setSelectedDistributorId(distRes.data[0].id);
+            }
+          }
+        } catch {
+          // Abaikan jika user tidak memiliki role untuk list distributors
+        }
 
         // Pre-fill form if existing draft exists
         const latestDoc = data.latest_result_document;
@@ -272,11 +298,109 @@ export const VerificationInspectionPage = () => {
     }
   };
 
+  const handleApproveDocument = async () => {
+    if (!latestResultDoc?.id) return;
+    if (!window.confirm('Apakah Anda yakin ingin menyetujui dan menandatangani surat hasil verifikasi ini secara resmi?')) return;
+    setActionLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await verificationApi.approveDocument(latestResultDoc.id);
+      setSuccessMessage('Surat hasil verifikasi berhasil disetujui dan disahkan oleh Kepala LPMQ.');
+      await fetchDetail();
+    } catch (err) {
+      setError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReturnDocument = async (e) => {
+    e?.preventDefault();
+    if (!latestResultDoc?.id) return;
+    if (!returnReason.trim() || returnReason.trim().length < 5) {
+      setError('Alasan pengembalian draf minimal 5 karakter.');
+      return;
+    }
+    setActionLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await verificationApi.returnDocument(latestResultDoc.id, { reason: returnReason.trim() });
+      setSuccessMessage('Draf surat hasil verifikasi berhasil dikembalikan ke verifikator dengan catatan perbaikan.');
+      setReturnModalOpen(false);
+      setReturnReason('');
+      await fetchDetail();
+    } catch (err) {
+      setError(err.message || 'Gagal mengembalikan draf hasil verifikasi.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSendDocument = async () => {
+    if (!latestResultDoc?.id) return;
+    if (!window.confirm('Kirimkan surat hasil verifikasi resmi kepada penerbit dan terbitkan tagihan pembayaran PNBP?')) return;
+    setActionLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await verificationApi.sendDocument(latestResultDoc.id, { channel: 'IN_APP' });
+      setSuccessMessage('Surat hasil verifikasi telah berhasil dikirimkan kepada penerbit dan tagihan pembayaran PNBP aktif terbit.');
+      await fetchDetail();
+    } catch (err) {
+      setError(err.message || 'Gagal mengirimkan surat hasil verifikasi.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCreateHandover = async (e) => {
+    e?.preventDefault();
+    if (!detail?.registration?.id) return;
+    if (!selectedDistributorId) {
+      setHandoverModalError('Silakan pilih petugas Distributor penerima naskah.');
+      return;
+    }
+
+    setActionLoading(true);
+    setHandoverModalError(null);
+    try {
+      const payload = {
+        to_user_id: selectedDistributorId,
+        condition: handoverCondition.trim() || 'BAIK',
+        volume_count: Number(handoverVolumeCount) || 30,
+        notes: handoverNotes.trim() || undefined,
+      };
+
+      await handoverApi.createHandover(detail.registration.id, payload);
+      setSuccessMessage(
+        'Master fisik mushaf berhasil diserahkan kepada Distributor. Nomor BAST telah terbit dan status naskah berpindah ke "Menunggu Distributor".'
+      );
+      setHandoverModalOpen(false);
+      setHandoverNotes('');
+      await fetchDetail();
+    } catch (err) {
+      setHandoverModalError(err.message || 'Gagal menyerahkan master fisik ke distributor.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleCopyReceipt = (val) => {
     if (!val) return;
     navigator.clipboard?.writeText(val);
     setCopiedReceipt(true);
     setTimeout(() => setCopiedReceipt(false), 2000);
+  };
+
+  const formatDateOnly = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   };
 
   // Format tanggal Indonesia
@@ -328,6 +452,32 @@ export const VerificationInspectionPage = () => {
   const isCompletedOrSubmitted =
     assignment.status === 'COMPLETED' || latestResultDoc?.status === 'SUBMITTED';
   const isReadOnly = !isInProgress;
+
+  const userRoles = Array.isArray(currentUser?.roles)
+    ? currentUser.roles
+    : (currentUser?.role ? [currentUser.role] : []);
+  const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
+  const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
+
+  const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
+  const canVerifierSend = isVerifier && (registration.status === 'VERIFICATION_APPROVED' || latestResultDoc?.status === 'APPROVED');
+  const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
+
+  const latestPayment = registration.payment_records?.[0];
+  const latestHandover = registration.physical_handovers?.[0];
+  const isPaymentVerified = latestPayment?.status === 'VERIFIED';
+  const canVerifierHandover =
+    (isVerifier || isAdmin) &&
+    registration.status === 'PAYMENT_VERIFICATION' &&
+    isPaymentVerified &&
+    (!latestHandover || latestHandover.status === 'RETURNED');
+  const isWaitingDistributor = registration.status === 'WAITING_DISTRIBUTOR_RECEIPT';
+  const isHandoverReceived =
+    latestHandover?.status === 'RECEIVED' ||
+    ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS', 'READY_FOR_STT', 'STT_ISSUED', 'COMPLETED'].includes(
+      registration.status
+    );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-24">
@@ -1153,7 +1303,7 @@ export const VerificationInspectionPage = () => {
           </div>
         )}
 
-        {/* Action Button Footer */}
+        {/* Action Button Footer Verifikator Input Draf */}
         {isInProgress && (
           <div className="pt-6 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-end gap-3">
             <Button
@@ -1178,7 +1328,80 @@ export const VerificationInspectionPage = () => {
           </div>
         )}
 
-        {isCompletedOrSubmitted && (
+        {/* Panel Aksi Persetujuan Kepala LPMQ (Epic E - BR-VER-013) */}
+        {canHeadApprove && (
+          <div className="p-5 bg-gradient-to-r from-amber-50/90 via-amber-100/60 to-emerald-50/80 border border-amber-300 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-200 text-amber-900 rounded-xl shrink-0">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  Otoritas Pengesahan Kepala LPMQ
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-200 text-amber-900">
+                    BR-VER-013
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                  Draf surat hasil verifikasi telah diajukan oleh Verifikator. Anda memiliki wewenang untuk menyetujui serta menandatangani surat secara resmi, atau mengembalikan draf untuk diperbaiki.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setReturnModalOpen(true)}
+                disabled={actionLoading}
+                className="w-full md:w-auto text-xs text-rose-700 border-rose-300 hover:bg-rose-50 hover:border-rose-400 font-semibold"
+              >
+                <AlertTriangle className="w-4 h-4 mr-1.5" />
+                Kembalikan Draf
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleApproveDocument}
+                disabled={actionLoading}
+                className="w-full md:w-auto text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-5 py-2.5 shadow-sm"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Panel Aksi Pengiriman Surat & Penerbitan PNBP oleh Verifikator (Epic F & G) */}
+        {canVerifierSend && (
+          <div className="p-5 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-100/70 border border-emerald-300 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-emerald-200 text-emerald-900 rounded-xl shrink-0">
+                <FileCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Surat Telah Disetujui Kepala LPMQ
+                </h4>
+                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                  Surat hasil verifikasi telah ditandatangani secara resmi. Silakan kirimkan surat ini kepada penerbit dan otomatis terbitkan tagihan billing PNBP.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+              <Button
+                variant="primary"
+                onClick={handleSendDocument}
+                disabled={actionLoading}
+                className="w-full md:w-auto text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-6 py-2.5 shadow-sm inline-flex items-center justify-center gap-2"
+              >
+                <Send className="w-4 h-4" />
+                {actionLoading ? 'Mengirimkan...' : 'Kirim Surat Resmi & Terbitkan Billing PNBP'}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Status Banner Pengajuan Masih Menunggu Kepala LPMQ (untuk Non-Kepala) */}
+        {isCompletedOrSubmitted && !canHeadApprove && !canVerifierSend && !isSent && (
           <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl flex items-center gap-3 text-indigo-900 text-xs shadow-2xs">
             <Clock className="w-5 h-5 text-indigo-600 flex-shrink-0" />
             <div>
@@ -1190,7 +1413,334 @@ export const VerificationInspectionPage = () => {
             </div>
           </div>
         )}
+
+        {/* Status Banner Dokumen Resmi Telah Terkirim (Epic G) */}
+        {isSent && (
+          <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-slate-700 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-900">
+                  Surat Hasil Verifikasi Resmi Telah Terkirim ke Penerbit
+                </p>
+                <p className="text-slate-600">
+                  Surat hasil verifikasi berstatus <span className="font-semibold text-emerald-800">SENT</span> dan tagihan PNBP telah diterbitkan dengan masa aktif 7 hari kalender.
+                  Status registrasi terkini: <span className="font-bold text-slate-800">{registration.status}</span>.
+                </p>
+              </div>
+            </div>
+            {registration.status === 'PAYMENT_VERIFICATION' && (
+              <span className="px-3 py-1.5 rounded-lg bg-amber-100 text-amber-800 font-bold text-xs whitespace-nowrap">
+                {isPaymentVerified ? 'Pembayaran Lunas (Terverifikasi)' : 'Menunggu Verifikasi Pembayaran'}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Panel Aksi Serah Terima Master Fisik ke Distributor (Langkah 7 SOP - PR-VER-06) */}
+        {canVerifierHandover && (
+          <div className="p-5 bg-gradient-to-r from-teal-50 via-emerald-50 to-emerald-100/70 border border-emerald-300 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-emerald-200 text-emerald-900 rounded-xl shrink-0">
+                <PackageCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                  Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">
+                    SOP v2.2
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                  Pembayaran PNBP telah diverifikasi sah (LUNAS). Verifikator wajib menyerahkan naskah fisik cetak ukuran A4 (dijilid per juz, 30 jilid) kepada petugas Distributor di loket pentashihan untuk diterbitkan Berita Acara Serah Terima (BAST).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-end">
+              <Button
+                variant="primary"
+                onClick={() => setHandoverModalOpen(true)}
+                disabled={actionLoading}
+                className="w-full md:w-auto text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-6 py-2.5 shadow-sm inline-flex items-center justify-center gap-2"
+              >
+                <PackageCheck className="w-4 h-4" />
+                Serahkan Master Fisik & Terbitkan BAST
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Status Banner Menunggu Konfirmasi Loket Distributor (Langkah 8 SOP) */}
+        {isWaitingDistributor && latestHandover && (
+          <div className="p-5 bg-amber-50/90 border border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-amber-900 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-amber-200 text-amber-900 rounded-xl shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-amber-950">
+                  Master Fisik Telah Diserahkan &bull; Menunggu Konfirmasi Distributor
+                </p>
+                <p className="text-amber-800">
+                  BAST Nomor: <span className="font-mono font-bold">{latestHandover.receipt_no}</span> &bull; Diserahkan kepada petugas Distributor{' '}
+                  <span className="font-bold">{latestHandover.to_user?.name || 'Distributor'}</span> pada{' '}
+                  {formatDate(latestHandover.handed_over_at)} ({latestHandover.volume_count} Jilid A4).
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/internal/distributions"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs whitespace-nowrap shadow-xs transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Buka Antrean Distributor
+            </Link>
+          </div>
+        )}
+
+        {/* Status Banner Master Fisik Resmi Diterima Distributor (Langkah 8 Selesai) */}
+        {isHandoverReceived && latestHandover && (
+          <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-emerald-900 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-emerald-200 text-emerald-900 rounded-xl shrink-0">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-emerald-950">
+                  Master Fisik Resmi Diterima di Meja Pentashihan (Langkah 8 SOP Selesai)
+                </p>
+                <p className="text-emerald-800">
+                  BAST <span className="font-mono font-bold">{latestHandover.receipt_no}</span> telah disahkan oleh Distributor pada{' '}
+                  {formatDate(latestHandover.received_at)}. Tenggat pentashihan sidang ditetapkan pada{' '}
+                  <span className="font-bold">{formatDateOnly(latestHandover.tashih_due_at)}</span>. Naskah siap diagendakan ke tim sidang pentashih.
+                </p>
+              </div>
+            </div>
+            <span className="px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs whitespace-nowrap border border-emerald-200">
+              Siap Distribusi Sidang
+            </span>
+          </div>
+        )}
+
+        {/* Warning Banner Jika Master Fisik Pernah Dikembalikan Distributor (Cacat Fisik) */}
+        {latestHandover?.status === 'RETURNED' && (
+          <div className="p-5 bg-rose-50 border border-rose-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-rose-900 shadow-2xs">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 bg-rose-200 text-rose-900 rounded-xl shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-rose-950">
+                  Master Fisik Terakhir Dikembalikan oleh Distributor (Cacat Fisik)
+                </p>
+                <p className="text-rose-800">
+                  BAST: <span className="font-mono font-semibold">{latestHandover.receipt_no}</span> &bull; Catatan: {latestHandover.notes || 'Master fisik cacat / halaman tidak lengkap.'}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHandoverModalOpen(true)}
+              className="text-xs text-rose-800 border-rose-300 hover:bg-rose-100 whitespace-nowrap font-bold"
+            >
+              Serahkan Ulang Fisik
+            </Button>
+          </div>
+        )}
       </div>
+
+      {/* Modal Pengembalian Draf (Kepala LPMQ) */}
+      {returnModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-rose-700 font-bold text-base">
+                <AlertTriangle className="w-5 h-5" />
+                Kembalikan Draf ke Verifikator
+              </div>
+              <button
+                onClick={() => setReturnModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Mohon berikan catatan arahan perbaikan secara spesifik kepada Verifikator. Draf surat akan dikembalikan ke status pemeriksaan aktif.
+            </p>
+
+            <form onSubmit={handleReturnDocument} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-800 mb-1.5">
+                  Alasan & Arahan Perbaikan <span className="text-rose-600">*</span>
+                </label>
+                <textarea
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="Contoh: Format penulisan rasm pada draf surat perlu disesuaikan dengan ketentuan Surat Keputusan..."
+                  rows={4}
+                  className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  required
+                />
+                <span className="text-[11px] text-slate-400">Minimal 5 karakter.</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setReturnModalOpen(false)}
+                  disabled={actionLoading}
+                  className="text-xs"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={actionLoading || returnReason.trim().length < 5}
+                  className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold"
+                >
+                  {actionLoading ? 'Mengembalikan...' : 'Kembalikan Draf'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Serah-Terima Master Fisik ke Distributor (Langkah 7 SOP - PR-VER-06) */}
+      {handoverModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
+                <PackageCheck className="w-5 h-5 text-emerald-700" />
+                Serah-Terima Master Fisik ke Distributor (Langkah 7 SOP)
+              </div>
+              <button
+                onClick={() => setHandoverModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1 text-xs text-emerald-950">
+              <p className="font-bold">Naskah: {registration.title}</p>
+              <p>Nomor Registrasi: {registration.registration_no}</p>
+              <p>Penerbit: {publisher.legal_name}</p>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Setelah data diserahkan, sistem akan otomatis menerbitkan Nomor BAST resmi (
+              <span className="font-mono text-emerald-800 font-bold">BAST-VER-DIST-...</span>) dan memindahkan status naskah ke{' '}
+              <span className="font-bold text-slate-800">Menunggu Distributor (WAITING_DISTRIBUTOR_RECEIPT)</span>.
+            </p>
+
+            {handoverModalError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                <span>{handoverModalError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateHandover} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Pilih Petugas Distributor Penerima <span className="text-rose-600">*</span>
+                </label>
+                {distributors.length > 0 ? (
+                  <select
+                    value={selectedDistributorId}
+                    onChange={(e) => setSelectedDistributorId(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 font-medium"
+                    required
+                  >
+                    {distributors.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} {d.nip ? `(NIP: ${d.nip})` : ''} - Petugas Distributor
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                    Tidak ditemukan petugas Distributor aktif. Hubungi Administrator.
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Kondisi Fisik Master <span className="text-rose-600">*</span>
+                  </label>
+                  <select
+                    value={handoverCondition}
+                    onChange={(e) => setHandoverCondition(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 font-medium"
+                    required
+                  >
+                    <option value="BAIK">BAIK (Rapi & Lengkap)</option>
+                    <option value="LENGKAP">LENGKAP (30 Juz A4)</option>
+                    <option value="CUKUP">CUKUP</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-800 mb-1">
+                    Jumlah Jilid Fisik <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    value={handoverVolumeCount}
+                    onChange={(e) => setHandoverVolumeCount(e.target.value)}
+                    className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600 font-medium"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 mb-1">
+                  Catatan Penyerahan Verifikator (Opsional)
+                </label>
+                <textarea
+                  value={handoverNotes}
+                  onChange={(e) => setHandoverNotes(e.target.value)}
+                  placeholder="Contoh: Master cetak A4 dijilid spiral per juz lengkap 1-30 juz diserahkan di loket pentashihan..."
+                  rows={3}
+                  className="w-full p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setHandoverModalOpen(false)}
+                  disabled={actionLoading}
+                  className="text-xs"
+                >
+                  Batal
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={actionLoading || !selectedDistributorId}
+                  className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-5 py-2.5"
+                >
+                  {actionLoading ? 'Menerbitkan BAST...' : 'Serahkan & Terbitkan BAST'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

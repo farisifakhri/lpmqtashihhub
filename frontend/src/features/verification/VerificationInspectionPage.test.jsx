@@ -95,5 +95,49 @@ describe('VerificationInspectionPage Component', () => {
       expect(screen.getByText('Ajukan Draf ke Kepala LPMQ')).toBeInTheDocument();
     });
   });
+
+  it('merender panel Serah-Terima Master Fisik ke Distributor jika pembayaran PNBP telah diverifikasi sah', async () => {
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'COMPLETED',
+          decision: 'PASSED',
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: 'Mushaf Al-Qur\'an Standar Kemenag',
+          status: 'PAYMENT_VERIFICATION',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          payment_records: [
+            {
+              id: 'pay-1',
+              billing_no: 'BILL-001',
+              status: 'VERIFIED',
+              amount: 5000000,
+            },
+          ],
+          physical_handovers: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { status: 'SENT' },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor/i)).toBeInTheDocument();
+      expect(screen.getByText(/Serahkan Master Fisik & Terbitkan BAST/i)).toBeInTheDocument();
+    });
+  });
 });
 

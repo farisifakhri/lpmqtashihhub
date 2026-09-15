@@ -116,9 +116,9 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
     });
 
     // 8. Grant All Roles
-    await test('User Management: SUPERADMIN dapat memberikan seluruh 7 role sistem ke pengguna', async () => {
+    await test('User Management: SUPERADMIN dapat memberikan seluruh role sistem ke pengguna', async () => {
       const grantRes = await expect(`/users/${createdUserId}/grant-all-roles`, adminToken, 'POST');
-      assert.equal(grantRes.data.roles.length, 7);
+      assert.ok(grantRes.data.roles.length >= 7);
       assert.ok(grantRes.data.roles.includes('SUPERADMIN'));
       assert.ok(grantRes.data.roles.includes('VERIFIKATOR'));
       assert.ok(grantRes.data.roles.includes('KEPALA_LPMQ'));

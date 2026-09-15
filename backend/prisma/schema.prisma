@@ -428,6 +428,8 @@ model PaymentRecord {
   sync_status     String       @default("NOT_SYNCED")
   paid_at         DateTime?
   verified_at     DateTime?
+  expires_at      DateTime?
+  rejection_reason String?
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
 

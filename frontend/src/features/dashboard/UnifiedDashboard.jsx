@@ -22,9 +22,13 @@ import {
   FileText,
   ShieldCheck,
   CheckCircle2,
+  Activity,
+  TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { registrationApi } from '@/api/registration.api';
+import { reportApi } from '@/api/report.api';
 import { GreetingHeroCard } from '@/components/dashboard/GreetingHeroCard';
 import { DailyQuranWidget } from '@/components/dashboard/DailyQuranWidget';
 
@@ -32,7 +36,8 @@ export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isPublisher = userRoles.includes('ADMIN_PENERBIT') || currentUser?.role === 'ADMIN_PENERBIT';
-  const isAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
+  const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
+  const isAdmin = userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN' || isSuperAdmin;
 
   // Super Admin dapat melihat perspektif Operasional Internal atau Perspektif Layanan Penerbit
   const [adminViewMode, setAdminViewMode] = useState('OPERATIONAL'); // 'OPERATIONAL' | 'PUBLISHER'
@@ -40,6 +45,7 @@ export const UnifiedDashboard = () => {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [registrations, setRegistrations] = useState([]);
+  const [performanceReport, setPerformanceReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -63,6 +69,21 @@ export const UnifiedDashboard = () => {
   useEffect(() => {
     fetchRegistrations();
   }, [currentUser, filterMyTasksOnly]);
+
+  useEffect(() => {
+    if (!isPublisher) {
+      reportApi
+        .getVerificationPerformance()
+        .then((res) => {
+          if (res?.data) {
+            setPerformanceReport(res.data);
+          }
+        })
+        .catch(() => {
+          // Metrik non-kritis, diamkan agar tidak mengganggu tabel utama
+        });
+    }
+  }, [currentUser, isPublisher]);
 
   // Kalkulasi Metrik Internal
   const countVerification = registrations.filter((r) =>
@@ -232,14 +253,16 @@ export const UnifiedDashboard = () => {
   const greetingUserName = currentUser?.publisherName || currentUser?.name || 'Pengguna Terdaftar';
   const greetingRoleLabel = isPublisher
     ? 'Penerbit Mushaf Terdaftar'
-    : isAdmin
+    : isSuperAdmin
     ? 'Super Administrator Sistem LPMQ'
+    : (userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN')
+    ? 'Administrator Internal LPMQ'
     : `Petugas LPMQ — ${currentUser?.role || 'Staff'}`;
   const greetingExtra = isPublisher
     ? (currentUser?.publisherId ? `ID: ${currentUser.publisherId.slice(0, 8)}` : 'Verifikasi Kemenag')
     : (currentUser?.nip ? `NIP: ${currentUser.nip}` : 'LPMQ Kemenag RI');
 
-  const showOperationalCards = !isPublisher || (isAdmin && adminViewMode === 'OPERATIONAL');
+  const showOperationalCards = !isPublisher || (isSuperAdmin && adminViewMode === 'OPERATIONAL');
 
   return (
     <div className="space-y-6">
@@ -297,7 +320,6 @@ export const UnifiedDashboard = () => {
       </div>
 
       {/* 4. Statistics Overview Section */}
-      {/* 4. Statistics Overview Section */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3.5">
           <div className="flex items-center gap-2">
@@ -309,7 +331,7 @@ export const UnifiedDashboard = () => {
 
           <div className="flex items-center gap-2">
             {/* Super Admin Perspective Switcher */}
-            {isAdmin && (
+            {isSuperAdmin && (
               <div className="inline-flex items-center p-1 rounded-lg bg-neutral-100 border border-neutral-200 text-xs font-semibold">
                 <button
                   type="button"
@@ -509,6 +531,79 @@ export const UnifiedDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* 4b. Ringkasan Kinerja & Kepatuhan SLA (VER-I06) */}
+      {showOperationalCards && performanceReport && (
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 rounded-2xl p-5 text-white shadow-md border border-slate-700/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-700/60">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                <Activity className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-slate-200">
+                  Kinerja Verifikasi & Kepatuhan SLA (SOP v2.2)
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Target Standar: Telaah berkas max 48 jam • Masa bayar PNBP max 7 hari
+                </p>
+              </div>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 text-xs font-semibold border border-emerald-500/20 self-start sm:self-auto">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>SLA Kepatuhan: {performanceReport.summary?.compliance_rate_percent ?? 100}%</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="text-slate-400 text-[11px] mb-1">Rata-rata Waktu Telaah</div>
+              <div className="text-lg font-black text-white">
+                {performanceReport.summary?.avg_duration_hours ?? 0}{' '}
+                <span className="text-xs font-normal text-slate-400">jam</span>
+              </div>
+              <div className="text-[10px] text-emerald-400 mt-0.5">SOP Max: 48 jam</div>
+            </div>
+
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="text-slate-400 text-[11px] mb-1">Keputusan Telaah</div>
+              <div className="text-lg font-black text-white">
+                <span className="text-emerald-400">{performanceReport.summary?.total_passed ?? 0}</span>
+                <span className="text-slate-500 text-xs font-normal mx-1">/</span>
+                <span className="text-amber-400">{performanceReport.summary?.total_revision ?? 0}</span>
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">Lolos vs Perlu Revisi</div>
+            </div>
+
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="text-slate-400 text-[11px] mb-1">Antrean Overdue SLA</div>
+              <div className="text-lg font-black text-white">
+                {performanceReport.summary?.total_overdue ?? 0}{' '}
+                <span className="text-xs font-normal text-slate-400">berkas</span>
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                {(performanceReport.summary?.total_overdue || 0) > 0 ? (
+                  <span className="text-rose-400 font-semibold flex items-center gap-1">
+                    <AlertTriangle className="w-2.5 h-2.5" /> Perlu atensi
+                  </span>
+                ) : (
+                  <span className="text-emerald-400">Semua sesuai jadwal</span>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+              <div className="text-slate-400 text-[11px] mb-1">PNBP Terverifikasi</div>
+              <div className="text-sm sm:text-base font-black text-amber-300 truncate">
+                {formatRupiah(performanceReport.payments?.total_verified_amount ?? 0)}
+              </div>
+              <div className="text-[10px] text-slate-300 mt-0.5">
+                {performanceReport.payments?.verified_count ?? 0} transaksi lunas
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-status-danger text-sm flex items-start gap-2.5">

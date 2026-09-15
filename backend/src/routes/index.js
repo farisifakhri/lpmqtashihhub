@@ -7,6 +7,8 @@ import publicRoutes from './public.routes.js';
 import systemRoutes from './system.routes.js';
 import workflowRoutes from './workflow.routes.js';
 import verificationRoutes from './verification.routes.js';
+import handoverRoutes from './handover.routes.js';
+import reportRoutes from './report.routes.js';
 import userRoutes from './user.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
@@ -63,6 +65,8 @@ router.get('/health', getHealth);
 router.use('/auth', authRoutes);
 router.use(workflowRoutes);
 router.use(verificationRoutes);
+router.use(handoverRoutes);
+router.use(reportRoutes);
 router.use('/master', masterRoutes);
 router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);

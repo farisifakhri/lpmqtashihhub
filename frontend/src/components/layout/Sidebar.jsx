@@ -30,10 +30,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     role === 'PUBLISHER' ||
     roles.includes('ADMIN_PENERBIT');
 
-  const isAdmin =
+  const isSuperAdmin =
     role === 'SUPERADMIN' ||
-    role === 'ADMIN' ||
     roles.includes('SUPERADMIN');
+
+  const isAdmin =
+    role === 'ADMIN' ||
+    roles.includes('ADMIN') ||
+    isSuperAdmin;
 
   const isVerifikator =
     role === 'VERIFIKATOR' ||
@@ -159,14 +163,20 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         icon: <CheckSquare className="w-4 h-4 flex-shrink-0" />,
         description: 'Kelengkapan dokumen',
       });
+      workflowItems.push({
+        label: '1b. Verifikasi Pembayaran',
+        path: '/internal/payments',
+        icon: <CreditCard className="w-4 h-4 flex-shrink-0" />,
+        description: 'Setoran PNBP SIMPONI',
+      });
     }
 
-    if (isDistributor || isAdmin) {
+    if (isDistributor || isVerifikator || isAdmin) {
       workflowItems.push({
         label: '2. Distribusi Sidang',
         path: '/internal/distributions',
         icon: <Users className="w-4 h-4 flex-shrink-0" />,
-        description: 'SK & penugasan tim',
+        description: 'Serah-terima fisik & tim sidang',
       });
     }
 
@@ -213,7 +223,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           },
         ],
       });
+    }
 
+    if (isSuperAdmin) {
       internalSections.push({
         title: 'PORTAL PENERBIT (SUPER ADMIN)',
         items: [

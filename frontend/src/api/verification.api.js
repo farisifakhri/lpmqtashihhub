@@ -59,7 +59,50 @@ export const verificationApi = {
       body: payload,
     });
   },
+
+  /**
+   * Menyetujui dan menandatangani surat hasil verifikasi oleh Kepala LPMQ
+   * @param {string} documentId - Verification Document ID
+   */
+  approveDocument: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}/approve`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Mengembalikan draf surat hasil verifikasi ke verifikator dengan alasan perbaikan
+   * @param {string} documentId - Verification Document ID
+   * @param {Object} payload - { reason }
+   */
+  returnDocument: async (documentId, payload) => {
+    return apiClient(`/verification-documents/${documentId}/return`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengirimkan surat hasil verifikasi ke akun penerbit oleh verifikator
+   * @param {string} documentId - Verification Document ID
+   * @param {Object} payload - { channel, notes }
+   */
+  sendDocument: async (documentId, payload = {}) => {
+    return apiClient(`/verification-documents/${documentId}/send`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengambil detail dokumen verifikasi
+   * @param {string} documentId - Verification Document ID
+   */
+  getDocumentDetail: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}`);
+  },
 };
 
 export default verificationApi;
+
 

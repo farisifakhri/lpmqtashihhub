@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 
@@ -245,6 +247,14 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
           service_type: { include: { category: true } },
           manuscript_files: { orderBy: { version: 'desc' } },
           physical_master_intake: true,
+          payment_records: { orderBy: { created_at: 'desc' } },
+          physical_handovers: {
+            orderBy: { created_at: 'desc' },
+            include: {
+              from_user: { select: { id: true, name: true, nip: true } },
+              to_user: { select: { id: true, name: true, nip: true } },
+            },
+          },
           status_histories: {
             orderBy: { changed_at: 'desc' },
             include: { actor: { select: { id: true, name: true } } },
@@ -331,4 +341,262 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 
   return file;
 };
+
+// PR-VER-04: Persetujuan dan Tanda Tangan Kepala LPMQ (Epic E)
+export const approveVerificationDocument = (documentId, user, req) => prisma.$transaction(async tx => {
+  // BR-VER-013: Administrator teknis tidak menggantikan kewenangan penetapan Kepala LPMQ
+  if (!user.roles.includes('KEPALA_LPMQ')) {
+    fail(403, 'Persetujuan dan pengesahan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
+  }
+
+  const doc = await tx.verificationDocument.findUnique({
+    where: { id: documentId },
+    include: { registration: true, assignment: true },
+  });
+  if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
+  if (doc.document_type !== 'SURAT_HASIL_VERIFIKASI') {
+    fail(400, 'Hanya dokumen Surat Hasil Verifikasi yang memerlukan persetujuan.');
+  }
+  if (doc.status !== 'SUBMITTED') {
+    fail(409, `Dokumen saat ini berstatus "${doc.status}". Hanya dokumen yang berstatus SUBMITTED yang dapat disetujui.`);
+  }
+
+  const reg = await registration(tx, doc.registration_id);
+  requireStatus(reg, ['WAITING_VERIFICATION_APPROVAL']);
+
+  const now = new Date();
+  const updated = await tx.verificationDocument.update({
+    where: { id: documentId },
+    data: {
+      status: 'APPROVED',
+      approved_by_id: user.id,
+      approved_at: now,
+      signed_at: now,
+    },
+  });
+
+  await move(tx, reg, 'VERIFICATION_APPROVED', user, `Surat hasil verifikasi disetujui dan disahkan oleh Kepala LPMQ (${user.name})`, req);
+  await audit(tx, user, 'APPROVE_VERIFICATION_RESULT', 'VerificationDocument', documentId, updated, req);
+
+  // Notifikasi ke verifikator penugasan
+  if (doc.created_by_id) {
+    await tx.notification.create({
+      data: {
+        user_id: doc.created_by_id,
+        registration_id: reg.id,
+        type: 'DOCUMENT_APPROVED',
+        title: `Draf hasil verifikasi disetujui: ${reg.registration_no}`,
+        payload: {
+          document_id: documentId,
+          registration_no: reg.registration_no,
+          approver_name: user.name,
+        },
+      },
+    });
+  }
+
+  return updated;
+}, transactionOptions);
+
+export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  if (!user.roles.includes('KEPALA_LPMQ')) {
+    fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
+  }
+
+  const doc = await tx.verificationDocument.findUnique({
+    where: { id: documentId },
+    include: { registration: true, assignment: true },
+  });
+  if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
+  if (doc.document_type !== 'SURAT_HASIL_VERIFIKASI') {
+    fail(400, 'Hanya dokumen Surat Hasil Verifikasi yang dapat dikembalikan.');
+  }
+  if (doc.status !== 'SUBMITTED') {
+    fail(409, `Dokumen saat ini berstatus "${doc.status}". Hanya dokumen yang berstatus SUBMITTED yang dapat dikembalikan.`);
+  }
+
+  const reg = await registration(tx, doc.registration_id);
+  requireStatus(reg, ['WAITING_VERIFICATION_APPROVAL']);
+
+  const updated = await tx.verificationDocument.update({
+    where: { id: documentId },
+    data: {
+      status: 'RETURNED',
+    },
+  });
+
+  await move(tx, reg, 'IN_VERIFICATION', user, `Draf surat hasil verifikasi dikembalikan oleh Kepala LPMQ: ${data.reason}`, req);
+  await audit(tx, user, 'RETURN_VERIFICATION_RESULT', 'VerificationDocument', documentId, { ...updated, reason: data.reason }, req);
+
+  // Notifikasi ke verifikator penugasan
+  if (doc.created_by_id) {
+    await tx.notification.create({
+      data: {
+        user_id: doc.created_by_id,
+        registration_id: reg.id,
+        type: 'DRAFT_RETURNED',
+        title: `Draf hasil verifikasi dikembalikan: ${reg.registration_no}`,
+        payload: {
+          document_id: documentId,
+          registration_no: reg.registration_no,
+          reason: data.reason,
+          returned_by: user.name,
+        },
+      },
+    });
+  }
+
+  return updated;
+}, transactionOptions);
+
+// PR-VER-04: Pengiriman Surat Hasil Verifikasi kepada Penerbit (Epic F)
+export const sendVerificationResult = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['VERIFIKATOR']);
+
+  const doc = await tx.verificationDocument.findUnique({
+    where: { id: documentId },
+    include: {
+      registration: {
+        include: { publisher: true },
+      },
+      assignment: true,
+    },
+  });
+  if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
+  if (doc.document_type !== 'SURAT_HASIL_VERIFIKASI') {
+    fail(400, 'Hanya dokumen Surat Hasil Verifikasi yang dapat dikirimkan kepada penerbit.');
+  }
+  if (doc.assignment && doc.assignment.verifier_id !== user.id) {
+    fail(403, 'Anda bukan verifikator yang ditugaskan untuk mengirimkan surat hasil pengajuan ini.');
+  }
+  if (doc.status === 'SENT') {
+    fail(409, 'Surat hasil verifikasi sudah dikirimkan kepada penerbit sebelumnya.');
+  }
+  if (doc.status !== 'APPROVED') {
+    fail(409, `Surat hasil verifikasi belum disetujui Kepala LPMQ (status dokumen: ${doc.status}).`);
+  }
+
+  const reg = await registration(tx, doc.registration_id);
+  requireStatus(reg, ['VERIFICATION_APPROVED']);
+
+  const now = new Date();
+  const channel = data?.channel || 'IN_APP';
+  const targetName = reg.publisher?.legal_name || 'Penerbit';
+
+  const updatedDoc = await tx.verificationDocument.update({
+    where: { id: documentId },
+    data: {
+      status: 'SENT',
+      sent_at: now,
+      sent_channel: channel,
+      sent_to: targetName,
+    },
+  });
+
+  const decision = doc.content_snapshot?.decision || doc.assignment?.decision || 'PASSED';
+  let payment = null;
+
+  if (decision === 'PASSED') {
+    await move(tx, reg, 'AWAITING_PAYMENT', user, `Surat hasil telaah disahkan dan dikirimkan kepada penerbit (${targetName})`, req);
+
+    // Idempoten pembuatan tagihan pembayaran PNBP
+    const existingPayment = await tx.paymentRecord.findFirst({
+      where: { registration_id: reg.id },
+    });
+
+    if (!existingPayment) {
+      const total = reg.fee_sla_snapshot?.total_fee;
+      if (total === undefined || total === null || !Number.isFinite(Number(total)) || Number(total) < 0) {
+        fail(409, 'Tagihan belum dapat dibuat karena rincian tarif saat pendaftaran tidak lengkap. Hubungi administrator.');
+      }
+      const cleanRegNo = reg.registration_no.replace(/[^A-Za-z0-9]/g, '');
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Batas 7 hari
+
+      payment = await tx.paymentRecord.create({
+        data: {
+          registration_id: reg.id,
+          billing_no: `BILL-${cleanRegNo}-${randomUUID().slice(0, 6).toUpperCase()}`,
+          amount: new Prisma.Decimal(total),
+          provider: 'MANUAL',
+          status: 'UNPAID',
+          expires_at: expiresAt,
+        },
+      });
+      await audit(tx, user, 'CREATE_BILLING', 'PaymentRecord', payment.id, payment, req);
+    } else {
+      payment = existingPayment;
+    }
+
+    if (reg.publisher?.user_id) {
+      await tx.notification.create({
+        data: {
+          user_id: reg.publisher.user_id,
+          registration_id: reg.id,
+          type: 'VERIFICATION_RESULT_SENT',
+          title: `Hasil Verifikasi: Naskah Lolos & Tagihan PNBP Diterbitkan (${reg.registration_no})`,
+          payload: {
+            document_id: documentId,
+            billing_id: payment?.id,
+            billing_no: payment?.billing_no,
+            amount: payment?.amount,
+            expires_at: payment?.expires_at,
+          },
+        },
+      });
+    }
+  } else {
+    await move(tx, reg, 'REVISION_REQUIRED', user, `Surat hasil telaah (Perlu Perbaikan) dikirimkan kepada penerbit (${targetName})`, req);
+    if (reg.publisher?.user_id) {
+      await tx.notification.create({
+        data: {
+          user_id: reg.publisher.user_id,
+          registration_id: reg.id,
+          type: 'VERIFICATION_RESULT_REVISION',
+          title: `Hasil Verifikasi: Perbaikan Naskah Diperlukan (${reg.registration_no})`,
+          payload: {
+            document_id: documentId,
+            notes: doc.content_snapshot?.notes,
+          },
+        },
+      });
+    }
+  }
+
+  await audit(tx, user, 'SEND_VERIFICATION_RESULT', 'VerificationDocument', documentId, updatedDoc, req);
+  return { document: updatedDoc, payment };
+}, transactionOptions);
+
+export const getVerificationDocument = async (documentId, user) => {
+  const doc = await prisma.verificationDocument.findUnique({
+    where: { id: documentId },
+    include: {
+      registration: {
+        include: {
+          publisher: { select: { id: true, legal_name: true, entity_type: true } },
+          service_type: true,
+          payment_records: { orderBy: { created_at: 'desc' } },
+        },
+      },
+      created_by: { select: { id: true, name: true, nip: true } },
+      approved_by: { select: { id: true, name: true, nip: true } },
+    },
+  });
+  if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
+
+  const isHead = user.roles.includes('KEPALA_LPMQ');
+  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isVerifier = user.roles.includes('VERIFIKATOR');
+  const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
+
+  if (isOwnerPublisher) {
+    if (doc.status !== 'SENT') {
+      fail(403, 'Surat hasil verifikasi belum dikirimkan kepada Anda.');
+    }
+  } else if (!isHead && !isAdmin && !isVerifier) {
+    fail(403, 'Anda tidak memiliki hak akses untuk membaca dokumen ini.');
+  }
+
+  return doc;
+};
+
 
