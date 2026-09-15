@@ -20,14 +20,22 @@ export const TRANSITION_POLICY = {
     },
   },
   READY_FOR_VERIFICATION: {
-    IN_VERIFICATION: {
-      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
-      description: 'Verifikator memulai verifikasi dokumen & naskah',
+    VERIFICATION_ASSIGNED: {
+      allowedRoles: ['KEPALA_LPMQ'],
+      domainAction: true,
+      description: 'Kepala LPMQ menugaskan verifikator dan menerbitkan Nota Dinas Verifikasi',
     },
     CANCELLED: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan ditarik kembali oleh pemohon',
+    },
+  },
+  VERIFICATION_ASSIGNED: {
+    IN_VERIFICATION: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator yang ditugaskan memulai pemeriksaan',
     },
   },
   IN_VERIFICATION: {
@@ -53,13 +61,26 @@ export const TRANSITION_POLICY = {
     },
   },
   WAITING_VERIFICATION_APPROVAL: {
-    AWAITING_PAYMENT: {
+    VERIFICATION_APPROVED: {
       allowedRoles: ['KEPALA_LPMQ'],
-      description: 'Kepala LPMQ menyetujui hasil verifikasi untuk dilanjutkan ke pembayaran',
+      domainAction: true,
+      description: 'Kepala LPMQ menyetujui dan menandatangani surat hasil verifikasi',
     },
     IN_VERIFICATION: {
       allowedRoles: ['KEPALA_LPMQ'],
       description: 'Kepala LPMQ mengembalikan draf surat hasil verifikasi kepada verifikator untuk diperbaiki',
+    },
+  },
+  VERIFICATION_APPROVED: {
+    AWAITING_PAYMENT: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator mengirim surat hasil verifikasi (lolos) kepada penerbit',
+    },
+    REVISION_REQUIRED: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator mengirim surat hasil verifikasi (perlu perbaikan) kepada penerbit',
     },
   },
   AWAITING_PAYMENT: {
@@ -70,9 +91,22 @@ export const TRANSITION_POLICY = {
     },
   },
   PAYMENT_VERIFICATION: {
+    WAITING_DISTRIBUTOR_RECEIPT: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Pembayaran terverifikasi dan master fisik diserahkan kepada distributor',
+    },
+    AWAITING_PAYMENT: {
+      allowedRoles: ['VERIFIKATOR'],
+      domainAction: true,
+      description: 'Verifikator mengembalikan bukti pembayaran yang tidak sesuai kepada penerbit',
+    },
+  },
+  WAITING_DISTRIBUTOR_RECEIPT: {
     WAITING_DISTRIBUTION: {
-      allowedRoles: ['VERIFIKATOR', 'SUPERADMIN'],
-      description: 'Pembayaran diverifikasi lunas, naskah masuk antrean distribusi',
+      allowedRoles: ['DISTRIBUTOR'],
+      domainAction: true,
+      description: 'Distributor menerima master fisik dan menetapkan tenggat pentashihan',
     },
   },
   WAITING_DISTRIBUTION: {
@@ -415,7 +449,7 @@ export const submitRegistration = async (id, user, req) => {
 
 export const transitionStatus = async (id, toStatus, notes, user, req, expectedFromStatus) => {
   if (['READY_FOR_VERIFICATION', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS', 'READY_FOR_STT', 'STT_ISSUED'].includes(toStatus)) {
-    fail(400, 'Gunakan aksi submit, pembayaran, distribusi, sidang, atau dokumen resmi untuk transisi ini.');
+    fail(409, 'Gunakan aksi submit, pembayaran, distribusi, sidang, atau dokumen resmi untuk transisi ini.');
   }
   const reg = await prisma.registration.findUnique({
     where: { id },
@@ -431,7 +465,7 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
   const fromStatus = reg.status;
   if (expectedFromStatus && expectedFromStatus !== fromStatus) fail(409, 'Status pengajuan telah berubah sejak halaman dimuat.');
   if (fromStatus === 'TASHIH_IN_PROGRESS' || (toStatus === 'CANCELLED' && await prisma.paymentRecord.count({ where: { registration_id: id } }))) {
-    fail(400, 'Transisi ini memerlukan keputusan domain; pembatalan setelah billing belum tersedia.');
+    fail(409, 'Transisi ini memerlukan keputusan domain; pembatalan setelah billing belum tersedia.');
   }
   const policyForFrom = TRANSITION_POLICY[fromStatus];
   const rule = policyForFrom ? policyForFrom[toStatus] : null;
@@ -440,21 +474,32 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
     const error = new Error(
       `Pengajuan tidak dapat diubah dari "${statusLabel(fromStatus)}" ke "${statusLabel(toStatus)}". Ikuti tahapan pada detail pengajuan; muat ulang halaman jika status baru saja berubah.`
     );
-    error.statusCode = 400;
+    error.statusCode = 409;
     throw error;
+  }
+
+  if (rule.domainAction) {
+    fail(409, `Perubahan ke "${statusLabel(toStatus)}" memerlukan aksi khusus beserta dokumen dan catatan kewenangan. Gunakan halaman tugas sesuai peran.`);
   }
 
   const isSuperadmin = user.roles.includes('SUPERADMIN');
 
   // Pengecekan Otorisasi Role Spesifik
   // Persetujuan Kepala LPMQ tidak diwariskan kepada administrator teknis.
-  const hasAllowedRole = (isSuperadmin && fromStatus !== 'WAITING_VERIFICATION_APPROVAL') || user.roles.some((r) => rule.allowedRoles.includes(r));
+  const hasAllowedRole = user.roles.some((r) => rule.allowedRoles.includes(r));
   if (!hasAllowedRole) {
     const error = new Error(
       `Perubahan dari "${statusLabel(fromStatus)}" ke "${statusLabel(toStatus)}" hanya dapat dilakukan oleh ${rule.allowedRoles.map(roleLabel).join(' atau ')}. Hubungi petugas tersebut untuk melanjutkan pengajuan.`
     );
     error.statusCode = 403;
     throw error;
+  }
+
+  if (fromStatus === 'IN_VERIFICATION') {
+    const assignment = await prisma.verificationAssignment.findFirst({
+      where: { registration_id: id, verifier_id: user.id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
+    });
+    if (!assignment) fail(403, 'Hanya verifikator yang ditugaskan dapat memproses pemeriksaan ini.');
   }
 
   if (fromStatus === 'WAITING_VERIFICATION_APPROVAL' && toStatus === 'IN_VERIFICATION' && !notes?.trim()) {
@@ -500,9 +545,19 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
       },
     });
 
-    if (toStatus === 'IN_VERIFICATION' && fromStatus === 'READY_FOR_VERIFICATION') {
-      await tx.verificationAssignment.create({ data: { registration_id: id, verifier_id: user.id, status: 'IN_PROGRESS' } });
-    }
+    await tx.auditLog.create({
+      data: {
+        actor_id: user.id,
+        action: 'TRANSITION_REGISTRATION_STATUS',
+        subject_type: 'Registration',
+        subject_id: id,
+        before_json: { status: fromStatus },
+        after_json: { status: toStatus, notes: notes || null },
+        ip_address: req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || null,
+        user_agent: req?.headers?.['user-agent'] || null,
+      },
+    });
+
     if (['AWAITING_PAYMENT', 'REVISION_REQUIRED'].includes(toStatus)) {
       await tx.verificationAssignment.updateMany({
         where: { registration_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
@@ -517,16 +572,6 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
         service_type: true,
       },
     });
-  });
-
-  await logAudit({
-    actorId: user.id,
-    action: 'TRANSITION_REGISTRATION_STATUS',
-    subjectType: 'Registration',
-    subjectId: id,
-    beforeJson: { status: fromStatus },
-    afterJson: { status: toStatus, notes },
-    req,
   });
 
   return updated;
@@ -589,6 +634,7 @@ export const listRegistrations = async ({
           orderBy: { assigned_at: 'desc' },
           include: { verifier: { select: { id: true, name: true } } },
         },
+        physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
       },
       orderBy: { created_at: 'desc' },
     }),
@@ -620,6 +666,7 @@ export const getDetail = async (id, user) => {
       verification_assignments: {
         include: { verifier: { select: { id: true, name: true, nip: true } } },
       },
+      physical_master_intake: true,
       payment_records: true,
       assignments: {
         include: {

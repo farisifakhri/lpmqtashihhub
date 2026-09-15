@@ -12,27 +12,27 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed select-none min-h-[44px]';
+    'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none select-none min-h-[44px] active:scale-[0.98] cursor-pointer';
 
   const sizeStyles = {
-    sm: 'text-xs px-3 py-1.5 gap-1.5',
-    md: 'text-sm px-4 py-2 gap-2',
-    lg: 'text-base px-6 py-3 gap-2.5',
+    sm: 'text-xs px-3.5 py-1.5 gap-1.5 font-semibold',
+    md: 'text-sm px-4.5 py-2 gap-2 font-semibold',
+    lg: 'text-base px-6 py-3 gap-2.5 font-bold',
   };
 
   const variantStyles = {
     primary:
-      'bg-primary-700 text-white hover:bg-primary-800 active:bg-primary-800 focus:ring-primary-500 shadow-sm',
+      'bg-gradient-to-b from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white shadow-xs shadow-primary-950/15 hover:shadow-sm border border-primary-700/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] focus:ring-primary-600',
     secondary:
-      'bg-primary-100 text-primary-800 hover:bg-primary-200 active:bg-primary-300 focus:ring-primary-500 font-medium',
+      'bg-primary-50 hover:bg-primary-100 text-primary-800 hover:text-primary-900 border border-primary-200/80 shadow-2xs focus:ring-primary-500 font-semibold',
     outline:
-      'bg-transparent border border-primary-700 text-primary-700 hover:bg-primary-50 active:bg-primary-100 focus:ring-primary-500 font-medium',
+      'bg-white hover:bg-primary-50/40 border border-slate-300 hover:border-primary-600/60 text-slate-700 hover:text-primary-800 shadow-2xs focus:ring-primary-500 font-semibold',
     danger:
-      'bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800 focus:ring-rose-500 shadow-sm',
+      'bg-gradient-to-b from-rose-500 to-rose-700 hover:from-rose-600 hover:to-rose-800 text-white shadow-xs shadow-rose-950/15 hover:shadow-sm border border-rose-700/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] focus:ring-rose-500',
     gold:
-      'bg-gold-600 text-white hover:bg-gold-700 active:bg-gold-800 focus:ring-gold-400 shadow-sm border border-gold-700 font-semibold',
+      'bg-gradient-to-b from-gold-400 via-gold-500 to-gold-600 hover:from-gold-500 hover:to-gold-700 text-white shadow-xs shadow-gold-950/20 hover:shadow-sm border border-gold-600/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.3)] focus:ring-gold-400 font-bold',
     ghost:
-      'bg-transparent text-neutral-700 hover:bg-neutral-100 active:bg-neutral-200 focus:ring-neutral-400',
+      'bg-transparent text-slate-700 hover:bg-slate-100/80 hover:text-slate-900 active:bg-slate-200/60 focus:ring-slate-400 shadow-none border-transparent',
   };
 
   return (

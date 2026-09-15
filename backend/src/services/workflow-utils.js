@@ -5,7 +5,9 @@ export function fail(statusCode, message) {
 }
 
 export function requireRole(user, roles) {
-  if (!user.roles.some(role => roles.includes(role))) fail(403, `Tindakan ini hanya dapat dilakukan oleh ${roles.map(roleLabel).join(' atau ')}. Gunakan akun dengan kewenangan tersebut atau hubungi petugas terkait.`);
+  if (!user?.roles?.some(role => roles.includes(role))) {
+    fail(403, `Tindakan ini hanya dapat dilakukan oleh ${roles.map(roleLabel).join(' atau ')}. Gunakan akun dengan kewenangan tersebut atau hubungi petugas terkait.`);
+  }
 }
 
 export async function registration(tx, id) {
@@ -16,14 +18,17 @@ export async function registration(tx, id) {
   return tx.registration.findUnique({ where: { id } });
 }
 
-export async function audit(tx, user, action, subjectType, subjectId, after) {
+export async function audit(tx, user, action, subjectType, subjectId, after, req = null, before = null) {
   await tx.auditLog.create({ data: {
     actor_id: user.id, action, subject_type: subjectType, subject_id: subjectId,
+    before_json: before === null ? undefined : JSON.parse(JSON.stringify(before)),
     after_json: JSON.parse(JSON.stringify(after)),
+    ip_address: req?.ip || req?.socket?.remoteAddress || null,
+    user_agent: req?.headers?.['user-agent'] || null,
   } });
 }
 
-export async function move(tx, reg, status, user, notes) {
+export async function move(tx, reg, status, user, notes, req = null) {
   const result = await tx.registration.updateMany({
     where: { id: reg.id, status: reg.status }, data: { status },
   });
@@ -31,7 +36,7 @@ export async function move(tx, reg, status, user, notes) {
   await tx.statusHistory.create({ data: {
     registration_id: reg.id, from_status: reg.status, to_status: status, actor_id: user.id, notes,
   } });
-  await audit(tx, user, 'STATUS_TRANSITION', 'Registration', reg.id, { from: reg.status, to: status, notes });
+  await audit(tx, user, 'STATUS_TRANSITION', 'Registration', reg.id, { from: reg.status, to: status, notes }, req, { status: reg.status });
 }
 
 export function requireStatus(reg, statuses) {
@@ -39,6 +44,15 @@ export function requireStatus(reg, statuses) {
 }
 
 export function requireOwner(reg, user) {
-  requireRole(user, ['ADMIN_PENERBIT']);
-  if (!user.publisherId || reg.publisher_id !== user.publisherId) fail(403, 'Pengajuan bukan milik penerbit Anda.');
+  // SUPERADMIN has access across all tenants
+  if (user?.roles?.includes('SUPERADMIN')) return;
+
+  // ADMIN internal cannot touch publisher submissions
+  if (!user?.roles?.includes('ADMIN_PENERBIT')) {
+    fail(403, 'Tindakan ini khusus untuk akun Penerbit.');
+  }
+
+  if (!user.publisherId || reg.publisher_id !== user.publisherId) {
+    fail(403, 'Pengajuan bukan milik penerbit Anda.');
+  }
 }

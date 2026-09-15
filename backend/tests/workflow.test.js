@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { detectMime, MAX_UPLOAD_BYTES } from '../src/services/storage.service.js';
 import { assertManuscriptAccess } from '../src/services/file-access.service.js';
 import { calculateDueAt, jakartaDate } from '../src/services/sla.service.js';
-import { transitionStatus } from '../src/services/registration.service.js';
+import { transitionStatus, TRANSITION_POLICY } from '../src/services/registration.service.js';
 import { signDocument, renderDraft } from '../src/services/official-document.service.js';
 import { confirmPaymentSchema } from '../src/validators/workflow.validator.js';
 
@@ -43,11 +43,26 @@ test('SLA uses complete master calendar including holidays and Jakarta end of da
   await assert.rejects(calculateDueAt({ workingDay: { findMany: async () => [{ date: new Date('2026-09-12Z'), is_working_day: true }] } }, new Date('2026-09-10Z'), 1), error => error.statusCode === 409);
 });
 
-test('manual status endpoint cannot bypass payment, assignments, review or official signing', async () => {
+test('manual status endpoint cannot bypass payment, assignment, approval, handover or official signing', async () => {
   for (const status of ['PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS', 'READY_FOR_STT', 'STT_ISSUED', 'READY_FOR_VERIFICATION']) {
-    await assert.rejects(transitionStatus('id', status, '', { roles: ['SUPERADMIN'] }), error => error.statusCode === 400);
+    await assert.rejects(transitionStatus('id', status, '', { roles: ['SUPERADMIN'] }), error => error.statusCode === 409);
   }
   await assert.rejects(signDocument('id', { roles: ['SUPERADMIN'] }), error => error.statusCode === 403);
+});
+
+test('SOP verification separates assignment, approval, sending and physical receipt', () => {
+  const policy = TRANSITION_POLICY;
+  assert.equal(policy.READY_FOR_VERIFICATION.IN_VERIFICATION, undefined);
+  assert.deepEqual(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['KEPALA_LPMQ']);
+  assert.equal(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.domainAction, true);
+  assert.deepEqual(policy.VERIFICATION_ASSIGNED.IN_VERIFICATION.allowedRoles, ['VERIFIKATOR']);
+  assert.equal(policy.WAITING_VERIFICATION_APPROVAL.AWAITING_PAYMENT, undefined);
+  assert.deepEqual(policy.WAITING_VERIFICATION_APPROVAL.VERIFICATION_APPROVED.allowedRoles, ['KEPALA_LPMQ']);
+  assert.deepEqual(policy.VERIFICATION_APPROVED.AWAITING_PAYMENT.allowedRoles, ['VERIFIKATOR']);
+  assert.equal(policy.PAYMENT_VERIFICATION.WAITING_DISTRIBUTION, undefined);
+  assert.deepEqual(policy.PAYMENT_VERIFICATION.WAITING_DISTRIBUTOR_RECEIPT.allowedRoles, ['VERIFIKATOR']);
+  assert.deepEqual(policy.WAITING_DISTRIBUTOR_RECEIPT.WAITING_DISTRIBUTION.allowedRoles, ['DISTRIBUTOR']);
+  assert.equal(policy.WAITING_VERIFICATION_APPROVAL.VERIFICATION_APPROVED.allowedRoles.includes('SUPERADMIN'), false);
 });
 
 test('payment confirmation rejects client-controlled amount and free-form file path', () => {

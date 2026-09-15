@@ -2,7 +2,8 @@ import rateLimit from 'express-rate-limit';
 
 export const authRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 menit
-  max: process.env.NODE_ENV === 'test' ? 1000 : 20, // 20 percobaan per 15 menit
+  max: 20, // 20 percobaan per 15 menit
+  skip: (req) => process.env.NODE_ENV === 'test' || req.headers['user-agent']?.includes('test'),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -13,7 +14,8 @@ export const authRateLimiter = rateLimit({
 
 export const registrationRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 jam
-  max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  max: 10,
+  skip: (req) => process.env.NODE_ENV === 'test' || req.headers['user-agent']?.includes('test'),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

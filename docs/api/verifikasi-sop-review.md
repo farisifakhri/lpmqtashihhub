@@ -6,13 +6,13 @@ Sumber: [SOP Verifikasi Mushaf Al-Quran.xlsx](../SOP%20Verifikasi%20Mushaf%20Al-
 
 | Langkah / sel | Isi SOP | Implikasi implementasi |
 |---|---|---|
-| 1 / B6 | Penerbit mengirim bukti pendaftaran dan print out master A4 dijilid per juz | Diperlukan pencatatan penerimaan fisik; belum tersedia dalam modul saat ini |
-| 2 / J7 | Nota Dinas Verifikasi Mushaf Al-Quran | Nota Dinas adalah dokumen tahap verifikasi; penomoran dan penerbitannya belum diimplementasikan |
+| 1 / B6 | Penerbit mengirim bukti pendaftaran dan print out master A4 dijilid per juz | Deklarasi, status penerimaan, nomor tanda terima, dan bukti pendaftaran JSON tersedia; halaman portal khusus belum ada |
+| 2 / J7 | Nota Dinas Verifikasi Mushaf Al-Quran | Kepala LPMQ dapat menugaskan verifikator dan menyimpan Nota Dinas bernomor sebagai snapshot; PDF resmi belum ada |
 | 3 / B8, J8 | Verifikator memeriksa naskah dan menyusun draf surat pemberitahuan | Verifikator menyusun hasil, lalu mengajukan persetujuan Kepala |
 | 4 / B9 | Kepala menyetujui dan menandatangani; bila menolak, mengembalikan draf kepada verifikator | Persetujuan bukan wewenang verifikator. Pengembalian draf memakai IN_VERIFICATION, bukan REVISION_REQUIRED untuk penerbit |
 | 5 / B10 | Verifikator mengirim surat yang disahkan kepada penerbit | Persetujuan dan pengiriman adalah dua kejadian berbeda; endpoint pengiriman belum tersedia |
 | 6 / B11 | Penerbit menerima surat/lampiran dan membayar sesuai kode billing | Billing dan bukti pembayaran sudah tersedia secara manual; integrasi SIMPONI belum tersedia |
-| 7 / B12 | Pemeriksaan pembayaran dan penyerahan naskah kepada distributor | Verifikasi pembayaran memindahkan ke WAITING_DISTRIBUTION |
+| 7 / B12 | Pemeriksaan pembayaran dan penyerahan naskah kepada distributor | Pembayaran terverifikasi dicatat terpisah; penyerahan fisik menuju WAITING_DISTRIBUTOR_RECEIPT menunggu endpoint khusus |
 | 8 / B13 | Distributor menerima naskah untuk pentashihan | Alur berikutnya merujuk SOP pentashihan, bukan ditentukan oleh SOP verifikasi ini |
 
 Diagram dalam workbook juga membedakan naskah tidak lulus yang dikembalikan kepada penerbit dari surat pemberitahuan yang ditolak dan dikembalikan kepada verifikator. Karena itu, persetujuan draf surat tidak boleh disamakan dengan hasil LOLOS/TIDAK_LOLOS naskah. Modul surat yang direncanakan harus menyimpan keduanya secara terpisah dan hanya mengizinkan billing untuk hasil naskah yang lolos.
@@ -21,13 +21,13 @@ Waktu pada kolom H–I: langkah 1–2 masing-masing 30 menit, langkah 3 dua hari
 
 ## Perbaikan yang diterapkan setelah pencocokan
 
-- WAITING_VERIFICATION_APPROVAL → AWAITING_PAYMENT hanya oleh KEPALA_LPMQ.
+- WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED hanya oleh KEPALA_LPMQ; pengiriman ke penerbit merupakan aksi verifikator tersendiri.
 - WAITING_VERIFICATION_APPROVAL → IN_VERIFICATION oleh KEPALA_LPMQ, dengan alasan wajib.
 - Penugasan verifikator semula tetap berlaku saat draf dikembalikan; Kepala tidak menjadi verifikator baru.
 - SUPERADMIN tanpa peran Kepala tidak menjadi pengganti otoritas persetujuan.
 - Kontrak §0 diperbaiki agar tidak mengarahkan perbaikan draf internal ke portal penerbit.
 
-Perubahan ini memperbaiki guard role dan tujuan pengembalian pada workflow yang ada. Surat bernomor, penandatanganan surat hasil verifikasi, lampiran, pengiriman, tracking master fisik, dan SLA per langkah belum selesai. Implementasi saat ini belum bisa dinyatakan memenuhi seluruh SOP verifikasi.
+Fondasi PR-VER-01 menambah status, model data, dan guard sehingga lompatan lama menuju pembayaran atau distribusi tidak lagi tersedia. PR-VER-02 menambah API deklarasi dan penerimaan master fisik, bukti pendaftaran JSON, penugasan atomik Kepala LPMQ, Nota Dinas bermetadata, dan inbox assignment. Halaman frontend untuk langkah ini, PDF Nota Dinas resmi, surat hasil verifikasi, lampiran, pengiriman, dan SLA final per langkah belum selesai. Implementasi saat ini belum bisa dinyatakan memenuhi seluruh SOP verifikasi.
 
 ## Keputusan terbuka — menunggu rapat stakeholder
 

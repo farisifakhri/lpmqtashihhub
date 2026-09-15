@@ -20,3 +20,18 @@ const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
 export const calendarSchema = { body: z.object({ days: z.array(z.object({
   date: calendarDate, is_working_day: z.boolean(), source: z.string().trim().min(1).max(191), description: z.string().max(191).optional(),
 }).strict()).min(1).max(366) }).strict() };
+export const returnPaymentSchema = {
+  params,
+  body: z.object({
+    reason: z.string().trim().min(5, 'Alasan pengembalian / penolakan bukti pembayaran minimal 5 karakter.').max(1000),
+  }).strict(),
+};
+export const paymentQuerySchema = {
+  query: z.object({
+    status: z.enum(['UNPAID', 'PAID', 'VERIFIED', 'EXPIRED', 'CANCELLED']).optional(),
+    search: z.string().trim().max(191).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }),
+};
+

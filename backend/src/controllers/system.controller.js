@@ -208,7 +208,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
           prisma.verificationAssignment.count(),
         ]);
         const sample = await prisma.registration.findMany({
-          where: { status: { in: ['READY_FOR_VERIFICATION', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL'] } },
+          where: { status: { in: ['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED'] } },
           take: 5,
           include: {
             publisher: { select: { legal_name: true } },
@@ -227,7 +227,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
           ],
           endpoints: [
             { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_VERIFICATION', desc: 'Antrean Naskah Masuk' },
-            { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Transisi Status Verifikasi' },
+            { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Perbaikan draf atau pengajuan hasil; aksi SOP lain memerlukan endpoint khusus' },
           ],
           rbac_roles: ['VERIFIKATOR', 'SUPERADMIN'],
           sample_records: sample,
@@ -272,8 +272,9 @@ export const getModuleDiagnostics = async (req, res, next) => {
       case 'DIS-01':
       case 'DIS':
       case 'DISTRIBUTION': {
-        const [waitingDist, teamsCount, assignmentsCount] = await Promise.all([
+        const [waitingDist, waitingReceipt, teamsCount, assignmentsCount] = await Promise.all([
           prisma.registration.count({ where: { status: 'WAITING_DISTRIBUTION' } }),
+          prisma.registration.count({ where: { status: 'WAITING_DISTRIBUTOR_RECEIPT' } }),
           prisma.distributionTeam.count(),
           prisma.assignment.count(),
         ]);
@@ -292,6 +293,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
           tables: [
             { name: 'distribution_teams', row_count: teamsCount, status: 'SCHEMA_READY' },
             { name: 'assignments', row_count: assignmentsCount, status: 'SCHEMA_READY' },
+            { name: 'registrations (Menunggu Penerimaan Fisik)', row_count: waitingReceipt, status: 'SCHEMA_READY' },
             { name: 'registrations (Siap Distribusi)', row_count: waitingDist, status: 'SCHEMA_READY' },
           ],
           endpoints: [

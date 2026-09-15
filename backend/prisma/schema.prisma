@@ -28,6 +28,12 @@ model User {
   roles                    UserRole[]
   publisher                Publisher?
   verification_assignments VerificationAssignment[]
+  verification_assignments_made VerificationAssignment[] @relation("VerificationAssignmentIssuer")
+  verification_documents_created VerificationDocument[] @relation("VerificationDocumentCreator")
+  verification_documents_approved VerificationDocument[] @relation("VerificationDocumentApprover")
+  physical_master_receipts PhysicalMasterIntake[] @relation("PhysicalMasterIntakeReceiver")
+  physical_handovers_sent PhysicalManuscriptHandover[] @relation("PhysicalHandoverSender")
+  physical_handovers_received PhysicalManuscriptHandover[] @relation("PhysicalHandoverReceiver")
   team_memberships         TeamMember[]
   teams_led                DistributionTeam[]
   assignments              Assignment[]
@@ -226,8 +232,9 @@ model Registration {
   registration_type        String                   @default("NEW") // NEW, EXTENSION
   previous_registration_id String?
   status RegistrationStatus @default(DRAFT)
-  // Status: DRAFT, READY_FOR_VERIFICATION, IN_VERIFICATION, REVISION_REQUIRED,
-  // WAITING_VERIFICATION_APPROVAL, AWAITING_PAYMENT, PAYMENT_VERIFICATION,
+  // Status: DRAFT, READY_FOR_VERIFICATION, VERIFICATION_ASSIGNED, IN_VERIFICATION,
+  // REVISION_REQUIRED, WAITING_VERIFICATION_APPROVAL, VERIFICATION_APPROVED,
+  // AWAITING_PAYMENT, PAYMENT_VERIFICATION, WAITING_DISTRIBUTOR_RECEIPT,
   // WAITING_DISTRIBUTION, TASHIH_IN_PROGRESS, READY_FOR_STT, STT_ISSUED,
   // DOCUMENTATION_IN_PROGRESS, COMPLETED, CANCELLED
   fee_sla_snapshot         Json?                    // Snapshot snapshot tarif & SLA saat submit (BR-04, BR-05)
@@ -243,6 +250,9 @@ model Registration {
   manuscript_files         ManuscriptFile[]
   status_histories         StatusHistory[]
   verification_assignments VerificationAssignment[]
+  verification_documents   VerificationDocument[]
+  physical_master_intake   PhysicalMasterIntake?
+  physical_handovers       PhysicalManuscriptHandover[]
   payment_records          PaymentRecord[]
   assignments              Assignment[]
   documentation_items      DocumentationItem[]
@@ -309,6 +319,10 @@ model VerificationAssignment {
   id              String       @id @default(uuid())
   registration_id String
   verifier_id     String
+  assigned_by_id  String?
+  started_at      DateTime?
+  due_at          DateTime?
+  assignment_notes String?
   status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED
   decision        String?      // APPROVED, REVISION_REQUIRED, REJECTED
   notes           String?
@@ -318,8 +332,88 @@ model VerificationAssignment {
   // Relations
   registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
   verifier        User         @relation(fields: [verifier_id], references: [id])
+  assigned_by     User?        @relation("VerificationAssignmentIssuer", fields: [assigned_by_id], references: [id], onDelete: SetNull)
+  documents       VerificationDocument[]
 
+  @@index([registration_id, status])
   @@map("verification_assignments")
+}
+
+model PhysicalMasterIntake {
+  id              String @id @default(uuid())
+  registration_id String @unique
+  format          String @default("A4")
+  binding_method  String @default("PER_JUZ")
+  volume_count    Int?
+  sent_at         DateTime?
+  delivery_method String?
+  notes           String?
+  status          PhysicalMasterIntakeStatus @default(PENDING)
+  received_by_id  String?
+  received_at     DateTime?
+  condition       String?
+  receipt_no      String? @unique
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  received_by     User? @relation("PhysicalMasterIntakeReceiver", fields: [received_by_id], references: [id], onDelete: SetNull)
+
+  @@map("physical_master_intakes")
+}
+
+model VerificationDocument {
+  id              String @id @default(uuid())
+  registration_id String
+  assignment_id   String?
+  document_type   VerificationDocumentType
+  document_no     String? @unique
+  version         Int @default(1)
+  status          VerificationDocumentStatus @default(DRAFT)
+  content_snapshot Json?
+  file_id         String?
+  created_by_id   String
+  approved_by_id  String?
+  approved_at     DateTime?
+  signed_at       DateTime?
+  sent_at         DateTime?
+  sent_channel    String?
+  sent_to         String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  assignment      VerificationAssignment? @relation(fields: [assignment_id], references: [id], onDelete: SetNull)
+  created_by      User @relation("VerificationDocumentCreator", fields: [created_by_id], references: [id])
+  approved_by     User? @relation("VerificationDocumentApprover", fields: [approved_by_id], references: [id], onDelete: SetNull)
+
+  @@unique([registration_id, document_type, version])
+  @@map("verification_documents")
+}
+
+model PhysicalManuscriptHandover {
+  id              String @id @default(uuid())
+  registration_id String
+  from_user_id    String
+  to_user_id      String
+  stage           String @default("VERIFICATION_TO_DISTRIBUTION")
+  receipt_no      String? @unique
+  condition       String?
+  volume_count    Int?
+  handed_over_at  DateTime?
+  received_at     DateTime?
+  tashih_due_at   DateTime?
+  notes           String?
+  status          PhysicalHandoverStatus @default(PENDING)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  from_user       User @relation("PhysicalHandoverSender", fields: [from_user_id], references: [id])
+  to_user         User @relation("PhysicalHandoverReceiver", fields: [to_user_id], references: [id])
+
+  @@index([registration_id, status])
+  @@map("physical_manuscript_handovers")
 }
 
 model PaymentRecord {
@@ -334,6 +428,8 @@ model PaymentRecord {
   sync_status     String       @default("NOT_SYNCED")
   paid_at         DateTime?
   verified_at     DateTime?
+  expires_at      DateTime?
+  rejection_reason String?
   created_at      DateTime     @default(now())
   updated_at      DateTime     @updatedAt
 
@@ -514,11 +610,14 @@ enum PublisherDocumentStatus {
 enum RegistrationStatus {
   DRAFT
   READY_FOR_VERIFICATION
+  VERIFICATION_ASSIGNED
   IN_VERIFICATION
   REVISION_REQUIRED
   WAITING_VERIFICATION_APPROVAL
+  VERIFICATION_APPROVED
   AWAITING_PAYMENT
   PAYMENT_VERIFICATION
+  WAITING_DISTRIBUTOR_RECEIPT
   WAITING_DISTRIBUTION
   TASHIH_IN_PROGRESS
   READY_FOR_STT
@@ -526,6 +625,33 @@ enum RegistrationStatus {
   DOCUMENTATION_IN_PROGRESS
   COMPLETED
   CANCELLED
+}
+
+enum PhysicalMasterIntakeStatus {
+  PENDING
+  RECEIVED
+  RETURNED
+}
+
+enum VerificationDocumentType {
+  NOTA_DINAS_VERIFIKASI
+  SURAT_HASIL_VERIFIKASI
+}
+
+enum VerificationDocumentStatus {
+  DRAFT
+  SUBMITTED
+  ISSUED
+  APPROVED
+  SIGNED
+  SENT
+  RETURNED
+}
+
+enum PhysicalHandoverStatus {
+  PENDING
+  RECEIVED
+  RETURNED
 }
 
 enum VerificationAssignmentStatus {

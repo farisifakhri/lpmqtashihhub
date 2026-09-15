@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
 const statusLabels = {
-  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu verifikasi', IN_VERIFICATION: 'Sedang diverifikasi',
+  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu penugasan Kepala LPMQ',
+  VERIFICATION_ASSIGNED: 'Verifikator ditugaskan', IN_VERIFICATION: 'Sedang diverifikasi',
   REVISION_REQUIRED: 'Perlu perbaikan penerbit', WAITING_VERIFICATION_APPROVAL: 'Menunggu persetujuan Kepala LPMQ',
-  AWAITING_PAYMENT: 'Menunggu pembayaran', PAYMENT_VERIFICATION: 'Menunggu verifikasi pembayaran',
+  VERIFICATION_APPROVED: 'Surat disetujui, menunggu pengiriman verifikator',
+  AWAITING_PAYMENT: 'Menunggu pembayaran', PAYMENT_VERIFICATION: 'Menunggu verifikasi pembayaran atau serah-terima master',
+  WAITING_DISTRIBUTOR_RECEIPT: 'Menunggu penerimaan master oleh distributor',
   WAITING_DISTRIBUTION: 'Menunggu distribusi', TASHIH_IN_PROGRESS: 'Sedang ditashih',
   READY_FOR_STT: 'Siap untuk penetapan STT', STT_ISSUED: 'STT telah terbit',
   DOCUMENTATION_IN_PROGRESS: 'Sedang didokumentasikan', COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan',
@@ -25,6 +28,13 @@ const fields = {
   is_working_day: 'Penanda hari kerja', source: 'Sumber keputusan', description: 'Keterangan', external_ref: 'Referensi pembayaran',
   to_status: 'Status tujuan', from_status: 'Status awal', version: 'Versi berkas', checksum: 'Checksum berkas',
   file_size: 'Ukuran berkas', mime_type: 'Jenis isi berkas', amount: 'Nominal pembayaran',
+  format: 'Format master fisik', binding_method: 'Metode jilid', volume_count: 'Jumlah jilid',
+  sent_at: 'Waktu pengiriman', delivery_method: 'Metode pengiriman', decision: 'Keputusan penerimaan',
+  receipt_no: 'Nomor tanda terima', condition: 'Kondisi master', verifier_id: 'Verifikator',
+  nota_no: 'Nomor Nota Dinas', my_tasks: 'Filter tugas saya', search: 'Pencarian',
+  page: 'Halaman', limit: 'Jumlah per halaman',
+  checklist: 'Checklist pemeriksaan', code: 'Butir checklist', letter_text: 'Isi draf surat',
+  attachment_file_ids: 'Lampiran surat', documentId: 'Dokumen verifikasi', fileId: 'Berkas lampiran',
 };
 
 export function validationMessage(issue) {

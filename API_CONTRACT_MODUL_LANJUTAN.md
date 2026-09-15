@@ -174,7 +174,7 @@ Modul master data menyediakan pembacaan publik/terotentikasi serta operasi penge
 1. `POST /registrations` (`ADMIN_PENERBIT`): Membuat draf registrasi pengajuan baru (status awal: `DRAFT`).
 2. `POST /uploads` (`ADMIN_PENERBIT`, `VERIFIKATOR`, `DOKUMENTATOR`): Mengunggah berkas biner naskah mentah (PDF/PNG/JPEG, batas 10 MiB). Menghasilkan `id` berkas privat.
 3. `POST /registrations/:id/manuscripts`: Menautkan berkas privat yang telah diunggah ke pengajuan (`type`: `COVER`, `SURAH_SAMPEL`, `JUZ_LENGKAP`, dll).
-4. `POST /registrations/:id/submit` (`ADMIN_PENERBIT`): Mengunci formulir dan mengirimkan pengajuan ke LPMQ (transisi dari `DRAFT` ke `SUBMITTED`).
+4. `POST /registrations/:id/submit` (`ADMIN_PENERBIT`): Mengunci formulir dan mengirimkan pengajuan ke LPMQ (transisi dari `DRAFT` ke `READY_FOR_VERIFICATION`).
 
 ---
 
@@ -182,14 +182,14 @@ Modul master data menyediakan pembacaan publik/terotentikasi serta operasi penge
 
 ### Tahap 1: Verifikasi Berkas Permohonan
 - **Aktor**: `VERIFIKATOR`, `KEPALA_LPMQ`
-- **Alur Status**: `SUBMITTED` → `IN_VERIFICATION` → `WAITING_VERIFICATION_APPROVAL` → `AWAITING_PAYMENT` (atau `REVISION_REQUIRED`).
+- **Alur Status**: `READY_FOR_VERIFICATION` → `VERIFICATION_ASSIGNED` → `IN_VERIFICATION` → `WAITING_VERIFICATION_APPROVAL` → `VERIFICATION_APPROVED` → `AWAITING_PAYMENT` (atau `REVISION_REQUIRED`). Assignment/Nota Dinas, persetujuan, dan pengiriman surat memerlukan aksi terpisah; endpoint khususnya dijadwalkan pada PR lanjutan.
 - **Pemeriksaan**: Verifikator memeriksa kelengkapan administrasi dan keabsahan sampel naskah. Draf rekomendasi diteruskan ke Kepala LPMQ untuk persetujuan.
 
 ### Tahap 2: Billing & Pembayaran PNBP
 - **Endpoint**:
   - `POST /registrations/:id/payments` (`VERIFIKATOR`): Menerbitkan kode billing pembayaran PNBP berstatus `UNPAID`. Tarif diambil secara deterministik dari `fee_sla_snapshot`.
   - `POST /payments/:id/confirm` (`ADMIN_PENERBIT`): Penerbit mengunggah bukti setor bank / NTPN. Status registrasi berpindah ke `PAYMENT_VERIFICATION`.
-  - `PATCH /payments/:id/verify` (`VERIFIKATOR`): Verifikator memeriksa keabsahan bukti bayar. Jika sah, status menjadi `VERIFIED` dan registrasi berpindah ke `WAITING_DISTRIBUTION`.
+  - `PATCH /payments/:id/verify` (`VERIFIKATOR`): Verifikator memeriksa bukti bayar. Jika sah, catatan pembayaran menjadi `VERIFIED`; registrasi tetap `PAYMENT_VERIFICATION` sampai serah-terima master fisik dicatat. Penerimaan distributor kemudian memindahkan ke `WAITING_DISTRIBUTION`.
 
 ### Tahap 3: Distribusi Sidang & Penugasan Tim
 - **Aktor**: `DISTRIBUTOR`
@@ -224,16 +224,19 @@ Modul master data menyediakan pembacaan publik/terotentikasi serta operasi penge
 
 ```mermaid
 flowchart TD
-    DRAFT([1. DRAFT]) -->|Penerbit Submit| SUBMITTED([2. SUBMITTED])
-    SUBMITTED -->|Mulai Verifikasi| IN_VERIFICATION([3. IN_VERIFICATION])
+    DRAFT([1. DRAFT]) -->|Penerbit Submit| READY_FOR_VERIFICATION([2. READY_FOR_VERIFICATION])
+    READY_FOR_VERIFICATION -->|Kepala: Nota Dinas dan penugasan| VERIFICATION_ASSIGNED([VERIFICATION_ASSIGNED])
+    VERIFICATION_ASSIGNED -->|Verifikator terpilih mulai| IN_VERIFICATION([3. IN_VERIFICATION])
     IN_VERIFICATION -->|Draf Surat Hasil| WAITING_VERIF_APP([4. WAITING_VERIFICATION_APPROVAL])
-    WAITING_VERIF_APP -->|Persetujuan Kepala| AWAITING_PAYMENT([5. AWAITING_PAYMENT])
+    WAITING_VERIF_APP -->|Persetujuan Kepala| VERIFICATION_APPROVED([VERIFICATION_APPROVED])
+    VERIFICATION_APPROVED -->|Verifikator kirim surat| AWAITING_PAYMENT([5. AWAITING_PAYMENT])
     WAITING_VERIF_APP -->|Penolakan Kepala| IN_VERIFICATION
     IN_VERIFICATION -->|Berkas Kurang| REVISION_REQUIRED([REVISION_REQUIRED])
-    REVISION_REQUIRED -->|Penerbit Resubmit| SUBMITTED
+    REVISION_REQUIRED -->|Penerbit Resubmit| READY_FOR_VERIFICATION
     
     AWAITING_PAYMENT -->|Terbit Billing & Unggah Bukti| PAYMENT_VERIFICATION([6. PAYMENT_VERIFICATION])
-    PAYMENT_VERIFICATION -->|Verifikasi Lunas| WAITING_DISTRIBUTION([7. WAITING_DISTRIBUTION])
+    PAYMENT_VERIFICATION -->|Bayar terverifikasi dan master diserahkan| WAITING_DISTRIBUTOR_RECEIPT([WAITING_DISTRIBUTOR_RECEIPT])
+    WAITING_DISTRIBUTOR_RECEIPT -->|Distributor terima fisik| WAITING_DISTRIBUTION([7. WAITING_DISTRIBUTION])
     
     WAITING_DISTRIBUTION -->|Penugasan Tim Sidang| TASHIH_IN_PROGRESS([8. TASHIH_IN_PROGRESS])
     TASHIH_IN_PROGRESS -->|Perbaikan Naskah| REVISION_REQUIRED
