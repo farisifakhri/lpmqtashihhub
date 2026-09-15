@@ -89,7 +89,7 @@ export const LoginPage = () => {
               <div className="bg-green-600/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
                 <p className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5 mb-0.5">
                   <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-                  SISNA (Sistem Informasi Pentashih Mushaf Quran)
+                  SIPNA (Sistem Informasi Pentashih Mushaf Quran)
                 </p>
 {/* >>>>>>> bb6bb11 (Fix Mock-up login page) */}
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
