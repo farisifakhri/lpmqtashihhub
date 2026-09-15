@@ -156,12 +156,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     const workflowItems = [];
 
-    if (isVerifikator || isAdmin) {
+    if (isVerifikator || isKepala || isAdmin) {
       workflowItems.push({
-        label: '1. Verifikasi Berkas',
+        label: isKepala ? '1. Verifikasi & Persetujuan' : '1. Verifikasi Berkas',
         path: '/internal/verifications',
         icon: <CheckSquare className="w-4 h-4 flex-shrink-0" />,
-        description: 'Kelengkapan dokumen',
+        description: isKepala ? 'Nota dinas penugasan & approval draf' : 'Kelengkapan dokumen',
       });
       workflowItems.push({
         label: '1b. Verifikasi Pembayaran',
@@ -171,7 +171,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       });
     }
 
-    if (isDistributor || isVerifikator || isAdmin) {
+    if (isDistributor || isVerifikator || isKepala || isAdmin) {
       workflowItems.push({
         label: '2. Distribusi Sidang',
         path: '/internal/distributions',

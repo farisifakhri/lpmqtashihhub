@@ -186,11 +186,19 @@ export const listVerificationAssignments = async (query, user) => {
   if (!isHead && !isAdmin) where.verifier_id = user.id;
   if (query.my_tasks === 'true' && (isHead || isAdmin)) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
-  if (query.search) where.registration = { OR: [
-    { registration_no: { contains: query.search } },
-    { title: { contains: query.search } },
-    { publisher: { legal_name: { contains: query.search } } },
-  ] };
+  if (query.registration_status) {
+    where.registration = { ...(where.registration || {}), status: query.registration_status };
+  }
+  if (query.search) {
+    where.registration = {
+      ...(where.registration || {}),
+      OR: [
+        { registration_no: { contains: query.search } },
+        { title: { contains: query.search } },
+        { publisher: { legal_name: { contains: query.search } } },
+      ],
+    };
+  }
   const skip = (query.page - 1) * query.limit;
   const [total, items] = await Promise.all([
     prisma.verificationAssignment.count({ where }),

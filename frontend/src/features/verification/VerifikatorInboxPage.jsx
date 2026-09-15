@@ -27,12 +27,15 @@ import {
 export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
   const [assignments, setAssignments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'
+  const [activeTab, setActiveTab] = useState(isHead ? 'WAITING_APPROVAL' : 'ALL'); // 'ALL' | 'WAITING_APPROVAL' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'
   const [searchQuery, setSearchQuery] = useState('');
   const [startingId, setStartingId] = useState(null);
 
@@ -44,7 +47,9 @@ export const VerifikatorInboxPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      if (activeTab !== 'ALL') {
+      if (activeTab === 'WAITING_APPROVAL') {
+        params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
+      } else if (activeTab !== 'ALL') {
         params.status = activeTab;
       }
       if (searchQuery.trim()) {
@@ -152,11 +157,12 @@ export const VerifikatorInboxPage = () => {
               SOP Verifikasi — Epic D
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white font-sans">
-              Antrean Penugasan Verifikasi Berkas
+              {isHead ? 'Persetujuan Hasil Verifikasi & Penugasan' : 'Antrean Penugasan Verifikasi Berkas'}
             </h1>
             <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
-              Daftar naskah mushaf yang ditugaskan oleh Kepala LPMQ melalui Nota Dinas resmi.
-              Pemeriksaan mencakup validasi data pendaftaran, kelengkapan berkas digital, dan master fisik A4.
+              {isHead
+                ? 'Daftar pengajuan naskah mushaf untuk penerbitan Nota Dinas penugasan dan persetujuan draf surat hasil telaah (Langkah 4 SOP).'
+                : 'Daftar naskah mushaf yang ditugaskan oleh Kepala LPMQ melalui Nota Dinas resmi. Pemeriksaan mencakup validasi data pendaftaran, kelengkapan berkas digital, dan master fisik A4.'}
             </p>
           </div>
 
@@ -179,6 +185,22 @@ export const VerifikatorInboxPage = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Status Tabs */}
           <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl text-xs font-semibold border border-slate-200/60">
+            {(isHead || isAdmin) && (
+              <button
+                onClick={() => {
+                  setActiveTab('WAITING_APPROVAL');
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
+                  activeTab === 'WAITING_APPROVAL'
+                    ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                    : 'text-amber-800 hover:text-amber-950 font-semibold'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Menunggu Approval Kepala
+              </button>
+            )}
             <button
               onClick={() => {
                 setActiveTab('ALL');
@@ -401,15 +423,24 @@ export const VerifikatorInboxPage = () => {
 
                 {/* Right Action Buttons */}
                 <div className="flex sm:flex-col items-stretch justify-center gap-2 pt-2 lg:pt-0 lg:border-l lg:border-slate-100 lg:pl-6 min-w-[170px]">
-                  {item.status === 'ASSIGNED' ? (
+                  {reg.status === 'WAITING_VERIFICATION_APPROVAL' ? (
                     <Button
                       variant="gold"
-                      onClick={() => handleStartVerification(item.id)}
+                      onClick={() => navigate(`/internal/verifications/${item.id}`)}
+                      className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      {isHead ? 'Tinjau & Setujui Draf' : 'Menunggu Approval Kepala'}
+                    </Button>
+                  ) : item.status === 'ASSIGNED' ? (
+                    <Button
+                      variant="gold"
+                      onClick={() => (isHead ? navigate(`/internal/verifications/${item.id}`) : handleStartVerification(item.id))}
                       disabled={startingId === item.id}
                       className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      {startingId === item.id ? 'Memulai...' : 'Mulai Pemeriksaan'}
+                      {isHead ? 'Lihat Detail Penugasan' : startingId === item.id ? 'Memulai...' : 'Mulai Pemeriksaan'}
                     </Button>
                   ) : item.status === 'IN_PROGRESS' ? (
                     <Button
@@ -418,7 +449,7 @@ export const VerifikatorInboxPage = () => {
                       className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5"
                     >
                       <ClipboardCheck className="w-3.5 h-3.5" />
-                      Lanjutkan Pemeriksaan
+                      {isHead ? 'Pantau Progres Pemeriksaan' : 'Lanjutkan Pemeriksaan'}
                     </Button>
                   ) : (
                     <Button

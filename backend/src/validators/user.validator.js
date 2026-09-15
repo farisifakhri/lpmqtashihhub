@@ -8,18 +8,21 @@ export const userIdParamSchema = {
   params: idParam,
 };
 
+export const VALID_ROLES = [
+  'SUPERADMIN',
+  'ADMIN',
+  'ADMIN_PENERBIT',
+  'VERIFIKATOR',
+  'DISTRIBUTOR',
+  'PENTASHIH',
+  'DOKUMENTATOR',
+  'KEPALA_LPMQ',
+];
+
 export const listUsersQuerySchema = {
   query: z.object({
     search: z.string().trim().max(100).optional(),
-    role: z.enum([
-      'SUPERADMIN',
-      'ADMIN_PENERBIT',
-      'VERIFIKATOR',
-      'DISTRIBUTOR',
-      'PENTASHIH',
-      'DOKUMENTATOR',
-      'KEPALA_LPMQ',
-    ]).optional(),
+    role: z.enum(VALID_ROLES).optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
     page: z.coerce.number().int().min(1).default(1),
     limit: z.coerce.number().int().min(1).max(100).default(20),
@@ -33,17 +36,7 @@ export const createUserSchema = {
     password: z.string().min(6, 'Password minimal 6 karakter.').max(100),
     nip: z.string().trim().max(50).nullable().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
-    roles: z.array(
-      z.enum([
-        'SUPERADMIN',
-        'ADMIN_PENERBIT',
-        'VERIFIKATOR',
-        'DISTRIBUTOR',
-        'PENTASHIH',
-        'DOKUMENTATOR',
-        'KEPALA_LPMQ',
-      ])
-    ).min(1, 'Minimal satu role harus dipilih.'),
+    roles: z.array(z.enum(VALID_ROLES)).min(1, 'Minimal satu role harus dipilih.'),
     publisher: z.object({
       legal_name: z.string().trim().min(3).max(191),
       entity_type: z.string().trim().max(50).default('PT'),
@@ -61,17 +54,7 @@ export const updateUserSchema = {
     password: z.string().min(6, 'Password minimal 6 karakter.').max(100).optional(),
     nip: z.string().trim().max(50).nullable().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
-    roles: z.array(
-      z.enum([
-        'SUPERADMIN',
-        'ADMIN_PENERBIT',
-        'VERIFIKATOR',
-        'DISTRIBUTOR',
-        'PENTASHIH',
-        'DOKUMENTATOR',
-        'KEPALA_LPMQ',
-      ])
-    ).min(1, 'Minimal satu role harus dipilih.').optional(),
+    roles: z.array(z.enum(VALID_ROLES)).min(1, 'Minimal satu role harus dipilih.').optional(),
     publisher: z.object({
       legal_name: z.string().trim().min(3).max(191),
       entity_type: z.string().trim().max(50).default('PT'),

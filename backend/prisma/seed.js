@@ -9,6 +9,7 @@ async function main() {
   // 1. Roles
   const rolesData = [
     { code: 'SUPERADMIN', name: 'Administrator Sistem LPMQ' },
+    { code: 'ADMIN', name: 'Administrator Internal LPMQ' },
     { code: 'ADMIN_PENERBIT', name: 'Penerbit / Pemohon Pentashihan' },
     { code: 'VERIFIKATOR', name: 'Verifikator Berkas & Naskah' },
     { code: 'DISTRIBUTOR', name: 'Distributor Naskah Pentashihan' },
@@ -50,6 +51,12 @@ async function main() {
       role: 'SUPERADMIN',
     },
     {
+      name: 'Budi Santoso, S.Kom (Admin Internal)',
+      email: 'admin.internal@lpmq.kemenag.go.id',
+      nip: '198701012015011005',
+      role: 'ADMIN',
+    },
+    {
       name: 'Ahmad Verifikator, S.Ag',
       email: 'verifikator@lpmq.kemenag.go.id',
       nip: '198502022010011002',
@@ -59,6 +66,12 @@ async function main() {
       name: 'Ust. H. Mahmud Distributor, M.A',
       email: 'distributor@lpmq.kemenag.go.id',
       nip: '197903032008011003',
+      role: 'DISTRIBUTOR',
+    },
+    {
+      name: 'Fahmi Distributor Kedua, S.Th.I',
+      email: 'distributor2@lpmq.kemenag.go.id',
+      nip: '198404042011011007',
       role: 'DISTRIBUTOR',
     },
     {
@@ -74,7 +87,7 @@ async function main() {
       role: 'DOKUMENTATOR',
     },
     {
-      name: 'Dr. H. Muchlis M. Hanafi, M.A (Kepala LPMQ)',
+      name: 'H. Abdul Aziz Sidqi, M.Ag. (Kepala LPMQ)',
       email: 'kepala@lpmq.kemenag.go.id',
       nip: '197106061998031006',
       role: 'KEPALA_LPMQ',

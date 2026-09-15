@@ -371,7 +371,7 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
       status: 'APPROVED',
       approved_by_id: user.id,
       approved_at: now,
-      signed_at: now,
+      signature_status: 'NOT_REQUESTED',
     },
   });
 

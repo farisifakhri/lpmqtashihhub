@@ -324,7 +324,7 @@ model VerificationAssignment {
   due_at          DateTime?
   assignment_notes String?
   status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED
-  decision        String?      // APPROVED, REVISION_REQUIRED, REJECTED
+  decision        VerificationDecision? // PASSED, REVISION_REQUIRED, REJECTED
   notes           String?
   assigned_at     DateTime     @default(now())
   completed_at    DateTime?
@@ -375,6 +375,7 @@ model VerificationDocument {
   created_by_id   String
   approved_by_id  String?
   approved_at     DateTime?
+  signature_status DocumentSignatureStatus @default(NOT_REQUESTED)
   signed_at       DateTime?
   sent_at         DateTime?
   sent_channel    String?
@@ -712,4 +713,17 @@ enum AssignmentStage {
   INITIAL
   REVISION
   DUMMY
+}
+
+enum VerificationDecision {
+  PASSED
+  REVISION_REQUIRED
+  REJECTED
+}
+
+enum DocumentSignatureStatus {
+  NOT_REQUESTED
+  PENDING
+  SIGNED
+  FAILED
 }

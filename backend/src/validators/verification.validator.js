@@ -46,6 +46,7 @@ export const createVerificationAssignmentSchema = {
 export const verificationInboxSchema = {
   query: z.object({
     status: z.enum(['ASSIGNED', 'IN_PROGRESS', 'COMPLETED']).optional(),
+    registration_status: z.string().trim().max(191).optional(),
     my_tasks: z.enum(['true', 'false']).optional(),
     search: z.string().trim().max(191).optional(),
     page: z.coerce.number().int().min(1).default(1),

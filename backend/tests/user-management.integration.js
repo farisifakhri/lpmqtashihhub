@@ -143,6 +143,74 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
       createdUserId = null;
     });
 
+    // 11. Create Admin Internal & Super Admin explicitly
+    let adminInternalId = null;
+    let newSuperadminId = null;
+    const adminInternalEmail = `test.admin.internal.${Date.now()}@lpmq.kemenag.go.id`;
+    const newSuperadminEmail = `test.superadmin.${Date.now()}@lpmq.kemenag.go.id`;
+
+    try {
+      await test('User Management: SUPERADMIN dapat membuat akun ADMIN (Admin Internal) dan mengujinya', async () => {
+        const res = await expect('/users', adminToken, 'POST', {
+          name: 'Staf Admin Internal Uji',
+          email: adminInternalEmail,
+          password: 'password123',
+          nip: '199001012015011010',
+          status: 'ACTIVE',
+          roles: ['ADMIN'],
+        }, 201);
+
+        assert.ok(res.data.id);
+        assert.equal(res.data.email, adminInternalEmail);
+        assert.ok(res.data.roles.includes('ADMIN'));
+        adminInternalId = res.data.id;
+
+        // Login sebagai Admin Internal
+        const login = await loginAs(adminInternalEmail, 'password123');
+        assert.ok(login.token);
+
+        // Hak akses: Admin Internal dapat melihat laporan kinerja
+        const repRes = await call('/reports/verification-performance', login.token);
+        assert.equal(repRes.status, 200);
+
+        // Batas akses: Admin Internal DILARANG mengelola akun pengguna (hanya SUPERADMIN) -> 403
+        const usersRes = await call('/users', login.token);
+        assert.equal(usersRes.status, 403);
+      });
+
+      await test('User Management: SUPERADMIN dapat membuat akun SUPERADMIN baru', async () => {
+        const res = await expect('/users', adminToken, 'POST', {
+          name: 'Super Admin Kedua Uji',
+          email: newSuperadminEmail,
+          password: 'password123',
+          nip: '198202022007011002',
+          status: 'ACTIVE',
+          roles: ['SUPERADMIN'],
+        }, 201);
+
+        assert.ok(res.data.id);
+        assert.equal(res.data.email, newSuperadminEmail);
+        assert.ok(res.data.roles.includes('SUPERADMIN'));
+        newSuperadminId = res.data.id;
+
+        const login = await loginAs(newSuperadminEmail, 'password123');
+        assert.ok(login.token);
+
+        // Super Admin baru dapat mengakses daftar users
+        const usersRes = await call('/users', login.token);
+        assert.equal(usersRes.status, 200);
+      });
+    } finally {
+      if (adminInternalId) {
+        await prisma.userRole.deleteMany({ where: { user_id: adminInternalId } }).catch(() => {});
+        await prisma.user.delete({ where: { id: adminInternalId } }).catch(() => {});
+      }
+      if (newSuperadminId) {
+        await prisma.userRole.deleteMany({ where: { user_id: newSuperadminId } }).catch(() => {});
+        await prisma.user.delete({ where: { id: newSuperadminId } }).catch(() => {});
+      }
+    }
+
   } finally {
     // Cleanup if test failed before delete
     if (createdUserId) {

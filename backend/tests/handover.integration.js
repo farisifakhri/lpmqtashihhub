@@ -14,6 +14,8 @@ export async function runHandoverTests({
   const kepalaToken = (await loginAs('kepala@lpmq.kemenag.go.id')).token;
   const distributorToken = (await loginAs('distributor@lpmq.kemenag.go.id')).token;
   const distributorUser = await prisma.user.findUnique({ where: { email: 'distributor@lpmq.kemenag.go.id' } });
+  const distributor2Token = (await loginAs('distributor2@lpmq.kemenag.go.id')).token;
+  const distributor2User = await prisma.user.findUnique({ where: { email: 'distributor2@lpmq.kemenag.go.id' } });
   const verifierUser = await prisma.user.findUnique({ where: { email: 'verifikator@lpmq.kemenag.go.id' } });
 
   const call = async (path, token, method = 'GET', body) => {
@@ -224,19 +226,22 @@ export async function runHandoverTests({
     await expect(receivePath, verifikatorToken, 'POST', {}, 403);
     await expect(receivePath, publisherToken, 'POST', {}, 403);
 
-    // 2. Sukses: Distributor mengonfirmasi penerimaan fisik dan menetapkan deadline
-    const dueTarget = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString();
+    // 1b. Negative: Distributor B dilarang menerima handover yang ditujukan kepada Distributor A (P0/P1 Ownership Guard)
+    const crossDistributorReceive = await call(receivePath, distributor2Token, 'POST', {});
+    assert.equal(crossDistributorReceive.status, 403);
+    assert.match(crossDistributorReceive.json.message || '', /bukan petugas Distributor tujuan/i);
+
+    // 2. Sukses: Distributor A mengonfirmasi penerimaan fisik tanpa default hardcode 30 hari (tashih_due_at dibiarkan null)
     const received = await expect(receivePath, distributorToken, 'POST', {
       condition: 'BAIK_SESUAI_LOKET',
       volume_count: 30,
-      tashih_due_at: dueTarget,
       notes: 'Fisik master diterima lengkap 30 juz di loket pentashihan.',
     });
 
     assert.equal(received.handover.status, 'RECEIVED');
     assert.ok(received.handover.received_at);
     assert.equal(received.handover.condition, 'BAIK_SESUAI_LOKET');
-    assert.ok(received.handover.tashih_due_at);
+    assert.equal(received.handover.tashih_due_at, null); // Pentashihan backlog: tidak ada asumsi 30 hari bawaan!
 
     // 3. Status registrasi resmi berpindah ke WAITING_DISTRIBUTION (Modul Verifikasi Selesai)
     const regFinal = await prisma.registration.findUnique({ where: { id: reg.id } });
@@ -293,6 +298,13 @@ export async function runHandoverTests({
 
     // Negative: Verifikator dilarang menolak atas nama Distributor
     await expect(returnPath, verifikatorToken, 'POST', { reason: 'Juz 15 halaman terbalik' }, 403);
+
+    // Negative: Distributor B dilarang menolak/mengembalikan berkas yang ditujukan kepada Distributor A
+    const crossReturn = await call(returnPath, distributor2Token, 'POST', {
+      reason: 'Fisik rusak menurut distributor 2',
+    });
+    assert.equal(crossReturn.status, 403);
+    assert.match(crossReturn.json.message || '', /bukan petugas Distributor tujuan/i);
 
     // Sukses: Distributor mengembalikan fisik cacat
     const returned = await expect(returnPath, distributorToken, 'POST', {

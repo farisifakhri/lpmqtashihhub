@@ -126,21 +126,15 @@ export const receiveHandover = (handoverId, data, user, req) =>
     }
 
     // Pastikan hak akses distributor penerima
-    if (handover.to_user_id !== user.id && !user.roles.includes('DISTRIBUTOR')) {
-      fail(403, 'Anda bukan petugas Distributor yang berwenang mengonfirmasi penerimaan fisik ini.');
+    if (handover.to_user_id !== user.id) {
+      fail(403, 'Anda bukan petugas Distributor tujuan serah-terima ini.');
     }
 
     const reg = await registration(tx, handover.registration_id);
     requireStatus(reg, ['WAITING_DISTRIBUTOR_RECEIPT']);
 
-    // Tentukan tenggat pentashihan (tashih_due_at)
-    let tashihDueAt = null;
-    if (data.tashih_due_at) {
-      tashihDueAt = new Date(data.tashih_due_at);
-    } else {
-      // Default: 30 hari kalender
-      tashihDueAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    }
+    // Tentukan tenggat pentashihan (tashih_due_at) jika diisi eksplisit
+    const tashihDueAt = data.tashih_due_at ? new Date(data.tashih_due_at) : null;
 
     const updatedHandover = await tx.physicalManuscriptHandover.update({
       where: { id: handoverId },
@@ -223,6 +217,11 @@ export const returnHandover = (handoverId, data, user, req) =>
 
     if (handover.status !== 'PENDING') {
       fail(409, 'Serah-terima master fisik ini sudah tidak dalam status menunggu konfirmasi.');
+    }
+
+    // Pastikan hak akses distributor penerima
+    if (handover.to_user_id !== user.id) {
+      fail(403, 'Anda bukan petugas Distributor tujuan serah-terima ini.');
     }
 
     const reg = await registration(tx, handover.registration_id);

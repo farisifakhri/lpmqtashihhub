@@ -27,6 +27,7 @@ import {
 
 export const ROLE_OPTIONS = [
   { code: 'SUPERADMIN', label: 'Super Admin', desc: 'Akses penuh ke konfigurasi dan seluruh alur' },
+  { code: 'ADMIN', label: 'Admin Internal', desc: 'Pengelolaan operasional internal & master data' },
   { code: 'ADMIN_PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Pengajuan naskah dan pemantauan billing' },
   { code: 'VERIFIKATOR', label: 'Verifikator Naskah', desc: 'Pemeriksaan berkas digital dan master fisik' },
   { code: 'DISTRIBUTOR', label: 'Distributor Sidang', desc: 'Penugasan tim pentashih dan tanda terima' },
@@ -230,6 +231,8 @@ export const UserManagementPage = () => {
     switch (roleCode) {
       case 'SUPERADMIN':
         return { label: 'Super Admin', className: 'bg-rose-50 text-rose-700 border-rose-200' };
+      case 'ADMIN':
+        return { label: 'Admin Internal', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
       case 'ADMIN_PENERBIT':
         return { label: 'Penerbit', className: 'bg-primary-50 text-primary-800 border-primary-200' };
       case 'VERIFIKATOR':

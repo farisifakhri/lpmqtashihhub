@@ -3,10 +3,15 @@ import { fail, requireRole } from './workflow-utils.js';
 
 // Konfigurasi SLA Resmi SOP Verifikasi LPMQ (VER-I01)
 export const SLA_CONFIG = {
-  INTAKE_PHYSICAL_MINUTES: 30,       // Langkah 2 SOP: Tanda terima master fisik di loket
-  VERIFICATION_REVIEW_DAYS: 2,       // Langkah 4 SOP: Telaah berkas & draf nota dinas (48 jam)
-  PAYMENT_BILLING_DAYS: 7,          // Langkah 6 SOP: Masa aktif kode billing PNBP SIMPONI
-  TASHIH_DEFAULT_DAYS: 30,          // Langkah 8 SOP: Standar masa sidang pentashihan mushaf
+  INTAKE_PHYSICAL_MINUTES: 30,       // Langkah 1: Intake & tanda terima master fisik di loket
+  ASSIGNMENT_HEAD_MINUTES: 30,       // Langkah 2: Penerbitan Nota Dinas penugasan oleh Kepala LPMQ
+  VERIFICATION_REVIEW_DAYS: 2,       // Langkah 3: Telaah berkas & draf hasil verifikasi (48 jam)
+  APPROVAL_HEAD_MINUTES: 30,         // Langkah 4: Persetujuan/penolakan draf surat oleh Kepala LPMQ
+  SEND_RESULT_MINUTES: 30,           // Langkah 5: Pengiriman surat hasil verifikasi ke penerbit
+  PAYMENT_BILLING_DAYS: 7,          // Langkah 6: Masa aktif kode billing PNBP SIMPONI
+  HANDOVER_PHYSICAL_MINUTES: 30,     // Langkah 7: Verifikator serahkan master fisik ke Distributor
+  DISTRIBUTOR_RECEIPT_MINUTES: 30,   // Langkah 8: Distributor konfirmasi penerimaan master fisik di loket
+  TASHIH_DEFAULT_DAYS: 30,          // Estimasi masa sidang pentashihan mushaf (di luar modul verifikasi)
 };
 
 /**
@@ -171,6 +176,16 @@ export const getVerificationPerformanceReport = async (filters = {}, user) => {
       overdue_payments: overduePayments,
       avg_duration_hours: avgDurationHours,
       compliance_rate_percent: complianceRate,
+      step_sla_targets: {
+        step_1_intake: '30 menit',
+        step_2_assignment: '30 menit',
+        step_3_review: '2 hari kerja',
+        step_4_head_approval: '30 menit',
+        step_5_send_result: '30 menit',
+        step_6_payment: '7 hari kalender',
+        step_7_handover: '30 menit',
+        step_8_distributor_receipt: '30 menit',
+      },
     },
     status_distribution: statusDistribution,
     payments: {

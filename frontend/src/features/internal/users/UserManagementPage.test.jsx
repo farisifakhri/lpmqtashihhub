@@ -32,7 +32,7 @@ describe('UserManagementPage Component', () => {
           },
           {
             id: 'user-2',
-            name: 'Dr. H. Muchlis M. Hanafi, M.A',
+            name: 'H. Abdul Aziz Sidqi, M.Ag.',
             email: 'kepala@lpmq.kemenag.go.id',
             nip: '197106061998031006',
             status: 'ACTIVE',
@@ -57,7 +57,7 @@ describe('UserManagementPage Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Ahmad Verifikator, S.Ag')).toBeInTheDocument();
       expect(screen.getByText('verifikator@lpmq.kemenag.go.id')).toBeInTheDocument();
-      expect(screen.getByText('Dr. H. Muchlis M. Hanafi, M.A')).toBeInTheDocument();
+      expect(screen.getByText('H. Abdul Aziz Sidqi, M.Ag.')).toBeInTheDocument();
       expect(screen.getByText('kepala@lpmq.kemenag.go.id')).toBeInTheDocument();
     });
   });
@@ -74,6 +74,7 @@ describe('UserManagementPage Component', () => {
 
     expect(screen.getByPlaceholderText(/Contoh: Dr. H. Ahmad Fauzan, M.Ag/i)).toBeInTheDocument();
     expect(screen.getByText(/Pilih Semua Role \(Akses Penuh\)/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Admin Internal').length).toBeGreaterThanOrEqual(2);
   });
 });
 

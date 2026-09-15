@@ -38,6 +38,7 @@ export const UnifiedDashboard = () => {
   const isPublisher = userRoles.includes('ADMIN_PENERBIT') || currentUser?.role === 'ADMIN_PENERBIT';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
   const isAdmin = userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN' || isSuperAdmin;
+  const isKepala = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
 
   // Super Admin dapat melihat perspektif Operasional Internal atau Perspektif Layanan Penerbit
   const [adminViewMode, setAdminViewMode] = useState('OPERATIONAL'); // 'OPERATIONAL' | 'PUBLISHER'
@@ -158,22 +159,22 @@ export const UnifiedDashboard = () => {
 
     const items = [
       {
-        title: 'Verifikasi Berkas',
-        desc: 'Pemeriksaan naskah & legalitas penerbit',
+        title: isKepala ? 'Persetujuan Verifikasi' : 'Verifikasi Berkas',
+        desc: isKepala ? 'Nota dinas penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
         iconBg: 'bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-xs',
         cardHover: 'hover:border-sky-400 hover:bg-sky-50/40',
-        allowed: isAdmin || userRoles.includes('VERIFIKATOR'),
+        allowed: isAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
         title: 'Distribusi Sidang',
-        desc: 'Penugasan berkas ke SK Tim Pentashih',
+        desc: 'Penugasan berkas ke SK Tim Pentashih & serah terima fisik',
         icon: Send,
         path: '/internal/distributions',
         iconBg: 'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-xs',
         cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
-        allowed: isAdmin || userRoles.includes('DISTRIBUTOR'),
+        allowed: isAdmin || userRoles.includes('DISTRIBUTOR') || isKepala,
       },
       {
         title: 'Sidang Pentashihan',

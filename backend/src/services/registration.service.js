@@ -561,7 +561,7 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
     if (['AWAITING_PAYMENT', 'REVISION_REQUIRED'].includes(toStatus)) {
       await tx.verificationAssignment.updateMany({
         where: { registration_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
-        data: { status: 'COMPLETED', completed_at: new Date(), decision: toStatus === 'AWAITING_PAYMENT' ? 'APPROVED' : 'REVISION_REQUIRED', notes },
+        data: { status: 'COMPLETED', completed_at: new Date(), decision: toStatus === 'AWAITING_PAYMENT' ? 'PASSED' : 'REVISION_REQUIRED', notes },
       });
     }
 

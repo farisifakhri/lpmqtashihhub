@@ -162,11 +162,12 @@ export async function runVerificationApprovalPaymentTests({
       // Endpoint mengharuskan KEPALA_LPMQ
     }
 
-    // Sukses: Kepala LPMQ menyetujui dan menandatangani surat
+    // Sukses: Kepala LPMQ menyetujui draf surat (persetujuan administratif tanpa memalsukan TTE)
     const approved = await expect(approvePath, kepalaToken, 'POST');
     assert.equal(approved.status, 'APPROVED');
     assert.ok(approved.approved_at);
-    assert.ok(approved.signed_at);
+    assert.equal(approved.signature_status, 'NOT_REQUESTED');
+    assert.equal(approved.signed_at, null);
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_APPROVED');
 
     // Negative: Dokumen yang sudah disetujui tidak dapat disetujui ulang (409)
