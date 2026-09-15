@@ -190,7 +190,7 @@ export const RegisterPublisherPage = () => {
                   <img
                     src={kemenagLogo}
                     alt="Kementerian Agama RI"
-                    className="h-13 sm:h-15 w-auto object-contain drop-shadow-sm"
+                    className="h-14 sm:h-16 w-auto object-contain drop-shadow-sm"
                   />
                   <div className="h-8 w-[1px] bg-neutral-200" />
                   <img
