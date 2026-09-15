@@ -122,11 +122,7 @@ export const LoginPage = () => {
                   <img
                     src={kemenagLogo}
                     alt="Kementerian Agama RI"
-<<<<<<< HEAD
                     className="h-14 sm:h-16 w-auto object-contain drop-shadow-sm"
-=======
-                    className="h-10 w-auto object-contain drop-shadow-xs"
->>>>>>> bb6bb11 (Fix Mock-up login page)
                   />
                   <div className="h-9 w-[1px] bg-neutral-200" />
                   <img
