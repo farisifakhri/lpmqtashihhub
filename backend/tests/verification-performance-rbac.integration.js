@@ -89,7 +89,6 @@ export async function runVerificationPerformanceRbacTests({
     assert.equal(data.sla_config.INTAKE_PHYSICAL_MINUTES, 30);
     assert.equal(data.sla_config.VERIFICATION_REVIEW_DAYS, 2);
     assert.equal(data.sla_config.PAYMENT_BILLING_DAYS, 7);
-    assert.equal(data.sla_config.TASHIH_DEFAULT_DAYS, 30);
 
     assert.ok(data.summary, 'Summary kinerja harus tersedia');
     assert.equal(typeof data.summary.compliance_rate_percent, 'number');

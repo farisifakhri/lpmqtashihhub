@@ -11,7 +11,6 @@ export const SLA_CONFIG = {
   PAYMENT_BILLING_DAYS: 7,          // Langkah 6: Masa aktif kode billing PNBP SIMPONI
   HANDOVER_PHYSICAL_MINUTES: 30,     // Langkah 7: Verifikator serahkan master fisik ke Distributor
   DISTRIBUTOR_RECEIPT_MINUTES: 30,   // Langkah 8: Distributor konfirmasi penerimaan master fisik di loket
-  TASHIH_DEFAULT_DAYS: 30,          // Estimasi masa sidang pentashihan mushaf (di luar modul verifikasi)
 };
 
 /**
