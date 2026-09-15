@@ -124,13 +124,13 @@ export const RegisterPublisherPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F4F8] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#F3F6F5] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
       <div className="absolute top-[-10%] right-[-5%] w-[450px] h-[450px] rounded-full bg-emerald-200/40 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-teal-200/30 blur-3xl pointer-events-none" />
 
       {/* Main Glass Card Container */}
-      <div className="relative z-10 w-full max-w-5xl bg-white rounded-[32px] sm:rounded-[38px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.08)] border border-white/80 p-3.5 sm:p-5 lg:p-6">
+      <div className="relative z-10 w-full max-w-5xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-neutral-200 p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran & Info */}
@@ -186,18 +186,22 @@ export const RegisterPublisherPage = () => {
               
               {/* Header & Logo Clean Putih */}
               <div>
-                <div className="inline-flex items-center gap-4 bg-white py-1 mb-2">
-                  <img
-                    src={kemenagLogo}
-                    alt="Kementerian Agama RI"
-                    className="h-13 sm:h-15 w-auto object-contain drop-shadow-sm"
-                  />
+                <div className="inline-flex items-center gap-3 bg-white py-1 mb-2" aria-label="Identitas Kementerian Agama dan LPMQ">
+                  <div className="h-12 w-12 flex items-center justify-center">
+                    <img
+                      src={kemenagLogo}
+                      alt="Kementerian Agama RI"
+                      className="h-10 w-10 object-contain"
+                    />
+                  </div>
                   <div className="h-8 w-[1px] bg-neutral-200" />
-                  <img
-                    src={lpmqLogo}
-                    alt="LPMQ"
-                    className="h-11 sm:h-13 w-auto object-contain rounded-lg shadow-2xs"
-                  />
+                  <div className="h-12 w-12 flex items-center justify-center">
+                    <img
+                      src={lpmqLogo}
+                      alt="LPMQ"
+                      className="h-10 w-10 object-contain rounded-md"
+                    />
+                  </div>
                 </div>
 
                 <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">

@@ -124,23 +124,23 @@ export const UnifiedDashboard = () => {
       return [
         {
           title: 'Ajukan Naskah Baru',
-          desc: 'Pendaftaran naskah mushaf perdana ke LPMQ',
+          desc: 'Inisiasi registrasi dan pengiriman dokumen naskah',
           icon: PlusCircle,
           path: '/publisher/new-registration',
           iconBg: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xs',
           cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
         },
         {
-          title: 'Riwayat Pengajuan',
-          desc: 'Pantau tahapan naskah & timeline status',
+          title: 'Portofolio Pengajuan',
+          desc: 'Pantau tahapan proses dan rekam jejak status',
           icon: Layers,
           path: '/publisher/registrations',
           iconBg: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xs',
           cardHover: 'hover:border-blue-400 hover:bg-blue-50/40',
         },
         {
-          title: 'Billing PNBP',
-          desc: 'Informasi kode billing SIMPONI & bukti bayar',
+          title: 'Tagihan PNBP',
+          desc: 'Kelola kode billing SIMPONI dan bukti pembayaran',
           icon: CreditCard,
           path: '/publisher/billing',
           iconBg: 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-xs',
@@ -148,7 +148,7 @@ export const UnifiedDashboard = () => {
         },
         {
           title: 'Arsip Surat Tashih',
-          desc: 'Unduh dokumen STT resmi bersertifikat QR',
+          desc: 'Akses dokumen STT resmi dengan validasi QR',
           icon: Award,
           path: '/publisher/documents',
           iconBg: 'bg-gradient-to-br from-purple-600 to-violet-700 text-white shadow-xs',
@@ -196,7 +196,7 @@ export const UnifiedDashboard = () => {
       },
       {
         title: 'Master Data Layanan',
-        desc: 'Kelola kategori, jenis tarif, & addon',
+        desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
         icon: Sliders,
         path: '/internal/settings',
         iconBg: 'bg-gradient-to-br from-slate-700 to-indigo-800 text-white shadow-xs',
@@ -204,8 +204,8 @@ export const UnifiedDashboard = () => {
         allowed: isAdmin,
       },
       {
-        title: 'Manajemen Pengguna',
-        desc: 'Kelola akun user & hak akses multi-role',
+        title: 'Identitas dan Akses',
+        desc: 'Kelola akun, peran, dan matriks kewenangan',
         icon: Users,
         path: '/internal/users',
         iconBg: 'bg-gradient-to-br from-emerald-700 to-teal-800 text-white shadow-xs',
@@ -275,22 +275,22 @@ export const UnifiedDashboard = () => {
         subtext={
           isPublisher
             ? 'Layanan Mandiri Pendaftaran, Pemantauan Pentashihan, dan Pengunduhan Dokumen STT Resmi LPMQ Kemenag RI'
-            : 'Sistem Terpadu Pentashihan Mushaf Al-Qur\'an, Verifikasi Dokumen, dan Pengesahan Surat Tanda Tashih'
+            : 'Pemantauan terintegrasi untuk verifikasi, distribusi, pentashihan, dan pengesahan Surat Tanda Tashih'
         }
       />
 
       {/* 2. Daily Hadith & Al-Qur'an Widget */}
       <DailyQuranWidget />
 
-      {/* 3. Quick Actions Bar (Pintasan Aksi Cepat) */}
+      {/* 3. Role-based operational actions */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
           <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
             <Compass className="w-4 h-4 text-emerald-700" />
-            <span>Pintasan Aksi Cepat (Quick Actions)</span>
+            <span>Akses Proses Utama</span>
           </h3>
           <span className="text-[11px] text-slate-500 font-medium">
-            {isPublisher ? 'Menu layanan penerbit terdaftar' : 'Sesuai wewenang tugas operasional Anda'}
+            {isPublisher ? 'Layanan sesuai profil penerbit' : 'Akses berbasis peran dan kewenangan'}
           </span>
         </div>
 
@@ -326,7 +326,7 @@ export const UnifiedDashboard = () => {
           <div className="flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary-700" />
             <h3 className="text-sm font-bold text-neutral-800">
-              Ringkasan Data & Beban Kerja Sistem
+              Indikator Operasional
             </h3>
           </div>
 
@@ -546,7 +546,7 @@ export const UnifiedDashboard = () => {
                   Kinerja Verifikasi & Kepatuhan SLA (SOP v2.2)
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Target Standar: Telaah berkas max 48 jam • Masa bayar PNBP max 7 hari
+                  Parameter SLA: telaah berkas maksimal 48 jam • pembayaran PNBP maksimal 7 hari
                 </p>
               </div>
             </div>
@@ -610,7 +610,7 @@ export const UnifiedDashboard = () => {
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-status-danger text-sm flex items-start gap-2.5">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
-            <span className="font-semibold">Info Koneksi API: </span>
+            <span className="font-semibold">Gangguan layanan data: </span>
             {error}
           </div>
         </div>
@@ -624,11 +624,11 @@ export const UnifiedDashboard = () => {
             <div>
               <h3 className="text-base font-bold text-slate-900">
                 {isPublisher
-                  ? 'Daftar Pengajuan Mushaf Terbaru'
-                  : 'Antrean Naskah Pentashihan Masuk'}
+                  ? 'Portofolio Pengajuan Terkini'
+                  : 'Antrean Kerja Pentashihan'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Sinkronisasi real-time dengan Basis Data LPMQ ({registrations.length} Naskah Terdaftar)
+                Data operasional terintegrasi • {registrations.length} naskah tercatat
               </p>
             </div>
 
@@ -650,7 +650,7 @@ export const UnifiedDashboard = () => {
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1.5">
                 <Filter className="w-3.5 h-3.5 text-emerald-700" />
-                Filter:
+                Segmentasi:
               </span>
               <button
                 onClick={() => setStatusFilter('ALL')}
@@ -703,7 +703,7 @@ export const UnifiedDashboard = () => {
                     : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
                 }`}
               >
-                {filterMyTasksOnly ? '✓ Tugas Saya Saja' : 'Semua Penugasan'}
+                {filterMyTasksOnly ? '✓ Penugasan Saya' : 'Seluruh Penugasan'}
               </button>
             )}
           </div>
@@ -732,8 +732,8 @@ export const UnifiedDashboard = () => {
             <table className="w-full text-left border-collapse min-w-[760px]">
               <thead>
                 <tr className="bg-slate-50/80 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
-                  <th className="py-3.5 px-6">Nomor & Tanggal</th>
-                  <th className="py-3.5 px-6">Penerbit & Judul Naskah</th>
+                  <th className="py-3.5 px-6">Referensi & Tanggal</th>
+                  <th className="py-3.5 px-6">Entitas & Naskah</th>
                   <th className="py-3.5 px-6">Profil Layanan</th>
                   <th className="py-3.5 px-6">Status Sistem</th>
                   <th className="py-3.5 px-6 text-right">Aksi</th>
@@ -775,7 +775,7 @@ export const UnifiedDashboard = () => {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Button variant="outline" size="sm" className="text-xs">
-                        Buka Berkas
+                        Tinjau Detail
                       </Button>
                     </td>
                   </tr>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -13,6 +13,18 @@
     background-size: 120px 120px;
   }
 
+  * {
+    @apply border-neutral-200;
+  }
+
+  ::selection {
+    @apply bg-primary-100 text-primary-950;
+  }
+
+  button, a, input, select, textarea {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply text-neutral-900 font-semibold tracking-tight;
   }
@@ -21,7 +33,7 @@
 @layer components {
   /* Komponen kartu formal sesuai standar portal kementerian: latar putih, radius 12-16px, border 1px neutral-200 */
   .lpmq-card {
-    @apply bg-white rounded-xl border border-neutral-200/90 shadow-sm p-6;
+    @apply bg-white rounded-xl border border-neutral-200 shadow-sm p-6;
   }
 
   /* Kartu ringkasan tarif/billing dengan latar emas muda */
@@ -45,6 +57,15 @@
   .lpmq-light-pattern {
     background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px);
     background-size: 16px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
