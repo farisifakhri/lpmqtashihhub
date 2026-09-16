@@ -165,10 +165,16 @@ export const DistributorHandoverInboxPage = () => {
     setActionLoading(true);
     setReceiveModalError(null);
     try {
+      if (!tashihDueAt) {
+        setReceiveModalError('Tenggat waktu pentashihan (tashih_due_at) wajib ditetapkan oleh Distributor.');
+        setActionLoading(false);
+        return;
+      }
+      const isoDueAt = new Date(tashihDueAt).toISOString();
       const payload = {
         condition: receiveCondition.trim() || 'BAIK',
         volume_count: Number(receiveVolumeCount) || 30,
-        tashih_due_at: tashihDueAt || undefined,
+        tashih_due_at: isoDueAt,
         notes: receiveNotes.trim() || undefined,
       };
 
@@ -828,7 +834,7 @@ export const DistributorHandoverInboxPage = () => {
 
             <p className="text-xs text-slate-600 leading-relaxed">
               Master fisik yang dikembalikan akan memindahkan status pengajuan naskah kembali ke{' '}
-              <span className="font-bold text-amber-700">Perlu Perbaikan (REVISION_REQUIRED)</span>. Penerbit wajib mencetak ulang / memperbaiki fisik yang cacat.
+              <span className="font-bold text-amber-700">Perlu Perbaikan Fisik (PHYSICAL_HANDOVER_CORRECTION_REQUIRED)</span>. Pembayaran PNBP yang telah diverifikasi tetap sah (tanpa tagihan ulang) dan penerbit hanya perlu memperbaiki master fisik.
             </p>
 
             {returnModalError && (

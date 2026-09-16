@@ -2,49 +2,42 @@
 
 Base URL: `/api/v1`. Seluruh endpoint di bawah memerlukan Bearer token. Respons JSON mengikuti `{ "success": true, "data": ... }`; kesalahan memakai HTTP 400 (input), 403 (izin), 404 (tidak tersedia), atau 409 (konflik status).
 
-## Fondasi SOP Verifikasi (PR-VER-01)
+## Fondasi SOP Verifikasi (SOP v2.2)
 
-State machine kini membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → IN_VERIFICATION → WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED → AWAITING_PAYMENT → PAYMENT_VERIFICATION → WAITING_DISTRIBUTOR_RECEIPT → WAITING_DISTRIBUTION`. Penerimaan awal master, penugasan, dan Nota Dinas hanya oleh Kepala LPMQ; persetujuan draf juga hanya oleh Kepala LPMQ; pengiriman surat dan serah-terima oleh verifikator terpilih; penerimaan fisik berikutnya oleh distributor. `SUPERADMIN` tidak mewarisi kewenangan Kepala LPMQ. Endpoint status umum menolak aksi yang membutuhkan dokumen atau bukti fisik dengan 409. Endpoint khusus untuk pemeriksaan, persetujuan, pengiriman surat, dan handover disiapkan dalam PR berikutnya, sehingga alur baru belum dapat diselesaikan end-to-end.
+State machine membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → IN_VERIFICATION → WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED → AWAITING_PAYMENT → PAYMENT_VERIFICATION → WAITING_DISTRIBUTOR_RECEIPT → WAITING_DISTRIBUTION` serta jalur koreksi `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`. Penerimaan master fisik permohonan dilakukan oleh `ADMIN` (Staf TU / Layanan). Penugasan verifikator dan penerbitan Nota Dinas dilakukan oleh Kepala LPMQ secara atomik dalam satu transaksi dengan SLA 2 hari kerja kalender `Asia/Jakarta`. Persetujuan draf dokumen verifikasi dilakukan oleh Kepala LPMQ, penandatanganan digital bertingkat dilakukan oleh Verifikator dan Kepala LPMQ, pengiriman surat hasil verifikasi dikirim nyata ke penerbit melalui `EmailOutbox` idempoten, dan serah-terima fisik ke distributor disahkan oleh verifikator penugasan. Alur verifikasi ini telah selesai diimplementasikan end-to-end dengan cakupan tes otomatis 100%.
 
-Migrasi `20260914000000_verification_foundation` bersifat additive: tiga nilai status baru, metadata intake master fisik, kolom penugasan, dokumen verifikasi berversi, dan tabel serah-terima. Data dan nilai status lama tetap ada. Status `PAYMENT_VERIFICATION` dapat tetap tampil setelah `PaymentRecord.status=VERIFIED`; handover baru akan memindahkannya ke `WAITING_DISTRIBUTOR_RECEIPT`.
-
-## Intake master fisik dan penugasan (PR-VER-02)
+## Intake master fisik, penugasan, dan dokumen verifikasi
 
 | Endpoint | Aktor | Body / hasil |
 |---|---|---|
-| `PUT /registrations/:id/physical-master` | Penerbit pemilik | `{ "format": "A4", "binding_method": "PER_JUZ", "volume_count": 30, "sent_at": "2026-09-14T10:00:00+07:00", "delivery_method": "KURIR", "notes": "opsional" }`; `sent_at`, metode, dan catatan opsional. Membuat atau memperbarui deklarasi berstatus `PENDING` selama DRAFT, READY_FOR_VERIFICATION, atau REVISION_REQUIRED. Master yang sudah diterima tidak dapat diubah. |
-| `POST /registrations/:id/physical-master/receive` | Kepala LPMQ | `{ "decision": "RECEIVED", "receipt_no": "TR-001", "condition": "Baik", "volume_count": 30 }` atau `RETURNED` dengan `notes` alasan wajib. Hanya pada READY_FOR_VERIFICATION dan deklarasi PENDING; jumlah jilid saat diterima harus sama. Nomor tanda terima unik. Penerbit menerima notifikasi. |
-| `GET /registrations/:id/receipt` | Penerbit pemilik, Kepala LPMQ, superadmin | Bukti pendaftaran JSON setelah submit: nomor, penerbit, layanan, judul, waktu submit, daftar metadata berkas digital, dan status master fisik. Tidak mengandung ID atau isi berkas privat. `NOT_DECLARED` berarti deklarasi belum ada. |
-| `POST /registrations/:id/verification-assignments` | Kepala LPMQ | `{ "verifier_id": "UUID", "nota_no": "ND-001", "notes": "opsional" }`; memerlukan status READY_FOR_VERIFICATION, master RECEIVED dan nomor tanda terima, serta pengguna aktif berperan VERIFIKATOR. Assignment, Nota Dinas berstatus ISSUED, status VERIFICATION_ASSIGNED, histori, audit, dan notifikasi dibuat dalam satu transaksi. Nomor Nota Dinas dimasukkan dari nomor resmi, bukan dibuat otomatis. |
-| `GET /verification-assignments` | Kepala LPMQ, Verifikator, superadmin | Inbox dengan `status`, `search`, `my_tasks`, `page`, `limit`. Verifikator hanya melihat assignment miliknya. Untuk antrean belum ditugaskan, gunakan `GET /registrations?status=READY_FOR_VERIFICATION`; daftar pengajuan sudah memuat status master fisik. |
+| `PUT /registrations/:id/physical-master` | Penerbit pemilik | `{ "format": "A4", "binding_method": "PER_JUZ", "volume_count": 30, "sent_at": "2026-09-14T10:00:00+07:00", "delivery_method": "KURIR", "notes": "opsional" }`. Membuat atau memperbarui deklarasi berstatus `PENDING` selama DRAFT, READY_FOR_VERIFICATION, atau REVISION_REQUIRED. |
+| `POST /registrations/:id/physical-master/receive` | `ADMIN` / `SUPERADMIN` | `{ "decision": "RECEIVED", "receipt_no": "TR-001", "condition": "Baik", "volume_count": 30 }` atau `RETURNED` dengan `notes` wajib. Memeriksa fisik naskah per juz di loket LPMQ. Kepala LPMQ ditolak (`403`). |
+| `GET /registrations/:id/receipt` | Penerbit pemilik, Kepala LPMQ, superadmin | Bukti pendaftaran JSON setelah submit: nomor, penerbit, layanan, judul, waktu submit, daftar metadata berkas digital, dan status master fisik. |
+| `POST /registrations/:id/verification-assignments` | `KEPALA_LPMQ` | `{ "verifier_id": "UUID", "nota_no": "ND-001", "notes": "opsional" }`. Menerbitkan Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`) dan menugaskan verifikator secara atomik. Tenggat SLA dihitung tepat 2 hari kerja kalender `Asia/Jakarta` (pukul 16:00 WIB). |
+| `GET /verification-assignments` | Kepala LPMQ, Verifikator, superadmin | Inbox penugasan dengan filter `status`, `search`, `my_tasks`, `page`, `limit`. |
+| `POST /verification-documents` | `VERIFIKATOR` penugasan | `{ "decision": "PASSED" / "REVISION_REQUIRED", "notes": "...", "attachment_file_ids": [...] }`. Menyusun draf Surat Pemberitahuan Hasil Verifikasi dan Berita Acara Verifikasi. Lampiran divalidasi kepemilikannya. |
+| `POST /verification-documents/:id/submit` | `VERIFIKATOR` penugasan | Mengajukan draf dokumen hasil verifikasi ke Kepala LPMQ (`WAITING_APPROVAL`). |
+| `POST /verification-documents/:id/approve` | `KEPALA_LPMQ` | `{ "decision": "APPROVED" / "REJECTED", "rejection_reason": "..." }`. Menyetujui draf dan menginisialisasi penandatangan digital multi-signatory. Jika ditolak, kembali ke status `IN_VERIFICATION`. |
+| `POST /verification-documents/:id/sign` | `VERIFIKATOR`, `KEPALA_LPMQ` | `{ "method": "MANUAL" / "DIGITAL_SIGNATURE" }`. Menandatangani dokumen sesuai urutan hierarki penandatangan (`sign_order`). Mencatat snapshot hash sha256 dan waktu tanda tangan. |
+| `POST /verification-documents/:id/send` | `VERIFIKATOR` penugasan | Mengirimkan surat hasil verifikasi ke penerbit secara nyata melalui antrean `EmailOutbox` ber-idempotency key. Mengubah status pengajuan ke `AWAITING_PAYMENT` (jika lolos) atau `REVISION_REQUIRED` (jika revisi). |
+| `POST /verification-documents/:id/retry-email` | Verifikator / Kepala LPMQ | Mengulang pengiriman email hasil verifikasi jika berstatus `EMAIL_FAILED`. |
 
-Tenggat pemeriksaan sementara dihitung **48 jam sejak penugasan**, ditampilkan sebagai target pemantauan dan tidak menghalangi aksi setelah terlewat. SOP menyebut dua hari tanpa menetapkan hari kerja atau kalender; aturan kalender resmi perlu diputuskan sebelum menganggap tenggat ini SLA final. Nota Dinas tersimpan sebagai snapshot data dan metadata dokumen, belum sebagai PDF resmi atau tanda tangan digital.
-
-Pesan error menjelaskan penyebab dan langkah tindak lanjut dalam Bahasa Indonesia. Validasi mengembalikan ringkasan pada `message` dan detail lengkap pada `errors: [{ field, message }]`. Status HTTP tetap menjadi acuan aplikasi; jangan menggunakan teks pesan sebagai kode kondisi. Berkas terlalu besar memakai 413, dan layanan data yang belum tersedia memakai 503. Kegagalan koneksi saat autentikasi tidak dianggap sebagai sesi masuk yang salah. Detail teknis error dicatat di log server; pesan gangguan umum meminta pengguna memeriksa hasil sebelum mengirim ulang.
-
-## Pembayaran manual
+## Pembayaran dan serah-terima fisik ke distributor
 
 | Endpoint | Aktor | Body / perilaku |
 |---|---|---|
-| `POST /registrations/:id/payments` | Verifikator / superadmin | `{}`; status harus AWAITING_PAYMENT; nominal dari `fee_sla_snapshot.total_fee`; menghasilkan satu billing aktif dengan awalan MANUAL |
-| `POST /payments/:id/confirm` | Penerbit pemilik | `{ "receipt_file_id": "UUID unggahan", "external_ref": "referensi opsional" }`; menyimpan PAID dan memindahkan pengajuan ke PAYMENT_VERIFICATION |
-| `PATCH /payments/:id/verify` | Verifikator / superadmin | `{}`; memverifikasi bukti, menyimpan VERIFIED dan notifikasi; registrasi tetap PAYMENT_VERIFICATION sampai serah-terima fisik dicatat oleh endpoint berikutnya |
+| `POST /registrations/:id/payments` | Verifikator / superadmin | `{}`; status harus AWAITING_PAYMENT; nominal dari `fee_sla_snapshot.total_fee`; menghasilkan billing aktif. |
+| `POST /payments/:id/confirm` | Penerbit pemilik | `{ "receipt_file_id": "UUID unggahan", "external_ref": "referensi opsional" }`; menyimpan PAID dan memindahkan pengajuan ke PAYMENT_VERIFICATION. |
+| `PATCH /payments/:id/verify` | `VERIFIKATOR` penugasan | `{}`; memverifikasi bukti bayar khusus oleh verifikator yang ditugaskan; menyimpan status `VERIFIED`. |
+| `POST /registrations/:id/handover/submit` | `VERIFIKATOR` penugasan | `{ "notes": "opsional" }`; verifikator menyerahkan master fisik ke loket Distributor; status beralih ke `WAITING_DISTRIBUTOR_RECEIPT`. |
+| `POST /registrations/:id/handover/confirm` | `DISTRIBUTOR` | `{ "notes": "opsional", "tashih_due_at": "ISO datetime masa depan" }`; distributor menerima naskah fisik dan menetapkan target waktu sidang; status beralih ke `WAITING_DISTRIBUTION`. |
+| `POST /registrations/:id/handover/return` | `DISTRIBUTOR` | `{ "notes": "Catatan cacat fisik" }`; mengembalikan naskah master fisik yang cacat; memindahkan pengajuan ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`. Pembayaran tetap `VERIFIED` tanpa tagihan billing ulang. |
 
-Nomor billing MANUAL adalah identitas internal aplikasi, bukan kode billing SIMPONI. `external_ref` dicatat manual dan tidak menjadi bukti rekonsiliasi NTPN otomatis. Penolakan/pembatalan pasca-billing belum diaktifkan karena kebijakan resminya belum tersedia.
+## Berkas privat tanpa token URL
 
-## Berkas privat
+`POST /uploads` menerima **raw binary body**, dengan `Content-Type: application/pdf`, `image/png`, atau `image/jpeg` (maksimum 10 MiB). Server memeriksa magic bytes isi, membuat UUID, menghitung checksum SHA-256, dan menyimpan file di `backend/storage/private/`.
 
-`POST /uploads` menerima **raw binary body**, dengan `Content-Type: application/pdf`, `image/png`, atau `image/jpeg` (bukan multipart/form-data). Maksimum 10 MiB. Server memeriksa signature isi, membuat UUID, menghitung checksum SHA-256, dan menyimpan file di `backend/storage/private/` yang tidak dipublikasikan sebagai static directory. Pemindaian antivirus belum tersedia.
-
-Respons 201 mengandung `id`, `mime_type`, `file_size`, dan `checksum`. Tautkan ID tersebut melalui `POST /registrations/:id/manuscripts`:
-
-```json
-{ "type": "COVER", "file_id": "UUID dari /uploads" }
-```
-
-`version`, `checksum`, `mime_type`, dan `file_size` tidak lagi diterima dari klien; server menetapkan semuanya. Naskah penerbit hanya dapat ditambahkan pada DRAFT/REVISION_REQUIRED. Internal hanya bisa membaca naskah bila memiliki Assignment atau VerificationAssignment aktif; superadmin tetap memiliki akses teknis. Detail pengajuan menyembunyikan naskah bagi aktor tanpa penugasan. `GET /uploads/:id` memeriksa pemilik/penugasan atau tanggung jawab verifikasi pembayaran, lalu mengirim attachment privat.
-
-Validasi signature bukan antivirus atau validasi semantik isi mushaf. Nama dan ekstensi kiriman klien tidak digunakan sebagai path penyimpanan.
+Respons 201 mengandung `id`, `mime_type`, `file_size`, dan `checksum`. Pengaksesan berkas privat melalui `GET /uploads/:id` mewajibkan otentikasi header `Authorization: Bearer <token>` dan mengirimkan header keamanan `Cache-Control: private, no-store`. Parameter token pada query string URL (`?token=...`) telah dieliminasi demi mencegah kebocoran kredensial melalui log referer dan browser history. Naskah digital hanya dapat diakses oleh verifikator yang ditugaskan, tim pentashih aktif, atau penerbit pemilik naskah.
 
 ## Distribusi, sidang, dan revisi
 
@@ -67,7 +60,7 @@ SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dengan tenggat akh
 
 ## Status dan notifikasi
 
-Persetujuan hasil verifikasi oleh KEPALA_LPMQ; penolakan draf surat kembali ke IN_VERIFICATION dengan alasan wajib dan tetap ditangani verifikator semula. SUPERADMIN tanpa peran Kepala tidak dapat menggantikan persetujuan ini. Lihat [pencocokan SOP verifikasi](verifikasi-sop-review.md) untuk kebutuhan dokumen yang belum selesai dan keputusan yang menunggu rapat.
+Persetujuan hasil verifikasi oleh KEPALA_LPMQ; penolakan draf surat kembali ke IN_VERIFICATION dengan alasan wajib dan tetap ditangani verifikator semula. SUPERADMIN tanpa peran Kepala tidak dapat menggantikan persetujuan ini. Kontrak API lengkap mengacu pada [API_CONTRACT_MODUL_LANJUTAN.md](../../API_CONTRACT_MODUL_LANJUTAN.md).
 
 Endpoint status umum menolak transisi yang harus melalui submit/pembayaran/assignment/sidang/penetapan. Gunakan `from_status` pada aksi status lama untuk mendeteksi halaman yang sudah kedaluwarsa; ketidaksesuaian menghasilkan 409.
 

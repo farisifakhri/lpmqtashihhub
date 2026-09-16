@@ -110,3 +110,6 @@ export const sendVerificationSchema = {
   }).strict().optional(),
 };
 
+
+export const signVerificationSchema = { params: idParams };
+export const retryVerificationSchema = { params: idParams };

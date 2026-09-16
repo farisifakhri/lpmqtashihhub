@@ -242,11 +242,16 @@ export const returnHandover = (handoverId, data, user, req) =>
     await move(
       tx,
       reg,
-      'REVISION_REQUIRED',
+      'PHYSICAL_HANDOVER_CORRECTION_REQUIRED',
       user,
       `Master fisik dikembalikan oleh Distributor: ${data.reason.trim()}`,
       req
     );
+
+    await tx.registration.update({
+      where: { id: reg.id },
+      data: { revision_source: 'PHYSICAL_HANDOVER' },
+    });
 
     // Notifikasi ke verifikator
     await tx.notification.create({

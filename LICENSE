@@ -1,24 +1,34 @@
-INTERNAL USE LICENSE — DRAFT
+PROPRIETARY & CONFIDENTIAL — INTERNAL USE LICENSE
 
-Copyright (c) 2026 [PEMEGANG HAK CIPTA — MENUNGGU KONFIRMASI]
+Hak Cipta (c) 2026 Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)
+Badan Litbang dan Diklat — Kementerian Agama Republik Indonesia
+Hak cipta dilindungi undang-undang.
 
-Dokumen dan kode sumber dalam repository ini disiapkan untuk evaluasi,
-perancangan, pengembangan, pengujian, dan penggunaan internal proyek Sistem
-Manajemen Layanan Pentashihan Mushaf Al-Qur'an.
+Seluruh dokumen, spesifikasi teknis, dan kode sumber dalam repositori ini merupakan milik resmi
+Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ), Kementerian Agama Republik Indonesia, yang dikembangkan
+untuk Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ Tashih Hub).
 
-Sampai pemegang hak cipta dan lisensi resmi ditetapkan secara tertulis:
+Ketentuan Lisensi & Hak Penggunaan:
 
-1. Penggunaan dibatasi untuk personel dan pihak yang memperoleh izin dalam
-   pelaksanaan proyek.
-2. Penyalinan, distribusi publik, sublicensing, penjualan, atau penggunaan di
-   luar proyek tidak diperkenankan tanpa persetujuan tertulis.
-3. Kredensial, data pribadi, naskah, dokumen pembayaran, tanda tangan, dan
-   konfigurasi lingkungan produksi tidak boleh dimasukkan ke repository.
-4. Perangkat lunak diberikan dalam kondisi sebagaimana adanya untuk keperluan
-   evaluasi dan pengembangan, tanpa jaminan sampai ada perjanjian resmi.
-5. Lisensi dependensi pihak ketiga tetap mengikuti ketentuan masing-masing.
+1. Penggunaan Internal Kedinasan:
+   Hak penggunaan, penelaahan, pengembangan, dan pengujian kode sumber ini secara eksklusif
+   diperuntukkan bagi lingkungan internal kedinasan LPMQ Kementerian Agama RI dan pihak/personel
+   yang telah diberikan wewenang resmi tertulis dalam pelaksanaan proyek.
 
-CATATAN: File ini bukan keputusan hukum final. Ganti dengan lisensi yang telah
-disetujui LPMQ/Kementerian Agama sebelum publikasi, pengadaan, serah terima,
-atau deployment produksi.
+2. Larangan Distribusi Publik & Komersialisasi:
+   Dilarang keras menyalin, memodifikasi untuk keperluan luar kedinasan, mendistribusikan ke domain publik,
+   memperjualbelikan, atau memberikan lisensi turunan (sublicense) atas sebagian maupun seluruh isi
+   repositori ini tanpa izin tertulis resmi dari Kepala LPMQ Kementerian Agama Republik Indonesia.
 
+3. Kerahasiaan Data & Integritas Dokumen:
+   Kredensial, kunci kriptografi, data master mushaf Al-Qur'an, tanda tangan elektronik kedinasan,
+   dokumen penerimaan kas negara (PNBP/NTPN), serta identitas pemohon dilindungi oleh ketentuan
+   kerahasiaan negara dan peraturan perundang-undangan Republik Indonesia yang berlaku.
+
+4. Penafian Jaminan (Disclaimer):
+   Perangkat lunak ini disediakan "sebagaimana adanya" (AS IS) untuk operasional resmi sistem
+   manajemen layanan pentashihan, dengan pemeliharaan dan audit integritas data berkelanjutan.
+
+5. Dependensi Pihak Ketiga:
+   Setiap pustaka atau komponen pihak ketiga (open-source libraries) yang digunakan dalam repositori ini
+   tetap tunduk pada ketentuan lisensi masing-masing pihak ketiga yang bersangkutan.

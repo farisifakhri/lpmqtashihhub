@@ -1,11 +1,29 @@
 import { prisma } from '../config/database.js';
 import { fail } from './workflow-utils.js';
 
+export const WORK_HOURS_CONFIG = {
+  START_HOUR: 8,
+  END_HOUR: 16,
+  TIMEZONE: 'Asia/Jakarta',
+  CUTOFF_HOUR_JAKARTA: 16,
+};
+
 export const jakartaDate = date => new Date(date.getTime() + 7 * 3600000).toISOString().slice(0, 10);
 
-export async function calculateDueAt(db, start, days) {
+export async function calculateDueAt(db, start, days, options = {}) {
   if (!Number.isInteger(days) || days < 1) fail(409, 'Tenggat penugasan belum dapat dihitung karena durasi layanan pada pengajuan tidak lengkap. Minta administrator memeriksa data durasi layanan.');
-  const firstDate = new Date(`${jakartaDate(start)}T00:00:00Z`);
+  
+  let baseStart = start;
+  if (options?.applyCutoff) {
+    const jakartaHour = new Date(start.getTime() + 7 * 3600000).getUTCHours();
+    const cutoff = options.cutoffHour ?? WORK_HOURS_CONFIG.CUTOFF_HOUR_JAKARTA;
+    if (jakartaHour >= cutoff) {
+      // Lewat jam operasional loket: mulai hitung dari hari berikutnya
+      baseStart = new Date(start.getTime() + 24 * 3600000);
+    }
+  }
+
+  const firstDate = new Date(`${jakartaDate(baseStart)}T00:00:00Z`);
   const calendar = await db.workingDay.findMany({ where: { date: { gt: firstDate } }, orderBy: { date: 'asc' }, take: 3660 });
   let cursor = firstDate.getTime();
   let remaining = days;

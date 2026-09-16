@@ -289,6 +289,25 @@ async function main() {
   }
   console.log('✅ Sample Distribution Team seeded');
 
+  // 7. Working Days (Official Calendar for SLA)
+  const startDate = new Date('2025-01-01T00:00:00.000Z');
+  const endDate = new Date('2027-12-31T00:00:00.000Z');
+  const days = [];
+  for (let d = new Date(startDate); d <= endDate; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dayOfWeek = d.getUTCDay(); // 0 = Sun, 6 = Sat
+    days.push({
+      date: new Date(d),
+      is_working_day: dayOfWeek !== 0 && dayOfWeek !== 6,
+      source: 'SKB_3_MENTERI',
+      description: dayOfWeek === 0 || dayOfWeek === 6 ? 'Akhir Pekan' : 'Hari Kerja Reguler',
+    });
+  }
+  await prisma.workingDay.createMany({
+    data: days,
+    skipDuplicates: true,
+  });
+  console.log('✅ Working Days seeded');
+
   console.log('--- Seeding Selesai Sukses! ---');
 }
 

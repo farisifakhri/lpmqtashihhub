@@ -4,9 +4,16 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 
 ## Status implementasi
 
-Fondasi API, migrasi/seed database, master data, dashboard berbasis peran, dan sebagian alur pengajuan hingga dokumen draf sudah tersedia. Beberapa halaman operasional masih `ModulePlaceholder`, termasuk riwayat pengajuan, billing PNBP, antrean verifikasi, distribusi, pentashihan, dan dokumen. Sistem belum siap dipakai end-to-end untuk SOP Verifikasi final. Penugasan verifikator oleh Kepala LPMQ, pengiriman surat hasil verifikasi, dan serah-terima master fisik masih perlu dilengkapi. Kontrak API saat ini dijelaskan di [docs/api/workflow.md](docs/api/workflow.md); kesenjangan terhadap SOP dicatat di [docs/api/verifikasi-sop-review.md](docs/api/verifikasi-sop-review.md).
+Sistem telah mengimplementasikan alur SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) secara end-to-end dengan pengujian otomatis 100%:
+- Pemeriksaan berkas fisik (intake) dan serah-terima fisik oleh `ADMIN` (Staf TU / Layanan).
+- Penerbitan Nota Dinas Verifikasi dan penugasan verifikator oleh Kepala LPMQ secara atomik dengan SLA 2 hari kerja kalender kerja (`Asia/Jakarta`).
+- Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi, dan Berita Acara Verifikasi.
+- Penandatanganan digital bertingkat (multi-signatory) untuk Kepala LPMQ dan Verifikator.
+- Pengiriman email hasil verifikasi nyata berbasis outbox idempoten dengan mekanisme retry.
+- Pembatasan verifikasi pembayaran PNBP dan serah-terima master fisik ke distributor loket pentashihan.
+- Akses berkas privat terproteksi tanpa token query URL.
 
-Nomor billing `MANUAL` adalah referensi internal, bukan kode SIMPONI. PDF dokumen resmi masih draf dan belum memakai template final atau tanda tangan elektronik.
+Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [API_CONTRACT_MODUL_LANJUTAN.md](API_CONTRACT_MODUL_LANJUTAN.md).
 
 ## Prasyarat
 
@@ -59,11 +66,14 @@ frontend/                React/Vite UI, API client, component tests
 backend/prisma/          Model dan migrasi MySQL
 backend/src/             Routes, controllers, services, middleware
 frontend/src/            Router, halaman, komponen, konteks autentikasi
-docs/api/                Kontrak workflow dan catatan SOP
+docs/                    Dokumentasi teknis, RBAC admin, dashboard, FIFO
+docs/api/                Kontrak workflow dan siklus SOP
 .github/workflows/ci.yml Quality gate CI
+API_CONTRACT_MODUL_LANJUTAN.md Spesifikasi kontrak API modul lanjutan (Live)
 DESIGN.MD                Rancangan arsitektur dan domain
-IMPLEMENTATION.md        Rencana implementasi
-USER_FLOWS.md            Alur pengguna dan keputusan terbuka
+IMPLEMENTATION.md        Rencana implementasi & status sprint
+USER_FLOWS.md            Alur pengguna per peran
 ```
 
-SOP dan keputusan stakeholder menjadi sumber aturan bisnis. SLA adalah target pemantauan, bukan pemblokir otomatis. File unggahan privat dan perubahan transaksi harus ditangani sesuai otorisasi serta audit. Alur Berita Acara/STT final, delegasi Kepala LPMQ, integrasi SIMPONI, dan tanda tangan elektronik menunggu keputusan resmi.
+SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Alur SOP Verifikasi v2.2 (penerimaan fisik oleh Admin, penugasan Kepala LPMQ dengan SLA 2 hari kerja kalender, penyusunan draf Surat Hasil & Berita Acara Verifikasi, tanda tangan digital multi-signatory, pengiriman email outbox idempoten, verifikasi pembayaran, serta serah-terima fisik distributor dengan penanganan koreksi fisik cacat) telah selesai diimplementasikan secara end-to-end dengan uji otomatis 100%. Alur penetapan Berita Acara Tashih/STT final, integrasi gateway SIMPONI, dan integrasi tanda tangan elektronik BSrE menunggu tahapan resmi berikutnya.
+

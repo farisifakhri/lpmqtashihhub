@@ -26,7 +26,7 @@ const action = (fn, status = 200) => async (req, res, next) => {
 };
 
 router.put('/registrations/:id/physical-master', authenticate, authorize('ADMIN_PENERBIT'), validate(declarePhysicalMasterSchema), action(req => intake.declarePhysicalMaster(req.params.id, req.body, req.user, req)));
-router.post('/registrations/:id/physical-master/receive', authenticate, authorize('KEPALA_LPMQ'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
+router.post('/registrations/:id/physical-master/receive', authenticate, authorize('ADMIN', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
 router.post('/registrations/:id/verification-assignments', authenticate, authorize('KEPALA_LPMQ'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
@@ -39,6 +39,9 @@ router.post('/verification-assignments/:id/result-drafts', authenticate, authori
 router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), action(req => review.getVerificationAttachment(req.params.documentId, req.params.fileId, req.user)));
 
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E) & Pengiriman Hasil Verifikasi (Epic F)
+router.post('/verification-documents/:id/sign', authenticate, authorize('VERIFIKATOR', 'KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.signVerificationDocumentHandler(req.params.id, req.user, req)));
+router.post('/verification-documents/:id/retry-email', authenticate, authorize('VERIFIKATOR'), validate(documentIdSchema), action(req => review.retryVerificationEmail(req.params.id, req.user, req)));
+
 router.post('/verification-documents/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
 router.post('/verification-results/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
 

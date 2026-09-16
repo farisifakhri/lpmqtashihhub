@@ -11,7 +11,7 @@ export async function assertManuscriptAccess(reg, user, write = false, db = pris
   }
   if (write) fail(403, 'Berkas naskah hanya dapat ditambahkan oleh penerbit atau administrator.');
   const verification = user.roles.includes('VERIFIKATOR') && await db.verificationAssignment.findFirst({
-    where: { registration_id: reg.id, verifier_id: user.id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } },
+    where: { registration_id: reg.id, verifier_id: user.id },
   });
   const assignment = user.roles.includes('PENTASHIH') && await db.assignment.findFirst({
     where: { registration_id: reg.id, assignee_id: user.id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } },

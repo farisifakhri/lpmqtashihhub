@@ -10,6 +10,7 @@ const statusLabels = {
   WAITING_DISTRIBUTION: 'Menunggu distribusi', TASHIH_IN_PROGRESS: 'Sedang ditashih',
   READY_FOR_STT: 'Siap untuk penetapan STT', STT_ISSUED: 'STT telah terbit',
   DOCUMENTATION_IN_PROGRESS: 'Sedang didokumentasikan', COMPLETED: 'Selesai', CANCELLED: 'Dibatalkan',
+  PHYSICAL_HANDOVER_CORRECTION_REQUIRED: 'Perlu perbaikan master fisik dari serah-terima',
 };
 export const statusLabel = status => statusLabels[status] || 'Tidak dikenali';
 const roleLabels = {
@@ -35,6 +36,7 @@ const fields = {
   page: 'Halaman', limit: 'Jumlah per halaman',
   checklist: 'Checklist pemeriksaan', code: 'Butir checklist', letter_text: 'Isi draf surat',
   attachment_file_ids: 'Lampiran surat', documentId: 'Dokumen verifikasi', fileId: 'Berkas lampiran',
+  tashih_due_at: 'Tenggat waktu pentashihan',
 };
 
 export function validationMessage(issue) {

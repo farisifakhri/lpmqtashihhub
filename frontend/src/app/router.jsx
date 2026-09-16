@@ -1,23 +1,42 @@
+import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
-import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
-import { PublisherRegistrationsPage } from '@/features/registrations/PublisherRegistrationsPage';
-import { PublisherRegistrationDetailPage } from '@/features/registrations/PublisherRegistrationDetailPage';
-import { NewRegistrationPage } from '@/features/registrations/NewRegistrationPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
-import { InternalDashboard } from '@/features/internal/InternalDashboard';
-import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
-import { VerifikatorInboxPage } from '@/features/verification/VerifikatorInboxPage';
-import { VerificationInspectionPage } from '@/features/verification/VerificationInspectionPage';
-import { InternalPaymentQueuePage } from '@/features/verification/InternalPaymentQueuePage';
-import { DistributorHandoverInboxPage } from '@/features/distribution/DistributorHandoverInboxPage';
-import { PublisherBillingPage } from '@/features/billing/PublisherBillingPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
-import { ContentConfiguration } from '@/features/internal/settings/ContentConfiguration';
-import { UserManagementPage } from '@/features/internal/users/UserManagementPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+// Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
+const PageFallback = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-semibold text-slate-500">Memuat modul...</span>
+    </div>
+  </div>
+);
+
+const withSuspense = (Component) => (props) => (
+  <Suspense fallback={<PageFallback />}>
+    <Component {...props} />
+  </Suspense>
+);
+
+// Code-split heavy feature routes (P2-02)
+const PublisherDashboard = withSuspense(lazy(() => import('@/features/registrations/PublisherDashboard').then(m => ({ default: m.PublisherDashboard }))));
+const PublisherRegistrationsPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationsPage').then(m => ({ default: m.PublisherRegistrationsPage }))));
+const PublisherRegistrationDetailPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationDetailPage').then(m => ({ default: m.PublisherRegistrationDetailPage }))));
+const NewRegistrationPage = withSuspense(lazy(() => import('@/features/registrations/NewRegistrationPage').then(m => ({ default: m.NewRegistrationPage }))));
+const PublisherBillingPage = withSuspense(lazy(() => import('@/features/billing/PublisherBillingPage').then(m => ({ default: m.PublisherBillingPage }))));
+const InternalDashboard = withSuspense(lazy(() => import('@/features/internal/InternalDashboard').then(m => ({ default: m.InternalDashboard }))));
+const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verification/VerifikatorInboxPage').then(m => ({ default: m.VerifikatorInboxPage }))));
+const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
+const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
+const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
+const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
+const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 
 export const router = createBrowserRouter([
   // Rute Autentikasi Mandiri

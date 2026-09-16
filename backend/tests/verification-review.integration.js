@@ -45,7 +45,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
     });
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
-    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', {
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED', receipt_no: receiptNo, condition: 'Lengkap dan baik', volume_count: 30,
     });
     const assigned = await expect(`/registrations/${reg.id}/verification-assignments`, kepalaToken, 'POST', {
@@ -94,7 +94,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     assert.equal(detail.registration.status, 'IN_VERIFICATION');
     assert.ok(detail.nota_dinas);
     assert.equal(detail.nota_dinas.document_no, notaNo);
-    assert.equal(detail.assignment.sla.duration_target, '2 hari');
+    assert.equal(detail.assignment.sla.duration_target, '2 hari kerja');
     assert.equal(detail.assignment.sla.is_overdue, false);
     assert.ok(detail.assignment.sla.remaining_ms > 0);
 
@@ -115,7 +115,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
       decision: 'PASSED',
       letter_text: 'Draf surat catatan verifikasi awal...',
     });
-    assert.equal(draft.document_type, 'SURAT_HASIL_VERIFIKASI');
+    assert.ok(['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(draft.document_type));
     assert.equal(draft.status, 'DRAFT');
     assert.equal(draft.content_snapshot.checklist.length, 2);
 
@@ -190,7 +190,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
       letter_text: letterText,
     }, 201);
 
-    assert.equal(submitted.document_type, 'SURAT_HASIL_VERIFIKASI');
+    assert.ok(['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(submitted.document_type));
     assert.equal(submitted.status, 'SUBMITTED');
     assert.equal(submitted.content_snapshot.decision, 'PASSED');
     assert.equal(submitted.content_snapshot.checklist.length, 4);

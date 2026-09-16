@@ -69,6 +69,10 @@ describe('UserManagementPage Component', () => {
       </MemoryRouter>
     );
 
+    await waitFor(() => {
+      expect(screen.getByText('Ahmad Verifikator, S.Ag')).toBeInTheDocument();
+    });
+
     const addBtn = screen.getByText('Tambah Pengguna Baru');
     fireEvent.click(addBtn);
 

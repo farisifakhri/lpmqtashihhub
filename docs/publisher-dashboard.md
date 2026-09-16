@@ -41,6 +41,8 @@ Endpoint PDF existing tetap merender draf untuk petugas yang berwenang.
 Untuk dokumen ISSUED, server membaca **PDF existing tanpa mengubah bytes** dari
 file_id storage private, memeriksa tipe PDF, checksum, status, dan masa berlaku.
 Dokumen missing-file, revoked, expired, atau dari penerbit lain tidak diunduh.
+Pengunduhan berkas privat dan PDF resmi mewajibkan header `Authorization: Bearer <token>`
+dan mengirim header `Cache-Control: private, no-store` tanpa menyertakan query token di URL.
 Tidak ada implementasi penerbitan/tanda tangan STT baru: format resmi dan SOP
 penetapan existing masih menunggu stakeholder. Tidak ada dokumen resmi palsu
 yang dibuat demi mengisi dashboard.

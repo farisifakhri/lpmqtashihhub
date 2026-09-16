@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
+import { fileApi } from '@/api/file.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
@@ -167,11 +168,13 @@ export const InternalPaymentQueuePage = () => {
     }
   };
 
-  const handleViewReceipt = (fileId) => {
+  const handleViewReceipt = async (fileId) => {
     if (!fileId) return;
-    const token = localStorage.getItem('lpmq_token');
-    const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
-    window.open(`${apiBase}/workflow/uploads/${fileId}?token=${token}`, '_blank');
+    try {
+      await fileApi.viewPrivateFile(fileId);
+    } catch (err) {
+      setError(err?.message || 'Gagal membuka bukti pembayaran.');
+    }
   };
 
   return (

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
+import { calculateDueAt } from './sla.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 const verificationTargetMs = 2 * 24 * 60 * 60 * 1000;
@@ -35,7 +36,7 @@ export const declarePhysicalMaster = (id, data, user, req) => prisma.$transactio
 export const receivePhysicalMaster = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['KEPALA_LPMQ']);
+      requireRole(user, ['ADMIN', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
       const previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
@@ -96,7 +97,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       }
 
       const assignedAt = new Date();
-      const dueAt = new Date(assignedAt.getTime() + verificationTargetMs);
+      const dueAt = await calculateDueAt(tx, assignedAt, 2, { applyCutoff: true });
       const previousNota = await tx.verificationDocument.findFirst({
         where: { registration_id: id, document_type: 'NOTA_DINAS_VERIFIKASI' },
         orderBy: { version: 'desc' },
@@ -163,7 +164,7 @@ export const getRegistrationReceipt = async (id, user) => {
     },
   });
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
-  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && reg.publisher_id !== user.publisherId) {
+  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('ADMIN') && reg.publisher_id !== user.publisherId) {
     fail(403, 'Bukti pendaftaran hanya dapat dilihat oleh penerbit pemilik atau Kepala LPMQ.');
   }
   if (reg.status === 'DRAFT') fail(409, 'Bukti pendaftaran tersedia setelah pengajuan dikirim.');

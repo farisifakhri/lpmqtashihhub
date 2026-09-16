@@ -9,6 +9,7 @@ pada tabel `Role`, bukan menambahkan single-role pada `User`. Semua guard membac
 | Aksi | ADMIN | SUPERADMIN | DISTRIBUTOR |
 | --- | --- | --- | --- |
 | Baca pengajuan, timeline tersanitasi, progres | Ya | Tetap | Tetap |
+| POST `/registrations/:id/physical-master/receive` (intake fisik master) | Ya | Ya | Tidak, 403 |
 | POST `/registrations/:id/assignments` (tim pentashihan) | Ya | Ya | Tidak, 403 |
 | GET `/distribution-teams/:id/workload` | Ya | Ya | Ya |
 | Persetujuan SOP verifikasi, Nota Dinas verifikator | Tidak | Guard existing, tidak diperluas | Tidak |
@@ -18,6 +19,11 @@ pada tabel `Role`, bukan menambahkan single-role pada `User`. Semua guard membac
 Path tabel berada di bawah `/api/v1`. `requireAdminInternal` adalah guard terpisah
 yang memakai `authorize('ADMIN', 'SUPERADMIN')`; endpoint assignment menggunakan
 guard eksklusif dengan allowlist yang sama serta pemeriksaan service.
+
+Sesuai SOP Pendaftaran Mushaf (Sheet 3) dan keputusan bisnis KB-01 / P1-01, pemeriksaan berkas
+fisik dan tanda terima fisik (`POST /registrations/:id/physical-master/receive`) dilakukan oleh
+`ADMIN` (Staf TU / Layanan) dan `SUPERADMIN`. `KEPALA_LPMQ` memiliki hak akses view-only dan ditolak
+dengan 403 jika mencoba melakukan penerimaan fisik.
 
 `/registrations/:id/verification-assignments` bukan assignment tim pentashihan:
 itu penugasan verifikator/Nota Dinas milik Kepala LPMQ dan tidak diubah.

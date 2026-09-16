@@ -78,6 +78,13 @@ export const TOKENS = {
       borderClass: 'border-sky-200',
       description: 'Verifikator sedang memeriksa kelengkapan administrasi dan naskah',
     },
+    PHYSICAL_HANDOVER_CORRECTION_REQUIRED: {
+      label: 'Perbaikan Fisik',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-800',
+      borderClass: 'border-amber-300',
+      description: 'Master fisik dikembalikan distributor karena cacat fisik; pembayaran sah tetap terjaga tanpa re-billing',
+    },
     REVISION_REQUIRED: {
       label: 'Perlu Perbaikan',
       bgClass: 'bg-amber-50',
@@ -179,10 +186,12 @@ export const TOKENS = {
   },
 
   paymentStatus: {
-    UNPAID: { label: 'Belum Dibayar', color: '#D97706' },
-    PAID: { label: 'Lunas', color: '#0E5139' },
-    EXPIRED: { label: 'Kedaluwarsa', color: '#E11D48' },
-    WAIVED: { label: 'Bebas Tarif', color: '#0284C7' },
+    UNPAID: { label: 'Menunggu Pembayaran', color: '#D97706', bgClass: 'bg-amber-50', textClass: 'text-amber-800', borderClass: 'border-amber-200' },
+    PAID: { label: 'Menunggu Verifikasi', color: '#0284C7', bgClass: 'bg-blue-50', textClass: 'text-blue-800', borderClass: 'border-blue-200' },
+    VERIFIED: { label: 'Lunas & Sah', color: '#0E5139', bgClass: 'bg-emerald-50', textClass: 'text-emerald-800', borderClass: 'border-emerald-200' },
+    EXPIRED: { label: 'Kedaluwarsa', color: '#E11D48', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' },
+    REJECTED: { label: 'Bukti Ditolak', color: '#E11D48', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' },
+    WAIVED: { label: 'Bebas Tarif', color: '#0284C7', bgClass: 'bg-cyan-50', textClass: 'text-cyan-800', borderClass: 'border-cyan-200' },
   },
 
   tashihStages: {

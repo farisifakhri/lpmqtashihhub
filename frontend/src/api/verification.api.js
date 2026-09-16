@@ -102,6 +102,25 @@ export const verificationApi = {
   getDocumentDetail: async (documentId) => {
     return apiClient(`/verification-documents/${documentId}`);
   },
+  /**
+   * Menandatangani dokumen verifikasi resmi (P0-02 / §4.3)
+   * @param {string} documentId - Verification Document ID
+   */
+  signDocument: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}/sign`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Mengirim ulang email hasil verifikasi yang gagal (KB-07 / P0-03)
+   * @param {string} documentId - Verification Document ID
+   */
+  retryEmail: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}/retry-email`, {
+      method: 'POST',
+    });
+  },
 };
 
 export default verificationApi;

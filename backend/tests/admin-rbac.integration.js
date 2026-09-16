@@ -21,7 +21,7 @@ const call = async (path, token, method = 'GET', body, expected = 200) => {
 };
 try {
   const tokens = {};
-  for (const [role, email] of [['ADMIN', 'admin.internal@lpmq.kemenag.go.id'], ['SUPERADMIN', 'admin@lpmq.kemenag.go.id'], ['DISTRIBUTOR', 'distributor@lpmq.kemenag.go.id'], ['ADMIN_PENERBIT', 'penerbit@mushafnusantara.com'], ['VERIFIKATOR', 'verifikator@lpmq.kemenag.go.id']]) tokens[role] = (await call('/auth/login', null, 'POST', { email, password: 'password123' })).data.token;
+  for (const [role, email] of [['ADMIN', 'admin.internal@lpmq.kemenag.go.id'], ['SUPERADMIN', 'admin@lpmq.kemenag.go.id'], ['DISTRIBUTOR', 'distributor@lpmq.kemenag.go.id'], ['ADMIN_PENERBIT', 'penerbit@mushafnusantara.com'], ['VERIFIKATOR', 'verifikator@lpmq.kemenag.go.id'], ['KEPALA_LPMQ', 'kepala@lpmq.kemenag.go.id']]) tokens[role] = (await call('/auth/login', null, 'POST', { email, password: 'password123' })).data.token;
   const publisher = await prisma.publisher.findFirst();
   const service = await prisma.serviceType.findFirst();
   const verifier = await prisma.user.findUnique({ where: { email: 'verifikator@lpmq.kemenag.go.id' } });
@@ -47,7 +47,10 @@ try {
   await deny(`/verification-documents/${document.id}/return`, 'POST', { reason: 'Tidak berwenang' });
   await deny(`/verification-documents/${document.id}/send`);
   await deny(`/registrations/${ready.id}/verification-assignments`, 'POST', { verifier_id: verifier.id, nota_no: 'ADMIN-FORBIDDEN-ND' });
-  await deny(`/registrations/${ready.id}/physical-master/receive`, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 });
+  // Under KB-01: Admin is authorized to receive physical master; Kepala LPMQ and Verifikator are denied 403
+  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.KEPALA_LPMQ, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
+  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.VERIFIKATOR, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
+  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.ADMIN, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 409);
   await deny('/registrations', 'POST', { service_type_id: service.id, title: 'Forbidden publisher action' });
   await deny(`/registrations/${draft.id}/submit`);
   await deny(`/registrations/${draft.id}/manuscripts`, 'POST', { type: 'COVER', file_id: '00000000-0000-4000-8000-000000000001' });

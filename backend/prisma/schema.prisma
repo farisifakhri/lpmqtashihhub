@@ -38,6 +38,7 @@ model User {
   teams_led                DistributionTeam[]
   assignments              Assignment[]
   document_signatories     DocumentSignatory[]
+  verification_signatures  VerificationDocumentSignatory[] @relation("VerificationSignatures")
   notifications            Notification[]
   audit_logs               AuditLog[]
   status_histories         StatusHistory[]
@@ -239,6 +240,7 @@ model Registration {
   // WAITING_DISTRIBUTION, TASHIH_IN_PROGRESS, READY_FOR_STT, STT_ISSUED,
   // DOCUMENTATION_IN_PROGRESS, COMPLETED, CANCELLED
   fee_sla_snapshot         Json?                    // Snapshot snapshot tarif & SLA saat submit (BR-04, BR-05)
+  revision_source          String?                  // VERIFICATION, PHYSICAL_HANDOVER
   created_at               DateTime                 @default(now())
   updated_at               DateTime                 @updatedAt
 
@@ -389,9 +391,32 @@ model VerificationDocument {
   assignment      VerificationAssignment? @relation(fields: [assignment_id], references: [id], onDelete: SetNull)
   created_by      User @relation("VerificationDocumentCreator", fields: [created_by_id], references: [id])
   approved_by     User? @relation("VerificationDocumentApprover", fields: [approved_by_id], references: [id], onDelete: SetNull)
+  signatories     VerificationDocumentSignatory[]
 
   @@unique([registration_id, document_type, version])
   @@map("verification_documents")
+}
+
+model VerificationDocumentSignatory {
+  id                     String                  @id @default(uuid())
+  document_id            String
+  signer_user_id         String
+  name_position_snapshot String
+  sign_order             Int                     @default(1)
+  method                 String                  @default("DIGITAL") // DIGITAL, BSRE, MANUAL
+  status                 SigningStatus           @default(PENDING) // PENDING, SIGNED, REJECTED
+  signed_at              DateTime?
+  document_hash          String?
+  external_signature_id  String?
+  failure_reason         String?
+  created_at             DateTime                @default(now())
+  updated_at             DateTime                @updatedAt
+
+  document               VerificationDocument    @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  signer                 User                    @relation("VerificationSignatures", fields: [signer_user_id], references: [id])
+
+  @@index([document_id, signer_user_id])
+  @@map("verification_document_signatories")
 }
 
 model PhysicalManuscriptHandover {
@@ -593,6 +618,34 @@ model StoredFile {
   @@map("stored_files")
 }
 
+model EmailOutbox {
+  id                  String            @id @default(uuid())
+  registration_id     String?
+  document_id         String?
+  idempotency_key     String            @unique
+  recipient_email     String
+  recipient_name      String?
+  subject             String
+  template            String
+  payload             Json?
+  attachments_json    Json?
+  provider            String            @default("SYSTEM")
+  provider_message_id String?
+  status              EmailOutboxStatus @default(QUEUED)
+  retry_count         Int               @default(0)
+  max_retries         Int               @default(3)
+  failure_reason      String?           @db.Text
+  queued_at           DateTime          @default(now())
+  sent_at             DateTime?
+  last_attempt_at     DateTime?
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+
+  @@index([registration_id, status])
+  @@index([idempotency_key])
+  @@map("email_outbox")
+}
+
 // Keep the Role / UserRole tables and multi-role memberships intact.
 enum RoleCode {
   SUPERADMIN
@@ -640,6 +693,7 @@ enum RegistrationStatus {
   DOCUMENTATION_IN_PROGRESS
   COMPLETED
   CANCELLED
+  PHYSICAL_HANDOVER_CORRECTION_REQUIRED
 }
 
 enum PhysicalMasterIntakeStatus {
@@ -651,16 +705,29 @@ enum PhysicalMasterIntakeStatus {
 enum VerificationDocumentType {
   NOTA_DINAS_VERIFIKASI
   SURAT_HASIL_VERIFIKASI
+  SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI
+  BERITA_ACARA_VERIFIKASI
+  LAMPIRAN_HASIL_VERIFIKASI
 }
 
 enum VerificationDocumentStatus {
   DRAFT
   SUBMITTED
-  ISSUED
-  APPROVED
-  SIGNED
-  SENT
   RETURNED
+  APPROVED
+  SIGNING
+  SIGNED
+  EMAIL_QUEUED
+  SENT
+  EMAIL_FAILED
+  REVOKED
+  ISSUED
+}
+
+enum EmailOutboxStatus {
+  QUEUED
+  SENT
+  FAILED
 }
 
 enum PhysicalHandoverStatus {

@@ -37,14 +37,16 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(JSON.stringify(receipt).includes('file_id'), false);
   });
 
-  await test('PR-VER-02: hanya Kepala dapat menerima fisik dan menugaskan verifikator aktif', async () => {
+  await test('PR-VER-02: hanya Admin dapat menerima fisik dan hanya Kepala dapat menugaskan verifikator aktif', async () => {
     notaNo = `ND-VER-${reg.registration_no}`;
     const assignPath = `/registrations/${reg.id}/verification-assignments`;
     await expect(assignPath, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
     await expect(assignPath, adminToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 403);
     await expect(`/registrations/${reg.id}/physical-master/receive`, verifikatorToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
-    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 29 }, 409);
-    const received = await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 });
+    // KB-01: Kepala LPMQ dilarang menerima master fisik
+    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 29 }, 409);
+    const received = await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 });
     assert.equal(received.status, 'RECEIVED');
     assert.equal((await expect(`/registrations/${reg.id}/receipt`, publisherToken)).physical_master.receipt_no, `TR-${reg.registration_no}`);
     await expect(assignPath, kepalaToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
@@ -68,7 +70,7 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const audit = await prisma.auditLog.findFirst({ where: { subject_id: created.assignment.id, action: 'CREATE_VERIFICATION_ASSIGNMENT' } });
     assert.equal(audit.user_agent, 'pr-ver-02-test');
     assert.ok(audit.ip_address);
-    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
   });
 
   await test('PR-VER-02: inbox terfilter dan hanya tersedia bagi petugas berwenang', async () => {
@@ -83,14 +85,14 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const another = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Master Dikembalikan' }, 201);
     await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
-    await expect(`/registrations/${another.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });
+    await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });
     const path = `/registrations/${another.id}/verification-assignments`;
     await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
     const reset = await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     assert.equal(reset.status, 'PENDING');
-    await expect(`/registrations/${another.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
+    await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
     assert.equal((await prisma.physicalMasterIntake.findUnique({ where: { registration_id: another.id } })).status, 'PENDING');
-    await expect(`/registrations/${another.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
+    await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
     await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
     assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 0);
     assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'READY_FOR_VERIFICATION');
