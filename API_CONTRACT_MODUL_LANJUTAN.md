@@ -59,11 +59,12 @@ Sistem menggunakan enum peran `Role` yang tersimpan pada tabel `UserRole`:
 |---|---|---|
 | `SUPERADMIN` | Administrator Sistem | Akses penuh ke seluruh modul, konfigurasi master data CRUD, dan audit log. |
 | `ADMIN_PENERBIT` | Penerbit / Pemohon | Portal Penerbit: membuat draft, upload naskah, submit pengajuan, konfirmasi billing. |
-| `VERIFIKATOR` | Verifikator Berkas | Memeriksa berkas permohonan, menerbitkan billing PNBP, memverifikasi bukti bayar. |
-| `DISTRIBUTOR` | Koordinator Distribusi | Membentuk penugasan tim sidang (SK), mengelola beban kerja, review hasil sidang. |
+| `ADMIN` | Staf TU / Layanan | Penerimaan master fisik permohonan (intake), penugasan tim sidang pentashihan, antrean FIFO. |
+| `VERIFIKATOR` | Verifikator Berkas | Memeriksa berkas permohonan, menyusun draf surat & BA verifikasi, verifikasi pembayaran PNBP, serah-terima fisik ke distributor. |
+| `DISTRIBUTOR` | Koordinator Distribusi | Menerima serah-terima fisik (menetapkan `tashih_due_at`), mengelola beban kerja tim sidang (SK), review hasil sidang. |
 | `PENTASHIH` | Anggota Tim Sidang | Melakukan sidang pentashihan mushaf, mencatat koreksi lafazh, submit review. |
 | `DOKUMENTATOR` | Dokumentator Hasil | Menyusun draf berita acara tashih, mencatat penyerahan eksemplar fisik master. |
-| `KEPALA_LPMQ` | Kepala LPMQ | Menyetujui hasil verifikasi naskah, menandatangani Berita Acara & Surat Tanda Tashih. |
+| `KEPALA_LPMQ` | Kepala LPMQ | Menerbitkan Nota Dinas & penugasan verifikator, menyetujui dan menandatangani dokumen verifikasi, menandatangani Surat Tanda Tashih. |
 
 ---
 
@@ -170,31 +171,45 @@ Modul master data menyediakan pembacaan publik/terotentikasi serta operasi penge
 
 ## 5. Modul Registrasi & Pengelolaan Naskah (`/registrations`)
 
-### 5.1 Alur Pengajuan
+### 5.1 Alur Pengajuan Digital
 1. `POST /registrations` (`ADMIN_PENERBIT`): Membuat draf registrasi pengajuan baru (status awal: `DRAFT`).
 2. `POST /uploads` (`ADMIN_PENERBIT`, `VERIFIKATOR`, `DOKUMENTATOR`): Mengunggah berkas biner naskah mentah (PDF/PNG/JPEG, batas 10 MiB). Menghasilkan `id` berkas privat.
 3. `POST /registrations/:id/manuscripts`: Menautkan berkas privat yang telah diunggah ke pengajuan (`type`: `COVER`, `SURAH_SAMPEL`, `JUZ_LENGKAP`, dll).
 4. `POST /registrations/:id/submit` (`ADMIN_PENERBIT`): Mengunci formulir dan mengirimkan pengajuan ke LPMQ (transisi dari `DRAFT` ke `READY_FOR_VERIFICATION`).
 
+### 5.2 Intake Master Fisik
+1. `PUT /registrations/:id/physical-master` (`ADMIN_PENERBIT`): Penerbit mendeklarasikan pengiriman berkas master fisik cetak A4 dijilid per juz (jilid 1–30).
+2. `POST /registrations/:id/physical-master/receive` (`ADMIN`): Staf TU / Layanan menerima dan memeriksa kelengkapan fisik di loket LPMQ. Menolak `KEPALA_LPMQ` (`403`).
+
 ---
 
 ## 6. Alur Layanan SOP v2.2 (Siklus Hidup Pentashihan)
 
-### Tahap 1: Verifikasi Berkas Permohonan
-- **Aktor**: `VERIFIKATOR`, `KEPALA_LPMQ`
-- **Alur Status**: `READY_FOR_VERIFICATION` → `VERIFICATION_ASSIGNED` → `IN_VERIFICATION` → `WAITING_VERIFICATION_APPROVAL` → `VERIFICATION_APPROVED` → `AWAITING_PAYMENT` (atau `REVISION_REQUIRED`). Assignment/Nota Dinas, persetujuan, dan pengiriman surat memerlukan aksi terpisah; endpoint khususnya dijadwalkan pada PR lanjutan.
-- **Pemeriksaan**: Verifikator memeriksa kelengkapan administrasi dan keabsahan sampel naskah. Draf rekomendasi diteruskan ke Kepala LPMQ untuk persetujuan.
+### Tahap 1: Verifikasi Berkas Permohonan (Live)
+- **Aktor**: `ADMIN`, `KEPALA_LPMQ`, `VERIFIKATOR`
+- **Alur Status**: `READY_FOR_VERIFICATION` → `VERIFICATION_ASSIGNED` → `IN_VERIFICATION` → `WAITING_VERIFICATION_APPROVAL` → `VERIFICATION_APPROVED` → `AWAITING_PAYMENT` (atau `REVISION_REQUIRED`).
+- **Endpoint**:
+  - `POST /registrations/:id/verification-assignments` (`KEPALA_LPMQ`): Menerbitkan **Nota Dinas Verifikasi** (`NOTA_DINAS_VERIFIKASI`) dan menugaskan Verifikator secara atomik dengan perhitungan tenggat tepat 2 hari kerja kalender `Asia/Jakarta`.
+  - `POST /verification-documents` (`VERIFIKATOR`): Menyusun draf **Surat Pemberitahuan Hasil Verifikasi** (`SURAT_HASIL_VERIFIKASI`) dan **Berita Acara Verifikasi** (`BERITA_ACARA_VERIFIKASI`).
+  - `POST /verification-documents/:id/submit` (`VERIFIKATOR`): Mengajukan draf ke Kepala LPMQ (`WAITING_APPROVAL`).
+  - `POST /verification-documents/:id/approve` (`KEPALA_LPMQ`): Menyetujui draf dokumen dan menginisialisasi relasi `VerificationDocumentSignatory`.
+  - `POST /verification-documents/:id/sign` (`VERIFIKATOR`, `KEPALA_LPMQ`): Penandatanganan digital berjenjang (Verifikator urutan 1 untuk Berita Acara; Kepala LPMQ urutan 1 untuk Surat Hasil & urutan 2 untuk Berita Acara).
+  - `POST /verification-documents/:id/send` (`VERIFIKATOR`): Mengirim surat hasil verifikasi ke penerbit secara idempoten via `EmailOutbox`.
+  - `POST /verification-documents/:id/retry-email` (`VERIFIKATOR`, `KEPALA_LPMQ`): Mencoba ulang pengiriman email yang gagal (`EMAIL_FAILED`).
 
-### Tahap 2: Billing & Pembayaran PNBP
+### Tahap 2: Billing, Pembayaran PNBP & Serah-Terima Fisik
 - **Endpoint**:
   - `POST /registrations/:id/payments` (`VERIFIKATOR`): Menerbitkan kode billing pembayaran PNBP berstatus `UNPAID`. Tarif diambil secara deterministik dari `fee_sla_snapshot`.
   - `POST /payments/:id/confirm` (`ADMIN_PENERBIT`): Penerbit mengunggah bukti setor bank / NTPN. Status registrasi berpindah ke `PAYMENT_VERIFICATION`.
-  - `PATCH /payments/:id/verify` (`VERIFIKATOR`): Verifikator memeriksa bukti bayar. Jika sah, catatan pembayaran menjadi `VERIFIED`; registrasi tetap `PAYMENT_VERIFICATION` sampai serah-terima master fisik dicatat. Penerimaan distributor kemudian memindahkan ke `WAITING_DISTRIBUTION`.
+  - `PATCH /payments/:id/verify` (`VERIFIKATOR` penugasan): Memvalidasi bukti bayar (khusus verifikator yang ditugaskan). Catatan bayar menjadi `VERIFIED`.
+  - `POST /registrations/:id/handover/submit` (`VERIFIKATOR` penugasan): Menyerahkan master fisik ke loket Distributor. Status beralih ke `WAITING_DISTRIBUTOR_RECEIPT`.
+  - `POST /registrations/:id/handover/confirm` (`DISTRIBUTOR`): Distributor menerima fisik dengan menetapkan waktu `tashih_due_at` masa depan. Status beralih ke `WAITING_DISTRIBUTION`.
+  - `POST /registrations/:id/handover/return` (`DISTRIBUTOR`): Mengembalikan fisik yang cacat ke penerbit. Status beralih ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` (pembayaran tetap `VERIFIED` tanpa penerbitan tagihan ulang).
 
 ### Tahap 3: Distribusi Sidang & Penugasan Tim
-- **Aktor**: `DISTRIBUTOR`
+- **Aktor**: `ADMIN`, `DISTRIBUTOR`
 - **Endpoint**:
-  - `POST /registrations/:id/assignments`: Membentuk penugasan anggota tim pentashih berdasarkan SK resmi. Menghitung tanggal tenggat (`due_at`) berbasis kalender kerja aktif.
+  - `POST /registrations/:id/assignments`: Membentuk penugasan anggota tim pentashih berdasarkan SK resmi dari antrean FIFO. Menghitung tanggal tenggat (`due_at`) berbasis kalender kerja aktif.
   - Registrasi berpindah status ke `TASHIH_IN_PROGRESS`.
 
 ### Tahap 4: Sidang Pentashihan Naskah
@@ -225,20 +240,22 @@ Modul master data menyediakan pembacaan publik/terotentikasi serta operasi penge
 ```mermaid
 flowchart TD
     DRAFT([1. DRAFT]) -->|Penerbit Submit| READY_FOR_VERIFICATION([2. READY_FOR_VERIFICATION])
-    READY_FOR_VERIFICATION -->|Kepala: Nota Dinas dan penugasan| VERIFICATION_ASSIGNED([VERIFICATION_ASSIGNED])
-    VERIFICATION_ASSIGNED -->|Verifikator terpilih mulai| IN_VERIFICATION([3. IN_VERIFICATION])
-    IN_VERIFICATION -->|Draf Surat Hasil| WAITING_VERIF_APP([4. WAITING_VERIFICATION_APPROVAL])
+    READY_FOR_VERIFICATION -->|Admin Terima Fisik & Kepala Nota Dinas| VERIFICATION_ASSIGNED([VERIFICATION_ASSIGNED])
+    VERIFICATION_ASSIGNED -->|Verifikator mulai pemeriksaan| IN_VERIFICATION([3. IN_VERIFICATION])
+    IN_VERIFICATION -->|Draf Surat Hasil & Berita Acara| WAITING_VERIF_APP([4. WAITING_VERIFICATION_APPROVAL])
     WAITING_VERIF_APP -->|Persetujuan Kepala| VERIFICATION_APPROVED([VERIFICATION_APPROVED])
-    VERIFICATION_APPROVED -->|Verifikator kirim surat| AWAITING_PAYMENT([5. AWAITING_PAYMENT])
+    VERIFICATION_APPROVED -->|Multi-sign & Kirim Email Outbox| AWAITING_PAYMENT([5. AWAITING_PAYMENT])
     WAITING_VERIF_APP -->|Penolakan Kepala| IN_VERIFICATION
     IN_VERIFICATION -->|Berkas Kurang| REVISION_REQUIRED([REVISION_REQUIRED])
     REVISION_REQUIRED -->|Penerbit Resubmit| READY_FOR_VERIFICATION
     
     AWAITING_PAYMENT -->|Terbit Billing & Unggah Bukti| PAYMENT_VERIFICATION([6. PAYMENT_VERIFICATION])
-    PAYMENT_VERIFICATION -->|Bayar terverifikasi dan master diserahkan| WAITING_DISTRIBUTOR_RECEIPT([WAITING_DISTRIBUTOR_RECEIPT])
-    WAITING_DISTRIBUTOR_RECEIPT -->|Distributor terima fisik| WAITING_DISTRIBUTION([7. WAITING_DISTRIBUTION])
+    PAYMENT_VERIFICATION -->|Verifikator Sahkan Bayar & Serahkan Fisik| WAITING_DISTRIBUTOR_RECEIPT([WAITING_DISTRIBUTOR_RECEIPT])
+    WAITING_DISTRIBUTOR_RECEIPT -->|Distributor Kembalikan Fisik Cacat| HANDOVER_CORRECTION([PHYSICAL_HANDOVER_CORRECTION_REQUIRED])
+    HANDOVER_CORRECTION -->|Penerbit Perbaiki Fisik Tanpa Re-billing| WAITING_DISTRIBUTOR_RECEIPT
+    WAITING_DISTRIBUTOR_RECEIPT -->|Distributor Terima Fisik & Set Due Date| WAITING_DISTRIBUTION([7. WAITING_DISTRIBUTION])
     
-    WAITING_DISTRIBUTION -->|Penugasan Tim Sidang| TASHIH_IN_PROGRESS([8. TASHIH_IN_PROGRESS])
+    WAITING_DISTRIBUTION -->|Admin/Distributor Tugaskan Tim| TASHIH_IN_PROGRESS([8. TASHIH_IN_PROGRESS])
     TASHIH_IN_PROGRESS -->|Perbaikan Naskah| REVISION_REQUIRED
     TASHIH_IN_PROGRESS -->|Sidang Selesai Lulus| READY_FOR_STT([9. READY_FOR_STT])
     
@@ -252,5 +269,5 @@ flowchart TD
 ## 8. Ringkasan Keamanan & Kepatuhan SOP
 
 1. **Integritas Status Terpusat**: Seluruh transisi status registrasi dikawal oleh fungsi terpusat `transitionStatus()` dan diverifikasi terhadap `TRANSITION_POLICY`. Manipulasi status secara langsung ditolak pada layer service.
-2. **Perlindungan Berkas Privat**: Berkas mushaf tidak diletakkan di direktori publik; pengaksesan melalui `/uploads/:id` mewajibkan otentikasi serta verifikasi kepemilikan naskah atau surat tugas pentashih yang aktif.
-3. **Audit Trail Digital**: Seluruh mutasi data penting (pembuatan registrasi, pembayaran, penugasan sidang, dan penerbitan STT) dicatat otomatis pada tabel `AuditLog` dengan stempel waktu dan IP klien.
+2. **Perlindungan Berkas Privat Tanpa Token URL**: Berkas mushaf disimpan pada storage privat; pengaksesan melalui `/uploads/:id` mewajibkan otentikasi header `Authorization: Bearer <token>` dan verifikasi kepemilikan naskah/surat tugas aktif, serta dilindungi respons header `Cache-Control: private, no-store`. Token di query parameter URL tidak diizinkan.
+3. **Audit Trail Digital & Outbox Idempoten**: Seluruh mutasi data penting dicatat otomatis pada tabel `AuditLog`. Pengiriman email hasil verifikasi menggunakan pola `EmailOutbox` dengan idempotency key dan mekanisme retry berstatus andal.

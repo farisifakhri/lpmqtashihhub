@@ -1,7 +1,8 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { prisma } from '../config/database.js';
 import { fail, requireRole, registration, requireStatus, audit } from './workflow-utils.js';
+import { readStoredFile } from './storage.service.js';
 
 export const createDocument = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN']);
@@ -62,6 +63,21 @@ export async function renderDraft(document) {
     page.drawText(text, { x: 40, y, font, size: 10 }); y -= 14;
   }
   return Buffer.from(await pdf.save());
+}
+
+// Existing issued PDFs are downloaded unchanged: never generate an official
+// document from a draft or bypass the pending issuance/signature SOP.
+export async function documentPdf(document) {
+  if (document.status === 'DRAFT') return renderDraft(document);
+  if (document.status !== 'ISSUED' || (document.valid_until && document.valid_until < new Date())) fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
+  if (!document.file_id) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+  const file = await prisma.storedFile.findUnique({ where: { id: document.file_id } });
+  if (!file || file.mime_type !== 'application/pdf') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+  let bytes;
+  try { bytes = await readStoredFile(file.id); }
+  catch (error) { if (error.code === 'ENOENT') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.'); throw error; }
+  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) fail(409, 'Integritas berkas tidak dapat diverifikasi. Hubungi pengelola layanan.');
+  return bytes;
 }
 
 export async function signDocument(id, user) {

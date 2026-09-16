@@ -77,14 +77,6 @@ export const PublisherBillingPage = () => {
           setPagination(res.data.pagination);
         }
 
-        // Auto open confirm modal if preselected registration_id matches
-        if (preselectedRegId) {
-          const match = items.find((p) => p.registration_id === preselectedRegId);
-          if (match && match.status === 'UNPAID') {
-            setSelectedPayment(match);
-            setConfirmModalOpen(true);
-          }
-        }
       }
     } catch (err) {
       setError(err.message || 'Gagal memuat daftar tagihan pembayaran.');
@@ -180,6 +172,21 @@ export const PublisherBillingPage = () => {
     setModalError(null);
     setConfirmModalOpen(true);
   };
+
+  // A dashboard link may reference a bill outside the currently loaded page.
+  // Resolve it through the ownership-checked detail endpoint, not page matching.
+  useEffect(() => {
+    if (!preselectedRegId) return;
+    let active = true;
+    paymentApi.getRegistrationPayment(preselectedRegId).then(response => {
+      if (!active) return;
+      const payment = response.data?.id ? response.data : response.data?.payment;
+      if (payment?.status === 'UNPAID') openConfirmModal(payment);
+      else if (!payment) setSuccessMessage('Tagihan untuk naskah ini belum tersedia. Tunggu penerbitan kode billing oleh petugas.');
+      else setSuccessMessage('Bukti pembayaran naskah ini sudah dikirim atau diverifikasi. Tidak perlu mengirim ulang.');
+    }).catch(err => { if (active) setError(err.message || 'Tagihan naskah tidak dapat dimuat.'); });
+    return () => { active = false; };
+  }, [preselectedRegId]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];

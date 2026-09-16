@@ -21,47 +21,29 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](diagrams/user-fl
 
 | # | Aksi | Trigger / Syarat | Output |
 |---|---|---|---|
-| 1 | Login ke sistem, isi formulir pendaftaran | Akun penerbit terverifikasi | Draf pendaftaran |
-| 2 | Kirim bukti pendaftaran + **naskah master fisik** (cetak A4, dijilid per juz) ke LPMQ | Formulir lengkap | Naskah diterima LPMQ (fisik) |
-| 3 | Terima Surat Pemberitahuan Hasil Verifikasi | Verifikasi selesai (SLA 2 hari + approval Kepala LPMQ) | Tahu status lolos/tidak, dapat kode billing bila lolos |
-| 4a | *(Jika tidak lolos)* — proses berhenti | — | — |
-| 4b | *(Jika lolos)* Bayar PNBP via kode billing | Maks. 7 hari sejak surat diterima | NTPN |
-| 5 | Konfirmasi pembayaran di sistem | Pembayaran berhasil | Status "PNBP lunas" |
-| 6 | *(Loop revisi, bila diminta)* Terima laporan hasil pentashihan → perbaiki naskah → rekap perbaikan → kirim kembali | Distributor memutuskan revisi diperlukan | Naskah revisi dikirim ulang |
-| 7 | *(Hanya untuk naskah cetak fisik)* Cetak mushaf setelah Surat Tanda Tashih terbit | Surat Tanda Tashih terbit `[BELUM DIKONFIRMASI: siapa memberi tahu penerbit]` | Mushaf hasil cetak |
-| 8 | *(Hanya untuk naskah cetak fisik)* Kirim s.d. 5 eksemplar mushaf hasil cetak ke LPMQ | Diminta Dokumentator | Surat tanda terima |
+| 1 | Login ke sistem, isi formulir pendaftaran, unggah sampul & halaman 1–5 | Akun penerbit terverifikasi | Draf pendaftaran |
+| 2 | Kirim bukti pendaftaran + **naskah master fisik** (cetak A4, dijilid per juz) ke loket LPMQ | Formulir disubmit (`READY_FOR_VERIFICATION`) | Diterima & diperiksa oleh Staf TU / Admin |
+| 3 | Terima Surat Pemberitahuan Hasil Verifikasi resmi via email | Verifikasi selesai & disetujui Kepala LPMQ | Tahu status lolos/perlu perbaikan; menerima kode billing jika lolos |
+| 4a | *(Jika perlu perbaikan verifikasi)* Perbaiki berkas/sampel & ajukan ulang | Email/surat meminta revisi | Naskah masuk kembali ke `READY_FOR_VERIFICATION` |
+| 4b | *(Jika lolos)* Bayar PNBP via kode billing & konfirmasi bukti bayar | Maks. 7 hari sejak surat diterima | Verifikator memvalidasi pembayaran |
+| 4c | *(Jika naskah fisik cacat saat serah-terima distributor)* Serahkan perbaikan jilid fisik | Naskah `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` | Fisik diperbaiki; pembayaran tetap sah tanpa bayar ulang |
+| 5 | *(Loop revisi sidang pentashihan, bila diminta)* Terima laporan hasil pentashihan → perbaiki naskah → kirim kembali | Distributor memutuskan revisi diperlukan | Naskah revisi dikirim ulang |
+| 6 | *(Hanya untuk naskah cetak fisik)* Cetak massal setelah Surat Tanda Tashih terbit | Surat Tanda Tashih resmi terbit | Mushaf hasil cetak |
+| 7 | *(Hanya untuk naskah cetak fisik)* Kirim s.d. 5 eksemplar mushaf hasil cetak ke LPMQ | Diminta Dokumentator | Surat tanda terima dokumentasi |
 
 **Klarifikasi**:
-- Langkah 7-8 **tidak berlaku untuk naskah digital/audio** — penerbit
-  jenis ini tidak perlu kirim eksemplar fisik sama sekali; prosesnya
-  langsung selesai setelah Surat Tanda Tashih terbit. Field
-  `service_types.service_kind` di ERD sudah bisa membedakan
-  cetak/audio/digital, jadi logika "wajibkan kirim eksemplar" tinggal
-  dikondisikan dari field ini.
-- Untuk naskah cetak fisik: **kurang dari 5 eksemplar tidak
-  menghambat proses apa pun** — ini murni kepatuhan regulasi, dicatat
-  sebagai data, bukan gate wajib sebelum status bisa `COMPLETED`.
-  Jumlah aktual yang diterima + catatan Dokumentator masuk sebagai
-  data pelaporan/kinerja (lihat `IMPLEMENTATION.md` §3 tambahan
-  `documentation_items` / catatan Dokumentator).
-
-**Pertanyaan terbuka**: bagaimana penerbit diberi tahu bahwa Surat
-Tanda Tashih sudah terbit dan mereka boleh mulai cetak massal? Perlu
-notifikasi eksplisit — belum ada di SOP mana pun yang sudah dibaca.
+- Langkah 6-7 **tidak berlaku untuk naskah digital/audio** — penerbit jenis ini tidak perlu kirim eksemplar fisik sama sekali; prosesnya langsung selesai setelah Surat Tanda Tashih terbit.
+- Untuk naskah cetak fisik: **kurang dari 5 eksemplar tidak menghambat proses apa pun** — ini murni kepatuhan regulasi, dicatat sebagai data pelaporan/kinerja.
 
 ---
 
-## 2. Verifikator
+## 2. Staf TU / Layanan (`ADMIN`)
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Terima & periksa berkas pendaftaran + naskah master fisik | Naskah diterima LPMQ | Hasil pemeriksaan |
-| 2 | Susun draf Surat Pemberitahuan Hasil Verifikasi (+ kode billing bila lolos) | Pemeriksaan selesai (SLA 2 hari) | Draf surat |
-| 3 | Laporkan draf ke Kepala LPMQ | Draf siap | Menunggu approval |
-| 4 | *(Jika ditolak)* Perbaiki draf sesuai catatan Kepala LPMQ, ulangi langkah 3 | Kepala LPMQ tidak setuju | Draf revisi |
-| 5 | *(Jika disetujui)* Kirim surat yang sudah ditandatangani ke penerbit | Kepala LPMQ setuju & tanda tangan | Penerbit menerima surat |
-| 6 | Cek pembayaran PNBP | Penerbit konfirmasi bayar | Validasi NTPN |
-| 7 | Serahkan naskah ke Distributor | Pembayaran terverifikasi | Naskah siap didistribusi |
+| 1 | Terima & periksa kelengkapan naskah master fisik A4 per juz di loket LPMQ (`POST /registrations/:id/physical-master/receive`) | Penerbit menyerahkan print-out master fisik | Tanda terima fisik tercatat; status `READY_FOR_VERIFICATION` siap ditugaskan |
+| 2 | Pantau antrean FIFO naskah yang siap disidangkan | Pembayaran lunas & master diterima distributor (`WAITING_DISTRIBUTION`) | Antrean kerja terurut waktu masuk |
+| 3 | Lakukan penugasan tim pentashihan (`POST /registrations/:id/assignments`) | Tim dan anggota aktif sesuai SK | Penugasan pentashih terbentuk; status beralih ke `TASHIH_IN_PROGRESS` |
 
 ---
 
@@ -69,28 +51,38 @@ notifikasi eksplisit — belum ada di SOP mana pun yang sudah dibaca.
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Terima draf Surat Pemberitahuan Hasil Verifikasi dari Verifikator | Verifikasi selesai | — |
-| 2 | Setuju & tanda tangan, **atau** tolak & kembalikan dengan catatan | Review draf (SLA 30 menit) | Surat final / draf dikembalikan |
-| 3 | `[BELUM DIKONFIRMASI]` Terima hasil reviu Distributor atas rekomendasi Pentashih/pembaca naskah | Naskah dumi bersih | — |
-| 4 | `[BELUM DIKONFIRMASI]` Menetapkan Surat Tanda Tashih | Berdasarkan Berita Acara | Surat Tanda Tashih terbit |
-
-**Catatan risiko operasional** (sudah ditandai sebelumnya di
-`IMPLEMENTATION.md` §3.1): Kepala LPMQ adalah titik approval di
-**dua tahap terpisah** dalam alur ini (langkah 2 dan langkah 4).
-Mekanisme delegasi bila berhalangan masih `[KEPUTUSAN TIM]` terbuka.
+| 1 | Terbitkan **Nota Dinas Verifikasi** dan tugaskan Verifikator secara atomik (`POST /registrations/:id/verification-assignments`) | Naskah fisik sudah diterima Admin (`READY_FOR_VERIFICATION`) | Nota Dinas resmi terbit; tenggat SLA dihitung tepat 2 hari kerja kalender `Asia/Jakarta` |
+| 2 | Terima & tinjau draf Surat Pemberitahuan Hasil Verifikasi dan Berita Acara Verifikasi | Verifikator menyelesaikan pemeriksaan | Persetujuan draf (`APPROVED`) atau pengembalian dengan catatan revisi |
+| 3 | Lakukan tanda tangan digital resmi (`POST /verification-documents/:id/sign`) | Draf telah disetujui (`APPROVED`) | Surat Pemberitahuan & Berita Acara tertandatangani digital (snapshot hash sha256) |
+| 4 | `[BELUM DIKONFIRMASI]` Menetapkan Surat Tanda Tashih | Rekomendasi sidang tuntas & Berita Acara Tashih lengkap | Surat Tanda Tashih terbit resmi |
 
 ---
 
-## 4. Distributor
+## 4. Verifikator
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Buat surat penugasan | Naskah diterima dari Verifikator | Surat penugasan |
-| 2 | Distribusikan naskah ke seluruh Pentashih | Surat penugasan terbit | Pentashih menerima tugas |
-| 3 | Cross-check / ceklis laporan hasil pentashihan, berdasarkan rekomendasi **Pentashih** (termasuk tugas baca-ulang/dumi) | Pentashih submit rekomendasi | Hasil ceklis |
-| 4a | Jika belum dekat deadline & masih perlu dibaca ulang → distribusikan lagi ke Pentashih | Kualitas belum final | Loop kembali ke langkah 2 |
-| 4b | Jika mendekati deadline → kembalikan untuk revisi/dumi sesuai rekomendasi + kirim notifikasi ke Penerbit | Waktu terbatas | Notifikasi perbaikan ke Penerbit |
-| 4c | Jika naskah dumi tidak ada temuan lagi → proses terbit Tanda Tashih | Dumi bersih | Diteruskan ke Kepala LPMQ |
+| 1 | Buka antrean tugas verifikasi dan terima Nota Dinas Verifikasi | Kepala LPMQ menugaskan (`VERIFICATION_ASSIGNED`) | Pemeriksaan berkas dan sampel naskah dimulai |
+| 2 | Susun draf **Surat Pemberitahuan Hasil Verifikasi** dan **Berita Acara Verifikasi** | Pemeriksaan selesai dalam SLA 2 hari kerja | Draf dokumen tersimpan dengan lampiran terverifikasi |
+| 3 | Ajukan draf ke Kepala LPMQ (`POST /verification-documents/:id/submit`) | Draf lengkap | Status dokumen `WAITING_APPROVAL` |
+| 4 | Lakukan tanda tangan digital pada Berita Acara Verifikasi (urutan penandatangan 1) | Kepala LPMQ menyetujui draf | Berita Acara ditandatangani verifikator |
+| 5 | Kirimkan surat hasil verifikasi ke penerbit (`POST /verification-documents/:id/send`) | Seluruh penandatanganan selesai (`SIGNED`) | Surel resmi dikirim via `EmailOutbox` idempoten; status naskah berpindah ke `AWAITING_PAYMENT` / `REVISION_REQUIRED` |
+| 6 | Verifikasi bukti setor pembayaran PNBP penerbit | Penerbit mengunggah bukti bayar (`PAYMENT_VERIFICATION`) | Status pembayaran menjadi `VERIFIED` |
+| 7 | Serahkan naskah master fisik ke loket Distributor (`POST /registrations/:id/handover/submit`) | Pembayaran terverifikasi | Berita acara serah-terima fisik ke distributor |
+
+---
+
+## 5. Distributor
+
+| # | Aksi | Trigger | Output |
+|---|---|---|---|
+| 1 | Konfirmasi penerimaan fisik master dari Verifikator (`POST /registrations/:id/handover/confirm`) dengan menetapkan `tashih_due_at` masa depan | Verifikator menyerahkan master fisik | Naskah masuk status `WAITING_DISTRIBUTION` |
+| 1b | *(Jika fisik master cacat/rusak)* Kembalikan master fisik (`POST /registrations/:id/handover/return`) | Master fisik tidak layak sidang | Status beralih ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`; pembayaran tetap sah |
+| 2 | Distribusikan naskah ke seluruh Pentashih berdasarkan penugasan | Penugasan tim terbit | Pentashih menerima bahan sidang |
+| 3 | Cross-check / ceklis laporan hasil pentashihan berdasarkan rekomendasi Pentashih | Pentashih submit rekomendasi | Rekomendasi kompilasi sidang |
+| 4a | Jika belum tuntas & perlu dibaca ulang → distribusikan kembali ke Pentashih | Kualitas belum final | Loop sidang lanjutan |
+| 4b | Jika mendekati deadline → kembalikan untuk revisi naskah ke Penerbit | Butuh perbaikan lafazh/tanda baca | Status beralih ke `REVISION_REQUIRED` |
+| 4c | Jika seluruh telaah lulus → teruskan untuk penetapan Surat Tanda Tashih | Naskah bersih | Status beralih ke `READY_FOR_STT` |
 
 **Klarifikasi penting (mengoreksi asumsi sebelumnya)**:
 - Reviu di langkah 3-4 adalah **cross-check administratif / ceklis
@@ -117,7 +109,7 @@ dashboard Distributor (lihat `DESIGN.md`).
 
 ---
 
-## 5. Pentashih
+## 6. Pentashih
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
@@ -128,7 +120,7 @@ dashboard Distributor (lihat `DESIGN.md`).
 
 ---
 
-## 6. Dokumentator
+## 7. Dokumentator
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
@@ -141,7 +133,7 @@ dashboard Distributor (lihat `DESIGN.md`).
 
 ---
 
-## 7. PusdokQ / Arsiparis `⚠️ pembagian tugas belum jelas di SOP`
+## 8. PusdokQ / Arsiparis `⚠️ pembagian tugas belum jelas di SOP`
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
@@ -187,3 +179,9 @@ menangani hal yang sama di unit berbeda?
   kinerja Dokumentator.
 - ✅ Naskah digital/audio tidak melalui proses eksemplar fisik sama
   sekali — dokumentasi selesai begitu berkas digital lengkap.
+- ✅ Intake naskah master fisik A4 per juz dilakukan oleh Staf TU / Admin (`ADMIN`) di loket LPMQ, bukan oleh Kepala LPMQ ataupun Verifikator.
+- ✅ Penugasan Verifikator dilakukan secara atomik bersama Nota Dinas Verifikasi oleh Kepala LPMQ dengan SLA 2 hari kerja kalender `Asia/Jakarta`.
+- ✅ Pemisahan dokumen verifikasi (Nota Dinas, Surat Hasil Verifikasi, Berita Acara Verifikasi) dengan penandatanganan digital bertingkat (multi-signatory).
+- ✅ Pengiriman Surat Hasil Verifikasi dilakukan secara nyata dan andal melalui modul `EmailOutbox` dengan idempotency key dan mekanisme retry.
+- ✅ Pengesahan pembayaran dan serah-terima fisik ke distributor dibatasi khusus untuk verifikator yang ditugaskan.
+- ✅ Pengembalian fisik naskah cacat oleh distributor mengalihkan status ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` tanpa tagihan billing ulang.

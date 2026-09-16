@@ -27,6 +27,15 @@ describe('ProtectedRoute Security Guard', () => {
     );
   };
 
+  it.each([['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['DISTRIBUTOR', 'SUPERADMIN'], ['PENTASHIH', 'SUPERADMIN'], ['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['SUPERADMIN']])('ADMIN cannot enter an operational/admin module guarded by %j', (...roles) => {
+    renderWithRouter(
+      { id: 'internal-admin', role: 'ADMIN', roles: ['ADMIN'] },
+      <ProtectedRoute portalType="internal" allowedRoles={roles}><div>Restricted module</div></ProtectedRoute>
+    );
+    expect(screen.getByText('Portal Internal')).toBeInTheDocument();
+    expect(screen.queryByText('Restricted module')).not.toBeInTheDocument();
+  });
+
   it('menunggu validasi sesi sebelum menampilkan portal atau mengalihkan ke login', () => {
     renderWithRouter(
       { role: 'SUPERADMIN', roles: ['SUPERADMIN'] },

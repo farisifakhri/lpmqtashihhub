@@ -31,25 +31,29 @@ Setiap fitur dikerjakan vertikal: migration, model/domain rule, permission, API/
 - CRUD berversi untuk kategori, 17 profil layanan, SLA, add-on, tarif, kalender kerja, dan Tim Distribusi.
 - Larang penghapusan fisik master yang sudah direferensikan transaksi.
 
-### Sprint 2 — Pengajuan dan verifikasi
+### Sprint 2 — Pengajuan dan verifikasi (SOP Verifikasi v2)
 
 - Pengajuan melalui portal atau input admin atas nama penerbit.
-- Unggah privat: cover dan halaman Al-Qur'an 1–5.
-- Validasi metadata, MIME, ekstensi, ukuran, checksum, serta versioning file.
-- Antrean verifikasi, penugasan verifikator, filter Tugas Saya, keputusan perbaikan/lanjut.
-- Catat penerimaan master fisik dan tanda terimanya.
-- Bentuk Berita Acara Tashih, lalu sediakan persetujuan/pengembalian oleh Kepala LPMQ.
-- Perubahan status hanya melalui transition service, bukan update kolom langsung.
+- Unggah privat: cover dan halaman Al-Qur'an 1–5 dengan validasi MIME magic bytes, ukuran, dan SHA-256. Akses berkas privat via header `Authorization: Bearer <token>` tanpa query parameter token di URL (`Cache-Control: private, no-store`).
+- Intake berkas master fisik cetak A4 per juz diterima dan diperiksa resmi oleh `ADMIN` (Staf TU / Layanan).
+- Penugasan verifikator dan penerbitan Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`) oleh Kepala LPMQ secara atomik dalam satu transaksi basis data dengan perhitungan tenggat tepat 2 hari kerja kalender `Asia/Jakarta`.
+- Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi (`SURAT_HASIL_VERIFIKASI`), dan Berita Acara Verifikasi (`BERITA_ACARA_VERIFIKASI`).
+- Persetujuan draf dokumen verifikasi oleh Kepala LPMQ dengan inisialisasi daftar penandatangan digital multi-signatory berjenjang (Verifikator & Kepala LPMQ).
+- Penandatanganan digital bertingkat (`sign_order`, snapshot sha256 `document_hash`, pencatatan `signed_at`).
+- Pengiriman surat hasil verifikasi ke penerbit secara nyata melalui antrean `EmailOutbox` idempoten ber-retry.
+- Perubahan status hanya melalui `transitionStatus()` terpusat, bukan update kolom langsung.
 - Siapkan skema `registration_type` dan `previous_registration_id`; implementasi UX perpanjangan dilakukan di Sprint 5.
 
 ### Sprint 3 — Tarif, SLA, dan pembayaran
 
 - Hitung tarif dari layanan dasar dan add-on.
 - Simpan snapshot tarif, SLA, dan effective date pada pengajuan.
-- Hitung hari kerja melalui master kalender.
+- Hitung hari kerja melalui master kalender (`WorkingDay`) 2025–2027.
 - Tampilkan target dan realisasi SLA untuk cross-check/pelaporan tanpa menjadikannya transition guard.
-- Catat billing dan bukti pembayaran secara manual.
-- Terapkan status verifikasi pembayaran dan larang distribusi sebelum pembayaran dikonfirmasi.
+- Catat billing PNBP dan bukti pembayaran penerbit.
+- Pengesahan pembayaran (`PATCH /payments/:id/verify`) dibatasi khusus untuk verifikator yang ditugaskan.
+- Serah-terima naskah master fisik oleh verifikator penugasan ke loket Distributor (`POST /registrations/:id/handover/submit`).
+- Distributor mengonfirmasi penerimaan fisik dengan menetapkan `tashih_due_at` masa depan (`POST /registrations/:id/handover/confirm`), atau mengembalikan fisik cacat (`POST /registrations/:id/handover/return`) yang memindahkan status ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` tanpa tagihan billing ulang.
 - Sediakan port/adapter SIMPONI tanpa memanggil layanan eksternal pada MVP.
 
 ### Sprint 4 — Distribusi dan pentashihan
@@ -89,6 +93,7 @@ VERIFICATION_APPROVED
 AWAITING_PAYMENT
 PAYMENT_VERIFICATION
 WAITING_DISTRIBUTOR_RECEIPT
+PHYSICAL_HANDOVER_CORRECTION_REQUIRED
 WAITING_DISTRIBUTION
 TASHIH_IN_PROGRESS
 READY_FOR_STT

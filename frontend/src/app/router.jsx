@@ -1,21 +1,42 @@
+import React, { Suspense, lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
-import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
-import { NewRegistrationPage } from '@/features/registrations/NewRegistrationPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
-import { InternalDashboard } from '@/features/internal/InternalDashboard';
-import { PublicDocumentVerification } from '@/features/verification/PublicDocumentVerification';
-import { VerifikatorInboxPage } from '@/features/verification/VerifikatorInboxPage';
-import { VerificationInspectionPage } from '@/features/verification/VerificationInspectionPage';
-import { InternalPaymentQueuePage } from '@/features/verification/InternalPaymentQueuePage';
-import { DistributorHandoverInboxPage } from '@/features/distribution/DistributorHandoverInboxPage';
-import { PublisherBillingPage } from '@/features/billing/PublisherBillingPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
-import { ContentConfiguration } from '@/features/internal/settings/ContentConfiguration';
-import { UserManagementPage } from '@/features/internal/users/UserManagementPage';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+// Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
+const PageFallback = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-semibold text-slate-500">Memuat modul...</span>
+    </div>
+  </div>
+);
+
+const withSuspense = (Component) => (props) => (
+  <Suspense fallback={<PageFallback />}>
+    <Component {...props} />
+  </Suspense>
+);
+
+// Code-split heavy feature routes (P2-02)
+const PublisherDashboard = withSuspense(lazy(() => import('@/features/registrations/PublisherDashboard').then(m => ({ default: m.PublisherDashboard }))));
+const PublisherRegistrationsPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationsPage').then(m => ({ default: m.PublisherRegistrationsPage }))));
+const PublisherRegistrationDetailPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationDetailPage').then(m => ({ default: m.PublisherRegistrationDetailPage }))));
+const NewRegistrationPage = withSuspense(lazy(() => import('@/features/registrations/NewRegistrationPage').then(m => ({ default: m.NewRegistrationPage }))));
+const PublisherBillingPage = withSuspense(lazy(() => import('@/features/billing/PublisherBillingPage').then(m => ({ default: m.PublisherBillingPage }))));
+const InternalDashboard = withSuspense(lazy(() => import('@/features/internal/InternalDashboard').then(m => ({ default: m.InternalDashboard }))));
+const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verification/VerifikatorInboxPage').then(m => ({ default: m.VerifikatorInboxPage }))));
+const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
+const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
+const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
+const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
+const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 
 export const router = createBrowserRouter([
   // Rute Autentikasi Mandiri
@@ -56,28 +77,13 @@ export const router = createBrowserRouter([
         path: 'publisher/registrations',
         element: (
           <ProtectedRoute portalType="publisher">
-            <ModulePlaceholder
-              moduleCode="REG-02"
-              title="Daftar Riwayat Pengajuan Naskah"
-              moduleName="REG-02 Pemantauan Status"
-              sprintTarget="Sprint 2"
-              description="Lacak tahapan naskah, timeline status, dan unduh tanda terima pengajuan."
-              targetTables={['registrations', 'status_histories', 'registration_addons', 'manuscript_files']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations', desc: 'Daftar pengajuan naskah terdaftar' },
-                { method: 'GET', path: '/api/v1/registrations?status=DRAFT', desc: 'Filter status Draf' },
-                { method: 'POST', path: '/api/v1/registrations', desc: 'Buat draf pengajuan baru' },
-              ]}
-              allowedRoles={['ADMIN_PENERBIT', 'SUPERADMIN']}
-              sopReference="SOP Pendaftaran Mushaf Al-Qur'an (Kemenag RI v2.2)"
-              businessRules={[
-                'Penerbit hanya dapat melihat pengajuan miliknya sendiri (data isolation)',
-                'Unggah berkas awal hanya cover dan halaman 1-5 sebagai penanda',
-                'Pengajuan dapat dibatalkan hanya saat berstatus DRAFT atau REVISION_REQUIRED',
-              ]}
-            />
+            <PublisherRegistrationsPage key="history" />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'publisher/registrations/:id',
+        element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
       },
       {
         path: 'publisher/billing',
@@ -91,25 +97,7 @@ export const router = createBrowserRouter([
         path: 'publisher/documents',
         element: (
           <ProtectedRoute portalType="publisher">
-            <ModulePlaceholder
-              moduleCode="DOC-01"
-              title="Arsip Surat Tanda Tashih"
-              moduleName="DOC-01 Surat Tanda Tashih"
-              sprintTarget="Sprint 5"
-              description="Unduh Surat Tanda Tashih resmi berformat PDF bersertifikat digital dan QR code keabsahan."
-              targetTables={['official_documents', 'document_signatories', 'registrations']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=STT_ISSUED', desc: 'Daftar naskah dengan STT terbit' },
-                { method: 'GET', path: '/api/v1/registrations?status=COMPLETED', desc: 'Daftar naskah selesai seluruhnya' },
-              ]}
-              allowedRoles={['ADMIN_PENERBIT', 'SUPERADMIN']}
-              sopReference="SOP Penatausahaan dan Penerbitan STT Mushaf Al-Qur'an (Kemenag RI v2.2)"
-              businessRules={[
-                'Dokumen PDF resmi wajib di-generate server-side dengan hash integritas',
-                'Setiap dokumen memiliki token verifikasi publik untuk validasi QR tanpa login',
-                'Masa berlaku STT adalah 2 tahun dan dapat diajukan perpanjangan',
-              ]}
-            />
+            <PublisherRegistrationsPage key="documents" documents />
           </ProtectedRoute>
         ),
       },

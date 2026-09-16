@@ -34,11 +34,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     role === 'SUPERADMIN' ||
     roles.includes('SUPERADMIN');
 
-  const isAdmin =
-    role === 'ADMIN' ||
-    roles.includes('ADMIN') ||
-    isSuperAdmin;
-
   const isVerifikator =
     role === 'VERIFIKATOR' ||
     role === 'VERIFICATOR' ||
@@ -66,8 +61,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
   const getRoleBadge = (userRole) => {
     switch (userRole) {
       case 'SUPERADMIN':
-      case 'ADMIN':
         return { label: 'Superadmin', badgeClass: 'bg-gradient-to-r from-rose-600 to-red-600 text-white font-bold border-rose-700 shadow-2xs' };
+      case 'ADMIN':
+        return { label: 'Admin Internal', badgeClass: 'bg-emerald-700 text-white font-bold border-emerald-800 shadow-2xs' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
         return { label: 'Verifikator', badgeClass: 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-bold border-sky-700 shadow-2xs' };
@@ -156,7 +152,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     const workflowItems = [];
 
-    if (isVerifikator || isKepala || isAdmin) {
+    if (isVerifikator || isKepala || isSuperAdmin) {
       workflowItems.push({
         label: isKepala ? '1. Verifikasi & Persetujuan' : '1. Verifikasi Berkas',
         path: '/internal/verifications',
@@ -171,7 +167,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       });
     }
 
-    if (isDistributor || isVerifikator || isKepala || isAdmin) {
+    if (isDistributor || isVerifikator || isKepala || isSuperAdmin) {
       workflowItems.push({
         label: '2. Distribusi Sidang',
         path: '/internal/distributions',
@@ -180,7 +176,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       });
     }
 
-    if (isPentashih || isAdmin) {
+    if (isPentashih || isSuperAdmin) {
       workflowItems.push({
         label: '3. Sidang Pentashihan',
         path: '/internal/tashih',
@@ -189,7 +185,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       });
     }
 
-    if (isDokumentator || isKepala || isAdmin) {
+    if (isDokumentator || isKepala || isSuperAdmin) {
       workflowItems.push({
         label: '4. Pengesahan & STT',
         path: '/internal/documents',
@@ -205,7 +201,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       });
     }
 
-    if (isAdmin) {
+    if (isSuperAdmin) {
       internalSections.push({
         title: 'TATA KELOLA SISTEM',
         items: [

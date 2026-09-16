@@ -22,7 +22,7 @@ export const StatusBadge = ({
   className,
   showIcon = true,
 }) => {
-  const config = TOKENS.registrationStatus[status] || TOKENS.registrationStatus.DRAFT;
+  const config = TOKENS.registrationStatus[status] || TOKENS.paymentStatus[status] || TOKENS.registrationStatus.DRAFT;
 
   const renderIcon = () => {
     const iconClass = 'w-3.5 h-3.5 flex-shrink-0';
@@ -35,6 +35,7 @@ export const StatusBadge = ({
         return <Users className={iconClass} aria-hidden="true" />;
       case 'IN_VERIFICATION':
         return <Search className={iconClass} aria-hidden="true" />;
+      case 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED':
       case 'REVISION_REQUIRED':
         return <AlertTriangle className={iconClass} aria-hidden="true" />;
       case 'WAITING_VERIFICATION_APPROVAL':

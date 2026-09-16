@@ -77,7 +77,7 @@ export async function runHandoverTests({
 
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
 
-    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', {
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
       condition: 'BAIK',
       receipt_no: `TT-MASTER-${Date.now()}`,
@@ -114,6 +114,16 @@ export async function runHandoverTests({
 
     // Kepala LPMQ setujui
     await expect(`/verification-documents/${doc.id}/approve`, kepalaToken, 'POST');
+
+    // Tanda tangani dokumen sebelum kirim
+    const baDoc = await prisma.verificationDocument.findFirst({
+      where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    });
+    if (baDoc) {
+      await expect(`/verification-documents/${baDoc.id}/sign`, verifikatorToken, 'POST');
+      await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST');
+    }
+    await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST');
 
     // Verifikator kirim surat resmi -> AWAITING_PAYMENT & Payment terbit
     const sent = await expect(`/verification-documents/${doc.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
@@ -264,7 +274,7 @@ export async function runHandoverTests({
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG',
     });
     await expect(`/registrations/${reg2.id}/submit`, publisherToken, 'POST');
-    await expect(`/registrations/${reg2.id}/physical-master/receive`, kepalaToken, 'POST', {
+    await expect(`/registrations/${reg2.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
       receipt_no: `TT-M2-${Date.now()}`,
       condition: 'BAIK',
@@ -280,6 +290,14 @@ export async function runHandoverTests({
       decision: 'PASSED', checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
     }, 201);
     await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST');
+    const baDoc2 = await prisma.verificationDocument.findFirst({
+      where: { assignment_id: asg2.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    });
+    if (baDoc2) {
+      await expect(`/verification-documents/${baDoc2.id}/sign`, verifikatorToken, 'POST');
+      await expect(`/verification-documents/${baDoc2.id}/sign`, kepalaToken, 'POST');
+    }
+    await expect(`/verification-documents/${doc2.id}/sign`, kepalaToken, 'POST');
     const sent2 = await expect(`/verification-documents/${doc2.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
     await expect(`/payments/${sent2.payment.id}/confirm`, publisherToken, 'POST', {
       receipt_file_id: receiptFile.id, external_ref: 'NTPN-REG2',
@@ -313,7 +331,8 @@ export async function runHandoverTests({
 
     assert.equal(returned.handover.status, 'RETURNED');
     const reg2Check = await prisma.registration.findUnique({ where: { id: reg2.id } });
-    assert.equal(reg2Check.status, 'REVISION_REQUIRED');
+    assert.equal(reg2Check.status, 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED');
+    assert.equal(reg2Check.revision_source, 'PHYSICAL_HANDOVER');
   });
 }
 

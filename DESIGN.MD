@@ -28,17 +28,17 @@ flowchart TB
 
 | Modul | Tanggung jawab |
 |---|---|
-| Identity & Access | Pengguna, role, permission, session, akun aktif |
+| Identity & Access | Pengguna, role (`SUPERADMIN`, `ADMIN_PENERBIT`, `ADMIN`, `VERIFIKATOR`, `DISTRIBUTOR`, `PENTASHIH`, `DOKUMENTATOR`, `KEPALA_LPMQ`), session, akun aktif |
 | Publisher | Profil penerbit dan dokumen badan hukum |
-| Master Data | Kategori, layanan, SLA, add-on, tarif, kalender, Tim Distribusi |
-| Registration | Pengajuan baru/perpanjangan, metadata, sampel naskah, penerimaan master fisik |
-| Verification | Assignment verifikator, checklist, BA, persetujuan Kepala LPMQ, Tugas Saya |
-| Billing | Snapshot kalkulasi, billing, bukti pembayaran, status rekonsiliasi |
-| Distribution | Tim berbasis SK, anggota, assignment tahap awal/perbaikan/dumi, reviu distributor |
+| Master Data | Kategori, layanan, SLA, add-on, tarif, kalender kerja, Tim Distribusi |
+| Registration | Pengajuan baru/perpanjangan, metadata, sampel naskah, penerimaan master fisik oleh `ADMIN` |
+| Verification | Assignment & Nota Dinas atomik Kepala LPMQ (SLA 2 hari kerja), checklist berkas, draf Surat Hasil & Berita Acara Verifikasi, tanda tangan multi-signatory, outbox email idempoten, Tugas Saya |
+| Billing | Snapshot kalkulasi, billing PNBP, bukti pembayaran, verifikasi bayar oleh Verifikator penugasan |
+| Distribution | Handover fisik ke distributor, penetapan `tashih_due_at`, koreksi fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`), tim berbasis SK, anggota, assignment tahap awal/perbaikan/dumi, reviu distributor |
 | Tashih | Progres dan rekomendasi per pentashih/pembaca naskah |
 | Documentation | STT, checklist, eksemplar/N/A, tanda terima, penilaian, versi, masa berlaku |
 | Public Verification | Token QR, metadata publik, status aktif/kedaluwarsa |
-| Audit & Notification | Audit append-only dan notifikasi pengguna |
+| Audit & Notification | Audit append-only dan antrean pengiriman email outbox idempoten |
 
 ## 4. Dokumen dan file
 
@@ -46,20 +46,18 @@ flowchart TB
 
 - Cover.
 - Halaman Al-Qur'an 1–5 sebagai sampel/penanda naskah.
+- Master fisik cetak A4 dijilid per juz diserahkan ke loket LPMQ (diterima oleh `ADMIN`).
 - Dokumen badan hukum dan pembayaran sesuai tahapnya.
 
 ### Keluaran proses
 
-Berita Acara Tashih bukan syarat upload awal. Dokumen ini dibentuk setelah proses tashih dan minimal berisi:
+Dokumen resmi dipisahkan secara tegas dan berjenjang:
 
-- identitas naskah;
-- rincian komponen, tarif, dan durasi pengerjaan;
-- matriks distribusi dan progres tahapan kerja;
-- catatan serta rekomendasi verifikator;
-- tanda tangan verifikator/pejabat sesuai SOP;
-- tanda tangan verifikator sesuai format resmi.
-
-Surat Tanda Tashih ditetapkan oleh Kepala LPMQ setelah distributor mereviu rekomendasi pentashih/pembaca naskah. Mekanisme delegasi masih keputusan terbuka.
+1. **Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`)**: Diterbitkan oleh Kepala LPMQ saat menugaskan verifikator.
+2. **Surat Pemberitahuan Hasil Verifikasi (`SURAT_HASIL_VERIFIKASI`)**: Diterbitkan oleh Kepala LPMQ dan dikirimkan ke penerbit via email resmi berisi keputusan Lolos/Perlu Perbaikan.
+3. **Berita Acara Verifikasi (`BERITA_ACARA_VERIFIKASI`)**: Dokumen internal hasil sidang verifikasi yang ditandatangani berjenjang oleh Verifikator lalu Kepala LPMQ.
+4. **Berita Acara Tashih (`BERITA_ACARA_TASHIH`)**: Dibentuk setelah proses sidang tashih selesai oleh tim pentashih/distributor.
+5. **Surat Tanda Tashih (`SURAT_TANDA_TASHIH`)**: Ditetapkan oleh Kepala LPMQ setelah seluruh rekomendasi pentashih dan distributor tuntas.
 
 ## 5. Model data minimum
 
@@ -71,7 +69,8 @@ Entitas inti:
 - `service_addons`, `registration_addons`
 - `working_days`
 - `registrations`, `manuscript_files`, `physical_master_receipts`, `status_histories`
-- `verification_assignments`
+- `verification_assignments`, `verification_documents`, `verification_document_signatories`
+- `email_outbox`
 - `distribution_teams`, `team_members`
 - `assignments`, `assignment_members`, `tashih_reviews`
 - `payment_records`
@@ -92,25 +91,28 @@ Constraint penting:
 ```mermaid
 stateDiagram-v2
     [*] --> DRAFT
-    DRAFT --> READY_FOR_VERIFICATION: ajukan
-    READY_FOR_VERIFICATION --> VERIFICATION_ASSIGNED: Kepala menugaskan dan menerbitkan Nota Dinas
-    VERIFICATION_ASSIGNED --> IN_VERIFICATION: verifikator terpilih mulai
-    IN_VERIFICATION --> REVISION_REQUIRED: minta perbaikan
-    REVISION_REQUIRED --> READY_FOR_VERIFICATION: ajukan ulang
-    IN_VERIFICATION --> WAITING_VERIFICATION_APPROVAL: ajukan persetujuan
-    WAITING_VERIFICATION_APPROVAL --> IN_VERIFICATION: kembalikan
-    WAITING_VERIFICATION_APPROVAL --> VERIFICATION_APPROVED: Kepala setujui dan tanda tangan
-    VERIFICATION_APPROVED --> AWAITING_PAYMENT: verifikator kirim surat
-    AWAITING_PAYMENT --> PAYMENT_VERIFICATION: catat pembayaran
-    PAYMENT_VERIFICATION --> WAITING_DISTRIBUTOR_RECEIPT: verifikator serahkan master setelah bayar terverifikasi
-    WAITING_DISTRIBUTOR_RECEIPT --> WAITING_DISTRIBUTION: distributor terima fisik dan tetapkan tenggat
-    WAITING_DISTRIBUTION --> TASHIH_IN_PROGRESS: distribusi
-    TASHIH_IN_PROGRESS --> READY_FOR_STT: rekomendasi distributor
+    DRAFT --> READY_FOR_VERIFICATION: ajukan & serahkan berkas fisik ke Admin
+    READY_FOR_VERIFICATION --> VERIFICATION_ASSIGNED: Kepala menugaskan & terbitkan Nota Dinas (SLA 2 hari)
+    VERIFICATION_ASSIGNED --> IN_VERIFICATION: verifikator mulai pemeriksaan
+    IN_VERIFICATION --> WAITING_VERIFICATION_APPROVAL: susun draf surat & berita acara
+    WAITING_VERIFICATION_APPROVAL --> IN_VERIFICATION: Kepala kembalikan draf
+    WAITING_VERIFICATION_APPROVAL --> VERIFICATION_APPROVED: Kepala setujui draf
+    VERIFICATION_APPROVED --> AWAITING_PAYMENT: tanda tangan multi-signatory & kirim email outbox
+    IN_VERIFICATION --> REVISION_REQUIRED: keputusan perbaikan verifikasi
+    REVISION_REQUIRED --> READY_FOR_VERIFICATION: penerbit perbaiki & ajukan ulang
+    AWAITING_PAYMENT --> PAYMENT_VERIFICATION: bayar PNBP & unggah bukti
+    PAYMENT_VERIFICATION --> WAITING_DISTRIBUTOR_RECEIPT: verifikator sahkan bayar & serahkan master
+    WAITING_DISTRIBUTOR_RECEIPT --> PHYSICAL_HANDOVER_CORRECTION_REQUIRED: distributor kembalikan fisik cacat
+    PHYSICAL_HANDOVER_CORRECTION_REQUIRED --> WAITING_DISTRIBUTOR_RECEIPT: penerbit serahkan perbaikan fisik (tanpa re-billing)
+    WAITING_DISTRIBUTOR_RECEIPT --> WAITING_DISTRIBUTION: distributor terima fisik & tetapkan tashih_due_at
+    WAITING_DISTRIBUTION --> TASHIH_IN_PROGRESS: penugasan tim sidang
+    TASHIH_IN_PROGRESS --> REVISION_REQUIRED: sidang minta perbaikan
+    TASHIH_IN_PROGRESS --> READY_FOR_STT: rekomendasi distributor lulus
     READY_FOR_STT --> STT_ISSUED: tetapkan STT
-    STT_ISSUED --> DOCUMENTATION_IN_PROGRESS: mulai dokumentasi
-    DOCUMENTATION_IN_PROGRESS --> COMPLETED: penilaian selesai
+    STT_ISSUED --> DOCUMENTATION_IN_PROGRESS: mulai dokumentasi & serah eksemplar
+    DOCUMENTATION_IN_PROGRESS --> COMPLETED: dokumentasi selesai
     DRAFT --> CANCELLED: batalkan
-    READY_FOR_VERIFICATION --> CANCELLED: batalkan sebelum proses
+    READY_FOR_VERIFICATION --> CANCELLED: batalkan sebelum diproses
     REVISION_REQUIRED --> CANCELLED: batalkan
 ```
 
@@ -119,8 +121,8 @@ stateDiagram-v2
 - Default deny RBAC dan policy per resource/penerbit.
 - Scope setiap query portal menggunakan publisher terautentikasi.
 - UUID/ULID bukan pengganti authorization check.
-- File di private storage; unduhan memakai authorization dan URL sementara.
-- Validasi MIME melalui isi file, ukuran, ekstensi, checksum, nama aman, dan scanning sesuai infrastruktur.
+- File di private storage; unduhan mewajibkan header `Authorization: Bearer <token>` dan dilindungi `Cache-Control: private, no-store` (tanpa token di query string URL).
+- Validasi MIME melalui isi file (magic bytes), ukuran, ekstensi, checksum SHA-256, nama aman, dan scanning sesuai infrastruktur.
 - Token QR acak berentropi tinggi, tidak berurutan, dapat dirotasi/dicabut, dan diberi rate limit.
 - Endpoint QR hanya menampilkan judul, penerbit, nomor Surat Tanda Tashih, status, deskripsi, dan cover yang diizinkan.
 - Audit log append-only untuk login sensitif, permission, status, assignment, tarif, pembayaran, dan dokumen.
@@ -132,7 +134,7 @@ Gunakan port/adapter:
 
 - `BillingGateway` untuk SIMPONI.
 - `DigitalSignatureProvider` untuk BSrE.
-- `NotificationChannel` untuk email/kanal lain.
+- `NotificationChannel` / `EmailProvider` untuk email outbox idempoten dengan mekanisme retry.
 - `FileStorage` untuk object storage.
 
 MVP memakai adapter manual/local. Kontrak adapter harus dapat diuji tanpa akses layanan eksternal.

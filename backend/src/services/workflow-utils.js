@@ -29,12 +29,13 @@ export async function audit(tx, user, action, subjectType, subjectId, after, req
 }
 
 export async function move(tx, reg, status, user, notes, req = null) {
+  const enteredAt = new Date();
   const result = await tx.registration.updateMany({
-    where: { id: reg.id, status: reg.status }, data: { status },
+    where: { id: reg.id, status: reg.status }, data: { status, stage_entered_at: enteredAt },
   });
   if (result.count !== 1) fail(409, 'Status pengajuan berubah. Muat ulang dan coba kembali.');
   await tx.statusHistory.create({ data: {
-    registration_id: reg.id, from_status: reg.status, to_status: status, actor_id: user.id, notes,
+    registration_id: reg.id, from_status: reg.status, to_status: status, actor_id: user.id, notes, changed_at: enteredAt,
   } });
   await audit(tx, user, 'STATUS_TRANSITION', 'Registration', reg.id, { from: reg.status, to: status, notes }, req, { status: reg.status });
 }

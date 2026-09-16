@@ -72,7 +72,7 @@ export async function runVerificationApprovalPaymentTests({
 
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
 
-    await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', {
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
       receipt_no: `TR-APP-${Date.now()}`,
       condition: 'Kondisi sangat baik',
@@ -166,7 +166,7 @@ export async function runVerificationApprovalPaymentTests({
     const approved = await expect(approvePath, kepalaToken, 'POST');
     assert.equal(approved.status, 'APPROVED');
     assert.ok(approved.approved_at);
-    assert.equal(approved.signature_status, 'NOT_REQUESTED');
+    assert.equal(approved.signature_status, 'PENDING');
     assert.equal(approved.signed_at, null);
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_APPROVED');
 
@@ -187,11 +187,40 @@ export async function runVerificationApprovalPaymentTests({
     await expect(sendPath, publisherToken, 'POST', {}, 403);
     await expect(sendPath, kepalaToken, 'POST', {}, 403);
 
+    // Negative: Kirim ditolak jika dokumen belum ditandatangani (409)
+    await expect(sendPath, verifikatorToken, 'POST', { channel: 'IN_APP' }, 409);
+
+    // Cari Berita Acara Verifikasi yang dihasilkan saat submit
+    const baDoc = await prisma.verificationDocument.findFirst({
+      where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    });
+    assert.ok(baDoc, 'Berita Acara Verifikasi harus terbentuk');
+
+    // Negative: Kepala LPMQ dilarang menandatangani Berita Acara sebelum Verifikator (urutan sign_order)
+    await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST', undefined, 409);
+
+    // 1. Verifikator menandatangani Berita Acara (Urutan 1)
+    const verifierSignedBA = await expect(`/verification-documents/${baDoc.id}/sign`, verifikatorToken, 'POST');
+    assert.equal(verifierSignedBA.status, 'SIGNING');
+
+    // 2. Kepala LPMQ menandatangani Berita Acara (Urutan 2)
+    const kepalaSignedBA = await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST');
+    assert.equal(kepalaSignedBA.status, 'SIGNED');
+
+    // 3. Kepala LPMQ menandatangani Surat Pemberitahuan
+    const kepalaSignedDoc = await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST');
+    assert.equal(kepalaSignedDoc.status, 'SIGNED');
+
     // Sukses: Verifikator mengirim surat hasil telaah ke penerbit
     const sendResult = await expect(sendPath, verifikatorToken, 'POST', { channel: 'IN_APP' });
     assert.equal(sendResult.document.status, 'SENT');
     assert.ok(sendResult.document.sent_at);
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'AWAITING_PAYMENT');
+
+    // P0-01: Verifikasi assignment selesai (COMPLETED)
+    const asgCheck = await prisma.verificationAssignment.findUnique({ where: { id: assignment.id } });
+    assert.equal(asgCheck.status, 'COMPLETED');
+    assert.ok(asgCheck.completed_at);
 
     // Tagihan pembayaran otomatis terbit dengan SLA 7 hari
     assert.ok(sendResult.payment);

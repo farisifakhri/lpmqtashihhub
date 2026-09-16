@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
 import {
   ClipboardCheck,
   Search,
@@ -35,11 +36,14 @@ export const VerifikatorInboxPage = () => {
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(isHead ? 'WAITING_APPROVAL' : 'ALL'); // 'ALL' | 'WAITING_APPROVAL' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED'
+  const [activeTab, setActiveTab] = useState(isHead ? 'WAITING_APPROVAL' : 'ASSIGNED');
   const [searchQuery, setSearchQuery] = useState('');
   const [startingId, setStartingId] = useState(null);
+  const [submittedSearch, setSubmittedSearch] = useState('');
+  const requestId = useRef(0);
 
   const fetchAssignments = async () => {
+    const request = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -52,11 +56,12 @@ export const VerifikatorInboxPage = () => {
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
       }
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
+      if (submittedSearch) {
+        params.search = submittedSearch;
       }
 
       const res = await verificationApi.listAssignments(params);
+      if (request !== requestId.current) return;
       if (res?.data) {
         setAssignments(res.data.items || []);
         if (res.data.pagination) {
@@ -64,20 +69,22 @@ export const VerifikatorInboxPage = () => {
         }
       }
     } catch (err) {
-      setError(err.message || 'Gagal memuat daftar penugasan verifikasi.');
+      if (request === requestId.current) setError(err.message || 'Gagal memuat daftar penugasan verifikasi.');
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchAssignments();
-  }, [activeTab, pagination.page]);
+    return () => { requestId.current += 1; };
+  }, [activeTab, pagination.page, submittedSearch]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (pagination.page === 1 && submittedSearch === searchQuery.trim()) fetchAssignments();
+    setSubmittedSearch(searchQuery.trim());
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchAssignments();
   };
 
   const handleStartVerification = async (assignmentId) => {
@@ -86,7 +93,7 @@ export const VerifikatorInboxPage = () => {
       await verificationApi.startVerification(assignmentId);
       navigate(`/internal/verifications/${assignmentId}`);
     } catch (err) {
-      alert(err.message || 'Gagal memulai pemeriksaan.');
+      setError(err.message || 'Gagal memulai pemeriksaan.');
       setStartingId(null);
     }
   };
@@ -180,6 +187,8 @@ export const VerifikatorInboxPage = () => {
         </div>
       </div>
 
+      {!error && <QueueOverview total={pagination.total} oldest={assignments[0]?.queue_entered_at || assignments[0]?.assigned_at} fifo={activeTab !== 'COMPLETED'} loading={loading} />}
+
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -264,6 +273,7 @@ export const VerifikatorInboxPage = () => {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                aria-label="Cari penugasan verifikasi"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari no. registrasi, judul, atau penerbit..."
@@ -301,7 +311,7 @@ export const VerifikatorInboxPage = () => {
       )}
 
       {/* Empty State */}
-      {!loading && assignments.length === 0 && (
+      {!loading && !error && assignments.length === 0 && (
         <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto shadow-xs">
           <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4 border border-emerald-200">
             <ClipboardCheck className="w-6 h-6" />
@@ -327,7 +337,7 @@ export const VerifikatorInboxPage = () => {
 
       {/* Assignment Cards List */}
       <div className="space-y-4">
-        {assignments.map((item) => {
+        {!loading && !error && assignments.map((item) => {
           const reg = item.registration || {};
           const notaDinas = item.documents?.[0];
           const sla = getSlaInfo(item);
@@ -342,6 +352,7 @@ export const VerifikatorInboxPage = () => {
                 {/* Left Meta & Main Info */}
                 <div className="space-y-3 flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
+                    <QueueItemMeta item={item} />
                     <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/80 shadow-2xs">
                       {reg.registration_no || 'REG-BELUM-TERBIT'}
                     </span>
@@ -353,8 +364,8 @@ export const VerifikatorInboxPage = () => {
                       </span>
                     )}
                     {item.status === 'IN_PROGRESS' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
-                        <Play className="w-3 h-3 text-sky-600" />
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        <Play className="w-3 h-3 text-amber-600" />
                         Sedang Diperiksa
                       </span>
                     )}

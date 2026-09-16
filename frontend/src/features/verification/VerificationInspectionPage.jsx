@@ -338,6 +338,39 @@ export const VerificationInspectionPage = () => {
     }
   };
 
+  const handleSignDocument = async (docId) => {
+    if (!docId) return;
+    if (!window.confirm('Bubuhkan tanda tangan digital pada dokumen resmi ini?')) return;
+    setActionLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await verificationApi.signDocument(docId);
+      setSuccessMessage('Dokumen berhasil ditandatangani secara digital.');
+      await fetchDetail();
+    } catch (err) {
+      setError(err.message || 'Gagal menandatangani dokumen.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRetryEmail = async (docId) => {
+    if (!docId) return;
+    setActionLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await verificationApi.retryEmail(docId);
+      setSuccessMessage('Email hasil verifikasi berhasil dikirim ulang kepada penerbit.');
+      await fetchDetail();
+    } catch (err) {
+      setError(err.message || 'Gagal mengirim ulang email.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleSendDocument = async () => {
     if (!latestResultDoc?.id) return;
     if (!window.confirm('Kirimkan surat hasil verifikasi resmi kepada penerbit dan terbitkan tagihan pembayaran PNBP?')) return;
@@ -447,6 +480,34 @@ export const VerificationInspectionPage = () => {
   const physicalMaster = registration.physical_master_intake || {};
   const notaDinas = detail?.nota_dinas || {};
   const latestResultDoc = detail?.latest_result_document;
+  const beritaAcaraDoc = detail?.berita_acara;
+
+  // Multi-signatory completion checks (P0-02 & §4.3)
+  const isLatestDocSigned = latestResultDoc?.status === 'SIGNED' || latestResultDoc?.status === 'SENT';
+  const isBaSigned = !beritaAcaraDoc || beritaAcaraDoc.status === 'SIGNED' || beritaAcaraDoc.status === 'SENT';
+  const isAllFullySigned = isLatestDocSigned && isBaSigned;
+
+  // Signatory permissions for current user
+  const latestSignatory = latestResultDoc?.signatories?.find(s => s.signer_user_id === currentUser?.id);
+  const canUserSignLatest = Boolean(
+    ['APPROVED', 'SIGNING'].includes(latestResultDoc?.status) &&
+    latestSignatory &&
+    latestSignatory.status === 'PENDING'
+  );
+
+  const baSignatories = beritaAcaraDoc?.signatories || [];
+  const baMySignatory = baSignatories.find(s => s.signer_user_id === currentUser?.id);
+  const priorBaPending = baMySignatory
+    ? baSignatories.find(s => s.sign_order < baMySignatory.sign_order && s.status !== 'SIGNED')
+    : null;
+  const canUserSignBa = Boolean(
+    ['APPROVED', 'SIGNING'].includes(beritaAcaraDoc?.status) &&
+    baMySignatory &&
+    baMySignatory.status === 'PENDING' &&
+    !priorBaPending
+  );
+
+  const isEmailFailed = latestResultDoc?.status === 'EMAIL_FAILED' || latestResultDoc?.email_delivery_status === 'EMAIL_FAILED';
   const isAssigned = assignment.status === 'ASSIGNED';
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
@@ -461,7 +522,7 @@ export const VerificationInspectionPage = () => {
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
 
   const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
-  const canVerifierSend = isVerifier && (registration.status === 'VERIFICATION_APPROVED' || latestResultDoc?.status === 'APPROVED');
+  const canVerifierSend = isVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
 
   const latestPayment = registration.payment_records?.[0];
@@ -1370,6 +1431,124 @@ export const VerificationInspectionPage = () => {
           </div>
         )}
 
+        {/* Panel Penandatanganan Digital Multi-Signatory (KB-04, KB-05, P0-02 & §4.3) */}
+        {(['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+          <div className="p-5 bg-white border border-slate-200 rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-50 text-emerald-800 rounded-xl">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    Penandatanganan Digital Dokumen Resmi
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">SOP v2.2</span>
+                  </h4>
+                  <p className="text-xs text-slate-500">Pemberitahuan hasil verifikasi dan Berita Acara wajib ditandatangani secara berurutan.</p>
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${isAllFullySigned ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-amber-100 text-amber-800 border border-amber-300"}`}>
+                {isAllFullySigned ? "Semua Dokumen Ditandatangani" : "Menunggu Tanda Tangan"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* 1. Surat Pemberitahuan Hasil Verifikasi */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900">1. Surat Pemberitahuan Hasil</span>
+                  <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800">{latestResultDoc?.status}</span>
+                </div>
+                <p className="text-slate-600 text-[11px]">Ditandatangani tunggal oleh Kepala LPMQ sebagai pengesahan hasil pemeriksaan administrasi & format.</p>
+                <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-700">Kepala LPMQ:</span>
+                    <span className={`font-semibold ${latestSignatory?.status === "SIGNED" ? "text-emerald-700" : "text-amber-700"}`}>
+                      {latestSignatory?.status === "SIGNED" ? "Sudah Ditandatangani" : "Menunggu Tanda Tangan"}
+                    </span>
+                  </div>
+                  {latestSignatory?.signed_at && (
+                    <p className="text-[10px] text-slate-400 font-mono">Waktu: {formatDate(latestSignatory.signed_at)}</p>
+                  )}
+                </div>
+                {canUserSignLatest && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleSignDocument(latestResultDoc.id)}
+                    disabled={actionLoading}
+                    className="w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Tanda Tangani Surat Pemberitahuan
+                  </Button>
+                )}
+              </div>
+
+              {/* 2. Berita Acara Verifikasi */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-900">2. Berita Acara Verifikasi</span>
+                  <span className="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-200 text-slate-800">{beritaAcaraDoc?.status || "PENDING"}</span>
+                </div>
+                <p className="text-slate-600 text-[11px]">Ditandatangani bertingkat: Verifikator Naskah (urutan 1), kemudian Kepala LPMQ (urutan 2).</p>
+                <div className="space-y-1.5">
+                  {baSignatories.map((sig) => (
+                    <div key={sig.id} className="p-2 bg-white rounded-lg border border-slate-200 text-[11px] flex items-center justify-between">
+                      <div>
+                        <span className="font-semibold text-slate-800">{sig.name_position_snapshot}</span>
+                        <span className="text-[10px] text-slate-400 block font-mono">Urutan {sig.sign_order}</span>
+                      </div>
+                      <span className={`font-semibold px-2 py-0.5 rounded text-[10px] ${sig.status === "SIGNED" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"}`}>
+                        {sig.status === "SIGNED" ? "Ditandatangani" : "Menunggu"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {canUserSignBa && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleSignDocument(beritaAcaraDoc.id)}
+                    disabled={actionLoading}
+                    className="w-full text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Tanda Tangani Berita Acara Verifikasi
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Banner Notifikasi Kegagalan Email (KB-07 / P0-03) */}
+        {isEmailFailed && (
+          <div className="p-5 bg-rose-50 border border-rose-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-rose-900 shadow-sm animate-fadeIn">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-rose-200 text-rose-800 rounded-xl shrink-0">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-bold text-sm text-rose-950">Pengiriman Email Hasil Verifikasi Gagal</p>
+                <p className="text-rose-800 leading-relaxed">
+                  {latestResultDoc?.email_delivery_error || "Gagal menghubungi penyedia email outbox."}
+                  <span className="block mt-0.5 text-rose-700 text-[11px]">Sesuai SOP, proses pengajuan belum berpindah status sampai email berhasil dikirim ke penerbit.</span>
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="primary"
+              onClick={() => handleRetryEmail(latestResultDoc?.id)}
+              disabled={actionLoading}
+              className="bg-rose-700 hover:bg-rose-800 text-white font-bold px-4 py-2 text-xs shrink-0 inline-flex items-center gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${actionLoading ? "animate-spin" : ""}`} />
+              Coba Kirim Ulang Email
+            </Button>
+          </div>
+        )}
+
         {/* Panel Aksi Pengiriman Surat & Penerbitan PNBP oleh Verifikator (Epic F & G) */}
         {canVerifierSend && (
           <div className="p-5 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-emerald-100/70 border border-emerald-300 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
@@ -1390,7 +1569,7 @@ export const VerificationInspectionPage = () => {
               <Button
                 variant="primary"
                 onClick={handleSendDocument}
-                disabled={actionLoading}
+                disabled={actionLoading || !isAllFullySigned}
                 className="w-full md:w-auto text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-6 py-2.5 shadow-sm inline-flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />

@@ -8,6 +8,7 @@ export const verificationApi = {
   listAssignments: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
+    if (params.registration_status) query.append('registration_status', params.registration_status);
     if (params.my_tasks !== undefined) query.append('my_tasks', params.my_tasks);
     if (params.search) query.append('search', params.search);
     if (params.page) query.append('page', params.page);
@@ -100,6 +101,25 @@ export const verificationApi = {
    */
   getDocumentDetail: async (documentId) => {
     return apiClient(`/verification-documents/${documentId}`);
+  },
+  /**
+   * Menandatangani dokumen verifikasi resmi (P0-02 / §4.3)
+   * @param {string} documentId - Verification Document ID
+   */
+  signDocument: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}/sign`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Mengirim ulang email hasil verifikasi yang gagal (KB-07 / P0-03)
+   * @param {string} documentId - Verification Document ID
+   */
+  retryEmail: async (documentId) => {
+    return apiClient(`/verification-documents/${documentId}/retry-email`, {
+      method: 'POST',
+    });
   },
 };
 

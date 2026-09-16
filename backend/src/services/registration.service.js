@@ -4,6 +4,7 @@ import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
 import { fail, registration as lockRegistration, audit } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
+import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -402,6 +403,7 @@ export const submitRegistration = async (id, user, req) => {
       },
       data: {
         status: submitStatus,
+        stage_entered_at: new Date(),
         fee_sla_snapshot: reg.fee_sla_snapshot || feeSlaSnapshot,
       },
     });
@@ -524,6 +526,7 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
       },
       data: {
         status: toStatus,
+        stage_entered_at: new Date(),
       },
     });
 
@@ -582,13 +585,17 @@ export const listRegistrations = async ({
   myTasks = false,
   status,
   search,
+  segment,
+  queueOnly = false,
   page = 1,
   limit = 10,
 }) => {
   const where = {};
 
   // Scope filter berdasarkan Role
-  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
+  const publisherScope = user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN');
+  if (publisherScope) {
+    if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
 
@@ -605,8 +612,15 @@ export const listRegistrations = async ({
     }
   }
 
-  if (status) {
+  const summaryWhere = { ...where };
+  if (segment === 'PUBLISHER_DOCUMENTS') {
+    where.official_documents = { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } };
+  } else if (status) {
     where.status = status;
+  } else if (REGISTRATION_SEGMENTS[segment]) {
+    where.status = { in: REGISTRATION_SEGMENTS[segment] };
+  } else if (queueOnly === true || queueOnly === 'true') {
+    where.status = { in: ACTIVE_REGISTRATION_STATUSES };
   }
 
   if (search) {
@@ -617,16 +631,24 @@ export const listRegistrations = async ({
     ];
   }
 
-  const skip = (Number(page) - 1) * Number(limit);
-  const take = Number(limit);
+  const paging = queuePagination({ page, limit });
+  const { skip, limit: take } = paging;
+  const fifo = !user.roles.includes('ADMIN_PENERBIT') || user.roles.includes('SUPERADMIN');
 
-  const [total, items] = await Promise.all([
+  const [total, items, counts, issuedSTT] = await Promise.all([
     prisma.registration.count({ where }),
     prisma.registration.findMany({
       where,
       skip,
       take,
       include: {
+        ...(publisherScope || segment === 'PUBLISHER_DOCUMENTS' ? {
+          official_documents: {
+            where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
+            select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
+            orderBy: { version: 'desc' },
+          },
+        } : {}),
         publisher: { select: { id: true, legal_name: true, entity_type: true } },
         service_type: { select: { id: true, name: true, service_kind: true } },
         verification_assignments: {
@@ -636,16 +658,19 @@ export const listRegistrations = async ({
         },
         physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: fifo ? [{ stage_entered_at: 'asc' }, { id: 'asc' }] : [{ created_at: 'desc' }, { id: 'asc' }],
     }),
+    prisma.registration.groupBy({ by: ['status'], where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}) }, _count: true }),
+    publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
   ]);
 
   return {
-    items,
+    items: queueItems(items, item => item.stage_entered_at, skip, fifo),
+    summary: { by_status: Object.fromEntries(counts.map(item => [item.status, item._count])), ...(issuedSTT !== null ? { issued_stt: issuedSTT } : {}) },
     pagination: {
       total,
-      page: Number(page),
-      limit: Number(limit),
+      page: paging.page,
+      limit: take,
       totalPages: Math.ceil(total / take),
     },
   };

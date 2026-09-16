@@ -15,7 +15,10 @@
     "prisma:seed": "node prisma/seed.js",
     "prisma:studio": "prisma studio",
     "sla:check": "node src/jobs/sla.js",
-    "test:unit": "node --test tests/*.test.js"
+    "test:unit": "node --test tests/*.test.js",
+    "test:isolated": "node scripts/test-isolated.js",
+    "db:backup": "node scripts/backup-db.js",
+    "db:cleanup-preview": "node scripts/cleanup-test-data.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

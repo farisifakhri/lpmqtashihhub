@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import app from './src/app.js';
 import { prisma } from './src/config/database.js';
 import bcrypt from 'bcryptjs';
+import { assertIsolatedTestDatabase } from './src/utils/test-database.js';
 import { runWorkflowTests } from './tests/workflow.integration.js';
 import { runMasterTests } from './tests/master.integration.js';
 import { runVerificationIntakeTests } from './tests/verification-intake.integration.js';
@@ -33,6 +34,7 @@ async function test(name, fn) {
 }
 
 async function runTests() {
+  assertIsolatedTestDatabase(process.env.DATABASE_URL);
   console.log('🧪 Memulai Test Suite Backend LPMQ (Assertions, Negative & Security Checks)...');
 
   const server = app.listen(PORT, async () => {
