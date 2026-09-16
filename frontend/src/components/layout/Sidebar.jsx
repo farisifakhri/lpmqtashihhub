@@ -100,7 +100,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           title: 'UTAMA',
           items: [
             {
-              label: 'Dashboard Penerbit',
+              label: 'Ikhtisar Layanan',
               path: '/publisher',
               icon: <LayoutDashboard className="w-4 h-4 flex-shrink-0" />,
               end: true,
@@ -108,7 +108,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           ],
         },
         {
-          title: 'ALUR PENGAJUAN (SOP v2.2)',
+          title: 'SIKLUS PENGAJUAN',
           items: [
             {
               label: '1. Pengajuan Baru',
@@ -117,13 +117,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Pendaftaran naskah baru',
             },
             {
-              label: '2. Riwayat Pengajuan',
+              label: '2. Portofolio Pengajuan',
               path: '/publisher/registrations',
               icon: <FileText className="w-4 h-4 flex-shrink-0" />,
               description: 'Status & perbaikan naskah',
             },
             {
-              label: '3. Billing & PNBP',
+              label: '3. Tagihan dan PNBP',
               path: '/publisher/billing',
               icon: <CreditCard className="w-4 h-4 flex-shrink-0" />,
               description: 'Tagihan & konfirmasi bayar',
@@ -145,7 +145,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         title: 'UTAMA',
         items: [
           {
-            label: 'Dashboard Petugas',
+            label: 'Kendali Operasional',
             path: '/internal',
             icon: <LayoutDashboard className="w-4 h-4 flex-shrink-0" />,
             end: true,
@@ -200,26 +200,26 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     if (workflowItems.length > 0) {
       internalSections.push({
-        title: 'ALUR PENTASHIHAN (SOP v2.2)',
+        title: 'PROSES BISNIS PENTASHIHAN',
         items: workflowItems,
       });
     }
 
     if (isAdmin) {
       internalSections.push({
-        title: 'SISTEM & KONFIGURASI',
+        title: 'TATA KELOLA SISTEM',
         items: [
           {
-            label: '5. Master Data & Sistem',
+            label: '5. Data Induk dan Parameter',
             path: '/internal/settings',
             icon: <Settings className="w-4 h-4 flex-shrink-0" />,
-            description: 'Kategori, layanan, addon',
+            description: 'Kategori, layanan, tarif, dan SLA',
           },
           {
-            label: '6. Manajemen Pengguna',
+            label: '6. Identitas dan Akses',
             path: '/internal/users',
             icon: <Users className="w-4 h-4 flex-shrink-0" />,
-            description: 'Kelola user & hak akses',
+            description: 'Akun, peran, dan kewenangan',
           },
         ],
       });
@@ -265,7 +265,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       <aside
         className={clsx(
           'fixed lg:static inset-y-0 left-0 z-50 lg:z-0',
-          'w-72 bg-white border-r border-neutral-200/90 flex flex-col justify-between',
+          'w-72 bg-gradient-to-b from-slate-100 via-slate-50 to-primary-50/60 border-r border-slate-200 flex flex-col justify-between',
           'transition-all duration-300 ease-in-out shadow-lg lg:shadow-none',
           isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
         )}
@@ -273,7 +273,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         <div className="flex flex-col h-full overflow-hidden">
           
           {/* 1. Header Brand (Logo Kemenag + LPMQ + App Title) */}
-          <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
+          <div className="px-5 py-4 border-b border-slate-200 bg-white/65 backdrop-blur-sm flex items-center justify-between">
             <Link
               to={isPublisher ? '/publisher' : '/internal'}
               className="flex items-center gap-3 hover:opacity-95 transition-opacity"
@@ -294,7 +294,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                   Kemenag RI
                 </span>
                 <span className="text-sm font-black text-slate-900 block leading-tight">
-                  LPMQ Tashih Hub
+                  Sistem Pentashihan
                 </span>
               </div>
             </Link>
@@ -312,7 +312,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
           {/* 2. User Mini Profile Card (ldksyahid-app style) */}
           {currentUser && (
-            <div className="px-5 py-4 border-b border-neutral-100 bg-neutral-50/70">
+            <div className="mx-4 mt-4 px-3.5 py-3 rounded-xl border border-slate-200 bg-white/80 shadow-xs">
               <div className="flex items-center gap-3">
                 {/* Avatar with Live Green Dot Indicator */}
                 <div className="relative flex-shrink-0">
@@ -348,10 +348,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           )}
 
           {/* 3. Navigation Links (Grouped & Ordered "Sesuai Alur") */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-5">
+          <div className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
             {navSections.map((section, idx) => (
               <div key={idx} className="space-y-1">
-                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
                   {section.title}
                 </div>
                 <nav className="space-y-1">
@@ -365,10 +365,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                       }}
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all group',
+                          'relative flex items-center gap-3 px-3 py-2.5 rounded-r-xl rounded-l-sm border-l-[3px] text-xs font-medium transition-all group',
                           isActive
-                            ? 'bg-primary-700 text-white shadow-xs font-semibold'
-                            : 'text-neutral-700 hover:bg-neutral-100 hover:text-primary-800'
+                            ? 'bg-white border-primary-700 text-primary-900 shadow-sm font-bold'
+                            : 'border-transparent text-slate-700 hover:bg-white/75 hover:border-primary-300 hover:text-primary-800'
                         )
                       }
                     >
@@ -377,7 +377,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'transition-colors',
-                              isActive ? 'text-white' : 'text-neutral-400 group-hover:text-primary-700'
+                              isActive ? 'text-primary-700' : 'text-slate-400 group-hover:text-primary-700'
                             )}
                           >
                             {item.icon}

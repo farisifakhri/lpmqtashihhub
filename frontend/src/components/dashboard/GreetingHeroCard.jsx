@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Clock, Calendar } from 'lucide-react';
+import { ShieldCheck, Clock, Calendar, Activity } from 'lucide-react';
 
 export const GreetingHeroCard = ({
   userName = 'Petugas LPMQ',
@@ -19,12 +19,12 @@ export const GreetingHeroCard = ({
   const hours = time.getHours();
   const timeGreeting =
     hours < 11
-      ? { text: 'Selamat Pagi', emoji: '☀️' }
+      ? { text: 'Selamat pagi' }
       : hours < 15
-      ? { text: 'Selamat Siang', emoji: '🌤️' }
+      ? { text: 'Selamat siang' }
       : hours < 18
-      ? { text: 'Selamat Sore', emoji: '🌅' }
-      : { text: 'Selamat Malam', emoji: '🌙' };
+      ? { text: 'Selamat sore' }
+      : { text: 'Selamat malam' };
 
   const timeString = time.toLocaleTimeString('id-ID', {
     hour: '2-digit',
@@ -41,7 +41,7 @@ export const GreetingHeroCard = ({
   });
 
   return (
-    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white p-6 sm:p-7 shadow-md border border-primary-800">
+    <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white p-6 sm:p-7 shadow-md border border-primary-800" aria-labelledby="dashboard-greeting">
       {/* Subtle institutional pattern overlay */}
       <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#DFB045_1px,transparent_1px)] [background-size:20px_20px]" />
 
@@ -49,6 +49,9 @@ export const GreetingHeroCard = ({
         {/* Sisi Kiri: Sapaan & Wewenang Akun */}
         <div className="space-y-2 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-gold-400 text-primary-950 text-[10px] font-extrabold uppercase tracking-wider">
+              <Activity className="w-3 h-3" /> Pusat Kendali
+            </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-white/10 backdrop-blur-xs text-xs font-semibold text-primary-100 border border-white/15 shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-gold-400" />
               <span>{roleLabel}</span>
@@ -60,10 +63,7 @@ export const GreetingHeroCard = ({
             )}
           </div>
 
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-            <span className="text-2xl sm:text-3xl animate-bounce-short select-none" role="img" aria-label={timeGreeting.text}>
-              {timeGreeting.emoji}
-            </span>
+          <h2 id="dashboard-greeting" className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
             <span>{timeGreeting.text}, {userName}!</span>
           </h2>
 
@@ -84,7 +84,7 @@ export const GreetingHeroCard = ({
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -1,152 +1,141 @@
-import React, { useState, useEffect } from 'react';
-import { BookOpen, RefreshCw, ChevronDown, ChevronUp, Quote } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { BookOpen, RefreshCw, WifiOff } from 'lucide-react';
 
-const QURAN_HADITH_COLLECTION = [
-  {
-    id: 1,
-    arabic: 'إِنَّا نَحْنُ نَزَّلْنَا الذِّكْرَ وَإِنَّا لَهُ لَحَافِظُونَ',
-    translation: 'Sesungguhnya Kamilah yang menurunkan Al-Qur\'an, dan sesungguhnya Kami benar-benar memeliharanya.',
-    source: 'QS. Al-Hijr [15]: 9',
-    category: 'Pemeliharaan Mushaf',
-  },
-  {
-    id: 2,
-    arabic: 'خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ',
-    translation: 'Sebaik-baik kalian adalah orang yang mempelajari Al-Qur\'an dan mengajarkannya.',
-    source: 'HR. Bukhari No. 5027',
-    category: 'Keutamaan Al-Qur\'an',
-  },
-  {
-    id: 3,
-    arabic: 'إِنَّ عَلَيْنَا جَمْعَهُ وَقُرْآنَهُ ۝ فَإِذَا قَرَأْنَاهُ فَاتَّبِعْ قُرْآنَهُ',
-    translation: 'Sesungguhnya atas tanggungan Kamilah mengumpulkannya (di dadamu) dan membacakannya. Apabila Kami telah selesai membacakannya maka ikutilah bacaannya itu.',
-    source: 'QS. Al-Qiyamah [75]: 17-18',
-    category: 'Kodifikasi & Bacaan',
-  },
-  {
-    id: 4,
-    arabic: 'اقْرَءُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ شَفِيعًا لِأَصْحَابِهِ',
-    translation: 'Bacalah Al-Qur\'an, sesungguhnya ia akan datang pada hari kiamat sebagai pemberi syafaat bagi para pembacanya.',
-    source: 'HR. Muslim No. 798',
-    category: 'Syafaat Al-Qur\'an',
-  },
-  {
-    id: 5,
-    arabic: 'ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِلْمُتَّقِينَ',
-    translation: 'Kitab (Al-Qur\'an) ini tidak ada keraguan padanya; petunjuk bagi mereka yang bertakwa.',
-    source: 'QS. Al-Baqarah [2]: 2',
-    category: 'Keotentikan Wahyu',
-  },
-  {
-    id: 6,
-    arabic: 'مَنْ قَرَأَ حَرْفًا مِنْ كِتَابِ اللَّهِ فَلَهُ بِهِ حَسَنَةٌ، وَالْحَسَنَةُ بِعَشْرِ أَمْثَالِهَا',
-    translation: 'Barangsiapa membaca satu huruf dari Kitabullah, maka baginya satu kebaikan, dan satu kebaikan dilipatgandakan sepuluh kali lipat semisalnya.',
-    source: 'HR. At-Tirmidzi No. 2910',
-    category: 'Pahala Huruf Mushaf',
-  },
-  {
-    id: 7,
-    arabic: 'لَا يَأْتِيهِ الْبَاطِلُ مِنْ بَيْنِ يَدَيْهِ وَلَا مِنْ خَلْفِهِ ۖ تَنْزِيلٌ مِنْ حَكِيمٍ حَمِيدٍ',
-    translation: '(Yang) tidak akan didatangi oleh kebatilan baik dari depan maupun dari belakangnya, diturunkan dari Tuhan Yang Mahabijaksana lagi Maha Terpuji.',
-    source: 'QS. Fushshilat [41]: 42',
-    category: 'Kemurnian Al-Qur\'an',
-  },
+const SURAH_AYAH_COUNTS = [
+  7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,
+  111,110,98,135,112,78,118,64,77,227,93,88,69,60,34,30,
+  73,54,45,83,182,88,75,85,54,53,89,59,37,35,38,29,
+  18,45,60,49,62,55,78,96,29,22,24,13,14,11,11,18,
+  12,12,30,52,52,44,28,28,20,56,40,31,50,40,46,42,
+  29,19,36,25,22,17,19,26,30,20,15,21,11,8,8,19,
+  5,8,8,11,11,8,3,9,5,4,7,3,6,3,5,4,5,6,
 ];
 
-export const DailyQuranWidget = () => {
-  const [currentIndex, setCurrentIndex] = useState(() => Math.floor(Math.random() * QURAN_HADITH_COLLECTION.length));
-  const [countdown, setCountdown] = useState(60);
-  const [isFading, setIsFading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
+const FALLBACK_AYAH = {
+  arabic: 'إِنَّا نَحْنُ نَزَّلْنَا الذِّكْرَ وَإِنَّا لَهُ لَحَافِظُونَ',
+  translation: 'Sesungguhnya Kamilah yang menurunkan Al-Qur\'an dan pasti Kami pula yang memeliharanya.',
+  source: 'QS. Al-Hijr: 9',
+};
 
-  const nextQuote = () => {
-    setIsFading(true);
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % QURAN_HADITH_COLLECTION.length);
+const API_BASE_URL = 'https://quran-api-id.vercel.app';
+
+export const DailyQuranWidget = () => {
+  const [ayah, setAyah] = useState(FALLBACK_AYAH);
+  const [countdown, setCountdown] = useState(60);
+  const [isLoading, setIsLoading] = useState(false);
+  const [usesFallback, setUsesFallback] = useState(false);
+  const requestController = useRef(null);
+
+  const loadRandomAyah = useCallback(async () => {
+    requestController.current?.abort();
+    const controller = new AbortController();
+    requestController.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const surahNumber = Math.floor(Math.random() * 114) + 1;
+    const ayahNumber = Math.floor(Math.random() * SURAH_AYAH_COUNTS[surahNumber - 1]) + 1;
+
+    setIsLoading(true);
+    setUsesFallback(false);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/surah/${surahNumber}/${ayahNumber}`, {
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error('Respons API tidak berhasil.');
+
+      const payload = await response.json();
+      const data = payload?.data;
+      const arabic = data?.text?.arab;
+      const translation = data?.translation?.id;
+      if (payload?.code !== 200 || !arabic || !translation) {
+        throw new Error('Struktur respons API tidak valid.');
+      }
+
+      const surahName = data?.surah?.name?.transliteration?.id || `Surah ${surahNumber}`;
+      const resolvedAyahNumber = data?.number?.inSurah || ayahNumber;
+      setAyah({ arabic, translation, source: `QS. ${surahName}: ${resolvedAyahNumber}` });
       setCountdown(60);
-      setIsFading(false);
-    }, 300);
-  };
+    } catch (error) {
+      if (requestController.current !== controller) return;
+      setUsesFallback(true);
+      setAyah(FALLBACK_AYAH);
+    } finally {
+      clearTimeout(timeoutId);
+      if (requestController.current === controller) setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadRandomAyah();
+    return () => {
+      const activeController = requestController.current;
+      requestController.current = null;
+      activeController?.abort();
+    };
+  }, [loadRandomAyah]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          nextQuote();
+      setCountdown((current) => {
+        if (current <= 1) {
+          loadRandomAyah();
           return 60;
         }
-        return prev - 1;
+        return current - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, []);
-
-  const currentItem = QURAN_HADITH_COLLECTION[currentIndex];
+  }, [loadRandomAyah]);
 
   return (
-    <div className="bg-gradient-to-br from-white via-amber-50/25 to-white rounded-xl border border-amber-200/80 shadow-sm p-5 sm:p-6 transition-all hover:shadow-md">
-      {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-amber-100/70">
+    <section className="rounded-xl border border-amber-200/80 bg-gradient-to-br from-white via-amber-50/25 to-white p-5 shadow-sm sm:p-6" aria-labelledby="quran-widget-title">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100/70 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-600 text-white flex items-center justify-center shadow-xs">
-            <BookOpen className="w-4 h-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 text-white shadow-xs">
+            <BookOpen className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-neutral-900 tracking-tight flex items-center gap-1.5">
-              <span>Kutipan Harian Al-Qur'an & Hadis</span>
-              <span className="hidden sm:inline-block text-[11px] font-medium text-primary-700 bg-primary-50 border border-primary-200/60 px-2 py-0.5 rounded-md">
-                {currentItem.category}
-              </span>
-            </h3>
-            <p className="text-[11px] text-neutral-500">Inspirasi integritas & pemeliharaan kalam Ilahi</p>
+            <h3 id="quran-widget-title" className="text-sm font-bold text-neutral-900">Ayat Al-Qur'an dalam 1 Menit</h3>
+            <p className="text-[11px] text-neutral-500">Sumber dinamis • quran-api-id</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <span className="text-[11px] text-neutral-400 hidden xs:inline">
-            Konten berikutnya dalam <span className="font-mono font-bold text-primary-700">{countdown}</span>s
+        <div className="flex items-center gap-2">
+          <span className="hidden text-[11px] text-neutral-500 sm:inline">
+            Ayat berikutnya dalam <strong className="font-mono text-primary-700">{countdown}</strong> detik
           </span>
           <button
             type="button"
-            onClick={nextQuote}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-primary-700 bg-primary-50 hover:bg-primary-100 active:scale-95 rounded-lg border border-primary-200 transition-all cursor-pointer"
-            title="Segarkan kutipan sekarang"
+            onClick={loadRandomAyah}
+            disabled={isLoading}
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-wait disabled:opacity-60"
+            title="Muat ayat lain"
           >
-            <RefreshCw className={`w-3 h-3 ${isFading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Ganti</span>
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            {isLoading ? 'Memuat' : 'Ayat lain'}
           </button>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className={`mt-4 transition-opacity duration-300 ${isFading ? 'opacity-0' : 'opacity-100'}`}>
-        {/* Source Badge */}
-        <div className="mb-2">
-          <span className="inline-block px-3 py-0.5 text-xs font-bold rounded-md bg-primary-800 text-white shadow-2xs">
-            {currentItem.source}
-          </span>
+      {usesFallback && (
+        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-amber-800" role="status">
+          <WifiOff className="h-3.5 w-3.5" /> Data referensi lokal ditampilkan karena API tidak tersedia.
         </div>
+      )}
 
-        {/* Arabic Text */}
-        <div className="py-2">
-          <p
-            dir="rtl"
-            className="text-lg sm:text-2xl font-serif text-neutral-900 leading-[2.2] sm:leading-[2.4] tracking-wide text-right font-medium"
-            style={{ fontFamily: "'Traditional Arabic', 'Amiri', 'Scheherazade New', serif" }}
-          >
-            {currentItem.arabic}
-          </p>
-        </div>
-
-        {/* Indonesian Translation */}
-        <div className="mt-2 text-xs sm:text-sm text-neutral-700 leading-relaxed italic border-l-3 border-gold-500 pl-3.5 bg-neutral-50/90 py-2.5 rounded-r-lg">
-          "{currentItem.translation}"
-        </div>
+      <div className={`mt-4 transition-opacity ${isLoading ? 'opacity-55' : 'opacity-100'}`} aria-busy={isLoading}>
+        <span className="inline-block rounded-md bg-primary-800 px-3 py-1 text-xs font-bold text-white">
+          {ayah.source}
+        </span>
+        <p dir="rtl" className="py-4 text-right font-serif text-xl font-medium leading-[2.3] tracking-wide text-neutral-900 sm:text-2xl">
+          {ayah.arabic}
+        </p>
+        <p className="rounded-r-lg border-l-4 border-gold-500 bg-neutral-50/90 py-2.5 pl-3.5 text-xs italic leading-relaxed text-neutral-700 sm:text-sm">
+          “{ayah.translation}”
+        </p>
       </div>
-    </div>
+    </section>
   );
 };
 
 export default DailyQuranWidget;
-

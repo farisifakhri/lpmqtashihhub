@@ -6,7 +6,7 @@ import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
 import * as AuthContext from '@/features/auth/AuthContext';
 
-describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
+describe('Komponen tata letak portal operasional', () => {
   const mockLogout = vi.fn();
 
   const mockUserSuperadmin = {
@@ -41,7 +41,7 @@ describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
     );
 
     // Tombol toggler
-    const togglerBtn = screen.getByRole('button', { name: /toggle navigation sidebar/i });
+    const togglerBtn = screen.getByRole('button', { name: /tutup navigasi utama/i });
     expect(togglerBtn).toBeDefined();
     fireEvent.click(togglerBtn);
     expect(toggleSidebar).toHaveBeenCalledTimes(1);
@@ -56,11 +56,11 @@ describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
 
     // Buka dropdown
     fireEvent.click(profileBtn);
-    expect(screen.getByText(/masuk sebagai/i)).toBeDefined();
-    expect(screen.getByText(/standar mushaf usmani/i)).toBeDefined();
+    expect(screen.getByText(/sesi aktif/i)).toBeDefined();
+    expect(screen.getByText(/kontrol proses mengacu/i)).toBeDefined();
 
     // Tombol logout di dropdown
-    const logoutBtn = screen.getByRole('button', { name: /keluar sesi \(logout\)/i });
+    const logoutBtn = screen.getByRole('button', { name: /akhiri sesi/i });
     expect(logoutBtn).toBeDefined();
     fireEvent.click(logoutBtn);
     expect(mockLogout).toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
     );
 
     // Brand header
-    expect(screen.getByText('LPMQ Tashih Hub')).toBeDefined();
+    expect(screen.getByText('Sistem Pentashihan')).toBeDefined();
     expect(screen.getByText('Kemenag RI')).toBeDefined();
 
     // User mini-card
@@ -92,7 +92,7 @@ describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
     expect(screen.getByText('2. Distribusi Sidang')).toBeDefined();
     expect(screen.getByText('3. Sidang Pentashihan')).toBeDefined();
     expect(screen.getByText('4. Pengesahan & STT')).toBeDefined();
-    expect(screen.getByText('5. Master Data & Sistem')).toBeDefined();
+    expect(screen.getByText('5. Data Induk dan Parameter')).toBeDefined();
   });
 
   it('Sidebar merender alur pengajuan penerbit secara berurutan', () => {
@@ -112,10 +112,10 @@ describe('Layout Components (Navbar & Sidebar - ldksyahid-app styling)', () => {
     expect(screen.getByText('Penerbit')).toBeDefined();
 
     // Menu penerbit sesuai alur
-    expect(screen.getByText('Dashboard Penerbit')).toBeDefined();
+    expect(screen.getByText('Ikhtisar Layanan')).toBeDefined();
     expect(screen.getByText('1. Pengajuan Baru')).toBeDefined();
-    expect(screen.getByText('2. Riwayat Pengajuan')).toBeDefined();
-    expect(screen.getByText('3. Billing & PNBP')).toBeDefined();
+    expect(screen.getByText('2. Portofolio Pengajuan')).toBeDefined();
+    expect(screen.getByText('3. Tagihan dan PNBP')).toBeDefined();
     expect(screen.getByText('4. Surat Tanda Tashih')).toBeDefined();
   });
 });
