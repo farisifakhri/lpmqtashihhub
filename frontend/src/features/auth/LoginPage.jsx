@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRight } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -57,18 +57,22 @@ export const LoginPage = () => {
             />
 
             {/* Badge Kemenag Overlay Atas */}
-            <div className="relative z-10 p-5 sm:p-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/60 shadow-xs">
+            <div className="relative z-10 p-5 sm:p-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-xs">
                 <ShieldCheck className="w-4 h-4 text-primary-700" />
                 <span className="text-xs font-bold tracking-wide text-neutral-800">
-                  Lajnah Pentashihan Mushaf Al-Qur'an
+                  Lajnah Pentashihan Mushaf Quran RI
                 </span>
               </div>
             </div>
 
             {/* Caption Glassmorphism Bawah */}
-            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-neutral-900/70 via-neutral-900/30 to-transparent pt-12">
-              <div className="backdrop-blur-sm bg-white/20 p-4 rounded-2xl border border-white/30 text-white shadow-sm">
+            <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-neutral-900/60 via-neutral-900/20 to-transparent pt-12">
+              <div className="bg-green-600/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
+                <p className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5 mb-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+                  SIPNA (Sistem Informasi Pentashih Mushaf Quran)
+                </p>
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
                   Sistem Informasi Pentashihan Naskah Al-Qur'an (SIPNA) - LPMQ Kementerian Agama RI
                 </h3>
