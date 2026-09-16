@@ -8,8 +8,8 @@ import { updatePublisherProfileSchema, verifyPublisherSchema } from '../validato
 const router = Router();
 
 // Rute khusus portal penerbit
-router.get('/me', authenticate, publisherController.getMyProfile);
-router.put('/me', authenticate, validate(updatePublisherProfileSchema), publisherController.updateMyProfile);
+router.get('/me', authenticate, authorize('ADMIN_PENERBIT'), publisherController.getMyProfile);
+router.put('/me', authenticate, authorize('ADMIN_PENERBIT'), validate(updatePublisherProfileSchema), publisherController.updateMyProfile);
 
 // Rute internal LPMQ
 router.get('/', authenticate, authorize('SUPERADMIN', 'VERIFIKATOR'), publisherController.listPublishers);

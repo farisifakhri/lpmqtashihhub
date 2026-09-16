@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { UnifiedDashboard } from './UnifiedDashboard';
 import * as AuthContextModule from '@/features/auth/AuthContext';
@@ -86,5 +86,34 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
 
     expect(screen.getByText('Alur Sidang Internal')).toBeInTheDocument();
     expect(screen.getByText('Layanan Penerbit & PNBP')).toBeInTheDocument();
+  });
+
+  it('filters active work server-side and fetches the next FIFO page', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'staff', roles: ['VERIFIKATOR'], role: 'VERIFIKATOR' } });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Naskah FIFO', status: 'READY_FOR_VERIFICATION', created_at: new Date().toISOString() }], pagination: { page: 1, limit: 20, total: 25, totalPages: 2 } });
+    render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
+    await screen.findByText('Naskah FIFO');
+    expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenCalledWith(expect.objectContaining({ queue_only: 'true', limit: 20, page: 1 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selanjutnya' }));
+    await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    fireEvent.click(screen.getByRole('button', { name: /Verifikasi \(/ }));
+    await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, segment: 'VERIFICATION' })));
+  });
+  it('ADMIN sees team assignment but not operational or system-admin shortcuts', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-internal', roles: ['ADMIN'], role: 'ADMIN' } });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Siap ditugaskan', status: 'WAITING_DISTRIBUTION', created_at: new Date().toISOString() }] });
+    render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
+    await screen.findByText('Siap ditugaskan');
+    expect(screen.getByText('Penugasan Tim')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tetapkan Tim' })).toBeInTheDocument();
+    for (const title of ['Master Data Layanan', 'Identitas dan Akses', 'Verifikasi Berkas', 'Penetapan STT', 'Sidang Pentashihan']) expect(screen.queryByRole('link', { name: new RegExp(title) })).not.toBeInTheDocument();
+  });
+  it('DISTRIBUTOR cannot see the manual team assignment controls', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'distributor', roles: ['DISTRIBUTOR'], role: 'DISTRIBUTOR' } });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Antrean distribusi', status: 'WAITING_DISTRIBUTION', created_at: new Date().toISOString() }] });
+    render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
+    await screen.findByText('Antrean distribusi');
+    expect(screen.queryByRole('button', { name: 'Tetapkan Tim' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Penugasan Tim/ })).not.toBeInTheDocument();
   });
 });

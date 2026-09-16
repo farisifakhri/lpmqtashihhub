@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
+import { queueItems } from './queue-utils.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 const verificationTargetMs = 2 * 24 * 60 * 60 * 1000;
@@ -200,20 +201,23 @@ export const listVerificationAssignments = async (query, user) => {
     };
   }
   const skip = (query.page - 1) * query.limit;
+  const byStage = Boolean(query.registration_status) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
     prisma.verificationAssignment.count({ where }),
     prisma.verificationAssignment.findMany({
       where,
       skip,
       take: query.limit,
-      orderBy: { assigned_at: 'desc' },
+      orderBy: byStage
+        ? [{ registration: { stage_entered_at: 'asc' } }, { id: 'asc' }]
+        : [{ assigned_at: query.status === 'COMPLETED' ? 'desc' : 'asc' }, { id: 'asc' }],
       include: {
         verifier: { select: { id: true, name: true } },
         assigned_by: { select: { id: true, name: true } },
-        registration: { select: { id: true, registration_no: true, title: true, status: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
+        registration: { select: { id: true, registration_no: true, title: true, status: true, stage_entered_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
         documents: { where: { document_type: 'NOTA_DINAS_VERIFIKASI' }, select: { id: true, document_no: true, version: true, status: true, created_at: true } },
       },
     }),
   ]);
-  return { items, pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
+  return { items: queueItems(items, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
 };

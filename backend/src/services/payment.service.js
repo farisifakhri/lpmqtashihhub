@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { ownedFile } from './storage.service.js';
 import { fail, requireRole, registration, requireStatus, requireOwner, move, audit } from './workflow-utils.js';
+import { queueItems, queuePagination } from './queue-utils.js';
 
 export const createPayment = (id, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
@@ -231,9 +232,7 @@ export const listPayments = async (query, user) => {
   const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT');
 
-  const page = Number(query.page) || 1;
-  const limit = Math.min(100, Number(query.limit) || 20);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = queuePagination(query);
 
   const where = {};
   if (isOwnerPublisher && !isAdmin) {
@@ -262,7 +261,9 @@ export const listPayments = async (query, user) => {
       where,
       skip,
       take: limit,
-      orderBy: { created_at: 'desc' },
+      orderBy: query.status === 'PAID'
+        ? [{ registration: { stage_entered_at: 'asc' } }, { id: 'asc' }]
+        : [{ created_at: isOwnerPublisher || query.status === 'VERIFIED' ? 'desc' : 'asc' }, { id: 'asc' }],
       include: {
         registration: {
           select: {
@@ -270,6 +271,7 @@ export const listPayments = async (query, user) => {
             registration_no: true,
             title: true,
             status: true,
+            stage_entered_at: true,
             publisher: { select: { id: true, legal_name: true } },
             service_type: { select: { id: true, name: true } },
           },
@@ -279,12 +281,13 @@ export const listPayments = async (query, user) => {
   ]);
 
   return {
-    items,
+    items: queueItems(items, item => query.status === 'PAID' ? item.registration.stage_entered_at : item.created_at, skip, !isOwnerPublisher && query.status !== 'VERIFIED'),
     pagination: {
       page,
       limit,
       total,
       total_pages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit),
     },
   };
 };

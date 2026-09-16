@@ -80,4 +80,11 @@ describe('PublisherBillingPage Component', () => {
     expect(screen.getByPlaceholderText(/Contoh: 8274910284759281/i)).toBeInTheDocument();
     expect(screen.getByText(/Unggah Bukti Setor \/ Transfer/i)).toBeInTheDocument();
   });
+  it('opens a dashboard-linked bill even when it is outside the loaded list page', async () => {
+    PaymentApiModule.paymentApi.listPayments.mockResolvedValue({ data: { items: [], pagination: { total: 0, page: 1, totalPages: 0 } } });
+    vi.spyOn(PaymentApiModule.paymentApi, 'getRegistrationPayment').mockResolvedValue({ data: mockPayments[0] });
+    render(<MemoryRouter initialEntries={['/publisher/billing?registration_id=reg-1']}><PublisherBillingPage /></MemoryRouter>);
+    expect(await screen.findByText('Konfirmasi Pembayaran PNBP')).toBeInTheDocument();
+    expect(PaymentApiModule.paymentApi.getRegistrationPayment).toHaveBeenCalledWith('reg-1');
+  });
 });

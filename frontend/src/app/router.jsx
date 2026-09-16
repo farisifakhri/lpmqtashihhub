@@ -2,6 +2,8 @@ import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { PublisherDashboard } from '@/features/registrations/PublisherDashboard';
+import { PublisherRegistrationsPage } from '@/features/registrations/PublisherRegistrationsPage';
+import { PublisherRegistrationDetailPage } from '@/features/registrations/PublisherRegistrationDetailPage';
 import { NewRegistrationPage } from '@/features/registrations/NewRegistrationPage';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
@@ -56,28 +58,13 @@ export const router = createBrowserRouter([
         path: 'publisher/registrations',
         element: (
           <ProtectedRoute portalType="publisher">
-            <ModulePlaceholder
-              moduleCode="REG-02"
-              title="Daftar Riwayat Pengajuan Naskah"
-              moduleName="REG-02 Pemantauan Status"
-              sprintTarget="Sprint 2"
-              description="Lacak tahapan naskah, timeline status, dan unduh tanda terima pengajuan."
-              targetTables={['registrations', 'status_histories', 'registration_addons', 'manuscript_files']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations', desc: 'Daftar pengajuan naskah terdaftar' },
-                { method: 'GET', path: '/api/v1/registrations?status=DRAFT', desc: 'Filter status Draf' },
-                { method: 'POST', path: '/api/v1/registrations', desc: 'Buat draf pengajuan baru' },
-              ]}
-              allowedRoles={['ADMIN_PENERBIT', 'SUPERADMIN']}
-              sopReference="SOP Pendaftaran Mushaf Al-Qur'an (Kemenag RI v2.2)"
-              businessRules={[
-                'Penerbit hanya dapat melihat pengajuan miliknya sendiri (data isolation)',
-                'Unggah berkas awal hanya cover dan halaman 1-5 sebagai penanda',
-                'Pengajuan dapat dibatalkan hanya saat berstatus DRAFT atau REVISION_REQUIRED',
-              ]}
-            />
+            <PublisherRegistrationsPage key="history" />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'publisher/registrations/:id',
+        element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
       },
       {
         path: 'publisher/billing',
@@ -91,25 +78,7 @@ export const router = createBrowserRouter([
         path: 'publisher/documents',
         element: (
           <ProtectedRoute portalType="publisher">
-            <ModulePlaceholder
-              moduleCode="DOC-01"
-              title="Arsip Surat Tanda Tashih"
-              moduleName="DOC-01 Surat Tanda Tashih"
-              sprintTarget="Sprint 5"
-              description="Unduh Surat Tanda Tashih resmi berformat PDF bersertifikat digital dan QR code keabsahan."
-              targetTables={['official_documents', 'document_signatories', 'registrations']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=STT_ISSUED', desc: 'Daftar naskah dengan STT terbit' },
-                { method: 'GET', path: '/api/v1/registrations?status=COMPLETED', desc: 'Daftar naskah selesai seluruhnya' },
-              ]}
-              allowedRoles={['ADMIN_PENERBIT', 'SUPERADMIN']}
-              sopReference="SOP Penatausahaan dan Penerbitan STT Mushaf Al-Qur'an (Kemenag RI v2.2)"
-              businessRules={[
-                'Dokumen PDF resmi wajib di-generate server-side dengan hash integritas',
-                'Setiap dokumen memiliki token verifikasi publik untuk validasi QR tanpa login',
-                'Masa berlaku STT adalah 2 tahun dan dapat diajukan perpanjangan',
-              ]}
-            />
+            <PublisherRegistrationsPage key="documents" documents />
           </ProtectedRoute>
         ),
       },

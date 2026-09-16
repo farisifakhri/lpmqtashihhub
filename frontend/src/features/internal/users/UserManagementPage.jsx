@@ -27,7 +27,7 @@ import {
 
 export const ROLE_OPTIONS = [
   { code: 'SUPERADMIN', label: 'Super Admin', desc: 'Akses penuh ke konfigurasi dan seluruh alur' },
-  { code: 'ADMIN', label: 'Admin Internal', desc: 'Pengelolaan operasional internal & master data' },
+  { code: 'ADMIN', label: 'Admin Internal', desc: 'Baca pengajuan, pantau progres, dan tetapkan tim pentashih' },
   { code: 'ADMIN_PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Pengajuan naskah dan pemantauan billing' },
   { code: 'VERIFIKATOR', label: 'Verifikator Naskah', desc: 'Pemeriksaan berkas digital dan master fisik' },
   { code: 'DISTRIBUTOR', label: 'Distributor Sidang', desc: 'Penugasan tim pentashih dan tanda terima' },

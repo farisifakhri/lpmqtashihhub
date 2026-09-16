@@ -390,7 +390,7 @@ export const getDistributionTeams = async () => {
       leader: { select: { id: true, name: true, nip: true } },
       members: {
         include: {
-          user: { select: { id: true, name: true, nip: true } },
+          user: { select: { id: true, name: true, nip: true, status: true, roles: { select: { role: { select: { code: true } } } } } },
         },
       },
     },

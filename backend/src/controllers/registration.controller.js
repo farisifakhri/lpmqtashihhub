@@ -44,7 +44,7 @@ export const transitionStatus = async (req, res, next) => {
 
 export const listRegistrations = async (req, res, next) => {
   try {
-    const { my_tasks, status, search, page, limit } = req.query;
+    const { my_tasks, status, search, page, limit, segment, queue_only } = req.query;
     const result = await registrationService.listRegistrations({
       user: req.user,
       myTasks: my_tasks,
@@ -52,12 +52,15 @@ export const listRegistrations = async (req, res, next) => {
       search,
       page,
       limit,
+      segment,
+      queueOnly: queue_only,
     });
 
     res.status(200).json({
       success: true,
       data: result.items,
       pagination: result.pagination,
+      summary: result.summary,
     });
   } catch (error) {
     next(error);

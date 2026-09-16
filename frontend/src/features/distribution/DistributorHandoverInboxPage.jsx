@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { handoverApi } from '@/api/handover.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
 import {
   PackageCheck,
   Search,
@@ -40,6 +41,8 @@ export const DistributorHandoverInboxPage = () => {
   const [activeTab, setActiveTab] = useState('PENDING'); // 'PENDING' | 'RECEIVED' | 'RETURNED' | 'ALL'
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedReceipt, setCopiedReceipt] = useState(null);
+  const [submittedSearch, setSubmittedSearch] = useState('');
+  const requestId = useRef(0);
 
   // Modal Konfirmasi Penerimaan Fisik
   const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -66,9 +69,10 @@ export const DistributorHandoverInboxPage = () => {
     : [];
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
-  const canConfirm = isDistributor || isAdmin;
+  const canConfirm = isDistributor;
 
   const fetchHandovers = async () => {
+    const request = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -79,11 +83,12 @@ export const DistributorHandoverInboxPage = () => {
       if (activeTab !== 'ALL') {
         params.status = activeTab;
       }
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
+      if (submittedSearch) {
+        params.search = submittedSearch;
       }
 
       const res = await handoverApi.listHandovers(params);
+      if (request !== requestId.current) return;
       if (res?.data) {
         setHandovers(res.data.items || []);
         if (res.data.pagination) {
@@ -91,20 +96,22 @@ export const DistributorHandoverInboxPage = () => {
         }
       }
     } catch (err) {
-      setError(err.message || 'Gagal memuat antrean serah-terima fisik master mushaf.');
+      if (request === requestId.current) setError(err.message || 'Gagal memuat antrean serah-terima fisik master mushaf.');
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchHandovers();
-  }, [activeTab, pagination.page]);
+    return () => { requestId.current += 1; };
+  }, [activeTab, pagination.page, submittedSearch]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (pagination.page === 1 && submittedSearch === searchQuery.trim()) fetchHandovers();
+    setSubmittedSearch(searchQuery.trim());
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchHandovers();
   };
 
   const handleCopyText = (text, key) => {
@@ -335,7 +342,7 @@ export const DistributorHandoverInboxPage = () => {
             </span>
           </div>
           <p className="text-2xl font-black text-slate-900">{pendingCount}</p>
-          <p className="text-[11px] text-slate-500">Master fisik tiba di meja Distributor</p>
+          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
@@ -348,7 +355,7 @@ export const DistributorHandoverInboxPage = () => {
           <p className="text-2xl font-black text-slate-900">
             {handovers.filter((h) => h.status === 'RECEIVED').length}
           </p>
-          <p className="text-[11px] text-slate-500">Siap diagendakan ke tim sidang pentashih</p>
+          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
@@ -361,9 +368,11 @@ export const DistributorHandoverInboxPage = () => {
           <p className="text-2xl font-black text-slate-900">
             {handovers.filter((h) => h.status === 'RETURNED').length}
           </p>
-          <p className="text-[11px] text-slate-500">Menunggu revisi master fisik dari penerbit</p>
+          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
         </div>
       </div>
+
+      {!error && <QueueOverview total={pagination.total} oldest={handovers[0]?.queue_entered_at || handovers[0]?.created_at} fifo={!['RECEIVED', 'RETURNED'].includes(activeTab)} loading={loading} />}
 
       {/* Filter Tabs & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-4">
@@ -429,6 +438,7 @@ export const DistributorHandoverInboxPage = () => {
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
+              aria-label="Cari serah-terima naskah"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari BAST, no reg, judul..."
@@ -439,7 +449,8 @@ export const DistributorHandoverInboxPage = () => {
                 type="button"
                 onClick={() => {
                   setSearchQuery('');
-                  fetchHandovers();
+                  setSubmittedSearch('');
+                  setPagination(prev => ({ ...prev, page: 1 }));
                 }}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
               >
@@ -456,7 +467,7 @@ export const DistributorHandoverInboxPage = () => {
           <div className="w-9 h-9 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs font-medium text-slate-600">Memuat berkas serah-terima fisik...</p>
         </div>
-      ) : handovers.length === 0 ? (
+      ) : error ? null : handovers.length === 0 ? (
         <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
           <Inbox className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-800">Tidak Ada Serah-Terima Fisik</h3>
@@ -468,7 +479,7 @@ export const DistributorHandoverInboxPage = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {handovers.map((item) => {
+          {!loading && !error && handovers.map((item) => {
             const reg = item.registration || {};
             const pub = reg.publisher || {};
             const fromUser = item.from_user || {};
@@ -483,6 +494,7 @@ export const DistributorHandoverInboxPage = () => {
                 className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
               >
                 {/* Header Row: BAST No + Status */}
+                <QueueItemMeta item={item} />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">

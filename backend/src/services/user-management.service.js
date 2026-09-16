@@ -4,6 +4,7 @@ import { audit, fail, requireRole } from './workflow-utils.js';
 
 export const ALL_ROLE_CODES = [
   'SUPERADMIN',
+  'ADMIN',
   'ADMIN_PENERBIT',
   'VERIFIKATOR',
   'DISTRIBUTOR',

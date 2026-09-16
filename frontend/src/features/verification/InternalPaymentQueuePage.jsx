@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
 import {
   CreditCard,
   Search,
@@ -38,6 +39,8 @@ export const InternalPaymentQueuePage = () => {
   const [activeTab, setActiveTab] = useState('PAID'); // default tab 'PAID' (perlu verifikasi)
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBilling, setCopiedBilling] = useState(null);
+  const [submittedSearch, setSubmittedSearch] = useState('');
+  const requestId = useRef(0);
 
   // Modal Penolakan / Pengembalian Bukti Bayar
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -46,6 +49,7 @@ export const InternalPaymentQueuePage = () => {
   const [modalError, setModalError] = useState(null);
 
   const fetchPayments = async () => {
+    const request = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
@@ -56,11 +60,12 @@ export const InternalPaymentQueuePage = () => {
       if (activeTab !== 'ALL') {
         params.status = activeTab;
       }
-      if (searchQuery.trim()) {
-        params.search = searchQuery.trim();
+      if (submittedSearch) {
+        params.search = submittedSearch;
       }
 
       const res = await paymentApi.listPayments(params);
+      if (request !== requestId.current) return;
       if (res?.data) {
         setPayments(res.data.items || []);
         if (res.data.pagination) {
@@ -68,20 +73,22 @@ export const InternalPaymentQueuePage = () => {
         }
       }
     } catch (err) {
-      setError(err.message || 'Gagal memuat antrean pembayaran PNBP.');
+      if (request === requestId.current) setError(err.message || 'Gagal memuat antrean pembayaran PNBP.');
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchPayments();
-  }, [activeTab, pagination.page]);
+    return () => { requestId.current += 1; };
+  }, [activeTab, pagination.page, submittedSearch]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (pagination.page === 1 && submittedSearch === searchQuery.trim()) fetchPayments();
+    setSubmittedSearch(searchQuery.trim());
     setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchPayments();
   };
 
   const handleCopyText = (text, key) => {
@@ -290,13 +297,15 @@ export const InternalPaymentQueuePage = () => {
         </div>
       </div>
 
+      {!error && <QueueOverview total={pagination.total} oldest={payments[0]?.queue_entered_at || payments[0]?.paid_at || payments[0]?.created_at} fifo={activeTab !== 'VERIFIED'} loading={loading} />}
+
       {/* List Payments */}
       {loading ? (
         <div className="py-16 text-center space-y-3">
           <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-xs text-slate-500 font-medium">Memuat data verifikasi pembayaran...</p>
         </div>
-      ) : payments.length === 0 ? (
+      ) : error ? null : payments.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
           <Receipt className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="text-sm font-bold text-slate-800">Tidak Ada Antrean Pembayaran</h3>
@@ -321,6 +330,7 @@ export const InternalPaymentQueuePage = () => {
                 className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
               >
                 {/* Header Row */}
+                <QueueItemMeta item={item} />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
@@ -451,6 +461,8 @@ export const InternalPaymentQueuePage = () => {
           })}
         </div>
       )}
+
+      {!error && <QueuePagination pagination={pagination} loading={loading} onPageChange={page => setPagination(prev => ({ ...prev, page }))} />}
 
       {/* Modal Penolakan Bukti Pembayaran */}
       {rejectModalOpen && selectedPayment && (

@@ -14,7 +14,7 @@ const router = Router();
 
 // Semua endpoint pengajuan memerlukan otentikasi
 router.use(authenticate);
-router.use(authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ', 'DOKUMENTATOR'));
+router.use(authorize('ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ', 'DOKUMENTATOR'));
 
 // Daftar & Pembuatan Pengajuan
 router.get('/', registrationController.listRegistrations);
@@ -25,6 +25,7 @@ router.get('/:id', registrationController.getDetail);
 router.get('/:id/manuscripts', registrationController.listManuscriptFiles);
 router.post(
   '/:id/manuscripts',
+  authorize('ADMIN_PENERBIT'),
   validate(createManuscriptFileSchema),
   registrationController.addManuscriptFile
 );
@@ -33,6 +34,7 @@ router.post(
 router.post('/:id/submit', authorize('ADMIN_PENERBIT'), registrationController.submitRegistration);
 
 const transitionRoles = [
+  // ADMIN is intentionally excluded: team assignment is a separate domain action.
   'SUPERADMIN',
   'VERIFIKATOR',
   'DISTRIBUTOR',

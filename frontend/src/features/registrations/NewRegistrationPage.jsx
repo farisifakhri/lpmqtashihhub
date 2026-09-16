@@ -140,10 +140,10 @@ export const NewRegistrationPage = () => {
       const createdReg = createRes.data;
 
       if (isDirectSubmit) {
-        // 2. Submit langsung untuk mengunci snapshot tarif & SLA
-        await registrationApi.submitRegistration(createdReg.id);
+        // Continue to the owned detail page to upload required samples first.
+        // Final submission is an explicit action after the files are reviewed.
         setSuccessMsg(
-          `Pengajuan "${formData.title}" (${createdReg.registration_no}) berhasil dikirim dan siap diverifikasi!`
+          `Draf "${formData.title}" (${createdReg.registration_no}) dibuat. Lanjutkan melengkapi berkas sebelum mengirim.`
         );
       } else {
         setSuccessMsg(
@@ -151,9 +151,7 @@ export const NewRegistrationPage = () => {
         );
       }
 
-      setTimeout(() => {
-        navigate('/publisher');
-      }, 1500);
+      navigate(`/publisher/registrations/${createdReg.id}`);
     } catch (err) {
       setError(err.message || 'Gagal menyimpan pengajuan ke server.');
     } finally {
@@ -208,7 +206,7 @@ export const NewRegistrationPage = () => {
             icon={<Send className="w-3.5 h-3.5" />}
             className="text-xs font-bold"
           >
-            {isSubmitting ? 'Memproses...' : 'Kirim Pengajuan'}
+            {isSubmitting ? 'Memproses...' : 'Lanjutkan ke Berkas'}
           </Button>
         </div>
       </div>
@@ -427,7 +425,7 @@ export const NewRegistrationPage = () => {
               className="w-full justify-center py-3 text-sm font-bold shadow-sm"
               icon={<Send className="w-4 h-4" />}
             >
-              {isSubmitting ? 'Memproses Pengajuan...' : 'Kirim & Ajukan Pentashihan'}
+              {isSubmitting ? 'Memproses Pengajuan...' : 'Lanjutkan ke Berkas'}
             </Button>
 
             <Button
@@ -474,7 +472,7 @@ export const NewRegistrationPage = () => {
             className="text-xs font-bold px-4"
             icon={<Send className="w-3.5 h-3.5" />}
           >
-            {isSubmitting ? 'Memproses...' : 'Kirim'}
+            {isSubmitting ? 'Memproses...' : 'Lanjutkan'}
           </Button>
         </div>
       </div>

@@ -1,9 +1,19 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthContext";
 import { verificationApi } from "@/api/verification.api";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Button } from "@/components/ui/Button";
+=======
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/features/auth/AuthContext';
+import { verificationApi } from '@/api/verification.api';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { Button } from '@/components/ui/Button';
+import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
+>>>>>>> d04a5b965cd1d28b17d8c20bedb92d51b3252391
 import {
     ClipboardCheck,
     Search,
@@ -37,12 +47,131 @@ export const VerifikatorInboxPage = () => {
         userRoles.includes("ADMIN") ||
         currentUser?.role === "SUPERADMIN";
 
+<<<<<<< HEAD
     const [assignments, setAssignments] = useState([]);
     const [pagination, setPagination] = useState({
         total: 0,
         page: 1,
         limit: 20,
         totalPages: 1,
+=======
+  const [assignments, setAssignments] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState(isHead ? 'WAITING_APPROVAL' : 'ASSIGNED');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [startingId, setStartingId] = useState(null);
+  const [submittedSearch, setSubmittedSearch] = useState('');
+  const requestId = useRef(0);
+
+  const fetchAssignments = async () => {
+    const request = ++requestId.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+      if (activeTab === 'WAITING_APPROVAL') {
+        params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
+      } else if (activeTab !== 'ALL') {
+        params.status = activeTab;
+      }
+      if (submittedSearch) {
+        params.search = submittedSearch;
+      }
+
+      const res = await verificationApi.listAssignments(params);
+      if (request !== requestId.current) return;
+      if (res?.data) {
+        setAssignments(res.data.items || []);
+        if (res.data.pagination) {
+          setPagination(res.data.pagination);
+        }
+      }
+    } catch (err) {
+      if (request === requestId.current) setError(err.message || 'Gagal memuat daftar penugasan verifikasi.');
+    } finally {
+      if (request === requestId.current) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAssignments();
+    return () => { requestId.current += 1; };
+  }, [activeTab, pagination.page, submittedSearch]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (pagination.page === 1 && submittedSearch === searchQuery.trim()) fetchAssignments();
+    setSubmittedSearch(searchQuery.trim());
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
+  const handleStartVerification = async (assignmentId) => {
+    setStartingId(assignmentId);
+    try {
+      await verificationApi.startVerification(assignmentId);
+      navigate(`/internal/verifications/${assignmentId}`);
+    } catch (err) {
+      setError(err.message || 'Gagal memulai pemeriksaan.');
+      setStartingId(null);
+    }
+  };
+
+  // Helper SLA status dengan persentase sisa waktu (target 48 jam)
+  const getSlaInfo = (item) => {
+    if (!item.due_at) return null;
+    const now = new Date();
+    const due = new Date(item.due_at);
+    const diffMs = due.getTime() - now.getTime();
+    const isOverdue = diffMs < 0 && item.status !== 'COMPLETED';
+
+    const totalTargetMs = 48 * 60 * 60 * 1000;
+    const remainingPercent = Math.max(0, Math.min(100, Math.round((diffMs / totalTargetMs) * 100)));
+
+    if (isOverdue) {
+      const hoursOverdue = Math.abs(Math.floor(diffMs / (1000 * 60 * 60)));
+      return {
+        isOverdue: true,
+        text: `Terlambat ${hoursOverdue} jam (SLA 2 Hari Lewat)`,
+        badgeClass: 'bg-rose-50 text-rose-800 border-rose-200 font-bold',
+        barClass: 'bg-rose-600',
+        percent: 100,
+      };
+    }
+
+    const hoursRemaining = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
+    const daysRemaining = Math.floor(hoursRemaining / 24);
+    const remainingText =
+      daysRemaining > 0
+        ? `Sisa ${daysRemaining} hari ${hoursRemaining % 24} jam`
+        : `Sisa ${hoursRemaining} jam`;
+
+    return {
+      isOverdue: false,
+      text: remainingText,
+      badgeClass:
+        hoursRemaining < 12
+          ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
+          : 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold',
+      barClass: hoursRemaining < 12 ? 'bg-amber-500' : 'bg-emerald-600',
+      percent: remainingPercent,
+    };
+  };
+
+  // Format tanggal Indonesia
+  const formatDate = (dateString) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+>>>>>>> d04a5b965cd1d28b17d8c20bedb92d51b3252391
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -85,6 +214,7 @@ export const VerifikatorInboxPage = () => {
         }
     };
 
+<<<<<<< HEAD
     useEffect(() => {
         fetchAssignments();
     }, [activeTab, pagination.page]);
@@ -94,6 +224,107 @@ export const VerifikatorInboxPage = () => {
         setPagination((prev) => ({ ...prev, page: 1 }));
         fetchAssignments();
     };
+=======
+      {!error && <QueueOverview total={pagination.total} oldest={assignments[0]?.queue_entered_at || assignments[0]?.assigned_at} fifo={activeTab !== 'COMPLETED'} loading={loading} />}
+
+      {/* Filter & Search Bar */}
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          {/* Status Tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl text-xs font-semibold border border-slate-200/60">
+            {(isHead || isAdmin) && (
+              <button
+                onClick={() => {
+                  setActiveTab('WAITING_APPROVAL');
+                  setPagination((p) => ({ ...p, page: 1 }));
+                }}
+                className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
+                  activeTab === 'WAITING_APPROVAL'
+                    ? 'bg-amber-600 text-white shadow-2xs font-bold'
+                    : 'text-amber-800 hover:text-amber-950 font-semibold'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Menunggu Approval Kepala
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setActiveTab('ALL');
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              className={`px-3.5 py-1.5 rounded-lg transition-all ${
+                activeTab === 'ALL'
+                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Semua Tugas
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('ASSIGNED');
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
+                activeTab === 'ASSIGNED'
+                  ? 'bg-white text-cyan-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+              Menunggu Mulai
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('IN_PROGRESS');
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
+                activeTab === 'IN_PROGRESS'
+                  ? 'bg-white text-sky-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-sky-500"></span>
+              Sedang Diperiksa
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('COMPLETED');
+                setPagination((p) => ({ ...p, page: 1 }));
+              }}
+              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
+                activeTab === 'COMPLETED'
+                  ? 'bg-white text-emerald-900 shadow-2xs font-bold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Selesai / Diajukan
+            </button>
+          </div>
+
+          {/* Search Form */}
+          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-md w-full">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                aria-label="Cari penugasan verifikasi"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Cari no. registrasi, judul, atau penerbit..."
+                className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white transition-all"
+              />
+            </div>
+            <Button type="submit" variant="secondary" size="sm" className="text-xs">
+              Cari
+            </Button>
+          </form>
+        </div>
+      </div>
+>>>>>>> d04a5b965cd1d28b17d8c20bedb92d51b3252391
 
     const handleStartVerification = async (assignmentId) => {
         setStartingId(assignmentId);
@@ -114,6 +345,7 @@ export const VerifikatorInboxPage = () => {
         const diffMs = due.getTime() - now.getTime();
         const isOverdue = diffMs < 0 && item.status !== "COMPLETED";
 
+<<<<<<< HEAD
         const totalTargetMs = 48 * 60 * 60 * 1000;
         const remainingPercent = Math.max(
             0,
@@ -143,6 +375,74 @@ export const VerifikatorInboxPage = () => {
             daysRemaining > 0
                 ? `Sisa ${daysRemaining} hari ${hoursRemaining % 24} jam`
                 : `Sisa ${hoursRemaining} jam`;
+=======
+      {/* Empty State */}
+      {!loading && !error && assignments.length === 0 && (
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4 border border-emerald-200">
+            <ClipboardCheck className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-slate-800">Tidak Ada Penugasan Ditemukan</h3>
+          <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
+            {activeTab !== 'ALL'
+              ? `Belum ada penugasan dengan filter status "${activeTab}". Silakan pilih filter lain.`
+              : 'Belum ada naskah yang ditugaskan kepada Anda oleh Kepala LPMQ. Tugas baru akan muncul otomatis ketika Nota Dinas diterbitkan.'}
+          </p>
+          {activeTab !== 'ALL' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setActiveTab('ALL')}
+              className="mt-4 text-xs"
+            >
+              Tampilkan Semua Tugas
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Assignment Cards List */}
+      <div className="space-y-4">
+        {!loading && !error && assignments.map((item) => {
+          const reg = item.registration || {};
+          const notaDinas = item.documents?.[0];
+          const sla = getSlaInfo(item);
+          const physicalMaster = reg.physical_master_intake || {};
+
+          return (
+            <div
+              key={item.id}
+              className="bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-300 hover:shadow-md transition-all duration-200 overflow-hidden shadow-2xs"
+            >
+              <div className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                {/* Left Meta & Main Info */}
+                <div className="space-y-3 flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <QueueItemMeta item={item} />
+                    <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/80 shadow-2xs">
+                      {reg.registration_no || 'REG-BELUM-TERBIT'}
+                    </span>
+                    <StatusBadge status={reg.status} />
+                    {item.status === 'ASSIGNED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
+                        <Clock className="w-3 h-3 text-cyan-600" />
+                        Tugas Baru
+                      </span>
+                    )}
+                    {item.status === 'IN_PROGRESS' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-800 border border-sky-200">
+                        <Play className="w-3 h-3 text-sky-600" />
+                        Sedang Diperiksa
+                      </span>
+                    )}
+                    {item.status === 'COMPLETED' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        Pemeriksaan Selesai
+                      </span>
+                    )}
+                  </div>
+>>>>>>> d04a5b965cd1d28b17d8c20bedb92d51b3252391
 
         return {
             isOverdue: false,
