@@ -232,6 +232,7 @@ model Registration {
   registration_type        String                   @default("NEW") // NEW, EXTENSION
   previous_registration_id String?
   status RegistrationStatus @default(DRAFT)
+  stage_entered_at          DateTime                 @default(now())
   // Status: DRAFT, READY_FOR_VERIFICATION, VERIFICATION_ASSIGNED, IN_VERIFICATION,
   // REVISION_REQUIRED, WAITING_VERIFICATION_APPROVAL, VERIFICATION_APPROVED,
   // AWAITING_PAYMENT, PAYMENT_VERIFICATION, WAITING_DISTRIBUTOR_RECEIPT,
@@ -259,6 +260,7 @@ model Registration {
   official_documents       OfficialDocument[]
   notifications            Notification[]
 
+  @@index([status, stage_entered_at, id])
   @@map("registrations")
 }
 

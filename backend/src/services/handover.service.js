@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { fail, requireRole, registration, requireStatus, move, audit } from './workflow-utils.js';
+import { queueItems, queuePagination } from './queue-utils.js';
 
 /**
  * Verifikator mencatat penyerahan master fisik kepada Distributor (Langkah 7 SOP)
@@ -341,9 +342,7 @@ export const getRegistrationHandovers = async (registrationId, user) => {
 export const listHandovers = async (query, user) => {
   requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
 
-  const page = Number(query.page) || 1;
-  const limit = Math.min(100, Number(query.limit) || 20);
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = queuePagination(query);
 
   const where = {};
 
@@ -356,7 +355,7 @@ export const listHandovers = async (query, user) => {
   }
 
   // Jika my_tasks aktif atau role utama Distributor
-  if (query.my_tasks) {
+  if (query.my_tasks === true || query.my_tasks === 'true') {
     if (user.roles.includes('DISTRIBUTOR')) {
       where.to_user_id = user.id;
     } else if (user.roles.includes('VERIFIKATOR')) {
@@ -379,7 +378,7 @@ export const listHandovers = async (query, user) => {
       where,
       skip,
       take: limit,
-      orderBy: { created_at: 'desc' },
+      orderBy: [{ created_at: query.status === 'RECEIVED' || query.status === 'RETURNED' ? 'desc' : 'asc' }, { id: 'asc' }],
       include: {
         from_user: { select: { id: true, name: true, nip: true } },
         to_user: { select: { id: true, name: true, nip: true } },
@@ -398,12 +397,13 @@ export const listHandovers = async (query, user) => {
   ]);
 
   return {
-    items,
+    items: queueItems(items, item => item.created_at, skip, !['RECEIVED', 'RETURNED'].includes(query.status)),
     pagination: {
       page,
       limit,
       total,
       total_pages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / limit),
     },
   };
 };

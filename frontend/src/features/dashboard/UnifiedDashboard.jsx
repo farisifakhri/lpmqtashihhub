@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -31,6 +31,8 @@ import { registrationApi } from '@/api/registration.api';
 import { reportApi } from '@/api/report.api';
 import { GreetingHeroCard } from '@/components/dashboard/GreetingHeroCard';
 import { DailyQuranWidget } from '@/components/dashboard/DailyQuranWidget';
+import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
+import { RegistrationDetailDialog } from '@/components/common/RegistrationDetailDialog';
 
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
@@ -43,33 +45,56 @@ export const UnifiedDashboard = () => {
   // Super Admin dapat melihat perspektif Operasional Internal atau Perspektif Layanan Penerbit
   const [adminViewMode, setAdminViewMode] = useState('OPERATIONAL'); // 'OPERATIONAL' | 'PUBLISHER'
   const [filterMyTasksOnly, setFilterMyTasksOnly] = useState(false);
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [statusFilter, setStatusFilter] = useState(isPublisher && !isAdmin ? 'ALL' : 'ACTIVE');
   const [searchQuery, setSearchQuery] = useState('');
   const [registrations, setRegistrations] = useState([]);
   const [performanceReport, setPerformanceReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 0 });
+  const [counts, setCounts] = useState(null);
+  const requestId = useRef(0);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [detailId, setDetailId] = useState(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(searchQuery.trim()); setPage(1); }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const changeStatusFilter = value => { setStatusFilter(value); setPage(1); };
 
   const fetchRegistrations = async () => {
+    const request = ++requestId.current;
     setLoading(true);
     setError(null);
     try {
       const res = await registrationApi.listRegistrations({
         my_tasks: filterMyTasksOnly ? 'true' : undefined,
+        page,
+        limit: 20,
+        search: debouncedSearch || undefined,
+        segment: ['VERIFICATION', 'TASHIH', 'COMPLETED'].includes(statusFilter) ? statusFilter : undefined,
+        queue_only: statusFilter === 'ACTIVE' ? 'true' : undefined,
       });
+      if (request !== requestId.current) return;
       if (res?.data) {
         setRegistrations(res.data);
+        setPagination(res.pagination || { total: res.data.length, page, limit: 20, totalPages: 1 });
+        setCounts(res.summary?.by_status || null);
       }
     } catch (err) {
-      setError(err.message || 'Gagal memuat antrean data dari server');
+      if (request === requestId.current) setError(err.message || 'Gagal memuat antrean data dari server');
     } finally {
-      setLoading(false);
+      if (request === requestId.current) setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchRegistrations();
-  }, [currentUser, filterMyTasksOnly]);
+    return () => { requestId.current += 1; };
+  }, [currentUser, filterMyTasksOnly, page, statusFilter, debouncedSearch]);
 
   useEffect(() => {
     if (!isPublisher) {
@@ -87,22 +112,17 @@ export const UnifiedDashboard = () => {
   }, [currentUser, isPublisher]);
 
   // Kalkulasi Metrik Internal
-  const countVerification = registrations.filter((r) =>
-    ['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED'].includes(r.status)
-  ).length;
+  const countStatuses = statuses => counts
+    ? statuses.reduce((sum, status) => sum + (counts[status] || 0), 0)
+    : registrations.filter(item => statuses.includes(item.status)).length;
+  const countVerification = countStatuses(['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED']);
 
-  const countTashih = registrations.filter((r) =>
-    ['WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
-  ).length;
+  const countTashih = countStatuses(['WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);
 
-  const countSTT = registrations.filter((r) =>
-    ['READY_FOR_STT', 'STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(r.status)
-  ).length;
+  const countSTT = countStatuses(['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED']);
 
   // Kalkulasi Metrik Penerbit / PNBP
-  const inProgressCount = registrations.filter((r) =>
-    ['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(r.status)
-  ).length;
+  const inProgressCount = countStatuses(['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);
 
   const completedCount = countSTT;
 
@@ -217,38 +237,8 @@ export const UnifiedDashboard = () => {
     return items.filter((item) => item.allowed);
   }, [isPublisher, isAdmin, userRoles]);
 
-  // Filter tabel
-  const filteredRegistrations = useMemo(() => {
-    return registrations.filter((item) => {
-      // Filter status
-      if (statusFilter === 'VERIFICATION') {
-        if (!['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL', 'VERIFICATION_APPROVED'].includes(item.status)) {
-          return false;
-        }
-      } else if (statusFilter === 'TASHIH') {
-        if (!['WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(item.status)) {
-          return false;
-        }
-      } else if (statusFilter === 'COMPLETED') {
-        if (!['READY_FOR_STT', 'STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(item.status)) {
-          return false;
-        }
-      }
-
-      // Filter teks pencarian
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const no = (item.registration_no || item.registrationNumber || '').toLowerCase();
-        const title = (item.title || item.mushafTitle || '').toLowerCase();
-        const pub = (item.publisher?.legal_name || item.publisherName || '').toLowerCase();
-        if (!no.includes(query) && !title.includes(query) && !pub.includes(query)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [registrations, statusFilter, searchQuery]);
+  // Filtering happens before server pagination, so older tasks remain searchable.
+  const filteredRegistrations = registrations;
 
   // Label nama dan role pengguna untuk Greeting Card
   const greetingUserName = currentUser?.publisherName || currentUser?.name || 'Pengguna Terdaftar';
@@ -469,7 +459,7 @@ export const UnifiedDashboard = () => {
                   {formatRupiah(totalBilling)}
                 </div>
                 <div className="text-xs font-bold text-amber-900 mt-1">Billing PNBP Terdaftar</div>
-                <div className="text-[11px] text-neutral-500 mt-0.5">Total tarif naskah resmi</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Nominal naskah pada halaman ini</div>
               </div>
             </div>
 
@@ -616,6 +606,8 @@ export const UnifiedDashboard = () => {
         </div>
       )}
 
+      {!error && <QueueOverview total={pagination.total} oldest={registrations[0]?.queue_entered_at} fifo={!isPublisher || isSuperAdmin} loading={loading} />}
+
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
       <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
         {/* Header & Filter Controls */}
@@ -628,15 +620,16 @@ export const UnifiedDashboard = () => {
                   : 'Antrean Kerja Pentashihan'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Data operasional terintegrasi • {registrations.length} naskah tercatat
+                {pagination.total} naskah dalam filter • maksimal 20 per halaman
               </p>
             </div>
 
             {/* Search Input */}
-            <div className="relative min-w-[260px]">
+            <div className="relative w-full md:w-auto md:min-w-[260px]">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
+                aria-label="Cari pengajuan naskah"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nomor, judul, penerbit..."
@@ -653,17 +646,21 @@ export const UnifiedDashboard = () => {
                 Segmentasi:
               </span>
               <button
-                onClick={() => setStatusFilter('ALL')}
+                onClick={() => changeStatusFilter('ACTIVE')}
+                className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${statusFilter === 'ACTIVE' ? 'bg-emerald-700 text-white' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'}`}
+              >Antrean Aktif</button>
+              <button
+                onClick={() => changeStatusFilter('ALL')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'ALL'
                     ? 'bg-slate-900 text-white shadow-xs'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Semua ({registrations.length})
+                Semua & Riwayat
               </button>
               <button
-                onClick={() => setStatusFilter('VERIFICATION')}
+                onClick={() => changeStatusFilter('VERIFICATION')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'VERIFICATION'
                     ? 'bg-sky-700 text-white shadow-xs'
@@ -673,7 +670,7 @@ export const UnifiedDashboard = () => {
                 Verifikasi ({countVerification})
               </button>
               <button
-                onClick={() => setStatusFilter('TASHIH')}
+                onClick={() => changeStatusFilter('TASHIH')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'TASHIH'
                     ? 'bg-amber-600 text-white shadow-xs'
@@ -683,7 +680,7 @@ export const UnifiedDashboard = () => {
                 Sidang Tashih ({countTashih})
               </button>
               <button
-                onClick={() => setStatusFilter('COMPLETED')}
+                onClick={() => changeStatusFilter('COMPLETED')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'COMPLETED'
                     ? 'bg-emerald-700 text-white shadow-xs'
@@ -696,7 +693,7 @@ export const UnifiedDashboard = () => {
 
             {!isPublisher && (
               <button
-                onClick={() => setFilterMyTasksOnly(!filterMyTasksOnly)}
+                onClick={() => { setFilterMyTasksOnly(!filterMyTasksOnly); setPage(1); }}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                   filterMyTasksOnly
                     ? 'bg-gradient-to-r from-amber-500 to-yellow-600 text-white border-amber-600 shadow-xs'
@@ -715,7 +712,7 @@ export const UnifiedDashboard = () => {
             <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-emerald-700" />
             <p className="text-xs font-semibold">Memuat data naskah pentashihan...</p>
           </div>
-        ) : filteredRegistrations.length === 0 ? (
+        ) : error ? null : filteredRegistrations.length === 0 ? (
           <div className="py-16 text-center text-slate-500 max-w-sm mx-auto">
             <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
               <CheckSquare className="w-6 h-6" />
@@ -772,9 +769,10 @@ export const UnifiedDashboard = () => {
                     </td>
                     <td className="py-4 px-6">
                       <StatusBadge status={item.status} />
+                      <div className="mt-2"><QueueItemMeta item={item} /></div>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <Button variant="outline" size="sm" className="text-xs">
+                      <Button variant="outline" size="sm" className="text-xs" onClick={() => setDetailId(item.id)}>
                         Tinjau Detail
                       </Button>
                     </td>
@@ -785,6 +783,8 @@ export const UnifiedDashboard = () => {
           </div>
         )}
       </div>
+      {!error && <QueuePagination pagination={pagination} loading={loading} onPageChange={setPage} />}
+      {detailId && <RegistrationDetailDialog key={detailId} id={detailId} onClose={() => setDetailId(null)} />}
     </div>
   );
 };

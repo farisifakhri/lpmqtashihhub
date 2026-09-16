@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { UnifiedDashboard } from './UnifiedDashboard';
 import * as AuthContextModule from '@/features/auth/AuthContext';
@@ -86,5 +86,17 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
 
     expect(screen.getByText('Alur Sidang Internal')).toBeInTheDocument();
     expect(screen.getByText('Layanan Penerbit & PNBP')).toBeInTheDocument();
+  });
+
+  it('filters active work server-side and fetches the next FIFO page', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'staff', roles: ['VERIFIKATOR'], role: 'VERIFIKATOR' } });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Naskah FIFO', status: 'READY_FOR_VERIFICATION', created_at: new Date().toISOString() }], pagination: { page: 1, limit: 20, total: 25, totalPages: 2 } });
+    render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
+    await screen.findByText('Naskah FIFO');
+    expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenCalledWith(expect.objectContaining({ queue_only: 'true', limit: 20, page: 1 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Selanjutnya' }));
+    await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
+    fireEvent.click(screen.getByRole('button', { name: /Verifikasi \(/ }));
+    await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, segment: 'VERIFICATION' })));
   });
 });

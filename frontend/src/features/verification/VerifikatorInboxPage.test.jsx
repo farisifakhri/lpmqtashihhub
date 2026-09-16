@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { VerifikatorInboxPage } from './VerifikatorInboxPage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
@@ -67,6 +67,22 @@ describe('VerifikatorInboxPage Component', () => {
       expect(screen.getByText(/ND-VERIF-2026-001/i)).toBeInTheDocument();
       expect(screen.getByText('Mulai Pemeriksaan')).toBeInTheDocument();
     });
+  });
+
+  it('defaults to active assignments and searches from page one', async () => {
+    render(<MemoryRouter><VerifikatorInboxPage /></MemoryRouter>);
+    await screen.findByText('REG-2026-001');
+    expect(VerificationApiModule.verificationApi.listAssignments).toHaveBeenCalledWith(expect.objectContaining({ status: 'ASSIGNED', page: 1 }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Cari penugasan verifikasi' }), { target: { value: 'Naskah lama' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Cari' }));
+    await waitFor(() => expect(VerificationApiModule.verificationApi.listAssignments).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, search: 'Naskah lama' })));
+  });
+
+  it('does not display an empty queue when loading failed', async () => {
+    VerificationApiModule.verificationApi.listAssignments.mockRejectedValue(new Error('Jaringan tidak tersedia'));
+    render(<MemoryRouter><VerifikatorInboxPage /></MemoryRouter>);
+    await screen.findByText('Jaringan tidak tersedia');
+    expect(screen.queryByText('Tidak Ada Penugasan Ditemukan')).not.toBeInTheDocument();
   });
 });
 

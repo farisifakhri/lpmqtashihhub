@@ -8,6 +8,8 @@ export const registrationApi = {
     if (params.search) query.append('search', params.search);
     if (params.page) query.append('page', params.page);
     if (params.limit) query.append('limit', params.limit);
+    if (params.segment) query.append('segment', params.segment);
+    if (params.queue_only !== undefined) query.append('queue_only', params.queue_only);
 
     const queryString = query.toString();
     const endpoint = queryString ? `/registrations?${queryString}` : '/registrations';
