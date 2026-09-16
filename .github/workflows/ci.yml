@@ -2,23 +2,23 @@ name: Continuous Integration (LPMQ CI)
 
 on:
   push:
-    branches: [ main, feature/**, implementationSprint0 ]
+    branches: [ main, feature/**, feat/**, implementationSprint0 ]
   pull_request:
-    branches: [ main, feature/**, implementationSprint0 ]
+    branches: [ main ]
 
 jobs:
   backend-test:
     name: Backend Lint, Schema & Integration Test
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
+      DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
 
     services:
       mysql:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: lpmq_db
+          MYSQL_DATABASE: lpmq_db_test
         ports:
           - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
@@ -49,25 +49,31 @@ jobs:
       - name: Apply Prisma Migrations
         working-directory: backend
         env:
-          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
         run: npx prisma migrate deploy
 
       - name: Seed Database
         working-directory: backend
         env:
-          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
           SEED_DEFAULT_PASSWORD: "password123"
         run: node prisma/seed.js
+
+      - name: Run Backend Unit Tests
+        working-directory: backend
+        env:
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
+          JWT_SECRET: "test_jwt_secret_key_ci_environment_32chars"
+          NODE_ENV: test
+        run: npm run test:unit
 
       - name: Run Backend Integration & Negative Tests
         working-directory: backend
         env:
-          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db"
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
           JWT_SECRET: "test_jwt_secret_key_ci_environment_32chars"
           NODE_ENV: test
-        run: |
-          npm run test:unit
-          npm test
+        run: npm test
 
   frontend-test:
     name: Frontend Test & Build
