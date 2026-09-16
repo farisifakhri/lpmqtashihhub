@@ -37,9 +37,9 @@ export function QueueItemMeta({ item }) {
   </span>;
 }
 
-export function QueuePagination({ pagination, loading, onPageChange }) {
+export function QueuePagination({ pagination, loading, onPageChange, label = 'Navigasi halaman antrean' }) {
   const totalPages = pagination.totalPages ?? pagination.total_pages ?? 0;
-  return <nav aria-label="Navigasi halaman antrean" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
+  return <nav aria-label={label} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-xs text-slate-600">
     <span aria-live="polite">Halaman {pagination.page} dari {Math.max(1, totalPages)} · {pagination.total} naskah</span>
     <div className="flex gap-2">
       <button type="button" disabled={loading || pagination.page <= 1} onClick={() => onPageChange(pagination.page - 1)} className="rounded-lg border border-slate-300 px-3 py-2 font-semibold hover:bg-slate-50 disabled:opacity-40">Sebelumnya</button>

@@ -1,6 +1,7 @@
 import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
+import { requireManualTeamAssignment } from '../middlewares/admin-internal.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, assignmentSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
 import { updateCalendar } from '../services/calendar.service.js';
@@ -17,8 +18,8 @@ const action = (fn, status = 200) => async (req, res, next) => {
   try { res.status(status).json({ success: true, data: await fn(req) }); } catch (error) { next(error); }
 };
 router.put('/master/working-days', authenticate, authorize('SUPERADMIN'), validate(calendarSchema), action(req => updateCalendar(req.body.days, req.user)));
-router.get('/notifications', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), action(req => prisma.notification.findMany({ where: { user_id: req.user.id }, orderBy: { created_at: 'desc' }, take: 50 })));
-router.patch('/notifications/:id/read', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), validate(emptyAction), action(async req => {
+router.get('/notifications', authenticate, authorize('ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), action(req => prisma.notification.findMany({ where: { user_id: req.user.id }, orderBy: { created_at: 'desc' }, take: 50 })));
+router.patch('/notifications/:id/read', authenticate, authorize('ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), validate(emptyAction), action(async req => {
   const notification = await prisma.notification.findFirst({ where: { id: req.params.id, user_id: req.user.id } });
   if (!notification) fail(404, 'Notifikasi tidak ditemukan.');
   await prisma.notification.updateMany({ where: { id: notification.id, user_id: req.user.id, read_at: null }, data: { read_at: new Date() } });
@@ -34,8 +35,8 @@ router.post('/payments/:id/confirm', authenticate, authorize('ADMIN_PENERBIT'), 
 router.post('/payments/:id/return', authenticate, authorize('VERIFIKATOR'), validate(returnPaymentSchema), action(req => payment.returnPayment(req.params.id, req.body, req.user, req)));
 router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user, req)));
 
-router.post('/registrations/:id/assignments', authenticate, authorize('DISTRIBUTOR'), validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
-router.get('/distribution-teams/:id/workload', authenticate, authorize('DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
+router.post('/registrations/:id/assignments', authenticate, requireManualTeamAssignment, validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
+router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN', 'DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(reviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
 router.post('/registrations/:id/official-documents', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
@@ -43,7 +44,7 @@ router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ
 router.get('/official-documents/:id/pdf', authenticate, authorize('ADMIN_PENERBIT', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
-    const bytes = await documents.renderDraft(document);
+    const bytes = await documents.documentPdf(document);
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.document_no}.pdf"`, 'Cache-Control': 'private, no-store' });
     res.send(bytes);
   } catch (error) { next(error); }

@@ -593,7 +593,9 @@ export const listRegistrations = async ({
   const where = {};
 
   // Scope filter berdasarkan Role
-  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
+  const publisherScope = user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN');
+  if (publisherScope) {
+    if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
 
@@ -611,7 +613,9 @@ export const listRegistrations = async ({
   }
 
   const summaryWhere = { ...where };
-  if (status) {
+  if (segment === 'PUBLISHER_DOCUMENTS') {
+    where.official_documents = { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } };
+  } else if (status) {
     where.status = status;
   } else if (REGISTRATION_SEGMENTS[segment]) {
     where.status = { in: REGISTRATION_SEGMENTS[segment] };
@@ -631,13 +635,20 @@ export const listRegistrations = async ({
   const { skip, limit: take } = paging;
   const fifo = !user.roles.includes('ADMIN_PENERBIT') || user.roles.includes('SUPERADMIN');
 
-  const [total, items, counts] = await Promise.all([
+  const [total, items, counts, issuedSTT] = await Promise.all([
     prisma.registration.count({ where }),
     prisma.registration.findMany({
       where,
       skip,
       take,
       include: {
+        ...(publisherScope || segment === 'PUBLISHER_DOCUMENTS' ? {
+          official_documents: {
+            where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
+            select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
+            orderBy: { version: 'desc' },
+          },
+        } : {}),
         publisher: { select: { id: true, legal_name: true, entity_type: true } },
         service_type: { select: { id: true, name: true, service_kind: true } },
         verification_assignments: {
@@ -650,11 +661,12 @@ export const listRegistrations = async ({
       orderBy: fifo ? [{ stage_entered_at: 'asc' }, { id: 'asc' }] : [{ created_at: 'desc' }, { id: 'asc' }],
     }),
     prisma.registration.groupBy({ by: ['status'], where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}) }, _count: true }),
+    publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
   ]);
 
   return {
     items: queueItems(items, item => item.stage_entered_at, skip, fifo),
-    summary: { by_status: Object.fromEntries(counts.map(item => [item.status, item._count])) },
+    summary: { by_status: Object.fromEntries(counts.map(item => [item.status, item._count])), ...(issuedSTT !== null ? { issued_stt: issuedSTT } : {}) },
     pagination: {
       total,
       page: paging.page,

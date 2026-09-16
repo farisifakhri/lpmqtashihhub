@@ -1,9 +1,10 @@
 import { prisma } from '../config/database.js';
 import { calculateDueAt } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit } from './workflow-utils.js';
+import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   const reg = await registration(tx, id);
   requireStatus(reg, ['WAITING_DISTRIBUTION']);
   if (!await tx.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } })) fail(409, 'Penugasan belum dapat dibuat karena pembayaran belum dinyatakan lunas. Minta verifikator memeriksa bukti pembayaran terlebih dahulu.');
@@ -30,7 +31,8 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 }, { isolationLevel: 'ReadCommitted' });
 
 export async function workload(id, user) {
-  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  // Read-only workload remains available to Distributor for their own duties.
+  requireRole(user, ['ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
   if (!await prisma.distributionTeam.findUnique({ where: { id } })) fail(404, 'Tim tidak ditemukan.');
   return prisma.assignment.groupBy({ by: ['assignee_id', 'status'], where: { team_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } }, _count: { _all: true } });
 }

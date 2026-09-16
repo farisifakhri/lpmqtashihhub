@@ -33,6 +33,7 @@ import { GreetingHeroCard } from '@/components/dashboard/GreetingHeroCard';
 import { DailyQuranWidget } from '@/components/dashboard/DailyQuranWidget';
 import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
 import { RegistrationDetailDialog } from '@/components/common/RegistrationDetailDialog';
+import { ManualTeamAssignmentDialog } from '@/features/distribution/ManualTeamAssignmentDialog';
 
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
@@ -57,6 +58,9 @@ export const UnifiedDashboard = () => {
   const requestId = useRef(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [detailId, setDetailId] = useState(null);
+  const [assignmentId, setAssignmentId] = useState(null);
+  const [assignmentSuccess, setAssignmentSuccess] = useState('');
+  const canAssignTeam = isAdmin;
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(searchQuery.trim()); setPage(1); }, 300);
@@ -179,13 +183,22 @@ export const UnifiedDashboard = () => {
 
     const items = [
       {
+        title: 'Penugasan Tim',
+        desc: 'Tetapkan tim pentashih pada naskah yang siap distribusi',
+        icon: Users,
+        path: '/internal#antrean-tim',
+        iconBg: 'bg-emerald-700 text-white',
+        cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
+        allowed: canAssignTeam,
+      },
+      {
         title: isKepala ? 'Persetujuan Verifikasi' : 'Verifikasi Berkas',
         desc: isKepala ? 'Nota dinas penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
         iconBg: 'bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-xs',
         cardHover: 'hover:border-sky-400 hover:bg-sky-50/40',
-        allowed: isAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
+        allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
         title: 'Distribusi Sidang',
@@ -194,7 +207,7 @@ export const UnifiedDashboard = () => {
         path: '/internal/distributions',
         iconBg: 'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-xs',
         cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
-        allowed: isAdmin || userRoles.includes('DISTRIBUTOR') || isKepala,
+        allowed: isSuperAdmin || userRoles.includes('DISTRIBUTOR') || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
         title: 'Sidang Pentashihan',
@@ -203,7 +216,7 @@ export const UnifiedDashboard = () => {
         path: '/internal/tashih',
         iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xs',
         cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
-        allowed: isAdmin || userRoles.includes('PENTASHIH'),
+        allowed: isSuperAdmin || userRoles.includes('PENTASHIH'),
       },
       {
         title: 'Penetapan STT',
@@ -212,7 +225,7 @@ export const UnifiedDashboard = () => {
         path: '/internal/documents',
         iconBg: 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white shadow-xs',
         cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
-        allowed: isAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
+        allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
         title: 'Master Data Layanan',
@@ -221,7 +234,7 @@ export const UnifiedDashboard = () => {
         path: '/internal/settings',
         iconBg: 'bg-gradient-to-br from-slate-700 to-indigo-800 text-white shadow-xs',
         cardHover: 'hover:border-indigo-400 hover:bg-indigo-50/40',
-        allowed: isAdmin,
+        allowed: isSuperAdmin,
       },
       {
         title: 'Identitas dan Akses',
@@ -230,7 +243,7 @@ export const UnifiedDashboard = () => {
         path: '/internal/users',
         iconBg: 'bg-gradient-to-br from-emerald-700 to-teal-800 text-white shadow-xs',
         cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
-        allowed: isAdmin,
+        allowed: isSuperAdmin,
       },
     ];
 
@@ -609,7 +622,8 @@ export const UnifiedDashboard = () => {
       {!error && <QueueOverview total={pagination.total} oldest={registrations[0]?.queue_entered_at} fifo={!isPublisher || isSuperAdmin} loading={loading} />}
 
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+      {assignmentSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{assignmentSuccess}</p>}
+      <div id="antrean-tim" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-6">
         {/* Header & Filter Controls */}
         <div className="p-5 sm:p-6 border-b border-slate-100 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -772,6 +786,7 @@ export const UnifiedDashboard = () => {
                       <div className="mt-2"><QueueItemMeta item={item} /></div>
                     </td>
                     <td className="py-4 px-6 text-right">
+                      {canAssignTeam && item.status === 'WAITING_DISTRIBUTION' && <Button variant="primary" size="sm" className="text-xs mb-2" onClick={() => setAssignmentId(item.id)}>Tetapkan Tim</Button>}
                       <Button variant="outline" size="sm" className="text-xs" onClick={() => setDetailId(item.id)}>
                         Tinjau Detail
                       </Button>
@@ -785,6 +800,7 @@ export const UnifiedDashboard = () => {
       </div>
       {!error && <QueuePagination pagination={pagination} loading={loading} onPageChange={setPage} />}
       {detailId && <RegistrationDetailDialog key={detailId} id={detailId} onClose={() => setDetailId(null)} />}
+      {assignmentId && <ManualTeamAssignmentDialog key={assignmentId} id={assignmentId} onClose={() => setAssignmentId(null)} onAssigned={() => { setAssignmentId(null); setAssignmentSuccess('Tim pentashih berhasil ditetapkan. Penugasan dan notifikasi telah dicatat.'); fetchRegistrations(); }} />}
     </div>
   );
 };

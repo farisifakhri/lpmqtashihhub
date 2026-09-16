@@ -39,6 +39,9 @@ export const registrationApi = {
       body: { to_status, notes },
     });
   },
+  addManuscript: async (id, payload) => apiClient(`/registrations/${id}/manuscripts`, { method: 'POST', body: payload }),
+  declarePhysicalMaster: async (id, payload) => apiClient(`/registrations/${id}/physical-master`, { method: 'PUT', body: payload }),
+  createAssignments: async (id, payload) => apiClient(`/registrations/${id}/assignments`, { method: 'POST', body: payload }),
 };
 
 export default registrationApi;

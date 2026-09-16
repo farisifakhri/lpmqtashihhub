@@ -47,7 +47,7 @@ model User {
 
 model Role {
   id         String     @id @default(uuid())
-  code       String     @unique // SUPERADMIN, ADMIN_PENERBIT, VERIFIKATOR, DISTRIBUTOR, PENTASHIH, DOKUMENTATOR, KEPALA_LPMQ
+  code       RoleCode   @unique
   name       String
   created_at DateTime   @default(now())
   updated_at DateTime   @updatedAt
@@ -591,6 +591,18 @@ model StoredFile {
 
   @@index([owner_id])
   @@map("stored_files")
+}
+
+// Keep the Role / UserRole tables and multi-role memberships intact.
+enum RoleCode {
+  SUPERADMIN
+  ADMIN
+  ADMIN_PENERBIT
+  VERIFIKATOR
+  DISTRIBUTOR
+  PENTASHIH
+  DOKUMENTATOR
+  KEPALA_LPMQ
 }
 
 enum UserStatus {
