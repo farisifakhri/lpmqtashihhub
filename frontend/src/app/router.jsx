@@ -147,7 +147,7 @@ export const router = createBrowserRouter([
       {
         path: 'internal/master-intake',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN', 'SUPERADMIN', 'VERIFIKATOR']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN', 'SUPERADMIN']}>
             <AdminMasterIntakePage />
           </ProtectedRoute>
         ),

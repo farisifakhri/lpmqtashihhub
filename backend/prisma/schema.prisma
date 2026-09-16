@@ -327,9 +327,10 @@ model VerificationAssignment {
   started_at      DateTime?
   due_at          DateTime?
   assignment_notes String?
-  status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED
+  status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, WAITING_APPROVAL, WAITING_SIGNATURE, READY_TO_SEND, COMPLETED
   decision        VerificationDecision? // PASSED, REVISION_REQUIRED, REJECTED
   notes           String?
+  return_reason   String?   @db.Text   // Alasan pengembalian draft oleh Kepala LPMQ
   assigned_at     DateTime     @default(now())
   completed_at    DateTime?
 
@@ -739,6 +740,9 @@ enum PhysicalHandoverStatus {
 enum VerificationAssignmentStatus {
   ASSIGNED
   IN_PROGRESS
+  WAITING_APPROVAL    // Draft diajukan, menunggu persetujuan Kepala LPMQ
+  WAITING_SIGNATURE   // Disetujui, proses tanda tangan multi-pihak per dokumen
+  READY_TO_SEND       // Semua tanda tangan selesai, Verifikator kirim email
   COMPLETED
 }
 

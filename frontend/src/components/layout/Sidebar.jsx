@@ -35,6 +35,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     role === 'SUPERADMIN' ||
     roles.includes('SUPERADMIN');
 
+  const isAdmin =
+    role === 'ADMIN' ||
+    roles.includes('ADMIN');
+
   const isVerifikator =
     role === 'VERIFIKATOR' ||
     role === 'VERIFICATOR' ||
@@ -160,12 +164,18 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
         description: isKepala ? 'Nota dinas penugasan & approval draf' : 'Kelengkapan berkas & rasm',
       });
+    }
+
+    if (isAdmin || isSuperAdmin) {
       workflowItems.push({
         label: '1a. Intake Master Fisik',
         path: '/internal/master-intake',
         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
         description: 'Pencocokan print-out master A4',
       });
+    }
+
+    if (isAdmin || isSuperAdmin || isVerifikator || isKepala) {
       workflowItems.push({
         label: '1b. Verifikasi Pembayaran',
         path: '/internal/payments',

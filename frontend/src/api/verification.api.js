@@ -62,7 +62,7 @@ export const verificationApi = {
   },
 
   /**
-   * Menyetujui dan menandatangani surat hasil verifikasi oleh Kepala LPMQ
+   * Menyetujui draf hasil verifikasi oleh Kepala LPMQ (melanjutkan ke proses penandatanganan)
    * @param {string} documentId - Verification Document ID
    */
   approveDocument: async (documentId) => {
@@ -140,6 +140,40 @@ export const verificationApi = {
    */
   getRegistrationReceipt: async (registrationId) => {
     return apiClient(`/registrations/${registrationId}/receipt`);
+  },
+
+  /**
+   * Menugaskan Verifikator dan menerbitkan Nota Dinas oleh Kepala LPMQ
+   * @param {string} registrationId
+   * @param {Object} payload - { verifier_id, nota_no, notes }
+   */
+  createAssignment: async (registrationId, payload) => {
+    return apiClient(`/registrations/${registrationId}/verification-assignments`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengambil direktori verifikator aktif beserta beban tugas aktif
+   */
+  getVerifiers: async () => {
+    return apiClient('/verification/verifiers');
+  },
+
+  /**
+   * Mengambil antrean pendaftaran yang master fisiknya sudah diterima namun belum memiliki penugasan
+   * @param {Object} params - { search, page, limit }
+   */
+  listUnassignedRegistrations: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.page) query.append('page', params.page);
+    if (params.limit) query.append('limit', params.limit);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/verification/unassigned-registrations?${queryString}` : '/verification/unassigned-registrations';
+    return apiClient(endpoint);
   },
 };
 

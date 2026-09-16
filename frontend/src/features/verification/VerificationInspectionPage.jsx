@@ -330,13 +330,13 @@ export const VerificationInspectionPage = () => {
 
   const handleApproveDocument = async () => {
     if (!latestResultDoc?.id) return;
-    if (!window.confirm('Apakah Anda yakin ingin menyetujui dan menandatangani surat hasil verifikasi ini secara resmi?')) return;
+    if (!window.confirm('Setujui draft dan lanjutkan ke proses tanda tangan?')) return;
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
       await verificationApi.approveDocument(latestResultDoc.id);
-      setSuccessMessage('Surat hasil verifikasi berhasil disetujui dan disahkan oleh Kepala LPMQ.');
+      setSuccessMessage('Draf surat hasil verifikasi berhasil disetujui. Proses penandatanganan dokumen telah dimulai.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
@@ -650,6 +650,54 @@ export const VerificationInspectionPage = () => {
 
       {/* Workflow Stepper */}
       <WorkflowStepper currentStatus={registration.status} currentStageId={2} />
+
+      {/* Return reason alert banner if returned by Kepala */}
+      {assignment.status === 'IN_PROGRESS' && assignment.return_reason && (
+        <div className="p-4 rounded-xl border border-rose-300 bg-rose-50/70 text-rose-900 flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-rose-900">
+              Draf Dikembalikan oleh Kepala LPMQ
+            </h4>
+            <p className="text-rose-800 leading-relaxed">
+              <strong>Catatan Perbaikan:</strong> &ldquo;{assignment.return_reason}&rdquo;
+            </p>
+            <p className="text-rose-600 text-[11px]">
+              Silakan periksa kembali berkas/checklist yang perlu disesuaikan, lalu ajukan draf perbaikan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info banner if WAITING_APPROVAL */}
+      {assignment.status === 'WAITING_APPROVAL' && !canHeadApprove && (
+        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 flex items-start gap-3 shadow-2xs">
+          <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-amber-900">
+              Draf Sedang Diperiksa Kepala LPMQ
+            </h4>
+            <p className="text-amber-800 leading-relaxed">
+              Draf hasil telaah dan Berita Acara telah diajukan. Tidak ada tindakan yang diperlukan dari Verifikator saat ini.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info banner if READY_TO_SEND */}
+      {assignment.status === 'READY_TO_SEND' && (
+        <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-start gap-3 shadow-2xs">
+          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-emerald-900">
+              Dokumen Telah Lengkap Ditandatangani
+            </h4>
+            <p className="text-emerald-800 leading-relaxed">
+              Surat Pemberitahuan dan Berita Acara telah ditandatangani secara digital. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Responsive View Switcher for Screen < 1024px */}
       <div className="lg:hidden flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
@@ -1288,9 +1336,21 @@ export const VerificationInspectionPage = () => {
                 {isDirty ? 'Ada perubahan belum disimpan' : 'Tersimpan otomatis'}
               </span>
             </div>
-          ) : isHead && canHeadApprove ? (
+          ) : canHeadApprove ? (
             <span className="font-bold text-amber-900">
-              Menunggu Pengesahan Tanda Tangan Elektronik Kepala LPMQ
+              Menunggu Persetujuan Draf oleh Kepala LPMQ
+            </span>
+          ) : assignment.status === 'WAITING_APPROVAL' ? (
+            <span className="font-bold text-amber-900">
+              Draf Sedang Diperiksa Kepala LPMQ
+            </span>
+          ) : assignment.status === 'WAITING_SIGNATURE' ? (
+            <span className="font-bold text-indigo-900">
+              Menunggu Penandatanganan Dokumen Resmi
+            </span>
+          ) : assignment.status === 'READY_TO_SEND' ? (
+            <span className="font-bold text-emerald-900">
+              Dokumen Telah Lengkap Ditandatangani — Siap Dikirim ke Penerbit
             </span>
           ) : isSent ? (
             <span className="font-bold text-emerald-900">
@@ -1343,7 +1403,7 @@ export const VerificationInspectionPage = () => {
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat'}
+              {actionLoading ? 'Memproses...' : 'Setujui Draf Hasil Verifikasi'}
             </Button>
           ) : canVerifierSend ? (
             <Button

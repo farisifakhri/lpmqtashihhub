@@ -65,6 +65,35 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         title: data.decision === 'RECEIVED' ? 'Master fisik telah diterima LPMQ' : 'Master fisik perlu diperbaiki',
         payload: { status: data.decision, receipt_no: intake.receipt_no, notes: intake.notes },
       } });
+
+      // Notifikasi ke Kepala LPMQ: master fisik diterima, siap ditugaskan
+      if (data.decision === 'RECEIVED') {
+        const kepalaUsers = await tx.user.findMany({
+          where: {
+            status: 'ACTIVE',
+            roles: { some: { role: { code: 'KEPALA_LPMQ' } } },
+          },
+          select: { id: true },
+        });
+        for (const k of kepalaUsers) {
+          await tx.notification.create({
+            data: {
+              user_id: k.id,
+              registration_id: id,
+              type: 'PHYSICAL_MASTER_RECEIVED',
+              title: `Master fisik diterima — Siap ditugaskan verifikasi: ${reg.registration_no}`,
+              payload: {
+                registration_id: id,
+                registration_no: reg.registration_no,
+                title: reg.title,
+                receipt_no: intake.receipt_no,
+                link: '/internal/verifications?tab=NEED_ASSIGNMENT',
+              },
+            },
+          });
+        }
+      }
+
       return intake;
     }, transactionOptions);
   } catch (error) {
@@ -222,3 +251,88 @@ export const listVerificationAssignments = async (query, user) => {
   ]);
   return { items: queueItems(items, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
 };
+
+export const listVerifiers = async (user) => {
+  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  const verifiers = await prisma.user.findMany({
+    where: {
+      status: 'ACTIVE',
+      roles: { some: { role: { code: 'VERIFIKATOR' } } },
+    },
+    select: {
+      id: true,
+      name: true,
+      nip: true,
+      status: true,
+      verification_assignments: {
+        where: {
+          status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
+        },
+        select: { id: true },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  return verifiers.map(v => ({
+    id: v.id,
+    name: v.name,
+    nip: v.nip,
+    status: v.status,
+    active_assignments_count: v.verification_assignments.length,
+  }));
+};
+
+export const listUnassignedRegistrations = async (query = {}, user) => {
+  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+  const skip = (page - 1) * limit;
+
+  const where = {
+    status: 'READY_FOR_VERIFICATION',
+    physical_master_intake: {
+      status: 'RECEIVED',
+    },
+    verification_assignments: {
+      none: {
+        status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
+      },
+    },
+  };
+
+  if (query.search) {
+    where.OR = [
+      { registration_no: { contains: query.search } },
+      { title: { contains: query.search } },
+      { publisher: { legal_name: { contains: query.search } } },
+    ];
+  }
+
+  const [total, items] = await Promise.all([
+    prisma.registration.count({ where }),
+    prisma.registration.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: [{ stage_entered_at: 'asc' }, { id: 'asc' }],
+      include: {
+        publisher: { select: { legal_name: true } },
+        service_type: { select: { name: true } },
+        physical_master_intake: { select: { status: true, receipt_no: true, received_at: true, volume_count: true, condition: true } },
+        manuscript_files: { select: { id: true, file_name: true, type: true, version: true } },
+      },
+    }),
+  ]);
+
+  return {
+    items: queueItems(items, item => item.stage_entered_at, skip, true),
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
