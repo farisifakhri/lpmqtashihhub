@@ -88,49 +88,54 @@ export const DailyQuranWidget = () => {
   }, [loadRandomAyah]);
 
   return (
-    <section className="rounded-xl border border-amber-200/80 bg-gradient-to-br from-white via-amber-50/25 to-white p-5 shadow-sm sm:p-6" aria-labelledby="quran-widget-title">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-100/70 pb-3">
+    <section
+      className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs transition-shadow"
+      aria-labelledby="quran-widget-title"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-600 text-white shadow-xs">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-800 text-white shadow-2xs">
             <BookOpen className="h-4 w-4" />
           </div>
           <div>
-            <h3 id="quran-widget-title" className="text-sm font-bold text-neutral-900">Ayat Al-Qur'an dalam 1 Menit</h3>
-            <p className="text-[11px] text-neutral-500">Sumber dinamis • quran-api-id</p>
+            <h3 id="quran-widget-title" className="text-sm font-bold text-slate-900">
+              Ayat Al-Qur'an dalam 1 Menit
+            </h3>
+            <p className="text-xs text-slate-500">Penyemangat & Pengingat Tugas Layanan</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="hidden text-[11px] text-neutral-500 sm:inline">
-            Ayat berikutnya dalam <strong className="font-mono text-primary-700">{countdown}</strong> detik
+        <div className="flex items-center gap-2.5">
+          <span className="hidden text-xs text-slate-500 sm:inline">
+            Berganti dalam <strong className="font-mono text-emerald-800 font-bold">{countdown}s</strong>
           </span>
           <button
             type="button"
             onClick={loadRandomAyah}
             disabled={isLoading}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-800 hover:bg-primary-100 disabled:cursor-wait disabled:opacity-60"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 disabled:cursor-wait disabled:opacity-60 transition-colors"
             title="Muat ayat lain"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            {isLoading ? 'Memuat' : 'Ayat lain'}
+            {isLoading ? 'Memuat...' : 'Ayat lain'}
           </button>
         </div>
       </div>
 
       {usesFallback && (
-        <div className="mt-3 flex items-center gap-1.5 text-[11px] font-medium text-amber-800" role="status">
-          <WifiOff className="h-3.5 w-3.5" /> Data referensi lokal ditampilkan karena API tidak tersedia.
+        <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200" role="status">
+          <WifiOff className="h-3.5 w-3.5" /> Referensi naskah lokal ditampilkan.
         </div>
       )}
 
-      <div className={`mt-4 transition-opacity ${isLoading ? 'opacity-55' : 'opacity-100'}`} aria-busy={isLoading}>
-        <span className="inline-block rounded-md bg-primary-800 px-3 py-1 text-xs font-bold text-white">
+      <div className={`mt-4 transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`} aria-busy={isLoading}>
+        <span className="inline-block rounded-md bg-emerald-800 px-2.5 py-1 text-xs font-bold text-white shadow-2xs">
           {ayah.source}
         </span>
-        <p dir="rtl" className="py-4 text-right font-serif text-xl font-medium leading-[2.3] tracking-wide text-neutral-900 sm:text-2xl">
+        <p dir="rtl" className="py-4 text-right font-serif text-xl sm:text-2xl font-normal leading-[2.4] tracking-wide text-slate-950">
           {ayah.arabic}
         </p>
-        <p className="rounded-r-lg border-l-4 border-gold-500 bg-neutral-50/90 py-2.5 pl-3.5 text-xs italic leading-relaxed text-neutral-700 sm:text-sm">
+        <p className="rounded-r-lg border-l-4 border-gold-500 bg-slate-50 py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-slate-700">
           “{ayah.translation}”
         </p>
       </div>

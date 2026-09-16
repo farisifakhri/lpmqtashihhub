@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Navbar } from './Navbar';
 import { Sidebar } from './Sidebar';
+import { AppLayout } from './AppLayout';
 import * as AuthContext from '@/features/auth/AuthContext';
 
 describe('Komponen tata letak portal operasional', () => {
@@ -118,5 +119,28 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('3. Tagihan dan PNBP')).toBeDefined();
     expect(screen.getByText('4. Surat Tanda Tashih')).toBeDefined();
   });
+
+  it('AppLayout merender navigasi bawah seluler untuk akun Penerbit', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: mockUserPublisher,
+      isInitializing: false,
+      logout: mockLogout,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/publisher']}>
+        <AppLayout />
+      </MemoryRouter>
+    );
+
+    const bottomNav = screen.getByRole('navigation', { name: /navigasi bawah seluler/i });
+    expect(bottomNav).toBeDefined();
+    expect(screen.getAllByText('Beranda').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Pengajuan').length).toBeGreaterThan(0);
+    expect(screen.getByText('Ajukan')).toBeDefined();
+    expect(screen.getAllByText('Tagihan').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Dokumen').length).toBeGreaterThan(0);
+  });
 });
+
 

@@ -34,6 +34,7 @@ const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verifica
 const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
 const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
 const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
@@ -140,6 +141,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/master-intake',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN', 'SUPERADMIN', 'VERIFIKATOR']}>
+            <AdminMasterIntakePage />
           </ProtectedRoute>
         ),
       },

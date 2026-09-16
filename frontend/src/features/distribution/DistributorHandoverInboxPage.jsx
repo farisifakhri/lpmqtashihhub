@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { handoverApi } from '@/api/handover.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
 import {
   PackageCheck,
@@ -235,28 +236,28 @@ export const DistributorHandoverInboxPage = () => {
     switch (status) {
       case 'PENDING':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
             <Clock className="w-3.5 h-3.5 text-amber-600" />
             Menunggu Konfirmasi
           </span>
         );
       case 'RECEIVED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
             Diterima di Meja Pentashihan
           </span>
         );
       case 'RETURNED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-300">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-300">
             <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
             Dikembalikan (Cacat Fisik)
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
             {status}
           </span>
         );
@@ -270,42 +271,34 @@ export const DistributorHandoverInboxPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
-      {/* Top Breadcrumb & Status Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
-            <span className="text-emerald-800 font-medium">Internal LPMQ</span>
-            <span>&bull;</span>
-            <span className="font-semibold text-slate-700">Distribusi Sidang</span>
-            <span>&bull;</span>
-            <span className="font-bold text-slate-900">Serah-Terima Master Fisik</span>
+      {/* Top Header & Breadcrumb */}
+      <PageHeader
+        title="Antrean Serah-Terima Master Fisik"
+        subtitle="Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di loket pentashihan (Langkah 7 & 8 SOP)"
+        breadcrumbs={[
+          { label: 'Portal Petugas', href: '/internal' },
+          { label: 'Distribusi Sidang' },
+          { label: 'Serah-Terima Master Fisik' },
+        ]}
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+              SOP v2.2 &bull; Langkah 8
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchHandovers}
+              disabled={loading}
+              className="text-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+              Segarkan
+            </Button>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <PackageCheck className="w-7 h-7 text-emerald-700" />
-            Antrean Serah-Terima Master Fisik
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 mt-1">
-            Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di loket pentashihan (Langkah 7 & 8 SOP).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
-            SOP v2.2 &bull; Langkah 8
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchHandovers}
-            disabled={loading}
-            className="text-xs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
-            Segarkan
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Alert Notices */}
       {successMessage && (

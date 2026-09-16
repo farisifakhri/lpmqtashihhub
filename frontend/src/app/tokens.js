@@ -1,197 +1,331 @@
 /**
  * Design Tokens resmi Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ)
- * Acuan: DESIGN.md §2 & §3
+ * Acuan: Backlog Redesign UI/UX v1, DESIGN.md §2 & §3
  *
- * Rasio warna: Hijau · Putih · Emas (±30/60/10)
- * Hindari hardcode hex di komponen. Gunakan konstanta ini atau class Tailwind terkait.
+ * Prinsip: Operational Government Workspace
+ * - Rasio warna: Hijau Tua · Putih · Emas Terbatas (±30/60/10)
+ * - 5 Keluarga Semantik: Slate (Netral/Draf), Biru (Diproses), Amber (Tindakan), Merah (Masalah), Hijau (Selesai/Sah)
+ * - 8 Fase Alur Manusiawi: Pendaftaran, Verifikasi, Pembayaran, Serah-terima, Pentashihan, Penerbitan STT, Dokumentasi, Selesai
  */
+
+export const WORKFLOW_PHASES = [
+  { id: 1, key: 'REGISTRATION', label: 'Pendaftaran', shortLabel: 'Pendaftaran', description: 'Pengajuan data naskah & kelengkapan berkas' },
+  { id: 2, key: 'VERIFICATION', label: 'Verifikasi', shortLabel: 'Verifikasi', description: 'Pemeriksaan administrasi & master fisik' },
+  { id: 3, key: 'PAYMENT', label: 'Pembayaran', shortLabel: 'Pembayaran', description: 'Penagihan billing PNBP SIMPONI & validasi' },
+  { id: 4, key: 'HANDOVER', label: 'Serah-terima', shortLabel: 'Serah-terima', description: 'Serah-terima master fisik ke distributor' },
+  { id: 5, key: 'TASHIH', label: 'Pentashihan', shortLabel: 'Pentashihan', description: 'Sidang koreksi lafaz & tanda baca mushaf' },
+  { id: 6, key: 'STT_ISSUANCE', label: 'Penerbitan STT', shortLabel: 'Penerbitan STT', description: 'Penetapan Surat Tanda Tashih Kepala LPMQ' },
+  { id: 7, key: 'DOCUMENTATION', label: 'Dokumentasi', shortLabel: 'Dokumentasi', description: 'Penyusunan Berita Acara & deposit 5 eksemplar' },
+  { id: 8, key: 'COMPLETED', label: 'Selesai', shortLabel: 'Selesai', description: 'Seluruh tahapan tuntas dan berkas terbit' },
+];
 
 export const TOKENS = {
   colors: {
     // Primary - Deep Islamic Pine / Sovereign Forest
+    primary950: '#031C13',
     primary900: '#083224',
     primary800: '#0B3F2D',
     primary700: '#0E5139', // Header, sidebar aktif, tombol utama
     primary600: '#116447',
     primary500: '#167A58', // Aksen tombol, ikon aktif, tab terpilih
+    primary200: '#BCE1D0',
     primary100: '#DDF0E7', // Latar kartu info, hover, badge positif
     primary50:  '#F0F7F4',
 
     // Netral - Crisp Slate Neutrals
     neutralWhite: '#FFFFFF', // Latar kartu permukaan utama
-    neutral50: '#F8FAFC',    // Latar halaman aplikasi
-    neutral100: '#F1F5F9',   // Latar tabel/kartu sekunder
+    neutral50: '#F8FAFC',    // Latar kanvas aplikasi polos (Level 0)
+    neutral100: '#F1F5F9',   // Latar section / tabel sekunder (Level 1)
     neutral200: '#E2E8F0',   // Border/garis pemisah
     neutral300: '#CBD5E1',   // Input border
-    neutral500: '#64748B',   // Teks sekunder, status Draft
-    neutral700: '#334155',   // Teks isi/body
+    neutral400: '#94A3B8',
+    neutral500: '#64748B',   // Teks sekunder, metadata
+    neutral600: '#475569',
+    neutral700: '#334155',   // Teks isi/body (min 14px)
+    neutral800: '#1E293B',
     neutral900: '#0F172A',   // Teks gelap tegas
     neutral950: '#020617',   // Heading pekat
 
-    // Aksen Emas Sandstone / Imperial Brass
-    accentGold700: '#865714', // Aksen dokumen resmi, ikon terverifikasi
+    // Aksen Emas Sandstone / Imperial Brass (Terbatas pada dokumen resmi, billing, pengesahan)
+    accentGold700: '#865714',
     accentGold600: '#A97516',
     accentGold500: '#C99320', // Highlight nominal tarif/PNBP
     accentGold400: '#DFB045',
     accentGold100: '#F9F0D3',
     accentGold50:  '#FDF9EE', // Latar kartu ringkasan tarif/billing
 
-    // Status
-    statusWarning: '#D97706', // Perlu Perbaikan, Menunggu Pembayaran
-    statusDanger:  '#E11D48', // Ditolak, Dibatalkan
-    statusInfo:    '#0284C7', // Sedang Diverifikasi / Diproses
-    statusSuccess: '#0E5139', // Selesai / Terverifikasi
+    // 5 Keluarga Semantik
+    semantic: {
+      neutral: { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' },
+      info:    { bg: 'bg-sky-50',    text: 'text-sky-800',    border: 'border-sky-300' },
+      warning: { bg: 'bg-amber-50',  text: 'text-amber-900',  border: 'border-amber-300' },
+      danger:  { bg: 'bg-rose-50',   text: 'text-rose-900',   border: 'border-rose-300' },
+      success: { bg: 'bg-emerald-50',text: 'text-emerald-900',border: 'border-emerald-300' },
+      gold:    { bg: 'bg-gold-50',   text: 'text-gold-900',   border: 'border-gold-300' },
+    },
   },
 
   typography: {
-    fontSans: '"Plus Jakarta Sans", Inter, system-ui, sans-serif',
+    fontSans: '"Plus Jakarta Sans", Inter, system-ui, -apple-system, sans-serif',
     fontSerif: '"Amiri", "Traditional Arabic", Georgia, serif',
   },
 
-  // State Machine Status Mapping (DESIGN.md §3 & IMPLEMENTATION.md §4)
+  // State Machine Status Mapping (Backlog UX-03, UX-04, §9)
   registrationStatus: {
     DRAFT: {
-      label: 'Draft',
-      bgClass: 'bg-neutral-100',
-      textClass: 'text-neutral-700',
-      borderClass: 'border-neutral-300',
-      description: 'Pengajuan baru, belum dikirim ke verifikator',
+      label: 'Draf Pengajuan',
+      phaseKey: 'REGISTRATION',
+      phaseLabel: 'Pendaftaran',
+      bgClass: 'bg-slate-100',
+      textClass: 'text-slate-800',
+      borderClass: 'border-slate-300',
+      description: 'Pengajuan baru, berkas atau data naskah belum lengkap.',
+      actionOwner: 'Penerbit',
+      nextAction: 'Lengkapi berkas & ajukan',
     },
     READY_FOR_VERIFICATION: {
-      label: 'Siap Diverifikasi',
-      bgClass: 'bg-emerald-50',
-      textClass: 'text-emerald-800',
-      borderClass: 'border-emerald-200',
-      description: 'Dokumen diterima, menunggu Kepala LPMQ menugaskan verifikator',
+      label: 'Siap Ditugaskan',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Pengajuan diajukan penerbit, menunggu Kepala LPMQ menugaskan verifikator.',
+      actionOwner: 'Kepala LPMQ',
+      nextAction: 'Terbitkan Nota Dinas & tugaskan verifikator',
     },
     VERIFICATION_ASSIGNED: {
       label: 'Verifikator Ditugaskan',
-      bgClass: 'bg-cyan-50',
-      textClass: 'text-cyan-800',
-      borderClass: 'border-cyan-200',
-      description: 'Nota Dinas Verifikasi telah diterbitkan; menunggu pemeriksaan verifikator terpilih',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Nota Dinas terbit, verifikator terpilih dapat memulai pemeriksaan.',
+      actionOwner: 'Verifikator',
+      nextAction: 'Mulai pemeriksaan naskah',
     },
     IN_VERIFICATION: {
       label: 'Sedang Diverifikasi',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
       bgClass: 'bg-sky-50',
-      textClass: 'text-sky-700',
+      textClass: 'text-sky-800',
       borderClass: 'border-sky-200',
-      description: 'Verifikator sedang memeriksa kelengkapan administrasi dan naskah',
-    },
-    PHYSICAL_HANDOVER_CORRECTION_REQUIRED: {
-      label: 'Perbaikan Fisik',
-      bgClass: 'bg-amber-50',
-      textClass: 'text-amber-800',
-      borderClass: 'border-amber-300',
-      description: 'Master fisik dikembalikan distributor karena cacat fisik; pembayaran sah tetap terjaga tanpa re-billing',
+      description: 'Verifikator sedang memeriksa kelengkapan administrasi dan fisik naskah.',
+      actionOwner: 'Verifikator',
+      nextAction: 'Selesaikan checklist & susun draf surat',
     },
     REVISION_REQUIRED: {
-      label: 'Perlu Perbaikan',
+      label: 'Perlu Perbaikan Berkas',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
       bgClass: 'bg-amber-50',
-      textClass: 'text-amber-700',
-      borderClass: 'border-amber-200',
-      description: 'Ditemukan kekurangan berkas yang harus diperbaiki penerbit',
+      textClass: 'text-amber-900',
+      borderClass: 'border-amber-300',
+      description: 'Ditemukan kekurangan berkas yang harus diperbaiki oleh penerbit.',
+      actionOwner: 'Penerbit',
+      nextAction: 'Unggah perbaikan sesuai catatan',
     },
     WAITING_VERIFICATION_APPROVAL: {
-      label: 'Menunggu Persetujuan Verifikasi',
-      bgClass: 'bg-indigo-50',
-      textClass: 'text-indigo-800',
-      borderClass: 'border-indigo-200',
-      description: 'Menunggu persetujuan hasil verifikasi oleh Kepala LPMQ',
+      label: 'Menunggu Persetujuan Kepala',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-900',
+      borderClass: 'border-amber-300',
+      description: 'Draf hasil telaah menunggu reviu dan persetujuan Kepala LPMQ.',
+      actionOwner: 'Kepala LPMQ',
+      nextAction: 'Tinjau draf & setujui / kembalikan',
     },
     VERIFICATION_APPROVED: {
       label: 'Surat Disetujui',
-      bgClass: 'bg-indigo-50',
-      textClass: 'text-indigo-800',
-      borderClass: 'border-indigo-200',
-      description: 'Menunggu verifikator mengirim surat hasil verifikasi kepada penerbit',
+      phaseKey: 'VERIFICATION',
+      phaseLabel: 'Verifikasi',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-900',
+      borderClass: 'border-emerald-300',
+      description: 'Surat hasil telaah disetujui Kepala; menunggu verifikator mengirim surat.',
+      actionOwner: 'Verifikator',
+      nextAction: 'Kirim surat hasil verifikasi',
     },
     AWAITING_PAYMENT: {
       label: 'Menunggu Pembayaran',
+      phaseKey: 'PAYMENT',
+      phaseLabel: 'Pembayaran',
       bgClass: 'bg-amber-50',
-      textClass: 'text-amber-800',
+      textClass: 'text-amber-900',
       borderClass: 'border-amber-300',
-      description: 'Kode billing PNBP diterbitkan, menunggu pembayaran penerbit',
+      description: 'Kode billing PNBP SIMPONI telah diterbitkan (berlaku 7 hari kalender).',
+      actionOwner: 'Penerbit',
+      nextAction: 'Lakukan pembayaran & konfirmasi NTPN',
     },
     PAYMENT_VERIFICATION: {
       label: 'Verifikasi Pembayaran',
-      bgClass: 'bg-blue-50',
-      textClass: 'text-blue-800',
-      borderClass: 'border-blue-200',
-      description: 'Bukti bayar dikonfirmasi; setelah diverifikasi master menunggu serah-terima fisik',
+      phaseKey: 'PAYMENT',
+      phaseLabel: 'Pembayaran',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Bukti bayar diunggah penerbit; menunggu verifikator memeriksa keabsahan setoran.',
+      actionOwner: 'Verifikator',
+      nextAction: 'Periksa bukti bayar & sahkan',
     },
     WAITING_DISTRIBUTOR_RECEIPT: {
-      label: 'Menunggu Distributor',
-      bgClass: 'bg-violet-50',
-      textClass: 'text-violet-800',
-      borderClass: 'border-violet-200',
-      description: 'Master fisik telah diserahkan, menunggu distributor mengonfirmasi penerimaan',
+      label: 'Menunggu Konfirmasi Distributor',
+      phaseKey: 'HANDOVER',
+      phaseLabel: 'Serah-terima',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Master fisik diserahkan ke distributor; menunggu konfirmasi fisik & penetapan deadline.',
+      actionOwner: 'Distributor',
+      nextAction: 'Konfirmasi fisik & tetapkan target tashih',
+    },
+    PHYSICAL_HANDOVER_CORRECTION_REQUIRED: {
+      label: 'Perlu Koreksi Master Fisik',
+      phaseKey: 'HANDOVER',
+      phaseLabel: 'Serah-terima',
+      bgClass: 'bg-rose-50',
+      textClass: 'text-rose-900',
+      borderClass: 'border-rose-300',
+      description: 'Master fisik cacat/tidak lengkap dikembalikan distributor; penerbit perlu mengganti fisik.',
+      actionOwner: 'Penerbit',
+      nextAction: 'Serahkan penggantian master fisik ke LPMQ',
     },
     WAITING_DISTRIBUTION: {
-      label: 'Menunggu Distribusi',
-      bgClass: 'bg-primary-50',
-      textClass: 'text-primary-700',
-      borderClass: 'border-primary-200',
-      description: 'Verifikasi & pembayaran lolos, menunggu penugasan tim pentashih',
+      label: 'Siap Penugasan Tim',
+      phaseKey: 'TASHIH',
+      phaseLabel: 'Pentashihan',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Master fisik diterima distributor; siap ditetapkan tim pentashih.',
+      actionOwner: 'Distributor / Admin',
+      nextAction: 'Tetapkan anggota tim pentashih',
     },
     TASHIH_IN_PROGRESS: {
-      label: 'Proses Tashih Berjalan',
-      bgClass: 'bg-primary-100',
-      textClass: 'text-primary-800',
-      borderClass: 'border-primary-300',
-      description: 'Tim pentashih sedang memeriksa ayat dan tanda baca mushaf',
+      label: 'Sidang Tashih Berjalan',
+      phaseKey: 'TASHIH',
+      phaseLabel: 'Pentashihan',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Tim pentashih sedang menelaah ayat, tanda baca, dan format mushaf.',
+      actionOwner: 'Tim Pentashih',
+      nextAction: 'Catat hasil telaah & rekomendasi',
     },
     READY_FOR_STT: {
       label: 'Siap Penetapan STT',
-      bgClass: 'bg-teal-50',
-      textClass: 'text-teal-800',
-      borderClass: 'border-teal-300',
-      description: 'Naskah dumi bersih, siap ditetapkan Surat Tanda Tashih',
+      phaseKey: 'STT_ISSUANCE',
+      phaseLabel: 'Penerbitan STT',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-900',
+      borderClass: 'border-emerald-300',
+      description: 'Naskah dumi bersih dan telah disetujui; siap ditetapkan Surat Tanda Tashih.',
+      actionOwner: 'Kepala LPMQ',
+      nextAction: 'Tetapkan & tanda tangani STT resmi',
     },
     STT_ISSUED: {
       label: 'STT Ditetapkan',
-      bgClass: 'bg-primary-50',
-      textClass: 'text-primary-900',
-      borderClass: 'border-primary-300',
-      description: 'Surat Tanda Tashih telah ditetapkan oleh Kepala LPMQ',
+      phaseKey: 'STT_ISSUANCE',
+      phaseLabel: 'Penerbitan STT',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-900',
+      borderClass: 'border-emerald-300',
+      description: 'Surat Tanda Tashih telah ditetapkan; dokumen resmi aktif.',
+      actionOwner: 'Dokumentator',
+      nextAction: 'Lanjutkan pemberkasan dokumentasi',
     },
     DOCUMENTATION_IN_PROGRESS: {
       label: 'Pemberkasan Dokumentasi',
-      bgClass: 'bg-teal-50',
-      textClass: 'text-teal-900',
-      borderClass: 'border-teal-300',
-      description: 'Penyusunan Berita Acara Tashih & penerimaan eksemplar dokumentasi',
+      phaseKey: 'DOCUMENTATION',
+      phaseLabel: 'Dokumentasi',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Penyusunan Berita Acara Tashih & penerimaan 5 eksemplar naskah cetak.',
+      actionOwner: 'Dokumentator',
+      nextAction: 'Verifikasi tanda terima deposit naskah',
     },
     DOCUMENTATION: {
       label: 'Pemberkasan Dokumen',
-      bgClass: 'bg-teal-50',
-      textClass: 'text-teal-900',
-      borderClass: 'border-teal-300',
-      description: 'Penyusunan Berita Acara Tashih & verifikasi akhir dokumen',
+      phaseKey: 'DOCUMENTATION',
+      phaseLabel: 'Dokumentasi',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Penyusunan Berita Acara Tashih & verifikasi akhir dokumen.',
+      actionOwner: 'Dokumentator',
+      nextAction: 'Selesaikan pengarsipan dokumen',
     },
     COMPLETED: {
       label: 'Selesai (Surat Terbit)',
-      bgClass: 'bg-primary-50',
-      textClass: 'text-primary-900',
-      borderClass: 'border-gold-400',
-      description: 'Seluruh tahapan pentashihan dan dokumentasi telah rampung',
+      phaseKey: 'COMPLETED',
+      phaseLabel: 'Selesai',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-900',
+      borderClass: 'border-emerald-300',
+      description: 'Seluruh rangkaian pentashihan, STT, dan dokumentasi telah tuntas.',
+      actionOwner: 'LPMQ',
+      nextAction: 'Arsip selesai',
     },
     CANCELLED: {
       label: 'Dibatalkan',
+      phaseKey: 'REGISTRATION',
+      phaseLabel: 'Pendaftaran',
       bgClass: 'bg-rose-50',
-      textClass: 'text-rose-700',
-      borderClass: 'border-rose-200',
-      description: 'Pengajuan dibatalkan sebelum proses penagihan/penetapan',
+      textClass: 'text-rose-900',
+      borderClass: 'border-rose-300',
+      description: 'Pengajuan dibatalkan sebelum tahapan pembayaran atau penetapan.',
+      actionOwner: 'Penerbit / Admin',
+      nextAction: 'Tidak ada tindakan lanjutan',
     },
   },
 
   paymentStatus: {
-    UNPAID: { label: 'Menunggu Pembayaran', color: '#D97706', bgClass: 'bg-amber-50', textClass: 'text-amber-800', borderClass: 'border-amber-200' },
-    PAID: { label: 'Menunggu Verifikasi', color: '#0284C7', bgClass: 'bg-blue-50', textClass: 'text-blue-800', borderClass: 'border-blue-200' },
-    VERIFIED: { label: 'Lunas & Sah', color: '#0E5139', bgClass: 'bg-emerald-50', textClass: 'text-emerald-800', borderClass: 'border-emerald-200' },
-    EXPIRED: { label: 'Kedaluwarsa', color: '#E11D48', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' },
-    REJECTED: { label: 'Bukti Ditolak', color: '#E11D48', bgClass: 'bg-rose-50', textClass: 'text-rose-700', borderClass: 'border-rose-200' },
-    WAIVED: { label: 'Bebas Tarif', color: '#0284C7', bgClass: 'bg-cyan-50', textClass: 'text-cyan-800', borderClass: 'border-cyan-200' },
+    UNPAID: {
+      label: 'Menunggu Pembayaran',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-900',
+      borderClass: 'border-amber-300',
+      description: 'Kode billing aktif, menunggu penyetoran oleh penerbit',
+    },
+    PAID: {
+      label: 'Menunggu Verifikasi',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Bukti bayar telah dikirimkan, menunggu verifikasi petugas',
+    },
+    VERIFIED: {
+      label: 'Lunas & Sah',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-900',
+      borderClass: 'border-emerald-300',
+      description: 'Pembayaran PNBP telah diverifikasi sah',
+    },
+    EXPIRED: {
+      label: 'Kedaluwarsa',
+      bgClass: 'bg-rose-50',
+      textClass: 'text-rose-900',
+      borderClass: 'border-rose-300',
+      description: 'Masa berlaku kode billing 7 hari kalender telah berakhir',
+    },
+    REJECTED: {
+      label: 'Bukti Ditolak',
+      bgClass: 'bg-rose-50',
+      textClass: 'text-rose-900',
+      borderClass: 'border-rose-300',
+      description: 'Bukti bayar tidak sesuai atau NTPN tidak valid',
+    },
+    WAIVED: {
+      label: 'Bebas Tarif',
+      bgClass: 'bg-sky-50',
+      textClass: 'text-sky-800',
+      borderClass: 'border-sky-200',
+      description: 'Pengajuan dikecualikan dari tarif PNBP sesuai ketentuan',
+    },
   },
 
   tashihStages: {
