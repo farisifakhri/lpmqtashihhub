@@ -5,7 +5,12 @@ import { paymentApi } from '@/api/payment.api';
 import { fileApi } from '@/api/file.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
-import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { MasterDetailLayout } from '@/components/layout/MasterDetailLayout';
+import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
+import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import {
   CreditCard,
   Search,
@@ -25,6 +30,8 @@ import {
   X,
   Eye,
   Download,
+  PackageCheck,
+  ChevronRight,
 } from 'lucide-react';
 
 export const InternalPaymentQueuePage = () => {
@@ -37,15 +44,20 @@ export const InternalPaymentQueuePage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('PAID'); // default tab 'PAID' (perlu verifikasi)
+  const [activeTab, setActiveTab] = useState('PAID'); // default 'PAID' (perlu verifikasi)
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBilling, setCopiedBilling] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
   const requestId = useRef(0);
 
+  // Selected payment for detail workspace
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+
+  // Confirmation dialog for verifying payment
+  const [verifyConfirmOpen, setVerifyConfirmOpen] = useState(false);
+
   // Modal Penolakan / Pengembalian Bukti Bayar
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [modalError, setModalError] = useState(null);
 
@@ -68,9 +80,20 @@ export const InternalPaymentQueuePage = () => {
       const res = await paymentApi.listPayments(params);
       if (request !== requestId.current) return;
       if (res?.data) {
-        setPayments(res.data.items || []);
+        const items = res.data.items || [];
+        setPayments(items);
         if (res.data.pagination) {
           setPagination(res.data.pagination);
+        }
+
+        // Auto select first item if none selected or not in list
+        if (items.length > 0) {
+          setSelectedPaymentId((prev) => {
+            const exists = items.some((i) => i.id === prev);
+            return exists ? prev : items[0].id;
+          });
+        } else {
+          setSelectedPaymentId(null);
         }
       }
     } catch (err) {
@@ -82,7 +105,9 @@ export const InternalPaymentQueuePage = () => {
 
   useEffect(() => {
     fetchPayments();
-    return () => { requestId.current += 1; };
+    return () => {
+      requestId.current += 1;
+    };
   }, [activeTab, pagination.page, submittedSearch]);
 
   const handleSearchSubmit = (e) => {
@@ -119,17 +144,22 @@ export const InternalPaymentQueuePage = () => {
     });
   };
 
-  const handleVerify = async (payment) => {
-    if (!window.confirm(`Sahkan pembayaran PNBP untuk naskah '${payment.registration?.title || payment.billing_no}' sebagai LUNAS dan VALID?`)) {
-      return;
-    }
+  const selectedPayment = useMemo(() => {
+    return payments.find((p) => p.id === selectedPaymentId) || null;
+  }, [payments, selectedPaymentId]);
+
+  const handleVerify = async () => {
+    if (!selectedPayment) return;
 
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
-      await paymentApi.verifyPayment(payment.id);
-      setSuccessMessage(`Pembayaran untuk billing ${payment.billing_no} berhasil diverifikasi sah (LUNAS).`);
+      await paymentApi.verifyPayment(selectedPayment.id);
+      setSuccessMessage(
+        `Pembayaran untuk nomor billing ${selectedPayment.billing_no} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
+      );
+      setVerifyConfirmOpen(false);
       await fetchPayments();
     } catch (err) {
       setError(err.message || 'Gagal memverifikasi pembayaran.');
@@ -138,8 +168,7 @@ export const InternalPaymentQueuePage = () => {
     }
   };
 
-  const openRejectModal = (payment) => {
-    setSelectedPayment(payment);
+  const openRejectModal = () => {
     setRejectReason('');
     setModalError(null);
     setRejectModalOpen(true);
@@ -158,7 +187,9 @@ export const InternalPaymentQueuePage = () => {
     setModalError(null);
     try {
       await paymentApi.returnPayment(selectedPayment.id, { reason: rejectReason.trim() });
-      setSuccessMessage(`Bukti pembayaran untuk billing ${selectedPayment.billing_no} berhasil ditolak dan dikembalikan ke penerbit.`);
+      setSuccessMessage(
+        `Bukti pembayaran untuk billing ${selectedPayment.billing_no} berhasil ditolak dan status dikembalikan ke UNPAID.`
+      );
       setRejectModalOpen(false);
       await fetchPayments();
     } catch (err) {
@@ -168,42 +199,347 @@ export const InternalPaymentQueuePage = () => {
     }
   };
 
-  const handleViewReceipt = async (fileId) => {
-    if (!fileId) return;
-    try {
-      await fileApi.viewPrivateFile(fileId);
-    } catch (err) {
-      setError(err?.message || 'Gagal membuka bukti pembayaran.');
-    }
-  };
+  // Master Content: Left Queue Pane
+  const masterContent = (
+    <div className="space-y-4">
+      {/* Search Bar */}
+      <form onSubmit={handleSearchSubmit} className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Cari billing, naskah, pemohon..."
+          className="w-full text-xs pl-9 pr-14 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
+        />
+        <button
+          type="submit"
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-emerald-900 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+        >
+          Cari
+        </button>
+      </form>
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-24 animate-fadeIn">
-      {/* Top Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Link to="/internal" className="hover:text-emerald-700 transition-colors">
-            Portal Petugas
-          </Link>
-          <span>&bull;</span>
-          <span className="font-bold text-slate-800">Verifikasi Pembayaran PNBP</span>
-        </div>
-
-        <span className="text-[11px] font-mono font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
-          Epic G: BR-VER-016 & BR-VER-017
-        </span>
+      {/* Segmented Filter */}
+      <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold overflow-x-auto">
+        {[
+          { key: 'PAID', label: 'Perlu Verifikasi' },
+          { key: 'UNPAID', label: 'Menunggu' },
+          { key: 'VERIFIED', label: 'Lunas & Sah' },
+          { key: 'ALL', label: 'Semua' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => {
+              setActiveTab(tab.key);
+              setPagination((p) => ({ ...p, page: 1 }));
+            }}
+            className={`flex-1 py-1.5 px-2 rounded-lg transition-all whitespace-nowrap text-center ${
+              activeTab === tab.key
+                ? 'bg-white text-emerald-900 shadow-2xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Alert Messages */}
-      {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800 text-sm shadow-xs animate-fadeIn">
+      {/* List Items */}
+      {loading ? (
+        <div className="py-12 text-center space-y-2">
+          <div className="w-7 h-7 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-slate-500 font-medium">Memuat antrean tagihan...</p>
+        </div>
+      ) : payments.length === 0 ? (
+        <EmptyState
+          title="Tidak Ada Tagihan"
+          description={
+            activeTab === 'PAID'
+              ? 'Tidak ada bukti pembayaran baru yang menunggu verifikasi saat ini.'
+              : `Belum ada data pembayaran dengan status ${activeTab}.`
+          }
+          icon={Receipt}
+        />
+      ) : (
+        <div className="space-y-2.5">
+          {payments.map((item) => {
+            const isSelected = selectedPaymentId === item.id;
+            const reg = item.registration || {};
+            const pub = reg.publisher || {};
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => setSelectedPaymentId(item.id)}
+                className={`p-3.5 rounded-xl border cursor-pointer transition-all text-xs space-y-2 ${
+                  isSelected
+                    ? 'border-emerald-700 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-700/30'
+                    : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-2xs'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono font-bold text-slate-900 text-xs">
+                    {item.billing_no}
+                  </span>
+                  <StatusBadge status={item.status} />
+                </div>
+
+                <div>
+                  <h4 className="font-bold text-slate-900 text-xs line-clamp-1">
+                    {reg.title || 'Naskah Mushaf'}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                    {pub.legal_name || 'Penerbit Pemohon'}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                  <strong className="text-emerald-800 font-extrabold">
+                    {formatCurrency(item.amount)}
+                  </strong>
+                  <span className="text-slate-500 font-mono text-[10px]">
+                    {item.external_ref ? `NTPN: ${item.external_ref}` : 'Belum NTPN'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
+          <span>
+            Halaman {pagination.page} dari {pagination.totalPages}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={pagination.page <= 1}
+              onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+              className="px-2.5 py-1 rounded-md border border-slate-200 disabled:opacity-50 font-semibold hover:bg-slate-50"
+            >
+              Sebelumnya
+            </button>
+            <button
+              disabled={pagination.page >= pagination.totalPages}
+              onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+              className="px-2.5 py-1 rounded-md border border-slate-200 disabled:opacity-50 font-semibold hover:bg-slate-50"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Detail Content: Right Workspace Pane
+  const detailContent = selectedPayment ? (
+    <div className="space-y-6">
+      {/* Workspace Header Card */}
+      <div className="p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
+                Billing #{selectedPayment.billing_no}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleCopyText(selectedPayment.billing_no, 'detail')}
+                className="text-slate-400 hover:text-emerald-800 transition-colors"
+                title="Salin Nomor Billing"
+              >
+                {copiedBilling === 'detail' ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-700" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+              <StatusBadge status={selectedPayment.status} />
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900">
+              {selectedPayment.registration?.title || 'Naskah Mushaf'}
+            </h2>
+          </div>
+
+          <div className="text-left sm:text-right">
+            <span className="text-[11px] text-slate-500 block">Tarif Layanan PNBP</span>
+            <span className="text-xl font-black text-emerald-800">
+              {formatCurrency(selectedPayment.amount)}
+            </span>
+          </div>
+        </div>
+
+        {/* Snapshot Meta Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+            <span className="text-slate-500 block text-[11px]">Penerbit Pemohon:</span>
+            <strong className="text-slate-900 block font-semibold">
+              {selectedPayment.registration?.publisher?.legal_name || '-'}
+            </strong>
+            <p className="text-slate-500 text-[11px] truncate">
+              {selectedPayment.registration?.publisher?.address || 'Alamat terdaftar'}
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+            <span className="text-slate-500 block text-[11px]">Nomor NTPN / Referensi:</span>
+            {selectedPayment.external_ref ? (
+              <strong className="text-slate-900 block font-mono font-bold">
+                {selectedPayment.external_ref}
+              </strong>
+            ) : (
+              <span className="text-slate-400 italic block">Belum ada NTPN</span>
+            )}
+            <p className="text-slate-500 text-[11px]">
+              Waktu Setor: {formatDate(selectedPayment.paid_at || selectedPayment.created_at)}
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+            <span className="text-slate-500 block text-[11px]">Layanan Pentashihan:</span>
+            <strong className="text-slate-900 block font-semibold">
+              {selectedPayment.registration?.service_type?.name || 'Mushaf Standar'}
+            </strong>
+            <p className="text-slate-500 text-[11px]">
+              Registrasi: {selectedPayment.registration?.registration_no || '-'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Pratinjau Bukti Setor / Slip Bank */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+        <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-emerald-800" />
+            <h3 className="font-bold text-slate-900">
+              Pratinjau Bukti Setor / Slip Pembayaran Bank
+            </h3>
+          </div>
+          {selectedPayment.receipt_file_id && (
+            <span className="font-mono text-[11px] text-slate-500">
+              ID Berkas: {selectedPayment.receipt_file_id.substring(0, 8)}...
+            </span>
+          )}
+        </div>
+
+        <div className="p-4">
+          {selectedPayment.receipt_file_id ? (
+            <PrivateFileViewer
+              fileId={selectedPayment.receipt_file_id}
+              fileName={`bukti_bayar_${selectedPayment.billing_no}.pdf`}
+              height="480px"
+              fallbackText="Bukti setor tersimpan dalam format berkas terenkripsi."
+            />
+          ) : (
+            <div className="py-16 text-center text-slate-400 space-y-2">
+              <FileText className="w-10 h-10 mx-auto stroke-1" />
+              <p className="text-xs">
+                Penerbit belum mengunggah bukti bayar atau slip transfer bank.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Action Decision Card */}
+      {selectedPayment.status === 'PAID' && (
+        <div className="p-5 bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1">
+            <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              Verifikasi & Pengesahan Setoran PNBP
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-lg">
+              Periksa kecocokan nominal dan keaslian Nomor Transaksi Penerimaan Negara (NTPN). Setelah disahkan, naskah akan berstatus LUNAS dan siap diserahkan ke Distributor Pentashihan.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
+            <Button
+              variant="outline"
+              onClick={openRejectModal}
+              disabled={actionLoading}
+              className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+              Tolak Bukti Bayar
+            </Button>
+
+            <Button
+              variant="primary"
+              onClick={() => setVerifyConfirmOpen(true)}
+              disabled={actionLoading}
+              className="text-xs"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+              Sahkan Pembayaran (Lunas)
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {selectedPayment.status === 'VERIFIED' && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-emerald-900">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span className="font-medium">{successMessage}</span>
+            <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+            <div>
+              <strong className="block text-sm">Pembayaran Telah Diverifikasi Sah</strong>
+              <p className="text-emerald-800">
+                Penerimaan negara telah valid (LUNAS). Verifikator dapat melanjutkan penyerahan master fisik cetak di loket pentashihan.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/internal/verifications"
+            className="inline-flex items-center gap-1 font-bold text-emerald-900 bg-white border border-emerald-300 px-3 py-1.5 rounded-lg hover:bg-emerald-50 shrink-0"
+          >
+            <span>Buka Lembar Verifikasi</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+    </div>
+  ) : null;
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 pb-24 animate-fadeIn">
+      {/* Page Header */}
+      <PageHeader
+        title="Verifikasi Pembayaran & Setoran PNBP"
+        subtitle="Validasi bukti setor bank, NTPN, dan kecocokan nominal tarif PNBP mushaf (SOP Pentashihan LPMQ)"
+        breadcrumbs={[
+          { label: 'Portal Petugas', href: '/internal' },
+          { label: 'Verifikasi Pembayaran PNBP' },
+        ]}
+        actions={
+          <Button
+            variant="outline"
+            onClick={fetchPayments}
+            disabled={loading}
+            className="text-xs"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
+            Segarkan
+          </Button>
+        }
+      />
+
+      {/* Global Alerts */}
+      {successMessage && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-900 text-xs shadow-2xs animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span className="font-semibold">{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-xs text-emerald-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-emerald-800 hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -211,269 +547,60 @@ export const InternalPaymentQueuePage = () => {
       )}
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-800 text-sm shadow-xs animate-fadeIn">
-          <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            <span>{error}</span>
+        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-900 text-xs shadow-2xs animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span className="font-semibold">{error}</span>
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-xs text-rose-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-rose-800 hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
         </div>
       )}
 
-      {/* Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white rounded-2xl p-6 sm:p-8 shadow-md border border-emerald-800/60">
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#DFB045_1px,transparent_1px)] [background-size:18px_18px]" />
+      {/* Master-Detail Split Workspace */}
+      <MasterDetailLayout
+        masterContent={masterContent}
+        detailContent={detailContent}
+        hasSelection={Boolean(selectedPayment)}
+        onClearSelection={() => setSelectedPaymentId(null)}
+        emptyDetailText="Pilih salah satu tagihan pembayaran dari antrean di sebelah kiri untuk memeriksa berkas bukti setor dan mengesahkan transaksi."
+        masterWidth="lg:w-5/12 xl:w-4/12"
+        detailWidth="lg:w-7/12 xl:w-8/12"
+      />
 
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wide text-gold-300 uppercase shadow-2xs">
-              <Receipt className="w-3.5 h-3.5 text-gold-400" />
-              SOP Verifikasi — Epic G: Billing PNBP
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white font-sans">
-              Verifikasi Pembayaran & Setoran PNBP
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
-              Validasi bukti setor bank, kecocokan Nomor Transaksi Penerimaan Negara (NTPN), dan nominal tarif PNBP mushaf sebelum naskah diserahkan ke Distributor Pentashihan.
-            </p>
-          </div>
-
-          <Button
-            variant="outline"
-            onClick={fetchPayments}
-            disabled={loading}
-            className="bg-white/10 hover:bg-white/20 text-white border-white/25 backdrop-blur-2xs text-xs font-semibold shadow-xs shrink-0 self-start md:self-center"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Segarkan Data
-          </Button>
-        </div>
-      </div>
-
-      {/* Filter Tabs & Search */}
-      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl w-full sm:w-auto overflow-x-auto text-xs font-semibold">
-            {[
-              { key: 'PAID', label: 'Perlu Diverifikasi' },
-              { key: 'UNPAID', label: 'Menunggu Bayar' },
-              { key: 'VERIFIED', label: 'Lunas & Sah' },
-              { key: 'ALL', label: 'Semua Status' },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setActiveTab(tab.key);
-                  setPagination((p) => ({ ...p, page: 1 }));
-                }}
-                className={`px-3.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${
-                  activeTab === tab.key
-                    ? 'bg-white text-emerald-900 shadow-2xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-80">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari billing, naskah, penerbit..."
-                className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
-              />
-            </div>
-            <Button type="submit" variant="outline" className="text-xs py-2 px-3">
-              Cari
-            </Button>
-          </form>
-        </div>
-      </div>
-
-      {!error && <QueueOverview total={pagination.total} oldest={payments[0]?.queue_entered_at || payments[0]?.paid_at || payments[0]?.created_at} fifo={activeTab !== 'VERIFIED'} loading={loading} />}
-
-      {/* List Payments */}
-      {loading ? (
-        <div className="py-16 text-center space-y-3">
-          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-medium">Memuat data verifikasi pembayaran...</p>
-        </div>
-      ) : error ? null : payments.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
-          <Receipt className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">Tidak Ada Antrean Pembayaran</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            {activeTab === 'PAID'
-              ? 'Tidak ada bukti pembayaran baru yang menunggu verifikasi saat ini.'
-              : `Belum ada data pembayaran dengan status ${activeTab}.`}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {payments.map((item) => {
-            const reg = item.registration || {};
-            const pub = reg.publisher || {};
-            const isNeedsVerification = item.status === 'PAID';
-            const isVerified = item.status === 'VERIFIED';
-            const isUnpaid = item.status === 'UNPAID';
-
-            return (
-              <div
-                key={item.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
-              >
-                {/* Header Row */}
-                <QueueItemMeta item={item} />
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                      <span className="text-[11px] font-mono text-slate-500">Billing:</span>
-                      <span className="font-mono text-xs font-bold text-slate-900">{item.billing_no}</span>
-                      <button
-                        onClick={() => handleCopyText(item.billing_no, item.id)}
-                        className="text-slate-400 hover:text-emerald-700 transition-colors ml-1"
-                        title="Salin No. Billing"
-                      >
-                        {copiedBilling === item.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                        ) : (
-                          <Copy className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-
-                    <span className="font-mono text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                      {reg.registration_no || '-'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500">
-                      Terbit: {formatDate(item.created_at)}
-                    </span>
-                    <StatusBadge status={item.status} />
-                  </div>
-                </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Naskah & Penerbit</p>
-                    <p className="font-bold text-slate-900 text-sm">{reg.title || 'Naskah Mushaf'}</p>
-                    <p className="text-slate-600 flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-slate-400" />
-                      {pub.legal_name || 'Penerbit Pemohon'}
-                    </p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Tarif PNBP</p>
-                    <p className="font-black text-slate-900 text-base text-emerald-700">
-                      {formatCurrency(item.amount)}
-                    </p>
-                    <p className="text-slate-500">{reg.service_type?.name || 'Pentashihan Reguler'}</p>
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Nomor NTPN / Referensi</p>
-                    {item.external_ref ? (
-                      <p className="font-mono font-bold text-slate-800 text-xs bg-slate-100 px-2 py-1 rounded-md inline-block">
-                        {item.external_ref}
-                      </p>
-                    ) : (
-                      <p className="text-slate-400 italic">Belum dikonfirmasi</p>
-                    )}
-                    {item.paid_at && (
-                      <p className="text-[11px] text-slate-500">Waktu Bayar: {formatDate(item.paid_at)}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Bukti Bayar & Dokumen</p>
-                    {item.receipt_file_id ? (
-                      <button
-                        onClick={() => handleViewReceipt(item.receipt_file_id)}
-                        className="inline-flex items-center gap-1.5 text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-100 transition-colors"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        Buka Bukti Bayar
-                      </button>
-                    ) : (
-                      <span className="text-slate-400 italic">Tidak ada berkas</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer Action Bar */}
-                {isNeedsVerification && (
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                    <span className="text-[11px] text-amber-700 font-medium">
-                      Penerbit telah mengunggah bukti bayar dan menunggu validasi petugas.
-                    </span>
-
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                      <Button
-                        variant="outline"
-                        onClick={() => openRejectModal(item)}
-                        disabled={actionLoading}
-                        className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50"
-                      >
-                        <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                        Tolak Bukti Bayar
-                      </Button>
-
-                      <Button
-                        variant="primary"
-                        onClick={() => handleVerify(item)}
-                        disabled={actionLoading}
-                        className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-4 py-2"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                        Sahkan Pembayaran (Lunas)
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {isVerified && (
-                  <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-800">
-                    <span className="inline-flex items-center gap-1 font-semibold">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                      Pembayaran telah dinyatakan sah dan lunas. Naskah siap diserahkan kepada Distributor Pentashihan (Langkah 7 SOP).
-                    </span>
-                    <Link
-                      to="/internal/distributions"
-                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/70 hover:bg-emerald-200/80 px-2.5 py-1 rounded-lg transition-colors shrink-0"
-                    >
-                      Buka Serah-Terima Fisik &rarr;
-                    </Link>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+      {/* Confirmation Dialog for Verifying Payment */}
+      {selectedPayment && (
+        <ConfirmationSummaryDialog
+          isOpen={verifyConfirmOpen}
+          onClose={() => setVerifyConfirmOpen(false)}
+          onConfirm={handleVerify}
+          title="Sahkan Pembayaran PNBP (Lunas)"
+          description="Pastikan data NTPN dan bukti transfer bank telah cocok dengan catatan persepsi kas negara."
+          summaryItems={[
+            { label: 'Nomor Billing', value: selectedPayment.billing_no },
+            { label: 'Naskah Mushaf', value: selectedPayment.registration?.title || '-' },
+            { label: 'Penerbit', value: selectedPayment.registration?.publisher?.legal_name || '-' },
+            { label: 'Nomor NTPN', value: selectedPayment.external_ref || 'Belum diisi' },
+            { label: 'Nominal Tarif', value: formatCurrency(selectedPayment.amount) },
+          ]}
+          impactMessage="Status pembayaran akan menjadi LUNAS (VERIFIED) dan naskah resmi siap diserahkan ke Distributor Pentashihan (Langkah 7 SOP)."
+          confirmLabel="Sahkan & Tetapkan Lunas"
+          confirmVariant="primary"
+          loading={actionLoading}
+        />
       )}
-
-      {!error && <QueuePagination pagination={pagination} loading={loading} onPageChange={page => setPagination(prev => ({ ...prev, page }))} />}
 
       {/* Modal Penolakan Bukti Pembayaran */}
       {rejectModalOpen && selectedPayment && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-rose-700 font-bold text-base">
-                <AlertTriangle className="w-5 h-5" />
+              <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-rose-600" />
                 Tolak Bukti Pembayaran PNBP
               </div>
               <button
@@ -485,14 +612,14 @@ export const InternalPaymentQueuePage = () => {
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             <p className="text-xs text-slate-600 leading-relaxed">
-              Berikan alasan penolakan secara jelas kepada penerbit (misalnya: nominal tidak sesuai, NTPN tidak terdaftar di sistem persepsi, atau bukti tidak terbaca). Status tagihan akan dikembalikan ke <b>Menunggu Pembayaran (UNPAID)</b>.
+              Berikan alasan penolakan secara jelas kepada penerbit (misalnya: nominal transfer kurang, NTPN salah, atau bukti buram). Status tagihan akan dikembalikan ke <b>Menunggu Pembayaran (UNPAID)</b>.
             </p>
 
             <form onSubmit={handleRejectSubmit} className="space-y-4">
@@ -505,7 +632,7 @@ export const InternalPaymentQueuePage = () => {
                   onChange={(e) => setRejectReason(e.target.value)}
                   placeholder="Contoh: Bukti transfer buram dan NTPN tidak dapat diverifikasi pada sistem persepsi bank..."
                   rows={4}
-                  className="w-full text-xs p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   required
                 />
                 <span className="text-[11px] text-slate-400">Minimal 5 karakter.</span>
@@ -524,7 +651,7 @@ export const InternalPaymentQueuePage = () => {
                 <Button
                   type="submit"
                   disabled={actionLoading || rejectReason.trim().length < 5}
-                  className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2"
+                  className="text-xs bg-rose-700 hover:bg-rose-800 text-white font-bold px-4 py-2"
                 >
                   {actionLoading ? 'Menolak...' : 'Kirim Penolakan Bukti'}
                 </Button>
@@ -538,4 +665,3 @@ export const InternalPaymentQueuePage = () => {
 };
 
 export default InternalPaymentQueuePage;
-

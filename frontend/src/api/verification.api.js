@@ -121,8 +121,26 @@ export const verificationApi = {
       method: 'POST',
     });
   },
+
+  /**
+   * Menerima atau mengembalikan master fisik mushaf di loket (Admin Loket Intake)
+   * @param {string} registrationId
+   * @param {Object} payload - { decision, volume_count, condition, receipt_no, notes }
+   */
+  receivePhysicalMaster: async (registrationId, payload) => {
+    return apiClient(`/registrations/${registrationId}/physical-master/receive`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengambil tanda terima penerimaan master fisik
+   * @param {string} registrationId
+   */
+  getRegistrationReceipt: async (registrationId) => {
+    return apiClient(`/registrations/${registrationId}/receipt`);
+  },
 };
 
 export default verificationApi;
-
-

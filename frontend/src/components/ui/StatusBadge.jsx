@@ -21,11 +21,21 @@ export const StatusBadge = ({
   status,
   className,
   showIcon = true,
+  size = 'md',
 }) => {
-  const config = TOKENS.registrationStatus[status] || TOKENS.paymentStatus[status] || TOKENS.registrationStatus.DRAFT;
+  const config =
+    TOKENS.registrationStatus[status] ||
+    TOKENS.paymentStatus[status] ||
+    TOKENS.registrationStatus.DRAFT;
+
+  const sizeClasses = {
+    sm: 'text-[11px] px-2 py-0.5 gap-1',
+    md: 'text-xs px-2.5 py-1 gap-1.5',
+    lg: 'text-sm px-3 py-1.5 gap-2',
+  };
 
   const renderIcon = () => {
-    const iconClass = 'w-3.5 h-3.5 flex-shrink-0';
+    const iconClass = size === 'sm' ? 'w-3 h-3 flex-shrink-0' : 'w-3.5 h-3.5 flex-shrink-0';
     switch (status) {
       case 'DRAFT':
         return <FileEdit className={iconClass} aria-hidden="true" />;
@@ -70,7 +80,8 @@ export const StatusBadge = ({
     <span
       className={twMerge(
         clsx(
-          'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shadow-xs transition-colors',
+          'inline-flex items-center rounded-md font-semibold border shadow-2xs transition-colors',
+          sizeClasses[size] || sizeClasses.md,
           config.bgClass,
           config.textClass,
           config.borderClass,
@@ -84,3 +95,5 @@ export const StatusBadge = ({
     </span>
   );
 };
+
+export default StatusBadge;

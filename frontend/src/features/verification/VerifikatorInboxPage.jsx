@@ -2,14 +2,20 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { SlaIndicator } from '@/components/ui/SlaIndicator';
+import { StatusSummary } from '@/components/ui/StatusSummary';
+import { PrimaryTaskCard } from '@/components/ui/PrimaryTaskCard';
+import { MasterDetailLayout } from '@/components/layout/MasterDetailLayout';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Button } from '@/components/ui/Button';
-import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
+import { QueueOverview } from '@/components/common/QueueOverview';
 import {
   ClipboardCheck,
   Search,
   RefreshCw,
-  AlertCircle,
   Clock,
   FileText,
   Building2,
@@ -20,10 +26,12 @@ import {
   AlertTriangle,
   Calendar,
   Layers,
-  Sparkles,
   ShieldCheck,
   Check,
+  ChevronRight,
+  X,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 
 export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
@@ -33,6 +41,7 @@ export const VerifikatorInboxPage = () => {
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
   const [assignments, setAssignments] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,9 +72,13 @@ export const VerifikatorInboxPage = () => {
       const res = await verificationApi.listAssignments(params);
       if (request !== requestId.current) return;
       if (res?.data) {
-        setAssignments(res.data.items || []);
+        const items = res.data.items || [];
+        setAssignments(items);
         if (res.data.pagination) {
           setPagination(res.data.pagination);
+        }
+        if (items.length > 0 && !selectedId) {
+          setSelectedId(items[0].id);
         }
       }
     } catch (err) {
@@ -98,423 +111,307 @@ export const VerifikatorInboxPage = () => {
     }
   };
 
-  // Helper SLA status dengan persentase sisa waktu (target 48 jam)
-  const getSlaInfo = (item) => {
-    if (!item.due_at) return null;
-    const now = new Date();
-    const due = new Date(item.due_at);
-    const diffMs = due.getTime() - now.getTime();
-    const isOverdue = diffMs < 0 && item.status !== 'COMPLETED';
-
-    const totalTargetMs = 48 * 60 * 60 * 1000;
-    const remainingPercent = Math.max(0, Math.min(100, Math.round((diffMs / totalTargetMs) * 100)));
-
-    if (isOverdue) {
-      const hoursOverdue = Math.abs(Math.floor(diffMs / (1000 * 60 * 60)));
-      return {
-        isOverdue: true,
-        text: `Terlambat ${hoursOverdue} jam (SLA 2 Hari Lewat)`,
-        badgeClass: 'bg-rose-50 text-rose-800 border-rose-200 font-bold',
-        barClass: 'bg-rose-600',
-        percent: 100,
-      };
-    }
-
-    const hoursRemaining = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60)));
-    const daysRemaining = Math.floor(hoursRemaining / 24);
-    const remainingText =
-      daysRemaining > 0
-        ? `Sisa ${daysRemaining} hari ${hoursRemaining % 24} jam`
-        : `Sisa ${hoursRemaining} jam`;
-
-    return {
-      isOverdue: false,
-      text: remainingText,
-      badgeClass:
-        hoursRemaining < 12
-          ? 'bg-amber-50 text-amber-800 border-amber-300 font-bold'
-          : 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold',
-      barClass: hoursRemaining < 12 ? 'bg-amber-500' : 'bg-emerald-600',
-      percent: remainingPercent,
-    };
-  };
-
-  // Format tanggal Indonesia
-  const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  // Selected assignment object
+  const selectedAssignment = useMemo(() => {
+    return assignments.find((a) => a.id === selectedId) || assignments[0] || null;
+  }, [assignments, selectedId]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Header Banner with Institutional Accents */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white rounded-2xl p-6 sm:p-8 shadow-md border border-emerald-800/60">
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#DFB045_1px,transparent_1px)] [background-size:18px_18px]" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-bold tracking-wide text-gold-300 uppercase shadow-2xs">
-              <ClipboardCheck className="w-3.5 h-3.5 text-gold-400" />
-              SOP Verifikasi — Epic D
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white font-sans">
-              {isHead ? 'Persetujuan Hasil Verifikasi & Penugasan' : 'Antrean Penugasan Verifikasi Berkas'}
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 max-w-2xl leading-relaxed">
-              {isHead
-                ? 'Daftar pengajuan naskah mushaf untuk penerbitan Nota Dinas penugasan dan persetujuan draf surat hasil telaah (Langkah 4 SOP).'
-                : 'Daftar naskah mushaf yang ditugaskan oleh Kepala LPMQ melalui Nota Dinas resmi. Pemeriksaan mencakup validasi data pendaftaran, kelengkapan berkas digital, dan master fisik A4.'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={fetchAssignments}
-              disabled={loading}
-              className="bg-white/10 hover:bg-white/20 text-white border-white/25 backdrop-blur-2xs text-xs font-semibold shadow-xs"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              Segarkan Data
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {!error && <QueueOverview total={pagination.total} oldest={assignments[0]?.queue_entered_at || assignments[0]?.assigned_at} fifo={activeTab !== 'COMPLETED'} loading={loading} />}
-
-      {/* Filter & Search Bar */}
-      <div className="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100/90 rounded-xl text-xs font-semibold border border-slate-200/60">
-            {(isHead || isAdmin) && (
-              <button
-                onClick={() => {
-                  setActiveTab('WAITING_APPROVAL');
-                  setPagination((p) => ({ ...p, page: 1 }));
-                }}
-                className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
-                  activeTab === 'WAITING_APPROVAL'
-                    ? 'bg-amber-600 text-white shadow-2xs font-bold'
-                    : 'text-amber-800 hover:text-amber-950 font-semibold'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Menunggu Approval Kepala
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setActiveTab('ALL');
-                setPagination((p) => ({ ...p, page: 1 }));
-              }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                activeTab === 'ALL'
-                  ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Semua Tugas
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('ASSIGNED');
-                setPagination((p) => ({ ...p, page: 1 }));
-              }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
-                activeTab === 'ASSIGNED'
-                  ? 'bg-white text-cyan-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
-              Menunggu Mulai
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('IN_PROGRESS');
-                setPagination((p) => ({ ...p, page: 1 }));
-              }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
-                activeTab === 'IN_PROGRESS'
-                  ? 'bg-white text-sky-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-sky-500"></span>
-              Sedang Diperiksa
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('COMPLETED');
-                setPagination((p) => ({ ...p, page: 1 }));
-              }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all inline-flex items-center gap-1.5 ${
-                activeTab === 'COMPLETED'
-                  ? 'bg-white text-emerald-900 shadow-2xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              Selesai / Diajukan
-            </button>
-          </div>
-
-          {/* Search Form */}
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-md w-full">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                aria-label="Cari penugasan verifikasi"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari no. registrasi, judul, atau penerbit..."
-                className="w-full pl-9 pr-3.5 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white transition-all"
-              />
-            </div>
-            <Button type="submit" variant="secondary" size="sm" className="text-xs">
-              Cari
-            </Button>
-          </form>
-        </div>
-      </div>
-
-      {/* Error Banner */}
-      {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3 text-rose-800 text-sm shadow-xs">
-          <AlertCircle className="w-5 h-5 flex-shrink-0 text-rose-600 mt-0.5" />
-          <div className="flex-1">
-            <p className="font-bold">Terjadi Kendala</p>
-            <p className="text-rose-700 text-xs mt-0.5">{error}</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={fetchAssignments} className="text-xs">
-            Coba Lagi
+      {/* Formal Institutional Header */}
+      <PageHeader
+        breadcrumbs={[
+          { label: 'Aplikasi Internal', path: '/internal' },
+          { label: isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi' },
+        ]}
+        title={isHead ? 'Persetujuan Hasil Verifikasi & Penugasan' : 'Antrean Penugasan Verifikasi Berkas'}
+        subtitle={
+          isHead
+            ? 'Daftar pengajuan naskah mushaf untuk penerbitan Nota Dinas penugasan dan persetujuan draf surat hasil telaah (Langkah 4 SOP).'
+            : 'Daftar naskah mushaf yang ditugaskan oleh Kepala LPMQ melalui Nota Dinas resmi. Pemeriksaan mencakup validasi data pendaftaran, berkas digital, dan master fisik A4.'
+        }
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchAssignments}
+            disabled={loading}
+            className="text-xs"
+          >
+            <RefreshCw className={clsx('w-3.5 h-3.5 mr-1.5', loading && 'animate-spin')} />
+            Segarkan Data
           </Button>
-        </div>
-      )}
+        }
+      />
 
-      {/* Loading State */}
-      {loading && assignments.length === 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-xs">
-          <RefreshCw className="w-8 h-8 text-emerald-600 animate-spin mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-700">Memuat antrean tugas verifikasi...</p>
-          <p className="text-xs text-slate-400 mt-1">Mengambil data penugasan resmi dari server LPMQ</p>
-        </div>
-      )}
+      {error ? (
+        <ErrorState
+          title="Kendala Antrean Verifikasi"
+          message={error}
+          onRetry={fetchAssignments}
+          retrying={loading}
+        />
+      ) : (
+        <>
+          {/* FIFO and Volume Queue Metadata Bar */}
+          <QueueOverview
+            total={pagination.total}
+            oldest={assignments[0]?.queue_entered_at || assignments[0]?.assigned_at}
+            fifo={activeTab !== 'COMPLETED'}
+            loading={loading}
+          />
 
-      {/* Empty State */}
-      {!loading && !error && assignments.length === 0 && (
-        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center max-w-lg mx-auto shadow-xs">
-          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4 border border-emerald-200">
-            <ClipboardCheck className="w-6 h-6" />
-          </div>
-          <h3 className="text-base font-bold text-slate-800">Tidak Ada Penugasan Ditemukan</h3>
-          <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
-            {activeTab !== 'ALL'
-              ? `Belum ada penugasan dengan filter status "${activeTab}". Silakan pilih filter lain.`
-              : 'Belum ada naskah yang ditugaskan kepada Anda oleh Kepala LPMQ. Tugas baru akan muncul otomatis ketika Nota Dinas diterbitkan.'}
-          </p>
-          {activeTab !== 'ALL' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveTab('ALL')}
-              className="mt-4 text-xs"
-            >
-              Tampilkan Semua Tugas
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Assignment Cards List */}
-      <div className="space-y-4">
-        {!loading && !error && assignments.map((item) => {
-          const reg = item.registration || {};
-          const notaDinas = item.documents?.[0];
-          const sla = getSlaInfo(item);
-          const physicalMaster = reg.physical_master_intake || {};
-
-          return (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl border border-slate-200/90 hover:border-emerald-300 hover:shadow-md transition-all duration-200 overflow-hidden shadow-2xs"
-            >
-              <div className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                {/* Left Meta & Main Info */}
-                <div className="space-y-3 flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <QueueItemMeta item={item} />
-                    <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/80 shadow-2xs">
-                      {reg.registration_no || 'REG-BELUM-TERBIT'}
-                    </span>
-                    <StatusBadge status={reg.status} />
-                    {item.status === 'ASSIGNED' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-cyan-50 text-cyan-800 border border-cyan-200">
-                        <Clock className="w-3 h-3 text-cyan-600" />
-                        Tugas Baru
-                      </span>
-                    )}
-                    {item.status === 'IN_PROGRESS' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                        <Play className="w-3 h-3 text-amber-600" />
-                        Sedang Diperiksa
-                      </span>
-                    )}
-                    {item.status === 'COMPLETED' && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Pemeriksaan Selesai
-                      </span>
+          {/* Master Detail Workspace */}
+          <MasterDetailLayout
+            hasSelection={Boolean(selectedAssignment)}
+            onClearSelection={() => setSelectedId(null)}
+            masterWidth="lg:w-5/12"
+            detailWidth="lg:w-7/12"
+            masterContent={
+              <div className="space-y-3">
+                {/* Controlled Filter & Search Box */}
+                <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-3">
+                  {/* Segmented Control (Max 3 Options) */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold">
+                    {(isHead || isAdmin) ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setActiveTab('WAITING_APPROVAL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            activeTab === 'WAITING_APPROVAL'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Menunggu Persetujuan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setActiveTab('ALL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            activeTab === 'ALL'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Semua Penugasan
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => { setActiveTab('ASSIGNED'); setPagination(p => ({ ...p, page: 1 })); }}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            activeTab === 'ASSIGNED'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Tugas Baru
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setActiveTab('IN_PROGRESS'); setPagination(p => ({ ...p, page: 1 })); }}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            activeTab === 'IN_PROGRESS'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Sedang Diperiksa
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setActiveTab('ALL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            activeTab === 'ALL'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Semua
+                        </button>
+                      </>
                     )}
                   </div>
 
-                  <div>
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug truncate">
-                      {reg.title || 'Judul Naskah Tanpa Nama'}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 mt-1">
-                      <span className="inline-flex items-center gap-1 text-slate-700 font-semibold">
-                        <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                        {reg.publisher?.legal_name || 'Penerbit Tidak Terdata'}
-                      </span>
-                      {notaDinas && (
-                        <span className="inline-flex items-center gap-1 text-slate-600">
-                          <FileText className="w-3.5 h-3.5 text-slate-400" />
-                          Nota Dinas: <span className="font-mono font-semibold text-emerald-900">{notaDinas.document_no}</span>
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 text-slate-500">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        Ditugaskan: {formatDate(item.assigned_at)}
-                      </span>
+                  {/* Search Form */}
+                  <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <input
+                        type="text"
+                        aria-label="Cari penugasan verifikasi"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Cari reg no, judul, penerbit..."
+                        className="w-full text-xs pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
+                      />
                     </div>
-                  </div>
-
-                  {/* Context Badges: Master Fisik & SLA Progress */}
-                  <div className="flex flex-wrap items-center gap-3 pt-1 text-xs">
-                    {/* Master Fisik Badge */}
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gradient-to-r from-gold-50/70 via-white to-amber-50/40 border border-gold-300/80 text-slate-700 shadow-2xs">
-                      <PackageCheck className="w-3.5 h-3.5 text-gold-600" />
-                      <span className="text-slate-600 font-medium">Master Fisik:</span>
-                      <strong className="font-bold text-slate-900">
-                        {physicalMaster.status === 'RECEIVED'
-                          ? `Diterima (${physicalMaster.receipt_no || 'Tanda Terima LPMQ'})`
-                          : physicalMaster.status === 'RETURNED'
-                          ? 'Dikembalikan ke Penerbit'
-                          : 'Belum Diterima / Menunggu'}
-                      </strong>
-                    </div>
-
-                    {/* SLA Badge */}
-                    {sla && (
-                      <div
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs shadow-2xs ${sla.badgeClass}`}
-                        title={`Tenggat: ${formatDate(item.due_at)}`}
-                      >
-                        {sla.isOverdue ? (
-                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
-                        ) : (
-                          <Clock className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                        )}
-                        <span>SLA 2 Hari:</span>
-                        <span>{sla.text}</span>
-                      </div>
-                    )}
-                  </div>
+                    <Button type="submit" variant="outline" size="sm" className="text-xs px-3">
+                      Cari
+                    </Button>
+                  </form>
                 </div>
 
-                {/* Right Action Buttons */}
-                <div className="flex sm:flex-col items-stretch justify-center gap-2 pt-2 lg:pt-0 lg:border-l lg:border-slate-100 lg:pl-6 min-w-[170px]">
-                  {reg.status === 'WAITING_VERIFICATION_APPROVAL' ? (
-                    <Button
-                      variant="gold"
-                      onClick={() => navigate(`/internal/verifications/${item.id}`)}
-                      className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
-                    >
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      {isHead ? 'Tinjau & Setujui Draf' : 'Menunggu Approval Kepala'}
-                    </Button>
-                  ) : item.status === 'ASSIGNED' ? (
-                    <Button
-                      variant="gold"
-                      onClick={() => (isHead ? navigate(`/internal/verifications/${item.id}`) : handleStartVerification(item.id))}
-                      disabled={startingId === item.id}
-                      className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5"
-                    >
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      {isHead ? 'Lihat Detail Penugasan' : startingId === item.id ? 'Memulai...' : 'Mulai Pemeriksaan'}
-                    </Button>
-                  ) : item.status === 'IN_PROGRESS' ? (
-                    <Button
-                      variant="primary"
-                      onClick={() => navigate(`/internal/verifications/${item.id}`)}
-                      className="text-xs px-4 py-2 font-bold inline-flex items-center justify-center gap-1.5"
-                    >
-                      <ClipboardCheck className="w-3.5 h-3.5" />
-                      {isHead ? 'Pantau Progres Pemeriksaan' : 'Lanjutkan Pemeriksaan'}
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate(`/internal/verifications/${item.id}`)}
-                      className="text-xs px-4 py-2 font-semibold inline-flex items-center justify-center gap-1.5"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Lihat Rekap Pemeriksaan
-                    </Button>
-                  )}
+                {/* Queue List Cards */}
+                {loading ? (
+                  <div className="py-12 text-center space-y-2 bg-white rounded-xl border border-slate-200 p-6">
+                    <RefreshCw className="w-6 h-6 animate-spin text-emerald-800 mx-auto" />
+                    <p className="text-xs text-slate-500 font-medium">Memuat antrean tugas...</p>
+                  </div>
+                ) : assignments.length === 0 ? (
+                  <EmptyState
+                    title="Tidak Ada Penugasan Ditemukan"
+                    description="Tidak ada berkas yang memerlukan pemeriksaan pada tab filter ini."
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    {assignments.map((item) => {
+                      const reg = item.registration || {};
+                      const isSelected = selectedAssignment?.id === item.id;
+                      const pub = reg.publisher || {};
 
-                  <Link
-                    to={`/internal/verifications/${item.id}`}
-                    className="text-center text-xs font-semibold text-slate-500 hover:text-emerald-700 py-1 transition-colors"
-                  >
-                    Buka Detail Naskah &rarr;
-                  </Link>
-                </div>
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedId(item.id)}
+                          className={clsx(
+                            'p-4 rounded-xl border cursor-pointer transition-all duration-150 text-xs space-y-2',
+                            isSelected
+                              ? 'border-emerald-700 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-700'
+                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
+                          )}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              {reg.registration_no || '-'}
+                            </span>
+                            <StatusBadge status={reg.status || item.status} size="sm" />
+                          </div>
+
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-sm line-clamp-1">
+                              {reg.title || 'Naskah Mushaf'}
+                            </h4>
+                            <p className="text-slate-500 line-clamp-1">{pub.legal_name || '-'}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                            {item.due_at && (
+                              <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
+                            )}
+                            <ChevronRight className={clsx('w-3.5 h-3.5 text-slate-400 transition-transform', isSelected && 'rotate-90 text-emerald-800')} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            }
+            detailContent={
+              selectedAssignment ? (
+                <div className="space-y-4">
+                  {/* Task Action Card */}
+                  <PrimaryTaskCard
+                    title={
+                      selectedAssignment.status === 'ASSIGNED'
+                        ? 'Pemeriksaan Berkas & Master Fisik Siap Dimulai'
+                        : selectedAssignment.status === 'IN_PROGRESS'
+                        ? 'Lanjutkan Lembar Kerja Pemeriksaan Verifikator'
+                        : 'Hasil Verifikasi Telah Diserahkan'
+                    }
+                    description={
+                      selectedAssignment.status === 'ASSIGNED'
+                        ? 'Nota Dinas telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.'
+                        : 'Lengkapi lembar catatan koreksi dan susun draf Surat Hasil Telaah serta Berita Acara untuk diajukan ke Kepala LPMQ.'
+                    }
+                    objectRef={selectedAssignment.registration?.registration_no ? `No. Registrasi: ${selectedAssignment.registration.registration_no}` : undefined}
+                    ownerLabel={currentUser?.name}
+                    actionLabel={
+                      selectedAssignment.status === 'ASSIGNED'
+                        ? 'Mulai Pemeriksaan'
+                        : 'Lanjutkan Pemeriksaan'
+                    }
+                    onAction={() => {
+                      if (selectedAssignment.status === 'ASSIGNED') {
+                        handleStartVerification(selectedAssignment.id);
+                      } else {
+                        navigate(`/internal/verifications/${selectedAssignment.id}`);
+                      }
+                    }}
+                    actionIcon={<Play className="w-4 h-4 fill-white" />}
+                    slaText={selectedAssignment.due_at ? 'SLA Verifikasi: 2 Hari Kerja' : null}
+                  />
 
-      {/* Pagination Controls */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white px-5 py-3.5 border border-slate-200/90 rounded-2xl text-xs shadow-xs">
-          <p className="text-slate-600">
-            Menampilkan halaman <span className="font-bold text-slate-900">{pagination.page}</span> dari{' '}
-            <span className="font-bold text-slate-900">{pagination.totalPages}</span> (Total{' '}
-            <span className="font-bold text-slate-900">{pagination.total}</span> penugasan)
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-              className="text-xs font-semibold"
-            >
-              Sebelumnya
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-              className="text-xs font-semibold"
-            >
-              Selanjutnya
-            </Button>
-          </div>
-        </div>
+                  {/* Status & Consequence Summary */}
+                  <StatusSummary
+                    status={selectedAssignment.registration?.status || selectedAssignment.status}
+                    slaText={selectedAssignment.due_at ? 'Target SLA 48 Jam' : null}
+                  />
+
+                  {/* Key Metadata Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Publisher & Registration Info */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs shadow-2xs">
+                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-emerald-800" />
+                        Identitas Pemohon
+                      </h4>
+                      <div className="space-y-1 text-slate-600">
+                        <p><strong>Pemohon:</strong> {selectedAssignment.registration?.publisher?.legal_name ? `${selectedAssignment.registration.publisher.legal_name} (Terdaftar)` : '-'}</p>
+                        <p><strong>Naskah:</strong> “{selectedAssignment.registration?.title || '-'}”</p>
+                        <p><strong>Tanggal Masuk:</strong> {new Date(selectedAssignment.assigned_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    </div>
+
+                    {/* Master Physical Intake Status */}
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs shadow-2xs">
+                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
+                        <PackageCheck className="w-4 h-4 text-emerald-800" />
+                        Penerimaan Master Fisik Loket
+                      </h4>
+                      <div className="space-y-1 text-slate-600">
+                        <p>
+                          <strong>Status:</strong>{' '}
+                          {selectedAssignment.registration?.physical_master_intake?.status === 'RECEIVED' ? (
+                            <span className="text-emerald-800 font-bold">Sudah Diterima Loket</span>
+                          ) : (
+                            <span className="text-amber-800 font-bold">Menunggu Penerimaan Loket</span>
+                          )}
+                        </p>
+                        {selectedAssignment.registration?.physical_master_intake?.receipt_no && (
+                          <p>
+                            <strong>No. Tanda Terima:</strong>{' '}
+                            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                              {selectedAssignment.registration?.physical_master_intake?.receipt_no}
+                            </span>
+                          </p>
+                        )}
+                        {selectedAssignment.documents?.[0]?.document_no && (
+                          <p>
+                            <strong>Dasar Penugasan:</strong>{' '}
+                            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                              {selectedAssignment.documents[0].document_no}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null
+            }
+          />
+        </>
       )}
     </div>
   );
