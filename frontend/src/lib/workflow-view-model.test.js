@@ -63,5 +63,47 @@ describe('Centralized Workflow View Model', () => {
     expect(vm.ownerRole).toBe('ADMIN_PENERBIT');
     expect(vm.canUserAct).toBe(false);
   });
+
+  it('maps WAITING_PHYSICAL_MASTER and READY_FOR_ASSIGNMENT operational states accurately', () => {
+    // 1. Intake pending -> WAITING_PHYSICAL_MASTER
+    const pendingReg = {
+      id: 'reg-pending',
+      status: 'READY_FOR_VERIFICATION',
+      physical_master_intake: { status: 'PENDING' },
+    };
+    const adminUser = { role: 'ADMIN' };
+    const pendingVm = getWorkflowViewModel(pendingReg, adminUser);
+    expect(pendingVm.operationalState).toBe('WAITING_PHYSICAL_MASTER');
+    expect(pendingVm.operationalStatusLabel).toBe('Menunggu penerimaan master fisik');
+    expect(pendingVm.operationalOwnerRole).toBe('ADMIN');
+    expect(pendingVm.operationalNextAction).toBe('Periksa master fisik');
+    expect(pendingVm.canUserAct).toBe(true);
+    expect(pendingVm.nextActionPath).toBe('/internal/master-intake');
+
+    // 2. Intake received with receipt_no -> READY_FOR_ASSIGNMENT
+    const readyReg = {
+      id: 'reg-ready',
+      status: 'READY_FOR_VERIFICATION',
+      physical_master_intake: { status: 'RECEIVED', receipt_no: 'TR-123' },
+    };
+    const headUser = { role: 'KEPALA_LPMQ' };
+    const readyVm = getWorkflowViewModel(readyReg, headUser);
+    expect(readyVm.operationalState).toBe('READY_FOR_ASSIGNMENT');
+    expect(readyVm.operationalStatusLabel).toBe('Siap ditugaskan');
+    expect(readyVm.operationalOwnerRole).toBe('KEPALA_LPMQ');
+    expect(readyVm.operationalNextAction).toBe('Pilih Verifikator dan terbitkan Nota Dinas');
+    expect(readyVm.canUserAct).toBe(true);
+    expect(readyVm.nextActionPath).toBe('/internal/verifications?tab=NEED_ASSIGNMENT&id=reg-ready');
+
+    // 3. Assignment ASSIGNED -> VERIFICATION_ASSIGNED
+    const assignedReg = {
+      id: 'reg-assigned',
+      status: 'VERIFICATION_ASSIGNED',
+    };
+    const assignedVm = getWorkflowViewModel(assignedReg, { role: 'VERIFIKATOR' });
+    expect(assignedVm.operationalState).toBe('VERIFICATION_ASSIGNED');
+    expect(assignedVm.operationalStatusLabel).toBe('Verifikator telah ditugaskan');
+    expect(assignedVm.operationalNextAction).toBe('Mulai pemeriksaan');
+  });
 });
 

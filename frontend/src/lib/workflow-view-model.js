@@ -191,13 +191,38 @@ export function getWorkflowViewModel(registration, currentUser) {
   const status = registration.status || 'DRAFT';
   const def = STATUS_DEFINITIONS[status] || STATUS_DEFINITIONS.DRAFT;
 
-  // Evaluasi Blocker
+  // Evaluasi Blocker & Operational State (P0-04, Bagian 7)
+  let operationalState = registration.operational_state || null;
+  let operationalStatusLabel = def.statusLabel;
+  let operationalOwnerRole = def.ownerRole;
+  let operationalOwnerRoleLabel = def.ownerRoleLabel;
+  let operationalNextAction = def.nextActionLabel;
+
   let blockedReason = null;
   if (status === 'READY_FOR_VERIFICATION') {
-    const intake = registration.physical_master_intake;
-    if (!intake || intake.status !== 'RECEIVED') {
+    const intake = registration.physical_master_intake || registration.physical_master;
+    if (!intake || intake.status !== 'RECEIVED' || !intake.receipt_no) {
+      operationalState = 'WAITING_PHYSICAL_MASTER';
+      operationalStatusLabel = 'Menunggu penerimaan master fisik';
+      operationalOwnerRole = 'ADMIN';
+      operationalOwnerRoleLabel = 'Admin Loket';
+      operationalNextAction = 'Periksa master fisik';
       blockedReason = 'Menunggu penyerahan dan intake master fisik A4 di loket LPMQ.';
+    } else {
+      operationalState = 'READY_FOR_ASSIGNMENT';
+      operationalStatusLabel = 'Siap ditugaskan';
+      operationalOwnerRole = 'KEPALA_LPMQ';
+      operationalOwnerRoleLabel = 'Kepala LPMQ';
+      operationalNextAction = 'Pilih Verifikator dan terbitkan Nota Dinas';
     }
+  } else if (status === 'VERIFICATION_ASSIGNED') {
+    operationalState = 'VERIFICATION_ASSIGNED';
+    operationalStatusLabel = 'Verifikator telah ditugaskan';
+    operationalNextAction = 'Mulai pemeriksaan';
+  } else if (status === 'IN_VERIFICATION') {
+    operationalState = 'IN_VERIFICATION';
+    operationalStatusLabel = 'Sedang diperiksa';
+    operationalNextAction = 'Lengkapi pemeriksaan';
   }
 
   // Tentukan nama pejabat/petugas penanggung jawab saat ini
@@ -220,6 +245,7 @@ export function getWorkflowViewModel(registration, currentUser) {
 
   // Evaluasi apakah user yang sedang login berhak mengambil tindakan aktif
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const effectiveOwnerRole = operationalOwnerRole || def.ownerRole;
   let canUserAct = false;
 
   if (userRoles.includes('SUPERADMIN')) {
@@ -238,16 +264,32 @@ export function getWorkflowViewModel(registration, currentUser) {
     canUserAct = userRoles.includes('DOKUMENTATOR') || currentUser?.role === 'DOKUMENTATOR';
   }
 
+  if (operationalState === 'WAITING_PHYSICAL_MASTER' && (userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN')) {
+    canUserAct = true;
+  }
+
+  let nextActionPath = def.actionPath ? def.actionPath(registration.id) : null;
+  if (operationalState === 'WAITING_PHYSICAL_MASTER') {
+    nextActionPath = '/internal/master-intake';
+  } else if (operationalState === 'READY_FOR_ASSIGNMENT') {
+    nextActionPath = `/internal/verifications?tab=NEED_ASSIGNMENT&id=${registration.id}`;
+  }
+
   return {
     phase: def.phase,
     statusCode: status,
+    operationalState,
+    operationalStatusLabel,
+    operationalOwnerRole,
+    operationalOwnerRoleLabel,
+    operationalNextAction,
     statusLabel: def.statusLabel,
     statusDescription: def.statusDescription,
     ownerRole: def.ownerRole,
     ownerRoleLabel: def.ownerRoleLabel,
     ownerName,
-    nextActionLabel: def.nextActionLabel,
-    nextActionPath: def.actionPath ? def.actionPath(registration.id) : null,
+    nextActionLabel: operationalNextAction || def.nextActionLabel,
+    nextActionPath,
     dueAt,
     isOverdue,
     blockedReason,

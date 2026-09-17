@@ -66,7 +66,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         payload: { status: data.decision, receipt_no: intake.receipt_no, notes: intake.notes },
       } });
 
-      // Notifikasi ke Kepala LPMQ: master fisik diterima, siap ditugaskan
+      // Notifikasi ke Kepala LPMQ: master fisik diterima, siap ditugaskan (P0-03)
       if (data.decision === 'RECEIVED') {
         const kepalaUsers = await tx.user.findMany({
           where: {
@@ -75,22 +75,33 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
           },
           select: { id: true },
         });
+        const receivedAt = intake.received_at ? new Date(intake.received_at).toISOString() : new Date().toISOString();
         for (const k of kepalaUsers) {
-          await tx.notification.create({
-            data: {
+          const existing = await tx.notification.findFirst({
+            where: {
               user_id: k.id,
               registration_id: id,
-              type: 'PHYSICAL_MASTER_RECEIVED',
-              title: `Master fisik diterima — Siap ditugaskan verifikasi: ${reg.registration_no}`,
-              payload: {
-                registration_id: id,
-                registration_no: reg.registration_no,
-                title: reg.title,
-                receipt_no: intake.receipt_no,
-                link: '/internal/verifications?tab=NEED_ASSIGNMENT',
-              },
+              type: 'VERIFICATION_ASSIGNMENT_REQUIRED',
             },
           });
+          if (!existing) {
+            await tx.notification.create({
+              data: {
+                user_id: k.id,
+                registration_id: id,
+                type: 'VERIFICATION_ASSIGNMENT_REQUIRED',
+                title: `Master fisik diterima — Siap ditugaskan verifikasi: ${reg.registration_no}`,
+                payload: {
+                  registration_id: id,
+                  registration_no: reg.registration_no,
+                  receipt_no: intake.receipt_no,
+                  received_at: receivedAt,
+                  title: reg.title,
+                  link: '/internal/verifications?tab=NEED_ASSIGNMENT',
+                },
+              },
+            });
+          }
         }
       }
 
@@ -112,8 +123,13 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
       }
-      const active = await tx.verificationAssignment.count({ where: { registration_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS'] } } });
-      if (active) fail(409, 'Pengajuan sudah memiliki verifikator aktif. Muat ulang detail pengajuan.');
+      const active = await tx.verificationAssignment.count({
+        where: {
+          registration_id: id,
+          status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
+        },
+      });
+      if (active) fail(409, 'Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
       const verifier = await tx.user.findUnique({
         where: { id: data.verifier_id },
         include: { roles: { include: { role: true } } },
@@ -252,13 +268,25 @@ export const listVerificationAssignments = async (query, user) => {
   return { items: queueItems(items, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
 };
 
-export const listVerifiers = async (user) => {
+export const listVerifiers = async (queryOrUser, maybeUser) => {
+  const user = maybeUser || queryOrUser;
+  const query = maybeUser ? (queryOrUser || {}) : {};
   requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+
+  const where = {
+    status: query.status || 'ACTIVE',
+    roles: { some: { role: { code: 'VERIFIKATOR' } } },
+  };
+
+  if (query.search) {
+    where.OR = [
+      { name: { contains: query.search } },
+      { nip: { contains: query.search } },
+    ];
+  }
+
   const verifiers = await prisma.user.findMany({
-    where: {
-      status: 'ACTIVE',
-      roles: { some: { role: { code: 'VERIFIKATOR' } } },
-    },
+    where,
     select: {
       id: true,
       name: true,
@@ -268,19 +296,38 @@ export const listVerifiers = async (user) => {
         where: {
           status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
         },
-        select: { id: true },
+        select: { id: true, due_at: true },
+        orderBy: { due_at: 'asc' },
       },
     },
     orderBy: { name: 'asc' },
   });
 
-  return verifiers.map(v => ({
-    id: v.id,
-    name: v.name,
-    nip: v.nip,
-    status: v.status,
-    active_assignments_count: v.verification_assignments.length,
-  }));
+  const formatted = verifiers.map(v => {
+    const activeAssignments = v.verification_assignments || [];
+    const count = activeAssignments.length;
+    const oldestDueAt = activeAssignments.length > 0 ? activeAssignments[0].due_at : null;
+
+    return {
+      id: v.id,
+      name: v.name,
+      nip: v.nip,
+      status: v.status,
+      active_assignment_count: count,
+      active_assignments_count: count,
+      oldest_active_due_at: oldestDueAt,
+    };
+  });
+
+  // Urutkan berdasarkan beban aktif paling ringan lalu nama (P0-02)
+  formatted.sort((a, b) => {
+    if (a.active_assignment_count !== b.active_assignment_count) {
+      return a.active_assignment_count - b.active_assignment_count;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  return formatted;
 };
 
 export const listUnassignedRegistrations = async (query = {}, user) => {
@@ -293,6 +340,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
     status: 'READY_FOR_VERIFICATION',
     physical_master_intake: {
       status: 'RECEIVED',
+      receipt_no: { not: null },
     },
     verification_assignments: {
       none: {
@@ -325,8 +373,29 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
     }),
   ]);
 
+  const formattedItems = items.map(item => {
+    const physicalMaster = item.physical_master_intake ? {
+      status: item.physical_master_intake.status,
+      receipt_no: item.physical_master_intake.receipt_no,
+      volume_count: item.physical_master_intake.volume_count,
+      received_at: item.physical_master_intake.received_at,
+      condition: item.physical_master_intake.condition,
+    } : null;
+
+    return {
+      ...item,
+      submitted_at: item.fee_sla_snapshot?.submitted_at || item.created_at,
+      operational_state: 'READY_FOR_ASSIGNMENT',
+      physical_master: physicalMaster,
+      next_action: {
+        owner_role: 'KEPALA_LPMQ',
+        label: 'Tugaskan Verifikator',
+      },
+    };
+  });
+
   return {
-    items: queueItems(items, item => item.stage_entered_at, skip, true),
+    items: queueItems(formattedItems, item => item.stage_entered_at, skip, true),
     pagination: {
       total,
       page,
@@ -335,4 +404,5 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
     },
   };
 };
+
 

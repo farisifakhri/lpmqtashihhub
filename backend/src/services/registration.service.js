@@ -731,8 +731,22 @@ export const getDetail = async (id, user) => {
   if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
   }
+
+  let operational_state = null;
+  if (reg.status === 'READY_FOR_VERIFICATION') {
+    if (reg.physical_master_intake?.status === 'RECEIVED' && reg.physical_master_intake?.receipt_no) {
+      operational_state = 'READY_FOR_ASSIGNMENT';
+    } else {
+      operational_state = 'WAITING_PHYSICAL_MASTER';
+    }
+  } else if (reg.status === 'VERIFICATION_ASSIGNED') {
+    operational_state = 'VERIFICATION_ASSIGNED';
+  }
+  reg.operational_state = operational_state;
+
   return reg;
 };
+
 
 export const addManuscriptFile = async (registrationId, data, user, req) => {
   const reg = await prisma.registration.findUnique({

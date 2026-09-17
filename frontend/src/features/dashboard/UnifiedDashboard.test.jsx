@@ -116,4 +116,61 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     expect(screen.queryByRole('button', { name: 'Tetapkan Tim' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Penugasan Tim/ })).not.toBeInTheDocument();
   });
+
+  it('KEPALA_LPMQ sees Tugaskan Verifikator on READY_FOR_VERIFICATION rows when physical master is received', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'head-1', roles: ['KEPALA_LPMQ'], role: 'KEPALA_LPMQ' },
+    });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({
+      data: [
+        {
+          id: 'reg-ready-1',
+          registration_no: 'REG-2026-999',
+          title: 'Mushaf Standar Uji Penugasan',
+          status: 'READY_FOR_VERIFICATION',
+          created_at: new Date().toISOString(),
+          physical_master_intake: { status: 'RECEIVED', receipt_no: 'TT-001' },
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <UnifiedDashboard />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Mushaf Standar Uji Penugasan');
+    expect(screen.getByRole('button', { name: /Tugaskan Verifikator/i })).toBeInTheDocument();
+  });
+
+  it('ADMIN sees Intake Master Fisik action link on READY_FOR_VERIFICATION rows when physical master is pending', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'admin-loket', roles: ['ADMIN'], role: 'ADMIN' },
+    });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({
+      data: [
+        {
+          id: 'reg-intake-1',
+          registration_no: 'REG-2026-888',
+          title: 'Mushaf Menunggu Master Fisik',
+          status: 'READY_FOR_VERIFICATION',
+          created_at: new Date().toISOString(),
+          physical_master_intake: { status: 'PENDING' },
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <UnifiedDashboard />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Mushaf Menunggu Master Fisik');
+    expect(screen.getByRole('link', { name: /Loket Intake Master Fisik/i })).toBeInTheDocument();
+    const intakeLink = screen.getByRole('link', { name: /^Intake Master Fisik$/i });
+    expect(intakeLink).toBeInTheDocument();
+    expect(intakeLink.getAttribute('href')).toContain('/internal/master-intake?search=REG-2026-888');
+  });
 });

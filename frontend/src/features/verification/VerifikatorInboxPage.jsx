@@ -35,6 +35,17 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
+function formatWaitingTime(dateString) {
+  if (!dateString) return null;
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  if (diffMs < 0) return 'Baru saja';
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return '< 1 jam';
+  if (diffHours < 24) return `${diffHours} jam`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} hari`;
+}
+
 export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,7 +67,7 @@ export const VerifikatorInboxPage = () => {
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(null);
   const requestId = useRef(0);
 
   const fetchAssignments = async () => {
@@ -302,11 +313,21 @@ export const VerifikatorInboxPage = () => {
             <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between gap-3 text-xs text-emerald-900 shadow-2xs">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span className="font-semibold">{successMessage}</span>
+                <span className="font-semibold">
+                  {typeof successMessage === 'string' ? successMessage : successMessage.text}
+                </span>
+                {typeof successMessage === 'object' && successMessage.assignmentId && (
+                  <Link
+                    to={`/internal/verifications/${successMessage.assignmentId}`}
+                    className="ml-2 font-bold text-emerald-800 underline hover:text-emerald-950"
+                  >
+                    Buka Detail Penugasan &rarr;
+                  </Link>
+                )}
               </div>
               <button
                 type="button"
-                onClick={() => setSuccessMessage('')}
+                onClick={() => setSuccessMessage(null)}
                 className="text-emerald-700 hover:text-emerald-900 p-1 rounded-md"
                 aria-label="Tutup pesan sukses"
               >
@@ -314,6 +335,7 @@ export const VerifikatorInboxPage = () => {
               </button>
             </div>
           )}
+
 
           {/* FIFO and Volume Queue Metadata Bar */}
           <QueueOverview
@@ -492,7 +514,13 @@ export const VerifikatorInboxPage = () => {
                             <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                               {reg.registration_no || '-'}
                             </span>
-                            <StatusBadge status={item.isUnassigned ? 'READY_FOR_VERIFICATION' : (reg.status || item.status)} size="sm" />
+                            {item.isUnassigned ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Siap ditugaskan
+                              </span>
+                            ) : (
+                              <StatusBadge status={reg.status || item.status} size="sm" />
+                            )}
                           </div>
 
                           <div>
@@ -502,11 +530,30 @@ export const VerifikatorInboxPage = () => {
                             <p className="text-slate-500 line-clamp-1">{pub.legal_name || '-'}</p>
                           </div>
 
+                          {item.isUnassigned ? (
+                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/60 text-[11px] space-y-1 text-slate-600">
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-slate-700">
+                                  TT: <strong>{reg.physical_master?.receipt_no || reg.physical_master_intake?.receipt_no || '-'}</strong>
+                                </span>
+                                <span>{(reg.physical_master?.volume_count ?? reg.physical_master_intake?.volume_count ?? 30)} jilid</span>
+                              </div>
+                              <div className="flex items-center justify-between text-slate-500 text-[10px]">
+                                <span>
+                                  Diterima: {(reg.physical_master?.received_at || reg.physical_master_intake?.received_at) ? new Date(reg.physical_master?.received_at || reg.physical_master_intake?.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
+                                </span>
+                                <span>
+                                  Menunggu: {formatWaitingTime(reg.physical_master?.received_at || reg.physical_master_intake?.received_at || item.assigned_at)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+
                           <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
                             {item.due_at ? (
                               <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
                             ) : item.isUnassigned ? (
-                              <span className="text-amber-700 font-semibold flex items-center gap-1">
+                              <span className="text-emerald-700 font-semibold flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 Siap Ditugaskan
                               </span>
@@ -617,10 +664,18 @@ export const VerifikatorInboxPage = () => {
         <AssignVerificationDialog
           registration={selectedAssignment.registration || selectedAssignment}
           onClose={() => setAssignDialogOpen(false)}
+          onConflict={() => {
+            fetchAssignments();
+          }}
           onSuccess={(newAssignment) => {
             setAssignDialogOpen(false);
-            const docNo = newAssignment?.documents?.[0]?.document_no || '';
-            setSuccessMessage(`Berhasil menugaskan Verifikator${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`);
+            const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
+            const createdAssignmentId = newAssignment?.assignment?.id || newAssignment?.id;
+            setSuccessMessage({
+              text: `Berhasil menugaskan Verifikator${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`,
+              assignmentId: createdAssignmentId,
+            });
+            setAssignments((prev) => prev.filter((a) => a.id !== selectedAssignment.id));
             fetchAssignments();
           }}
         />

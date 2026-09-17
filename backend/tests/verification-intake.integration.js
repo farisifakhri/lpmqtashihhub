@@ -49,7 +49,31 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const received = await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 });
     assert.equal(received.status, 'RECEIVED');
     assert.equal((await expect(`/registrations/${reg.id}/receipt`, publisherToken)).physical_master.receipt_no, `TR-${reg.registration_no}`);
+
+    // P0-01: Verifikasi antrean kandidat penugasan Kepala LPMQ
+    const candidates = await expect('/verification-assignment-candidates', kepalaToken);
+    assert.ok(candidates.items.some(item => item.id === reg.id));
+    const candidateItem = candidates.items.find(item => item.id === reg.id);
+    assert.equal(candidateItem.operational_state, 'READY_FOR_ASSIGNMENT');
+    assert.equal(candidateItem.physical_master.receipt_no, `TR-${reg.registration_no}`);
+
+    // P0-02: Verifikasi direktori verifikator aktif
+    const verifiersList = await expect('/verification-verifiers?status=ACTIVE', kepalaToken);
+    assert.ok(Array.isArray(verifiersList));
+    assert.ok(verifiersList.some(v => v.id === verifier.id));
+    const verifierObj = verifiersList.find(v => v.id === verifier.id);
+    assert.equal(typeof verifierObj.active_assignment_count, 'number');
+
+    // P0-03: Notifikasi idempoten ke Kepala LPMQ saat intake RECEIVED
+    const kepalaUser = await prisma.user.findUnique({ where: { email: 'kepala@lpmq.kemenag.go.id' } });
+    const kepalaNotif = await prisma.notification.findFirst({
+      where: { registration_id: reg.id, user_id: kepalaUser.id, type: 'VERIFICATION_ASSIGNMENT_REQUIRED' },
+    });
+    assert.ok(kepalaNotif);
+    assert.equal(kepalaNotif.payload.receipt_no, `TR-${reg.registration_no}`);
+
     await expect(assignPath, kepalaToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
+
   });
 
   await test('PR-VER-02: assignment paralel menghasilkan satu Nota Dinas, status, audit, dan notifikasi', async () => {

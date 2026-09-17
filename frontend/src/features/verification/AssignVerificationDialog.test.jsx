@@ -35,6 +35,10 @@ describe('AssignVerificationDialog Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(VerificationApiModule.verificationApi, 'listActiveVerifiers').mockResolvedValue({
+      success: true,
+      data: mockVerifiers,
+    });
     vi.spyOn(VerificationApiModule.verificationApi, 'getVerifiers').mockResolvedValue({
       success: true,
       data: mockVerifiers,
@@ -66,8 +70,8 @@ describe('AssignVerificationDialog Component', () => {
     );
 
     expect(screen.getByText('Terbitkan Nota Dinas & Tugaskan Verifikator')).toBeInTheDocument();
-    expect(screen.getByText('REG-2026-LPMQ-001')).toBeInTheDocument();
-    expect(screen.getByText(/PT Percetakan Menara Kudus/i)).toBeInTheDocument();
+    expect(screen.getAllByText('REG-2026-LPMQ-001').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/PT Percetakan Menara Kudus/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/TT-LPMQ-2026-888/)).toBeInTheDocument();
 
     await waitFor(() => {
@@ -185,4 +189,57 @@ describe('AssignVerificationDialog Component', () => {
 
     expect(onCloseMock).toHaveBeenCalledTimes(1);
   });
+
+  it('merender ringkasan konfirmasi penugasan dan tenggat target 2 hari kerja', async () => {
+    render(
+      <AssignVerificationDialog
+        registration={mockRegistration}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Ringkasan Konfirmasi Penugasan/i)).toBeInTheDocument();
+    expect(screen.getByText(/2 Hari Kerja \(Asia\/Jakarta\)/i)).toBeInTheDocument();
+  });
+
+  it('menangani error konflik 409 dengan pesan ramah dan memanggil onConflict jika tersedia', async () => {
+    const onConflictMock = vi.fn();
+    const conflictError = new Error('Pengajuan sudah memiliki verifikator aktif.');
+    conflictError.status = 409;
+    vi.spyOn(VerificationApiModule.verificationApi, 'createAssignment').mockRejectedValue(conflictError);
+
+    render(
+      <AssignVerificationDialog
+        registration={mockRegistration}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+        onConflict={onConflictMock}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'v-1' } });
+    fireEvent.change(screen.getByLabelText(/Nomor Nota Dinas Penugasan/i), {
+      target: { value: 'ND.01/LPMQ/2026' },
+    });
+
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Pengajuan sudah ditugaskan oleh pengguna lain\. Muat ulang antrean untuk melihat penugasan terbaru\./i)
+      ).toBeInTheDocument();
+      expect(onConflictMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });
+

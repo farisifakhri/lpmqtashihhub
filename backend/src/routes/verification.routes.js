@@ -30,8 +30,11 @@ router.post('/registrations/:id/physical-master/receive', authenticate, authoriz
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
 router.post('/registrations/:id/verification-assignments', authenticate, authorize('KEPALA_LPMQ'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
-router.get('/verification/verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.user)));
+router.get('/verification/verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
+router.get('/verification-verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification/unassigned-registrations', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
+router.get('/verification-assignment-candidates', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
+
 
 // PR-VER-03: Pemeriksaan berkas & penyusunan draf surat hasil verifikasi (Epic D)
 router.patch('/verification-assignments/:id/start', authenticate, authorize('VERIFIKATOR'), validate(assignmentIdSchema), action(req => review.startVerification(req.params.id, req.user, req)));

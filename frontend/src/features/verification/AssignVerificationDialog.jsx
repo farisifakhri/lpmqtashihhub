@@ -3,8 +3,9 @@ import { X, FileText, CheckCircle2, AlertCircle, Clock, ShieldCheck, UserCheck }
 import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
-export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) => {
+export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
   const [verifiers, setVerifiers] = useState([]);
+  const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState('');
   const [notaNo, setNotaNo] = useState('');
   const [notes, setNotes] = useState('');
@@ -18,7 +19,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
     setError(null);
 
     verificationApi
-      .getVerifiers()
+      .listActiveVerifiers({ status: 'ACTIVE' })
       .then((res) => {
         if (!isMounted) return;
         const items = res?.data || [];
@@ -36,6 +37,17 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
       isMounted = false;
     };
   }, []);
+
+  const filteredVerifiers = verifiers.filter((v) => {
+    if (!verifierSearch.trim()) return true;
+    const term = verifierSearch.toLowerCase();
+    return (
+      v.name?.toLowerCase().includes(term) ||
+      (v.nip && String(v.nip).includes(term))
+    );
+  });
+
+  const selectedVerifier = verifiers.find((v) => v.id === selectedVerifierId) || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -66,14 +78,22 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
         onSuccess(res?.data);
       }
     } catch (err) {
-      setError(err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.');
+      const isConflict = err.status === 409 || err.statusCode === 409 || err.message?.includes('sudah');
+      if (isConflict) {
+        setError('Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
+        if (onConflict) {
+          onConflict();
+        }
+      } else {
+        setError(err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   const publisher = registration?.publisher || {};
-  const physicalMaster = registration?.physical_master_intake || {};
+  const physicalMaster = registration?.physical_master || registration?.physical_master_intake || {};
   const todayFormatted = new Date().toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'long',
@@ -87,7 +107,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
       aria-labelledby="assign-verifier-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
     >
-      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2.5">
@@ -148,28 +168,55 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
 
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Verifier Selection */}
+          {/* Verifier Selection with Search */}
           <div className="space-y-1.5">
-            <label htmlFor="verifier-select" className="block font-bold text-slate-800">
-              Pilih Verifikator <span className="text-rose-600">*</span>
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="verifier-select" className="block font-bold text-slate-800">
+                Pilih Verifikator <span className="text-rose-600">*</span>
+              </label>
+              {verifiers.length > 3 && (
+                <span className="text-[11px] text-slate-500">
+                  {filteredVerifiers.length} dari {verifiers.length} petugas
+                </span>
+              )}
+            </div>
+
             {loading ? (
               <p className="text-slate-500 italic py-2">Memuat daftar verifikator...</p>
             ) : (
-              <select
-                id="verifier-select"
-                value={selectedVerifierId}
-                onChange={(e) => setSelectedVerifierId(e.target.value)}
-                disabled={submitting}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-white"
-              >
-                <option value="">-- Pilih Petugas Verifikator --</option>
-                {verifiers.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} {v.nip ? `(NIP: ${v.nip})` : ''} · {v.active_assignments_count} tugas aktif
-                  </option>
-                ))}
-              </select>
+              <div className="space-y-1.5">
+                {verifiers.length > 3 && (
+                  <input
+                    type="text"
+                    value={verifierSearch}
+                    onChange={(e) => setVerifierSearch(e.target.value)}
+                    placeholder="Ketik untuk memfilter nama / NIP verifikator..."
+                    aria-label="Filter verifikator"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  />
+                )}
+                <select
+                  id="verifier-select"
+                  role="combobox"
+                  value={selectedVerifierId}
+                  onChange={(e) => setSelectedVerifierId(e.target.value)}
+                  disabled={submitting}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-white"
+                >
+                  <option value="">-- Pilih Petugas Verifikator --</option>
+                  {filteredVerifiers.map((v) => {
+                    const taskCount = v.active_assignment_count ?? v.active_assignments_count ?? 0;
+                    const dueInfo = v.oldest_active_due_at
+                      ? ` · tenggat terdekat ${new Date(v.oldest_active_due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                      : '';
+                    return (
+                      <option key={v.id} value={v.id}>
+                        {v.name} {v.nip ? `(NIP: ${v.nip})` : ''} · {taskCount} tugas aktif{dueInfo}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
             )}
             <p className="text-[11px] text-slate-500">
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
@@ -211,21 +258,39 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess }) =
             />
           </div>
 
-          {/* SLA & Timeline Info */}
-          <div className="p-3 bg-emerald-50/60 border border-emerald-200 rounded-xl grid grid-cols-2 gap-3 text-[11px] text-emerald-950">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-700 shrink-0" />
+          {/* Confirmation Summary (P0-08) */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+            <div className="font-bold text-slate-800 border-b border-slate-200/60 pb-1.5 flex items-center justify-between">
+              <span>Ringkasan Konfirmasi Penugasan</span>
+              <span className="text-[11px] font-normal text-slate-500">Mulai: saat dikonfirmasi</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-slate-600">
               <div>
-                <span className="text-emerald-800 font-medium block">Tanggal Penugasan:</span>
-                <strong className="font-semibold">{todayFormatted}</strong>
+                <span className="text-slate-500 text-[11px] block">Registrasi:</span>
+                <span className="font-mono font-semibold text-slate-900">{registration?.registration_no || '-'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 text-[11px] block">Penerbit:</span>
+                <span className="font-semibold text-slate-900 truncate block">{publisher.legal_name || '-'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 text-[11px] block">Verifikator:</span>
+                <span className="font-semibold text-slate-900">{selectedVerifier?.name || '(Belum dipilih)'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 text-[11px] block">Nomor Nota Dinas:</span>
+                <span className="font-mono font-semibold text-slate-900">{notaNo.trim() || '(Belum diisi)'}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <div>
-                <span className="text-emerald-800 font-medium block">Tenggat Target SLA:</span>
-                <strong className="font-semibold">2 Hari Kerja (SOP)</strong>
-              </div>
+            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-emerald-900">
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span>Tanggal: <strong>{todayFormatted}</strong></span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span>Tenggat Target: <strong>2 Hari Kerja (Asia/Jakarta)</strong></span>
+              </span>
             </div>
           </div>
 
