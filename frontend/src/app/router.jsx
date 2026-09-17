@@ -34,6 +34,7 @@ const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verifica
 const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
 const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
 const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signatures/SignatureCenterPage').then(m => ({ default: m.SignatureCenterPage }))));
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
@@ -125,6 +126,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <VerificationInspectionPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/signatures',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN']}>
+            <SignatureCenterPage />
           </ProtectedRoute>
         ),
       },

@@ -22,6 +22,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusSummary } from '@/components/ui/StatusSummary';
+import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnershipBanner';
+import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 import { PublisherProgress } from './PublisherProgress';
 import { PublisherDocumentList } from './PublisherDocumentList';
 import { publisherAction, dateLabel } from './publisher-status';
@@ -78,6 +80,7 @@ export function PublisherRegistrationDetailPage() {
   const editable = data && ['DRAFT', 'REVISION_REQUIRED'].includes(data.status);
   const revision = data?.status === 'REVISION_REQUIRED';
   const action = data && publisherAction(data);
+  const workflowVm = data ? getWorkflowViewModel(data, currentUser) : null;
 
   const run = async (operation, message) => {
     if (busy) return;
@@ -246,6 +249,11 @@ export function PublisherRegistrationDetailPage() {
                 <PublisherProgress registration={data} />
               </div>
             </header>
+
+            {/* Workflow Ownership & Action Banner */}
+            {workflowVm && (
+              <WorkflowOwnershipBanner viewModel={workflowVm} />
+            )}
 
             {/* Revision Callout Box */}
             {revision && (

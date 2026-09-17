@@ -580,6 +580,10 @@ export const InternalPaymentQueuePage = () => {
           onConfirm={handleVerify}
           title="Sahkan Pembayaran PNBP (Lunas)"
           description="Pastikan data NTPN dan bukti transfer bank telah cocok dengan catatan persepsi kas negara."
+          objectName={`Billing SIMPONI #${selectedPayment.billing_no}`}
+          nextActor="Petugas Distributor (Serah-Terima Master Fisik)"
+          statusChange="PAID -> VERIFIED"
+          irreversibleConsequence="Pengesahan pembayaran PNBP bersifat permanen dan mencatatkan penerimaan kas negara. Naskah akan langsung melangkah ke penyerahan master fisik."
           summaryItems={[
             { label: 'Nomor Billing', value: selectedPayment.billing_no },
             { label: 'Naskah Mushaf', value: selectedPayment.registration?.title || '-' },

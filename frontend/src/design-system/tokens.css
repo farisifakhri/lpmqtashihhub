@@ -1,0 +1,38 @@
+/**
+ * Modern Civic Workspace Design Tokens
+ * Acuan: Total Redesign UI/UX Sistem Pentashihan LPMQ v2
+ */
+
+:root {
+  /* Canvas & Surfaces */
+  --canvas: #f4f7f5;
+  --surface: #ffffff;
+  --surface-subtle: #eef3f0;
+  --surface-strong: #e2ebe6;
+
+  /* Brand / Deep Islamic Pine */
+  --brand-950: #062d24;
+  --brand-900: #0a3d31;
+  --brand-800: #115442;
+  --brand-700: #176b53;
+  --brand-100: #dff2e9;
+  --brand-50: #f0faf6;
+
+  /* Official Gold / Brass (dokumen resmi, pengesahan, billing) */
+  --gold-700: #8a641f;
+  --gold-500: #b88a32;
+  --gold-100: #f5e9cb;
+
+  /* Ink & Lines */
+  --ink: #17211d;
+  --ink-muted: #5d6b64;
+  --line: #d6dfda;
+  --line-strong: #b8c6bf;
+
+  /* Semantic Feedback */
+  --info: #2563eb;
+  --warning: #b45309;
+  --danger: #b42318;
+  --success: #16805c;
+}
+

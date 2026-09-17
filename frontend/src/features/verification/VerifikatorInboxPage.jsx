@@ -359,7 +359,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-slate-600 hover:text-slate-900'
                           )}
                         >
-                          Persetujuan
+                          Menunggu Persetujuan
                         </button>
                         <button
                           type="button"
@@ -383,7 +383,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-slate-600 hover:text-slate-900'
                           )}
                         >
-                          Selesai
+                          Riwayat
                         </button>
                       </>
                     ) : (
@@ -392,7 +392,7 @@ export const VerifikatorInboxPage = () => {
                           type="button"
                           onClick={() => handleTabChange('ASSIGNED')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'ASSIGNED'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
@@ -404,7 +404,7 @@ export const VerifikatorInboxPage = () => {
                           type="button"
                           onClick={() => handleTabChange('IN_PROGRESS')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'IN_PROGRESS'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
@@ -414,15 +414,27 @@ export const VerifikatorInboxPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleTabChange('ALL')}
+                          onClick={() => handleTabChange('WAITING_APPROVAL')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
-                            activeTab === 'ALL'
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_APPROVAL'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                           )}
                         >
-                          Semua
+                          Menunggu Pihak Lain
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('READY_TO_SEND')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'READY_TO_SEND'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Siap Dikirim
                         </button>
                       </>
                     )}

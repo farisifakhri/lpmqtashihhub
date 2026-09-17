@@ -9,6 +9,10 @@ import { SlaIndicator } from './SlaIndicator';
 import { AssignedOfficer } from './AssignedOfficer';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
+import { IconButton } from './IconButton';
+import { FormField } from './FormField';
+import { SearchField } from './SearchField';
+import { Skeleton } from './Skeleton';
 import { WorkflowTimeline } from '@/components/common/WorkflowTimeline';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { StickyActionBar } from '@/components/layout/StickyActionBar';
@@ -126,6 +130,85 @@ describe('Redesign UI/UX Reusable Components', () => {
 
     expect(screen.getByText('Draf tersimpan otomatis')).toBeInTheDocument();
     expect(screen.getByText('Simpan & Ajukan')).toBeInTheDocument();
+  });
+
+  it('IconButton merender icon dengan accessible label dan merespons klik', () => {
+    const handleClick = vi.fn();
+    render(
+      <IconButton
+        icon={<span data-testid="test-icon">icon</span>}
+        label="Tutup Dialog"
+        onClick={handleClick}
+      />
+    );
+
+    const btn = screen.getByRole('button', { name: 'Tutup Dialog' });
+    expect(btn).toBeInTheDocument();
+    expect(screen.getByTestId('test-icon')).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('FormField menghubungkan label, input, error, dan hint secara aksesibel', () => {
+    render(
+      <FormField
+        id="nama-naskah"
+        label="Judul Naskah"
+        hint="Gunakan judul lengkap sesuai cover."
+        error="Judul naskah wajib diisi."
+        required
+      >
+        <input type="text" />
+      </FormField>
+    );
+
+    expect(screen.getByLabelText(/Judul Naskah/i)).toBeInTheDocument();
+    expect(screen.getByText('Judul naskah wajib diisi.')).toBeInTheDocument();
+    expect(screen.getByText('*')).toBeInTheDocument();
+    const input = screen.getByLabelText(/Judul Naskah/i);
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input.getAttribute('aria-describedby')).toContain('nama-naskah-error');
+    expect(input.getAttribute('aria-describedby')).toContain('nama-naskah-hint');
+  });
+
+  it('SearchField merender input pencarian dengan clear button dan shortcut badge', () => {
+    const handleChange = vi.fn();
+    const handleClear = vi.fn();
+
+    const { rerender } = render(
+      <SearchField
+        value=""
+        onChange={handleChange}
+        placeholder="Cari naskah..."
+        shortcut="Ctrl+K"
+        onClear={handleClear}
+      />
+    );
+
+    expect(screen.getByPlaceholderText('Cari naskah...')).toBeInTheDocument();
+    expect(screen.getByText('Ctrl+K')).toBeInTheDocument();
+
+    rerender(
+      <SearchField
+        value="Al-Baqarah"
+        onChange={handleChange}
+        placeholder="Cari naskah..."
+        shortcut="Ctrl+K"
+        onClear={handleClear}
+      />
+    );
+
+    const clearBtn = screen.getByRole('button', { name: 'Bersihkan pencarian' });
+    expect(clearBtn).toBeInTheDocument();
+    fireEvent.click(clearBtn);
+    expect(handleClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('Skeleton merender placeholder loading dengan role presentation/aria-hidden', () => {
+    const { container } = render(<Skeleton className="h-6 w-32" />);
+    const el = container.firstChild;
+    expect(el).toHaveAttribute('aria-hidden', 'true');
+    expect(el.className).toContain('animate-pulse');
   });
 });
 

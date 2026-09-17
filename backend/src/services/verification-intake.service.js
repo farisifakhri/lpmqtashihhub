@@ -320,7 +320,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
         publisher: { select: { legal_name: true } },
         service_type: { select: { name: true } },
         physical_master_intake: { select: { status: true, receipt_no: true, received_at: true, volume_count: true, condition: true } },
-        manuscript_files: { select: { id: true, file_name: true, type: true, version: true } },
+        manuscript_files: { select: { id: true, file_id: true, type: true, version: true, created_at: true } },
       },
     }),
   ]);

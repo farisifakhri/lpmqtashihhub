@@ -10,6 +10,11 @@ export const ConfirmationSummaryDialog = ({
   title = 'Konfirmasi Tindakan',
   description = 'Periksa rincian objek berikut sebelum melanjutkan keputusan.',
   summaryItems = [],
+  objectName,
+  nextActor,
+  statusChange,
+  generatedDocument,
+  irreversibleConsequence,
   impactMessage,
   confirmLabel = 'Lanjutkan',
   cancelLabel = 'Batal',
@@ -18,6 +23,17 @@ export const ConfirmationSummaryDialog = ({
   icon,
 }) => {
   const dialogRef = useRef(null);
+
+  // Gabungkan item ringkasan terstruktur jika disediakan
+  const allSummaryItems = [
+    ...summaryItems,
+    objectName ? { label: 'Objek Naskah', value: objectName } : null,
+    nextActor ? { label: 'Pelaku / Penerima Berikutnya', value: nextActor } : null,
+    statusChange ? { label: 'Perubahan Status', value: statusChange } : null,
+    generatedDocument ? { label: 'Dokumen Terbentuk', value: generatedDocument } : null,
+  ].filter(Boolean);
+
+  const finalImpact = impactMessage || irreversibleConsequence;
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -89,9 +105,9 @@ export const ConfirmationSummaryDialog = ({
         </div>
 
         {/* Summary Details Table */}
-        {summaryItems.length > 0 && (
+        {allSummaryItems.length > 0 && (
           <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-200 space-y-2 text-xs">
-            {summaryItems.map((item, idx) => (
+            {allSummaryItems.map((item, idx) => (
               <div
                 key={idx}
                 className="flex items-start justify-between gap-2 border-b border-slate-200/60 pb-1.5 last:border-b-0 last:pb-0"
@@ -106,7 +122,7 @@ export const ConfirmationSummaryDialog = ({
         )}
 
         {/* Impact Message */}
-        {impactMessage && (
+        {finalImpact && (
           <div
             role="note"
             className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-900"
@@ -114,7 +130,7 @@ export const ConfirmationSummaryDialog = ({
             <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Akibat Tindakan: </span>
-              <span>{impactMessage}</span>
+              <span>{finalImpact}</span>
             </div>
           </div>
         )}
