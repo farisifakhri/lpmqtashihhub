@@ -382,7 +382,7 @@ export const createDraft = async (data, user, req) => {
 };
 
 export const dispatchPhysical = async (id, data, user, req) => {
-  return await prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx) => {
     const reg = await lockRegistration(tx, id);
     requireOwner(reg, user);
     requireStatus(reg, ['READY_FOR_VERIFICATION']);
@@ -400,7 +400,7 @@ export const dispatchPhysical = async (id, data, user, req) => {
     const trackingNo = data.tracking_no || null;
     const notes = data.notes || (trackingNo ? `No. Resi: ${trackingNo}` : null);
 
-    const updated = await tx.registration.update({
+    const updatedRegistration = await tx.registration.update({
       where: { id },
       data: {
         physical_dispatch_status: 'DISPATCHED',
@@ -430,13 +430,15 @@ export const dispatchPhysical = async (id, data, user, req) => {
       },
     });
 
-    await audit(tx, user, 'DISPATCH_PHYSICAL_MANUSCRIPT', 'Registration', id, updated, req, reg);
+    await audit(tx, user, 'DISPATCH_PHYSICAL_MANUSCRIPT', 'Registration', id, updatedRegistration, req, reg);
 
-    // Sinkronisasi otomatis ke website existing
-    syncRegistrationToExistingWebsite(id).catch(() => {});
-
-    return updated;
+    return updatedRegistration;
   });
+
+  // Sinkronisasi otomatis ke website existing (setelah transaksi commit)
+  syncRegistrationToExistingWebsite(id).catch(() => {});
+
+  return updated;
 };
 
 export const submitRegistration = async (id, user, req) => {

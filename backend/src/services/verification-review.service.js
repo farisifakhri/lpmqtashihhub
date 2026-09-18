@@ -375,9 +375,9 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
-  const isAssignedVerifier = user.roles.includes('VERIFIKATOR') && user.id === doc.created_by_id;
+  const isAssignedVerifier = user.roles.includes('VERIFIKATOR') && (user.id === doc.created_by_id || user.id === doc.assignment?.verifier_id);
 
   if (isOwnerPublisher) {
     if (doc.status !== 'SENT') {
