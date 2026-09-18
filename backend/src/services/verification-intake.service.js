@@ -39,10 +39,26 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
       requireRole(user, ['ADMIN', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
-      const previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
-      if (!previous) fail(409, 'Penerbit belum mendeklarasikan master fisik A4 yang dijilid per juz.');
+      let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
+      if (!previous) {
+        if (reg.physical_dispatch_status === 'DISPATCHED') {
+          previous = await tx.physicalMasterIntake.create({
+            data: {
+              registration_id: id,
+              format: 'A4',
+              binding_method: 'PER_JUZ',
+              volume_count: data.volume_count || 30,
+              status: 'PENDING',
+              sent_at: reg.dispatch_date || new Date(),
+              delivery_method: reg.dispatch_courier || 'LOKET_LPMQ',
+            },
+          });
+        } else {
+          fail(409, 'Penerbit belum mendeklarasikan master fisik A4 yang dijilid per juz.');
+        }
+      }
       if (previous.status !== 'PENDING') fail(409, 'Penerimaan master ini sudah diputuskan. Muat ulang status sebelum mencoba lagi.');
-      if (data.decision === 'RECEIVED' && data.volume_count !== previous.volume_count) {
+      if (data.decision === 'RECEIVED' && previous.volume_count && data.volume_count !== previous.volume_count) {
         fail(409, 'Jumlah jilid yang diterima berbeda dari deklarasi penerbit. Kembalikan master dengan alasan agar penerbit memperbaiki deklarasi.');
       }
       const intake = await tx.physicalMasterIntake.update({
@@ -117,6 +133,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
       requireRole(user, ['KEPALA_LPMQ']);
+      await tx.$queryRawUnsafe('SELECT id, status FROM registrations WHERE id = ? FOR UPDATE', id);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
@@ -261,7 +278,24 @@ export const listVerificationAssignments = async (query, user) => {
         verifier: { select: { id: true, name: true } },
         assigned_by: { select: { id: true, name: true } },
         registration: { select: { id: true, registration_no: true, title: true, status: true, stage_entered_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
-        documents: { where: { document_type: 'NOTA_DINAS_VERIFIKASI' }, select: { id: true, document_no: true, version: true, status: true, created_at: true } },
+        documents: {
+          orderBy: { version: 'desc' },
+          select: {
+            id: true,
+            document_no: true,
+            document_type: true,
+            version: true,
+            status: true,
+            signature_status: true,
+            created_at: true,
+            signatories: {
+              orderBy: { sign_order: 'asc' },
+              include: {
+                signer: { select: { id: true, name: true, nip: true } },
+              },
+            },
+          },
+        },
       },
     }),
   ]);

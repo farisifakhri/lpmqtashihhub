@@ -29,7 +29,7 @@ router.put('/registrations/:id/physical-master', authenticate, authorize('ADMIN_
 router.post('/registrations/:id/physical-master/receive', authenticate, authorize('ADMIN', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
 router.post('/registrations/:id/verification-assignments', authenticate, authorize('KEPALA_LPMQ'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
-router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
+router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
 router.get('/verification/verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification-verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification/unassigned-registrations', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));

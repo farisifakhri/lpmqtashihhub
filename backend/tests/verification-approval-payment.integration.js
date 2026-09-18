@@ -125,12 +125,18 @@ export async function runVerificationApprovalPaymentTests({
     await expect(returnPath, kepalaToken, 'POST', {}, 400);
     await expect(returnPath, kepalaToken, 'POST', { reason: 'abc' }, 400);
 
-    // Sukses: Kepala LPMQ mengembalikan draf ke verifikator
     const returned = await expect(returnPath, kepalaToken, 'POST', {
       reason: 'Mohon periksa kembali keselarasan penomoran ayat pada lembar penanda awal juz.',
     });
     assert.equal(returned.status, 'RETURNED');
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'IN_VERIFICATION');
+
+    // P1: Atomic return — pastikan Berita Acara ikut berstatus RETURNED
+    const baDocCheck = await prisma.verificationDocument.findFirst({
+      where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    });
+    assert.ok(baDocCheck, 'Berita Acara harus terbentuk');
+    assert.equal(baDocCheck.status, 'RETURNED', 'Berita Acara harus ikut berstatus RETURNED secara atomik');
 
     // Verifikator mengajukan draf perbaikan
     doc = await expect(
@@ -172,6 +178,33 @@ export async function runVerificationApprovalPaymentTests({
 
     // Negative: Dokumen yang sudah disetujui tidak dapat disetujui ulang (409)
     await expect(approvePath, kepalaToken, 'POST', {}, 409);
+
+    // P1: Isolasi Verifikator — Verifikator lain dilarang mengakses dokumen yang bukan miliknya (403)
+    let verifier2 = await prisma.user.findUnique({ where: { email: 'verifikator2@lpmq.kemenag.go.id' } });
+    if (!verifier2) {
+      const verifierRole = await prisma.role.findUnique({ where: { code: 'VERIFIKATOR' } });
+      verifier2 = await prisma.user.create({
+        data: {
+          name: 'Verifikator Kedua, S.Ag',
+          email: 'verifikator2@lpmq.kemenag.go.id',
+          password_hash: verifier.password_hash,
+          status: 'ACTIVE',
+          roles: { create: [{ role_id: verifierRole.id }] },
+        },
+      });
+    }
+    const verifier2Token = (await loginAs('verifikator2@lpmq.kemenag.go.id')).token;
+    await expect(`/verification-documents/${doc.id}`, verifier2Token, 'GET', undefined, 403);
+
+    // P0: Pusat Tanda Tangan — GET /verification-assignments mengembalikan semua dokumen dengan signatories lengkap
+    const inboxAsgs = await expect('/verification-assignments?status=WAITING_SIGNATURE', kepalaToken);
+    const targetAsg = inboxAsgs.items.find(item => item.id === assignment.id);
+    assert.ok(targetAsg, 'Assignment berstatus WAITING_SIGNATURE harus ada di inbox');
+    assert.ok(Array.isArray(targetAsg.documents), 'Documents harus berupa array');
+    const hasResultDoc = targetAsg.documents.some(d => ['SURAT_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'].includes(d.document_type));
+    assert.ok(hasResultDoc, 'Dokumen hasil verifikasi harus dikembalikan bersama penugasan');
+    const baInTarget = targetAsg.documents.find(d => d.document_type === 'BERITA_ACARA_VERIFIKASI');
+    assert.ok(baInTarget?.signatories?.length > 0, 'Signatories pada Berita Acara harus terisi lengkap');
   });
 
   // -------------------------------------------------------------
@@ -317,6 +350,61 @@ export async function runVerificationApprovalPaymentTests({
 
     // Negative: Pembayaran yang sudah VERIFIED tidak dapat diverifikasi ulang (409)
     await expect(`/payments/${payment.id}/verify`, verifikatorToken, 'PATCH', undefined, 409);
+  });
+
+  await test('P0/P2: Penerimaan loket fisik langsung tanpa deklarasi & proteksi konkurensi penugasan paralel', async () => {
+    // 1. Registrasi langsung tanpa deklarasi fisik
+    const directReg = await expect(
+      '/registrations',
+      publisherToken,
+      'POST',
+      { service_type_id: serviceId, title: "Mushaf Al-Qur'an Uji Loket Langsung & Konkurensi" },
+      201
+    );
+    await expect(`/registrations/${directReg.id}/submit`, publisherToken, 'POST');
+
+    // 2. Penerbit konfirmasi kirim berkas fisik via CTA
+    await expect(`/registrations/${directReg.id}/dispatch-physical`, publisherToken, 'POST', {
+      courier: 'LOKET_LPMQ',
+      tracking_no: 'RESI-LOKET-01',
+    });
+
+    // 3. Loket ADMIN menerima fisik (auto-inisialisasi physicalMasterIntake)
+    const directIntake = await expect(
+      `/registrations/${directReg.id}/physical-master/receive`,
+      adminToken,
+      'POST',
+      {
+        decision: 'RECEIVED',
+        receipt_no: `TR-DIR-${Date.now()}`,
+        condition: 'Lengkap dan terverifikasi di loket',
+        volume_count: 30,
+      }
+    );
+    assert.equal(directIntake.status, 'RECEIVED');
+    assert.equal(directIntake.volume_count, 30);
+
+    // 3. Konkurensi: Penugasan verifikator secara paralel untuk registrasi yang sama
+    const assignPath = `/registrations/${directReg.id}/verification-assignments`;
+    const notaDirect = `ND-PARALEL-${Date.now()}`;
+    const assignBody = {
+      verifier_id: verifier.id,
+      nota_no: notaDirect,
+      notes: 'Penugasan uji konkurensi paralel',
+    };
+
+    const parallelResults = await Promise.all([
+      call(assignPath, kepalaToken, 'POST', assignBody),
+      call(assignPath, kepalaToken, 'POST', assignBody),
+    ]);
+
+    // Tepat satu request berhasil 201 dan request lainnya ditolak 409
+    assert.deepEqual(parallelResults.map(r => r.status).sort(), [201, 409]);
+
+    const createdAssignment = await prisma.verificationAssignment.findMany({
+      where: { registration_id: directReg.id },
+    });
+    assert.equal(createdAssignment.length, 1, 'Hanya boleh ada tepat satu assignment aktif yang berhasil dibuat');
   });
 }
 

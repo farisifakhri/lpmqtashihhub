@@ -408,6 +408,26 @@ export const dispatchPhysical = async (id, data, user, req) => {
     },
   });
 
+  // Sinkronisasi status intake berkas fisik PENDING
+  await prisma.physicalMasterIntake.upsert({
+    where: { registration_id: id },
+    create: {
+      registration_id: id,
+      format: 'A4',
+      binding_method: 'PER_JUZ',
+      volume_count: 30,
+      sent_at: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
+      delivery_method: data.courier || 'LOKET_LPMQ',
+      notes: data.notes || (data.tracking_no ? `No. Resi: ${data.tracking_no}` : null),
+      status: 'PENDING',
+    },
+    update: {
+      sent_at: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
+      delivery_method: data.courier || 'LOKET_LPMQ',
+      notes: data.notes || (data.tracking_no ? `No. Resi: ${data.tracking_no}` : undefined),
+    },
+  });
+
   // Catat riwayat status / audit
   await logAudit({
     actorId: user.id,
@@ -912,6 +932,7 @@ export const listManuscriptFiles = async (registrationId, user) => {
 export default {
   createDraft,
   submitRegistration,
+  dispatchPhysical,
   transitionStatus,
   listRegistrations,
   getDetail,

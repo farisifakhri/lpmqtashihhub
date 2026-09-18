@@ -232,5 +232,32 @@ describe('VerifikatorInboxPage Component', () => {
       expect(screen.getByText('Terbitkan Nota Dinas & Tugaskan Verifikator')).toBeInTheDocument();
     });
   });
+
+  it('untuk peran ADMIN / SUPERADMIN: tidak menampilkan tab Perlu Penugasan dan tombol Tugaskan Verifikator', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'admin-1',
+        name: 'Staf Administrasi LPMQ',
+        role: 'ADMIN',
+        roles: ['ADMIN'],
+      },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'listAssignments').mockResolvedValue({
+      success: true,
+      data: {
+        items: [],
+        pagination: { total: 0, page: 1, limit: 20, totalPages: 1 },
+      },
+    });
+
+    render(<MemoryRouter><VerifikatorInboxPage /></MemoryRouter>);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: /Perlu Penugasan/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Tugaskan Verifikator/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Menunggu Persetujuan/i })).toBeInTheDocument();
+    });
+  });
 });
 

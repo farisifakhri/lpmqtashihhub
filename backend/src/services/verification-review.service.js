@@ -512,11 +512,11 @@ export const returnVerificationDocument = (documentId, data, user, req) => prism
   });
 
   if (doc.assignment_id) {
-    // Kembalikan juga Berita Acara terkait jika masih SUBMITTED
+    // Kembalikan seluruh dokumen hasil verifikasi terkait dalam penugasan ini secara atomik
     await tx.verificationDocument.updateMany({
       where: {
         assignment_id: doc.assignment_id,
-        document_type: 'BERITA_ACARA_VERIFIKASI',
+        document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'] },
         status: 'SUBMITTED',
       },
       data: { status: 'RETURNED' },
@@ -803,6 +803,9 @@ export const getVerificationDocument = async (documentId, user) => {
           payment_records: { orderBy: { created_at: 'desc' } },
         },
       },
+      assignment: {
+        select: { id: true, verifier_id: true },
+      },
       created_by: { select: { id: true, name: true, nip: true } },
       approved_by: { select: { id: true, name: true, nip: true } },
       signatories: {
@@ -822,7 +825,12 @@ export const getVerificationDocument = async (documentId, user) => {
     if (doc.status !== 'SENT') {
       fail(403, 'Surat hasil verifikasi belum dikirimkan kepada Anda.');
     }
-  } else if (!isHead && !isAdmin && !isVerifier) {
+  } else if (isVerifier && !isHead && !isAdmin) {
+    const isAssigned = doc.assignment?.verifier_id === user.id || doc.created_by_id === user.id;
+    if (!isAssigned) {
+      fail(403, 'Anda tidak memiliki hak akses untuk memeriksa dokumen penugasan verifikator lain.');
+    }
+  } else if (!isHead && !isAdmin) {
     fail(403, 'Anda tidak memiliki hak akses untuk membaca dokumen ini.');
   }
 

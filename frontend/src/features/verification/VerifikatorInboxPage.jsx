@@ -54,15 +54,16 @@ export const VerifikatorInboxPage = () => {
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
-  const defaultTab = (isHead || isAdmin) ? 'NEED_ASSIGNMENT' : 'ASSIGNED';
-  const urlTab = searchParams.get('tab');
+  const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
+  const rawUrlTab = searchParams.get('tab');
+  const initialTab = (!isHead && rawUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (rawUrlTab || defaultTab);
 
   const [assignments, setAssignments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(urlTab || defaultTab);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
@@ -194,6 +195,7 @@ export const VerifikatorInboxPage = () => {
     const returnReason = selectedAssignment.return_reason;
 
     if (selectedAssignment.isUnassigned) {
+      if (!isHead) return null;
       return {
         title: 'Naskah Siap Ditugaskan ke Verifikator',
         description: 'Master fisik telah diterima oleh loket. Terbitkan Nota Dinas dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
@@ -269,7 +271,7 @@ export const VerifikatorInboxPage = () => {
       actionIcon: <FileText className="w-4 h-4" />,
       isStart: false,
     };
-  }, [selectedAssignment]);
+  }, [selectedAssignment, isHead]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -357,7 +359,7 @@ export const VerifikatorInboxPage = () => {
                 <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-3">
                   {/* Segmented Control */}
                   <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold overflow-x-auto">
-                    {(isHead || isAdmin) ? (
+                    {isHead ? (
                       <>
                         <button
                           type="button"
@@ -371,6 +373,45 @@ export const VerifikatorInboxPage = () => {
                         >
                           Perlu Penugasan
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('WAITING_APPROVAL')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_APPROVAL'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Menunggu Persetujuan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('WAITING_SIGNATURE')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_SIGNATURE'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Tanda Tangan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('COMPLETED')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'COMPLETED'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Riwayat
+                        </button>
+                      </>
+                    ) : isAdmin ? (
+                      <>
                         <button
                           type="button"
                           onClick={() => handleTabChange('WAITING_APPROVAL')}
@@ -660,7 +701,7 @@ export const VerifikatorInboxPage = () => {
       )}
 
       {/* Assign Verification Dialog (Langkah 4 SOP: Kepala LPMQ) */}
-      {assignDialogOpen && selectedAssignment && (
+      {isHead && assignDialogOpen && selectedAssignment && (
         <AssignVerificationDialog
           registration={selectedAssignment.registration || selectedAssignment}
           onClose={() => setAssignDialogOpen(false)}

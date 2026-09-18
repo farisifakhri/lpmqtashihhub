@@ -115,16 +115,73 @@ export const SignatureCenterPage = () => {
       const publisher = reg.publisher || {};
       const isAssignedToMe = isVerifier && assignment.verifier_id === currentUser?.id;
 
-      // Check if assignment has documents
+      // Process real signable verification documents from assignment
       if (Array.isArray(assignment.documents) && assignment.documents.length > 0) {
-        assignment.documents.forEach((doc) => {
+        const signableDocs = assignment.documents.filter((doc) =>
+          ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'].includes(doc.document_type)
+        );
+
+        signableDocs.forEach((doc) => {
+          const docStatus = doc.status || assignment.status;
+          const isCompleted = ['READY_TO_SEND', 'COMPLETED'].includes(assignment.status) || docStatus === 'SIGNED';
+
+          // Signatories mapping
+          let signatories = [];
+          if (Array.isArray(doc.signatories) && doc.signatories.length > 0) {
+            signatories = doc.signatories.map((s) => ({
+              id: s.id,
+              sign_order: s.sign_order,
+              role_label: s.name_position_snapshot?.includes('Kepala')
+                ? 'Kepala LPMQ'
+                : (doc.document_type === 'BERITA_ACARA_VERIFIKASI' && s.sign_order === 1 ? 'Verifikator Berkas & Naskah' : 'Kepala LPMQ'),
+              name: s.signer?.name || s.name_position_snapshot || 'Petugas LPMQ',
+              status: s.status,
+              signer_id: s.signer_user_id || s.signer?.id,
+            }));
+          } else {
+            // Default / fallback signatories structure
+            signatories = [
+              {
+                role_label: 'Verifikator Berkas & Naskah',
+                name: assignment.verifier?.name || 'Verifikator',
+                status: isCompleted ? 'SIGNED' : 'PENDING',
+              },
+              {
+                role_label: 'Kepala LPMQ',
+                name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
+                status: isCompleted ? 'SIGNED' : 'PENDING',
+              },
+            ];
+          }
+
+          // Evaluate whether current user can sign this document
+          let canUserSign = false;
+          if (['APPROVED', 'SIGNING', 'WAITING_SIGNATURE'].includes(docStatus)) {
+            if (Array.isArray(doc.signatories) && doc.signatories.length > 0) {
+              const mySig = doc.signatories.find(
+                (s) => s.signer_user_id === currentUser?.id || s.signer?.id === currentUser?.id
+              );
+              if (mySig && mySig.status === 'PENDING') {
+                const pendingPrior = doc.signatories.some(
+                  (s) => s.sign_order < mySig.sign_order && s.status !== 'SIGNED'
+                );
+                canUserSign = !pendingPrior;
+              }
+            } else {
+              // Fallback for mock/test data without full signatories relation
+              canUserSign =
+                (isHead && ['APPROVED', 'SIGNING', 'WAITING_SIGNATURE'].includes(docStatus)) ||
+                (isAssignedToMe && ['APPROVED', 'SIGNING', 'WAITING_SIGNATURE'].includes(docStatus));
+            }
+          }
+
           list.push({
             id: doc.id,
-            document_no: doc.document_no,
+            document_no: doc.document_no || `DOC-${doc.id.slice(0, 8).toUpperCase()}`,
             document_type: doc.document_type || 'SURAT_HASIL_VERIFIKASI',
-            version: doc.version,
-            status: doc.status,
-            created_at: doc.created_at,
+            version: doc.version || 1,
+            status: docStatus,
+            created_at: doc.created_at || assignment.assigned_at,
             assignment_id: assignment.id,
             assignment_status: assignment.status,
             registration_id: reg.id,
@@ -132,59 +189,9 @@ export const SignatureCenterPage = () => {
             manuscript_title: reg.title,
             publisher_name: publisher.legal_name || 'Penerbit Terdaftar',
             isAssignedToMe,
-            canUserSign:
-              (isHead && ['APPROVED', 'SIGNING', 'WAITING_SIGNATURE'].includes(doc.status || assignment.status)) ||
-              (isAssignedToMe && ['APPROVED', 'SIGNING', 'WAITING_SIGNATURE'].includes(doc.status || assignment.status)),
-            signatories: [
-              {
-                role_label: 'Verifikator Berkas & Naskah',
-                name: assignment.verifier?.name || 'Verifikator',
-                status: ['READY_TO_SEND', 'COMPLETED'].includes(assignment.status) ? 'SIGNED' : 'PENDING',
-              },
-              {
-                role_label: 'Kepala LPMQ',
-                name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
-                status: ['READY_TO_SEND', 'COMPLETED'].includes(assignment.status) ? 'SIGNED' : 'PENDING',
-              },
-            ],
+            canUserSign,
+            signatories,
           });
-        });
-      } else {
-        // Synthesize document view from assignment if documents array not pre-populated
-        const isCompleted = ['READY_TO_SEND', 'COMPLETED'].includes(assignment.status);
-        const isWaitingMySign =
-          assignment.status === 'WAITING_SIGNATURE' &&
-          ((isHead) || (isVerifier && isAssignedToMe));
-        const isWaitingOthers =
-          assignment.status === 'WAITING_SIGNATURE' && !isWaitingMySign;
-
-        list.push({
-          id: `synth-${assignment.id}`,
-          document_no: `SP-VERIF/${assignment.id.slice(0, 8).toUpperCase()}`,
-          document_type: 'SURAT_HASIL_VERIFIKASI',
-          version: 1,
-          status: isCompleted ? 'SIGNED' : assignment.status === 'WAITING_SIGNATURE' ? 'SIGNING' : 'APPROVED',
-          created_at: assignment.assigned_at,
-          assignment_id: assignment.id,
-          assignment_status: assignment.status,
-          registration_id: reg.id,
-          registration_no: reg.registration_no,
-          manuscript_title: reg.title,
-          publisher_name: publisher.legal_name || 'Penerbit Terdaftar',
-          isAssignedToMe,
-          canUserSign: isWaitingMySign || (isHead && assignment.status === 'WAITING_SIGNATURE'),
-          signatories: [
-            {
-              role_label: 'Verifikator Berkas',
-              name: assignment.verifier?.name || 'Verifikator',
-              status: isCompleted ? 'SIGNED' : isWaitingMySign && isVerifier ? 'PENDING' : 'SIGNED',
-            },
-            {
-              role_label: 'Kepala LPMQ',
-              name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
-              status: isCompleted ? 'SIGNED' : isWaitingMySign && isHead ? 'PENDING' : 'WAITING',
-            },
-          ],
         });
       }
     });
@@ -261,12 +268,7 @@ export const SignatureCenterPage = () => {
     setActionLoading(true);
     setError(null);
     try {
-      // Call verificationApi.signDocument
-      const targetId = signDialogDoc.id.startsWith('synth-')
-        ? signDialogDoc.assignment_id
-        : signDialogDoc.id;
-
-      await verificationApi.signDocument(targetId);
+      await verificationApi.signDocument(signDialogDoc.id);
       setSuccessMessage(`Dokumen ${signDialogDoc.document_no} berhasil ditandatangani secara digital.`);
       setSignDialogDoc(null);
       await fetchAssignments();
@@ -286,9 +288,7 @@ export const SignatureCenterPage = () => {
       let successCount = 0;
       for (const id of selectedDocIds) {
         try {
-          const doc = allDocuments.find((d) => d.id === id);
-          const targetId = id.startsWith('synth-') ? doc?.assignment_id || id : id;
-          await verificationApi.signDocument(targetId);
+          await verificationApi.signDocument(id);
           successCount++;
         } catch {
           // continue with remaining
