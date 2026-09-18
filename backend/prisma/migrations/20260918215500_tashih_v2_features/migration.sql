@@ -15,3 +15,4 @@ ALTER TABLE `registrations`
     ADD COLUMN `dispatch_date` DATETIME(3) NULL,
     ADD COLUMN `external_sync_id` VARCHAR(191) NULL,
     ADD COLUMN `external_synced_at` DATETIME(3) NULL;
+
