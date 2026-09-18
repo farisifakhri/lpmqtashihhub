@@ -344,8 +344,14 @@ export const createDraft = async (data, user, req) => {
         return items;
       });
 
-      const primaryRegistration = createdItems[0];
-      primaryRegistration.batch = createdItems;
+      const primaryRegistration = {
+        ...createdItems[0],
+        batch: createdItems.map((item) => ({
+          id: item.id,
+          registration_no: item.registration_no,
+          title: item.title,
+        })),
+      };
 
       for (const item of createdItems) {
         await logAudit({

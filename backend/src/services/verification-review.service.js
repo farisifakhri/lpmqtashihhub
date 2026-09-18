@@ -134,7 +134,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     where: {
       assignment_id: assignmentId,
       document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'] },
-      status: 'DRAFT',
+      status: { in: ['DRAFT', 'RETURNED'] },
     },
     orderBy: { version: 'desc' },
   });
@@ -187,7 +187,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     where: {
       assignment_id: assignmentId,
       document_type: 'BERITA_ACARA_VERIFIKASI',
-      status: 'DRAFT',
+      status: { in: ['DRAFT', 'RETURNED'] },
     },
     orderBy: { version: 'desc' },
   });
