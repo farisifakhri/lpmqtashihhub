@@ -29,7 +29,7 @@ router.put('/registrations/:id/physical-master', authenticate, authorize('ADMIN_
 router.post('/registrations/:id/physical-master/receive', authenticate, authorize('ADMIN', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
 router.post('/registrations/:id/verification-assignments', authenticate, authorize('KEPALA_LPMQ'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
-router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
+router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
 router.get('/verification/verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification-verifiers', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification/unassigned-registrations', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
@@ -38,7 +38,7 @@ router.get('/verification-assignment-candidates', authenticate, authorize('KEPAL
 
 // PR-VER-03: Pemeriksaan berkas & penyusunan draf surat hasil verifikasi (Epic D)
 router.patch('/verification-assignments/:id/start', authenticate, authorize('VERIFIKATOR'), validate(assignmentIdSchema), action(req => review.startVerification(req.params.id, req.user, req)));
-router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.getVerificationAssignmentDetail(req.params.id, req.user)));
+router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.getVerificationAssignmentDetail(req.params.id, req.user)));
 router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), action(req => review.getVerificationAttachment(req.params.documentId, req.params.fileId, req.user)));

@@ -541,8 +541,6 @@ export const VerificationInspectionPage = () => {
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
     assignment.status === 'COMPLETED' || latestResultDoc?.status === 'SUBMITTED';
-  const isReadOnly = !isInProgress;
-
   const userRoles = Array.isArray(currentUser?.roles)
     ? currentUser.roles
     : (currentUser?.role ? [currentUser.role] : []);
@@ -550,9 +548,13 @@ export const VerificationInspectionPage = () => {
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
 
+  const isAssignedVerifier = isVerifier && (!assignment.verifier_id || assignment.verifier_id === currentUser?.id || assignment.verifier?.id === currentUser?.id);
+  const canVerifierWork = isInProgress && isAssignedVerifier;
+  const isReadOnly = !canVerifierWork;
+
   const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
-  const canVerifierSend = isVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
+  const canVerifierSend = isAssignedVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
 
   const latestPayment = registration.payment_records?.[0];
   const latestHandover = registration.physical_handovers?.[0];
@@ -1372,7 +1374,7 @@ export const VerificationInspectionPage = () => {
         }
         secondaryActions={
           <>
-            {isInProgress && (
+            {canVerifierWork && (
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}
@@ -1397,7 +1399,7 @@ export const VerificationInspectionPage = () => {
           </>
         }
         primaryAction={
-          isInProgress ? (
+          canVerifierWork ? (
             <Button
               variant="primary"
               onClick={handleOpenSubmitConfirm}

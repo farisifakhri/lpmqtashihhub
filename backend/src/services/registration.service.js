@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
-import { fail, registration as lockRegistration, audit } from './workflow-utils.js';
+import { fail, registration as lockRegistration, audit, requireStatus, requireOwner } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
@@ -382,66 +382,61 @@ export const createDraft = async (data, user, req) => {
 };
 
 export const dispatchPhysical = async (id, data, user, req) => {
-  const reg = await prisma.registration.findUnique({
-    where: { id },
+  return await prisma.$transaction(async (tx) => {
+    const reg = await lockRegistration(tx, id);
+    requireOwner(reg, user);
+    requireStatus(reg, ['READY_FOR_VERIFICATION']);
+
+    const previousIntake = await tx.physicalMasterIntake.findUnique({
+      where: { registration_id: id },
+    });
+
+    if (previousIntake?.status === 'RECEIVED') {
+      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas loket bila data pengiriman perlu diperbaiki.');
+    }
+
+    const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
+    const courier = data.courier || 'LOKET_LPMQ';
+    const trackingNo = data.tracking_no || null;
+    const notes = data.notes || (trackingNo ? `No. Resi: ${trackingNo}` : null);
+
+    const updated = await tx.registration.update({
+      where: { id },
+      data: {
+        physical_dispatch_status: 'DISPATCHED',
+        dispatch_courier: courier,
+        dispatch_tracking_no: trackingNo,
+        dispatch_date: dispatchDate,
+      },
+    });
+
+    // Sinkronisasi status intake berkas fisik PENDING
+    await tx.physicalMasterIntake.upsert({
+      where: { registration_id: id },
+      create: {
+        registration_id: id,
+        format: 'A4',
+        binding_method: 'PER_JUZ',
+        volume_count: 30,
+        sent_at: dispatchDate,
+        delivery_method: courier,
+        notes,
+        status: 'PENDING',
+      },
+      update: {
+        sent_at: dispatchDate,
+        delivery_method: courier,
+        notes: notes || undefined,
+      },
+    });
+
+    await audit(tx, user, 'DISPATCH_PHYSICAL_MANUSCRIPT', 'Registration', id, updated, req, reg);
+
+    // Sinkronisasi otomatis ke website existing
+    syncRegistrationToExistingWebsite(id).catch(() => {});
+
+    return updated;
   });
-
-  if (!reg) {
-    const error = new Error('Permohonan tidak ditemukan.');
-    error.statusCode = 404;
-    throw error;
-  }
-
-  if (!user.roles.includes('SUPERADMIN') && reg.publisher_id !== user.publisherId) {
-    const error = new Error('Akses ditolak. Anda tidak memiliki hak atas permohonan ini.');
-    error.statusCode = 403;
-    throw error;
-  }
-
-  const updated = await prisma.registration.update({
-    where: { id },
-    data: {
-      physical_dispatch_status: 'DISPATCHED',
-      dispatch_courier: data.courier || 'LOKET_LPMQ',
-      dispatch_tracking_no: data.tracking_no || null,
-      dispatch_date: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
-    },
-  });
-
-  // Sinkronisasi status intake berkas fisik PENDING
-  await prisma.physicalMasterIntake.upsert({
-    where: { registration_id: id },
-    create: {
-      registration_id: id,
-      format: 'A4',
-      binding_method: 'PER_JUZ',
-      volume_count: 30,
-      sent_at: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
-      delivery_method: data.courier || 'LOKET_LPMQ',
-      notes: data.notes || (data.tracking_no ? `No. Resi: ${data.tracking_no}` : null),
-      status: 'PENDING',
-    },
-    update: {
-      sent_at: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
-      delivery_method: data.courier || 'LOKET_LPMQ',
-      notes: data.notes || (data.tracking_no ? `No. Resi: ${data.tracking_no}` : undefined),
-    },
-  });
-
-  // Catat riwayat status / audit
-  await logAudit({
-    actorId: user.id,
-    action: 'DISPATCH_PHYSICAL_MANUSCRIPT',
-    subjectType: 'Registration',
-    subjectId: id,
-    afterJson: updated,
-    req,
-  });
-
-  // Sinkronisasi otomatis ke website existing
-  syncRegistrationToExistingWebsite(id).catch(() => {});
-
-  return updated;
 };
 
 export const submitRegistration = async (id, user, req) => {

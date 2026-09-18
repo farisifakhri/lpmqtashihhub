@@ -243,12 +243,12 @@ export const getRegistrationReceipt = async (id, user) => {
 };
 
 export const listVerificationAssignments = async (query, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN']);
+  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN', 'SUPERADMIN']);
   const where = {};
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   if (!isHead && !isAdmin) where.verifier_id = user.id;
-  if (query.my_tasks === 'true' && (isHead || isAdmin)) where.assigned_by_id = user.id;
+  if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
   if (query.registration_status) {
     where.registration = { ...(where.registration || {}), status: query.registration_status };

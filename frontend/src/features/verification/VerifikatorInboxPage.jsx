@@ -52,6 +52,7 @@ export const VerifikatorInboxPage = () => {
   const { currentUser } = useAuth();
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
+  const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
   const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
@@ -206,6 +207,16 @@ export const VerifikatorInboxPage = () => {
     }
 
     if (status === 'ASSIGNED') {
+      const isAssignedToUser = !selectedAssignment.verifier_id || selectedAssignment.verifier_id === currentUser?.id || selectedAssignment.verifier?.id === currentUser?.id;
+      if (!isVerifier || !isAssignedToUser) {
+        return {
+          title: 'Menunggu Verifikator Memulai Pemeriksaan',
+          description: 'Nota Dinas telah diterbitkan. Menunggu verifikator yang ditugaskan untuk memulai pemeriksaan lembar kerja.',
+          actionLabel: 'Lihat Detail Penugasan',
+          actionIcon: <FileText className="w-4 h-4" />,
+          isStart: false,
+        };
+      }
       return {
         title: 'Pemeriksaan Berkas & Master Fisik Siap Dimulai',
         description: 'Nota Dinas telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.',

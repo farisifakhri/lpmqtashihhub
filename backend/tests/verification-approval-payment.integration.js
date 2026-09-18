@@ -386,16 +386,14 @@ export async function runVerificationApprovalPaymentTests({
 
     // 3. Konkurensi: Penugasan verifikator secara paralel untuk registrasi yang sama
     const assignPath = `/registrations/${directReg.id}/verification-assignments`;
-    const notaDirect = `ND-PARALEL-${Date.now()}`;
     const assignBody = {
       verifier_id: verifier.id,
-      nota_no: notaDirect,
       notes: 'Penugasan uji konkurensi paralel',
     };
 
     const parallelResults = await Promise.all([
-      call(assignPath, kepalaToken, 'POST', assignBody),
-      call(assignPath, kepalaToken, 'POST', assignBody),
+      call(assignPath, kepalaToken, 'POST', { ...assignBody, nota_no: `ND-PAR-01-${Date.now()}` }),
+      call(assignPath, kepalaToken, 'POST', { ...assignBody, nota_no: `ND-PAR-02-${Date.now()}` }),
     ]);
 
     // Tepat satu request berhasil 201 dan request lainnya ditolak 409

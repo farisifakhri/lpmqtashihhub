@@ -72,16 +72,14 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       // Load assignments to extract documents requiring signatures
-      const [resWaitingSig, resApproved, resReady, resCompleted] = await Promise.all([
+      const [resWaitingSig, resReady, resCompleted] = await Promise.all([
         verificationApi.listAssignments({ status: 'WAITING_SIGNATURE', limit: 50 }).catch(() => ({ data: { items: [] } })),
-        verificationApi.listAssignments({ status: 'WAITING_APPROVAL', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'READY_TO_SEND', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'COMPLETED', limit: 50 }).catch(() => ({ data: { items: [] } })),
       ]);
 
       const allItems = [
         ...(resWaitingSig?.data?.items || []),
-        ...(resApproved?.data?.items || []),
         ...(resReady?.data?.items || []),
         ...(resCompleted?.data?.items || []),
       ];
@@ -204,15 +202,15 @@ export const SignatureCenterPage = () => {
     return allDocuments.filter((doc) => {
       // Tab categorization
       if (activeTab === 'NEED_MY_SIGN') {
-        // Document needs current user's signature or is pending approval for Kepala
-        if (!doc.canUserSign && doc.assignment_status !== 'WAITING_SIGNATURE') {
+        // Document needs current user's signature
+        if (!doc.canUserSign || doc.status === 'SIGNED') {
           return false;
         }
-        if (doc.status === 'SIGNED') return false;
       } else if (activeTab === 'WAITING_OTHERS') {
         // In signing process, but waiting for other signatories
-        if (doc.status === 'SIGNED') return false;
-        if (doc.canUserSign) return false;
+        if (doc.assignment_status !== 'WAITING_SIGNATURE' || doc.canUserSign || doc.status === 'SIGNED') {
+          return false;
+        }
       } else if (activeTab === 'SIGNED') {
         // Fully signed / issued
         if (doc.status !== 'SIGNED' && !['READY_TO_SEND', 'COMPLETED'].includes(doc.assignment_status)) {
@@ -241,8 +239,8 @@ export const SignatureCenterPage = () => {
 
   // Statistics counts
   const stats = useMemo(() => {
-    const needSign = allDocuments.filter((d) => (d.canUserSign || d.assignment_status === 'WAITING_SIGNATURE') && d.status !== 'SIGNED').length;
-    const waitingOthers = allDocuments.filter((d) => !d.canUserSign && d.assignment_status === 'WAITING_SIGNATURE' && d.status !== 'SIGNED').length;
+    const needSign = allDocuments.filter((d) => d.canUserSign && d.status !== 'SIGNED').length;
+    const waitingOthers = allDocuments.filter((d) => d.assignment_status === 'WAITING_SIGNATURE' && !d.canUserSign && d.status !== 'SIGNED').length;
     const signedCount = allDocuments.filter((d) => d.status === 'SIGNED' || ['READY_TO_SEND', 'COMPLETED'].includes(d.assignment_status)).length;
     return { needSign, waitingOthers, signedCount };
   }, [allDocuments]);

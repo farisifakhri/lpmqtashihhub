@@ -76,14 +76,21 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
 
   });
 
+  let createdNotaNo = null;
+
   await test('PR-VER-02: assignment paralel menghasilkan satu Nota Dinas, status, audit, dan notifikasi', async () => {
     const path = `/registrations/${reg.id}/verification-assignments`;
-    const body = { verifier_id: verifier.id, nota_no: notaNo, notes: 'Periksa naskah dan dokumen penerbit' };
-    const results = await Promise.all([call(path, kepalaToken, 'POST', body), call(path, kepalaToken, 'POST', body)]);
+    const nota1 = `${notaNo}-01`;
+    const nota2 = `${notaNo}-02`;
+    const results = await Promise.all([
+      call(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: nota1, notes: 'Periksa naskah dan dokumen penerbit' }),
+      call(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: nota2, notes: 'Periksa naskah dan dokumen penerbit' }),
+    ]);
     assert.deepEqual(results.map(item => item.status).sort(), [201, 409]);
     const created = results.find(item => item.status === 201).json.data;
+    createdNotaNo = created.nota_dinas.document_no;
     assert.equal(created.assignment.status, 'ASSIGNED');
-    assert.equal(created.nota_dinas.document_no, notaNo);
+    assert.ok([nota1, nota2].includes(created.nota_dinas.document_no));
     assert.equal(created.nota_dinas.status, 'ISSUED');
     assert.ok(new Date(created.assignment.due_at).getTime() > new Date(created.assignment.assigned_at).getTime());
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_ASSIGNED');
@@ -100,9 +107,12 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   await test('PR-VER-02: inbox terfilter dan hanya tersedia bagi petugas berwenang', async () => {
     await expect('/verification-assignments', publisherToken, 'GET', undefined, 403);
     const verifierInbox = await expect('/verification-assignments?my_tasks=true&status=ASSIGNED&limit=2', verifikatorToken);
-    assert.ok(verifierInbox.items.some(item => item.registration_id === reg.id && item.documents.some(doc => doc.document_no === notaNo)));
+    assert.ok(verifierInbox.items.some(item => item.registration_id === reg.id && item.documents.some(doc => doc.document_no === createdNotaNo)));
     const headInbox = await expect('/verification-assignments?my_tasks=true&status=ASSIGNED', kepalaToken);
     assert.ok(headInbox.items.some(item => item.registration_id === reg.id));
+    const adminInbox = await expect('/verification-assignments?status=ASSIGNED', adminToken);
+    assert.ok(adminInbox.items.some(item => item.registration_id === reg.id));
+    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-ADMIN-FORBIDDEN' }, 403);
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {
@@ -117,7 +127,7 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
     assert.equal((await prisma.physicalMasterIntake.findUnique({ where: { registration_id: another.id } })).status, 'PENDING');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
-    await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
+    await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 409);
     assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 0);
     assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'READY_FOR_VERIFICATION');
   });

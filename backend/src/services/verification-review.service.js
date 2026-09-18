@@ -281,7 +281,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 }, transactionOptions);
 
 export const getVerificationAssignmentDetail = async (assignmentId, user) => {
-  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
 
   const assignment = await prisma.verificationAssignment.findUnique({
     where: { id: assignmentId },
@@ -323,7 +323,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   if (!isHead && !isAdmin && assignment.verifier_id !== user.id) {
     fail(403, 'Anda tidak memiliki hak akses untuk memeriksa penugasan verifikator lain.');
   }
@@ -817,7 +817,7 @@ export const getVerificationDocument = async (documentId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
 
