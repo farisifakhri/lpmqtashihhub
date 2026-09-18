@@ -85,6 +85,9 @@ model Publisher {
   verification_status PublisherVerificationStatus @default(UNVERIFIED) // UNVERIFIED, VERIFIED, REJECTED
   address             String?
   phone               String?
+  profile_edit_allowed Boolean             @default(false)
+  profile_edit_granted_by String?
+  profile_edit_granted_at DateTime?
   created_at          DateTime            @default(now())
   updated_at          DateTime            @updatedAt
 
@@ -231,6 +234,15 @@ model Registration {
   title                    String                   // Judul Mushaf / Naskah
   submission_source        String                   @default("PUBLISHER_PORTAL") // PUBLISHER_PORTAL, INTERNAL_ADMIN
   registration_type        String                   @default("NEW") // NEW, EXTENSION
+  registration_category    String                   @default("NEW") // NEW, EXTENSION, FOREIGN_MANUSCRIPT
+  foreign_metadata         Json?                    // Metadata mushaf luar negeri (negara asal, penerbit luar negeri, no izin edar/impor)
+  statement_accepted       Boolean                  @default(false) // Pernyataan keabsahan naskah
+  physical_dispatch_status String?                  @default("PENDING") // PENDING, DISPATCHED, RECEIVED
+  dispatch_tracking_no     String?
+  dispatch_courier         String?
+  dispatch_date            DateTime?
+  external_sync_id         String?
+  external_synced_at       DateTime?
   previous_registration_id String?
   status RegistrationStatus @default(DRAFT)
   stage_entered_at          DateTime                 @default(now())

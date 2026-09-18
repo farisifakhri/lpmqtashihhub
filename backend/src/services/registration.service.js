@@ -5,6 +5,7 @@ import { ownedFile } from './storage.service.js';
 import { fail, registration as lockRegistration, audit } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
+import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -53,7 +54,12 @@ export const TRANSITION_POLICY = {
     READY_FOR_VERIFICATION: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
-      description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah',
+      description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
+    },
+    TASHIH_IN_PROGRESS: {
+      allowedRoles: ['ADMIN_PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
     },
     CANCELLED: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
@@ -252,39 +258,64 @@ export const createDraft = async (data, user, req) => {
   // Normalisasi daftar addon
   const requestedAddonIds = data.addons || data.addon_ids || [];
 
-  // Mekanisme retry loop untuk menangani kemungkinan tabrakan unik nomor registrasi (P2002)
+  // Mendukung pendaftaran lebih dari 1 naskah dalam satu kali permohonan
+  const manuscriptList =
+    Array.isArray(data.manuscripts) && data.manuscripts.length > 0
+      ? data.manuscripts.filter((m) => m && m.title && m.title.trim())
+      : [{ title: data.title }];
+
+  if (manuscriptList.length === 0) {
+    const error = new Error('Minimal satu judul naskah mushaf harus diisi.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const regCategory =
+    data.registration_category ||
+    (registrationType === 'EXTENSION'
+      ? 'EXTENSION'
+      : serviceType.name.toLowerCase().includes('luar negeri')
+      ? 'FOREIGN_MANUSCRIPT'
+      : 'NEW');
+
   const maxRetries = 3;
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const registration = await prisma.$transaction(async (tx) => {
-        const regNo = await generateRegistrationNo(tx);
+      const createdItems = await prisma.$transaction(async (tx) => {
+        const items = [];
+        const activeAddons =
+          requestedAddonIds.length > 0
+            ? await tx.serviceAddon.findMany({
+                where: { id: { in: requestedAddonIds }, status: 'ACTIVE' },
+              })
+            : [];
 
-        const created = await tx.registration.create({
-          data: {
-            registration_no: regNo,
-            publisher_id: publisherId,
-            service_type_id: data.service_type_id,
-            title: data.title,
-            submission_source: submissionSource,
-            registration_type: registrationType,
-            previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
-            status: 'DRAFT',
-          },
-        });
+        if (requestedAddonIds.length > 0 && activeAddons.length !== requestedAddonIds.length) {
+          const error = new Error('Satu atau lebih layanan tambahan (add-on) tidak ditemukan atau tidak aktif.');
+          error.statusCode = 400;
+          throw error;
+        }
 
-        // Simpan relasi addon bila diminta
-        if (requestedAddonIds.length > 0) {
-          const activeAddons = await tx.serviceAddon.findMany({
-            where: { id: { in: requestedAddonIds }, status: 'ACTIVE' },
+        for (const item of manuscriptList) {
+          const regNo = await generateRegistrationNo(tx);
+
+          const created = await tx.registration.create({
+            data: {
+              registration_no: regNo,
+              publisher_id: publisherId,
+              service_type_id: data.service_type_id,
+              title: item.title,
+              submission_source: submissionSource,
+              registration_type: registrationType,
+              registration_category: regCategory,
+              foreign_metadata: data.foreign_metadata || null,
+              statement_accepted: Boolean(data.statement_accepted),
+              previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
+              status: 'DRAFT',
+            },
           });
-
-          if (activeAddons.length !== requestedAddonIds.length) {
-            const error = new Error('Satu atau lebih layanan tambahan (add-on) tidak ditemukan atau tidak aktif.');
-            error.statusCode = 400;
-            throw error;
-          }
 
           for (const add of activeAddons) {
             await tx.registrationAddon.create({
@@ -296,32 +327,41 @@ export const createDraft = async (data, user, req) => {
               },
             });
           }
+
+          await tx.statusHistory.create({
+            data: {
+              registration_id: created.id,
+              from_status: 'NONE',
+              to_status: 'DRAFT',
+              actor_id: user.id,
+              notes: 'Draf permohonan dibuat',
+            },
+          });
+
+          items.push(created);
         }
 
-        // Catat riwayat status awal
-        await tx.statusHistory.create({
-          data: {
-            registration_id: created.id,
-            from_status: 'NONE',
-            to_status: 'DRAFT',
-            actor_id: user.id,
-            notes: 'Draf pengajuan dibuat',
-          },
+        return items;
+      });
+
+      const primaryRegistration = createdItems[0];
+      primaryRegistration.batch = createdItems;
+
+      for (const item of createdItems) {
+        await logAudit({
+          actorId: user.id,
+          action: 'CREATE_REGISTRATION_DRAFT',
+          subjectType: 'Registration',
+          subjectId: item.id,
+          afterJson: item,
+          req,
         });
 
-        return created;
-      });
+        // Sinkronisasi pendaftaran otomatis dengan website existing
+        syncRegistrationToExistingWebsite(item.id).catch(() => {});
+      }
 
-      await logAudit({
-        actorId: user.id,
-        action: 'CREATE_REGISTRATION_DRAFT',
-        subjectType: 'Registration',
-        subjectId: registration.id,
-        afterJson: registration,
-        req,
-      });
-
-      return registration;
+      return primaryRegistration;
     } catch (err) {
       if (err.code === 'P2002' && attempt < maxRetries) {
         lastError = err;
@@ -333,6 +373,49 @@ export const createDraft = async (data, user, req) => {
   }
 
   throw lastError;
+};
+
+export const dispatchPhysical = async (id, data, user, req) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+  });
+
+  if (!reg) {
+    const error = new Error('Permohonan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!user.roles.includes('SUPERADMIN') && reg.publisher_id !== user.publisherId) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki hak atas permohonan ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const updated = await prisma.registration.update({
+    where: { id },
+    data: {
+      physical_dispatch_status: 'DISPATCHED',
+      dispatch_courier: data.courier || 'LOKET_LPMQ',
+      dispatch_tracking_no: data.tracking_no || null,
+      dispatch_date: data.dispatch_date ? new Date(data.dispatch_date) : new Date(),
+    },
+  });
+
+  // Catat riwayat status / audit
+  await logAudit({
+    actorId: user.id,
+    action: 'DISPATCH_PHYSICAL_MANUSCRIPT',
+    subjectType: 'Registration',
+    subjectId: id,
+    afterJson: updated,
+    req,
+  });
+
+  // Sinkronisasi otomatis ke website existing
+  syncRegistrationToExistingWebsite(id).catch(() => {});
+
+  return updated;
 };
 
 export const submitRegistration = async (id, user, req) => {

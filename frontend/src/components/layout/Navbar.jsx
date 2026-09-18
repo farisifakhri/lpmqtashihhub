@@ -11,10 +11,12 @@ import {
   ShieldCheck,
   Search,
   ExternalLink,
+  Building2,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { CommandSearchDialog } from './CommandSearchDialog';
 import { NotificationCenter } from './NotificationCenter';
+import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 
@@ -23,6 +25,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [commandSearchOpen, setCommandSearchOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -288,6 +291,20 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       </div>
 
                       <div className="p-1 space-y-0.5">
+                        {currentUser.publisherId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setProfileDropdownOpen(false);
+                              setProfileModalOpen(true);
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                          >
+                            <Building2 className="w-3.5 h-3.5 text-ink-muted" />
+                            <span>Profil Penerbit (Terkunci)</span>
+                          </button>
+                        )}
+
                         <Link
                           to="/verify-documents/DEMO-QR-TOKEN-2026"
                           className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors"
@@ -318,6 +335,12 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       <CommandSearchDialog
         isOpen={commandSearchOpen}
         onClose={() => setCommandSearchOpen(false)}
+      />
+
+      {/* Publisher Profile Modal */}
+      <PublisherProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
       />
     </>
   );

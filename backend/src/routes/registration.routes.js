@@ -6,6 +6,7 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { registrationRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 import {
   createRegistrationSchema,
+  dispatchPhysicalSchema,
   transitionStatusSchema,
   createManuscriptFileSchema,
 } from '../validators/registration.validator.js';
@@ -32,6 +33,7 @@ router.post(
 
 // Aksi workflow submit & transisi status (didukung PATCH dan POST)
 router.post('/:id/submit', authorize('ADMIN_PENERBIT'), registrationController.submitRegistration);
+router.post('/:id/dispatch-physical', authorize('ADMIN_PENERBIT'), validate(dispatchPhysicalSchema), registrationController.dispatchPhysical);
 
 const transitionRoles = [
   // ADMIN is intentionally excluded: team assignment is a separate domain action.

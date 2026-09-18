@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Clock, Calendar, Activity } from 'lucide-react';
+import { ShieldCheck, Clock, Calendar, Activity, Globe } from 'lucide-react';
+
+const TIME_ZONES = {
+  WIB: {
+    code: 'WIB',
+    name: 'Waktu Indonesia Barat (UTC+7)',
+    iana: 'Asia/Jakarta',
+    description: 'Kantor Pusat LPMQ Jakarta (TMII)',
+  },
+  WITA: {
+    code: 'WITA',
+    name: 'Waktu Indonesia Tengah (UTC+8)',
+    iana: 'Asia/Makassar',
+    description: 'Zona Waktu Indonesia Tengah',
+  },
+  WIT: {
+    code: 'WIT',
+    name: 'Waktu Indonesia Timur (UTC+9)',
+    iana: 'Asia/Jayapura',
+    description: 'Zona Waktu Indonesia Timur',
+  },
+};
 
 export const GreetingHeroCard = ({
   userName = 'Petugas LPMQ',
   roleLabel = 'Petugas',
-  subtext = 'Layanan Pentashihan Naskah Mushaf Al-Qur\'an Kementerian Agama RI',
+  subtext = 'Layanan Surat Tanda Tashih Mushaf Al-Quran Kementerian Agama RI',
   badgeExtra = null,
 }) => {
   const [time, setTime] = useState(new Date());
+  const [selectedZone, setSelectedZone] = useState('WIB');
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -16,29 +38,61 @@ export const GreetingHeroCard = ({
     return () => clearInterval(timer);
   }, []);
 
-  const hours = time.getHours();
-  const timeGreeting =
-    hours < 11
-      ? { text: 'Selamat pagi' }
-      : hours < 15
-      ? { text: 'Selamat siang' }
-      : hours < 18
-      ? { text: 'Selamat sore' }
-      : { text: 'Selamat malam' };
+  const activeZoneConfig = TIME_ZONES[selectedZone] || TIME_ZONES.WIB;
 
-  const timeString = time.toLocaleTimeString('id-ID', {
+  // Format waktu lokal sesuai zona yang dipilih
+  const timeFormatter = new Intl.DateTimeFormat('id-ID', {
+    timeZone: activeZoneConfig.iana,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
     hour12: false,
   });
 
-  const dateString = time.toLocaleDateString('id-ID', {
+  const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+    timeZone: activeZoneConfig.iana,
     weekday: 'long',
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   });
+
+  const hourFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: activeZoneConfig.iana,
+    hour: 'numeric',
+    hour12: false,
+  });
+
+  const minuteFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: activeZoneConfig.iana,
+    minute: 'numeric',
+  });
+
+  const weekdayFormatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: activeZoneConfig.iana,
+    weekday: 'short',
+  });
+
+  const localHour = parseInt(hourFormatter.format(time), 10);
+  const localMinute = parseInt(minuteFormatter.format(time), 10);
+  const localWeekday = weekdayFormatter.format(time); // 'Mon', 'Tue', ... 'Sat', 'Sun'
+
+  const timeGreeting =
+    localHour < 11
+      ? { text: 'Selamat pagi' }
+      : localHour < 15
+      ? { text: 'Selamat siang' }
+      : localHour < 18
+      ? { text: 'Selamat sore' }
+      : { text: 'Selamat malam' };
+
+  // Jam kerja kedinasan Kemenag RI: Senin - Jumat, 07:30 - 16:00 waktu setempat
+  const isWeekend = localWeekday === 'Sat' || localWeekday === 'Sun';
+  const timeInMinutes = localHour * 60 + localMinute;
+  const isWorkingHours = !isWeekend && timeInMinutes >= 7 * 60 + 30 && timeInMinutes <= 16 * 60;
+
+  const timeString = timeFormatter.format(time);
+  const dateString = dateFormatter.format(time);
 
   return (
     <section
@@ -47,7 +101,7 @@ export const GreetingHeroCard = ({
     >
       <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         {/* Sisi Kiri: Sapaan & Wewenang Akun */}
-        <div className="space-y-2 max-w-2xl">
+        <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gold-400 text-primary-950 text-xs font-bold uppercase tracking-wider">
               <Activity className="w-3.5 h-3.5" /> Pusat Kendali
@@ -61,6 +115,18 @@ export const GreetingHeroCard = ({
                 {badgeExtra}
               </span>
             )}
+            {/* Status Jam Kerja Kedinasan Sesuai Zona Waktu Lokal */}
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+                isWorkingHours
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
+                  : 'bg-amber-500/20 text-amber-200 border-amber-400/40'
+              }`}
+              title="Jam kerja resmi Kemenag RI: Senin-Jumat 07.30 - 16.00 waktu setempat"
+            >
+              <span className={`w-2 h-2 rounded-full ${isWorkingHours ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              {isWorkingHours ? 'Jam Layanan Aktif (07.30 - 16.00)' : 'Di Luar Jam Layanan'}
+            </span>
           </div>
 
           <h2 id="dashboard-greeting" className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
@@ -72,13 +138,38 @@ export const GreetingHeroCard = ({
           </p>
         </div>
 
-        {/* Sisi Kanan: Jam Digital & Tanggal Kedinasan (Tempelan Waktu) */}
-        <div className="flex flex-col md:items-end justify-center pt-3 md:pt-0 border-t border-white/10 md:border-t-0">
+        {/* Sisi Kanan: Jam Digital 3 Zona Waktu Indonesia (WIB, WITA, WIT) */}
+        <div className="flex flex-col md:items-end justify-center pt-3 md:pt-0 border-t border-white/10 md:border-t-0 space-y-2">
+          {/* Zona Waktu Selector */}
+          <div className="flex items-center gap-1 bg-primary-950/80 p-1 rounded-lg border border-white/10" role="tablist" aria-label="Pilih Zona Waktu Indonesia">
+            {Object.keys(TIME_ZONES).map((zoneKey) => (
+              <button
+                key={zoneKey}
+                type="button"
+                role="tab"
+                aria-selected={selectedZone === zoneKey}
+                onClick={() => setSelectedZone(zoneKey)}
+                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                  selectedZone === zoneKey
+                    ? 'bg-gold-400 text-primary-950 shadow-xs'
+                    : 'text-primary-200 hover:text-white hover:bg-white/10'
+                }`}
+                title={TIME_ZONES[zoneKey].description}
+              >
+                {zoneKey}
+              </button>
+            ))}
+          </div>
+
           <div className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-white drop-shadow-xs tabular-nums flex items-center gap-2.5">
             <Clock className="w-5 h-5 text-gold-400 opacity-85 hidden sm:inline-block" />
             <span>{timeString}</span>
+            <span className="text-xs font-mono font-bold text-gold-400 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+              {selectedZone}
+            </span>
           </div>
-          <div className="text-xs sm:text-sm font-medium text-primary-200 mt-1 flex items-center gap-1.5">
+
+          <div className="text-xs sm:text-sm font-medium text-primary-200 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-gold-400 opacity-85" />
             <span>{dateString}</span>
           </div>

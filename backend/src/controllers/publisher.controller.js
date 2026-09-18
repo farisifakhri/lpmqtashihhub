@@ -67,9 +67,26 @@ export const verifyPublisher = async (req, res, next) => {
   }
 };
 
+export const permitProfileEdit = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { allowed, notes } = req.body;
+    const updated = await publisherService.permitPublisherProfileEdit(id, { allowed, notes }, req);
+    res.status(200).json({
+      success: true,
+      message: `Izin ubah profil berhasil ${allowed ? 'diberikan' : 'dicabut'}.`,
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getMyProfile,
   updateMyProfile,
   listPublishers,
   verifyPublisher,
+  permitProfileEdit,
 };
+
