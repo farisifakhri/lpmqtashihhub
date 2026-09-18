@@ -5,13 +5,24 @@ export const createRegistrationSchema = {
     .object({
       publisher_id: z.string().uuid().optional(), // Diisi jika admin membuat atas nama penerbit
       service_type_id: z.string().uuid('ID Layanan tidak valid'),
-      title: z.string().min(3, 'Judul mushaf wajib diisi'),
-      registration_type: z.enum(['NEW', 'EXTENSION']).default('NEW'),
+      title: z.string().min(3, 'Judul mushaf wajib diisi').optional(),
+      manuscripts: z.array(z.object({ title: z.string().min(3, 'Judul naskah minimal 3 karakter') })).optional(),
+      registration_type: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).default('NEW'),
+      registration_category: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).optional(),
+      foreign_metadata: z.record(z.any()).optional().nullable(),
+      statement_accepted: z.boolean().optional(),
       previous_registration_id: z.string().uuid('ID Pengajuan sebelumnya tidak valid').optional().nullable(),
       addons: z.array(z.string().uuid('ID Addon tidak valid')).optional(),
       addon_ids: z.array(z.string().uuid('ID Addon tidak valid')).optional(),
     })
     .superRefine((data, ctx) => {
+      if (!data.title && (!data.manuscripts || data.manuscripts.length === 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Judul naskah mushaf wajib diisi.',
+          path: ['title'],
+        });
+      }
       if (data.registration_type === 'EXTENSION') {
         if (!data.previous_registration_id) {
           ctx.addIssue({
@@ -30,6 +41,15 @@ export const createRegistrationSchema = {
         }
       }
     }),
+};
+
+export const dispatchPhysicalSchema = {
+  body: z.object({
+    courier: z.string().optional(),
+    tracking_no: z.string().optional(),
+    dispatch_date: z.string().optional(),
+    notes: z.string().optional(),
+  }),
 };
 
 export const transitionStatusSchema = {

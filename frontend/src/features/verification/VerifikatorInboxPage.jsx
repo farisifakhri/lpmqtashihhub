@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Button } from '@/components/ui/Button';
 import { QueueOverview } from '@/components/common/QueueOverview';
+import { AssignVerificationDialog } from './AssignVerificationDialog';
 import {
   ClipboardCheck,
   Search,
@@ -29,26 +30,46 @@ import {
   ShieldCheck,
   Check,
   ChevronRight,
+  UserCheck,
   X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
+function formatWaitingTime(dateString) {
+  if (!dateString) return null;
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  if (diffMs < 0) return 'Baru saja';
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  if (diffHours < 1) return '< 1 jam';
+  if (diffHours < 24) return `${diffHours} jam`;
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} hari`;
+}
+
 export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
+  const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
+
+  const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
+  const rawUrlTab = searchParams.get('tab');
+  const initialTab = (!isHead && rawUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (rawUrlTab || defaultTab);
 
   const [assignments, setAssignments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(isHead ? 'WAITING_APPROVAL' : 'ASSIGNED');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState(null);
   const requestId = useRef(0);
 
   const fetchAssignments = async () => {
@@ -56,6 +77,41 @@ export const VerifikatorInboxPage = () => {
     setLoading(true);
     setError(null);
     try {
+      if (activeTab === 'NEED_ASSIGNMENT') {
+        const params = {
+          page: pagination.page,
+          limit: pagination.limit,
+        };
+        if (submittedSearch) {
+          params.search = submittedSearch;
+        }
+
+        const res = await verificationApi.listUnassignedRegistrations(params);
+        if (request !== requestId.current) return;
+        if (res?.data) {
+          const items = res.data.items || [];
+          const normalized = items.map((reg) => ({
+            id: reg.id,
+            isUnassigned: true,
+            registration: reg,
+            status: 'READY_FOR_VERIFICATION',
+            assigned_at: reg.stage_entered_at || reg.created_at,
+            due_at: null,
+            documents: [],
+          }));
+          setAssignments(normalized);
+          if (res.data.pagination) {
+            setPagination(res.data.pagination);
+          }
+          if (normalized.length > 0) {
+            setSelectedId((prev) => (prev && normalized.some(n => n.id === prev) ? prev : normalized[0].id));
+          } else {
+            setSelectedId(null);
+          }
+        }
+        return;
+      }
+
       const params = {
         page: pagination.page,
         limit: pagination.limit,
@@ -77,8 +133,10 @@ export const VerifikatorInboxPage = () => {
         if (res.data.pagination) {
           setPagination(res.data.pagination);
         }
-        if (items.length > 0 && !selectedId) {
-          setSelectedId(items[0].id);
+        if (items.length > 0) {
+          setSelectedId((prev) => (prev && items.some(n => n.id === prev) ? prev : items[0].id));
+        } else {
+          setSelectedId(null);
         }
       }
     } catch (err) {
@@ -87,6 +145,22 @@ export const VerifikatorInboxPage = () => {
       if (request === requestId.current) setLoading(false);
     }
   };
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setPagination((p) => ({ ...p, page: 1 }));
+    setSelectedId(null);
+    setSearchParams({ tab });
+  };
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && tabFromUrl !== activeTab) {
+      setActiveTab(tabFromUrl);
+      setPagination((p) => ({ ...p, page: 1 }));
+      setSelectedId(null);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchAssignments();
@@ -115,6 +189,100 @@ export const VerifikatorInboxPage = () => {
   const selectedAssignment = useMemo(() => {
     return assignments.find((a) => a.id === selectedId) || assignments[0] || null;
   }, [assignments, selectedId]);
+
+  const taskCardInfo = useMemo(() => {
+    if (!selectedAssignment) return null;
+    const status = selectedAssignment.status;
+    const returnReason = selectedAssignment.return_reason;
+
+    if (selectedAssignment.isUnassigned) {
+      if (!isHead) return null;
+      return {
+        title: 'Naskah Siap Ditugaskan ke Verifikator',
+        description: 'Master fisik telah diterima oleh loket. Terbitkan Nota Dinas dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
+        actionLabel: 'Tugaskan Verifikator',
+        actionIcon: <UserCheck className="w-4 h-4" />,
+        isAssign: true,
+      };
+    }
+
+    if (status === 'ASSIGNED') {
+      const isAssignedToUser = !selectedAssignment.verifier_id || selectedAssignment.verifier_id === currentUser?.id || selectedAssignment.verifier?.id === currentUser?.id;
+      if (!isVerifier || !isAssignedToUser) {
+        return {
+          title: 'Menunggu Verifikator Memulai Pemeriksaan',
+          description: 'Nota Dinas telah diterbitkan. Menunggu verifikator yang ditugaskan untuk memulai pemeriksaan lembar kerja.',
+          actionLabel: 'Lihat Detail Penugasan',
+          actionIcon: <FileText className="w-4 h-4" />,
+          isStart: false,
+        };
+      }
+      return {
+        title: 'Pemeriksaan Berkas & Master Fisik Siap Dimulai',
+        description: 'Nota Dinas telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.',
+        actionLabel: 'Mulai Pemeriksaan',
+        actionIcon: <Play className="w-4 h-4 fill-white" />,
+        isStart: true,
+      };
+    }
+
+    if (status === 'IN_PROGRESS') {
+      if (returnReason) {
+        return {
+          title: 'Draf Dikembalikan oleh Kepala LPMQ',
+          description: `Catatan perbaikan: "${returnReason}". Silakan periksa kembali berkas/catatan dan ajukan draf revisi.`,
+          actionLabel: 'Revisi Pemeriksaan',
+          actionIcon: <RefreshCw className="w-4 h-4" />,
+          isStart: false,
+        };
+      }
+      return {
+        title: 'Lanjutkan Lembar Kerja Pemeriksaan Verifikator',
+        description: 'Lengkapi lembar catatan koreksi dan susun draf Surat Hasil Telaah serta Berita Acara untuk diajukan ke Kepala LPMQ.',
+        actionLabel: 'Lanjutkan Pemeriksaan',
+        actionIcon: <Play className="w-4 h-4 fill-white" />,
+        isStart: false,
+      };
+    }
+
+    if (status === 'WAITING_APPROVAL') {
+      return {
+        title: 'Draft Sedang Diperiksa Kepala LPMQ',
+        description: 'Draf hasil verifikasi telah diajukan. Saat ini sedang dalam proses penelaahan oleh Kepala LPMQ. Tidak ada tindakan yang diperlukan dari Verifikator saat ini.',
+        actionLabel: 'Lihat Detail Draf',
+        actionIcon: <FileText className="w-4 h-4" />,
+        isStart: false,
+      };
+    }
+
+    if (status === 'WAITING_SIGNATURE') {
+      return {
+        title: 'Menunggu Penandatanganan Dokumen',
+        description: 'Draf telah disetujui Kepala LPMQ. Proses penandatanganan digital Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
+        actionLabel: 'Buka Lembar Penandatanganan',
+        actionIcon: <ShieldCheck className="w-4 h-4" />,
+        isStart: false,
+      };
+    }
+
+    if (status === 'READY_TO_SEND') {
+      return {
+        title: 'Dokumen Siap Dikirim kepada Penerbit',
+        description: 'Seluruh tanda tangan digital telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
+        actionLabel: 'Kirim Dokumen ke Penerbit',
+        actionIcon: <ArrowRight className="w-4 h-4" />,
+        isStart: false,
+      };
+    }
+
+    return {
+      title: 'Verifikasi Selesai & Surat Telah Dikirimkan',
+      description: 'Pemeriksaan naskah telah selesai dan surat hasil verifikasi telah diterbitkan ke pemohon.',
+      actionLabel: 'Lihat Arsip Verifikasi',
+      actionIcon: <FileText className="w-4 h-4" />,
+      isStart: false,
+    };
+  }, [selectedAssignment, isHead]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -153,6 +321,35 @@ export const VerifikatorInboxPage = () => {
         />
       ) : (
         <>
+          {/* Success Notification Banner */}
+          {successMessage && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between gap-3 text-xs text-emerald-900 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span className="font-semibold">
+                  {typeof successMessage === 'string' ? successMessage : successMessage.text}
+                </span>
+                {typeof successMessage === 'object' && successMessage.assignmentId && (
+                  <Link
+                    to={`/internal/verifications/${successMessage.assignmentId}`}
+                    className="ml-2 font-bold text-emerald-800 underline hover:text-emerald-950"
+                  >
+                    Buka Detail Penugasan &rarr;
+                  </Link>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setSuccessMessage(null)}
+                className="text-emerald-700 hover:text-emerald-900 p-1 rounded-md"
+                aria-label="Tutup pesan sukses"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+
           {/* FIFO and Volume Queue Metadata Bar */}
           <QueueOverview
             total={pagination.total}
@@ -171,15 +368,27 @@ export const VerifikatorInboxPage = () => {
               <div className="space-y-3">
                 {/* Controlled Filter & Search Box */}
                 <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-3">
-                  {/* Segmented Control (Max 3 Options) */}
-                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold">
-                    {(isHead || isAdmin) ? (
+                  {/* Segmented Control */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold overflow-x-auto">
+                    {isHead ? (
                       <>
                         <button
                           type="button"
-                          onClick={() => { setActiveTab('WAITING_APPROVAL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          onClick={() => handleTabChange('NEED_ASSIGNMENT')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'NEED_ASSIGNMENT'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Perlu Penugasan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('WAITING_APPROVAL')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_APPROVAL'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
@@ -189,24 +398,75 @@ export const VerifikatorInboxPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setActiveTab('ALL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          onClick={() => handleTabChange('WAITING_SIGNATURE')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
-                            activeTab === 'ALL'
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_SIGNATURE'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                           )}
                         >
-                          Semua Penugasan
+                          Tanda Tangan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('COMPLETED')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'COMPLETED'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Riwayat
+                        </button>
+                      </>
+                    ) : isAdmin ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('WAITING_APPROVAL')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_APPROVAL'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Menunggu Persetujuan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('WAITING_SIGNATURE')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_SIGNATURE'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Tanda Tangan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('COMPLETED')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'COMPLETED'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Riwayat
                         </button>
                       </>
                     ) : (
                       <>
                         <button
                           type="button"
-                          onClick={() => { setActiveTab('ASSIGNED'); setPagination(p => ({ ...p, page: 1 })); }}
+                          onClick={() => handleTabChange('ASSIGNED')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'ASSIGNED'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
@@ -216,9 +476,9 @@ export const VerifikatorInboxPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setActiveTab('IN_PROGRESS'); setPagination(p => ({ ...p, page: 1 })); }}
+                          onClick={() => handleTabChange('IN_PROGRESS')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'IN_PROGRESS'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
@@ -228,15 +488,27 @@ export const VerifikatorInboxPage = () => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => { setActiveTab('ALL'); setPagination(p => ({ ...p, page: 1 })); }}
+                          onClick={() => handleTabChange('WAITING_APPROVAL')}
                           className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs',
-                            activeTab === 'ALL'
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'WAITING_APPROVAL'
                               ? 'bg-white text-emerald-900 shadow-2xs'
                               : 'text-slate-600 hover:text-slate-900'
                           )}
                         >
-                          Semua
+                          Menunggu Pihak Lain
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('READY_TO_SEND')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'READY_TO_SEND'
+                              ? 'bg-white text-emerald-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          )}
+                        >
+                          Siap Dikirim
                         </button>
                       </>
                     )}
@@ -294,7 +566,13 @@ export const VerifikatorInboxPage = () => {
                             <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
                               {reg.registration_no || '-'}
                             </span>
-                            <StatusBadge status={reg.status || item.status} size="sm" />
+                            {item.isUnassigned ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Siap ditugaskan
+                              </span>
+                            ) : (
+                              <StatusBadge status={reg.status || item.status} size="sm" />
+                            )}
                           </div>
 
                           <div>
@@ -304,10 +582,34 @@ export const VerifikatorInboxPage = () => {
                             <p className="text-slate-500 line-clamp-1">{pub.legal_name || '-'}</p>
                           </div>
 
+                          {item.isUnassigned ? (
+                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/60 text-[11px] space-y-1 text-slate-600">
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-slate-700">
+                                  TT: <strong>{reg.physical_master?.receipt_no || reg.physical_master_intake?.receipt_no || '-'}</strong>
+                                </span>
+                                <span>{(reg.physical_master?.volume_count ?? reg.physical_master_intake?.volume_count ?? 30)} jilid</span>
+                              </div>
+                              <div className="flex items-center justify-between text-slate-500 text-[10px]">
+                                <span>
+                                  Diterima: {(reg.physical_master?.received_at || reg.physical_master_intake?.received_at) ? new Date(reg.physical_master?.received_at || reg.physical_master_intake?.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
+                                </span>
+                                <span>
+                                  Menunggu: {formatWaitingTime(reg.physical_master?.received_at || reg.physical_master_intake?.received_at || item.assigned_at)}
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+
                           <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
-                            {item.due_at && (
+                            {item.due_at ? (
                               <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
-                            )}
+                            ) : item.isUnassigned ? (
+                              <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Siap Ditugaskan
+                              </span>
+                            ) : null}
                             <ChevronRight className={clsx('w-3.5 h-3.5 text-slate-400 transition-transform', isSelected && 'rotate-90 text-emerald-800')} />
                           </div>
                         </div>
@@ -322,34 +624,22 @@ export const VerifikatorInboxPage = () => {
                 <div className="space-y-4">
                   {/* Task Action Card */}
                   <PrimaryTaskCard
-                    title={
-                      selectedAssignment.status === 'ASSIGNED'
-                        ? 'Pemeriksaan Berkas & Master Fisik Siap Dimulai'
-                        : selectedAssignment.status === 'IN_PROGRESS'
-                        ? 'Lanjutkan Lembar Kerja Pemeriksaan Verifikator'
-                        : 'Hasil Verifikasi Telah Diserahkan'
-                    }
-                    description={
-                      selectedAssignment.status === 'ASSIGNED'
-                        ? 'Nota Dinas telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.'
-                        : 'Lengkapi lembar catatan koreksi dan susun draf Surat Hasil Telaah serta Berita Acara untuk diajukan ke Kepala LPMQ.'
-                    }
+                    title={taskCardInfo?.title || 'Tugas Verifikasi'}
+                    description={taskCardInfo?.description || 'Rincian tugas verifikasi naskah.'}
                     objectRef={selectedAssignment.registration?.registration_no ? `No. Registrasi: ${selectedAssignment.registration.registration_no}` : undefined}
-                    ownerLabel={currentUser?.name}
-                    actionLabel={
-                      selectedAssignment.status === 'ASSIGNED'
-                        ? 'Mulai Pemeriksaan'
-                        : 'Lanjutkan Pemeriksaan'
-                    }
+                    ownerLabel={selectedAssignment.isUnassigned ? 'Belum Ditugaskan' : (selectedAssignment.verifier?.name || currentUser?.name)}
+                    actionLabel={taskCardInfo?.actionLabel || 'Buka Pemeriksaan'}
                     onAction={() => {
-                      if (selectedAssignment.status === 'ASSIGNED') {
+                      if (taskCardInfo?.isAssign) {
+                        setAssignDialogOpen(true);
+                      } else if (taskCardInfo?.isStart) {
                         handleStartVerification(selectedAssignment.id);
                       } else {
                         navigate(`/internal/verifications/${selectedAssignment.id}`);
                       }
                     }}
-                    actionIcon={<Play className="w-4 h-4 fill-white" />}
-                    slaText={selectedAssignment.due_at ? 'SLA Verifikasi: 2 Hari Kerja' : null}
+                    actionIcon={taskCardInfo?.actionIcon || <Play className="w-4 h-4 fill-white" />}
+                    slaText={selectedAssignment.due_at ? 'SLA Verifikasi: 2 Hari Kerja' : (selectedAssignment.isUnassigned ? 'Perlu Penugasan' : null)}
                   />
 
                   {/* Status & Consequence Summary */}
@@ -396,14 +686,21 @@ export const VerifikatorInboxPage = () => {
                             </span>
                           </p>
                         )}
-                        {selectedAssignment.documents?.[0]?.document_no && (
+                        {selectedAssignment.isUnassigned ? (
+                          <p>
+                            <strong>Dasar Penugasan:</strong>{' '}
+                            <span className="text-slate-500 italic">
+                              Belum Ada (Menunggu Nota Dinas)
+                            </span>
+                          </p>
+                        ) : selectedAssignment.documents?.[0]?.document_no ? (
                           <p>
                             <strong>Dasar Penugasan:</strong>{' '}
                             <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
                               {selectedAssignment.documents[0].document_no}
                             </span>
                           </p>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -412,6 +709,28 @@ export const VerifikatorInboxPage = () => {
             }
           />
         </>
+      )}
+
+      {/* Assign Verification Dialog (Langkah 4 SOP: Kepala LPMQ) */}
+      {isHead && assignDialogOpen && selectedAssignment && (
+        <AssignVerificationDialog
+          registration={selectedAssignment.registration || selectedAssignment}
+          onClose={() => setAssignDialogOpen(false)}
+          onConflict={() => {
+            fetchAssignments();
+          }}
+          onSuccess={(newAssignment) => {
+            setAssignDialogOpen(false);
+            const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
+            const createdAssignmentId = newAssignment?.assignment?.id || newAssignment?.id;
+            setSuccessMessage({
+              text: `Berhasil menugaskan Verifikator${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`,
+              assignmentId: createdAssignmentId,
+            });
+            setAssignments((prev) => prev.filter((a) => a.id !== selectedAssignment.id));
+            fetchAssignments();
+          }}
+        />
       )}
     </div>
   );

@@ -134,7 +134,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     where: {
       assignment_id: assignmentId,
       document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'] },
-      status: 'DRAFT',
+      status: { in: ['DRAFT', 'RETURNED'] },
     },
     orderBy: { version: 'desc' },
   });
@@ -183,10 +183,11 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
       });
 
   // Buat atau perbarui Berita Acara Verifikasi (KB-03 & §4.1)
-  const existingBA = await tx.verificationDocument.findFirst({
+  const existingBADraft = await tx.verificationDocument.findFirst({
     where: {
       assignment_id: assignmentId,
       document_type: 'BERITA_ACARA_VERIFIKASI',
+      status: { in: ['DRAFT', 'RETURNED'] },
     },
     orderBy: { version: 'desc' },
   });
@@ -204,9 +205,9 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     submitted_at: new Date().toISOString(),
   };
 
-  if (existingBA) {
+  if (existingBADraft) {
     await tx.verificationDocument.update({
-      where: { id: existingBA.id },
+      where: { id: existingBADraft.id },
       data: {
         status: 'SUBMITTED',
         content_snapshot: baContent,
@@ -231,6 +232,8 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     data: {
       decision: data.decision,
       notes: data.notes || null,
+      status: 'WAITING_APPROVAL',  // Pemilik tindakan berganti ke Kepala LPMQ
+      return_reason: null,        // Reset catatan pengembalian setelah perbaikan diajukan
     },
   });
 
@@ -261,13 +264,14 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
         user_id: k.id,
         registration_id: reg.id,
         type: 'APPROVAL_REQUEST',
-        title: `Persetujuan draf hasil verifikasi: ${reg.registration_no}`,
+        title: `Permohonan persetujuan draf verifikasi: ${reg.registration_no}`,
         payload: {
           assignment_id: assignmentId,
           document_id: document.id,
           version: document.version,
           decision: data.decision,
           verifier_name: user.name,
+          link: `/internal/verifications/${assignmentId}`,
         },
       },
     });
@@ -277,7 +281,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 }, transactionOptions);
 
 export const getVerificationAssignmentDetail = async (assignmentId, user) => {
-  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
 
   const assignment = await prisma.verificationAssignment.findUnique({
     where: { id: assignmentId },
@@ -319,7 +323,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   if (!isHead && !isAdmin && assignment.verifier_id !== user.id) {
     fail(403, 'Anda tidak memiliki hak akses untuk memeriksa penugasan verifikator lain.');
   }
@@ -344,6 +348,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
       completed_at: assignment.completed_at,
       decision: assignment.decision,
       notes: assignment.notes,
+      return_reason: assignment.return_reason,
       assignment_notes: assignment.assignment_notes,
       verifier: assignment.verifier,
       assigned_by: assignment.assigned_by,
@@ -370,9 +375,9 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
-  const isAssignedVerifier = user.roles.includes('VERIFIKATOR') && user.id === doc.created_by_id;
+  const isAssignedVerifier = user.roles.includes('VERIFIKATOR') && (user.id === doc.created_by_id || user.id === doc.assignment?.verifier_id);
 
   if (isOwnerPublisher) {
     if (doc.status !== 'SENT') {
@@ -396,7 +401,7 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E)
 export const approveVerificationDocument = (documentId, user, req) => prisma.$transaction(async tx => {
   if (!user.roles.includes('KEPALA_LPMQ')) {
-    fail(403, 'Persetujuan dan pengesahan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
+    fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }
 
   const doc = await tx.verificationDocument.findUnique({
@@ -447,20 +452,30 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
 
   const primaryUpdated = updatedDocs.find(d => d.id === documentId) || updatedDocs[0];
 
-  await move(tx, reg, 'VERIFICATION_APPROVED', user, `Surat hasil verifikasi disetujui dan disahkan oleh Kepala LPMQ (${user.name})`, req);
+  // Transisi assignment ke WAITING_SIGNATURE
+  if (doc.assignment_id) {
+    await tx.verificationAssignment.update({
+      where: { id: doc.assignment_id },
+      data: { status: 'WAITING_SIGNATURE' },
+    });
+  }
+
+  await move(tx, reg, 'VERIFICATION_APPROVED', user, `Draf hasil verifikasi disetujui oleh Kepala LPMQ (${user.name}). Proses penandatanganan dimulai.`, req);
   await audit(tx, user, 'APPROVE_VERIFICATION_RESULT', 'VerificationDocument', documentId, primaryUpdated, req);
 
+  // Notifikasi ke Verifikator: draft disetujui, mulai tanda tangan
   if (doc.created_by_id) {
     await tx.notification.create({
       data: {
         user_id: doc.created_by_id,
         registration_id: reg.id,
         type: 'DOCUMENT_APPROVED',
-        title: `Draf hasil verifikasi disetujui: ${reg.registration_no}`,
+        title: `Draf disetujui — mulai penandatanganan: ${reg.registration_no}`,
         payload: {
           document_id: documentId,
           registration_no: reg.registration_no,
           approver_name: user.name,
+          link: `/internal/verifications/${doc.assignment_id}`,
         },
       },
     });
@@ -496,6 +511,27 @@ export const returnVerificationDocument = (documentId, data, user, req) => prism
     },
   });
 
+  if (doc.assignment_id) {
+    // Kembalikan seluruh dokumen hasil verifikasi terkait dalam penugasan ini secara atomik
+    await tx.verificationDocument.updateMany({
+      where: {
+        assignment_id: doc.assignment_id,
+        document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'] },
+        status: 'SUBMITTED',
+      },
+      data: { status: 'RETURNED' },
+    });
+
+    // Transisi assignment kembali ke IN_PROGRESS dengan return_reason terstruktur
+    await tx.verificationAssignment.update({
+      where: { id: doc.assignment_id },
+      data: {
+        status: 'IN_PROGRESS',
+        return_reason: data.reason,
+      },
+    });
+  }
+
   await move(tx, reg, 'IN_VERIFICATION', user, `Draf surat hasil verifikasi dikembalikan oleh Kepala LPMQ: ${data.reason}`, req);
   await audit(tx, user, 'RETURN_VERIFICATION_RESULT', 'VerificationDocument', documentId, { ...updated, reason: data.reason }, req);
 
@@ -507,10 +543,12 @@ export const returnVerificationDocument = (documentId, data, user, req) => prism
         type: 'DRAFT_RETURNED',
         title: `Draf hasil verifikasi dikembalikan: ${reg.registration_no}`,
         payload: {
+          assignment_id: doc.assignment_id,
           document_id: documentId,
           registration_no: reg.registration_no,
           reason: data.reason,
           returned_by: user.name,
+          link: doc.assignment_id ? `/internal/verifications/${doc.assignment_id}` : '/internal/verifications',
         },
       },
     });
@@ -765,6 +803,9 @@ export const getVerificationDocument = async (documentId, user) => {
           payment_records: { orderBy: { created_at: 'desc' } },
         },
       },
+      assignment: {
+        select: { id: true, verifier_id: true },
+      },
       created_by: { select: { id: true, name: true, nip: true } },
       approved_by: { select: { id: true, name: true, nip: true } },
       signatories: {
@@ -776,7 +817,7 @@ export const getVerificationDocument = async (documentId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
   const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
 
@@ -784,7 +825,12 @@ export const getVerificationDocument = async (documentId, user) => {
     if (doc.status !== 'SENT') {
       fail(403, 'Surat hasil verifikasi belum dikirimkan kepada Anda.');
     }
-  } else if (!isHead && !isAdmin && !isVerifier) {
+  } else if (isVerifier && !isHead && !isAdmin) {
+    const isAssigned = doc.assignment?.verifier_id === user.id || doc.created_by_id === user.id;
+    if (!isAssigned) {
+      fail(403, 'Anda tidak memiliki hak akses untuk memeriksa dokumen penugasan verifikator lain.');
+    }
+  } else if (!isHead && !isAdmin) {
     fail(403, 'Anda tidak memiliki hak akses untuk membaca dokumen ini.');
   }
 

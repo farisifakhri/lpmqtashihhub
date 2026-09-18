@@ -6,6 +6,8 @@ import { handoverApi } from '@/api/handover.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { WorkflowStepper } from '@/components/common/WorkflowStepper';
+import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnershipBanner';
+import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SlaIndicator } from '@/components/ui/SlaIndicator';
 import { StatusSummary } from '@/components/ui/StatusSummary';
@@ -103,6 +105,7 @@ export const VerificationInspectionPage = () => {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
 
   // Handover to Distributor State (Langkah 7 SOP)
   const [distributors, setDistributors] = useState([]);
@@ -126,6 +129,10 @@ export const VerificationInspectionPage = () => {
   const [letterText, setLetterText] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
+
+  const workflowVm = useMemo(() => {
+    return detail?.registration ? getWorkflowViewModel(detail.registration, currentUser) : null;
+  }, [detail, currentUser]);
 
   const fetchDetail = async () => {
     setLoading(true);
@@ -328,15 +335,15 @@ export const VerificationInspectionPage = () => {
     }
   };
 
-  const handleApproveDocument = async () => {
+  const handleConfirmApprove = async () => {
     if (!latestResultDoc?.id) return;
-    if (!window.confirm('Apakah Anda yakin ingin menyetujui dan menandatangani surat hasil verifikasi ini secara resmi?')) return;
+    setApproveConfirmOpen(false);
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
       await verificationApi.approveDocument(latestResultDoc.id);
-      setSuccessMessage('Surat hasil verifikasi berhasil disetujui dan disahkan oleh Kepala LPMQ.');
+      setSuccessMessage('Draf surat hasil verifikasi berhasil disetujui. Proses penandatanganan dokumen telah dimulai.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
@@ -534,8 +541,6 @@ export const VerificationInspectionPage = () => {
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
     assignment.status === 'COMPLETED' || latestResultDoc?.status === 'SUBMITTED';
-  const isReadOnly = !isInProgress;
-
   const userRoles = Array.isArray(currentUser?.roles)
     ? currentUser.roles
     : (currentUser?.role ? [currentUser.role] : []);
@@ -543,9 +548,13 @@ export const VerificationInspectionPage = () => {
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
 
+  const isAssignedVerifier = isVerifier && (!assignment.verifier_id || assignment.verifier_id === currentUser?.id || assignment.verifier?.id === currentUser?.id);
+  const canVerifierWork = isInProgress && isAssignedVerifier;
+  const isReadOnly = !canVerifierWork;
+
   const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
-  const canVerifierSend = isVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
+  const canVerifierSend = isAssignedVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
 
   const latestPayment = registration.payment_records?.[0];
   const latestHandover = registration.physical_handovers?.[0];
@@ -648,8 +657,61 @@ export const VerificationInspectionPage = () => {
         </div>
       )}
 
+      {/* Workflow Ownership Banner */}
+      {workflowVm && (
+        <WorkflowOwnershipBanner viewModel={workflowVm} />
+      )}
+
       {/* Workflow Stepper */}
       <WorkflowStepper currentStatus={registration.status} currentStageId={2} />
+
+      {/* Return reason alert banner if returned by Kepala */}
+      {assignment.status === 'IN_PROGRESS' && assignment.return_reason && (
+        <div className="p-4 rounded-xl border border-rose-300 bg-rose-50/70 text-rose-900 flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-rose-900">
+              Draf Dikembalikan oleh Kepala LPMQ
+            </h4>
+            <p className="text-rose-800 leading-relaxed">
+              <strong>Catatan Perbaikan:</strong> &ldquo;{assignment.return_reason}&rdquo;
+            </p>
+            <p className="text-rose-600 text-[11px]">
+              Silakan periksa kembali berkas/checklist yang perlu disesuaikan, lalu ajukan draf perbaikan.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info banner if WAITING_APPROVAL */}
+      {assignment.status === 'WAITING_APPROVAL' && !canHeadApprove && (
+        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 flex items-start gap-3 shadow-2xs">
+          <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-amber-900">
+              Draf Sedang Diperiksa Kepala LPMQ
+            </h4>
+            <p className="text-amber-800 leading-relaxed">
+              Draf hasil telaah dan Berita Acara telah diajukan. Tidak ada tindakan yang diperlukan dari Verifikator saat ini.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Info banner if READY_TO_SEND */}
+      {assignment.status === 'READY_TO_SEND' && (
+        <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-start gap-3 shadow-2xs">
+          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-emerald-900">
+              Dokumen Telah Lengkap Ditandatangani
+            </h4>
+            <p className="text-emerald-800 leading-relaxed">
+              Surat Pemberitahuan dan Berita Acara telah ditandatangani secara digital. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Responsive View Switcher for Screen < 1024px */}
       <div className="lg:hidden flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
@@ -1288,9 +1350,21 @@ export const VerificationInspectionPage = () => {
                 {isDirty ? 'Ada perubahan belum disimpan' : 'Tersimpan otomatis'}
               </span>
             </div>
-          ) : isHead && canHeadApprove ? (
+          ) : canHeadApprove ? (
             <span className="font-bold text-amber-900">
-              Menunggu Pengesahan Tanda Tangan Elektronik Kepala LPMQ
+              Menunggu Persetujuan Draf oleh Kepala LPMQ
+            </span>
+          ) : assignment.status === 'WAITING_APPROVAL' ? (
+            <span className="font-bold text-amber-900">
+              Draf Sedang Diperiksa Kepala LPMQ
+            </span>
+          ) : assignment.status === 'WAITING_SIGNATURE' ? (
+            <span className="font-bold text-indigo-900">
+              Menunggu Penandatanganan Dokumen Resmi
+            </span>
+          ) : assignment.status === 'READY_TO_SEND' ? (
+            <span className="font-bold text-emerald-900">
+              Dokumen Telah Lengkap Ditandatangani — Siap Dikirim ke Penerbit
             </span>
           ) : isSent ? (
             <span className="font-bold text-emerald-900">
@@ -1300,7 +1374,7 @@ export const VerificationInspectionPage = () => {
         }
         secondaryActions={
           <>
-            {isInProgress && (
+            {canVerifierWork && (
               <Button
                 variant="outline"
                 onClick={handleSaveDraft}
@@ -1325,7 +1399,7 @@ export const VerificationInspectionPage = () => {
           </>
         }
         primaryAction={
-          isInProgress ? (
+          canVerifierWork ? (
             <Button
               variant="primary"
               onClick={handleOpenSubmitConfirm}
@@ -1338,12 +1412,12 @@ export const VerificationInspectionPage = () => {
           ) : canHeadApprove ? (
             <Button
               variant="primary"
-              onClick={handleApproveDocument}
+              onClick={() => setApproveConfirmOpen(true)}
               disabled={actionLoading}
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat'}
+              {actionLoading ? 'Memproses...' : 'Setujui Draf Hasil Verifikasi'}
             </Button>
           ) : canVerifierSend ? (
             <Button
@@ -1366,6 +1440,10 @@ export const VerificationInspectionPage = () => {
         onConfirm={handleConfirmSubmitToHead}
         title="Ajukan Draf Hasil Verifikasi"
         description="Periksa ringkasan hasil evaluasi berkas dan naskah sebelum diajukan secara resmi kepada Kepala LPMQ."
+        objectName={`Naskah: ${registration.title || '-'}`}
+        nextActor="Kepala LPMQ"
+        statusChange="IN_PROGRESS -> WAITING_APPROVAL"
+        irreversibleConsequence="Draf akan dikunci untuk penelaahan Kepala LPMQ dan tidak dapat diedit selama masa reviu."
         summaryItems={[
           { label: 'Nomor Registrasi', value: registration.registration_no || '-' },
           { label: 'Naskah Mushaf', value: registration.title || '-' },
@@ -1382,6 +1460,22 @@ export const VerificationInspectionPage = () => {
         }
         confirmLabel={decision === 'PASSED' ? 'Ajukan Kelolosan' : 'Ajukan Perbaikan'}
         confirmVariant={decision === 'PASSED' ? 'primary' : 'gold'}
+        loading={actionLoading}
+      />
+
+      {/* Confirmation Summary Dialog for Approving Draft (Kepala LPMQ) */}
+      <ConfirmationSummaryDialog
+        isOpen={approveConfirmOpen}
+        onClose={() => setApproveConfirmOpen(false)}
+        onConfirm={handleConfirmApprove}
+        title="Setujui Draf Hasil Verifikasi"
+        description="Persetujuan draf oleh Kepala LPMQ akan mengunci isi dokumen dan memulai alur tanda tangan elektronik resmi."
+        objectName={`Surat Hasil Verifikasi (${registration.registration_no || '-'})`}
+        nextActor="Penandatangan Elektronik Resmi (Kepala LPMQ & Verifikator)"
+        statusChange="DRAFT -> APPROVED (Siap Ditandatangani)"
+        irreversibleConsequence="Setelah disetujui, draf dikunci dan didaftarkan ke antrean tanda tangan elektronik resmi."
+        confirmLabel="Setujui Draf"
+        confirmVariant="primary"
         loading={actionLoading}
       />
 

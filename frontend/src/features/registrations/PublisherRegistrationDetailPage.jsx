@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Clock,
   BookOpen,
+  Printer,
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { reportApi } from '@/api/report.api';
@@ -22,6 +23,9 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { StatusSummary } from '@/components/ui/StatusSummary';
+import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnershipBanner';
+import { getWorkflowViewModel } from '@/lib/workflow-view-model';
+import { RegistrationReceiptDialog } from './RegistrationReceiptDialog';
 import { PublisherProgress } from './PublisherProgress';
 import { PublisherDocumentList } from './PublisherDocumentList';
 import { publisherAction, dateLabel } from './publisher-status';
@@ -45,6 +49,11 @@ export function PublisherRegistrationDetailPage() {
   const [file, setFile] = useState(null);
   const [volumeCount, setVolumeCount] = useState(30);
   const [refresh, setRefresh] = useState(0);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [dispatchData, setDispatchData] = useState({
+    courier: 'LOKET_LPMQ',
+    tracking_no: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -78,6 +87,7 @@ export function PublisherRegistrationDetailPage() {
   const editable = data && ['DRAFT', 'REVISION_REQUIRED'].includes(data.status);
   const revision = data?.status === 'REVISION_REQUIRED';
   const action = data && publisherAction(data);
+  const workflowVm = data ? getWorkflowViewModel(data, currentUser) : null;
 
   const run = async (operation, message) => {
     if (busy) return;
@@ -139,6 +149,14 @@ export function PublisherRegistrationDetailPage() {
           ...(existing?.notes ? { notes: existing.notes } : {}),
         }),
       'Pernyataan master fisik berhasil disimpan.'
+    );
+  };
+
+  const handleDispatch = (event) => {
+    event.preventDefault();
+    run(
+      () => registrationApi.dispatchPhysical(id, dispatchData),
+      'Konfirmasi pengiriman berkas fisik ke LPMQ berhasil dicatat. Status diindikasikan sedang diverifikasi.'
     );
   };
 
@@ -208,23 +226,19 @@ export function PublisherRegistrationDetailPage() {
                   <p className="text-xs text-slate-500">
                     Layanan: <strong className="text-slate-700">{data.service_type?.name}</strong>
                   </p>
-                  {fee !== undefined && (
-                    <p className="text-[11px] text-slate-500">
-                      Biaya pengajuan:{' '}
-                      <strong className="text-slate-800 font-mono">
-                        {new Intl.NumberFormat('id-ID', {
-                          style: 'currency',
-                          currency: 'IDR',
-                          maximumFractionDigits: 0,
-                        }).format(Number(fee))}
-                      </strong>{' '}
-                      (Tarif PNBP Standar)
-                    </p>
-                  )}
                 </div>
 
-                <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">
                   <StatusBadge status={data.status} />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowReceipt(true)}
+                    className="text-xs font-bold text-slate-700 hover:text-emerald-800"
+                  >
+                    <Printer className="h-3.5 w-3.5 mr-1 text-emerald-700" />
+                    Cetak Bukti Pendaftaran
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -246,6 +260,98 @@ export function PublisherRegistrationDetailPage() {
                 <PublisherProgress registration={data} />
               </div>
             </header>
+
+            {/* Workflow Ownership & Action Banner */}
+            {workflowVm && (
+              <WorkflowOwnershipBanner viewModel={workflowVm} />
+            )}
+
+            {/* Tahapan Wajib & CTA: Kirimkan Berkas Fisik ke LPMQ Sebelum Verifikasi Dimulai */}
+            {data.status === 'READY_FOR_VERIFICATION' && (
+              <section className="rounded-xl border border-amber-300 bg-amber-50/60 p-5 space-y-3.5 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Send className="w-5 h-5 text-amber-700 shrink-0" />
+                    <div>
+                      <h2 className="font-bold text-slate-900 text-sm">
+                        Tahapan Pengiriman Berkas Fisik ke LPMQ
+                      </h2>
+                      <p className="text-[11px] text-slate-600">
+                        Proses verifikasi resmi oleh verifikator LPMQ dimulai setelah naskah master fisik diterima di loket LPMQ.
+                      </p>
+                    </div>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                    data.physical_dispatch_status === 'DISPATCHED'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                      : 'bg-amber-100 text-amber-900 border-amber-300'
+                  }`}>
+                    {data.physical_dispatch_status === 'DISPATCHED'
+                      ? 'Berkas Telah Dikirim · Sedang Verifikasi'
+                      : 'Menunggu Pengiriman Berkas Fisik'}
+                  </span>
+                </div>
+
+                {data.physical_dispatch_status === 'DISPATCHED' ? (
+                  <div className="p-4 bg-white rounded-xl border border-amber-200 text-xs text-slate-700 space-y-2">
+                    <p className="font-bold text-emerald-800 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      Konfirmasi Pengiriman Berkas Tercatat di Sistem
+                    </p>
+                    <p className="text-slate-600 leading-relaxed">
+                      Metode Pengantaran: <strong>{data.dispatch_courier || 'Loket LPMQ'}</strong>
+                      {data.dispatch_tracking_no ? ` · Nomor Resi / Tanda Terima: ${data.dispatch_tracking_no}` : ''}
+                    </p>
+                    <p className="text-[11px] text-sky-800 font-semibold bg-sky-50 p-2 rounded-lg border border-sky-200">
+                      Naskah telah diindikasikan masuk ke tahap: <strong>Sedang Proses Verifikasi</strong>. Verifikator LPMQ sedang memeriksa administrasi dan fisik naskah.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleDispatch} className="p-4 bg-white rounded-xl border border-amber-200 space-y-3">
+                    <p className="text-xs text-slate-700 leading-relaxed">
+                      Silakan bawa berkas master fisik (A4 dijilid per juz) ke <strong>Loket Pelayanan LPMQ Gedung Bayt Al-Qur'an & Museum Istiqlal, TMII Jakarta</strong> atau kirim melalui ekspedisi terpercaya, lalu konfirmasikan pada formulir di bawah ini:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Metode Pengiriman
+                        </label>
+                        <select
+                          disabled={busy}
+                          value={dispatchData.courier}
+                          onChange={(e) => setDispatchData({ ...dispatchData, courier: e.target.value })}
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white"
+                        >
+                          <option value="LOKET_LPMQ">Antar Langsung ke Loket LPMQ TMII</option>
+                          <option value="JNE">JNE Express</option>
+                          <option value="POS_INDONESIA">Pos Indonesia</option>
+                          <option value="TIKI">TIKI</option>
+                          <option value="SICEPAT">SiCepat</option>
+                          <option value="LAINNYA">Kurir / Ekspedisi Lainnya</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">
+                          Nomor Resi / Keterangan Tanda Kirim
+                        </label>
+                        <input
+                          type="text"
+                          disabled={busy}
+                          value={dispatchData.tracking_no}
+                          onChange={(e) => setDispatchData({ ...dispatchData, tracking_no: e.target.value })}
+                          placeholder="Contoh: Resi JNE12345678 atau Diserahkan Staf PT"
+                          className="w-full rounded-lg border border-slate-300 p-2 text-xs bg-white"
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={busy} variant="primary" size="sm" className="text-xs font-bold">
+                      <Send className="w-3.5 h-3.5 mr-1.5" />
+                      Kirimkan Berkas ke LPMQ (Konfirmasi Pengiriman)
+                    </Button>
+                  </form>
+                )}
+              </section>
+            )}
 
             {/* Revision Callout Box */}
             {revision && (
@@ -488,8 +594,16 @@ export function PublisherRegistrationDetailPage() {
           </>
         )
       )}
+
+      {/* Dialog Bukti Pendaftaran Resmi */}
+      <RegistrationReceiptDialog
+        isOpen={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        registration={data}
+      />
     </div>
   );
 }
 
 export default PublisherRegistrationDetailPage;
+

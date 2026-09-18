@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
 import { verificationApi } from '@/api/verification.api';
@@ -24,14 +24,19 @@ import {
   Calendar,
   BookOpen,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   Layers,
   X,
   QrCode,
+  UserCheck,
+  Inbox,
 } from 'lucide-react';
+import { AssignVerificationDialog } from '@/features/verification/AssignVerificationDialog';
 
 export const AdminMasterIntakePage = () => {
   const { currentUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +46,10 @@ export const AdminMasterIntakePage = () => {
 
   // Selected registration state
   const [selectedReg, setSelectedReg] = useState(null);
+
+  // Intake Queue Waiting List (naskah yang siap intake fisik)
+  const [waitingList, setWaitingList] = useState([]);
+  const [waitingLoading, setWaitingLoading] = useState(false);
 
   // Intake Form State
   const [condition, setCondition] = useState('BAIK');
@@ -53,12 +62,78 @@ export const AdminMasterIntakePage = () => {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
   // Auto-generate official intake receipt number format: TT-LPMQ-YYYY-XXXX
   const generateReceiptNo = () => {
     const year = new Date().getFullYear();
     const rand = Math.floor(1000 + Math.random() * 9000);
     return `TT-LPMQ-${year}-${rand}`;
+  };
+
+  const fetchWaitingList = async () => {
+    setWaitingLoading(true);
+    try {
+      const res = await registrationApi.listRegistrations({
+        status: 'READY_FOR_VERIFICATION',
+        limit: 20,
+      });
+      const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
+      const pendingItems = items.filter((item) => {
+        const intakeStatus = item.physical_master_intake?.status || item.physical_master?.status;
+        return intakeStatus !== 'RECEIVED';
+      });
+      setWaitingList(pendingItems);
+    } catch {
+      // Abaikan error background fetch agar tidak mengganggu UI utama
+    } finally {
+      setWaitingLoading(false);
+    }
+  };
+
+  const loadRegistrationById = async (id) => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const detailRes = await registrationApi.getDetail(id);
+      const data = detailRes?.data || detailRes;
+      if (data) {
+        setSelectedReg(data);
+        setSearchQuery(data.registration_no || '');
+        const declaration = data.physical_master_intake || {};
+        setActualVolumeCount(declaration.volume_count || 30);
+        setCondition(declaration.condition || 'BAIK');
+        setReceiptNo(declaration.receipt_no || generateReceiptNo());
+        setNotes(declaration.notes || '');
+      }
+    } catch (err) {
+      setError(err.message || 'Gagal memuat detail naskah.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Baca URL query parameter saat pertama kali dibuka atau parameter berubah
+  useEffect(() => {
+    const q = searchParams.get('search') || searchParams.get('q');
+    const id = searchParams.get('id');
+    if (id) {
+      loadRegistrationById(id);
+    } else if (q) {
+      setSearchQuery(q);
+      handleSearch(q);
+    } else {
+      fetchWaitingList();
+    }
+  }, [searchParams]);
+
+  const handleBackToQueue = () => {
+    setSelectedReg(null);
+    setSearchQuery('');
+    setSearchParams({});
+    fetchWaitingList();
   };
 
   const handleSearch = async (query = searchQuery) => {
@@ -74,7 +149,7 @@ export const AdminMasterIntakePage = () => {
         limit: 10,
       });
 
-      const items = res?.data?.items || [];
+      const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
       if (items.length === 0) {
         setSelectedReg(null);
         setError(`Tidak ditemukan pendaftaran dengan nomor atau kata kunci '${trimmed}'.`);
@@ -184,6 +259,10 @@ export const AdminMasterIntakePage = () => {
   const intakeStatus = selectedReg?.physical_master_intake?.status || 'PENDING';
   const isReceived = intakeStatus === 'RECEIVED';
   const isReturned = intakeStatus === 'RETURNED';
+  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
+  const canAssign = isHead;
+  const isAssigned = selectedReg?.status && selectedReg.status !== 'READY_FOR_VERIFICATION';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24 animate-fadeIn">
@@ -265,6 +344,24 @@ export const AdminMasterIntakePage = () => {
       {/* Workspace Area: 2-Column Comparison Snapshot */}
       {selectedReg ? (
         <div className="space-y-6">
+          {/* Navigation bar to return to queue */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 bg-slate-100/70 border border-slate-200 rounded-xl">
+            <button
+              type="button"
+              onClick={handleBackToQueue}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-emerald-800 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Antrean Intake Loket
+            </button>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span>Sedang Memproses:</span>
+              <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+                {selectedReg.registration_no}
+              </span>
+            </div>
+          </div>
+
           {/* Visual Diff Alert if Volume Count Mismatches */}
           {isVolumeMismatch && !isReceived && (
             <div className="p-4 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-3 text-xs text-amber-900 shadow-2xs animate-fadeIn">
@@ -293,15 +390,47 @@ export const AdminMasterIntakePage = () => {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.print()}
-                className="text-xs shrink-0 bg-white"
-              >
-                <Printer className="w-3.5 h-3.5 mr-1" />
-                Cetak Tanda Terima
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.print()}
+                  className="text-xs bg-white"
+                >
+                  <Printer className="w-3.5 h-3.5 mr-1" />
+                  Cetak Tanda Terima
+                </Button>
+                {!isAssigned ? (
+                  canAssign ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setAssignDialogOpen(true)}
+                      className="text-xs font-bold"
+                    >
+                      <UserCheck className="w-3.5 h-3.5 mr-1.5" />
+                      Tugaskan Verifikator Sekarang
+                    </Button>
+                  ) : (
+                    <Link
+                      to={`/internal/verifications?tab=NEED_ASSIGNMENT&id=${selectedReg.id}`}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-2xs transition-colors"
+                    >
+                      <span>Buka Antrean Penugasan</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )
+                ) : (
+                  <Link
+                    to={`/internal/verifications/${selectedReg.id}`}
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-2xs transition-colors"
+                  >
+                    <span>Lihat Pemeriksaan</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                )}
+              </div>
             </div>
           )}
 
@@ -478,7 +607,7 @@ export const AdminMasterIntakePage = () => {
                 </div>
 
                 {/* Action Buttons */}
-                {!isReceived && (
+                {!isReceived ? (
                   <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
                     <Button
                       type="button"
@@ -502,20 +631,149 @@ export const AdminMasterIntakePage = () => {
                       Terima Master Fisik & Terbitkan Tanda Terima
                     </Button>
                   </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
+                    <span className="text-xs text-slate-500 italic">
+                      {!isAssigned
+                        ? 'Master fisik sudah diterima. Langkah berikutnya: Penugasan Verifikator oleh Kepala LPMQ.'
+                        : 'Verifikator telah ditugaskan untuk naskah ini.'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {!isAssigned ? (
+                        canAssign ? (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setAssignDialogOpen(true)}
+                            className="text-xs font-bold"
+                          >
+                            <UserCheck className="w-3.5 h-3.5 mr-1.5" />
+                            Tugaskan Verifikator
+                          </Button>
+                        ) : (
+                          <Link
+                            to={`/internal/verifications?tab=NEED_ASSIGNMENT&id=${selectedReg.id}`}
+                            className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-2xs transition-colors"
+                          >
+                            <span>Buka Antrean Penugasan</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </Link>
+                        )
+                      ) : null}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-12 bg-white rounded-xl border border-slate-200 text-center space-y-3 shadow-2xs">
-          <PackageCheck className="w-12 h-12 text-slate-300 mx-auto stroke-1" />
-          <h3 className="text-sm font-bold text-slate-800">
-            Loket Intake Siap Digunakan
-          </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-            Masukkan nomor registrasi naskah atau scan QR bukti pendaftaran penerbit di atas untuk membuka formulir penerimaan fisik master mushaf.
-          </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Inbox className="w-5 h-5 text-emerald-700" />
+              <h3 className="text-sm font-bold text-slate-900">
+                Antrean Naskah Menunggu Master Fisik di Loket
+              </h3>
+              <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
+                {waitingList.length} Naskah
+              </span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchWaitingList}
+              disabled={waitingLoading}
+              className="text-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${waitingLoading ? 'animate-spin' : ''}`} />
+              Segarkan
+            </Button>
+          </div>
+
+          {waitingLoading ? (
+            <div className="p-12 bg-white rounded-xl border border-slate-200 text-center space-y-3 shadow-2xs">
+              <RefreshCw className="w-8 h-8 text-emerald-700 animate-spin mx-auto" />
+              <p className="text-xs font-semibold text-slate-600">Memuat antrean naskah masuk...</p>
+            </div>
+          ) : waitingList.length === 0 ? (
+            <div className="p-12 bg-white rounded-xl border border-slate-200 text-center space-y-3 shadow-2xs">
+              <PackageCheck className="w-12 h-12 text-slate-300 mx-auto stroke-1" />
+              <h3 className="text-sm font-bold text-slate-800">
+                Tidak Ada Antrean Naskah Menunggu Fisik
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                Seluruh naskah siap verifikasi telah diterima master fisiknya di loket, atau gunakan kotak pencarian di atas jika mencari nomor registrasi spesifik.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[650px]">
+                  <thead>
+                    <tr className="bg-slate-50/80 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                      <th className="py-3.5 px-5">Nomor Registrasi & Tanggal</th>
+                      <th className="py-3.5 px-5">Judul Naskah & Penerbit</th>
+                      <th className="py-3.5 px-5">Deklarasi Fisik</th>
+                      <th className="py-3.5 px-5">Status Fisik</th>
+                      <th className="py-3.5 px-5 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs">
+                    {waitingList.map((item) => (
+                      <tr key={item.id} className="hover:bg-emerald-50/40 transition-colors">
+                        <td className="py-3.5 px-5">
+                          <span className="font-mono font-bold text-slate-900 block">
+                            {item.registration_no || item.registrationNumber}
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {new Date(item.created_at || item.submittedAt || Date.now()).toLocaleDateString('id-ID', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <span className="font-bold text-slate-800 block">
+                            {item.title}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {item.publisher?.legal_name || item.publisher?.name || '-'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <span className="font-medium text-slate-700 block">
+                            {item.physical_master_intake?.volume_count || 30} Jilid A4
+                          </span>
+                          <span className="text-[11px] text-slate-400">
+                            {item.service_type?.name || 'Mushaf Standar'}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                            Menunggu Fisik A4
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-5 text-right">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => loadRegistrationById(item.id)}
+                            className="text-xs font-bold"
+                          >
+                            <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                            Proses Penerimaan Fisik
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -600,6 +858,35 @@ export const AdminMasterIntakePage = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Dialog Penugasan Verifikator oleh Kepala LPMQ */}
+      {assignDialogOpen && selectedReg && (
+        <AssignVerificationDialog
+          isOpen={assignDialogOpen}
+          onClose={() => setAssignDialogOpen(false)}
+          registration={selectedReg}
+          onSuccess={async () => {
+            setAssignDialogOpen(false);
+            setSuccessMessage(
+              `Verifikator berhasil ditugaskan untuk naskah ${selectedReg.registration_no}. Nota Dinas telah diterbitkan.`
+            );
+            try {
+              const detailRes = await registrationApi.getDetail(selectedReg.id);
+              if (detailRes?.data) setSelectedReg(detailRes.data);
+            } catch {
+              // Abaikan jika reload gagal
+            }
+          }}
+          onConflict={async () => {
+            try {
+              const detailRes = await registrationApi.getDetail(selectedReg.id);
+              if (detailRes?.data) setSelectedReg(detailRes.data);
+            } catch {
+              // Abaikan
+            }
+          }}
+        />
       )}
     </div>
   );

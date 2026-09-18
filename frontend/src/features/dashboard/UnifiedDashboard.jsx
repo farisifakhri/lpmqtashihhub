@@ -25,6 +25,8 @@ import {
   Activity,
   TrendingUp,
   AlertTriangle,
+  UserCheck,
+  PackageCheck,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { registrationApi } from '@/api/registration.api';
@@ -34,6 +36,7 @@ import { DailyQuranWidget } from '@/components/dashboard/DailyQuranWidget';
 import { QueueOverview, QueueItemMeta, QueuePagination } from '@/components/common/QueueOverview';
 import { RegistrationDetailDialog } from '@/components/common/RegistrationDetailDialog';
 import { ManualTeamAssignmentDialog } from '@/features/distribution/ManualTeamAssignmentDialog';
+import { AssignVerificationDialog } from '@/features/verification/AssignVerificationDialog';
 
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
@@ -60,7 +63,9 @@ export const UnifiedDashboard = () => {
   const [detailId, setDetailId] = useState(null);
   const [assignmentId, setAssignmentId] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
+  const [verificationAssignReg, setVerificationAssignReg] = useState(null);
   const canAssignTeam = isAdmin;
+  const canAssignVerification = isKepala;
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(searchQuery.trim()); setPage(1); }, 300);
@@ -182,6 +187,15 @@ export const UnifiedDashboard = () => {
     }
 
     const items = [
+      {
+        title: 'Loket Intake Master Fisik',
+        desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
+        icon: PackageCheck,
+        path: '/internal/master-intake',
+        iconBg: 'bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-xs',
+        cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
+        allowed: isAdmin || isSuperAdmin || isKepala,
+      },
       {
         title: 'Penugasan Tim',
         desc: 'Tetapkan tim pentashih pada naskah yang siap distribusi',
@@ -786,7 +800,31 @@ export const UnifiedDashboard = () => {
                       <div className="mt-2"><QueueItemMeta item={item} /></div>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      {canAssignTeam && item.status === 'WAITING_DISTRIBUTION' && <Button variant="primary" size="sm" className="text-xs mb-2" onClick={() => setAssignmentId(item.id)}>Tetapkan Tim</Button>}
+                      {canAssignTeam && item.status === 'WAITING_DISTRIBUTION' && (
+                        <Button variant="primary" size="sm" className="text-xs mb-2 block ml-auto" onClick={() => setAssignmentId(item.id)}>
+                          Tetapkan Tim
+                        </Button>
+                      )}
+                      {canAssignVerification && item.status === 'READY_FOR_VERIFICATION' && (item.physical_master_intake?.status === 'RECEIVED' || item.physical_master?.status === 'RECEIVED') && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="text-xs mb-2 block ml-auto font-bold"
+                          onClick={() => setVerificationAssignReg(item)}
+                        >
+                          <UserCheck className="w-3.5 h-3.5 mr-1" />
+                          Tugaskan Verifikator
+                        </Button>
+                      )}
+                      {isAdmin && item.status === 'READY_FOR_VERIFICATION' && (item.physical_master_intake?.status !== 'RECEIVED' && item.physical_master?.status !== 'RECEIVED') && (
+                        <Link
+                          to={`/internal/master-intake?search=${encodeURIComponent(item.registration_no || item.registrationNumber || '')}`}
+                          className="inline-flex items-center text-xs mb-2 ml-auto font-bold bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-lg shadow-2xs transition-colors"
+                        >
+                          <PackageCheck className="w-3.5 h-3.5 mr-1" />
+                          Intake Master Fisik
+                        </Link>
+                      )}
                       <Button variant="outline" size="sm" className="text-xs" onClick={() => setDetailId(item.id)}>
                         Tinjau Detail
                       </Button>
@@ -801,6 +839,22 @@ export const UnifiedDashboard = () => {
       {!error && <QueuePagination pagination={pagination} loading={loading} onPageChange={setPage} />}
       {detailId && <RegistrationDetailDialog key={detailId} id={detailId} onClose={() => setDetailId(null)} />}
       {assignmentId && <ManualTeamAssignmentDialog key={assignmentId} id={assignmentId} onClose={() => setAssignmentId(null)} onAssigned={() => { setAssignmentId(null); setAssignmentSuccess('Tim pentashih berhasil ditetapkan. Penugasan dan notifikasi telah dicatat.'); fetchRegistrations(); }} />}
+      {verificationAssignReg && (
+        <AssignVerificationDialog
+          key={verificationAssignReg.id}
+          registration={verificationAssignReg}
+          onClose={() => setVerificationAssignReg(null)}
+          onSuccess={() => {
+            setVerificationAssignReg(null);
+            setAssignmentSuccess('Verifikator berhasil ditugaskan dan Nota Dinas telah diterbitkan.');
+            fetchRegistrations();
+          }}
+          onConflict={() => {
+            setVerificationAssignReg(null);
+            fetchRegistrations();
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -15,11 +15,11 @@ describe('Publisher dashboard', () => {
   const show = () => render(<MemoryRouter><PublisherDashboard /></MemoryRouter>);
   it('uses global scoped counts, not the six most recent rows', async () => {
     show();
-    const total = screen.getByRole('link', { name: /Total pengajuan/ });
+    const total = screen.getByRole('link', { name: /Total (permohonan|pengajuan)/ });
     await waitFor(() => expect(total).toHaveTextContent('28'));
     expect(screen.getByRole('link', { name: /Perlu tindakan/ })).toHaveTextContent('9');
     expect(screen.getByRole('link', { name: /Sedang diproses/ })).toHaveTextContent('10');
-    expect(screen.getByRole('link', { name: /Naskah dengan STT terbit/ })).toHaveTextContent('7');
+    expect(screen.getByRole('link', { name: /(STT [Tt]erbit|Naskah dengan STT terbit)/ })).toHaveTextContent('7');
     expect(registrationApi.listRegistrations).toHaveBeenCalledWith({ page: 1, limit: 5, segment: 'PUBLISHER_ACTIONS' });
     expect(screen.queryByText('Tetapkan Tim')).not.toBeInTheDocument();
   });
@@ -33,15 +33,15 @@ describe('Publisher dashboard', () => {
   it('provides a first-registration empty state', async () => {
     registrationApi.listRegistrations.mockResolvedValue({ data: [], pagination: { total: 0 }, summary: { by_status: {}, issued_stt: 0 } });
     show();
-    expect(await screen.findByText('Belum ada pengajuan')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Buat pengajuan pertama/ })).toHaveAttribute('href', '/publisher/new-registration');
+    expect(await screen.findByText(/Belum ada (permohonan|pengajuan)/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Buat (permohonan|pengajuan) pertama/ })).toHaveAttribute('href', '/publisher/new-registration');
     expect(screen.getByText(/Tidak ada tindakan yang tertunda/)).toBeInTheDocument();
   });
   it('shows a fetch failure without misleading zeros and retries', async () => {
     registrationApi.listRegistrations.mockRejectedValueOnce(new Error('Koneksi terputus'));
     show();
     expect(await screen.findByRole('alert')).toHaveTextContent('Koneksi terputus');
-    expect(screen.getByRole('link', { name: /Total pengajuan/ })).toHaveTextContent('—');
+    expect(screen.getByRole('link', { name: /Total (permohonan|pengajuan)/ })).toHaveTextContent('—');
     fireEvent.click(screen.getByRole('button', { name: 'Muat ulang' }));
     await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
   });

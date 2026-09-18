@@ -62,7 +62,7 @@ export const verificationApi = {
   },
 
   /**
-   * Menyetujui dan menandatangani surat hasil verifikasi oleh Kepala LPMQ
+   * Menyetujui draf hasil verifikasi oleh Kepala LPMQ (melanjutkan ke proses penandatanganan)
    * @param {string} documentId - Verification Document ID
    */
   approveDocument: async (documentId) => {
@@ -140,6 +140,65 @@ export const verificationApi = {
    */
   getRegistrationReceipt: async (registrationId) => {
     return apiClient(`/registrations/${registrationId}/receipt`);
+  },
+
+  /**
+   * Menugaskan Verifikator dan menerbitkan Nota Dinas oleh Kepala LPMQ
+   * @param {string} registrationId
+   * @param {Object} payload - { verifier_id, nota_no, notes }
+   */
+  /**
+   * Menugaskan Verifikator dan menerbitkan Nota Dinas oleh Kepala LPMQ (P0-06)
+   * @param {string} registrationId
+   * @param {Object} payload - { verifier_id, nota_no, notes }
+   */
+  createAssignment: async (registrationId, payload) => {
+    return apiClient(`/registrations/${registrationId}/verification-assignments`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengambil direktori verifikator aktif beserta beban tugas aktif (P0-02, P0-06)
+   * @param {Object} params - { search, status }
+   */
+  listActiveVerifiers: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    query.append('status', params.status || 'ACTIVE');
+    const queryString = query.toString();
+    const endpoint = queryString ? `/verification-verifiers?${queryString}` : '/verification-verifiers';
+    return apiClient(endpoint);
+  },
+
+  /**
+   * Alias untuk listActiveVerifiers (kompatibilitas mundur)
+   */
+  getVerifiers: async (params = {}) => {
+    return verificationApi.listActiveVerifiers(params);
+  },
+
+  /**
+   * Mengambil antrean pendaftaran yang master fisiknya sudah diterima namun belum memiliki penugasan (P0-01, P0-06)
+   * @param {Object} params - { search, page, limit }
+   */
+  listAssignmentCandidates: async (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.page) query.append('page', params.page);
+    if (params.limit) query.append('limit', params.limit);
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `/verification-assignment-candidates?${queryString}` : '/verification-assignment-candidates';
+    return apiClient(endpoint);
+  },
+
+  /**
+   * Alias untuk listAssignmentCandidates (kompatibilitas mundur)
+   */
+  listUnassignedRegistrations: async (params = {}) => {
+    return verificationApi.listAssignmentCandidates(params);
   },
 };
 

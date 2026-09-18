@@ -139,5 +139,87 @@ describe('VerificationInspectionPage Component', () => {
       expect(screen.getByText(/Serahkan Master Fisik & Terbitkan BAST/i)).toBeInTheDocument();
     });
   });
+
+  it('merender banner catatan pengembalian jika draf dikembalikan oleh Kepala LPMQ', async () => {
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'IN_PROGRESS',
+          return_reason: 'Harap periksa keselarasan penomoran ayat pada juz 15.',
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: 'Mushaf Al-Qur\'an Standar Kemenag',
+          status: 'IN_VERIFICATION',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', status: 'RETURNED' },
+        result_documents: [],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Draf Dikembalikan oleh Kepala LPMQ/i)).toBeInTheDocument();
+      expect(screen.getByText(/Harap periksa keselarasan penomoran ayat pada juz 15./i)).toBeInTheDocument();
+    });
+  });
+
+  it('merender tombol "Setujui Draf Hasil Verifikasi" untuk Kepala LPMQ saat draf SUBMITTED', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'kepala-1',
+        name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
+        role: 'KEPALA_LPMQ',
+        roles: ['KEPALA_LPMQ'],
+      },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'WAITING_APPROVAL',
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: 'Mushaf Al-Qur\'an Standar Kemenag',
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', status: 'SUBMITTED' },
+        result_documents: [],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Setujui Draf Hasil Verifikasi/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Kembalikan Draf/i })).toBeInTheDocument();
+    });
+  });
 });
 

@@ -112,12 +112,12 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Ahmad Penerbit')).toBeDefined();
     expect(screen.getByText('Penerbit')).toBeDefined();
 
-    // Menu penerbit sesuai alur
-    expect(screen.getByText('Ikhtisar Layanan')).toBeDefined();
-    expect(screen.getByText('1. Pengajuan Baru')).toBeDefined();
-    expect(screen.getByText('2. Portofolio Pengajuan')).toBeDefined();
-    expect(screen.getByText('3. Tagihan dan PNBP')).toBeDefined();
-    expect(screen.getByText('4. Surat Tanda Tashih')).toBeDefined();
+    // Menu penerbit sesuai alur baru Mandat Bab 6
+    expect(screen.getByText('Beranda')).toBeDefined();
+    expect(screen.getByText('Pengajuan Saya')).toBeDefined();
+    expect(screen.getByText('Buat Pengajuan')).toBeDefined();
+    expect(screen.getByText('Tagihan')).toBeDefined();
+    expect(screen.getByText('Dokumen Resmi')).toBeDefined();
   });
 
   it('AppLayout merender navigasi bawah seluler untuk akun Penerbit', () => {
@@ -137,7 +137,6 @@ describe('Komponen tata letak portal operasional', () => {
     expect(bottomNav).toBeDefined();
     expect(screen.getAllByText('Beranda').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Pengajuan').length).toBeGreaterThan(0);
-    expect(screen.getByText('Ajukan')).toBeDefined();
     expect(screen.getAllByText('Tagihan').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Dokumen').length).toBeGreaterThan(0);
   });

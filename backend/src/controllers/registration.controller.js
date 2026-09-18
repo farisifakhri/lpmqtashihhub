@@ -107,12 +107,28 @@ export const listManuscriptFiles = async (req, res, next) => {
   }
 };
 
+export const dispatchPhysical = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await registrationService.dispatchPhysical(id, req.body, req.user, req);
+    res.status(200).json({
+      success: true,
+      message: 'Konfirmasi pengiriman berkas ke LPMQ berhasil dicatat.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
+  dispatchPhysical,
   transitionStatus,
   listRegistrations,
   getDetail,
   addManuscriptFile,
   listManuscriptFiles,
 };
+

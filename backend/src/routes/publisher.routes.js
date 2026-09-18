@@ -14,5 +14,7 @@ router.put('/me', authenticate, authorize('ADMIN_PENERBIT'), validate(updatePubl
 // Rute internal LPMQ
 router.get('/', authenticate, authorize('SUPERADMIN', 'VERIFIKATOR'), publisherController.listPublishers);
 router.patch('/:id/verify', authenticate, authorize('SUPERADMIN', 'VERIFIKATOR'), validate(verifyPublisherSchema), publisherController.verifyPublisher);
+router.patch('/:id/permit-edit', authenticate, authorize('SUPERADMIN', 'KEPALA_LPMQ'), publisherController.permitProfileEdit);
 
 export default router;
+

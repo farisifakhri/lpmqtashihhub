@@ -70,7 +70,7 @@ export const PublisherDashboard = () => {
 
   const metrics = [
     {
-      label: 'Total pengajuan',
+      label: 'Total permohonan',
       value: total,
       icon: BookOpen,
       iconColor: 'text-slate-700',
@@ -94,7 +94,7 @@ export const PublisherDashboard = () => {
       path: '/publisher/registrations?view=processing',
     },
     {
-      label: 'Naskah dengan STT terbit',
+      label: 'STT Terbit',
       value: data?.recent.summary?.issued_stt,
       icon: Award,
       iconColor: 'text-emerald-800',
@@ -122,7 +122,7 @@ export const PublisherDashboard = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500">
-            Ringkasan seluruh pengajuan naskah mushaf Al-Qur'an Anda.
+            Ringkasan seluruh permohonan surat tanda tashih Mushaf Al-Quran
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export const PublisherDashboard = () => {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs shadow-xs transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Ajukan Naskah Baru
+            Buat Permohonan Baru
           </Link>
           <Button
             variant="outline"
@@ -257,7 +257,7 @@ export const PublisherDashboard = () => {
 
             {data?.actions.pagination?.total > 5 && (
               <p className="text-xs text-slate-500 pt-1">
-                Menampilkan 5 dari {data.actions.pagination.total} pengajuan yang perlu tindakan.
+                Menampilkan 5 dari {data.actions.pagination.total} permohonan yang perlu tindakan.
               </p>
             )}
           </div>
@@ -269,17 +269,17 @@ export const PublisherDashboard = () => {
         <div className="flex flex-wrap justify-between items-center gap-3">
           <div>
             <h2 id="publisher-recent-title" className="text-base font-bold text-slate-900">
-              Pengajuan terbaru
+              Permohonan terbaru
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Urut pengajuan terbaru. Antrean kerja FIFO dikelola tim internal LPMQ.
+              Urut permohonan terbaru. Antrean kerja FIFO dikelola tim internal LPMQ.
             </p>
           </div>
           <Link
             to="/publisher/registrations"
             className="text-xs font-bold text-emerald-800 hover:underline inline-flex items-center gap-1"
           >
-            Semua pengajuan
+            Semua permohonan
             <ArrowRight className="inline h-3.5 w-3.5" />
           </Link>
         </div>
@@ -294,7 +294,7 @@ export const PublisherDashboard = () => {
           ) : (
             <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center space-y-3 shadow-2xs">
               <BookOpen className="h-9 w-9 text-emerald-700 mx-auto stroke-1" />
-              <h3 className="font-bold text-slate-900 text-sm">Belum ada pengajuan</h3>
+              <h3 className="font-bold text-slate-900 text-sm">Belum ada permohonan</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Mulai dengan memilih layanan dan membuat draf naskah pertama Anda.
               </p>
@@ -302,7 +302,7 @@ export const PublisherDashboard = () => {
                 to="/publisher/new-registration"
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-800 text-white font-bold text-xs shadow-xs hover:bg-emerald-900 transition-colors"
               >
-                Buat pengajuan pertama
+                Buat permohonan pertama
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Link>
             </div>

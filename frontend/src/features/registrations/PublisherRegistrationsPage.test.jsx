@@ -16,13 +16,13 @@ describe('Publisher registration history', () => {
     expect(registrationApi.listRegistrations).toHaveBeenCalledWith(expect.objectContaining({ segment: 'PUBLISHER_ACTIONS', page: 1 }));
     fireEvent.click(screen.getByRole('button', { name: 'Selanjutnya' }));
     await waitFor(() => expect(registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2 })));
-    fireEvent.change(screen.getByLabelText('Filter pengajuan'), { target: { value: 'REVISION_REQUIRED' } });
+    fireEvent.change(screen.getByLabelText(/Filter (permohonan|pengajuan)/), { target: { value: 'REVISION_REQUIRED' } });
     await waitFor(() => expect(registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'REVISION_REQUIRED', page: 1 })));
   });
   it('debounces server search and resets to page one', async () => {
     render(<MemoryRouter initialEntries={['/publisher/registrations?page=2']}><PublisherRegistrationsPage /></MemoryRouter>);
     await screen.findByText('Naskah pertama');
-    fireEvent.change(screen.getByLabelText('Cari judul atau nomor pengajuan'), { target: { value: 'alfarisi' } });
+    fireEvent.change(screen.getByLabelText(/Cari judul atau nomor (permohonan|pengajuan)/), { target: { value: 'alfarisi' } });
     await waitFor(() => expect(registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'alfarisi', page: 1 })));
   });
   it('requests only issued STT registrations for the archive', async () => {

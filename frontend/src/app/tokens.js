@@ -9,7 +9,7 @@
  */
 
 export const WORKFLOW_PHASES = [
-  { id: 1, key: 'REGISTRATION', label: 'Pendaftaran', shortLabel: 'Pendaftaran', description: 'Pengajuan data naskah & kelengkapan berkas' },
+  { id: 1, key: 'REGISTRATION', label: 'Pendaftaran', shortLabel: 'Pendaftaran', description: 'Permohonan data naskah & kelengkapan berkas' },
   { id: 2, key: 'VERIFICATION', label: 'Verifikasi', shortLabel: 'Verifikasi', description: 'Pemeriksaan administrasi & master fisik' },
   { id: 3, key: 'PAYMENT', label: 'Pembayaran', shortLabel: 'Pembayaran', description: 'Penagihan billing PNBP SIMPONI & validasi' },
   { id: 4, key: 'HANDOVER', label: 'Serah-terima', shortLabel: 'Serah-terima', description: 'Serah-terima master fisik ke distributor' },

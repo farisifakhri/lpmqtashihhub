@@ -145,6 +145,79 @@ export async function signVerificationDocument(documentId, user, req) {
       status: newDocStatus,
     }, req);
 
+    // 1. Notifikasi penandatangan PENDING berikutnya pada dokumen ini
+    const nextSignatory = await tx.verificationDocumentSignatory.findFirst({
+      where: {
+        document_id: documentId,
+        status: 'PENDING',
+      },
+      orderBy: { sign_order: 'asc' },
+    });
+
+    if (nextSignatory?.signer_user_id) {
+      const docLabel = doc.document_type === 'BERITA_ACARA_VERIFIKASI'
+        ? 'Berita Acara Verifikasi'
+        : 'Surat Hasil Verifikasi';
+      await tx.notification.create({
+        data: {
+          user_id: nextSignatory.signer_user_id,
+          registration_id: doc.registration_id,
+          type: 'SIGNATURE_REQUEST',
+          title: `Permohonan tanda tangan ${docLabel}: ${doc.registration?.registration_no || ''}`,
+          payload: {
+            assignment_id: doc.assignment_id,
+            document_id: doc.id,
+            document_type: doc.document_type,
+            registration_no: doc.registration?.registration_no,
+            sign_order: nextSignatory.sign_order,
+            link: doc.assignment_id ? `/internal/verifications/${doc.assignment_id}` : '/internal/verifications',
+          },
+        },
+      });
+    }
+
+    // 2. Jika dokumen ini telah lengkap ditandatangani, cek apakah seluruh dokumen pada assignment selesai
+    if (isAllSigned && doc.assignment_id) {
+      const remainingUnsignedDocs = await tx.verificationDocument.count({
+        where: {
+          assignment_id: doc.assignment_id,
+          document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'] },
+          status: { notIn: ['SIGNED', 'SENT'] },
+        },
+      });
+
+      if (remainingUnsignedDocs === 0) {
+        // Seluruh dokumen verifikasi selesai ditandatangani -> transisi ke READY_TO_SEND
+        await tx.verificationAssignment.update({
+          where: { id: doc.assignment_id },
+          data: { status: 'READY_TO_SEND' },
+        });
+
+        // Notifikasi ke Verifikator: Dokumen siap dikirim kepada Penerbit
+        const assignment = await tx.verificationAssignment.findUnique({
+          where: { id: doc.assignment_id },
+          select: { verifier_id: true },
+        });
+
+        if (assignment?.verifier_id) {
+          await tx.notification.create({
+            data: {
+              user_id: assignment.verifier_id,
+              registration_id: doc.registration_id,
+              type: 'READY_TO_SEND',
+              title: `Dokumen siap dikirim kepada Penerbit: ${doc.registration?.registration_no || ''}`,
+              payload: {
+                assignment_id: doc.assignment_id,
+                document_id: doc.id,
+                registration_no: doc.registration?.registration_no,
+                link: `/internal/verifications/${doc.assignment_id}`,
+              },
+            },
+          });
+        }
+      }
+    }
+
     return updatedDoc;
   }, { isolationLevel: 'ReadCommitted' });
 }

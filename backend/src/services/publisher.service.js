@@ -34,6 +34,16 @@ export const updateProfile = async (publisherId, data, req) => {
     throw error;
   }
 
+  // Proteksi Kunci Profil: Penerbit tidak diizinkan mengubah profil kecuali sudah diizinkan petinggi (Kepala LPMQ / Superadmin)
+  const isPetinggi = req.user?.roles?.some((r) => ['SUPERADMIN', 'KEPALA_LPMQ'].includes(r));
+  if (!isPetinggi && !existing.profile_edit_allowed) {
+    const error = new Error(
+      'Akses ditolak. Profil penerbit terkunci. Anda tidak memiliki izin untuk mengubah data profil kecuali sudah diberikan izin oleh Kepala LPMQ atau Administrator.'
+    );
+    error.statusCode = 403;
+    throw error;
+  }
+
   const updated = await prisma.publisher.update({
     where: { id: publisherId },
     data,
@@ -42,6 +52,40 @@ export const updateProfile = async (publisherId, data, req) => {
   await logAudit({
     actorId: req.user.id,
     action: 'UPDATE_PUBLISHER_PROFILE',
+    subjectType: 'Publisher',
+    subjectId: publisherId,
+    beforeJson: existing,
+    afterJson: updated,
+    req,
+  });
+
+  return updated;
+};
+
+export const permitPublisherProfileEdit = async (publisherId, { allowed = true, notes = '' }, req) => {
+  const existing = await prisma.publisher.findUnique({
+    where: { id: publisherId },
+  });
+
+  if (!existing) {
+    const error = new Error('Data penerbit tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const updated = await prisma.publisher.update({
+    where: { id: publisherId },
+    data: {
+      profile_edit_allowed: Boolean(allowed),
+      profile_edit_granted_by: req.user.id,
+      profile_edit_granted_at: new Date(),
+      profile_edit_notes: notes || null,
+    },
+  });
+
+  await logAudit({
+    actorId: req.user.id,
+    action: allowed ? 'PERMIT_PUBLISHER_PROFILE_EDIT' : 'REVOKE_PUBLISHER_PROFILE_EDIT',
     subjectType: 'Publisher',
     subjectId: publisherId,
     beforeJson: existing,

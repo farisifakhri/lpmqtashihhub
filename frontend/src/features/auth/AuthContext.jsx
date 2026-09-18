@@ -54,7 +54,7 @@ export const SEED_ACCOUNTS = [
   },
 ];
 
-const AuthContext = createContext(undefined);
+export const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
   // User cache is never an authority for portal access. Only /auth/me or login is.
@@ -220,4 +220,8 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+export const useOptionalAuth = () => {
+  return useContext(AuthContext) || null;
 };

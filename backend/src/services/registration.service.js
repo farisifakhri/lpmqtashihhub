@@ -2,9 +2,10 @@ import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
-import { fail, registration as lockRegistration, audit } from './workflow-utils.js';
+import { fail, registration as lockRegistration, audit, requireStatus, requireOwner } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
+import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -53,7 +54,12 @@ export const TRANSITION_POLICY = {
     READY_FOR_VERIFICATION: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
-      description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah',
+      description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
+    },
+    TASHIH_IN_PROGRESS: {
+      allowedRoles: ['ADMIN_PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
     },
     CANCELLED: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
@@ -252,39 +258,64 @@ export const createDraft = async (data, user, req) => {
   // Normalisasi daftar addon
   const requestedAddonIds = data.addons || data.addon_ids || [];
 
-  // Mekanisme retry loop untuk menangani kemungkinan tabrakan unik nomor registrasi (P2002)
+  // Mendukung pendaftaran lebih dari 1 naskah dalam satu kali permohonan
+  const manuscriptList =
+    Array.isArray(data.manuscripts) && data.manuscripts.length > 0
+      ? data.manuscripts.filter((m) => m && m.title && m.title.trim())
+      : [{ title: data.title }];
+
+  if (manuscriptList.length === 0) {
+    const error = new Error('Minimal satu judul naskah mushaf harus diisi.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const regCategory =
+    data.registration_category ||
+    (registrationType === 'EXTENSION'
+      ? 'EXTENSION'
+      : serviceType.name.toLowerCase().includes('luar negeri')
+      ? 'FOREIGN_MANUSCRIPT'
+      : 'NEW');
+
   const maxRetries = 3;
   let lastError = null;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const registration = await prisma.$transaction(async (tx) => {
-        const regNo = await generateRegistrationNo(tx);
+      const createdItems = await prisma.$transaction(async (tx) => {
+        const items = [];
+        const activeAddons =
+          requestedAddonIds.length > 0
+            ? await tx.serviceAddon.findMany({
+                where: { id: { in: requestedAddonIds }, status: 'ACTIVE' },
+              })
+            : [];
 
-        const created = await tx.registration.create({
-          data: {
-            registration_no: regNo,
-            publisher_id: publisherId,
-            service_type_id: data.service_type_id,
-            title: data.title,
-            submission_source: submissionSource,
-            registration_type: registrationType,
-            previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
-            status: 'DRAFT',
-          },
-        });
+        if (requestedAddonIds.length > 0 && activeAddons.length !== requestedAddonIds.length) {
+          const error = new Error('Satu atau lebih layanan tambahan (add-on) tidak ditemukan atau tidak aktif.');
+          error.statusCode = 400;
+          throw error;
+        }
 
-        // Simpan relasi addon bila diminta
-        if (requestedAddonIds.length > 0) {
-          const activeAddons = await tx.serviceAddon.findMany({
-            where: { id: { in: requestedAddonIds }, status: 'ACTIVE' },
+        for (const item of manuscriptList) {
+          const regNo = await generateRegistrationNo(tx);
+
+          const created = await tx.registration.create({
+            data: {
+              registration_no: regNo,
+              publisher_id: publisherId,
+              service_type_id: data.service_type_id,
+              title: item.title,
+              submission_source: submissionSource,
+              registration_type: registrationType,
+              registration_category: regCategory,
+              foreign_metadata: data.foreign_metadata || null,
+              statement_accepted: Boolean(data.statement_accepted),
+              previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
+              status: 'DRAFT',
+            },
           });
-
-          if (activeAddons.length !== requestedAddonIds.length) {
-            const error = new Error('Satu atau lebih layanan tambahan (add-on) tidak ditemukan atau tidak aktif.');
-            error.statusCode = 400;
-            throw error;
-          }
 
           for (const add of activeAddons) {
             await tx.registrationAddon.create({
@@ -296,32 +327,47 @@ export const createDraft = async (data, user, req) => {
               },
             });
           }
+
+          await tx.statusHistory.create({
+            data: {
+              registration_id: created.id,
+              from_status: 'NONE',
+              to_status: 'DRAFT',
+              actor_id: user.id,
+              notes: 'Draf permohonan dibuat',
+            },
+          });
+
+          items.push(created);
         }
 
-        // Catat riwayat status awal
-        await tx.statusHistory.create({
-          data: {
-            registration_id: created.id,
-            from_status: 'NONE',
-            to_status: 'DRAFT',
-            actor_id: user.id,
-            notes: 'Draf pengajuan dibuat',
-          },
+        return items;
+      });
+
+      const primaryRegistration = {
+        ...createdItems[0],
+        batch: createdItems.map((item) => ({
+          id: item.id,
+          registration_no: item.registration_no,
+          title: item.title,
+        })),
+      };
+
+      for (const item of createdItems) {
+        await logAudit({
+          actorId: user.id,
+          action: 'CREATE_REGISTRATION_DRAFT',
+          subjectType: 'Registration',
+          subjectId: item.id,
+          afterJson: item,
+          req,
         });
 
-        return created;
-      });
+        // Sinkronisasi pendaftaran otomatis dengan website existing
+        syncRegistrationToExistingWebsite(item.id).catch(() => {});
+      }
 
-      await logAudit({
-        actorId: user.id,
-        action: 'CREATE_REGISTRATION_DRAFT',
-        subjectType: 'Registration',
-        subjectId: registration.id,
-        afterJson: registration,
-        req,
-      });
-
-      return registration;
+      return primaryRegistration;
     } catch (err) {
       if (err.code === 'P2002' && attempt < maxRetries) {
         lastError = err;
@@ -333,6 +379,66 @@ export const createDraft = async (data, user, req) => {
   }
 
   throw lastError;
+};
+
+export const dispatchPhysical = async (id, data, user, req) => {
+  const updated = await prisma.$transaction(async (tx) => {
+    const reg = await lockRegistration(tx, id);
+    requireOwner(reg, user);
+    requireStatus(reg, ['READY_FOR_VERIFICATION']);
+
+    const previousIntake = await tx.physicalMasterIntake.findUnique({
+      where: { registration_id: id },
+    });
+
+    if (previousIntake?.status === 'RECEIVED') {
+      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas loket bila data pengiriman perlu diperbaiki.');
+    }
+
+    const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
+    const courier = data.courier || 'LOKET_LPMQ';
+    const trackingNo = data.tracking_no || null;
+    const notes = data.notes || (trackingNo ? `No. Resi: ${trackingNo}` : null);
+
+    const updatedRegistration = await tx.registration.update({
+      where: { id },
+      data: {
+        physical_dispatch_status: 'DISPATCHED',
+        dispatch_courier: courier,
+        dispatch_tracking_no: trackingNo,
+        dispatch_date: dispatchDate,
+      },
+    });
+
+    // Sinkronisasi status intake berkas fisik PENDING
+    await tx.physicalMasterIntake.upsert({
+      where: { registration_id: id },
+      create: {
+        registration_id: id,
+        format: 'A4',
+        binding_method: 'PER_JUZ',
+        volume_count: 30,
+        sent_at: dispatchDate,
+        delivery_method: courier,
+        notes,
+        status: 'PENDING',
+      },
+      update: {
+        sent_at: dispatchDate,
+        delivery_method: courier,
+        notes: notes || undefined,
+      },
+    });
+
+    await audit(tx, user, 'DISPATCH_PHYSICAL_MANUSCRIPT', 'Registration', id, updatedRegistration, req, reg);
+
+    return updatedRegistration;
+  });
+
+  // Sinkronisasi otomatis ke website existing (setelah transaksi commit)
+  syncRegistrationToExistingWebsite(id).catch(() => {});
+
+  return updated;
 };
 
 export const submitRegistration = async (id, user, req) => {
@@ -731,8 +837,22 @@ export const getDetail = async (id, user) => {
   if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
   }
+
+  let operational_state = null;
+  if (reg.status === 'READY_FOR_VERIFICATION') {
+    if (reg.physical_master_intake?.status === 'RECEIVED' && reg.physical_master_intake?.receipt_no) {
+      operational_state = 'READY_FOR_ASSIGNMENT';
+    } else {
+      operational_state = 'WAITING_PHYSICAL_MASTER';
+    }
+  } else if (reg.status === 'VERIFICATION_ASSIGNED') {
+    operational_state = 'VERIFICATION_ASSIGNED';
+  }
+  reg.operational_state = operational_state;
+
   return reg;
 };
+
 
 export const addManuscriptFile = async (registrationId, data, user, req) => {
   const reg = await prisma.registration.findUnique({
@@ -809,6 +929,7 @@ export const listManuscriptFiles = async (registrationId, user) => {
 export default {
   createDraft,
   submitRegistration,
+  dispatchPhysical,
   transitionStatus,
   listRegistrations,
   getDetail,
