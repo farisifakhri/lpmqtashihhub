@@ -156,7 +156,7 @@ export const UnifiedDashboard = () => {
           desc: 'Inisiasi registrasi dan pengiriman dokumen naskah',
           icon: PlusCircle,
           path: '/publisher/new-registration',
-          iconBg: 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-xs',
+          iconBg: 'bg-emerald-700 text-white shadow-xs',
           cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
         },
         {
@@ -164,15 +164,15 @@ export const UnifiedDashboard = () => {
           desc: 'Pantau tahapan proses dan rekam jejak status',
           icon: Layers,
           path: '/publisher/registrations',
-          iconBg: 'bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-xs',
-          cardHover: 'hover:border-blue-400 hover:bg-blue-50/40',
+          iconBg: 'bg-slate-700 text-white shadow-xs',
+          cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         },
         {
           title: 'Tagihan PNBP',
           desc: 'Kelola kode billing SIMPONI dan bukti pembayaran',
           icon: CreditCard,
           path: '/publisher/billing',
-          iconBg: 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white shadow-xs',
+          iconBg: 'bg-amber-600 text-white shadow-xs',
           cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
         },
         {
@@ -180,8 +180,8 @@ export const UnifiedDashboard = () => {
           desc: 'Akses dokumen STT resmi dengan validasi QR',
           icon: Award,
           path: '/publisher/documents',
-          iconBg: 'bg-gradient-to-br from-purple-600 to-violet-700 text-white shadow-xs',
-          cardHover: 'hover:border-purple-400 hover:bg-purple-50/40',
+          iconBg: 'bg-emerald-800 text-white shadow-xs',
+          cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
         },
       ];
     }
@@ -192,8 +192,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
         icon: PackageCheck,
         path: '/internal/master-intake',
-        iconBg: 'bg-gradient-to-br from-amber-600 to-amber-700 text-white shadow-xs',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
+        iconBg: 'bg-slate-700 text-white shadow-xs',
+        cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         allowed: isAdmin || isSuperAdmin || isKepala,
       },
       {
@@ -210,8 +210,8 @@ export const UnifiedDashboard = () => {
         desc: isKepala ? 'Nota dinas penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
-        iconBg: 'bg-gradient-to-br from-sky-600 to-blue-700 text-white shadow-xs',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-50/40',
+        iconBg: 'bg-slate-700 text-white shadow-xs',
+        cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
@@ -219,8 +219,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penugasan berkas ke SK Tim Pentashih & serah terima fisik',
         icon: Send,
         path: '/internal/distributions',
-        iconBg: 'bg-gradient-to-br from-teal-600 to-emerald-700 text-white shadow-xs',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
+        iconBg: 'bg-slate-700 text-white shadow-xs',
+        cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         allowed: isSuperAdmin || userRoles.includes('DISTRIBUTOR') || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
@@ -228,7 +228,7 @@ export const UnifiedDashboard = () => {
         desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
-        iconBg: 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-xs',
+        iconBg: 'bg-amber-600 text-white shadow-xs',
         cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
         allowed: isSuperAdmin || userRoles.includes('PENTASHIH'),
       },
@@ -237,8 +237,8 @@ export const UnifiedDashboard = () => {
         desc: 'Berita acara sidang & pengesahan dokumen',
         icon: Award,
         path: '/internal/documents',
-        iconBg: 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white shadow-xs',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-50/40',
+        iconBg: 'bg-emerald-800 text-white shadow-xs',
+        cardHover: 'hover:border-emerald-400 hover:bg-emerald-50/40',
         allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
@@ -246,8 +246,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
         icon: Sliders,
         path: '/internal/settings',
-        iconBg: 'bg-gradient-to-br from-slate-700 to-indigo-800 text-white shadow-xs',
-        cardHover: 'hover:border-indigo-400 hover:bg-indigo-50/40',
+        iconBg: 'bg-slate-800 text-white shadow-xs',
+        cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         allowed: isSuperAdmin,
       },
       {
@@ -255,8 +255,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola akun, peran, dan matriks kewenangan',
         icon: Users,
         path: '/internal/users',
-        iconBg: 'bg-gradient-to-br from-emerald-700 to-teal-800 text-white shadow-xs',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-50/40',
+        iconBg: 'bg-slate-700 text-white shadow-xs',
+        cardHover: 'hover:border-slate-400 hover:bg-slate-50/40',
         allowed: isSuperAdmin,
       },
     ];
@@ -337,6 +337,63 @@ export const UnifiedDashboard = () => {
         </div>
       </div>
 
+      {/* 4a. Urgent Action Triage untuk Administrator */}
+      {isAdmin && showOperationalCards && (
+        <div className="bg-red-50 border border-red-200/80 rounded-2xl p-5 shadow-xs mb-6">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-red-200/50">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+                <AlertTriangle className="w-4.5 h-4.5" />
+              </div>
+              <h3 className="text-sm font-black text-red-900 uppercase tracking-wider">
+                Prioritas Aksi Hari Ini
+              </h3>
+            </div>
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+              Perlu Intervensi
+            </span>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {/* Kartu Intake Kritis */}
+            <Link to="/internal/master-intake" className="bg-white rounded-xl p-4 border border-red-100 shadow-sm hover:border-red-300 hover:shadow transition-all flex items-center justify-between group">
+              <div>
+                <div className="text-2xl font-black text-red-700 tabular-nums">3</div>
+                <div className="text-xs font-bold text-slate-800 mt-1 group-hover:text-red-700 transition-colors">Master Fisik Tiba</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Perlu intake di loket segera</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 group-hover:border-red-200 transition-all">
+                <PackageCheck className="w-4.5 h-4.5" />
+              </div>
+            </Link>
+            
+            {/* Kartu Overdue SLA */}
+            <Link to="/internal/verifications" className="bg-white rounded-xl p-4 border border-amber-200 shadow-sm hover:border-amber-400 hover:shadow transition-all flex items-center justify-between group">
+              <div>
+                <div className="text-2xl font-black text-amber-600 tabular-nums">2</div>
+                <div className="text-xs font-bold text-slate-800 mt-1 group-hover:text-amber-600 transition-colors">Melebihi SLA Verifikasi</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Tenggat terlewati, butuh tindakan</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-amber-50 group-hover:text-amber-500 group-hover:border-amber-200 transition-all">
+                <Clock className="w-4.5 h-4.5" />
+              </div>
+            </Link>
+            
+            {/* Kartu Nota Dinas */}
+            <Link to="/internal/verifications" className="bg-white rounded-xl p-4 border border-emerald-200 shadow-sm hover:border-emerald-400 hover:shadow transition-all flex items-center justify-between group">
+              <div>
+                <div className="text-2xl font-black text-emerald-700 tabular-nums">5</div>
+                <div className="text-xs font-bold text-slate-800 mt-1 group-hover:text-emerald-700 transition-colors">Persetujuan Kepala</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">Menunggu pengesahan draft</div>
+              </div>
+              <div className="w-9 h-9 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-all">
+                <CheckSquare className="w-4.5 h-4.5" />
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* 4. Statistics Overview Section */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3.5">
@@ -412,9 +469,9 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 2: Sidang Pentashihan */}
-            <div className="rounded-xl border border-amber-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-amber-50/80 via-white to-orange-50/30">
+            <div className="rounded-xl border border-amber-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-amber-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shadow-sm shadow-amber-500/25">
+                <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-sm">
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
@@ -431,39 +488,39 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 3: Penetapan STT */}
-            <div className="rounded-xl border border-purple-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-purple-50/80 via-white to-violet-50/30">
+            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-emerald-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-violet-700 text-white flex items-center justify-center shadow-sm shadow-purple-500/25">
+                <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-sm">
                   <Award className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
                   Tahap 3
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-black text-purple-950 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-emerald-950 tabular-nums">
                   {countSTT}
                 </div>
-                <div className="text-xs font-bold text-purple-900 mt-1">Penetapan Dokumen STT</div>
+                <div className="text-xs font-bold text-emerald-900 mt-1">Penetapan Dokumen STT</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Berita acara & tanda tashih sah</div>
               </div>
             </div>
 
             {/* Card 4: Total Naskah */}
-            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30">
+            <div className="rounded-xl border border-slate-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-slate-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-sm shadow-emerald-600/25">
+                <div className="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-sm">
                   <Users className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 border border-slate-300">
                   Total
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-black text-emerald-950 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-bold text-emerald-900 mt-1">Total Naskah Masuk</div>
+                <div className="text-xs font-bold text-slate-800 mt-1">Total Naskah Masuk</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Seluruh berkas dalam antrean</div>
               </div>
             </div>
@@ -491,28 +548,28 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 2: Sedang Diproses */}
-            <div className="rounded-xl border border-sky-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-sky-50/80 via-white to-blue-50/30">
+            <div className="rounded-xl border border-slate-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-slate-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white flex items-center justify-center shadow-sm shadow-sky-500/25">
+                <div className="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-sm">
                   <Clock className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-300">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-300">
                   Diproses
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-black text-sky-950 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">
                   {inProgressCount}
                 </div>
-                <div className="text-xs font-bold text-sky-900 mt-1">Sedang Ditashih</div>
+                <div className="text-xs font-bold text-slate-800 mt-1">Sedang Ditashih</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Dalam verifikasi & sidang</div>
               </div>
             </div>
 
             {/* Card 3: STT Terbit */}
-            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/30">
+            <div className="rounded-xl border border-emerald-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-emerald-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center shadow-sm shadow-emerald-600/25">
+                <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center shadow-sm">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
@@ -529,20 +586,20 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 4: Total Pengajuan */}
-            <div className="rounded-xl border border-indigo-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-indigo-50/80 via-white to-violet-50/30">
+            <div className="rounded-xl border border-slate-200/90 p-4 shadow-xs hover:shadow-md transition-all bg-slate-50/40">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-violet-700 text-white flex items-center justify-center shadow-sm shadow-indigo-600/25">
+                <div className="w-10 h-10 rounded-xl bg-slate-700 text-white flex items-center justify-center shadow-sm">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 border border-indigo-300">
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-800 border border-slate-300">
                   Naskah
                 </span>
               </div>
               <div className="mt-3">
-                <div className="text-2xl sm:text-3xl font-black text-indigo-950 tabular-nums">
+                <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-bold text-indigo-900 mt-1">Total Pengajuan</div>
+                <div className="text-xs font-bold text-slate-800 mt-1">Total Pengajuan</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Semua riwayat pengajuan</div>
               </div>
             </div>

@@ -48,3 +48,8 @@ storage/
 backend/storage/
 ~$*.xlsx
 ~$*.docx
+
+# Impeccable design artifacts and skills
+.impeccable/
+.agent/skills/impeccable/
+
