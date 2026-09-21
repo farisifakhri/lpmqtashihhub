@@ -67,7 +67,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
       if (previous.status !== 'PENDING' && previous.status !== 'RETURNED') {
         fail(409, 'Penerimaan master ini sudah diputuskan. Muat ulang status sebelum mencoba lagi.');
       }
-      if (data.decision === 'RECEIVED' && previous.volume_count && data.volume_count !== previous.volume_count) {
+      if (data.decision === 'RECEIVED' && previous.volume_count && data.volume_count !== previous.volume_count && previous.status !== 'RETURNED') {
         fail(409, 'Jumlah jilid yang diterima berbeda dari deklarasi penerbit. Kembalikan master dengan alasan agar penerbit memperbaiki deklarasi.');
       }
       const intake = await tx.physicalMasterIntake.update({
@@ -78,6 +78,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
           received_at: data.decision === 'RECEIVED' ? new Date() : null,
           condition: data.condition,
           receipt_no: data.decision === 'RECEIVED' ? data.receipt_no : null,
+          volume_count: data.volume_count || previous.volume_count,
           notes: data.notes || null,
         },
       });
@@ -91,7 +92,13 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
           data: { revision_source: 'PHYSICAL_MASTER' },
         });
       } else if (data.decision === 'RECEIVED' && reg.status === 'REVISION_REQUIRED') {
-        await move(tx, reg, 'READY_FOR_VERIFICATION', user, 'Perbaikan master fisik diterima di loket LPMQ', req);
+        if (reg.revision_source === 'PHYSICAL_MASTER') {
+          await move(tx, reg, 'READY_FOR_VERIFICATION', user, 'Perbaikan master fisik diterima di loket LPMQ', req);
+          await tx.registration.update({
+            where: { id: reg.id },
+            data: { revision_source: null },
+          });
+        }
       }
 
       await audit(tx, user, data.decision === 'RECEIVED' ? 'RECEIVE_PHYSICAL_MASTER' : 'RETURN_PHYSICAL_MASTER', 'PhysicalMasterIntake', intake.id, intake, req, previous);

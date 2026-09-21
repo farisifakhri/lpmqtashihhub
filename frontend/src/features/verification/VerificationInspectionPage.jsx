@@ -144,6 +144,11 @@ export const VerificationInspectionPage = () => {
         const data = res.data;
         setDetail(data);
 
+        // Canonical ID redirect if called with registration_id or older alias
+        if (data.assignment?.id && data.assignment.id !== id) {
+          navigate(`/internal/verifications/${data.assignment.id}`, { replace: true });
+        }
+
         // Fetch distributors for handover if verifier or admin
         try {
           const distRes = await handoverApi.listDistributors();
@@ -545,6 +550,7 @@ export const VerificationInspectionPage = () => {
   );
 
   const isEmailFailed = latestResultDoc?.status === 'EMAIL_FAILED' || latestResultDoc?.email_delivery_status === 'EMAIL_FAILED';
+  const isRevoked = assignment.status === 'REVOKED';
   const isAssigned = assignment.status === 'ASSIGNED';
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
@@ -557,7 +563,7 @@ export const VerificationInspectionPage = () => {
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
 
   const isAssignedVerifier = isVerifier && (!assignment.verifier_id || assignment.verifier_id === currentUser?.id || assignment.verifier?.id === currentUser?.id);
-  const canVerifierWork = isInProgress && isAssignedVerifier;
+  const canVerifierWork = isInProgress && isAssignedVerifier && !isRevoked;
   const isReadOnly = !canVerifierWork;
 
   const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
@@ -638,6 +644,26 @@ export const VerificationInspectionPage = () => {
           >
             Tutup
           </button>
+        </div>
+      )}
+
+      {/* Revocation Banner if REVOKED */}
+      {isRevoked && (
+        <div className="p-4 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1 text-xs">
+            <h4 className="font-bold text-rose-800 text-sm">
+              Penugasan Verifikasi Ini Telah Dicabut (REVOKED)
+            </h4>
+            <p className="leading-relaxed">
+              Penugasan ini dicabut oleh {assignment.revoked_by?.name || 'Kepala LPMQ'} pada {assignment.revoked_at ? new Date(assignment.revoked_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}. Lembar pemeriksaan berstatus hanya-baca (read-only).
+            </p>
+            {assignment.revocation_reason && (
+              <p className="p-2 bg-white rounded border border-rose-200 font-medium">
+                Alasan pencabutan: &ldquo;{assignment.revocation_reason}&rdquo;
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -847,6 +873,42 @@ export const VerificationInspectionPage = () => {
               </p>
             )}
           </div>
+
+          {/* Riwayat Penugasan & Nota Dinas (if multiple assignments exist) */}
+          {detail?.assignment_history?.length > 1 && (
+            <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2 text-xs">
+              <div className="flex items-center gap-1.5 font-bold text-slate-900 border-b border-slate-100 pb-2">
+                <History className="w-4 h-4 text-emerald-800" />
+                <span>Riwayat Penugasan ({detail.assignment_history.length})</span>
+              </div>
+              <div className="space-y-2 divide-y divide-slate-100">
+                {detail.assignment_history.map((h) => {
+                  const hNota = h.documents?.find?.(d => d.document_type === 'NOTA_DINAS_VERIFIKASI') || h.documents?.[0];
+                  const isCur = h.id === assignment.id;
+                  return (
+                    <div key={h.id} className={`pt-2 first:pt-0 text-[11px] space-y-1 ${isCur ? 'font-semibold text-emerald-900' : 'text-slate-600'}`}>
+                      <div className="flex items-center justify-between">
+                        <span>{h.verifier?.name || 'Verifikator'}</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${h.status === 'REVOKED' ? 'bg-rose-100 text-rose-800' : (isCur ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700')}`}>
+                          {h.status === 'REVOKED' ? 'Dicabut' : h.status}
+                        </span>
+                      </div>
+                      {hNota?.document_no && (
+                        <div className="font-mono text-[10px] text-slate-500">
+                          ND: {hNota.document_no}
+                        </div>
+                      )}
+                      {h.revocation_reason && (
+                        <div className="text-rose-700 text-[10px] italic">
+                          Alasan: &ldquo;{h.revocation_reason}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Petugas Verifikator */}
           {assignment.assigned_to && (

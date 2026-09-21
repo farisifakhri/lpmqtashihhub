@@ -5,6 +5,7 @@ import { audit, fail, move, registration, requireRole, requireStatus } from './w
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { initVerificationSignatories, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
+import { calculateDueAt } from './sla.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -25,37 +26,40 @@ const resolveAssignment = async (db, idOrRegId, options = {}) => {
 
 export const startVerification = (assignmentId, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await resolveAssignment(tx, assignmentId);
+  const assignment = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+  });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
-  if (assignment.status === 'COMPLETED') {
-    fail(409, 'Pemeriksaan untuk penugasan ini sudah selesai.');
+  if (assignment.status === 'IN_PROGRESS') {
+    return assignment; // Idempotent
+  }
+  if (assignment.status !== 'ASSIGNED') {
+    fail(409, 'Pemeriksaan tidak dapat dimulai pada status saat ini.');
   }
 
   const reg = await registration(tx, assignment.registration_id);
-  if (assignment.status === 'ASSIGNED') {
-    requireStatus(reg, ['VERIFICATION_ASSIGNED']);
-    const startedAt = new Date();
-    const updated = await tx.verificationAssignment.update({
-      where: { id: assignment.id },
-      data: {
-        status: 'IN_PROGRESS',
-        started_at: startedAt,
-      },
-    });
-    await move(tx, reg, 'IN_VERIFICATION', user, `Pemeriksaan naskah dimulai oleh verifikator ${user.name}`, req);
-    await audit(tx, user, 'START_VERIFICATION', 'VerificationAssignment', assignment.id, updated, req);
-    return updated;
-  }
-
-  return assignment;
+  requireStatus(reg, ['VERIFICATION_ASSIGNED']);
+  const startedAt = new Date();
+  const updated = await tx.verificationAssignment.update({
+    where: { id: assignment.id },
+    data: {
+      status: 'IN_PROGRESS',
+      started_at: startedAt,
+    },
+  });
+  await move(tx, reg, 'IN_VERIFICATION', user, `Pemeriksaan naskah dimulai oleh verifikator ${user.name}`, req);
+  await audit(tx, user, 'START_VERIFICATION', 'VerificationAssignment', assignment.id, updated, req);
+  return updated;
 }, transactionOptions);
 
 export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await resolveAssignment(tx, assignmentId);
+  const assignment = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+  });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
@@ -128,7 +132,9 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
 
 export const submitVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await resolveAssignment(tx, assignmentId);
+  const assignment = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+  });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
@@ -242,6 +248,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     });
   }
 
+  const submittedAt = new Date();
   await tx.verificationAssignment.update({
     where: { id: actualAssignmentId },
     data: {
@@ -249,6 +256,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
       notes: data.notes || null,
       status: 'WAITING_APPROVAL',  // Pemilik tindakan berganti ke Kepala LPMQ
       return_reason: null,        // Reset catatan pengembalian setelah perbaikan diajukan
+      review_submitted_at: submittedAt,
     },
   });
 
@@ -302,6 +310,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
     include: {
       verifier: { select: { id: true, name: true, email: true, nip: true } },
       assigned_by: { select: { id: true, name: true } },
+      revoked_by: { select: { id: true, name: true } },
       registration: {
         include: {
           publisher: { select: { id: true, legal_name: true, entity_type: true, address: true, phone: true } },
@@ -344,8 +353,62 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
 
   const now = new Date();
   const dueAt = assignment.due_at ? new Date(assignment.due_at) : null;
-  const isOverdue = dueAt && now.getTime() > dueAt.getTime() && assignment.status !== 'COMPLETED';
+  const rawOverdue = dueAt && now.getTime() > dueAt.getTime();
+  const isOverdue = ['ASSIGNED', 'IN_PROGRESS'].includes(assignment.status) && rawOverdue;
   const remainingMs = dueAt ? Math.max(0, dueAt.getTime() - now.getTime()) : null;
+
+  let currentStageOwner = 'NONE';
+  let verifierPerformance = 'ON_TRACK';
+
+  if (['ASSIGNED', 'IN_PROGRESS'].includes(assignment.status)) {
+    currentStageOwner = 'VERIFIKATOR';
+    verifierPerformance = rawOverdue ? 'OVERDUE' : 'ON_TRACK';
+  } else if (assignment.status === 'WAITING_APPROVAL') {
+    currentStageOwner = 'KEPALA_LPMQ';
+    if (assignment.review_submitted_at && dueAt) {
+      verifierPerformance = new Date(assignment.review_submitted_at).getTime() <= dueAt.getTime() ? 'ON_TIME' : 'LATE';
+    } else {
+      verifierPerformance = 'ON_TRACK';
+    }
+  } else if (assignment.status === 'WAITING_SIGNATURE') {
+    currentStageOwner = 'SIGNATORIES';
+    if (assignment.review_submitted_at && dueAt) {
+      verifierPerformance = new Date(assignment.review_submitted_at).getTime() <= dueAt.getTime() ? 'ON_TIME' : 'LATE';
+    } else {
+      verifierPerformance = 'ON_TRACK';
+    }
+  } else if (assignment.status === 'READY_TO_SEND') {
+    currentStageOwner = 'VERIFIKATOR';
+    if (assignment.review_submitted_at && dueAt) {
+      verifierPerformance = new Date(assignment.review_submitted_at).getTime() <= dueAt.getTime() ? 'ON_TIME' : 'LATE';
+    } else {
+      verifierPerformance = 'ON_TRACK';
+    }
+  } else if (assignment.status === 'COMPLETED') {
+    currentStageOwner = 'NONE';
+    if (assignment.review_submitted_at && dueAt) {
+      verifierPerformance = new Date(assignment.review_submitted_at).getTime() <= dueAt.getTime() ? 'ON_TIME' : 'LATE';
+    } else {
+      verifierPerformance = 'ON_TIME';
+    }
+  } else if (assignment.status === 'REVOKED') {
+    currentStageOwner = 'NONE';
+    verifierPerformance = 'REVOKED';
+  }
+
+  const assignmentHistory = await prisma.verificationAssignment.findMany({
+    where: { registration_id: assignment.registration_id },
+    orderBy: { assigned_at: 'desc' },
+    include: {
+      verifier: { select: { id: true, name: true, nip: true, email: true } },
+      assigned_by: { select: { id: true, name: true } },
+      revoked_by: { select: { id: true, name: true } },
+      documents: {
+        where: { document_type: 'NOTA_DINAS_VERIFIKASI' },
+        select: { id: true, document_no: true, version: true, status: true, created_at: true },
+      },
+    },
+  });
 
   const notaDinas = assignment.documents.find(d => d.document_type === 'NOTA_DINAS_VERIFIKASI') || null;
   const resultDocuments = assignment.documents.filter(d => ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'].includes(d.document_type));
@@ -360,26 +423,259 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
       started_at: assignment.started_at,
       due_at: assignment.due_at,
       completed_at: assignment.completed_at,
+      review_submitted_at: assignment.review_submitted_at,
+      revoked_at: assignment.revoked_at,
+      revoked_by: assignment.revoked_by,
+      revocation_reason: assignment.revocation_reason,
       decision: assignment.decision,
       notes: assignment.notes,
       return_reason: assignment.return_reason,
       assignment_notes: assignment.assignment_notes,
       verifier: assignment.verifier,
       assigned_by: assignment.assigned_by,
+      current_stage_owner: currentStageOwner,
+      verifier_performance: verifierPerformance,
       sla: {
         due_at: assignment.due_at,
         is_overdue: Boolean(isOverdue),
         remaining_ms: remainingMs,
         duration_target: '2 hari kerja',
+        review_submitted_at: assignment.review_submitted_at,
+        current_stage_owner: currentStageOwner,
+        verifier_performance: verifierPerformance,
       },
     },
     registration: assignment.registration,
+    assignment_history: assignmentHistory,
     nota_dinas: notaDinas,
     latest_result_document: latestDraft,
     berita_acara: beritaAcara,
     result_documents: resultDocuments,
   };
 };
+
+export const getLatestVerificationAssignment = async (registrationId, user) => {
+  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
+  const assignment = await prisma.verificationAssignment.findFirst({
+    where: { registration_id: registrationId },
+    orderBy: { assigned_at: 'desc' },
+    include: {
+      verifier: { select: { id: true, name: true, email: true, nip: true } },
+    },
+  });
+
+  if (!assignment) {
+    fail(404, 'Penugasan verifikasi untuk pengajuan ini tidak ditemukan.');
+  }
+
+  const isHead = user.roles.includes('KEPALA_LPMQ');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  if (!isHead && !isAdmin && assignment.verifier_id !== user.id) {
+    fail(403, 'Anda tidak memiliki hak akses untuk memeriksa penugasan verifikator lain.');
+  }
+
+  return assignment;
+};
+
+export const revokeVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  const assignment = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { verifier: true },
+  });
+  if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+
+  if (assignment.status === 'COMPLETED') {
+    fail(409, 'Penugasan verifikasi sudah selesai dan tidak dapat dicabut.');
+  }
+  if (assignment.status === 'REVOKED') {
+    fail(409, 'Penugasan verifikasi sudah dicabut sebelumnya.');
+  }
+  if (['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(assignment.status)) {
+    fail(409, 'Penugasan verifikasi tidak dapat dicabut karena draf pemeriksaan sedang dalam proses telaah atau tanda tangan. Kembalikan draf ke verifikator terlebih dahulu.');
+  }
+  if (!['ASSIGNED', 'IN_PROGRESS'].includes(assignment.status)) {
+    fail(409, `Penugasan tidak dapat dicabut pada status "${assignment.status}".`);
+  }
+
+  const reg = await registration(tx, assignment.registration_id);
+  const now = new Date();
+
+  const updatedAssignment = await tx.verificationAssignment.update({
+    where: { id: assignment.id },
+    data: {
+      status: 'REVOKED',
+      revoked_at: now,
+      revoked_by_id: user.id,
+      revocation_reason: data.reason,
+    },
+  });
+
+  await move(tx, reg, 'READY_FOR_VERIFICATION', user, `Penugasan verifikasi dicabut oleh ${user.name}: ${data.reason}`, req);
+  await audit(tx, user, 'REVOKE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', assignment.id, updatedAssignment, req);
+
+  await tx.notification.create({
+    data: {
+      user_id: assignment.verifier_id,
+      registration_id: reg.id,
+      type: 'ASSIGNMENT_REVOKED',
+      title: `Penugasan verifikasi dicabut: ${reg.registration_no}`,
+      payload: {
+        assignment_id: assignment.id,
+        registration_no: reg.registration_no,
+        reason: data.reason,
+        revoked_by: user.name,
+        link: `/internal/verifications/${assignment.id}`,
+      },
+    },
+  });
+
+  return updatedAssignment;
+}, transactionOptions);
+
+export const reassignVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  const assignment = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+    include: { verifier: true },
+  });
+  if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+
+  if (assignment.status === 'COMPLETED') {
+    fail(409, 'Penugasan verifikasi sudah selesai dan tidak dapat dialihkan.');
+  }
+  if (assignment.status === 'REVOKED') {
+    fail(409, 'Penugasan verifikasi sudah dicabut sebelumnya.');
+  }
+  if (['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(assignment.status)) {
+    fail(409, 'Penugasan verifikasi tidak dapat dialihkan karena draf pemeriksaan sedang dalam proses telaah atau tanda tangan. Kembalikan draf ke verifikator terlebih dahulu.');
+  }
+  if (!['ASSIGNED', 'IN_PROGRESS'].includes(assignment.status)) {
+    fail(409, `Penugasan tidak dapat dialihkan pada status "${assignment.status}".`);
+  }
+
+  if (data.verifier_id === assignment.verifier_id) {
+    fail(400, 'Verifikator pengganti harus berbeda dengan verifikator yang ditugaskan saat ini.');
+  }
+
+  const newVerifier = await tx.user.findUnique({
+    where: { id: data.verifier_id },
+    include: { roles: { include: { role: true } } },
+  });
+  if (!newVerifier || newVerifier.status !== 'ACTIVE' || !newVerifier.roles.some(item => item.role.code === 'VERIFIKATOR')) {
+    fail(400, 'Pilih pengguna aktif dengan peran Verifikator.');
+  }
+
+  if (await tx.verificationDocument.findUnique({ where: { document_no: data.nota_no } })) {
+    fail(409, 'Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
+  }
+
+  const reg = await registration(tx, assignment.registration_id);
+  const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: reg.id } });
+  const now = new Date();
+
+  const revokedAssignment = await tx.verificationAssignment.update({
+    where: { id: assignment.id },
+    data: {
+      status: 'REVOKED',
+      revoked_at: now,
+      revoked_by_id: user.id,
+      revocation_reason: data.reason,
+    },
+  });
+  await audit(tx, user, 'REVOKE_FOR_REASSIGNMENT', 'VerificationAssignment', assignment.id, revokedAssignment, req);
+
+  const assignedAt = new Date();
+  const dueAt = await calculateDueAt(tx, assignedAt, 2, { applyCutoff: true });
+
+  const previousNota = await tx.verificationDocument.findFirst({
+    where: { registration_id: reg.id, document_type: 'NOTA_DINAS_VERIFIKASI' },
+    orderBy: { version: 'desc' },
+    select: { version: true },
+  });
+
+  const newAssignment = await tx.verificationAssignment.create({
+    data: {
+      registration_id: reg.id,
+      verifier_id: newVerifier.id,
+      assigned_by_id: user.id,
+      assigned_at: assignedAt,
+      due_at: dueAt,
+      assignment_notes: data.notes || assignment.assignment_notes,
+      status: 'ASSIGNED',
+    },
+  });
+
+  const newNota = await tx.verificationDocument.create({
+    data: {
+      registration_id: reg.id,
+      assignment_id: newAssignment.id,
+      document_type: 'NOTA_DINAS_VERIFIKASI',
+      document_no: data.nota_no,
+      version: (previousNota?.version || 0) + 1,
+      status: 'ISSUED',
+      created_by_id: user.id,
+      content_snapshot: {
+        registration_no: reg.registration_no,
+        title: reg.title,
+        verifier_id: newVerifier.id,
+        verifier_name: newVerifier.name,
+        assigned_by_id: user.id,
+        assigned_by_name: user.name,
+        physical_receipt_no: intake?.receipt_no || null,
+        volume_count: intake?.volume_count || null,
+        assigned_at: assignedAt.toISOString(),
+        due_at: dueAt.toISOString(),
+        notes: data.notes || null,
+        reassigned_from_assignment_id: assignment.id,
+        reassignment_reason: data.reason,
+      },
+    },
+  });
+
+  if (reg.status !== 'VERIFICATION_ASSIGNED') {
+    await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Penugasan dialihkan kepada ${newVerifier.name} via Nota Dinas ${data.nota_no}: ${data.reason}`, req);
+  } else {
+    await audit(tx, user, 'REASSIGN_VERIFICATION', 'Registration', reg.id, { nota_no: data.nota_no, new_verifier_id: newVerifier.id, reason: data.reason }, req);
+  }
+
+  await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', newAssignment.id, newAssignment, req);
+  await audit(tx, user, 'ISSUE_VERIFICATION_MEMO', 'VerificationDocument', newNota.id, newNota, req);
+
+  await tx.notification.create({
+    data: {
+      user_id: assignment.verifier_id,
+      registration_id: reg.id,
+      type: 'ASSIGNMENT_REVOKED',
+      title: `Penugasan verifikasi dialihkan: ${reg.registration_no}`,
+      payload: {
+        assignment_id: assignment.id,
+        registration_no: reg.registration_no,
+        reason: data.reason,
+        revoked_by: user.name,
+        link: `/internal/verifications/${assignment.id}`,
+      },
+    },
+  });
+
+  await tx.notification.create({
+    data: {
+      user_id: newVerifier.id,
+      registration_id: reg.id,
+      type: 'ASSIGNMENT',
+      title: `Penugasan verifikasi ${reg.registration_no}`,
+      payload: {
+        assignment_id: newAssignment.id,
+        link: `/internal/verifications/${newAssignment.id}`,
+        nota_no: data.nota_no,
+        assigned_at: assignedAt.toISOString(),
+        due_at: dueAt.toISOString(),
+      },
+    },
+  });
+
+  return { assignment: newAssignment, nota_dinas: newNota, old_assignment: revokedAssignment };
+}, transactionOptions);
 
 export const getVerificationAttachment = async (documentId, fileId, user) => {
   const doc = await prisma.verificationDocument.findUnique({
