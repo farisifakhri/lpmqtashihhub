@@ -24,7 +24,7 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     const assignment = await tx.assignment.create({ data: { registration_id: id, team_id: team.id, assignee_id, stage: data.stage, iteration: (previous?.iteration || 0) + 1, due_at } });
     assignments.push(assignment);
     await audit(tx, user, 'CREATE_ASSIGNMENT', 'Assignment', assignment.id, assignment);
-    await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id } } });
+    await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
   }
   await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Tim dan pentashih ditetapkan');
   return assignments;

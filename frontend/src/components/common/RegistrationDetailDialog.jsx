@@ -7,6 +7,8 @@ import { useOptionalAuth } from '@/features/auth/AuthContext';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { AssignVerificationDialog } from '@/features/verification/AssignVerificationDialog';
+import { TOKENS } from '@/app/tokens';
+import { clsx } from 'clsx';
 import { waitingLabel } from './QueueOverview';
 
 export function RegistrationDetailDialog({ id, onClose }) {
@@ -72,7 +74,26 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="p-5 sm:p-6 space-y-5">
           {error ? <p role="alert" className="flex gap-2 text-sm text-rose-700"><AlertCircle className="h-5 w-5 shrink-0" />{error}</p> : !data ? <p role="status" className="text-sm text-slate-500">Memuat detail naskah…</p> : <>
             <div><p className="font-mono text-xs text-emerald-700">{data.registration_no}</p><h3 className="text-xl font-bold text-slate-900 mt-1">{data.title}</h3><p className="text-sm text-slate-500 mt-1">{data.publisher?.legal_name}</p></div>
-            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2"><StatusBadge status={data.status} /><p className="text-xs text-slate-600 flex gap-2"><Clock className="h-4 w-4" />Berada pada tahap ini selama {waitingLabel(data.stage_entered_at)}</p><p className="text-xs text-slate-500">{data.service_type?.name}</p></div>
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <StatusBadge status={data.status} />
+                {data.external_sync_status && (
+                  <span
+                    className={clsx(
+                      'inline-flex items-center rounded-md font-semibold border px-2 py-0.5 text-[11px]',
+                      TOKENS.externalSyncStatus?.[data.external_sync_status]?.bgClass || 'bg-slate-100',
+                      TOKENS.externalSyncStatus?.[data.external_sync_status]?.textClass || 'text-slate-700',
+                      TOKENS.externalSyncStatus?.[data.external_sync_status]?.borderClass || 'border-slate-200'
+                    )}
+                    title={data.external_sync_error || TOKENS.externalSyncStatus?.[data.external_sync_status]?.description}
+                  >
+                    Integrasi: {TOKENS.externalSyncStatus?.[data.external_sync_status]?.label || data.external_sync_status}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-600 flex gap-2"><Clock className="h-4 w-4" />Berada pada tahap ini selama {waitingLabel(data.stage_entered_at)}</p>
+              <p className="text-xs text-slate-500">{data.service_type?.name}</p>
+            </div>
             <div><h4 className="text-sm font-bold text-slate-900 mb-3">Riwayat proses</h4>
               {data.status_histories?.length ? <ol className="space-y-4 border-l-2 border-emerald-100 pl-4">{data.status_histories.map(history => <li key={history.id} className="text-xs space-y-1"><StatusBadge status={history.to_status} /><p className="text-slate-500">{new Date(history.changed_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p>{history.notes && <p className="text-slate-700 break-words">{history.notes}</p>}</li>)}</ol> : <p className="text-xs text-slate-500">Belum ada perubahan status tercatat.</p>}
             </div>

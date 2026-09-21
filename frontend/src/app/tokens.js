@@ -333,4 +333,35 @@ export const TOKENS = {
     REVISION: { label: 'Tashih Perbaikan Naskah', step: 2 },
     DUMI: { label: 'Tashih Naskah Dumi (Final)', step: 3 },
   },
+
+  externalSyncStatus: {
+    PENDING: {
+      label: 'Menunggu integrasi resmi',
+      bgClass: 'bg-slate-100',
+      textClass: 'text-slate-700',
+      borderClass: 'border-slate-200',
+      description: 'Menunggu kredensial dan endpoint API resmi dari sistem pusat.',
+    },
+    SYNCED: {
+      label: 'Tersinkronisasi',
+      bgClass: 'bg-emerald-50',
+      textClass: 'text-emerald-800',
+      borderClass: 'border-emerald-200',
+      description: 'Data pendaftaran berhasil tersinkronisasi ke website existing.',
+    },
+    FAILED_CONFIGURATION: {
+      label: 'Konfigurasi Belum Lengkap',
+      bgClass: 'bg-amber-50',
+      textClass: 'text-amber-800',
+      borderClass: 'border-amber-200',
+      description: 'URL integrasi tersedia namun API key belum dikonfigurasi.',
+    },
+    FAILED: {
+      label: 'Gagal Sinkronisasi',
+      bgClass: 'bg-rose-50',
+      textClass: 'text-rose-800',
+      borderClass: 'border-rose-200',
+      description: 'Gagal terhubung atau server eksternal merespons error.',
+    },
+  },
 };

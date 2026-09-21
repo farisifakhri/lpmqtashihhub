@@ -136,4 +136,58 @@ describe('App Shell Components: CommandSearch & NotificationCenter', () => {
       expect(markAsReadSpy).toHaveBeenCalledWith('notif-unread-1');
     });
   });
+
+  it('NotificationCenter mengarahkan link action ke canonical assignment URL atau payload.link', async () => {
+    const mockNotifications = [
+      {
+        id: 'notif-assign-1',
+        title: 'Penugasan verifikasi naskah',
+        desc: 'Pemeriksaan kelengkapan naskah mushaf',
+        type: 'ASSIGNMENT',
+        registration_id: 'reg-abc-123',
+        payload: {
+          assignment_id: 'assign-xyz-789',
+          link: '/internal/verifications/assign-xyz-789',
+        },
+        read_at: null,
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'notif-tashih-1',
+        title: 'Penugasan pentashihan baru',
+        desc: 'Penugasan pentashihan naskah tahap 1',
+        type: 'ASSIGNMENT',
+        registration_id: 'reg-def-456',
+        payload: {
+          assignment_id: 'assign-tashih-111',
+          link: '/internal/tashih',
+        },
+        read_at: null,
+        created_at: new Date().toISOString(),
+      },
+    ];
+
+    vi.spyOn(notificationApi, 'getNotifications').mockResolvedValue({
+      success: true,
+      data: mockNotifications,
+    });
+
+    render(
+      <MemoryRouter>
+        <NotificationCenter />
+      </MemoryRouter>
+    );
+
+    const bellBtn = screen.getByRole('button', { name: /Pemberitahuan/i });
+    fireEvent.click(bellBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Penugasan verifikasi naskah')).toBeInTheDocument();
+      expect(screen.getByText('Penugasan pentashihan baru')).toBeInTheDocument();
+    });
+
+    const actionLinks = screen.getAllByRole('link', { name: /Buka Pekerjaan/i });
+    expect(actionLinks[0]).toHaveAttribute('href', '/internal/verifications/assign-xyz-789');
+    expect(actionLinks[1]).toHaveAttribute('href', '/internal/tashih');
+  });
 });

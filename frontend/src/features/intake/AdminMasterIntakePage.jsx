@@ -445,8 +445,17 @@ export const AdminMasterIntakePage = () => {
                     1. Deklarasi Dokumen Penerbit
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
-                  Data Terdaftar
+                <span
+                  className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200"
+                  title={selectedReg.external_sync_error || undefined}
+                >
+                  {selectedReg.external_sync_status === 'SYNCED'
+                    ? 'Tersinkronisasi'
+                    : selectedReg.external_sync_status === 'FAILED'
+                    ? 'Gagal Sinkronisasi'
+                    : selectedReg.external_sync_status === 'FAILED_CONFIGURATION'
+                    ? 'Konfigurasi Belum Lengkap'
+                    : 'Menunggu integrasi resmi'}
                 </span>
               </div>
 

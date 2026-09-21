@@ -45,7 +45,7 @@ export const syncRegistrationToExistingWebsite = async (registrationId) => {
       await prisma.registration.update({
         where: { id: registrationId },
         data: {
-          external_sync_status: 'FAILED',
+          external_sync_status: 'FAILED_CONFIGURATION',
           external_sync_error: errMsg,
           external_sync_attempts: { increment: 1 },
         },
@@ -53,7 +53,7 @@ export const syncRegistrationToExistingWebsite = async (registrationId) => {
 
       return {
         synced: false,
-        status: 'FAILED',
+        status: 'FAILED_CONFIGURATION',
         error: errMsg,
       };
     }

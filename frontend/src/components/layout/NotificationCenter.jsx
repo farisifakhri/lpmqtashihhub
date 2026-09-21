@@ -25,6 +25,11 @@ function formatRelativeTime(isoString) {
 }
 
 function resolveLink(item, isPublisher) {
+  // 1. Prioritaskan tautan langsung dari backend payload
+  if (typeof item.payload?.link === 'string' && item.payload.link.startsWith('/')) {
+    return item.payload.link;
+  }
+
   const type = item.type;
   const regId = item.registration_id;
 
@@ -34,7 +39,11 @@ function resolveLink(item, isPublisher) {
     return '/publisher/registrations';
   }
 
-  // Internal roles
+  // 2. Internal roles: prioritaskan assignment_id untuk deep-link pemeriksaan
+  if (item.payload?.assignment_id) {
+    return `/internal/verifications/${item.payload.assignment_id}`;
+  }
+
   if (type === 'VERIFICATION_ASSIGNMENT_REQUIRED') {
     return '/internal/verifications?tab=NEED_ASSIGNMENT';
   }
@@ -47,7 +56,7 @@ function resolveLink(item, isPublisher) {
     type === 'DRAFT_RETURNED' ||
     type === 'READY_TO_SEND'
   ) {
-    return regId ? `/internal/verifications/${regId}` : '/internal/verifications';
+    return regId ? `/internal/verifications?id=${regId}` : '/internal/verifications';
   }
   if (type?.includes('PAYMENT')) {
     return '/internal/payments';
@@ -55,7 +64,7 @@ function resolveLink(item, isPublisher) {
   if (type?.includes('HANDOVER') || type?.includes('DISTRIBUTION')) {
     return '/internal/distributions';
   }
-  if (regId) return `/internal/verifications/${regId}`;
+  if (regId) return `/internal/verifications?id=${regId}`;
   return '/internal';
 }
 

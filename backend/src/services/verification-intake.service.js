@@ -204,7 +204,13 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         registration_id: id,
         type: 'ASSIGNMENT',
         title: `Penugasan verifikasi ${reg.registration_no}`,
-        payload: { assignment_id: assignment.id, nota_no: data.nota_no, assigned_at: assignedAt.toISOString(), due_at: dueAt.toISOString() },
+        payload: {
+          assignment_id: assignment.id,
+          link: `/internal/verifications/${assignment.id}`,
+          nota_no: data.nota_no,
+          assigned_at: assignedAt.toISOString(),
+          due_at: dueAt.toISOString(),
+        },
       } });
       return { assignment, nota_dinas: document };
     }, transactionOptions);
