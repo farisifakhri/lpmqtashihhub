@@ -245,4 +245,8 @@ export const router = createBrowserRouter([
     path: '/verify-documents/:token',
     element: <PublicDocumentVerification />,
   },
-]);
+], {
+  future: {
+    v7_relativeSplatPath: true,
+  },
+});

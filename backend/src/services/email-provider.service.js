@@ -4,6 +4,11 @@ import { fail } from './workflow-utils.js';
 
 /**
  * P0-03: Email Provider Interface & Database Outbox Pattern
+ * Provider default saat ini adalah MockEmailProvider (in-memory) untuk keperluan
+ * pengujian unit/integrasi dan pengembangan lokal. Seluruh riwayat pengiriman
+ * tercatat persisten pada tabel database `email_outbox`.
+ * Untuk tahap produksi, adapter SMTP/API gateway eksternal dapat dihubungkan
+ * ke interface provider ini tanpa mengubah alur outbox.
  */
 
 export class MockEmailProvider {

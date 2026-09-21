@@ -240,9 +240,11 @@ model Registration {
   physical_dispatch_status String?                  @default("PENDING") // PENDING, DISPATCHED, RECEIVED
   dispatch_tracking_no     String?
   dispatch_courier         String?
-  dispatch_date            DateTime?
+  external_sync_status     String                   @default("PENDING") // PENDING, SYNCED, FAILED
   external_sync_id         String?
   external_synced_at       DateTime?
+  external_sync_error      String?                  @db.Text
+  external_sync_attempts   Int                      @default(0)
   previous_registration_id String?
   status RegistrationStatus @default(DRAFT)
   stage_entered_at          DateTime                 @default(now())

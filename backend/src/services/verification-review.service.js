@@ -612,7 +612,10 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
     fail(409, `Surat hasil verifikasi belum dapat dikirimkan pada status pengajuan ${reg.status}.`);
   }
 
-  const recipientEmail = reg.publisher?.user?.email || reg.publisher?.email || 'penerbit@gmail.com';
+  const recipientEmail = reg.publisher?.user?.email || reg.publisher?.email;
+  if (!recipientEmail || typeof recipientEmail !== 'string' || !recipientEmail.trim() || !recipientEmail.includes('@')) {
+    fail(400, 'Alamat email penerbit tidak ditemukan atau tidak valid pada data pendaftaran. Perbarui kontak akun penerbit terlebih dahulu sebelum mengirimkan surat hasil verifikasi.');
+  }
   const recipientName = reg.publisher?.legal_name || 'Penerbit';
   const decision = doc.content_snapshot?.decision || doc.assignment?.decision || 'PASSED';
   const idempotencyKey = `send_verification_${doc.id}_v${doc.version}`;

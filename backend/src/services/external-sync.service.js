@@ -3,6 +3,10 @@ import { prisma } from '../config/database.js';
 /**
  * Layanan Sinkronisasi Pendaftaran Otomatis dengan Website Existing (tashih.kemenag.go.id)
  * Mengirimkan data permohonan pendaftaran naskah mushaf ke sistem pendaftaran pusat Kemenag.
+ * Status sinkronisasi:
+ * - PENDING: Belum dikirim atau URL integrasi belum dikonfigurasi.
+ * - SYNCED: Berhasil diterima dan dikonfirmasi oleh sistem eksternal (2xx HTTP).
+ * - FAILED: Gagal koneksi, timeout, atau server eksternal merespons non-2xx.
  */
 export const syncRegistrationToExistingWebsite = async (registrationId) => {
   try {
@@ -16,7 +20,44 @@ export const syncRegistrationToExistingWebsite = async (registrationId) => {
 
     if (!reg) return null;
 
-    const externalApiUrl = process.env.EXISTING_WEBSITE_API_URL || 'https://tashih.kemenag.go.id/api/sync-registration';
+    const externalApiUrl = process.env.EXISTING_WEBSITE_API_URL?.trim();
+
+    // Jika URL integrasi tidak dikonfigurasi, jangan tandai berhasil atau isi sync_id palsu
+    if (!externalApiUrl) {
+      const updated = await prisma.registration.update({
+        where: { id: registrationId },
+        data: {
+          external_sync_status: 'PENDING',
+          external_sync_error: 'URL integrasi eksternal (EXISTING_WEBSITE_API_URL) belum dikonfigurasi. Status sinkronisasi PENDING.',
+        },
+      });
+
+      return {
+        synced: false,
+        status: 'PENDING',
+        message: 'URL integrasi eksternal belum dikonfigurasi. Menunggu konfigurasi sistem.',
+      };
+    }
+
+    const apiKey = process.env.EXISTING_WEBSITE_API_KEY?.trim();
+    if (!apiKey) {
+      const errMsg = 'Kunci API integrasi eksternal (EXISTING_WEBSITE_API_KEY) belum dikonfigurasi.';
+      await prisma.registration.update({
+        where: { id: registrationId },
+        data: {
+          external_sync_status: 'FAILED',
+          external_sync_error: errMsg,
+          external_sync_attempts: { increment: 1 },
+        },
+      });
+
+      return {
+        synced: false,
+        status: 'FAILED',
+        error: errMsg,
+      };
+    }
+
     const payload = {
       source_system: 'LPMQ_TASHIH_HUB',
       registration_no: reg.registration_no,
@@ -37,49 +78,86 @@ export const syncRegistrationToExistingWebsite = async (registrationId) => {
       submitted_at: reg.created_at,
     };
 
-    let syncId = `SYNC-TKID-${Date.now().toString(36).toUpperCase()}`;
-    let syncSuccess = true;
+    // Upaya pengiriman HTTP ke server eksternal
+    try {
+      const response = await fetch(externalApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': apiKey,
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(5000),
+      });
 
-    // Upaya pengiriman HTTP jika URL eksternal terkonfigurasi
-    if (process.env.EXISTING_WEBSITE_API_URL) {
-      try {
-        const response = await fetch(externalApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-KEY': process.env.EXISTING_WEBSITE_API_KEY || 'lpmq-secret-key',
+      if (!response.ok) {
+        const errBody = await response.text().catch(() => '');
+        const errMsg = `Server eksternal mengembalikan HTTP ${response.status}: ${errBody.slice(0, 150)}`;
+
+        await prisma.registration.update({
+          where: { id: registrationId },
+          data: {
+            external_sync_status: 'FAILED',
+            external_sync_error: errMsg,
+            external_sync_attempts: { increment: 1 },
           },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(5000),
         });
 
-        if (response.ok) {
-          const resJson = await response.json().catch(() => ({}));
-          syncId = resJson.sync_id || syncId;
-        }
-      } catch (networkErr) {
-        // Fallback gracefully without blocking transaction
-        console.warn(`[ExternalSync] Peringatan: Tidak dapat menjangkau server eksternal (${networkErr.message}). Menggunakan ID sinkronisasi lokal.`);
+        return {
+          synced: false,
+          status: 'FAILED',
+          error: errMsg,
+        };
       }
+
+      const resJson = await response.json().catch(() => ({}));
+      const syncId = resJson.sync_id || resJson.id || `SYNC-TKID-${Date.now().toString(36).toUpperCase()}`;
+
+      const updated = await prisma.registration.update({
+        where: { id: registrationId },
+        data: {
+          external_sync_status: 'SYNCED',
+          external_sync_id: syncId,
+          external_synced_at: new Date(),
+          external_sync_error: null,
+          external_sync_attempts: { increment: 1 },
+        },
+      });
+
+      return {
+        synced: true,
+        status: 'SYNCED',
+        sync_id: syncId,
+        synced_at: updated.external_synced_at,
+      };
+    } catch (networkErr) {
+      const errMsg = `Gagal terhubung ke server eksternal: ${networkErr.message}`;
+      await prisma.registration.update({
+        where: { id: registrationId },
+        data: {
+          external_sync_status: 'FAILED',
+          external_sync_error: errMsg,
+          external_sync_attempts: { increment: 1 },
+        },
+      });
+
+      return {
+        synced: false,
+        status: 'FAILED',
+        error: errMsg,
+      };
     }
-
-    const updated = await prisma.registration.update({
-      where: { id: registrationId },
-      data: {
-        external_sync_id: syncId,
-        external_synced_at: new Date(),
-      },
-    });
-
-    return {
-      synced: true,
-      sync_id: syncId,
-      synced_at: updated.external_synced_at,
-    };
   } catch (error) {
-    console.error('[ExternalSync] Gagal menyinkronkan data pendaftaran ke website existing:', error);
-    return { synced: false, error: error.message };
+    console.error('[ExternalSync] Gagal memproses sinkronisasi data pendaftaran:', error);
+    return { synced: false, status: 'FAILED', error: error.message };
   }
+};
+
+/**
+ * Mengulang sinkronisasi eksternal untuk pengajuan tertentu
+ */
+export const retryExternalSync = async (registrationId) => {
+  return syncRegistrationToExistingWebsite(registrationId);
 };
 
 /**
@@ -98,11 +176,13 @@ export const receiveFromExistingWebsite = async (incomingData) => {
     return prisma.registration.update({
       where: { id: existing.id },
       data: {
+        external_sync_status: 'SYNCED',
+        external_sync_id: incomingData.sync_id || existing.external_sync_id || `SYNC-IN-${Date.now().toString(36).toUpperCase()}`,
         external_synced_at: new Date(),
+        external_sync_error: null,
       },
     });
   }
 
   return null;
 };
-
