@@ -299,66 +299,28 @@ export const UnifiedDashboard = () => {
       {/* 2. Daily Hadith & Al-Qur'an Widget */}
       <DailyQuranWidget />
 
-      {/* 3. Role-based operational actions */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
-          <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-            <Compass className="w-4 h-4 text-emerald-700" />
-            <span>Akses Proses Utama</span>
-          </h3>
-          <span className="text-[11px] text-slate-500 font-medium">
-            {isPublisher ? 'Layanan sesuai profil penerbit' : 'Akses berbasis peran dan kewenangan'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-          {quickActions.map((action, idx) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={idx}
-                to={action.path}
-                className={`group p-3.5 rounded-xl border border-slate-200/80 ${action.cardHover || 'hover:border-emerald-400 hover:bg-emerald-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-gradient-to-b from-white to-slate-50/40`}
-              >
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className={`w-9 h-9 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 line-clamp-1">
-                    {action.title}
-                  </div>
-                </div>
-                <div className="text-[11px] text-slate-500 group-hover:text-slate-700 line-clamp-2 leading-relaxed">
-                  {action.desc}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 4a. Urgent Action Triage untuk Administrator */}
       {isAdmin && showOperationalCards && (
-        <div className="bg-red-50 border border-red-200/80 rounded-2xl p-5 shadow-xs mb-6">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-red-200/50">
+        <div className="bg-primary-900 text-white border border-red-200/80 rounded-2xl p-5 shadow-xs mb-6">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gold-400">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
-                <AlertTriangle className="w-4.5 h-4.5" />
+              <div className="w-8 h-8 rounded-lg bg-gold-400 flex items-center justify-center text-red-600">
+                <AlertTriangle className="w-4.5 h-4.5 text-white" />
               </div>
-              <h3 className="text-sm font-black text-red-900 uppercase tracking-wider">
+              <h3 className="text-sm font-black text-gold-300 uppercase tracking-wider">
                 Prioritas Aksi Hari Ini
               </h3>
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-red-100 text-red-700 border border-red-200">
+            <span className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-white text-amber-600 border border-red-200">
               Perlu Intervensi
             </span>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {/* Kartu Intake Kritis */}
-            <Link to="/internal/master-intake" className="bg-white rounded-xl p-4 border border-red-100 shadow-sm hover:border-red-300 hover:shadow transition-all flex items-center justify-between group">
+            <Link to="/internal/master-intake" className="bg-white rounded-xl p-4 border border-slate-800 shadow-sm hover:border-red-300 hover:shadow transition-all flex items-center justify-between group">
               <div>
-                <div className="text-2xl font-black text-red-700 tabular-nums">3</div>
+                <div className="text-2xl font-black text-slate-800 tabular-nums">3</div>
                 <div className="text-xs font-bold text-slate-800 mt-1 group-hover:text-red-700 transition-colors">Master Fisik Tiba</div>
                 <div className="text-[11px] text-slate-500 mt-0.5">Perlu intake di loket segera</div>
               </div>
@@ -680,6 +642,44 @@ export const UnifiedDashboard = () => {
         </div>
       )}
 
+{/* 3. Role-based operational actions */}
+      <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
+          <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-emerald-700" />
+            <span>Akses Proses Utama</span>
+          </h3>
+          <span className="text-[11px] text-slate-500 font-medium">
+            {isPublisher ? 'Layanan sesuai profil penerbit' : 'Akses berbasis peran dan kewenangan'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+          {quickActions.map((action, idx) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={idx}
+                to={action.path}
+                className={`group p-3.5 rounded-xl border border-slate-200/80 ${action.cardHover || 'hover:border-emerald-400 hover:bg-emerald-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-gradient-to-b from-white to-slate-50/40`}
+              >
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className={`w-9 h-9 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 line-clamp-1">
+                    {action.title}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 group-hover:text-slate-700 line-clamp-2 leading-relaxed">
+                  {action.desc}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       {error && (
         <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-status-danger text-sm flex items-start gap-2.5">
           <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -692,6 +692,7 @@ export const UnifiedDashboard = () => {
 
       {!error && <QueueOverview total={pagination.total} oldest={registrations[0]?.queue_entered_at} fifo={!isPublisher || isSuperAdmin} loading={loading} />}
 
+     
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
       {assignmentSuccess && <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">{assignmentSuccess}</p>}
       <div id="antrean-tim" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden scroll-mt-6">
