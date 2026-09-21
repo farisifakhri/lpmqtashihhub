@@ -2,6 +2,16 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const renderIcon = (icon) => {
+  if (!icon) return null;
+  if (React.isValidElement(icon)) return icon;
+  if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && icon.$$typeof)) {
+    const IconComponent = icon;
+    return <IconComponent className="w-4 h-4" />;
+  }
+  return icon;
+};
+
 export const Button = ({
   children,
   variant = 'primary',
@@ -43,7 +53,7 @@ export const Button = ({
       disabled={disabled}
       {...props}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span className="flex-shrink-0">{renderIcon(icon)}</span>}
       {children}
     </button>
   );

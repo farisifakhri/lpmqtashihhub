@@ -854,7 +854,7 @@ export const UnifiedDashboard = () => {
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <StatusBadge status={item.status} />
+                      <StatusBadge registration={item} status={item.status} />
                       <div className="mt-2"><QueueItemMeta item={item} /></div>
                     </td>
                     <td className="py-4 px-6 text-right">

@@ -8,7 +8,7 @@ on:
 
 jobs:
   backend-test:
-    name: Backend Lint, Schema & Integration Test
+    name: Backend Schema & Integration Test
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: "mysql://root:root@127.0.0.1:3306/lpmq_db_test"
@@ -36,7 +36,7 @@ jobs:
 
       - name: Install Backend Dependencies
         working-directory: backend
-        run: npm install
+        run: npm ci
 
       - name: Validate Prisma Schema
         working-directory: backend
@@ -92,7 +92,7 @@ jobs:
 
       - name: Install Frontend Dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
 
       - name: Run Frontend Component Tests
         working-directory: frontend

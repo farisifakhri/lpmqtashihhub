@@ -198,9 +198,18 @@ export const createDraft = async (data, user, req) => {
     throw error;
   }
 
+  let serviceTypeId = data.service_type_id;
+  if (!serviceTypeId) {
+    const defaultType = await prisma.serviceType.findFirst({
+      where: { status: 'ACTIVE' },
+      orderBy: { created_at: 'asc' },
+    });
+    serviceTypeId = defaultType?.id;
+  }
+
   // Verifikasi service type aktif
   const serviceType = await prisma.serviceType.findUnique({
-    where: { id: data.service_type_id },
+    where: { id: serviceTypeId },
     include: { category: true },
   });
 
@@ -214,38 +223,41 @@ export const createDraft = async (data, user, req) => {
 
   // Validasi Pengajuan Perpanjangan (EXTENSION)
   if (registrationType === 'EXTENSION') {
-    if (!data.previous_registration_id) {
-      const error = new Error('Pengajuan perpanjangan (EXTENSION) wajib menyertakan previous_registration_id.');
+    const legacyNo = data.foreign_metadata?.nomor_pendaftaran_lama || data.mushaf_details?.nomor_pendaftaran_lama;
+    if (!data.previous_registration_id && !legacyNo) {
+      const error = new Error('Pengajuan perpanjangan (EXTENSION) wajib menyertakan previous_registration_id atau nomor pendaftaran lama.');
       error.statusCode = 400;
       throw error;
     }
 
-    const prevReg = await prisma.registration.findUnique({
-      where: { id: data.previous_registration_id },
-      select: { id: true, publisher_id: true, status: true, registration_no: true },
-    });
+    if (data.previous_registration_id) {
+      const prevReg = await prisma.registration.findUnique({
+        where: { id: data.previous_registration_id },
+        select: { id: true, publisher_id: true, status: true, registration_no: true },
+      });
 
-    if (!prevReg) {
-      const error = new Error('Pengajuan sebelumnya tidak ditemukan.');
-      error.statusCode = 404;
-      throw error;
-    }
+      if (!prevReg) {
+        const error = new Error('Pengajuan sebelumnya tidak ditemukan.');
+        error.statusCode = 404;
+        throw error;
+      }
 
-    // Pastikan milik penerbit yang sama
-    if (prevReg.publisher_id !== publisherId && !user.roles.includes('SUPERADMIN')) {
-      const error = new Error('Pengajuan sebelumnya bukan milik penerbit ini.');
-      error.statusCode = 403;
-      throw error;
-    }
+      // Pastikan milik penerbit yang sama
+      if (prevReg.publisher_id !== publisherId && !user.roles.includes('SUPERADMIN')) {
+        const error = new Error('Pengajuan sebelumnya bukan milik penerbit ini.');
+        error.statusCode = 403;
+        throw error;
+      }
 
-    // Pastikan pengajuan sebelumnya telah memiliki STT yang sah
-    const validPreviousStatuses = ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'];
-    if (!validPreviousStatuses.includes(prevReg.status)) {
-      const error = new Error(
-        `Pengajuan sebelumnya (${prevReg.registration_no}) berstatus "${prevReg.status}" dan belum memiliki Surat Tanda Tashih (STT) yang sah untuk diperpanjang.`
-      );
-      error.statusCode = 400;
-      throw error;
+      // Pastikan pengajuan sebelumnya telah memiliki STT yang sah
+      const validPreviousStatuses = ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'];
+      if (!validPreviousStatuses.includes(prevReg.status)) {
+        const error = new Error(
+          `Pengajuan sebelumnya (${prevReg.registration_no}) berstatus "${prevReg.status}" dan belum memiliki Surat Tanda Tashih (STT) yang sah untuk diperpanjang.`
+        );
+        error.statusCode = 400;
+        throw error;
+      }
     }
   } else if (registrationType === 'NEW') {
     if (data.previous_registration_id) {
@@ -301,21 +313,71 @@ export const createDraft = async (data, user, req) => {
         for (const item of manuscriptList) {
           const regNo = await generateRegistrationNo(tx);
 
+          const combinedMetadata = {
+            ...(data.foreign_metadata || {}),
+            ...(data.mushaf_details || {}),
+            ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
+            ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
+            ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
+            ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
+            ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
+            ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
+          };
+
           const created = await tx.registration.create({
             data: {
               registration_no: regNo,
               publisher_id: publisherId,
-              service_type_id: data.service_type_id,
+              service_type_id: serviceTypeId,
               title: item.title,
               submission_source: submissionSource,
               registration_type: registrationType,
               registration_category: regCategory,
-              foreign_metadata: data.foreign_metadata || null,
+              foreign_metadata: Object.keys(combinedMetadata).length > 0 ? combinedMetadata : null,
               statement_accepted: Boolean(data.statement_accepted),
-              previous_registration_id: registrationType === 'EXTENSION' ? data.previous_registration_id : null,
+              previous_registration_id: registrationType === 'EXTENSION' && data.previous_registration_id ? data.previous_registration_id : null,
               status: 'DRAFT',
             },
           });
+
+          if (data.cover_file_id) {
+            try {
+              await tx.manuscriptFile.create({
+                data: {
+                  registration_id: created.id,
+                  type: 'COVER',
+                  file_id: data.cover_file_id,
+                  version: 1,
+                },
+              });
+            } catch {}
+          }
+
+          if (data.surat_permohonan_file_id) {
+            try {
+              await tx.manuscriptFile.create({
+                data: {
+                  registration_id: created.id,
+                  type: 'SAMPLE_PAGE_1_5',
+                  file_id: data.surat_permohonan_file_id,
+                  version: 1,
+                },
+              });
+            } catch {}
+          }
+
+          if (data.bukti_tashih_file_id) {
+            try {
+              await tx.manuscriptFile.create({
+                data: {
+                  registration_id: created.id,
+                  type: 'FOREIGN_TASHIH_CERTIFICATE',
+                  file_id: data.bukti_tashih_file_id,
+                  version: 1,
+                },
+              });
+            } catch {}
+          }
 
           for (const add of activeAddons) {
             await tx.registrationAddon.create({
@@ -798,6 +860,13 @@ export const getDetail = async (id, user) => {
         include: { verifier: { select: { id: true, name: true, nip: true } } },
       },
       physical_master_intake: true,
+      physical_handovers: {
+        include: {
+          from_user: { select: { id: true, name: true, nip: true } },
+          to_user: { select: { id: true, name: true, nip: true } },
+        },
+        orderBy: { created_at: 'desc' },
+      },
       payment_records: true,
       assignments: {
         include: {

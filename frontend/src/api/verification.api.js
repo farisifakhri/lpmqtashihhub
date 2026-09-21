@@ -200,6 +200,38 @@ export const verificationApi = {
   listUnassignedRegistrations: async (params = {}) => {
     return verificationApi.listAssignmentCandidates(params);
   },
+
+  /**
+   * Mengambil penugasan verifikasi terbaru dari sebuah registration ID
+   * @param {string} registrationId
+   */
+  getLatestAssignment: async (registrationId) => {
+    return apiClient(`/registrations/${registrationId}/latest-verification-assignment`);
+  },
+
+  /**
+   * Mencabut penugasan verifikasi aktif (Kepala LPMQ / Superadmin)
+   * @param {string} assignmentId
+   * @param {Object} payload - { reason }
+   */
+  revokeAssignment: async (assignmentId, payload) => {
+    return apiClient(`/verification-assignments/${assignmentId}/revoke`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  /**
+   * Mengalihkan penugasan verifikasi ke verifikator baru dan menerbitkan Nota Dinas baru
+   * @param {string} assignmentId
+   * @param {Object} payload - { verifier_id, nota_no, reason, notes }
+   */
+  reassignAssignment: async (assignmentId, payload) => {
+    return apiClient(`/verification-assignments/${assignmentId}/reassign`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
 };
 
 export default verificationApi;

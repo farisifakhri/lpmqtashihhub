@@ -289,24 +289,57 @@ async function main() {
   }
   console.log('✅ Sample Distribution Team seeded');
 
-  // 7. Working Days (Official Calendar for SLA)
+  // 7. Working Days (Official Calendar for SLA - SKB 3 Menteri 2026)
+  const officialHolidays2026 = {
+    '2026-01-01': 'Libur Nasional: Tahun Baru 2026 Masehi',
+    '2026-01-16': 'Libur Nasional: Isra Mikraj Nabi Muhammad S.A.W.',
+    '2026-02-16': 'Cuti Bersama: Tahun Baru Imlek 2577 Kongzili',
+    '2026-02-17': 'Libur Nasional: Tahun Baru Imlek 2577 Kongzili',
+    '2026-03-18': 'Cuti Bersama: Hari Suci Nyepi (Tahun Baru Saka 1948)',
+    '2026-03-19': 'Libur Nasional: Hari Suci Nyepi (Tahun Baru Saka 1948)',
+    '2026-03-20': 'Cuti Bersama: Idul Fitri 1447 Hijriah',
+    '2026-03-21': 'Libur Nasional: Idul Fitri 1447 Hijriah',
+    '2026-03-22': 'Libur Nasional: Idul Fitri 1447 Hijriah',
+    '2026-03-23': 'Cuti Bersama: Idul Fitri 1447 Hijriah',
+    '2026-03-24': 'Cuti Bersama: Idul Fitri 1447 Hijriah',
+    '2026-04-03': 'Libur Nasional: Wafat Yesus Kristus',
+    '2026-04-05': 'Libur Nasional: Kebangkitan Yesus Kristus (Paskah)',
+    '2026-05-01': 'Libur Nasional: Hari Buruh Internasional',
+    '2026-05-14': 'Libur Nasional: Kenaikan Yesus Kristus',
+    '2026-05-15': 'Cuti Bersama: Kenaikan Yesus Kristus',
+    '2026-05-27': 'Libur Nasional: Idul Adha 1447 Hijriah',
+    '2026-05-28': 'Cuti Bersama: Idul Adha 1447 Hijriah',
+    '2026-05-31': 'Libur Nasional: Hari Raya Waisak 2570 BE',
+    '2026-06-01': 'Libur Nasional: Hari Lahir Pancasila',
+    '2026-06-16': 'Libur Nasional: 1 Muharam Tahun Baru Islam 1448 Hijriah',
+    '2026-08-17': 'Libur Nasional: Proklamasi Kemerdekaan RI',
+    '2026-08-25': 'Libur Nasional: Maulid Nabi Muhammad S.A.W.',
+    '2026-12-24': 'Cuti Bersama: Kelahiran Yesus Kristus',
+    '2026-12-25': 'Libur Nasional: Kelahiran Yesus Kristus',
+  };
+
   const startDate = new Date('2025-01-01T00:00:00.000Z');
   const endDate = new Date('2027-12-31T00:00:00.000Z');
   const days = [];
   for (let d = new Date(startDate); d <= endDate; d.setUTCDate(d.getUTCDate() + 1)) {
     const dayOfWeek = d.getUTCDay(); // 0 = Sun, 6 = Sat
+    const dateStr = d.toISOString().slice(0, 10);
+    const holidayDesc = officialHolidays2026[dateStr];
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isWorking = !isWeekend && !holidayDesc;
+
     days.push({
       date: new Date(d),
-      is_working_day: dayOfWeek !== 0 && dayOfWeek !== 6,
+      is_working_day: isWorking,
       source: 'SKB_3_MENTERI',
-      description: dayOfWeek === 0 || dayOfWeek === 6 ? 'Akhir Pekan' : 'Hari Kerja Reguler',
+      description: holidayDesc || (isWeekend ? 'Akhir Pekan' : 'Hari Kerja Reguler'),
     });
   }
   await prisma.workingDay.createMany({
     data: days,
     skipDuplicates: true,
   });
-  console.log('✅ Working Days seeded');
+  console.log('✅ Working Days seeded (termasuk Libur Nasional & Cuti Bersama SKB 3 Menteri 2026)');
 
   console.log('--- Seeding Selesai Sukses! ---');
 }

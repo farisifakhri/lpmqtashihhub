@@ -2,6 +2,16 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const renderIcon = (icon) => {
+  if (!icon) return null;
+  if (React.isValidElement(icon)) return icon;
+  if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && icon.$$typeof)) {
+    const IconComponent = icon;
+    return <IconComponent className="w-3.5 h-3.5" />;
+  }
+  return icon;
+};
+
 export const Badge = ({
   className,
   variant = 'default',
@@ -29,7 +39,7 @@ export const Badge = ({
       )}
       {...props}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && <span className="flex-shrink-0">{renderIcon(icon)}</span>}
       <span>{children}</span>
     </span>
   );

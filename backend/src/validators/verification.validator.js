@@ -45,7 +45,10 @@ export const createVerificationAssignmentSchema = {
 
 export const verificationInboxSchema = {
   query: z.object({
-    status: z.enum(['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND', 'COMPLETED']).optional(),
+    status: z.preprocess(
+      (val) => (val === 'NEED_APPROVAL' ? 'WAITING_APPROVAL' : val),
+      z.enum(['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND', 'COMPLETED', 'REVOKED']).optional()
+    ),
     registration_status: z.string().trim().max(191).optional(),
     my_tasks: z.enum(['true', 'false']).optional(),
     search: z.string().trim().max(191).optional(),
@@ -113,3 +116,24 @@ export const sendVerificationSchema = {
 
 export const signVerificationSchema = { params: idParams };
 export const retryVerificationSchema = { params: idParams };
+
+export const revokeAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
+  body: z.object({
+    reason: z.string().trim().min(5, 'Alasan pencabutan penugasan minimal 5 karakter.').max(500),
+  }).strict(),
+};
+
+export const reassignAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
+  body: z.object({
+    verifier_id: z.string().uuid('ID verifikator pengganti tidak valid.'),
+    nota_no: z.string().trim().min(3, 'Nomor Nota Dinas baru minimal 3 karakter.').max(191),
+    notes: z.string().trim().max(191).optional(),
+    reason: z.string().trim().min(5, 'Alasan penggantian verifikator minimal 5 karakter.').max(500),
+  }).strict(),
+};
+
+export const latestAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID pengajuan tidak valid.') }),
+};

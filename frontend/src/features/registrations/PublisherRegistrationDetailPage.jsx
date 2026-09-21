@@ -35,6 +35,7 @@ const fileTypes = {
   SAMPLE_PAGE_1_5: 'Sampel halaman 1–5',
   DUMMY: 'Dumi perbaikan',
   MASTER_COMPLETED: 'Master lengkap perbaikan',
+  FOREIGN_TASHIH_CERTIFICATE: 'Bukti Tashih Lembaga Asal',
 };
 
 export function PublisherRegistrationDetailPage() {
@@ -226,6 +227,23 @@ export function PublisherRegistrationDetailPage() {
                   <p className="text-xs text-slate-500">
                     Layanan: <strong className="text-slate-700">{data.service_type?.name}</strong>
                   </p>
+                  {(data.foreign_metadata?.negara_asal_mushaf || data.foreign_metadata?.country_of_origin) && (
+                    <div className="pt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-semibold border border-blue-200 text-[11px]">
+                        Mushaf Luar Negeri: {data.foreign_metadata.negara_asal_mushaf || data.foreign_metadata.country_of_origin}
+                      </span>
+                      {(data.foreign_metadata.penerbit_asal_mushaf || data.foreign_metadata.foreign_publisher_name) && (
+                        <span className="text-slate-500 text-[11px]">
+                          Penerbit Asal: <strong className="text-slate-700">{data.foreign_metadata.penerbit_asal_mushaf || data.foreign_metadata.foreign_publisher_name}</strong>
+                        </span>
+                      )}
+                      {(data.foreign_metadata.lembaga_pentashih_asal_mushaf || data.foreign_metadata.foreign_tashih_institution) && (
+                        <span className="text-slate-500 text-[11px]">
+                          Lembaga Pentashih: <strong className="text-slate-700">{data.foreign_metadata.lembaga_pentashih_asal_mushaf || data.foreign_metadata.foreign_tashih_institution}</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 shrink-0">

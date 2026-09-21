@@ -23,7 +23,7 @@ export function QueueOverview({ total, oldest, fifo = true, loading = false }) {
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-4 flex items-center gap-3">
         <Clock className="h-5 w-5 shrink-0 text-amber-600" />
-        <div><p className="text-xs text-slate-500">{fifo ? 'Lama menunggu · item teratas' : 'Tampilan riwayat'}</p><p className="text-sm font-bold text-slate-900 mt-1">{loading ? 'Memuat…' : fifo && oldest ? waitingLabel(oldest) : '—'}</p></div>
+        <div><p className="text-xs text-slate-500">{fifo ? 'Status antrean teratas' : 'Tampilan riwayat'}</p><p className="text-sm font-bold text-slate-900 mt-1">{loading ? 'Memuat…' : fifo && oldest ? `Terdaftar ${new Date(oldest).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : '—'}</p></div>
       </div>
     </section>
   );
@@ -33,7 +33,11 @@ export function QueueItemMeta({ item }) {
   if (!item.queue_position) return null;
   return <span className="inline-flex flex-wrap items-center gap-2 text-xs text-slate-600">
     <span className="rounded-md bg-slate-100 px-2 py-1 font-semibold text-slate-800">Urutan #{item.queue_position}</span>
-    <span>Menunggu {waitingLabel(item.queue_entered_at)}</span>
+    {item.queue_entered_at && (
+      <span className="text-slate-500">
+        Masuk: {new Date(item.queue_entered_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+      </span>
+    )}
   </span>;
 }
 

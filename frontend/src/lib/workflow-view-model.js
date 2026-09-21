@@ -43,7 +43,7 @@ export const STATUS_DEFINITIONS = {
     ownerRole: 'VERIFIKATOR',
     ownerRoleLabel: 'Verifikator',
     nextActionLabel: 'Mulai pemeriksaan naskah',
-    actionPath: id => `/internal/verifications/${id}`,
+    actionPath: (id, reg) => `/internal/verifications/${reg?.verification_assignment?.id || reg?.verification_assignments?.[0]?.id || id}`,
   },
   IN_VERIFICATION: {
     phase: 'VERIFICATION',
@@ -52,7 +52,7 @@ export const STATUS_DEFINITIONS = {
     ownerRole: 'VERIFIKATOR',
     ownerRoleLabel: 'Verifikator',
     nextActionLabel: 'Lanjutkan telaah naskah',
-    actionPath: id => `/internal/verifications/${id}`,
+    actionPath: (id, reg) => `/internal/verifications/${reg?.verification_assignment?.id || reg?.verification_assignments?.[0]?.id || id}`,
   },
   REVISION_REQUIRED: {
     phase: 'VERIFICATION',
@@ -70,7 +70,7 @@ export const STATUS_DEFINITIONS = {
     ownerRole: 'KEPALA_LPMQ',
     ownerRoleLabel: 'Kepala LPMQ',
     nextActionLabel: 'Tinjau dan putuskan draf',
-    actionPath: id => `/internal/verifications?tab=NEED_APPROVAL&id=${id}`,
+    actionPath: id => `/internal/verifications?tab=WAITING_APPROVAL&id=${id}`,
   },
   VERIFICATION_APPROVED: {
     phase: 'VERIFICATION',
@@ -223,6 +223,33 @@ export function getWorkflowViewModel(registration, currentUser) {
     operationalState = 'IN_VERIFICATION';
     operationalStatusLabel = 'Sedang diperiksa';
     operationalNextAction = 'Lengkapi pemeriksaan';
+  } else if (status === 'PAYMENT_VERIFICATION') {
+    const isPaymentVerified =
+      registration.payment_records?.some((p) => p.status === 'VERIFIED') ||
+      registration.payment?.status === 'VERIFIED' ||
+      registration.payment_record?.status === 'VERIFIED';
+
+    if (isPaymentVerified) {
+      operationalState = 'READY_FOR_PHYSICAL_HANDOVER';
+      operationalStatusLabel = 'Pembayaran Lunas - Siap Serah-Terima Fisik';
+      operationalOwnerRole = 'VERIFIKATOR';
+      operationalOwnerRoleLabel = 'Verifikator';
+      operationalNextAction = 'Serahkan master fisik ke Distributor (Langkah 7 SOP)';
+    }
+  } else if (status === 'REVISION_REQUIRED') {
+    if (
+      registration.revision_source === 'PHYSICAL_MASTER' ||
+      registration.physical_master_intake?.status === 'RETURNED'
+    ) {
+      operationalState = 'PHYSICAL_MASTER_CORRECTION_REQUIRED';
+      operationalStatusLabel = 'Perlu Perbaikan Master Fisik';
+      operationalOwnerRole = 'ADMIN_PENERBIT';
+      operationalOwnerRoleLabel = 'Penerbit';
+      operationalNextAction = 'Perbaiki jilid master fisik & serahkan ulang ke loket LPMQ';
+      blockedReason =
+        registration.physical_master_intake?.notes ||
+        'Master fisik dikembalikan di loket karena jilid tidak lengkap atau cacat.';
+    }
   }
 
   // Tentukan nama pejabat/petugas penanggung jawab saat ini
@@ -268,11 +295,17 @@ export function getWorkflowViewModel(registration, currentUser) {
     canUserAct = true;
   }
 
-  let nextActionPath = def.actionPath ? def.actionPath(registration.id) : null;
+  let nextActionPath = def.actionPath ? def.actionPath(registration.id, registration) : null;
   if (operationalState === 'WAITING_PHYSICAL_MASTER') {
     nextActionPath = '/internal/master-intake';
   } else if (operationalState === 'READY_FOR_ASSIGNMENT') {
     nextActionPath = `/internal/verifications?tab=NEED_ASSIGNMENT&id=${registration.id}`;
+  } else if (operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
+    const assignmentId =
+      registration.verification_assignment?.id ||
+      registration.verification_assignments?.[0]?.id ||
+      registration.id;
+    nextActionPath = `/internal/verifications/${assignmentId}`;
   }
 
   return {

@@ -2,55 +2,86 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
+import { fileApi } from '@/api/file.api';
 import { useAuth } from '@/features/auth/AuthContext';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RegistrationReceiptDialog } from './RegistrationReceiptDialog';
 import {
   BookOpen,
   Send,
   Save,
-  Clock,
   AlertCircle,
   CheckCircle2,
   ArrowLeft,
-  Info,
-  Calendar,
-  Layers,
   Plus,
   Trash2,
-  Globe,
-  FileCheck,
-  ShieldCheck,
-  ExternalLink,
+  Upload,
+  FileText,
+  Layers,
   HelpCircle,
 } from 'lucide-react';
 
-const REGISTRATION_CATEGORIES = [
-  {
-    id: 'NEW',
-    title: 'STT Baru',
-    badge: 'Master Dalam Negeri',
-    description: 'Permohonan Surat Tanda Tashih untuk master mushaf Al-Qur\'an baru cetak atau digital yang diterbitkan di dalam negeri.',
-    icon: BookOpen,
-    borderActive: 'border-emerald-600 bg-emerald-50/60 ring-2 ring-emerald-600/30',
-  },
-  {
-    id: 'EXTENSION',
-    title: 'Perpanjangan STT',
-    badge: 'STT Aktif / Berakhir',
-    description: 'Permohonan perpanjangan masa berlaku Surat Tanda Tashih yang telah diterbitkan sebelumnya oleh LPMQ.',
-    icon: Clock,
-    borderActive: 'border-sky-600 bg-sky-50/60 ring-2 ring-sky-600/30',
-  },
-  {
-    id: 'FOREIGN_MANUSCRIPT',
-    title: 'Mushaf Luar Negeri',
-    badge: 'Izin Edar Mushaf Impor',
-    description: 'Permohonan Surat Izin Edar untuk mushaf Al-Qur\'an cetakan luar negeri agar sah dan legal diedarkan di Indonesia.',
-    icon: Globe,
-    borderActive: 'border-amber-600 bg-amber-50/60 ring-2 ring-amber-600/30',
-  },
+const JENIS_NASKAH_OPTIONS = [
+  // Kolom 1
+  [
+    "1. Al-Qur'an 30 Juz",
+    '1. Juz-juz pilihan',
+    "1. Majmu' Syarif/ Surah-surah pilihan",
+    "1. Mushaf Al-Qur'an Luar Negeri",
+    '2. Audio/Visual',
+    '3. Kode Tajwid',
+    '3. Tajwid Warna',
+    '3. Terjemah Perkata',
+    '3. Transliterasi Perkata',
+  ],
+  // Kolom 2
+  [
+    "1. Juz 'Amma",
+    '1. Kaligrafi',
+    '1. Metode Baca Tulis Al-Qur\'an',
+    '1. Surah Yasin dan Bacaan Tahlil',
+    '2. Digital',
+    '3. Tafsir',
+    '3. Terjemah',
+    '3. Transliterasi',
+    "3. Waqaf Ibtida'",
+  ],
+];
+
+const MATERI_TAMBAHAN_OPTIONS = [
+  'Azbabun Nuzul',
+  'Hadis',
+  'Tafsir',
+  "Do'a Tertentu",
+  'Kisah-Kisah',
+  'Lainnya',
+];
+
+const NEGARA_ASAL_OPTIONS = [
+  'Arab Saudi',
+  'Mesir',
+  'Lebanon',
+  'Uni Emirat Arab',
+  'Turki',
+  'Yordania',
+  'Kuwait',
+  'Qatar',
+  'Oman',
+  'Bahrain',
+  'Suriah',
+  'Yaman',
+  'Maroko',
+  'Tunisia',
+  'Aljazair',
+  'Sudan',
+  'Malaysia',
+  'Brunei Darussalam',
+  'Singapura',
+  'Pakistan',
+  'India',
+  'Iran',
+  'Palestina',
+  'Lainnya',
 ];
 
 export const NewRegistrationPage = () => {
@@ -62,39 +93,45 @@ export const NewRegistrationPage = () => {
   const [addons, setAddons] = useState([]);
   const [loadingMaster, setLoadingMaster] = useState(true);
 
-  // Kategori Permohonan Utama: NEW (STT Baru), EXTENSION (Perpanjangan), FOREIGN_MANUSCRIPT (Mushaf Luar Negeri)
-  const [registrationCategory, setRegistrationCategory] = useState('NEW');
+  // Bagian I. Informasi Data Mushaf
+  const [title, setTitle] = useState('');
+  const [penanggungJawabProduk, setPenanggungJawabProduk] = useState('');
+  const [sizes, setSizes] = useState([{ ukuran: '', oplah: '' }]);
+  const [selectedJenisNaskah, setSelectedJenisNaskah] = useState(["1. Al-Qur'an 30 Juz"]);
+  const [jenisMushaf, setJenisMushaf] = useState('Mushaf Baru'); // 'Mushaf Baru' | 'Perpanjangan Tanda Tashih' | 'Mushaf Luar Negeri'
+  const [namaPercetakan, setNamaPercetakan] = useState('');
+  const [deskripsiMushaf, setDeskripsiMushaf] = useState('');
 
-  // Multi-Naskah: Mendukung pendaftaran lebih dari 1 naskah dalam satu form
-  const [manuscripts, setManuscripts] = useState([
-    { title: '' },
-  ]);
+  // Field Khusus Perpanjangan Tanda Tashih
+  const [noPendaftaranLama, setNoPendaftaranLama] = useState('');
+  const [nomorKodeUkuranLama, setNomorKodeUkuranLama] = useState('');
+  const [suratPernyataanFile, setSuratPernyataanFile] = useState(null);
+  const [suratPernyataanFileId, setSuratPernyataanFileId] = useState(null);
 
-  const [formData, setFormData] = useState({
-    category_id: '',
-    service_type_id: '',
-    previous_registration_id: '',
-    selectedAddons: [],
-  });
+  // Field Khusus Mushaf Luar Negeri
+  const [negaraAsalMushaf, setNegaraAsalMushaf] = useState('');
+  const [penerbitAsalMushaf, setPenerbitAsalMushaf] = useState('');
+  const [lembagaPentashihAsal, setLembagaPentashihAsal] = useState('');
+  const [buktiTashihFile, setBuktiTashihFile] = useState(null);
+  const [buktiTashihFileId, setBuktiTashihFileId] = useState(null);
 
-  // Metadata khusus Mushaf Luar Negeri
-  const [foreignMetadata, setForeignMetadata] = useState({
-    country_of_origin: '',
-    foreign_publisher_name: '',
-    recommendation_decree_no: '',
-    import_license_no: '',
-  });
+  // Bagian II. Informasi Data Materi Tambahan pada Mushaf
+  const [selectedMateriTambahan, setSelectedMateriTambahan] = useState([]);
+  const [penanggungJawabMateri, setPenanggungJawabMateri] = useState('');
 
-  // Surat Pernyataan Keabsahan Naskah (Pre-checked by default, publisher can preview/uncheck)
-  const [statementAccepted, setStatementAccepted] = useState(true);
-  const [showStatementModal, setShowStatementModal] = useState(false);
+  // Bagian III. Informasi Dokumen Mushaf
+  const [suratPermohonanFile, setSuratPermohonanFile] = useState(null);
+  const [suratPermohonanFileId, setSuratPermohonanFileId] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverFileId, setCoverFileId] = useState(null);
+  const [apkFile, setApkFile] = useState(null);
+  const [apkFileId, setApkFileId] = useState(null);
 
-  const [selectedService, setSelectedService] = useState(null);
+  // Status & State
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-
-  // Dialog Bukti Pendaftaran
   const [createdReceipt, setCreatedReceipt] = useState(null);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
 
@@ -108,178 +145,240 @@ export const NewRegistrationPage = () => {
           masterApi.getServiceTypes(),
           masterApi.getAddons(),
         ]);
-
         if (resCat?.data) setCategories(resCat.data);
         if (resSt?.data) setServiceTypes(resSt.data);
         if (resAddon?.data) setAddons(resAddon.data);
-
-        // Pre-select first category and matching service type
-        if (resCat?.data?.length > 0) {
-          const firstCatId = resCat.data[0].id;
-          const matchingTypes = resSt?.data?.filter((s) => s.category_id === firstCatId) || [];
-          setFormData((prev) => ({
-            ...prev,
-            category_id: firstCatId,
-            service_type_id: matchingTypes[0]?.id || '',
-          }));
-          if (matchingTypes[0]) {
-            setSelectedService(matchingTypes[0]);
-          }
-        }
       } catch (err) {
-        setError('Gagal memuat master data layanan dari server: ' + err.message);
+        setError('Gagal memuat master data layanan: ' + err.message);
       } finally {
         setLoadingMaster(false);
       }
     };
-
     fetchMaster();
   }, []);
 
-  // Saat kategori pendaftaran berubah ke Mushaf Luar Negeri, sesuaikan jenis layanan
-  const handleCategorySelect = (catId) => {
-    setRegistrationCategory(catId);
-    if (catId === 'FOREIGN_MANUSCRIPT') {
-      const foreignService = serviceTypes.find((s) =>
-        s.name.toLowerCase().includes('luar negeri')
-      );
-      if (foreignService) {
-        setFormData((prev) => ({
-          ...prev,
-          category_id: foreignService.category_id,
-          service_type_id: foreignService.id,
-        }));
-        setSelectedService(foreignService);
+  // Handlers untuk Ukuran & Oplah Dinamis
+  const handleAddSizeRow = () => {
+    setSizes((prev) => [...prev, { ukuran: '', oplah: '' }]);
+  };
+
+  const handleRemoveSizeRow = (index) => {
+    if (sizes.length <= 1) return;
+    setSizes((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSizeChange = (index, field, value) => {
+    setSizes((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  // Toggle Checkbox Jenis Naskah
+  const toggleJenisNaskah = (item) => {
+    setSelectedJenisNaskah((prev) => {
+      const willInclude = !prev.includes(item);
+      const next = willInclude ? [...prev, item] : prev.filter((i) => i !== item);
+      if (item === "1. Mushaf Al-Qur'an Luar Negeri") {
+        if (willInclude) {
+          setJenisMushaf('Mushaf Luar Negeri');
+        } else if (jenisMushaf === 'Mushaf Luar Negeri') {
+          setJenisMushaf('Mushaf Baru');
+        }
       }
+      return next;
+    });
+  };
+
+  // Change Jenis Mushaf Dropdown
+  const handleJenisMushafChange = (val) => {
+    setJenisMushaf(val);
+    if (val === 'Mushaf Luar Negeri') {
+      setSelectedJenisNaskah((prev) =>
+        prev.includes("1. Mushaf Al-Qur'an Luar Negeri")
+          ? prev
+          : [...prev, "1. Mushaf Al-Qur'an Luar Negeri"]
+      );
+    } else {
+      setSelectedJenisNaskah((prev) =>
+        prev.filter((i) => i !== "1. Mushaf Al-Qur'an Luar Negeri")
+      );
     }
   };
 
-  // Handle Category change
-  const handleCategoryChange = (catId) => {
-    const matchingTypes = serviceTypes.filter((s) => s.category_id === catId);
-    const newServiceId = matchingTypes[0]?.id || '';
-    setFormData((prev) => ({
-      ...prev,
-      category_id: catId,
-      service_type_id: newServiceId,
-    }));
-    setSelectedService(matchingTypes[0] || null);
-  };
-
-  // Handle Service Type change
-  const handleServiceChange = (serviceId) => {
-    const found = serviceTypes.find((s) => s.id === serviceId);
-    setFormData((prev) => ({ ...prev, service_type_id: serviceId }));
-    setSelectedService(found || null);
-
-    if (found?.name?.toLowerCase().includes('luar negeri')) {
-      setRegistrationCategory('FOREIGN_MANUSCRIPT');
-    }
-  };
-
-  // Manajemen Multi-Naskah
-  const handleAddManuscript = () => {
-    setManuscripts([...manuscripts, { title: '' }]);
-  };
-
-  const handleRemoveManuscript = (index) => {
-    if (manuscripts.length <= 1) return;
-    setManuscripts(manuscripts.filter((_, idx) => idx !== index));
-  };
-
-  const handleManuscriptTitleChange = (index, value) => {
-    setManuscripts(
-      manuscripts.map((item, idx) => (idx === index ? { ...item, title: value } : item))
+  // Toggle Checkbox Materi Tambahan
+  const toggleMateriTambahan = (item) => {
+    setSelectedMateriTambahan((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item]
     );
   };
 
+  // Upload Single File Helper
+  const uploadSingleFile = async (fileObj) => {
+    if (!fileObj) return null;
+    const uploaded = await fileApi.upload(fileObj);
+    return uploaded?.id || null;
+  };
+
+  // Submit / Save Draft
   const handleSave = async (isDirectSubmit = false) => {
     setError('');
     setSuccessMsg('');
 
-    // Validasi multi-naskah
-    const invalidManuscript = manuscripts.find((m) => !m.title.trim());
-    if (invalidManuscript !== undefined) {
-      setError('Seluruh judul naskah mushaf yang didaftarkan wajib diisi.');
+    if (!title.trim()) {
+      setError('Nama / Brand Mushaf wajib diisi.');
       return;
     }
 
-    if (!formData.service_type_id) {
-      setError('Pilih jenis profil layanan pentashihan.');
+    if (sizes.some((s) => s.ukuran.trim() && !s.oplah)) {
+      setError('Jika ukuran diisi, rencana oplah juga wajib diisi.');
       return;
     }
 
-    if (registrationCategory === 'EXTENSION' && !formData.previous_registration_id.trim()) {
-      setError('Permohonan perpanjangan wajib menyertakan nomor atau ID registrasi STT sebelumnya.');
-      return;
-    }
-
-    if (registrationCategory === 'FOREIGN_MANUSCRIPT') {
-      if (!foreignMetadata.country_of_origin.trim()) {
-        setError('Negara asal penerbitan mushaf luar negeri wajib diisi.');
+    if (isDirectSubmit && jenisMushaf === 'Mushaf Luar Negeri') {
+      if (!negaraAsalMushaf.trim()) {
+        setError('Negara asal mushaf wajib dipilih.');
         return;
       }
-      if (!foreignMetadata.foreign_publisher_name.trim()) {
-        setError('Nama penerbit asli luar negeri wajib diisi.');
+      if (!penerbitAsalMushaf.trim()) {
+        setError('Penerbit asal mushaf wajib diisi.');
         return;
       }
-    }
-
-    if (!statementAccepted) {
-      setError('Anda wajib menyetujui Surat Pernyataan Keabsahan Naskah sebelum melanjutkan.');
-      return;
+      if (!lembagaPentashihAsal.trim()) {
+        setError('Lembaga pentashih asal mushaf wajib diisi.');
+        return;
+      }
     }
 
     setIsSubmitting(true);
+    setUploadingFiles(true);
+
     try {
-      const payload = {
-        title: manuscripts[0].title,
-        manuscripts: manuscripts.map((m) => ({ title: m.title.trim() })),
-        service_type_id: formData.service_type_id,
-        registration_type: registrationCategory === 'EXTENSION' ? 'EXTENSION' : 'NEW',
-        registration_category: registrationCategory,
-        ...(registrationCategory === 'EXTENSION' && formData.previous_registration_id
-          ? { previous_registration_id: formData.previous_registration_id.trim() }
+      // 1. Upload file dokumen jika ada yang dipilih
+      let uploadedCoverId = coverFileId;
+      if (coverFile && !uploadedCoverId) {
+        uploadedCoverId = await uploadSingleFile(coverFile);
+        setCoverFileId(uploadedCoverId);
+      }
+
+      let uploadedPermohonanId = suratPermohonanFileId;
+      if (suratPermohonanFile && !uploadedPermohonanId) {
+        uploadedPermohonanId = await uploadSingleFile(suratPermohonanFile);
+        setSuratPermohonanFileId(uploadedPermohonanId);
+      }
+
+      let uploadedPernyataanId = suratPernyataanFileId;
+      if (suratPernyataanFile && !uploadedPernyataanId) {
+        uploadedPernyataanId = await uploadSingleFile(suratPernyataanFile);
+        setSuratPernyataanFileId(uploadedPernyataanId);
+      }
+
+      let uploadedApkId = apkFileId;
+      if (apkFile && !uploadedApkId) {
+        uploadedApkId = await uploadSingleFile(apkFile);
+        setApkFileId(uploadedApkId);
+      }
+
+      let uploadedBuktiTashihId = buktiTashihFileId;
+      if (buktiTashihFile && !uploadedBuktiTashihId) {
+        uploadedBuktiTashihId = await uploadSingleFile(buktiTashihFile);
+        setBuktiTashihFileId(uploadedBuktiTashihId);
+      }
+
+      setUploadingFiles(false);
+
+      // Tentukan registration_type dan registration_category
+      let regType = 'NEW';
+      let regCategory = 'NEW';
+      if (jenisMushaf === 'Perpanjangan Tanda Tashih') {
+        regType = 'EXTENSION';
+        regCategory = 'EXTENSION';
+      } else if (jenisMushaf === 'Mushaf Luar Negeri') {
+        regType = 'FOREIGN_MANUSCRIPT';
+        regCategory = 'FOREIGN_MANUSCRIPT';
+      }
+
+      // Tentukan service_type default jika cocok dengan data
+      let matchedService = serviceTypes.find((s) => {
+        if (regCategory === 'FOREIGN_MANUSCRIPT') return s.name.toLowerCase().includes('luar negeri');
+        if (selectedJenisNaskah.includes('2. Digital')) return s.name.toLowerCase().includes('digital');
+        if (selectedJenisNaskah.includes('2. Audio/Visual')) return s.name.toLowerCase().includes('audio');
+        return s.status === 'ACTIVE';
+      });
+
+      const mushafDetails = {
+        penanggung_jawab_produk: penanggungJawabProduk.trim(),
+        sizes: sizes.filter((s) => s.ukuran.trim() || s.oplah),
+        jenis_naskah: selectedJenisNaskah,
+        jenis_mushaf: jenisMushaf,
+        nama_percetakan: jenisMushaf === 'Mushaf Luar Negeri' ? '' : namaPercetakan.trim(),
+        deskripsi_mushaf: deskripsiMushaf.trim(),
+        materi_tambahan: selectedMateriTambahan,
+        penanggung_jawab_materi_tambahan: penanggungJawabMateri.trim(),
+        ...(jenisMushaf === 'Perpanjangan Tanda Tashih'
+          ? {
+              nomor_pendaftaran_lama: noPendaftaranLama.trim(),
+              nomor_kode_ukuran_lama: nomorKodeUkuranLama.trim(),
+              surat_pernyataan_file_id: uploadedPernyataanId,
+            }
           : {}),
-        ...(registrationCategory === 'FOREIGN_MANUSCRIPT'
-          ? { foreign_metadata: foreignMetadata }
+        ...(jenisMushaf === 'Mushaf Luar Negeri'
+          ? {
+              country_of_origin: negaraAsalMushaf,
+              negara_asal_mushaf: negaraAsalMushaf,
+              foreign_publisher_name: penerbitAsalMushaf.trim(),
+              penerbit_asal_mushaf: penerbitAsalMushaf.trim(),
+              foreign_tashih_institution: lembagaPentashihAsal.trim(),
+              lembaga_pentashih_asal_mushaf: lembagaPentashihAsal.trim(),
+              bukti_tashih_file_id: uploadedBuktiTashihId,
+            }
           : {}),
-        statement_accepted: true,
-        addons: formData.selectedAddons,
-        addon_ids: formData.selectedAddons,
       };
 
-      const createRes = await registrationApi.createDraft(payload);
-      const createdReg = createRes.data;
+      const payload = {
+        title: title.trim(),
+        registration_type: regType,
+        registration_category: regCategory,
+        service_type_id: matchedService?.id || serviceTypes[0]?.id,
+        statement_accepted: true,
+        foreign_metadata: mushafDetails,
+        mushaf_details: mushafDetails,
+        cover_file_id: uploadedCoverId,
+        surat_permohonan_file_id: uploadedPermohonanId,
+        surat_pernyataan_perubahan_file_id: uploadedPernyataanId,
+        apk_file_id: uploadedApkId,
+        bukti_tashih_file_id: uploadedBuktiTashihId,
+      };
 
-      setCreatedReceipt(createdReg);
+      const res = await registrationApi.createDraft(payload);
+      const created = res.data;
+
+      setCreatedReceipt(created);
 
       if (isDirectSubmit) {
-        setSuccessMsg(
-          `Permohonan "${manuscripts[0].title}" (${createdReg.registration_no}) berhasil dibuat. Lanjutkan melengkapi berkas.`
-        );
-        navigate(`/publisher/registrations/${createdReg.id}`);
+        setSuccessMsg(`Permohonan "${title}" (${created.registration_no}) berhasil dibuat.`);
+        navigate(`/publisher/registrations/${created.id}`);
       } else {
-        setSuccessMsg(
-          `Draf permohonan (${createdReg.registration_no}) berhasil disimpan. Anda dapat mengunduh bukti pendaftaran.`
-        );
+        setSuccessMsg(`Draf permohonan (${created.registration_no}) berhasil disimpan.`);
         setShowReceiptDialog(true);
       }
     } catch (err) {
-      setError(err.message || 'Gagal menyimpan permohonan ke server.');
+      setError(err.message || 'Gagal menyimpan permohonan naskah.');
     } finally {
       setIsSubmitting(false);
+      setUploadingFiles(false);
     }
   };
 
-  const filteredServices = serviceTypes.filter(
-    (st) => !formData.category_id || st.category_id === formData.category_id
-  );
+  const isDigital = selectedJenisNaskah.includes('2. Digital');
+  const isPerpanjangan = jenisMushaf === 'Perpanjangan Tanda Tashih';
+  const isLuarNegeri = jenisMushaf === 'Mushaf Luar Negeri' || selectedJenisNaskah.includes("1. Mushaf Al-Qur'an Luar Negeri");
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-28 lg:pb-12 animate-fadeIn">
+    <div className="space-y-6 max-w-5xl mx-auto pb-28 lg:pb-12 animate-fadeIn">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <Link
             to="/publisher"
@@ -289,10 +388,10 @@ export const NewRegistrationPage = () => {
             Kembali ke Dasbor
           </Link>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Formulir Permohonan Layanan Tanda Tashih
+            Formulir Permohonan Naskah Mushaf Al-Qur'an
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Pendaftaran naskah mushaf Al-Qur'an, pemilihan kategori layanan resmi, dan penetapan standar waktu pelayanan (SLA).
+            Layanan Pentashihan Mushaf Al-Qur'an — Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kemenag RI
           </p>
         </div>
 
@@ -319,14 +418,14 @@ export const NewRegistrationPage = () => {
             icon={<Send className="w-3.5 h-3.5" />}
             className="text-xs font-bold"
           >
-            {isSubmitting ? 'Memproses...' : 'Lanjutkan ke Berkas'}
+            {isSubmitting ? (uploadingFiles ? 'Mengunggah Berkas...' : 'Memproses...') : 'Lanjutkan ke Berkas'}
           </Button>
         </div>
       </div>
 
-      {/* Error & Success Notices */}
+      {/* Notices */}
       {error && (
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+        <div role="alert" className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">Terjadi Kesalahan: </span>
@@ -336,7 +435,7 @@ export const NewRegistrationPage = () => {
       )}
 
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+        <div role="status" className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
           <div>
             <span className="font-bold">Berhasil: </span>
@@ -345,430 +444,528 @@ export const NewRegistrationPage = () => {
         </div>
       )}
 
-      {/* 1. Tiga Kategori Utama Permohonan (Sesuai tashih.kemenag.go.id) */}
-      <section aria-labelledby="registration-category-title" className="space-y-3">
-        <h2 id="registration-category-title" className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <Layers className="w-4 h-4 text-emerald-700" />
-          Pilih Kategori Permohonan Resmi:
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-          {REGISTRATION_CATEGORIES.map((cat) => {
-            const Icon = cat.icon;
-            const isSelected = registrationCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => handleCategorySelect(cat.id)}
-                className={`text-left p-4 rounded-xl border transition-all cursor-pointer bg-white relative ${
-                  isSelected
-                    ? cat.borderActive
-                    : 'border-slate-200 hover:border-slate-300 shadow-2xs'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
-                    <Icon className="w-3 h-3 text-emerald-700" />
-                    {cat.badge}
-                  </span>
-                  {isSelected && (
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+      {/* ========================================================================= */}
+      {/* BAGIAN I. INFORMASI DATA MUSHAF */}
+      {/* ========================================================================= */}
+      <section aria-labelledby="section-1-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 id="section-1-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-emerald-700" />
+            <span>I. Informasi Data Mushaf</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Lengkapi data teknis dan identitas naskah mushaf yang diajukan pentashihan.
+          </p>
+        </div>
+
+        {/* 1. Nama / Brand Mushaf */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Nama / Brand Mushaf <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Diisi dengan nama/brand mushaf al-qur'an yang akan didaftarkan pentashihan. Misal: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir, dll
+          </p>
+          <input
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Contoh: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+          />
+        </div>
+
+        {/* 2. Nama Penanggung Jawab Produk/Mushaf */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Nama Penanggung Jawab Produk/Mushaf <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Isi nama penanggung jawab Produk/Mushaf
+          </p>
+          <input
+            type="text"
+            value={penanggungJawabProduk}
+            onChange={(e) => setPenanggungJawabProduk(e.target.value)}
+            placeholder="Tulis nama penanggung jawab Produk/Mushaf"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+          />
+        </div>
+
+        {/* 3. Ukuran (cm) dan Oplah (Dinamis Multi-row) */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="block text-xs font-bold text-slate-800">
+                Ukuran (cm) & Oplah <span className="text-rose-500">*</span>
+              </span>
+              <p className="text-[11px] text-slate-500">
+                Daftar ukuran fisik (panjang x lebar) dan rencana oplah cetak
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAddSizeRow}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors shadow-2xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Tambah Ukuran dan Oplah</span>
+            </button>
+          </div>
+
+          <div className="space-y-2 pt-1">
+            {sizes.map((row, idx) => (
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+                <div className="sm:col-span-6 space-y-1">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Ukuran (cm) {idx === 0 && <span className="text-rose-500">*</span>}
+                  </label>
+                  <p className="text-[10px] text-emerald-700 leading-tight">
+                    Format: panjang x lebar (cm). Misal: 29,7 x 20 (tanpa cm)
+                  </p>
+                  <input
+                    type="text"
+                    value={row.ukuran}
+                    onChange={(e) => handleSizeChange(idx, 'ukuran', e.target.value)}
+                    placeholder="Tulis ukuran (cth: 29,7 x 20)"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                  />
+                </div>
+                <div className="sm:col-span-5 space-y-1">
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Oplah {idx === 0 && <span className="text-rose-500">*</span>}
+                  </label>
+                  <p className="text-[10px] text-emerald-700 leading-tight">
+                    Rencana oplah cetak. Misal: 100000
+                  </p>
+                  <input
+                    type="number"
+                    value={row.oplah}
+                    onChange={(e) => handleSizeChange(idx, 'oplah', e.target.value)}
+                    placeholder="Tulis oplah"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                  />
+                </div>
+                <div className="sm:col-span-1 pt-6 sm:pt-7 text-right">
+                  {sizes.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSizeRow(idx)}
+                      title="Hapus baris ini"
+                      className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   )}
                 </div>
-                <h3 className="font-bold text-sm text-slate-900">{cat.title}</h3>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  {cat.description}
-                </p>
-              </button>
-            );
-          })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. Jenis Naskah (Checklist 2 Kolom) */}
+        <div className="space-y-2 pt-2">
+          <label className="block text-xs font-bold text-slate-800">
+            Jenis Naskah <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-emerald-700 leading-relaxed">
+            Pilih jenis naskah yang sesuai dengan mushaf yang akan Anda terbitkan. Pilihan boleh lebih dari satu. Jika mushaf yang akan diterbitkan adalah mushaf digital, maka wajib mengunggah file apk
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+            {JENIS_NASKAH_OPTIONS.map((colItems, colIdx) => (
+              <div key={colIdx} className="space-y-2">
+                {colItems.map((item) => {
+                  const isChecked = selectedJenisNaskah.includes(item);
+                  return (
+                    <label
+                      key={item}
+                      className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-900 cursor-pointer select-none py-0.5"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleJenisNaskah(item)}
+                        className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-700 w-4 h-4"
+                      />
+                      <span className={isChecked ? 'font-bold text-emerald-950' : ''}>
+                        {item}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 5. Jenis Mushaf (Dropdown) */}
+        <div className="space-y-1.5 pt-2">
+          <label htmlFor="jenis-mushaf" className="block text-xs font-bold text-slate-800">
+            Jenis Mushaf <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Pilih jenis mushaf yang sesuai dengan mushaf yang akan Anda terbitkan.
+          </p>
+          <select
+            id="jenis-mushaf"
+            aria-label="Jenis Mushaf"
+            value={jenisMushaf}
+            onChange={(e) => handleJenisMushafChange(e.target.value)}
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 font-semibold"
+          >
+            <option value="Mushaf Baru">Mushaf Baru</option>
+            <option value="Perpanjangan Tanda Tashih">Perpanjangan Tanda Tashih</option>
+            <option value="Mushaf Luar Negeri">Mushaf Luar Negeri</option>
+          </select>
+        </div>
+
+        {/* 6. Nama Percetakan (Hanya untuk Mushaf Domestik / Baru / Perpanjangan) */}
+        {!isLuarNegeri && (
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-800">
+              Nama Percetakan <span className="text-rose-500">*</span>
+            </label>
+            <p className="text-[11px] text-emerald-700">
+              Diisi dengan nama percetakan tempat mushaf yang didaftarkan akan dicetak. Misal: Gramedia, Bekasi.
+            </p>
+            <input
+              type="text"
+              value={namaPercetakan}
+              onChange={(e) => setNamaPercetakan(e.target.value)}
+              placeholder="Tulis nama percetakan"
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+            />
+          </div>
+        )}
+
+        {/* 7. Deskripsi Mushaf */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Deskripsi Mushaf <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Diisi dengan deskripsi mushaf yang didaftarkan.
+          </p>
+          <textarea
+            rows={3}
+            value={deskripsiMushaf}
+            onChange={(e) => setDeskripsiMushaf(e.target.value)}
+            placeholder="Tulis deskripsi mushaf"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+          />
+        </div>
+
+        {/* Blok Khusus: Jika Jenis Mushaf === 'Mushaf Luar Negeri' */}
+        {isLuarNegeri && (
+          <div className="space-y-4 pt-1">
+            {/* Negara Asal Mushaf */}
+            <div className="space-y-1.5">
+              <label htmlFor="negara-asal-mushaf" className="block text-xs font-bold text-slate-800">
+                Negara asal mushaf <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Pilih negara asal mushaf yang didaftarkan.
+              </p>
+              <select
+                id="negara-asal-mushaf"
+                aria-label="Negara asal mushaf"
+                value={negaraAsalMushaf}
+                onChange={(e) => setNegaraAsalMushaf(e.target.value)}
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 font-medium"
+              >
+                <option value="">Pilih negara asal mushaf</option>
+                {NEGARA_ASAL_OPTIONS.map((country) => (
+                  <option key={country} value={country}>
+                    {country}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Penerbit Asal Mushaf */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Penerbit asal mushaf <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Diisi nama penerbit mushaf asal.
+              </p>
+              <input
+                type="text"
+                value={penerbitAsalMushaf}
+                onChange={(e) => setPenerbitAsalMushaf(e.target.value)}
+                placeholder="Tulis Nama penerbit asal Mushaf"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+              />
+            </div>
+
+            {/* Lembaga Pentashih Asal Mushaf */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Lembaga pentashih asal mushaf <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Diisi nama lembaga pentashih mushaf asal.
+              </p>
+              <input
+                type="text"
+                value={lembagaPentashihAsal}
+                onChange={(e) => setLembagaPentashihAsal(e.target.value)}
+                placeholder="Tulis Nama lembaga pentashih asal Mushaf"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+              />
+            </div>
+
+            {/* Bukti Tashih Lembaga Pentashih Asal Mushaf */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Bukti tashih Lembaga pentashih asal mushaf <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Unggah tanda tashih dari lembaga pentashih mushaf asal dengan format file pdf. Ukuran maksimal 500 kb.
+              </p>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => setBuktiTashihFile(e.target.files?.[0] || null)}
+                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-700 file:text-white hover:file:bg-emerald-800 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Blok Khusus: Jika Jenis Mushaf === 'Perpanjangan Tanda Tashih' */}
+        {isPerpanjangan && (
+          <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-amber-700" />
+              <span>Data Riwayat Perpanjangan STT</span>
+            </h3>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                No. Pendaftaran mushaf lama <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Pilih No. pendaftaran mushaf lama yang ingin diperpanjang tanda tashihnya.
+              </p>
+              <input
+                type="text"
+                value={noPendaftaranLama}
+                onChange={(e) => setNoPendaftaranLama(e.target.value)}
+                placeholder="Tulis nomor pendaftaran mushaf lama"
+                className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 bg-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Nomor, kode dan ukuran tanda tashih mushaf lama <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Pilih Nomor, kode dan ukuran tanda tashih mushaf lama yang ingin diperpanjang tanda tashihnya.
+              </p>
+              <input
+                type="text"
+                value={nomorKodeUkuranLama}
+                onChange={(e) => setNomorKodeUkuranLama(e.target.value)}
+                placeholder="Contoh: 123/LPMQ.01/TL.02/2021, A4 (21 x 29.7 cm)"
+                className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 bg-white"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-800">
+                Surat Pernyataan tidak ada perubahan pada master naskah <span className="text-rose-500">*</span>
+              </label>
+              <p className="text-[11px] text-emerald-700">
+                Upload Surat Pernyataan tidak ada perubahan pada master naskah dengan format file pdf. Ukuran maksimal 500 kb.
+              </p>
+              <input
+                type="file"
+                accept=".pdf,application/pdf"
+                onChange={(e) => setSuratPernyataanFile(e.target.files?.[0] || null)}
+                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-700 file:text-white hover:file:bg-emerald-800 cursor-pointer"
+              />
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ========================================================================= */}
+      {/* BAGIAN II. INFORMASI DATA MATERI TAMBAHAN PADA MUSHAF */}
+      {/* ========================================================================= */}
+      <section aria-labelledby="section-2-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 id="section-2-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-emerald-700" />
+            <span>II. Informasi Data Materi Tambahan pada Mushaf</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Isikan data materi tambahan pada mushaf yang Anda daftarkan.
+          </p>
+        </div>
+
+        {/* Checklist Materi Tambahan */}
+        <div className="space-y-2">
+          <label className="block text-xs font-bold text-slate-800">
+            Materi tambahan pada mushaf
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Pilih materi tambahan yang terdapat pada mushaf yang akan Anda terbitkan. Pilihan boleh lebih dari satu.
+          </p>
+
+          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+            {MATERI_TAMBAHAN_OPTIONS.map((item) => {
+              const isChecked = selectedMateriTambahan.includes(item);
+              return (
+                <label
+                  key={item}
+                  className="flex items-center gap-2 text-xs text-slate-700 hover:text-slate-900 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleMateriTambahan(item)}
+                    className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-700 w-4 h-4"
+                  />
+                  <span className={isChecked ? 'font-bold text-emerald-950' : ''}>
+                    {item}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Penanggung Jawab Materi Tambahan */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Penanggung Jawab Materi Tambahan
+          </label>
+          <p className="text-[11px] text-emerald-700">
+            Isi penanggung jawab materi tambahan
+          </p>
+          <textarea
+            rows={3}
+            value={penanggungJawabMateri}
+            onChange={(e) => setPenanggungJawabMateri(e.target.value)}
+            placeholder="Tulis nama penanggung jawab materi tambahan. Dapat diisi lebih dari 1 orang, dan dipisahkan oleh tanda koma. misal: Andi Fulan, Ilham Fulan, Ridwan Fulan"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+          />
         </div>
       </section>
 
-      {/* Form Content & Right Rail */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Kolom Kiri: Form Detail (8 cols) */}
-        <div className="lg:col-span-8 space-y-5">
-          {/* Card Multi-Naskah */}
-          <Card className="p-5 sm:p-6 shadow-xs border-slate-200/90 rounded-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-emerald-700" />
-                Daftar Naskah Mushaf yang Didaftarkan
-              </h2>
-              <span className="text-xs text-slate-500 font-medium">
-                {manuscripts.length} Naskah
-              </span>
-            </div>
+      {/* ========================================================================= */}
+      {/* BAGIAN III. INFORMASI DOKUMEN MUSHAF */}
+      {/* ========================================================================= */}
+      <section aria-labelledby="section-3-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-slate-100 pb-3">
+          <h2 id="section-3-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-emerald-700" />
+            <span>III. Informasi Dokumen Mushaf</span>
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Unggah dokumen mushaf pendukung permohonan.
+          </p>
+        </div>
 
-            <div className="space-y-3">
-              {manuscripts.map((manuscript, index) => (
-                <div key={index} className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Judul Naskah #{index + 1} *
-                    </label>
-                    {manuscripts.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveManuscript(index)}
-                        className="text-xs text-rose-600 hover:text-rose-800 inline-flex items-center gap-1 font-semibold cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Hapus
-                      </button>
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={manuscript.title}
-                    onChange={(e) => handleManuscriptTitleChange(index, e.target.value)}
-                    placeholder="Contoh: Mushaf Al-Qur'an Al-Karim Rasm Usmani Terjemah Tajwid Warna"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-700/20 bg-white"
-                  />
-                </div>
-              ))}
+        {/* 1. Surat Permohonan */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Surat permohonan tanda tashih <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-slate-500">
+            Unggah surat permohonan penerbitan / perpanjangan tanda tashih dengan format file PDF.
+          </p>
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={(e) => setSuratPermohonanFile(e.target.files?.[0] || null)}
+            className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+          />
+        </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddManuscript}
-                className="w-full text-xs font-bold border-dashed border-emerald-600/60 text-emerald-800 hover:bg-emerald-50 py-2.5"
-                icon={<Plus className="w-3.5 h-3.5" />}
-              >
-                + Tambah Naskah Lain (Daftarkan Lebih dari 1 Naskah)
-              </Button>
-            </div>
-          </Card>
+        {/* 2. Gambar Cover */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-bold text-slate-800">
+            Gambar Cover <span className="text-rose-500">*</span>
+          </label>
+          <p className="text-[11px] text-slate-500">
+            Unggah gambar cover/sampul mushaf (JPG, PNG, atau PDF).
+          </p>
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+            className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+          />
+        </div>
 
-          {/* Form Khusus Perpanjangan STT */}
-          {registrationCategory === 'EXTENSION' && (
-            <Card className="p-5 sm:p-6 shadow-xs border-sky-200 bg-sky-50/30 rounded-2xl space-y-3">
-              <h3 className="text-sm font-bold text-sky-950 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-sky-700" />
-                Data Surat Tanda Tashih (STT) Sebelumnya
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Masukkan nomor registrasi atau nomor STT sebelumnya yang hendak diperpanjang.
-              </p>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Nomor Registrasi / STT Terdahulu *
-                </label>
-                <input
-                  type="text"
-                  value={formData.previous_registration_id}
-                  onChange={(e) => setFormData({ ...formData, previous_registration_id: e.target.value })}
-                  placeholder="Contoh: REG-2025-06-0012 atau nomor SK Tanda Tashih"
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-sky-700/20 font-mono"
-                />
-              </div>
-            </Card>
-          )}
-
-          {/* Form Khusus Mushaf Luar Negeri */}
-          {registrationCategory === 'FOREIGN_MANUSCRIPT' && (
-            <Card className="p-5 sm:p-6 shadow-xs border-amber-200 bg-amber-50/30 rounded-2xl space-y-4">
-              <h3 className="text-sm font-bold text-amber-950 flex items-center gap-1.5">
-                <Globe className="w-4 h-4 text-amber-700" />
-                Kelengkapan Khusus Izin Edar Mushaf Luar Negeri
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Sesuai regulasi Kemenag RI, mushaf cetakan luar negeri memerlukan identitas penerbit asal dan surat rekomendasi/izin impor.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Negara Asal Penerbitan *
-                  </label>
-                  <input
-                    type="text"
-                    value={foreignMetadata.country_of_origin}
-                    onChange={(e) => setForeignMetadata({ ...foreignMetadata, country_of_origin: e.target.value })}
-                    placeholder="Contoh: Arab Saudi, Mesir, Turki, Lebanon"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-amber-700/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Nama Penerbit Asli Luar Negeri *
-                  </label>
-                  <input
-                    type="text"
-                    value={foreignMetadata.foreign_publisher_name}
-                    onChange={(e) => setForeignMetadata({ ...foreignMetadata, foreign_publisher_name: e.target.value })}
-                    placeholder="Contoh: Mujamma Malik Fahd, Darussalam"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-amber-700/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Nomor Rekomendasi / Izin Edar Kemenag
-                  </label>
-                  <input
-                    type="text"
-                    value={foreignMetadata.recommendation_decree_no}
-                    onChange={(e) => setForeignMetadata({ ...foreignMetadata, recommendation_decree_no: e.target.value })}
-                    placeholder="Jika sudah ada rekomendasi awal"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-amber-700/20"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Nomor Izin Impor / Dokumen Bea Cukai
-                  </label>
-                  <input
-                    type="text"
-                    value={foreignMetadata.import_license_no}
-                    onChange={(e) => setForeignMetadata({ ...foreignMetadata, import_license_no: e.target.value })}
-                    placeholder="Nomor dokumen kepabeanan/impor"
-                    className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-amber-700/20"
-                  />
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Pemilihan Jenis Layanan */}
-          <Card className="p-5 sm:p-6 shadow-xs border-slate-200/90 rounded-2xl space-y-4">
-            <h2 className="text-sm sm:text-base font-extrabold text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-700" />
-              Profil Layanan & Kategori Mushaf
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Kategori Mushaf
-                </label>
-                <select
-                  value={formData.category_id}
-                  onChange={(e) => handleCategoryChange(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-emerald-700/20"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Jenis Layanan Pentashihan *
-                </label>
-                <select
-                  value={formData.service_type_id}
-                  onChange={(e) => handleServiceChange(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs bg-white focus:ring-2 focus:ring-emerald-700/20"
-                >
-                  {filteredServices.map((st) => (
-                    <option key={st.id} value={st.id}>
-                      {st.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </Card>
-
-          {/* Surat Pernyataan Keabsahan */}
-          <Card className="p-5 sm:p-6 shadow-xs border-emerald-300/80 bg-emerald-50/40 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between border-b border-emerald-200/60 pb-2.5">
-              <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                Surat Pernyataan Keabsahan & Kepatuhan SOP
-              </h3>
-              <button
-                type="button"
-                onClick={() => setShowStatementModal(true)}
-                className="text-xs font-bold text-emerald-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
-              >
-                Baca Teks Lengkap
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-700 leading-relaxed">
-              Pemohon wajib menyatakan bahwa master mushaf Al-Qur'an yang diajukan tidak melanggar hak cipta, sesuai mushaf standar Indonesia, dan bersedia mengikuti koreksi sidang pentashihan LPMQ.
-            </p>
-
-            <label className="flex items-start gap-3 pt-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={statementAccepted}
-                onChange={(e) => setStatementAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-emerald-800 border-slate-300 rounded focus:ring-emerald-700"
-              />
-              <span className="text-xs font-semibold text-slate-900 leading-tight">
-                Saya menyetujui seluruh klausul <strong>Surat Pernyataan Keabsahan Naskah & Tanggung Jawab Mutlak</strong> dan menjamin kebenaran seluruh dokumen yang disampaikan.
-              </span>
+        {/* 3. File APK jika Digital */}
+        {isDigital && (
+          <div className="space-y-1.5 p-4 rounded-xl bg-sky-50 border border-sky-200">
+            <label className="block text-xs font-bold text-sky-900">
+              File Aplikasi Mushaf Digital (.apk) <span className="text-rose-500">*</span>
             </label>
-          </Card>
-        </div>
-
-        {/* Kolom Kanan: Sticky Rail (Standar Pelayanan SLA Resmi & Aksi) - TANPA KALKULASI TARIF PNBP */}
-        <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-20">
-          <Card className="p-5 rounded-2xl shadow-xs border-slate-200 space-y-3.5 bg-white">
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2 pb-2 border-b border-slate-100">
-              <Clock className="w-4 h-4 text-emerald-700" />
-              <span>Standar Waktu Pelayanan (SLA Resmi)</span>
-            </h2>
-
-            <div className="grid grid-cols-3 gap-1.5 text-center">
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="text-[10px] text-slate-500 font-bold uppercase">Sidang Awal</div>
-                <div className="text-sm font-extrabold text-emerald-800 mt-0.5">
-                  {selectedService?.duration_initial || 15} HK
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="text-[10px] text-slate-500 font-bold uppercase">Perbaikan</div>
-                <div className="text-sm font-extrabold text-amber-700 mt-0.5">
-                  {selectedService?.duration_revision || 7} HK
-                </div>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                <div className="text-[10px] text-slate-500 font-bold uppercase">Dumi Bersih</div>
-                <div className="text-sm font-extrabold text-teal-700 mt-0.5">
-                  {selectedService?.duration_dummy || 3} HK
-                </div>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-500 leading-relaxed italic">
-              * HK = Hari Kerja resmi (Senin–Jumat, 07.30–16.00). Dihitung berdasarkan kalender kerja SKB 3 Menteri.
+            <p className="text-[11px] text-sky-700">
+              Karena Anda memilih jenis naskah "2. Digital", maka wajib mengunggah file installer aplikasi Android (.apk).
             </p>
-
-            <div className="pt-2.5 border-t border-slate-100 space-y-1.5 text-[11px] text-slate-600">
-              <span className="font-bold block text-slate-800">Ketentuan Berkas Fisik:</span>
-              <ul className="list-disc list-inside space-y-1 pl-1 leading-relaxed">
-                <li>Naskah cetak master fisik A4 dijilid per juz dikirimkan ke Loket LPMQ.</li>
-                <li>Setelah pendaftaran berhasil, Anda dapat mencetak Bukti Pendaftaran Resmi.</li>
-              </ul>
-            </div>
-          </Card>
-
-          {/* Action Buttons Desktop */}
-          <div className="space-y-2 hidden lg:block">
-            <Button
-              type="button"
-              variant="primary"
-              disabled={isSubmitting || loadingMaster}
-              onClick={() => handleSave(true)}
-              className="w-full justify-center py-3 text-xs font-bold shadow-xs"
-              icon={<Send className="w-4 h-4" />}
-            >
-              {isSubmitting ? 'Memproses Permohonan...' : 'Lanjutkan ke Berkas'}
-            </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isSubmitting || loadingMaster}
-              onClick={() => handleSave(false)}
-              className="w-full justify-center py-2.5 text-xs font-semibold"
-              icon={<Save className="w-3.5 h-3.5 text-slate-600" />}
-            >
-              Simpan Sebagai Draf
-            </Button>
+            <input
+              type="file"
+              accept=".apk"
+              onChange={(e) => setApkFile(e.target.files?.[0] || null)}
+              className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-700 file:text-white hover:file:bg-sky-800 cursor-pointer p-1 rounded-xl border border-sky-300 bg-white"
+            />
           </div>
-        </div>
-      </div>
+        )}
+      </section>
 
-      {/* Floating Bottom Bar on Mobile */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 p-3 shadow-2xl flex items-center justify-between gap-3">
-        <div className="text-xs font-bold text-slate-800 truncate">
-          {manuscripts.length} Naskah · {selectedService?.name || 'Layanan Tashih'}
+      {/* Sticky Bottom Actions */}
+      <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/90 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="text-xs text-slate-500">
+          Pastikan semua data bertanda bintang (<span className="text-rose-500 font-bold">*</span>) telah terisi dengan benar sebelum mengirim.
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="md"
             disabled={isSubmitting || loadingMaster}
             onClick={() => handleSave(false)}
-            className="text-xs px-3"
+            icon={<Save className="w-4 h-4 text-slate-600" />}
+            className="text-xs w-full sm:w-auto"
           >
-            Draf
+            Simpan Draf
           </Button>
 
           <Button
             type="button"
             variant="primary"
-            size="sm"
+            size="md"
             disabled={isSubmitting || loadingMaster}
             onClick={() => handleSave(true)}
-            className="text-xs font-bold px-3.5"
-            icon={<Send className="w-3.5 h-3.5" />}
+            icon={<Send className="w-4 h-4" />}
+            className="text-xs font-bold w-full sm:w-auto"
           >
-            {isSubmitting ? '...' : 'Lanjutkan'}
+            {isSubmitting ? (uploadingFiles ? 'Mengunggah Berkas...' : 'Memproses...') : 'Lanjutkan ke Berkas'}
           </Button>
         </div>
       </div>
 
-      {/* Modal Teks Surat Pernyataan Lengkap */}
-      {showStatementModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-xs">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm">Teks Surat Pernyataan Keabsahan</h3>
-              <button
-                type="button"
-                onClick={() => setShowStatementModal(false)}
-                className="text-slate-400 hover:text-slate-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-4 bg-slate-50 rounded-xl space-y-3 leading-relaxed text-slate-700 max-h-80 overflow-y-auto">
-              <p className="font-bold text-slate-900 text-center uppercase">
-                Surat Pernyataan Keabsahan & Tanggung Jawab Mutlak
-              </p>
-              <p>
-                Yang bertanda tangan di bawah ini, pemohon permohonan tanda tashih dari badan usaha/perorangan penerbit terdaftar, menyatakan bahwa:
-              </p>
-              <ol className="list-decimal list-inside space-y-1 pl-1">
-                <li>Seluruh data dan naskah mushaf yang diajukan adalah benar, orisinal, dan sah secara hukum.</li>
-                <li>Naskah yang diajukan tidak melanggar hak cipta, merek, atau hak kekayaan intelektual pihak mana pun.</li>
-                <li>Penerbit bersedia mematuhi seluruh kaidah Rasm Usmani, tanda waqaf, dan mushaf standar Indonesia.</li>
-                <li>Penerbit bersedia melakukan perbaikan secara tertib sesuai hasil sidang pentashihan tim LPMQ.</li>
-              </ol>
-              <p>
-                Demikian surat pernyataan ini dibuat dengan penuh kesadaran dan tanggung jawab mutlak.
-              </p>
-            </div>
-
-            <div className="flex justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  setStatementAccepted(true);
-                  setShowStatementModal(false);
-                }}
-                className="text-xs font-bold"
-              >
-                Saya Mengerti & Setujui
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Dialog Bukti Pendaftaran */}
-      <RegistrationReceiptDialog
-        isOpen={showReceiptDialog}
-        onClose={() => setShowReceiptDialog(false)}
-        registration={createdReceipt}
-      />
+      {showReceiptDialog && createdReceipt && (
+        <RegistrationReceiptDialog
+          key={createdReceipt.id}
+          registration={createdReceipt}
+          onClose={() => {
+            setShowReceiptDialog(false);
+            navigate(`/publisher/registrations/${createdReceipt.id}`);
+          }}
+        />
+      )}
     </div>
   );
 };
