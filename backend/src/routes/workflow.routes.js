@@ -4,7 +4,7 @@ import { authorize } from '../middlewares/rbac.middleware.js';
 import { requireManualTeamAssignment } from '../middlewares/admin-internal.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, assignmentSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
-import { updateCalendar } from '../services/calendar.service.js';
+import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
 import * as distribution from '../services/distribution.service.js';
 import * as payment from '../services/payment.service.js';
@@ -18,6 +18,7 @@ const action = (fn, status = 200) => async (req, res, next) => {
   try { res.status(status).json({ success: true, data: await fn(req) }); } catch (error) { next(error); }
 };
 router.put('/master/working-days', authenticate, authorize('SUPERADMIN'), validate(calendarSchema), action(req => updateCalendar(req.body.days, req.user)));
+router.post('/master/working-days/sync-holidays', authenticate, authorize('SUPERADMIN', 'ADMIN'), action(req => syncNationalHolidays(req.user, req.body?.year ? Number(req.body.year) : 2026)));
 router.get('/notifications', authenticate, authorize('ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), action(req => prisma.notification.findMany({ where: { user_id: req.user.id }, orderBy: { created_at: 'desc' }, take: 50 })));
 router.patch('/notifications/:id/read', authenticate, authorize('ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), validate(emptyAction), action(async req => {
   const notification = await prisma.notification.findFirst({ where: { id: req.params.id, user_id: req.user.id } });
@@ -54,7 +55,7 @@ router.post('/uploads', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR',
   express.raw({ type: ['application/pdf', 'image/png', 'image/jpeg'], limit: MAX_UPLOAD_BYTES }),
   action(req => upload(req.body, req.get('content-type')?.split(';')[0], req.user), 201));
 
-router.get('/uploads/:id', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DOKUMENTATOR'), async (req, res, next) => {
+router.get('/uploads/:id', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DOKUMENTATOR', 'ADMIN', 'KEPALA_LPMQ'), async (req, res, next) => {
   try {
     const file = await prisma.storedFile.findUnique({ where: { id: req.params.id } });
     if (!file) fail(404, 'Berkas tidak ditemukan.');
@@ -62,8 +63,15 @@ router.get('/uploads/:id', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATO
       const manuscript = await prisma.manuscriptFile.findFirst({ where: { file_id: file.id }, include: { registration: true } });
       if (manuscript) await assertManuscriptAccess(manuscript.registration, req.user);
       else {
-        const receipt = await prisma.paymentRecord.findFirst({ where: { receipt_file_id: file.id, status: 'PAID' } });
-        if (!receipt || !req.user.roles.includes('VERIFIKATOR')) fail(403, 'Akses berkas ditolak.');
+        const receipt = await prisma.paymentRecord.findFirst({
+          where: { receipt_file_id: file.id },
+          include: { registration: true },
+        });
+        const isInternalStaff = req.user.roles.some((r) => ['VERIFIKATOR', 'ADMIN', 'KEPALA_LPMQ'].includes(r));
+        const isOwnerPublisher = receipt && req.user.roles.includes('ADMIN_PENERBIT') && receipt.registration?.publisher_id === req.user.publisherId;
+        if (!receipt || (!isInternalStaff && !isOwnerPublisher)) {
+          fail(403, 'Akses berkas ditolak.');
+        }
       }
     }
     res.set({ 'Content-Type': file.mime_type, 'Content-Disposition': `attachment; filename="${file.id}"`, 'Cache-Control': 'private, no-store' });

@@ -260,7 +260,7 @@ export const InternalPaymentQueuePage = () => {
               ? 'Tidak ada bukti pembayaran baru yang menunggu verifikasi saat ini.'
               : `Belum ada data pembayaran dengan status ${activeTab}.`
           }
-          icon={Receipt}
+          icon={<Receipt className="w-10 h-10 text-slate-300 stroke-1" />}
         />
       ) : (
         <div className="space-y-2.5">
@@ -484,26 +484,67 @@ export const InternalPaymentQueuePage = () => {
         </div>
       )}
 
-      {selectedPayment.status === 'VERIFIED' && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-emerald-900">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
-            <div>
-              <strong className="block text-sm">Pembayaran Telah Diverifikasi Sah</strong>
-              <p className="text-emerald-800">
-                Penerimaan negara telah valid (LUNAS). Verifikator dapat melanjutkan penyerahan master fisik cetak di loket pentashihan.
-              </p>
+      {selectedPayment.status === 'VERIFIED' && (() => {
+        const assignmentId =
+          selectedPayment.registration?.verification_assignments?.[0]?.id ||
+          selectedPayment.registration?.verification_assignment?.id ||
+          selectedPayment.registration?.id ||
+          selectedPayment.registration_id;
+        const latestHandover = selectedPayment.registration?.physical_handovers?.[0];
+        const isHandedOver = Boolean(latestHandover && latestHandover.status !== 'RETURNED');
+
+        return (
+          <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-xl space-y-4 text-xs text-emerald-950 shadow-2xs animate-fadeIn">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-emerald-200 text-emerald-900 rounded-xl shrink-0 mt-0.5">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <strong className="block text-sm font-bold text-emerald-900">
+                    Pembayaran PNBP Telah Diverifikasi Sah (Lunas)
+                  </strong>
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Setoran kas negara telah dicocokkan dengan NTPN. Tahap selanjutnya: Verifikator menyerahkan master fisik naskah ke petugas <strong>Distributor Pentashihan</strong> (Langkah 7 SOP).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Link
+                  to={`/internal/verifications/${assignmentId}`}
+                  className="inline-flex items-center gap-1.5 font-bold text-white bg-emerald-700 hover:bg-emerald-800 px-3.5 py-2 rounded-lg shadow-xs transition-colors"
+                >
+                  <PackageCheck className="w-4 h-4" />
+                  <span>{isHandedOver ? 'Lihat Lembar Serah-Terima' : 'Lakukan Serah-Terima Fisik (BAST)'}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  to="/internal/distributions"
+                  className="inline-flex items-center gap-1.5 font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 px-3 py-2 rounded-lg shadow-2xs transition-colors"
+                >
+                  <span>Antrean Distribusi</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* SOP Step Guidance */}
+            <div className="pt-3 border-t border-emerald-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-emerald-800">
+              <div className="flex items-center gap-2">
+                <span className="font-bold uppercase tracking-wider text-emerald-900">Alur SOP Selanjutnya:</span>
+                <span>Langkah 7: Verifikator serahkan master cetak & terbitkan BAST</span>
+                <span>&rarr;</span>
+                <span>Langkah 8: Distributor konfirmasi terima di loket</span>
+              </div>
+              {latestHandover && (
+                <div className="font-mono text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded">
+                  BAST: {latestHandover.receipt_no} ({latestHandover.status})
+                </div>
+              )}
             </div>
           </div>
-          <Link
-            to="/internal/verifications"
-            className="inline-flex items-center gap-1 font-bold text-emerald-900 bg-white border border-emerald-300 px-3 py-1.5 rounded-lg hover:bg-emerald-50 shrink-0"
-          >
-            <span>Buka Lembar Verifikasi</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-      )}
+        );
+      })()}
     </div>
   ) : null;
 

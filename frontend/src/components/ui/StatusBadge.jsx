@@ -13,20 +13,54 @@ import {
   CreditCard,
   Clock,
   CheckCircle2,
+  PackageCheck,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 
 export const StatusBadge = ({
-  status,
+  status: statusProp,
+  registration,
   className,
   showIcon = true,
   size = 'md',
 }) => {
+  const status = registration?.status || statusProp;
+  const vm = registration ? getWorkflowViewModel(registration) : null;
+
   const config =
     TOKENS.registrationStatus[status] ||
     TOKENS.paymentStatus[status] ||
     TOKENS.registrationStatus.DRAFT;
+
+  let label = config.label;
+  let description = config.description;
+  let bgClass = config.bgClass;
+  let textClass = config.textClass;
+  let borderClass = config.borderClass;
+
+  if (vm) {
+    if (vm.operationalStatusLabel) {
+      label = vm.operationalStatusLabel;
+    }
+    if (vm.blockedReason) {
+      description = vm.blockedReason;
+    }
+    if (vm.operationalState === 'WAITING_PHYSICAL_MASTER') {
+      bgClass = 'bg-amber-50';
+      textClass = 'text-amber-900';
+      borderClass = 'border-amber-300';
+    } else if (vm.operationalState === 'PHYSICAL_MASTER_CORRECTION_REQUIRED') {
+      bgClass = 'bg-rose-50';
+      textClass = 'text-rose-900';
+      borderClass = 'border-rose-300';
+    } else if (vm.operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
+      bgClass = 'bg-emerald-50';
+      textClass = 'text-emerald-900';
+      borderClass = 'border-emerald-300';
+    }
+  }
 
   const sizeClasses = {
     sm: 'text-[11px] px-2 py-0.5 gap-1',
@@ -36,6 +70,15 @@ export const StatusBadge = ({
 
   const renderIcon = () => {
     const iconClass = size === 'sm' ? 'w-3 h-3 flex-shrink-0' : 'w-3.5 h-3.5 flex-shrink-0';
+    if (vm?.operationalState === 'PHYSICAL_MASTER_CORRECTION_REQUIRED') {
+      return <AlertTriangle className={iconClass} aria-hidden="true" />;
+    }
+    if (vm?.operationalState === 'WAITING_PHYSICAL_MASTER') {
+      return <PackageCheck className={iconClass} aria-hidden="true" />;
+    }
+    if (vm?.operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
+      return <CheckCircle2 className={iconClass} aria-hidden="true" />;
+    }
     switch (status) {
       case 'DRAFT':
         return <FileEdit className={iconClass} aria-hidden="true" />;
@@ -82,16 +125,16 @@ export const StatusBadge = ({
         clsx(
           'inline-flex items-center rounded-md font-semibold border shadow-2xs transition-colors',
           sizeClasses[size] || sizeClasses.md,
-          config.bgClass,
-          config.textClass,
-          config.borderClass,
+          bgClass,
+          textClass,
+          borderClass,
           className
         )
       )}
-      title={config.description}
+      title={description}
     >
       {showIcon && renderIcon()}
-      <span>{config.label}</span>
+      <span>{label}</span>
     </span>
   );
 };

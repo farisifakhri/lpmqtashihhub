@@ -149,6 +149,16 @@ export const getPaymentDetail = async (id, user) => {
         include: {
           publisher: { select: { id: true, legal_name: true, entity_type: true } },
           service_type: { include: { category: true } },
+          verification_assignments: {
+            select: { id: true, status: true },
+            orderBy: { assigned_at: 'desc' },
+            take: 1,
+          },
+          physical_handovers: {
+            select: { id: true, status: true, receipt_no: true },
+            orderBy: { created_at: 'desc' },
+            take: 1,
+          },
         },
       },
     },
@@ -274,6 +284,16 @@ export const listPayments = async (query, user) => {
             stage_entered_at: true,
             publisher: { select: { id: true, legal_name: true } },
             service_type: { select: { id: true, name: true } },
+            verification_assignments: {
+              select: { id: true, status: true },
+              orderBy: { assigned_at: 'desc' },
+              take: 1,
+            },
+            physical_handovers: {
+              select: { id: true, status: true, receipt_no: true },
+              orderBy: { created_at: 'desc' },
+              take: 1,
+            },
           },
         },
       },

@@ -59,7 +59,23 @@ export function getDetailedStage(registration) {
   }
 
   if (status === 'REVISION_REQUIRED') {
+    const isPhysicalReturn =
+      registration.revision_source === 'PHYSICAL_MASTER' ||
+      registration.physical_master_intake?.status === 'RETURNED';
     const isTashihRevision = Array.isArray(registration.assignments) && registration.assignments.length > 0;
+
+    if (isPhysicalReturn) {
+      return {
+        index: 1,
+        label: 'Perlu Perbaikan Master Fisik',
+        percent: 35,
+        color: 'bg-rose-500',
+        badgeClass: 'bg-rose-50 text-rose-900 border-rose-300',
+        description: 'Master fisik dikembalikan loket; serahkan perbaikan jilid naskah ke Loket LPMQ',
+        isLoop: false,
+      };
+    }
+
     return {
       index: isTashihRevision ? 4 : 2,
       label: 'Dalam Proses Perbaikan',

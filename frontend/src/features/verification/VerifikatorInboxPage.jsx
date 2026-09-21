@@ -13,6 +13,8 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Button } from '@/components/ui/Button';
 import { QueueOverview } from '@/components/common/QueueOverview';
 import { AssignVerificationDialog } from './AssignVerificationDialog';
+import { RevokeAssignmentDialog } from './RevokeAssignmentDialog';
+import { ReassignVerificationDialog } from './ReassignVerificationDialog';
 import {
   ClipboardCheck,
   Search,
@@ -55,9 +57,15 @@ export const VerifikatorInboxPage = () => {
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
+  const normalizeTab = (tab) => {
+    if (tab === 'NEED_APPROVAL') return 'WAITING_APPROVAL';
+    return tab;
+  };
+
   const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
   const rawUrlTab = searchParams.get('tab');
-  const initialTab = (!isHead && rawUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (rawUrlTab || defaultTab);
+  const normalizedUrlTab = normalizeTab(rawUrlTab);
+  const initialTab = (!isHead && normalizedUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (normalizedUrlTab || defaultTab);
 
   const [assignments, setAssignments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -69,6 +77,8 @@ export const VerifikatorInboxPage = () => {
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
+  const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
   const requestId = useRef(0);
 
@@ -116,7 +126,7 @@ export const VerifikatorInboxPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      if (activeTab === 'WAITING_APPROVAL') {
+      if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
         params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
@@ -147,14 +157,15 @@ export const VerifikatorInboxPage = () => {
   };
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    const targetTab = normalizeTab(tab);
+    setActiveTab(targetTab);
     setPagination((p) => ({ ...p, page: 1 }));
     setSelectedId(null);
-    setSearchParams({ tab });
+    setSearchParams({ tab: targetTab });
   };
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
+    const tabFromUrl = normalizeTab(searchParams.get('tab'));
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
       setPagination((p) => ({ ...p, page: 1 }));
@@ -686,24 +697,104 @@ export const VerifikatorInboxPage = () => {
                             </span>
                           </p>
                         )}
-                        {selectedAssignment.isUnassigned ? (
+                        {selectedAssignment.isUnassigned && (
                           <p>
-                            <strong>Dasar Penugasan:</strong>{' '}
+                            <strong>Status Penugasan:</strong>{' '}
                             <span className="text-slate-500 italic">
                               Belum Ada (Menunggu Nota Dinas)
                             </span>
                           </p>
-                        ) : selectedAssignment.documents?.[0]?.document_no ? (
-                          <p>
-                            <strong>Dasar Penugasan:</strong>{' '}
-                            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                              {selectedAssignment.documents[0].document_no}
-                            </span>
-                          </p>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   </div>
+
+                  {/* Informasi Penugasan & SLA Panel */}
+                  {!selectedAssignment.isUnassigned && (() => {
+                    const notaDoc = selectedAssignment.documents?.find?.((d) => d.document_type === 'NOTA_DINAS_VERIFIKASI') || selectedAssignment.documents?.[0];
+                    const isRevoked = selectedAssignment.status === 'REVOKED';
+                    const canReassignOrRevoke = (isHead || isAdmin) && ['ASSIGNED', 'IN_PROGRESS'].includes(selectedAssignment.status);
+
+                    return (
+                      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-xs shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                          <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-800" />
+                            Informasi Penugasan & SLA Verifikasi
+                          </h4>
+                          {isRevoked ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                              Penugasan Dicabut (Revoked)
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">Verifikator Ditugaskan:</span>
+                            <span className="font-semibold text-slate-900">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">Nomor Nota Dinas:</span>
+                            <span className="font-mono font-semibold text-slate-900">{notaDoc?.document_no || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">Waktu Penugasan:</span>
+                            <span>{selectedAssignment.assigned_at ? new Date(selectedAssignment.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[11px]">Target Selesai (SLA):</span>
+                            <span>{selectedAssignment.due_at ? new Date(selectedAssignment.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '2 Hari Kerja'}</span>
+                          </div>
+                        </div>
+
+                        {isRevoked && selectedAssignment.revocation_reason && (
+                          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-[11px]">
+                            <strong>Alasan Pencabutan:</strong> {selectedAssignment.revocation_reason}
+                          </div>
+                        )}
+
+                        {['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(selectedAssignment.status) && (
+                          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <span>
+                              Pemeriksaan verifikator telah diajukan. Tanggung jawab saat ini:{' '}
+                              <strong>
+                                {selectedAssignment.status === 'WAITING_APPROVAL' ? 'Kepala LPMQ (Persetujuan Draf)' : (selectedAssignment.status === 'WAITING_SIGNATURE' ? 'Tim Penandatangan' : 'Pengiriman Resmi')}
+                              </strong>
+                            </span>
+                            <span className="font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200 self-start sm:self-auto">
+                              SLA Verifikator Selesai
+                            </span>
+                          </div>
+                        )}
+
+                        {canReassignOrRevoke && (
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setReassignDialogOpen(true)}
+                              className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 text-xs"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                              Tugaskan Ulang (Reassign)
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRevokeDialogOpen(true)}
+                              className="text-rose-700 border-rose-200 hover:bg-rose-50 text-xs"
+                            >
+                              <X className="w-3.5 h-3.5 mr-1" />
+                              Cabut Penugasan (Revoke)
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : null
             }
@@ -728,6 +819,37 @@ export const VerifikatorInboxPage = () => {
               assignmentId: createdAssignmentId,
             });
             setAssignments((prev) => prev.filter((a) => a.id !== selectedAssignment.id));
+            fetchAssignments();
+          }}
+        />
+      )}
+
+      {/* Revoke Assignment Dialog */}
+      {(isHead || isAdmin) && revokeDialogOpen && selectedAssignment && (
+        <RevokeAssignmentDialog
+          assignment={selectedAssignment}
+          onClose={() => setRevokeDialogOpen(false)}
+          onSuccess={() => {
+            setRevokeDialogOpen(false);
+            setSuccessMessage({
+              text: 'Penugasan verifikasi berhasil dicabut. Pengajuan dikembalikan ke antrean penugasan.',
+            });
+            fetchAssignments();
+          }}
+        />
+      )}
+
+      {/* Reassign Verification Dialog */}
+      {(isHead || isAdmin) && reassignDialogOpen && selectedAssignment && (
+        <ReassignVerificationDialog
+          assignment={selectedAssignment}
+          onClose={() => setReassignDialogOpen(false)}
+          onSuccess={(res) => {
+            setReassignDialogOpen(false);
+            const docNo = res?.nota_dinas?.document_no || '';
+            setSuccessMessage({
+              text: `Penugasan berhasil dialihkan${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`,
+            });
             fetchAssignments();
           }}
         />

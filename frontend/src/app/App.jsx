@@ -6,7 +6,7 @@ import { AuthProvider } from '@/features/auth/AuthContext';
 export const App = () => {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
     </AuthProvider>
   );
 };

@@ -4,14 +4,16 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 
 ## Status implementasi
 
-Sistem telah mengimplementasikan alur SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) secara end-to-end dengan pengujian otomatis 100%:
+Alur internal SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite saat ini lulus:
 - Pemeriksaan berkas fisik (intake) dan serah-terima fisik oleh `ADMIN` (Staf TU / Layanan).
-- Penerbitan Nota Dinas Verifikasi dan penugasan verifikator oleh Kepala LPMQ secara atomik dengan SLA 2 hari kerja kalender kerja (`Asia/Jakarta`).
+- Penerbitan Nota Dinas Verifikasi dan penugasan verifikator oleh Kepala LPMQ secara atomik dengan SLA 2 hari kerja kalender kerja (`Asia/Jakarta`, cut-off 16:00 WIB).
 - Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi, dan Berita Acara Verifikasi.
-- Penandatanganan digital bertingkat (multi-signatory) untuk Kepala LPMQ dan Verifikator.
-- Pengiriman email hasil verifikasi nyata berbasis outbox idempoten dengan mekanisme retry.
+- Penandatanganan digital bertingkat (multi-signatory) internal untuk Kepala LPMQ dan Verifikator.
+- Mekanisme pengiriman email hasil verifikasi berbasis database outbox idempoten dengan status antrean/retry (saat ini menggunakan `MockEmailProvider` in-memory untuk dev/test sebelum penyambungan SMTP gateway produksi).
+- Validasi ketat kontak penerbit tanpa fallback email generik dummy.
 - Pembatasan verifikasi pembayaran PNBP dan serah-terima master fisik ke distributor loket pentashihan.
 - Akses berkas privat terproteksi tanpa token query URL.
+- Penanganan sinkronisasi ke sistem eksternal dengan status terverifikasi (`PENDING`, `SYNCED`, `FAILED`) tanpa false-success.
 
 Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [API_CONTRACT_MODUL_LANJUTAN.md](API_CONTRACT_MODUL_LANJUTAN.md).
 
@@ -75,5 +77,5 @@ IMPLEMENTATION.md        Rencana implementasi & status sprint
 USER_FLOWS.md            Alur pengguna per peran
 ```
 
-SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Alur SOP Verifikasi v2.2 (penerimaan fisik oleh Admin, penugasan Kepala LPMQ dengan SLA 2 hari kerja kalender, penyusunan draf Surat Hasil & Berita Acara Verifikasi, tanda tangan digital multi-signatory, pengiriman email outbox idempoten, verifikasi pembayaran, serta serah-terima fisik distributor dengan penanganan koreksi fisik cacat) telah selesai diimplementasikan secara end-to-end dengan uji otomatis 100%. Alur penetapan Berita Acara Tashih/STT final, integrasi gateway SIMPONI, dan integrasi tanda tangan elektronik BSrE menunggu tahapan resmi berikutnya.
+SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Alur SOP Verifikasi v2.2 (penerimaan fisik oleh Admin, penugasan Kepala LPMQ dengan SLA 2 hari kerja kalender dan cut-off 16:00 WIB, penyusunan draf Surat Hasil & Berita Acara Verifikasi, tanda tangan digital internal multi-signatory, outbox email idempoten, verifikasi pembayaran internal, serta serah-terima fisik distributor dengan penanganan koreksi fisik cacat) telah selesai diimplementasikan secara end-to-end dan seluruh test suite saat ini lulus. Integrasi produksi tingkat lanjut (gateway SIMPONI, sertifikat digital BSrE, SMTP produksi, dan implementasi penuh UI Pentashihan/Dokumentasi) disiapkan sebagai tahapan implementasi berikutnya.
 

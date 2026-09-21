@@ -47,7 +47,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         ...(isHead || isSuperAdmin
           ? [
               { label: 'Penugasan Verifikator', desc: 'Terbitkan Nota Dinas & penugasan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Kepala LPMQ' },
-              { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=NEED_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
+              { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
               { label: 'Pusat Tanda Tangan Resmi', desc: 'Tandatangani Surat Pemberitahuan & Berita Acara', path: '/internal/signatures', icon: Award, category: 'Kepala LPMQ' },
             ]
           : []),

@@ -29,6 +29,7 @@ model User {
   publisher                Publisher?
   verification_assignments VerificationAssignment[]
   verification_assignments_made VerificationAssignment[] @relation("VerificationAssignmentIssuer")
+  verification_assignments_revoked VerificationAssignment[] @relation("VerificationAssignmentRevoker")
   verification_documents_created VerificationDocument[] @relation("VerificationDocumentCreator")
   verification_documents_approved VerificationDocument[] @relation("VerificationDocumentApprover")
   physical_master_receipts PhysicalMasterIntake[] @relation("PhysicalMasterIntakeReceiver")
@@ -241,8 +242,11 @@ model Registration {
   dispatch_tracking_no     String?
   dispatch_courier         String?
   dispatch_date            DateTime?
+  external_sync_status     String                   @default("PENDING") // PENDING, SYNCED, FAILED
   external_sync_id         String?
   external_synced_at       DateTime?
+  external_sync_error      String?                  @db.Text
+  external_sync_attempts   Int                      @default(0)
   previous_registration_id String?
   status RegistrationStatus @default(DRAFT)
   stage_entered_at          DateTime                 @default(now())
@@ -339,10 +343,14 @@ model VerificationAssignment {
   started_at      DateTime?
   due_at          DateTime?
   assignment_notes String?
-  status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, WAITING_APPROVAL, WAITING_SIGNATURE, READY_TO_SEND, COMPLETED
+  status VerificationAssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, WAITING_APPROVAL, WAITING_SIGNATURE, READY_TO_SEND, COMPLETED, REVOKED
   decision        VerificationDecision? // PASSED, REVISION_REQUIRED, REJECTED
   notes           String?
   return_reason   String?   @db.Text   // Alasan pengembalian draft oleh Kepala LPMQ
+  revoked_at      DateTime?
+  revoked_by_id   String?
+  revocation_reason String? @db.Text   // Alasan pencabutan penugasan oleh Kepala LPMQ
+  review_submitted_at DateTime?
   assigned_at     DateTime     @default(now())
   completed_at    DateTime?
 
@@ -350,6 +358,7 @@ model VerificationAssignment {
   registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
   verifier        User         @relation(fields: [verifier_id], references: [id])
   assigned_by     User?        @relation("VerificationAssignmentIssuer", fields: [assigned_by_id], references: [id], onDelete: SetNull)
+  revoked_by      User?        @relation("VerificationAssignmentRevoker", fields: [revoked_by_id], references: [id], onDelete: SetNull)
   documents       VerificationDocument[]
 
   @@index([registration_id, status])
@@ -756,6 +765,7 @@ enum VerificationAssignmentStatus {
   WAITING_SIGNATURE   // Disetujui, proses tanda tangan multi-pihak per dokumen
   READY_TO_SEND       // Semua tanda tangan selesai, Verifikator kirim email
   COMPLETED
+  REVOKED             // Dicabut / diganti oleh Kepala LPMQ
 }
 
 enum PaymentStatus {

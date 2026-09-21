@@ -3,6 +3,16 @@ import { Inbox, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { clsx } from 'clsx';
 
+const renderIcon = (icon) => {
+  if (!icon) return null;
+  if (React.isValidElement(icon)) return icon;
+  if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && icon.$$typeof)) {
+    const IconComponent = icon;
+    return <IconComponent className="w-10 h-10 text-slate-300 stroke-1" />;
+  }
+  return icon;
+};
+
 export const EmptyState = ({
   icon = <Inbox className="w-10 h-10 text-slate-300 stroke-1" />,
   title = 'Tidak Ada Data',
@@ -20,7 +30,7 @@ export const EmptyState = ({
         className
       )}
     >
-      <div className="flex justify-center">{icon}</div>
+      <div className="flex justify-center">{renderIcon(icon)}</div>
 
       <div className="space-y-1 max-w-sm mx-auto">
         <h3 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight">
