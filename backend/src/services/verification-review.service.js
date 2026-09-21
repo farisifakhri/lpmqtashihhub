@@ -8,11 +8,24 @@ import { sendOutboxEmail } from './email-provider.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
+const resolveAssignment = async (db, idOrRegId, options = {}) => {
+  let assignment = await db.verificationAssignment.findUnique({
+    where: { id: idOrRegId },
+    ...options,
+  });
+  if (!assignment) {
+    assignment = await db.verificationAssignment.findFirst({
+      where: { registration_id: idOrRegId },
+      orderBy: { assigned_at: 'desc' },
+      ...options,
+    });
+  }
+  return assignment;
+};
+
 export const startVerification = (assignmentId, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await tx.verificationAssignment.findUnique({
-    where: { id: assignmentId },
-  });
+  const assignment = await resolveAssignment(tx, assignmentId);
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
@@ -26,7 +39,7 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
     requireStatus(reg, ['VERIFICATION_ASSIGNED']);
     const startedAt = new Date();
     const updated = await tx.verificationAssignment.update({
-      where: { id: assignmentId },
+      where: { id: assignment.id },
       data: {
         status: 'IN_PROGRESS',
         started_at: startedAt,
@@ -42,7 +55,7 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
 
 export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await tx.verificationAssignment.findUnique({ where: { id: assignmentId } });
+  const assignment = await resolveAssignment(tx, assignmentId);
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
@@ -51,6 +64,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
     fail(409, 'Pemeriksaan belum dimulai. Mulai pemeriksaan terlebih dahulu.');
   }
 
+  const actualAssignmentId = assignment.id;
   const reg = await registration(tx, assignment.registration_id);
   requireStatus(reg, ['IN_VERIFICATION']);
 
@@ -60,7 +74,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
 
   const existingDraft = await tx.verificationDocument.findFirst({
     where: {
-      assignment_id: assignmentId,
+      assignment_id: actualAssignmentId,
       document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'] },
       status: 'DRAFT',
     },
@@ -100,7 +114,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
   const created = await tx.verificationDocument.create({
     data: {
       registration_id: reg.id,
-      assignment_id: assignmentId,
+      assignment_id: actualAssignmentId,
       document_type: 'SURAT_HASIL_VERIFIKASI',
       version,
       status: 'DRAFT',
@@ -114,7 +128,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
 
 export const submitVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['VERIFIKATOR']);
-  const assignment = await tx.verificationAssignment.findUnique({ where: { id: assignmentId } });
+  const assignment = await resolveAssignment(tx, assignmentId);
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
@@ -123,6 +137,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     fail(409, 'Pemeriksaan belum dimulai.');
   }
 
+  const actualAssignmentId = assignment.id;
   const reg = await registration(tx, assignment.registration_id);
   requireStatus(reg, ['IN_VERIFICATION']);
 
@@ -132,7 +147,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 
   const existingDraft = await tx.verificationDocument.findFirst({
     where: {
-      assignment_id: assignmentId,
+      assignment_id: actualAssignmentId,
       document_type: { in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'] },
       status: { in: ['DRAFT', 'RETURNED'] },
     },
@@ -173,7 +188,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     : await tx.verificationDocument.create({
         data: {
           registration_id: reg.id,
-          assignment_id: assignmentId,
+          assignment_id: actualAssignmentId,
           document_type: docType,
           version,
           status: 'SUBMITTED',
@@ -185,7 +200,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
   // Buat atau perbarui Berita Acara Verifikasi (KB-03 & §4.1)
   const existingBADraft = await tx.verificationDocument.findFirst({
     where: {
-      assignment_id: assignmentId,
+      assignment_id: actualAssignmentId,
       document_type: 'BERITA_ACARA_VERIFIKASI',
       status: { in: ['DRAFT', 'RETURNED'] },
     },
@@ -217,7 +232,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     await tx.verificationDocument.create({
       data: {
         registration_id: reg.id,
-        assignment_id: assignmentId,
+        assignment_id: actualAssignmentId,
         document_type: 'BERITA_ACARA_VERIFIKASI',
         version,
         status: 'SUBMITTED',
@@ -228,7 +243,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
   }
 
   await tx.verificationAssignment.update({
-    where: { id: assignmentId },
+    where: { id: actualAssignmentId },
     data: {
       decision: data.decision,
       notes: data.notes || null,
@@ -266,12 +281,12 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
         type: 'APPROVAL_REQUEST',
         title: `Permohonan persetujuan draf verifikasi: ${reg.registration_no}`,
         payload: {
-          assignment_id: assignmentId,
+          assignment_id: actualAssignmentId,
           document_id: document.id,
           version: document.version,
           decision: data.decision,
           verifier_name: user.name,
-          link: `/internal/verifications/${assignmentId}`,
+          link: `/internal/verifications/${actualAssignmentId}`,
         },
       },
     });
@@ -283,8 +298,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
 
-  const assignment = await prisma.verificationAssignment.findUnique({
-    where: { id: assignmentId },
+  const assignment = await resolveAssignment(prisma, assignmentId, {
     include: {
       verifier: { select: { id: true, name: true, email: true, nip: true } },
       assigned_by: { select: { id: true, name: true } },

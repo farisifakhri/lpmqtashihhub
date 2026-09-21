@@ -38,26 +38,35 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
     return await prisma.$transaction(async tx => {
       requireRole(user, ['ADMIN', 'SUPERADMIN']);
       const reg = await registration(tx, id);
-      requireStatus(reg, ['READY_FOR_VERIFICATION']);
+      requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
       let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (!previous) {
-        if (reg.physical_dispatch_status === 'DISPATCHED') {
-          previous = await tx.physicalMasterIntake.create({
+        // Mendukung intake langsung di loket LPMQ (walk-in) maupun melalui kurir
+        previous = await tx.physicalMasterIntake.create({
+          data: {
+            registration_id: id,
+            format: 'A4',
+            binding_method: 'PER_JUZ',
+            volume_count: data.volume_count || 30,
+            status: 'PENDING',
+            sent_at: reg.dispatch_date || new Date(),
+            delivery_method: reg.dispatch_courier || 'LOKET_LPMQ',
+          },
+        });
+        if (reg.physical_dispatch_status !== 'DISPATCHED') {
+          await tx.registration.update({
+            where: { id },
             data: {
-              registration_id: id,
-              format: 'A4',
-              binding_method: 'PER_JUZ',
-              volume_count: data.volume_count || 30,
-              status: 'PENDING',
-              sent_at: reg.dispatch_date || new Date(),
-              delivery_method: reg.dispatch_courier || 'LOKET_LPMQ',
+              physical_dispatch_status: 'DISPATCHED',
+              dispatch_courier: reg.dispatch_courier || 'LOKET_LPMQ',
+              dispatch_date: reg.dispatch_date || new Date(),
             },
           });
-        } else {
-          fail(409, 'Penerbit belum mendeklarasikan master fisik A4 yang dijilid per juz.');
         }
       }
-      if (previous.status !== 'PENDING') fail(409, 'Penerimaan master ini sudah diputuskan. Muat ulang status sebelum mencoba lagi.');
+      if (previous.status !== 'PENDING' && previous.status !== 'RETURNED') {
+        fail(409, 'Penerimaan master ini sudah diputuskan. Muat ulang status sebelum mencoba lagi.');
+      }
       if (data.decision === 'RECEIVED' && previous.volume_count && data.volume_count !== previous.volume_count) {
         fail(409, 'Jumlah jilid yang diterima berbeda dari deklarasi penerbit. Kembalikan master dengan alasan agar penerbit memperbaiki deklarasi.');
       }
@@ -72,6 +81,19 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
           notes: data.notes || null,
         },
       });
+
+      if (data.decision === 'RETURNED') {
+        if (reg.status !== 'REVISION_REQUIRED') {
+          await move(tx, reg, 'REVISION_REQUIRED', user, data.notes || 'Master fisik dikembalikan di loket LPMQ', req);
+        }
+        await tx.registration.update({
+          where: { id: reg.id },
+          data: { revision_source: 'PHYSICAL_MASTER' },
+        });
+      } else if (data.decision === 'RECEIVED' && reg.status === 'REVISION_REQUIRED') {
+        await move(tx, reg, 'READY_FOR_VERIFICATION', user, 'Perbaikan master fisik diterima di loket LPMQ', req);
+      }
+
       await audit(tx, user, data.decision === 'RECEIVED' ? 'RECEIVE_PHYSICAL_MASTER' : 'RETURN_PHYSICAL_MASTER', 'PhysicalMasterIntake', intake.id, intake, req, previous);
       const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id }, select: { user_id: true } });
       if (publisher?.user_id) await tx.notification.create({ data: {

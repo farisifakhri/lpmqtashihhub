@@ -423,13 +423,38 @@ export const AdminMasterIntakePage = () => {
                   )
                 ) : (
                   <Link
-                    to={`/internal/verifications/${selectedReg.id}`}
+                    to={`/internal/verifications/${selectedReg.verification_assignment?.id || selectedReg.verification_assignments?.[0]?.id || selectedReg.id}`}
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-2xs transition-colors"
                   >
                     <span>Lihat Pemeriksaan</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Intake Status Banner if Returned */}
+          {isReturned && (
+            <div className="p-4 bg-rose-50 border border-rose-300 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-rose-900 shadow-2xs animate-fadeIn">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <strong className="text-sm font-bold text-rose-950">
+                    Master Fisik Dikembalikan ke Penerbit (Perlu Perbaikan)
+                  </strong>
+                  <p className="text-rose-800 leading-relaxed">
+                    Alasan Pengembalian: <em>"{selectedReg.physical_master_intake?.notes || 'Master fisik tidak lengkap atau cacat.'}"</em>
+                  </p>
+                  <p className="text-[11px] text-rose-700">
+                    Kondisi Catatan Loket: <strong>{selectedReg.physical_master_intake?.condition || 'Tidak Lengkap'}</strong> · Menunggu penerbit menyerahkan perbaikan jilid naskah fisik A4.
+                  </p>
+                </div>
+              </div>
+              <div className="shrink-0">
+                <span className="inline-flex items-center px-3 py-1 bg-rose-100 border border-rose-300 rounded-full font-bold text-rose-800 text-xs">
+                  DIKEMBALIKAN (REVISI)
+                </span>
               </div>
             </div>
           )}
@@ -761,9 +786,19 @@ export const AdminMasterIntakePage = () => {
                           </span>
                         </td>
                         <td className="py-3.5 px-5">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                            Menunggu Fisik A4
-                          </span>
+                          {item.physical_master_intake?.status === 'RECEIVED' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              Diterima di Loket
+                            </span>
+                          ) : item.physical_master_intake?.status === 'RETURNED' || item.status === 'REVISION_REQUIRED' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-rose-50 text-rose-800 border border-rose-200">
+                              Dikembalikan (Revisi)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                              Menunggu Fisik A4
+                            </span>
+                          )}
                         </td>
                         <td className="py-3.5 px-5 text-right">
                           <Button

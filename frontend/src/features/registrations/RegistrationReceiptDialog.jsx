@@ -105,13 +105,33 @@ export const RegistrationReceiptDialog = ({ isOpen, onClose, registration }) => 
                   </td>
                 </tr>
                 {registration.foreign_metadata && (
-                  <tr>
-                    <td className="py-2.5 px-4 font-bold text-slate-700">Negara Asal / Izin Impor</td>
-                    <td className="py-2.5 px-4 text-slate-900">
-                      {registration.foreign_metadata.country_of_origin || '-'}{' '}
-                      {registration.foreign_metadata.recommendation_decree_no ? `(No: ${registration.foreign_metadata.recommendation_decree_no})` : ''}
-                    </td>
-                  </tr>
+                  <>
+                    {(registration.foreign_metadata.country_of_origin || registration.foreign_metadata.negara_asal_mushaf) && (
+                      <tr>
+                        <td className="py-2.5 px-4 font-bold text-slate-700">Negara Asal Mushaf</td>
+                        <td className="py-2.5 px-4 text-slate-900 font-semibold">
+                          {registration.foreign_metadata.country_of_origin || registration.foreign_metadata.negara_asal_mushaf}
+                          {registration.foreign_metadata.recommendation_decree_no ? ` (No: ${registration.foreign_metadata.recommendation_decree_no})` : ''}
+                        </td>
+                      </tr>
+                    )}
+                    {(registration.foreign_metadata.penerbit_asal_mushaf || registration.foreign_metadata.foreign_publisher_name) && (
+                      <tr className="bg-slate-50/70">
+                        <td className="py-2.5 px-4 font-bold text-slate-700">Penerbit Asal</td>
+                        <td className="py-2.5 px-4 text-slate-900">
+                          {registration.foreign_metadata.penerbit_asal_mushaf || registration.foreign_metadata.foreign_publisher_name}
+                        </td>
+                      </tr>
+                    )}
+                    {(registration.foreign_metadata.lembaga_pentashih_asal_mushaf || registration.foreign_tashih_institution) && (
+                      <tr>
+                        <td className="py-2.5 px-4 font-bold text-slate-700">Lembaga Pentashih Asal</td>
+                        <td className="py-2.5 px-4 text-slate-900">
+                          {registration.foreign_metadata.lembaga_pentashih_asal_mushaf || registration.foreign_tashih_institution}
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )}
                 <tr>
                   <td className="py-2.5 px-4 font-bold text-slate-700">Status Pendaftaran</td>

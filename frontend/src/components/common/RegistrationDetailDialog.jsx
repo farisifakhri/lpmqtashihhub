@@ -91,7 +91,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-600 flex gap-2"><Clock className="h-4 w-4" />Berada pada tahap ini selama {waitingLabel(data.stage_entered_at)}</p>
+              <p className="text-xs text-slate-600 flex gap-2"><Clock className="h-4 w-4" />Tahap ini dimulai: {data.stage_entered_at ? new Date(data.stage_entered_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : 'Belum tercatat'}</p>
               <p className="text-xs text-slate-500">{data.service_type?.name}</p>
             </div>
             <div><h4 className="text-sm font-bold text-slate-900 mb-3">Riwayat proses</h4>

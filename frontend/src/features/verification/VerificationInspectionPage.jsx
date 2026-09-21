@@ -85,6 +85,7 @@ export const VerificationInspectionPage = () => {
   const { currentUser } = useAuth();
 
   const [detail, setDetail] = useState(null);
+  const assignmentId = detail?.assignment?.id || id;
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -192,6 +193,13 @@ export const VerificationInspectionPage = () => {
     fetchDetail();
   }, [id]);
 
+  // Sinkronisasi canonical assignment URL jika masuk menggunakan registration_id
+  useEffect(() => {
+    if (detail?.assignment?.id && id !== detail.assignment.id) {
+      navigate(`/internal/verifications/${detail.assignment.id}`, { replace: true });
+    }
+  }, [detail, id, navigate]);
+
   // Set default letter text if blank
   useEffect(() => {
     if (!letterText && detail?.registration) {
@@ -222,7 +230,7 @@ export const VerificationInspectionPage = () => {
     setActionLoading(true);
     setError(null);
     try {
-      await verificationApi.startVerification(id);
+      await verificationApi.startVerification(assignmentId);
       await fetchDetail();
       setSuccessMessage('Pemeriksaan berhasil dimulai. Lembar kerja verifikasi kini aktif.');
     } catch (err) {
@@ -294,7 +302,7 @@ export const VerificationInspectionPage = () => {
         notes: notes.trim() || undefined,
         letter_text: letterText.trim() || undefined,
       };
-      await verificationApi.saveDraft(id, payload);
+      await verificationApi.saveDraft(assignmentId, payload);
       setIsDirty(false);
       setSuccessMessage('Draf checklist dan surat berhasil disimpan.');
       await fetchDetail();
@@ -323,7 +331,7 @@ export const VerificationInspectionPage = () => {
         notes: notes.trim() || undefined,
         letter_text: letterText.trim(),
       };
-      await verificationApi.submitDraft(id, payload);
+      await verificationApi.submitDraft(assignmentId, payload);
       setSubmitConfirmOpen(false);
       setIsDirty(false);
       setSuccessMessage('Draf surat hasil verifikasi berhasil diajukan kepada Kepala LPMQ.');

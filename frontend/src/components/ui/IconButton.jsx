@@ -2,6 +2,17 @@ import React from 'react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+const renderIcon = (icon, size) => {
+  if (!icon) return null;
+  if (React.isValidElement(icon)) return icon;
+  if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && icon.$$typeof)) {
+    const IconComponent = icon;
+    const iconSizeClass = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-6 h-6' : 'w-5 h-5';
+    return <IconComponent className={iconSizeClass} />;
+  }
+  return icon;
+};
+
 export const IconButton = ({
   icon,
   label,
@@ -47,7 +58,7 @@ export const IconButton = ({
       disabled={disabled}
       {...props}
     >
-      {icon}
+      {renderIcon(icon, size)}
     </button>
   );
 };

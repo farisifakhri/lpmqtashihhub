@@ -192,7 +192,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             },
             {
               label: 'Persetujuan Verifikasi',
-              path: '/internal/verifications?tab=NEED_APPROVAL',
+              path: '/internal/verifications?tab=WAITING_APPROVAL',
               icon: <CheckSquare className="w-4 h-4 shrink-0" />,
               description: 'Telaah draf hasil verifikasi',
             },

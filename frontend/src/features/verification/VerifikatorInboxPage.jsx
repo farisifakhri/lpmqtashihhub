@@ -55,9 +55,15 @@ export const VerifikatorInboxPage = () => {
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
 
+  const normalizeTab = (tab) => {
+    if (tab === 'NEED_APPROVAL') return 'WAITING_APPROVAL';
+    return tab;
+  };
+
   const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
   const rawUrlTab = searchParams.get('tab');
-  const initialTab = (!isHead && rawUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (rawUrlTab || defaultTab);
+  const normalizedUrlTab = normalizeTab(rawUrlTab);
+  const initialTab = (!isHead && normalizedUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (normalizedUrlTab || defaultTab);
 
   const [assignments, setAssignments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -116,7 +122,7 @@ export const VerifikatorInboxPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      if (activeTab === 'WAITING_APPROVAL') {
+      if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
         params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
@@ -147,14 +153,15 @@ export const VerifikatorInboxPage = () => {
   };
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    const targetTab = normalizeTab(tab);
+    setActiveTab(targetTab);
     setPagination((p) => ({ ...p, page: 1 }));
     setSelectedId(null);
-    setSearchParams({ tab });
+    setSearchParams({ tab: targetTab });
   };
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
+    const tabFromUrl = normalizeTab(searchParams.get('tab'));
     if (tabFromUrl && tabFromUrl !== activeTab) {
       setActiveTab(tabFromUrl);
       setPagination((p) => ({ ...p, page: 1 }));
