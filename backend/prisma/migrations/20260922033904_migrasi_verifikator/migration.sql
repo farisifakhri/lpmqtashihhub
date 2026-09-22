@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER TABLE `verification_document_signatories` RENAME INDEX `verification_document_signatories_document_id_signer_user_idx` TO `verification_document_signatories_document_id_signer_user_id_idx`;
