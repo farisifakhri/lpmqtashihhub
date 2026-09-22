@@ -37,6 +37,7 @@ router.post('/payments/:id/return', authenticate, authorize('VERIFIKATOR'), vali
 router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user, req)));
 
 router.post('/registrations/:id/assignments', authenticate, requireManualTeamAssignment, validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
+router.get('/assignments/my-tasks', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), action(req => distribution.listMyAssignments(req.user, req.query)));
 router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN', 'DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(reviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));

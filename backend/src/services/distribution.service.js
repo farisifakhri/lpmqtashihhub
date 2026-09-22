@@ -52,6 +52,34 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   return review;
 }, { isolationLevel: 'ReadCommitted' });
 
+export async function listMyAssignments(user, query = {}) {
+  requireRole(user, ['PENTASHIH', 'SUPERADMIN']);
+  const where = { assignee_id: user.id };
+  if (query.status === 'COMPLETED') {
+    where.status = 'COMPLETED';
+  } else if (query.status === 'ACTIVE') {
+    where.status = { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] };
+  } else if (query.status) {
+    where.status = query.status;
+  }
+
+  return prisma.assignment.findMany({
+    where,
+    include: {
+      registration: {
+        include: {
+          publisher: { select: { id: true, legal_name: true, brand_name: true } },
+          service_type: { select: { id: true, name: true, code: true } },
+          manuscript_files: true,
+        },
+      },
+      team: { select: { id: true, name: true, decree_no: true } },
+      reviews: { orderBy: { completed_at: 'desc' } },
+    },
+    orderBy: { created_at: 'desc' },
+  });
+}
+
 export const approveDistribution = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
@@ -65,5 +93,41 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
   await move(tx, reg, status, user, data.notes);
   await audit(tx, user, 'DISTRIBUTOR_REVIEW', 'Registration', id, data);
+
+  if (status === 'REVISION_REQUIRED' && reg.publisher_id) {
+    const publisherUsers = await tx.user.findMany({
+      where: { publisher_id: reg.publisher_id, status: 'ACTIVE' },
+    });
+    for (const pubUser of publisherUsers) {
+      await tx.notification.create({
+        data: {
+          user_id: pubUser.id,
+          registration_id: id,
+          type: 'REVISION_REQUIRED',
+          title: 'Hasil Sidang Pentashihan Memerlukan Perbaikan Naskah',
+          payload: { link: `/publisher/registrations/${id}`, notes: data.notes },
+        },
+      });
+    }
+  } else if (status === 'READY_FOR_STT') {
+    const signatories = await tx.user.findMany({
+      where: {
+        status: 'ACTIVE',
+        roles: { some: { role: { code: { in: ['KEPALA_LPMQ', 'DOKUMENTATOR'] } } } },
+      },
+    });
+    for (const officer of signatories) {
+      await tx.notification.create({
+        data: {
+          user_id: officer.id,
+          registration_id: id,
+          type: 'READY_FOR_STT',
+          title: 'Naskah Siap Penetapan Surat Tanda Tashih (STT)',
+          payload: { link: `/internal/documents?id=${id}` },
+        },
+      });
+    }
+  }
+
   return tx.registration.findUnique({ where: { id } });
 }, { isolationLevel: 'ReadCommitted' });

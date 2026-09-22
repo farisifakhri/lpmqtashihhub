@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { handoverApi } from '@/api/handover.api';
+import { registrationApi } from '@/api/registration.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
+import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
+import { DistributorReviewDialog } from './DistributorReviewDialog';
 import {
   PackageCheck,
   Search,
@@ -27,10 +30,29 @@ import {
   Inbox,
   RotateCcw,
   CheckSquare,
+  Users,
+  BookOpen,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 
 export const DistributorHandoverInboxPage = () => {
   const { currentUser } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get('tab') || searchParams.get('stage');
+  const [hubStage, setHubStage] = useState(
+    urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+      ? 'MONITORING'
+      : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT'
+      ? 'ASSIGNMENT'
+      : 'HANDOVER'
+  );
+
+  const [waitingDistRegistrations, setWaitingDistRegistrations] = useState([]);
+  const [inProgressRegistrations, setInProgressRegistrations] = useState([]);
+  const [distLoading, setDistLoading] = useState(false);
+
+  const [assignmentModalId, setAssignmentModalId] = useState(null);
+  const [reviewDialogRegId, setReviewDialogRegId] = useState(null);
 
   const [handovers, setHandovers] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
@@ -107,6 +129,26 @@ export const DistributorHandoverInboxPage = () => {
     fetchHandovers();
     return () => { requestId.current += 1; };
   }, [activeTab, pagination.page, submittedSearch]);
+
+  const fetchDistributionData = async () => {
+    setDistLoading(true);
+    try {
+      const [waitingRes, progressRes] = await Promise.all([
+        registrationApi.listRegistrations({ status: 'WAITING_DISTRIBUTION' }),
+        registrationApi.listRegistrations({ status: 'TASHIH_IN_PROGRESS' }),
+      ]);
+      if (waitingRes?.data) setWaitingDistRegistrations(waitingRes.data);
+      if (progressRes?.data) setInProgressRegistrations(progressRes.data);
+    } catch (err) {
+      console.error('Error fetching distribution data:', err);
+    } finally {
+      setDistLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDistributionData();
+  }, [hubStage]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -331,7 +373,72 @@ export const DistributorHandoverInboxPage = () => {
         </div>
       )}
 
-      {/* Summary Stat Cards */}
+      {/* 3-Stage Workflow Hub Navigation */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => {
+            setHubStage('HANDOVER');
+            setSearchParams({ stage: 'HANDOVER' });
+          }}
+          className={clsx(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            hubStage === 'HANDOVER'
+              ? 'bg-white text-emerald-800 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          )}
+        >
+          <PackageCheck className="w-4 h-4" />
+          <span>1. Serah-Terima Fisik dari Verifikator</span>
+          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+            {pendingCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHubStage('ASSIGNMENT');
+            setSearchParams({ stage: 'ASSIGNMENT' });
+          }}
+          className={clsx(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            hubStage === 'ASSIGNMENT'
+              ? 'bg-white text-emerald-800 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          )}
+        >
+          <Users className="w-4 h-4" />
+          <span>2. Siap Penugasan Tim SK</span>
+          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+            {waitingDistRegistrations.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHubStage('MONITORING');
+            setSearchParams({ stage: 'MONITORING' });
+          }}
+          className={clsx(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            hubStage === 'MONITORING'
+              ? 'bg-white text-emerald-800 shadow-xs'
+              : 'text-slate-600 hover:text-slate-900'
+          )}
+        >
+          <ShieldCheck className="w-4 h-4" />
+          <span>3. Monitoring Sidang & Reviu</span>
+          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+            {inProgressRegistrations.length}
+          </span>
+        </button>
+      </div>
+
+      {hubStage === 'HANDOVER' && (
+        <>
+          {/* Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
@@ -689,6 +796,270 @@ export const DistributorHandoverInboxPage = () => {
               Berikutnya
             </Button>
           </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {hubStage === 'ASSIGNMENT' && (
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-700" />
+                Naskah Siap Penugasan Tim Pentashih (Langkah 1 SOP)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Naskah yang telah lolos verifikasi, lunas PNBP, dan fisik master telah diterima loket distributor.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchDistributionData}
+              disabled={distLoading}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${distLoading ? 'animate-spin' : ''}`} />}
+            >
+              Segarkan
+            </Button>
+          </div>
+
+          {distLoading ? (
+            <div className="py-16 text-center text-slate-500">
+              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-emerald-700" />
+              <p className="text-xs font-semibold">Memuat naskah siap distribusi...</p>
+            </div>
+          ) : waitingDistRegistrations.length === 0 ? (
+            <div className="py-16 text-center text-slate-500 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+                <Users className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-slate-800">Tidak ada naskah yang menunggu penugasan</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Seluruh naskah yang telah diterima fisiknya sudah ditetapkan SK Tim Pentashihnya.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[700px]">
+                <thead>
+                  <tr className="bg-slate-50/80 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                    <th className="py-3 px-6">Nomor & Tanggal</th>
+                    <th className="py-3 px-6">Judul Naskah & Penerbit</th>
+                    <th className="py-3 px-6">Layanan</th>
+                    <th className="py-3 px-6">Kesiapan Berkas</th>
+                    <th className="py-3 px-6 text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {waitingDistRegistrations.map((reg) => (
+                    <tr key={reg.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-4 px-6">
+                        <span className="font-mono font-bold text-slate-900 block">
+                          {reg.registration_no}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {new Date(reg.created_at).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-bold text-slate-900 block line-clamp-1">
+                          {reg.title}
+                        </span>
+                        <span className="text-emerald-800 font-semibold text-[11px]">
+                          {reg.publisher?.legal_name || 'Penerbit'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-medium text-slate-800 block">
+                          {reg.service_type?.name}
+                        </span>
+                        <span className="text-[11px] text-slate-400">
+                          {reg.service_type?.category?.name || 'Mushaf Cetak'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            <CheckCircle2 className="w-3 h-3" /> PNBP Lunas
+                          </span>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 block w-fit">
+                            <PackageCheck className="w-3 h-3" /> Fisik Diterima
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        {isAdmin ? (
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => setAssignmentModalId(reg.id)}
+                            className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold"
+                            icon={<Users className="w-3.5 h-3.5" />}
+                          >
+                            Tetapkan Tim Sidang
+                          </Button>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
+                            <Clock className="w-3.5 h-3.5" /> Menunggu penetapan oleh Admin
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {hubStage === 'MONITORING' && (
+        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-teal-700" />
+                Monitoring Sidang & Reviu Hasil Pentashihan (Langkah 2 & 3 SOP)
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Pantau progres telaah anggota sidang. Distributor mereviu kompilasi hasil pentashihan untuk penetapan STT atau revisi naskah.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchDistributionData}
+              disabled={distLoading}
+              icon={<RefreshCw className={`w-3.5 h-3.5 ${distLoading ? 'animate-spin' : ''}`} />}
+            >
+              Segarkan
+            </Button>
+          </div>
+
+          {distLoading ? (
+            <div className="py-16 text-center text-slate-500">
+              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-teal-700" />
+              <p className="text-xs font-semibold">Memuat progres sidang pentashihan...</p>
+            </div>
+          ) : inProgressRegistrations.length === 0 ? (
+            <div className="py-16 text-center text-slate-500 max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold text-slate-800">Tidak ada sidang aktif saat ini</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Naskah yang telah ditetapkan tim pentashihnya akan dimonitor progresnya di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {inProgressRegistrations.map((reg) => {
+                const assignments = reg.assignments || [];
+                const maxIter = assignments.reduce((max, a) => Math.max(max, a.iteration || 1), 1);
+                const currentAssignments = assignments.filter((a) => (a.iteration || 1) === maxIter);
+                const totalMembers = currentAssignments.length;
+                const completedMembers = currentAssignments.filter(
+                  (a) => a.status === 'COMPLETED' && a.reviews?.length > 0
+                ).length;
+                const isReadyToReview = totalMembers > 0 && completedMembers === totalMembers;
+
+                return (
+                  <div
+                    key={reg.id}
+                    className="p-5 sm:p-6 hover:bg-slate-50/60 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-2 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                          {reg.registration_no}
+                        </span>
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+                          Iterasi #{maxIter}
+                        </span>
+                        {isReadyToReview ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-teal-100 text-teal-900 border border-teal-300">
+                            <CheckCircle2 className="w-3 h-3" /> Seluruh Pentashih Selesai ({completedMembers}/{totalMembers})
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+                            <Clock className="w-3 h-3" /> Sidang Berjalan: {completedMembers} dari {totalMembers} Selesai
+                          </span>
+                        )}
+                      </div>
+
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 line-clamp-1">
+                          {reg.title}
+                        </h4>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          <span className="font-semibold text-slate-700">
+                            {reg.publisher?.legal_name || 'Penerbit'}
+                          </span>
+                          {' • '}
+                          <span>{reg.service_type?.name}</span>
+                        </p>
+                      </div>
+
+                      {/* Anggota Pentashih Badges */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span className="text-[11px] font-semibold text-slate-500">Anggota Sidang:</span>
+                        {currentAssignments.map((a) => {
+                          const rev = a.reviews?.[0];
+                          const isDone = a.status === 'COMPLETED' && rev;
+                          return (
+                            <span
+                              key={a.id}
+                              className={clsx(
+                                'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px]',
+                                isDone
+                                  ? rev.result === 'PASSED'
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold'
+                                    : 'bg-amber-50 text-amber-900 border border-amber-200 font-semibold'
+                                  : 'bg-slate-100 text-slate-600 border border-slate-200'
+                              )}
+                            >
+                              {isDone ? (
+                                rev.result === 'PASSED' ? (
+                                  <Check className="w-3 h-3 text-emerald-700" />
+                                ) : (
+                                  <AlertTriangle className="w-3 h-3 text-amber-700" />
+                                )
+                              ) : (
+                                <Clock className="w-3 h-3 text-slate-400" />
+                              )}
+                              <span>{a.assignee?.name || 'Pentashih'}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 shrink-0">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setReviewDialogRegId(reg.id)}
+                        className={clsx(
+                          'text-xs font-bold',
+                          isReadyToReview
+                            ? 'bg-teal-700 hover:bg-teal-800 text-white shadow-xs'
+                            : 'bg-slate-800 hover:bg-slate-900 text-white'
+                        )}
+                        icon={<ShieldCheck className="w-4 h-4" />}
+                      >
+                        {isReadyToReview ? 'Reviu Hasil Sidang (Langkah 3)' : 'Lihat Hasil Anggota'}
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
