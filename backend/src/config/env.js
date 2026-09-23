@@ -4,8 +4,16 @@ dotenv.config();
 const isProduction = process.env.NODE_ENV === 'production';
 const rawJwtSecret = process.env.JWT_SECRET;
 
-if (isProduction && (!rawJwtSecret || rawJwtSecret === 'default_secret_fallback_do_not_use_in_prod')) {
-  throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is required and must not use fallback in production!');
+const INSECURE_JWT_SECRETS = [
+  'default_secret_fallback_do_not_use_in_prod',
+  'lpmq_secret_key_super_secure_jwt_2026_pentashihan',
+  'secret',
+  'secret123',
+  'changeme',
+];
+
+if (isProduction && (!rawJwtSecret || INSECURE_JWT_SECRETS.includes(rawJwtSecret) || rawJwtSecret.length < 32)) {
+  throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is required, must not use default/example fallback values, and must be at least 32 characters in production!');
 }
 
 if (!rawJwtSecret) {

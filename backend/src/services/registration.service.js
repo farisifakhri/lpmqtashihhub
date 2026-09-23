@@ -270,6 +270,38 @@ export const createDraft = async (data, user, req) => {
   // Normalisasi daftar addon
   const requestedAddonIds = data.addons || data.addon_ids || [];
 
+  // Validasi kepemilikan berkas lampiran (P0)
+  const fileIdsToCheck = [
+    data.cover_file_id,
+    data.surat_permohonan_file_id,
+    data.surat_pernyataan_perubahan_file_id,
+    data.apk_file_id,
+    data.bukti_tashih_file_id,
+    data.surat_rekomendasi_file_id,
+  ].filter(Boolean);
+
+  if (fileIdsToCheck.length > 0 && !user.roles.includes('SUPERADMIN')) {
+    const files = await prisma.storedFile.findMany({
+      where: { id: { in: fileIdsToCheck } },
+      select: { id: true, owner_id: true },
+    });
+    const foundIds = new Set(files.map((f) => f.id));
+    for (const fId of fileIdsToCheck) {
+      if (!foundIds.has(fId)) {
+        const error = new Error(`Berkas lampiran dengan ID ${fId} tidak ditemukan di sistem.`);
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+    for (const f of files) {
+      if (f.owner_id !== user.id) {
+        const error = new Error('Akses ditolak: Satu atau lebih berkas lampiran bukan milik akun Anda.');
+        error.statusCode = 403;
+        throw error;
+      }
+    }
+  }
+
   // Mendukung pendaftaran lebih dari 1 naskah dalam satu kali permohonan
   const manuscriptList =
     Array.isArray(data.manuscripts) && data.manuscripts.length > 0
@@ -920,6 +952,33 @@ export const getDetail = async (id, user) => {
   }
   if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
+    if (reg.verification_assignments) {
+      reg.verification_assignments = reg.verification_assignments.map(a => ({
+        id: a.id,
+        status: a.status,
+        assigned_at: a.assigned_at,
+        verifier: a.verifier ? { name: a.verifier.name } : null,
+      }));
+    }
+    if (reg.physical_handovers) {
+      reg.physical_handovers = reg.physical_handovers.map(h => ({
+        id: h.id,
+        receipt_no: h.receipt_no,
+        status: h.status,
+        stage: h.stage,
+        created_at: h.created_at,
+        handed_over_at: h.handed_over_at,
+        received_at: h.received_at,
+      }));
+    }
+    if (reg.assignments) {
+      reg.assignments = reg.assignments.map(a => ({
+        id: a.id,
+        stage: a.stage,
+        iteration: a.iteration,
+        status: a.status,
+      }));
+    }
   }
 
   let operational_state = null;

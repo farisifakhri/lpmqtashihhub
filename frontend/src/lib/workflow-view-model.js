@@ -6,16 +6,8 @@
  * Menghasilkan model status, fase, pemilik tindakan, SLA, dan blocker secara deterministik.
  */
 
-export const WORKFLOW_PHASES = [
-  { key: 'REGISTRATION', label: 'Pendaftaran', number: 1 },
-  { key: 'VERIFICATION', label: 'Verifikasi', number: 2 },
-  { key: 'PAYMENT', label: 'Pembayaran', number: 3 },
-  { key: 'HANDOVER', label: 'Serah-terima', number: 4 },
-  { key: 'TASHIH', label: 'Pentashihan', number: 5 },
-  { key: 'STT_ISSUANCE', label: 'Penerbitan STT', number: 6 },
-  { key: 'DOCUMENTATION', label: 'Dokumentasi', number: 7 },
-  { key: 'COMPLETED', label: 'Selesai', number: 8 },
-];
+import { WORKFLOW_PHASES } from '@/features/workflow/workflow-phases';
+export { WORKFLOW_PHASES };
 
 export const STATUS_DEFINITIONS = {
   DRAFT: {
@@ -237,7 +229,24 @@ export function getWorkflowViewModel(registration, currentUser) {
       operationalNextAction = 'Serahkan master fisik ke Distributor (Langkah 7 SOP)';
     }
   } else if (status === 'REVISION_REQUIRED') {
-    if (
+    const isTashihRevision =
+      registration.revision_source === 'TASHIH' ||
+      (Array.isArray(registration.assignments) && registration.assignments.length > 0) ||
+      registration.status_histories?.some(
+        (h) => (h.from_status === 'TASHIH_IN_PROGRESS' || h.from_status === 'WAITING_DISTRIBUTION') && h.to_status === 'REVISION_REQUIRED'
+      );
+
+    if (isTashihRevision) {
+      operationalState = 'TASHIH_REVISION_REQUIRED';
+      operationalStatusLabel = 'Perlu Perbaikan Naskah Sidang';
+      operationalOwnerRole = 'ADMIN_PENERBIT';
+      operationalOwnerRoleLabel = 'Penerbit';
+      operationalNextAction = 'Unggah perbaikan naskah / dumi';
+      blockedReason =
+        registration.revision_notes ||
+        registration.status_histories?.[registration.status_histories.length - 1]?.notes ||
+        'Hasil sidang pentashihan memerlukan koreksi lafazh/rasm/tanda baca atau naskah dumi.';
+    } else if (
       registration.revision_source === 'PHYSICAL_MASTER' ||
       registration.physical_master_intake?.status === 'RETURNED'
     ) {
@@ -308,16 +317,23 @@ export function getWorkflowViewModel(registration, currentUser) {
     nextActionPath = `/internal/verifications/${assignmentId}`;
   }
 
+  const isTashihRev = operationalState === 'TASHIH_REVISION_REQUIRED';
+  const effectivePhase = isTashihRev ? 'TASHIH' : def.phase;
+  const effectiveStatusLabel = isTashihRev ? 'Perlu Perbaikan Naskah Sidang' : def.statusLabel;
+  const effectiveStatusDescription = isTashihRev
+    ? 'Catatan telaah sidang pentashihan memerlukan koreksi lafazh, rasm usmani, tanda baca, atau naskah dumi oleh pemohon.'
+    : def.statusDescription;
+
   return {
-    phase: def.phase,
+    phase: effectivePhase,
     statusCode: status,
     operationalState,
     operationalStatusLabel,
     operationalOwnerRole,
     operationalOwnerRoleLabel,
     operationalNextAction,
-    statusLabel: def.statusLabel,
-    statusDescription: def.statusDescription,
+    statusLabel: effectiveStatusLabel,
+    statusDescription: effectiveStatusDescription,
     ownerRole: def.ownerRole,
     ownerRoleLabel: def.ownerRoleLabel,
     ownerName,

@@ -8,16 +8,8 @@
  * - 8 Fase Alur Manusiawi: Pendaftaran, Verifikasi, Pembayaran, Serah-terima, Pentashihan, Penerbitan STT, Dokumentasi, Selesai
  */
 
-export const WORKFLOW_PHASES = [
-  { id: 1, key: 'REGISTRATION', label: 'Pendaftaran', shortLabel: 'Pendaftaran', description: 'Permohonan data naskah & kelengkapan berkas' },
-  { id: 2, key: 'VERIFICATION', label: 'Verifikasi', shortLabel: 'Verifikasi', description: 'Pemeriksaan administrasi & master fisik' },
-  { id: 3, key: 'PAYMENT', label: 'Pembayaran', shortLabel: 'Pembayaran', description: 'Penagihan billing PNBP SIMPONI & validasi' },
-  { id: 4, key: 'HANDOVER', label: 'Serah-terima', shortLabel: 'Serah-terima', description: 'Serah-terima master fisik ke distributor' },
-  { id: 5, key: 'TASHIH', label: 'Pentashihan', shortLabel: 'Pentashihan', description: 'Sidang koreksi lafaz & tanda baca mushaf' },
-  { id: 6, key: 'STT_ISSUANCE', label: 'Penerbitan STT', shortLabel: 'Penerbitan STT', description: 'Penetapan Surat Tanda Tashih Kepala LPMQ' },
-  { id: 7, key: 'DOCUMENTATION', label: 'Dokumentasi', shortLabel: 'Dokumentasi', description: 'Penyusunan Berita Acara & deposit 5 eksemplar' },
-  { id: 8, key: 'COMPLETED', label: 'Selesai', shortLabel: 'Selesai', description: 'Seluruh tahapan tuntas dan berkas terbit' },
-];
+import { WORKFLOW_PHASES } from '@/features/workflow/workflow-phases';
+export { WORKFLOW_PHASES };
 
 export const TOKENS = {
   colors: {
