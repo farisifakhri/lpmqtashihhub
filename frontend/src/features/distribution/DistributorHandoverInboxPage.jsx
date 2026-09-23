@@ -91,8 +91,9 @@ export const DistributorHandoverInboxPage = () => {
     ? [currentUser.role]
     : [];
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
-  const canConfirm = isDistributor;
+  const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
+  const isAdmin = isSuperAdmin || userRoles.includes('ADMIN');
+  const canConfirm = isDistributor || isSuperAdmin;
 
   const fetchHandovers = async () => {
     const request = ++requestId.current;
@@ -593,6 +594,7 @@ export const DistributorHandoverInboxPage = () => {
             const isPending = item.status === 'PENDING';
             const isReceived = item.status === 'RECEIVED';
             const isReturned = item.status === 'RETURNED';
+            const isTargetOfficer = isSuperAdmin || (item.to_user_id || toUser.id) === currentUser?.id;
 
             return (
               <div
@@ -724,29 +726,35 @@ export const DistributorHandoverInboxPage = () => {
                     </Button>
 
                     {isPending && canConfirm && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openReturnModal(item)}
-                          disabled={actionLoading}
-                          className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50 font-semibold"
-                        >
-                          <AlertTriangle className="w-3.5 h-3.5 mr-1" />
-                          Tolak / Kembalikan Fisik
-                        </Button>
+                      isTargetOfficer ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openReturnModal(item)}
+                            disabled={actionLoading}
+                            className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50 font-semibold"
+                          >
+                            <AlertTriangle className="w-3.5 h-3.5 mr-1" />
+                            Tolak / Kembalikan Fisik
+                          </Button>
 
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => openReceiveModal(item)}
-                          disabled={actionLoading}
-                          className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-4 py-2"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                          Konfirmasi Diterima (Langkah 8)
-                        </Button>
-                      </>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => openReceiveModal(item)}
+                            disabled={actionLoading}
+                            className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-4 py-2"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                            Konfirmasi Diterima (Langkah 8)
+                          </Button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-500 italic bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                          Menunggu Petugas: {toUser.name || 'Distributor Tujuan'}
+                        </span>
+                      )
                     )}
 
                     {isReceived && (

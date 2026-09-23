@@ -825,6 +825,21 @@ export const listRegistrations = async ({
           include: { verifier: { select: { id: true, name: true } } },
         },
         physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
+        assignments: {
+          select: {
+            id: true,
+            stage: true,
+            iteration: true,
+            status: true,
+            due_at: true,
+            assignee_id: true,
+            assignee: { select: { id: true, name: true, email: true } },
+            reviews: {
+              select: { id: true, result: true, notes: true, completed_at: true },
+              orderBy: { completed_at: 'desc' },
+            },
+          },
+        },
       },
       orderBy: fifo ? [{ stage_entered_at: 'asc' }, { id: 'asc' }] : [{ created_at: 'desc' }, { id: 'asc' }],
     }),

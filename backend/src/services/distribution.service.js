@@ -95,13 +95,14 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   await audit(tx, user, 'DISTRIBUTOR_REVIEW', 'Registration', id, data);
 
   if (status === 'REVISION_REQUIRED' && reg.publisher_id) {
-    const publisherUsers = await tx.user.findMany({
-      where: { publisher_id: reg.publisher_id, status: 'ACTIVE' },
+    const publisher = await tx.publisher.findUnique({
+      where: { id: reg.publisher_id },
+      select: { user_id: true },
     });
-    for (const pubUser of publisherUsers) {
+    if (publisher?.user_id) {
       await tx.notification.create({
         data: {
-          user_id: pubUser.id,
+          user_id: publisher.user_id,
           registration_id: id,
           type: 'REVISION_REQUIRED',
           title: 'Hasil Sidang Pentashihan Memerlukan Perbaikan Naskah',

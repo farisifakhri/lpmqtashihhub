@@ -15,8 +15,17 @@ import {
   Check,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useAuth } from '@/features/auth/AuthContext';
 
 export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) => {
+  const { currentUser } = useAuth();
+  const userRoles = Array.isArray(currentUser?.roles)
+    ? currentUser.roles
+    : currentUser?.role
+    ? [currentUser.role]
+    : [];
+  const canDecide = userRoles.includes('DISTRIBUTOR') || userRoles.includes('SUPERADMIN') || currentUser?.role === 'DISTRIBUTOR' || currentUser?.role === 'SUPERADMIN';
+
   const [registration, setRegistration] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -265,97 +274,104 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
               {/* Keputusan Distributor */}
               {allCompleted && (
-                <div className="space-y-4 pt-2 border-t border-slate-100">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                      Keputusan Tindak Lanjut Distributor
-                    </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Opsi Lanjut STT */}
-                      <label
-                        className={clsx(
-                          'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3',
-                          !canPassSTT
-                            ? 'opacity-50 border-slate-200 bg-slate-50 cursor-not-allowed'
-                            : decision === 'PASSED'
-                            ? 'border-emerald-600 bg-emerald-50/50 cursor-pointer'
-                            : 'border-slate-200 hover:border-slate-300 cursor-pointer'
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="distributorDecision"
-                          value="PASSED"
-                          disabled={!canPassSTT}
-                          checked={decision === 'PASSED'}
-                          onChange={(e) => setDecision(e.target.value)}
-                          className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
-                        />
-                        <div>
-                          <div className="font-bold text-xs text-slate-900">
-                            Rekomendasikan Penetapan STT
-                          </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.
-                          </div>
-                        </div>
+                canDecide ? (
+                  <div className="space-y-4 pt-2 border-t border-slate-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Keputusan Tindak Lanjut Distributor
                       </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {/* Opsi Lanjut STT */}
+                        <label
+                          className={clsx(
+                            'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3',
+                            !canPassSTT
+                              ? 'opacity-50 border-slate-200 bg-slate-50 cursor-not-allowed'
+                              : decision === 'PASSED'
+                              ? 'border-emerald-600 bg-emerald-50/50 cursor-pointer'
+                              : 'border-slate-200 hover:border-slate-300 cursor-pointer'
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="distributorDecision"
+                            value="PASSED"
+                            disabled={!canPassSTT}
+                            checked={decision === 'PASSED'}
+                            onChange={(e) => setDecision(e.target.value)}
+                            className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          <div>
+                            <div className="font-bold text-xs text-slate-900">
+                              Rekomendasikan Penetapan STT
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.
+                            </div>
+                          </div>
+                        </label>
 
-                      {/* Opsi Perbaikan Penerbit */}
-                      <label
-                        className={clsx(
-                          'p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3',
-                          decision === 'REVISION_REQUIRED'
-                            ? 'border-amber-500 bg-amber-50/50'
-                            : 'border-slate-200 hover:border-slate-300'
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="distributorDecision"
-                          value="REVISION_REQUIRED"
-                          checked={decision === 'REVISION_REQUIRED'}
-                          onChange={(e) => setDecision(e.target.value)}
-                          className="mt-0.5 text-amber-600 focus:ring-amber-500"
-                        />
-                        <div>
-                          <div className="font-bold text-xs text-slate-900">
-                            Kembalikan ke Penerbit (Perbaikan)
+                        {/* Opsi Perbaikan Penerbit */}
+                        <label
+                          className={clsx(
+                            'p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3',
+                            decision === 'REVISION_REQUIRED'
+                              ? 'border-amber-500 bg-amber-50/50'
+                              : 'border-slate-200 hover:border-slate-300'
+                          )}
+                        >
+                          <input
+                            type="radio"
+                            name="distributorDecision"
+                            value="REVISION_REQUIRED"
+                            checked={decision === 'REVISION_REQUIRED'}
+                            onChange={(e) => setDecision(e.target.value)}
+                            className="mt-0.5 text-amber-600 focus:ring-amber-500"
+                          />
+                          <div>
+                            <div className="font-bold text-xs text-slate-900">
+                              Kembalikan ke Penerbit (Perbaikan)
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              Status beralih ke <code>REVISION_REQUIRED</code>. Penerbit memperbaiki master dan kirim ulang.
+                            </div>
                           </div>
-                          <div className="text-[11px] text-slate-500 mt-0.5">
-                            Status beralih ke <code>REVISION_REQUIRED</code>. Penerbit memperbaiki master dan kirim ulang.
-                          </div>
-                        </div>
-                      </label>
+                        </label>
+                      </div>
+
+                      {!canPassSTT && (
+                        <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          <span>
+                            Rekomendasi STT terkunci karena ada pentashih yang memberikan catatan perbaikan.
+                          </span>
+                        </p>
+                      )}
                     </div>
 
-                    {!canPassSTT && (
-                      <p className="text-[11px] text-amber-700 mt-1.5 flex items-center gap-1">
-                        <Info className="w-3.5 h-3.5 shrink-0" />
-                        <span>
-                          Rekomendasi STT terkunci karena ada pentashih yang memberikan catatan perbaikan.
-                        </span>
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Catatan Keputusan / Surat Revisi */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        Catatan Keputusan Reviu Distributor
-                      </label>
-                      <span className="text-[11px] text-slate-400">Wajib diisi</span>
+                    {/* Catatan Keputusan / Surat Revisi */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Catatan Keputusan Reviu Distributor
+                        </label>
+                        <span className="text-[11px] text-slate-400">Wajib diisi</span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        value={distributorNotes}
+                        onChange={(e) => setDistributorNotes(e.target.value)}
+                        placeholder="Tuliskan alasan keputusan atau rekap arahan perbaikan untuk penerbit..."
+                        className="w-full p-3 text-xs bg-slate-50/70 border border-slate-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-700 transition-all font-mono leading-relaxed"
+                      />
                     </div>
-                    <textarea
-                      rows={4}
-                      value={distributorNotes}
-                      onChange={(e) => setDistributorNotes(e.target.value)}
-                      placeholder="Tuliskan alasan keputusan atau rekap arahan perbaikan untuk penerbit..."
-                      className="w-full p-3 text-xs bg-slate-50/70 border border-slate-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-700 transition-all font-mono leading-relaxed"
-                    />
                   </div>
-                </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-center gap-2 mt-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                    <span>Mode Pratinjau: Seluruh anggota tim pentashih telah menyelesaikan sidang. Pengambilan keputusan reviu merupakan wewenang Koordinator Distributor.</span>
+                  </div>
+                )
               )}
             </>
           ) : null}
@@ -369,18 +385,20 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
               onClick={onClose}
               disabled={submitting}
             >
-              Batal
+              {canDecide ? 'Batal' : 'Tutup'}
             </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              size="sm"
-              disabled={submitting || !allCompleted || !distributorNotes.trim()}
-              className="bg-teal-700 hover:bg-teal-800 text-white font-bold"
-              icon={<Send className="w-3.5 h-3.5" />}
-            >
-              {submitting ? 'Menyimpan...' : 'Simpan Keputusan Distributor'}
-            </Button>
+            {canDecide && (
+              <Button
+                type="submit"
+                variant="primary"
+                size="sm"
+                disabled={submitting || !allCompleted || !distributorNotes.trim()}
+                className="bg-teal-700 hover:bg-teal-800 text-white font-bold"
+                icon={<Send className="w-3.5 h-3.5" />}
+              >
+                {submitting ? 'Menyimpan...' : 'Simpan Keputusan Distributor'}
+              </Button>
+            )}
           </div>
         </form>
       </div>
