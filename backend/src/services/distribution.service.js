@@ -54,6 +54,8 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
 
 export async function listMyAssignments(user, query = {}) {
   requireRole(user, ['PENTASHIH', 'SUPERADMIN']);
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 20;
   const where = { assignee_id: user.id };
   if (query.status === 'COMPLETED') {
     where.status = 'COMPLETED';
@@ -65,6 +67,8 @@ export async function listMyAssignments(user, query = {}) {
 
   return prisma.assignment.findMany({
     where,
+    skip: (page - 1) * limit,
+    take: limit,
     include: {
       registration: {
         include: {

@@ -5,6 +5,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { DistributorHandoverInboxPage } from './DistributorHandoverInboxPage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as HandoverApiModule from '@/api/handover.api';
+import * as RegistrationApiModule from '@/api/registration.api';
+import * as MasterApiModule from '@/api/master.api';
 
 describe('DistributorHandoverInboxPage Component', () => {
   beforeEach(() => {
@@ -174,6 +176,26 @@ describe('DistributorHandoverInboxPage Component', () => {
         })
       );
     });
+  });
+
+  it('membuka dialog penugasan dari antrean distributor untuk admin', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'ADMIN', roles: ['ADMIN'] } });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }] });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
+    vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /Penugasan Tim/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Tetapkan Tim Sidang/i }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('membuka dialog reviu dari panel monitoring', async () => {
+    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] }] });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] } });
+    render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
+    fireEvent.click(screen.getByRole('button', { name: /Monitoring Sidang/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Lihat Hasil Anggota/i }));
+    expect(await screen.findByText(/Reviu Hasil Pentashihan/i)).toBeInTheDocument();
   });
 });
 

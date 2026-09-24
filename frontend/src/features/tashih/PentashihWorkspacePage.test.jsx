@@ -162,6 +162,7 @@ describe('PentashihWorkspacePage Component', () => {
           notes: 'Seluruh rasm dan harakat telah ditashih dengan cermat.',
         })
       );
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
 
@@ -182,4 +183,3 @@ describe('PentashihWorkspacePage Component', () => {
     });
   });
 });
-

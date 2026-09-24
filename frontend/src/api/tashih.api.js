@@ -8,6 +8,8 @@ export const tashihApi = {
   getMyAssignments: async (params = {}) => {
     const query = new URLSearchParams();
     if (params.status) query.append('status', params.status);
+    if (params.page) query.append('page', String(params.page));
+    if (params.limit) query.append('limit', String(params.limit));
     const queryString = query.toString();
     return apiClient(queryString ? `/assignments/my-tasks?${queryString}` : '/assignments/my-tasks');
   },

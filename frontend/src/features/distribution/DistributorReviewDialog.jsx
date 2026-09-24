@@ -107,8 +107,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     e.preventDefault();
     if (!registration || !allCompleted) return;
 
-    if (!distributorNotes.trim()) {
-      setError('Catatan keputusan distributor wajib diisi.');
+    if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
+      setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
       return;
     }
 
@@ -360,6 +360,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                       <textarea
                         rows={4}
                         value={distributorNotes}
+                        maxLength={10000}
                         onChange={(e) => setDistributorNotes(e.target.value)}
                         placeholder="Tuliskan alasan keputusan atau rekap arahan perbaikan untuk penerbit..."
                         className="w-full p-3 text-xs bg-slate-50/70 border border-slate-300 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-700 transition-all font-mono leading-relaxed"

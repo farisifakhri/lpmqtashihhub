@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../src/config/database.js';
 import { recordReview, approveDistribution } from '../src/services/distribution.service.js';
-import { reviewSchema } from '../src/validators/workflow.validator.js';
+import { reviewSchema, myTasksQuerySchema } from '../src/validators/workflow.validator.js';
+import { handoverQuerySchema } from '../src/validators/handover.validator.js';
 
 function createMockTx(overrides = {}) {
   const mockTx = {
@@ -53,6 +54,21 @@ test('reviewSchema validates review result and notes correctly', () => {
   assert.equal(reviewSchema.body.safeParse({ result: 'REVISION_REQUIRED', notes: 'Perbaiki ayat 15 surat Al-Baqarah' }).success, true);
   // Invalid result
   assert.equal(reviewSchema.body.safeParse({ result: 'INVALID_STATUS', notes: 'Catatan' }).success, false);
+});
+
+test('myTasksQuerySchema bounds paging and rejects unsupported filters', () => {
+  assert.deepEqual(myTasksQuerySchema.query.parse({}), { page: 1, limit: 20 });
+  assert.deepEqual(myTasksQuerySchema.query.parse({ status: 'ACTIVE', page: '2', limit: '50' }), { status: 'ACTIVE', page: 2, limit: 50 });
+  assert.equal(myTasksQuerySchema.query.safeParse({ status: 'UNKNOWN' }).success, false);
+  assert.equal(myTasksQuerySchema.query.safeParse({ page: '0' }).success, false);
+  assert.equal(myTasksQuerySchema.query.safeParse({ limit: '101' }).success, false);
+  assert.equal(myTasksQuerySchema.query.safeParse({ role: 'SUPERADMIN' }).success, false);
+});
+
+test('handoverQuerySchema interprets false literally and bounds search', () => {
+  assert.equal(handoverQuerySchema.query.parse({ my_tasks: 'false' }).my_tasks, false);
+  assert.equal(handoverQuerySchema.query.safeParse({ search: 'a'.repeat(192) }).success, false);
+  assert.equal(handoverQuerySchema.query.safeParse({ stage: 'UNKNOWN' }).success, false);
 });
 
 test('recordReview enforces PENTASHIH role and task ownership', async () => {
@@ -321,4 +337,3 @@ test('approveDistribution transitions to REVISION_REQUIRED and notifies publishe
     prisma.$transaction = originalTx;
   }
 });
-
