@@ -9,7 +9,7 @@
     "dev:backend": "nodemon src/server.js",
     "build": "echo Backend is ready (Node.js ES Modules - no build step required)",
     "start": "node src/server.js",
-    "test": "node test-api.js",
+    "test": "node tests/setup-core-team.fixture.js && node test-api.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "node prisma/seed.js",
