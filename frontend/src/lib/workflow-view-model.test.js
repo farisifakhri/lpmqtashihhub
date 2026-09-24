@@ -105,5 +105,32 @@ describe('Centralized Workflow View Model', () => {
     expect(assignedVm.operationalStatusLabel).toBe('Verifikator telah ditugaskan');
     expect(assignedVm.operationalNextAction).toBe('Mulai pemeriksaan');
   });
+
+  it('differentiates REVISION_REQUIRED origin between verification and pentashihan', () => {
+    // 1. Revision from verification
+    const verifRevisionReg = {
+      id: 'reg-rev-verif',
+      status: 'REVISION_REQUIRED',
+      assignments: [],
+    };
+    const verifVm = getWorkflowViewModel(verifRevisionReg, { role: 'ADMIN_PENERBIT' });
+    expect(verifVm.phase).toBe('VERIFICATION');
+    expect(verifVm.statusLabel).toBe('Perlu Perbaikan Berkas');
+
+    // 2. Revision from pentashihan (has assignments / distributor review)
+    const tashihRevisionReg = {
+      id: 'reg-rev-tashih',
+      status: 'REVISION_REQUIRED',
+      assignments: [{ id: 'a1', status: 'COMPLETED' }],
+      status_histories: [
+        { from_status: 'TASHIH_IN_PROGRESS', to_status: 'REVISION_REQUIRED', notes: 'Perbaiki lafaz QS 2:255' },
+      ],
+    };
+    const tashihVm = getWorkflowViewModel(tashihRevisionReg, { role: 'ADMIN_PENERBIT' });
+    expect(tashihVm.phase).toBe('TASHIH');
+    expect(tashihVm.statusLabel).toBe('Perlu Perbaikan Naskah Sidang');
+    expect(tashihVm.operationalState).toBe('TASHIH_REVISION_REQUIRED');
+    expect(tashihVm.operationalNextAction).toBe('Unggah perbaikan naskah / dumi');
+  });
 });
 

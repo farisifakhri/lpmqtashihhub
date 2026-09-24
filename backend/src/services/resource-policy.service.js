@@ -57,7 +57,8 @@ export async function assertVerifierPaymentAccess(payment, user, db, write = fal
   }
 
   if (write) {
-    // Aksi substantif verifikasi / penolakan pembayaran: HANYA Verifikator penugasan
+    // Aksi substantif verifikasi / penolakan pembayaran: HANYA Verifikator penugasan atau Superadmin
+    if (isSuperadmin) return;
     if (!isVerifier) {
       fail(403, 'Verifikasi dan pengembalian bukti pembayaran hanya dapat dilakukan oleh Verifikator penugasan.');
     }

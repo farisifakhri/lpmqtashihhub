@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { WORKFLOW_PHASES, TOKENS } from '@/app/tokens';
+import { TOKENS } from '@/app/tokens';
+import { WORKFLOW_PHASES } from '@/features/workflow/workflow-phases';
+import { STATUS_DEFINITIONS } from '@/lib/workflow-view-model';
 import {
   Check,
   Clock,
@@ -36,12 +38,13 @@ export const WorkflowTimeline = ({
   const [expandedPhase, setExpandedPhase] = useState(null);
 
   const statusConfig = TOKENS.registrationStatus[currentStatus] || TOKENS.registrationStatus.DRAFT;
-  const activePhaseKey = statusConfig.phaseKey || 'REGISTRATION';
+  const activePhaseKey = STATUS_DEFINITIONS[currentStatus]?.phase || statusConfig.phaseKey || 'REGISTRATION';
 
   const activePhaseIndex = WORKFLOW_PHASES.findIndex((p) => p.key === activePhaseKey);
   const currentPhaseNumber = activePhaseIndex >= 0 ? activePhaseIndex + 1 : 1;
 
   const isRevision = currentStatus === 'REVISION_REQUIRED' || currentStatus === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED';
+  const isCancelled = currentStatus === 'CANCELLED';
 
   const toggleExpand = (phaseId) => {
     setExpandedPhase((prev) => (prev === phaseId ? null : phaseId));
@@ -114,7 +117,7 @@ export const WorkflowTimeline = ({
 
               {isCurrent && (
                 <span className="text-[11px] font-medium text-sky-700 mt-0.5">
-                  Fase Aktif
+                  {isCancelled ? 'Dibatalkan' : 'Fase Aktif'}
                 </span>
               )}
             </div>
@@ -173,7 +176,7 @@ export const WorkflowTimeline = ({
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isCurrent && (
                     <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">
-                      Aktif
+                      {isCancelled ? 'Dibatalkan' : 'Aktif'}
                     </span>
                   )}
                   {isExpanded ? (

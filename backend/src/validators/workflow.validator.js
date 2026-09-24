@@ -35,3 +35,11 @@ export const paymentQuerySchema = {
   }),
 };
 
+export const myTasksQuerySchema = {
+  query: z.object({
+    status: z.enum(['ACTIVE', 'COMPLETED', 'ASSIGNED', 'IN_PROGRESS', 'OVERDUE']).optional(),
+    page: z.coerce.number().int().min(1).max(10000).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }).strict(),
+};
+
