@@ -38,6 +38,7 @@ const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signature
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
+const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 
 export const router = createBrowserRouter([
@@ -148,7 +149,7 @@ export const router = createBrowserRouter([
       {
         path: 'internal/distributions',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
           </ProtectedRoute>
         ),
@@ -165,25 +166,7 @@ export const router = createBrowserRouter([
         path: 'internal/tashih',
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'SUPERADMIN']}>
-            <ModulePlaceholder
-              moduleCode="TSH-01"
-              title="Sidang & Catatan Tashih Naskah"
-              moduleName="TSH-01/02 Pentashihan Bertahap"
-              sprintTarget="Sprint 4"
-              description="Pencatatan koreksi lafaz, rasm usmani, harakat, ayat, dan tanda waqaf pada 3 tahap: Awal, Perbaikan, dan Dumi."
-              targetTables={['tashih_reviews', 'assignments', 'registrations', 'distribution_teams']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=TASHIH_IN_PROGRESS', desc: 'Naskah sedang dalam tahap pentashihan' },
-                { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Rekomendasi lanjut STT / revisi' },
-              ]}
-              allowedRoles={['PENTASHIH', 'SUPERADMIN']}
-              sopReference="SOP Pentashihan Master Mushaf Al-Qur'an - Pelaksanaan Sidang (v2.2)"
-              businessRules={[
-                'Pencatatan koreksi terbagi menjadi 3 tahap: Awal, Perbaikan, dan Dumi',
-                'Riwayat koreksi bersifat append-only dan tidak boleh ditimpa',
-                'Rekomendasi pentashih menjadi dasar penetapan STT oleh Kepala LPMQ',
-              ]}
-            />
+            <PentashihWorkspacePage />
           </ProtectedRoute>
         ),
       },

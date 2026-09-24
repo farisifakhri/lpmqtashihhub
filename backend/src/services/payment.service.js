@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { ownedFile } from './storage.service.js';
+import { assertVerifierPaymentAccess } from './resource-policy.service.js';
 import { fail, requireRole, registration, requireStatus, requireOwner, move, audit } from './workflow-utils.js';
 import { queueItems, queuePagination } from './queue-utils.js';
 
@@ -165,16 +166,7 @@ export const getPaymentDetail = async (id, user) => {
   });
   if (!payment) fail(404, 'Tagihan pembayaran tidak ditemukan.');
 
-  const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN');
-  const isVerifier = user.roles.includes('VERIFIKATOR');
-  const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === payment.registration.publisher_id;
-
-  if (isOwnerPublisher) {
-    // Publisher only sees their own payment
-  } else if (!isHead && !isAdmin && !isVerifier) {
-    fail(403, 'Anda tidak memiliki hak akses untuk melihat tagihan ini.');
-  }
+  await assertVerifierPaymentAccess(payment, user, prisma, false);
 
   let receiptFile = null;
   if (payment.receipt_file_id) {
@@ -213,10 +205,17 @@ export const getRegistrationPayment = async (registrationId, user) => {
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN');
-  const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === reg.publisher_id;
+  let isAssignedVerifier = false;
+  if (user.roles.includes('VERIFIKATOR')) {
+    const assignment = await prisma.verificationAssignment.findFirst({
+      where: { registration_id: registrationId },
+      orderBy: { assigned_at: 'desc' },
+    });
+    isAssignedVerifier = assignment?.verifier_id === user.id;
+  }
 
-  if (!isOwnerPublisher && !isHead && !isAdmin && !isVerifier) {
+  if (!isOwnerPublisher && !isHead && !isAdmin && !isAssignedVerifier) {
     fail(403, 'Anda tidak memiliki hak akses untuk melihat tagihan naskah ini.');
   }
 

@@ -93,6 +93,13 @@ describe('Redesign UI/UX Reusable Components', () => {
     expect(screen.getAllByText(/Selesai/i).length).toBeGreaterThan(0);
   });
 
+  it('WorkflowTimeline menampilkan revisi dan pembatalan sesuai status registrasi', () => {
+    const { rerender } = render(<WorkflowTimeline currentStatus="REVISION_REQUIRED" />);
+    expect(screen.getAllByText(/Perlu Perbaikan Berkas/i).length).toBeGreaterThan(0);
+    rerender(<WorkflowTimeline currentStatus="CANCELLED" />);
+    expect(screen.getAllByText(/Dibatalkan/i).length).toBeGreaterThan(0);
+  });
+
   it('ConfirmationSummaryDialog merangkum rincian sebelum submit', () => {
     const handleConfirm = vi.fn();
     const handleClose = vi.fn();

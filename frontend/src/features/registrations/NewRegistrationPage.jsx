@@ -49,9 +49,9 @@ const JENIS_NASKAH_OPTIONS = [
 ];
 
 const MATERI_TAMBAHAN_OPTIONS = [
-  'Azbabun Nuzul',
+  'Asbabun Nuzul',
   'Hadis',
-  'Tafsir',
+  'Mutiara Hikmah',
   "Do'a Tertentu",
   'Kisah-Kisah',
   'Lainnya',
@@ -461,10 +461,10 @@ export const NewRegistrationPage = () => {
         {/* 1. Nama / Brand Mushaf */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-800">
-            Nama / Brand Mushaf <span className="text-rose-500">*</span>
+            Nama Produk/Mushaf <span className="text-rose-500">*</span>
           </label>
           <p className="text-[11px] text-emerald-700">
-            Diisi dengan nama/brand mushaf al-qur'an yang akan didaftarkan pentashihan. Misal: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir, dll
+            Diisi dengan nama produk/mushaf al-qur'an yang akan didaftarkan pentashihan. Misal: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir, dll
           </p>
           <input
             type="text"
@@ -479,7 +479,7 @@ export const NewRegistrationPage = () => {
         {/* 2. Nama Penanggung Jawab Produk/Mushaf */}
         <div className="space-y-1.5">
           <label className="block text-xs font-bold text-slate-800">
-            Nama Penanggung Jawab Produk/Mushaf <span className="text-rose-500">*</span>
+            Nama Penanggung Jawab Produk/Mushaf<span className="text-rose-500">*</span>
           </label>
           <p className="text-[11px] text-emerald-700">
             Isi nama penanggung jawab Produk/Mushaf
@@ -498,7 +498,7 @@ export const NewRegistrationPage = () => {
           <div className="flex items-center justify-between">
             <div>
               <span className="block text-xs font-bold text-slate-800">
-                Ukuran (cm) & Oplah <span className="text-rose-500">*</span>
+                Ukuran (cm) & oplah <span className="text-rose-500">*</span>
               </span>
               <p className="text-[11px] text-slate-500">
                 Daftar ukuran fisik (panjang x lebar) dan rencana oplah cetak
@@ -537,7 +537,7 @@ export const NewRegistrationPage = () => {
                     Oplah {idx === 0 && <span className="text-rose-500">*</span>}
                   </label>
                   <p className="text-[10px] text-emerald-700 leading-tight">
-                    Rencana oplah cetak. Misal: 100000
+                    Rencana oplah cetak. Misal: 100000 eksemplar, 50000 eksemplar, dll
                   </p>
                   <input
                     type="number"
@@ -603,7 +603,7 @@ export const NewRegistrationPage = () => {
         {/* 5. Jenis Mushaf (Dropdown) */}
         <div className="space-y-1.5 pt-2">
           <label htmlFor="jenis-mushaf" className="block text-xs font-bold text-slate-800">
-            Jenis Mushaf <span className="text-rose-500">*</span>
+            Jenis Pendaftaran Mushaf <span className="text-rose-500">*</span>
           </label>
           <p className="text-[11px] text-emerald-700">
             Pilih jenis mushaf yang sesuai dengan mushaf yang akan Anda terbitkan.
