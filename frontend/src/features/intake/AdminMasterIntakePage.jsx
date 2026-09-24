@@ -260,8 +260,7 @@ export const AdminMasterIntakePage = () => {
   const isReceived = intakeStatus === 'RECEIVED';
   const isReturned = intakeStatus === 'RETURNED';
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
-  const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
-  const canAssign = isHead;
+  const canAssign = userRoles.includes('ADMIN') || userRoles.includes('SUPERADMIN') || ['ADMIN', 'SUPERADMIN'].includes(currentUser?.role);
   const isAssigned = selectedReg?.status && selectedReg.status !== 'READY_FOR_VERIFICATION';
 
   return (
@@ -669,7 +668,7 @@ export const AdminMasterIntakePage = () => {
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-3 border-t border-slate-100">
                     <span className="text-xs text-slate-500 italic">
                       {!isAssigned
-                        ? 'Master fisik sudah diterima. Langkah berikutnya: Penugasan Verifikator oleh Kepala LPMQ.'
+                        ? 'Master fisik sudah diterima. Langkah berikutnya: Penugasan Verifikator oleh Admin Internal.'
                         : 'Verifikator telah ditugaskan untuk naskah ini.'}
                     </span>
                     <div className="flex items-center gap-2">
@@ -837,7 +836,7 @@ export const AdminMasterIntakePage = () => {
             { label: 'Nomor Tanda Terima', value: receiptNo },
             { label: 'Kondisi Naskah', value: condition },
           ]}
-          impactMessage="Tanda terima resmi (TT-LPMQ) akan diterbitkan ke akun penerbit dan naskah siap ditugaskan kepada Verifikator oleh Kepala LPMQ."
+          impactMessage="Tanda terima resmi (TT-LPMQ) akan diterbitkan ke akun penerbit dan naskah siap ditugaskan kepada Verifikator oleh Admin Internal."
           confirmLabel="Terbitkan Tanda Terima"
           confirmVariant="primary"
           loading={actionLoading}
@@ -904,7 +903,7 @@ export const AdminMasterIntakePage = () => {
         </div>
       )}
 
-      {/* Dialog Penugasan Verifikator oleh Kepala LPMQ */}
+      {/* Dialog Penugasan Verifikator oleh Admin Internal */}
       {assignDialogOpen && selectedReg && (
         <AssignVerificationDialog
           isOpen={assignDialogOpen}

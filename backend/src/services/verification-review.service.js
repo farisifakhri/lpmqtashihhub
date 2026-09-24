@@ -478,7 +478,7 @@ export const getLatestVerificationAssignment = async (registrationId, user) => {
 };
 
 export const revokeVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
     include: { verifier: true },
@@ -499,6 +499,7 @@ export const revokeVerificationAssignment = (assignmentId, data, user, req) => p
   }
 
   const reg = await registration(tx, assignment.registration_id);
+  if (reg.core_team_number) fail(409, 'Anggota tim inti pengajuan tidak dapat dicabut melalui alur ini.');
   const now = new Date();
 
   const updatedAssignment = await tx.verificationAssignment.update({
@@ -534,12 +535,14 @@ export const revokeVerificationAssignment = (assignmentId, data, user, req) => p
 }, transactionOptions);
 
 export const reassignVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
     include: { verifier: true },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+  const coreTeamRegistration = await registration(tx, assignment.registration_id);
+  if (coreTeamRegistration.core_team_number) fail(409, 'Anggota tim inti pengajuan tidak dapat diganti melalui alur ini.');
 
   if (assignment.status === 'COMPLETED') {
     fail(409, 'Penugasan verifikasi sudah selesai dan tidak dapat dialihkan.');

@@ -12,6 +12,8 @@ export const createHandover = (registrationId, data, user, req) =>
     requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
     const reg = await registration(tx, registrationId);
     requireStatus(reg, ['PAYMENT_VERIFICATION']);
+    if (reg.core_team_number && user.id !== reg.core_verifier_id) fail(403, 'Hanya verifikator tim inti pengajuan ini yang dapat membuat BAST.');
+    if (reg.core_team_number && data.to_user_id !== reg.core_distributor_id) fail(400, 'BAST harus ditujukan kepada distributor tim inti pengajuan ini.');
 
     // Validasi kelunasan PNBP
     const payment = await tx.paymentRecord.findFirst({
@@ -281,8 +283,8 @@ export const getHandoverDetail = async (handoverId, user) => {
   const handover = await prisma.physicalManuscriptHandover.findUnique({
     where: { id: handoverId },
     include: {
-      from_user: { select: { id: true, name: true, nip: true, email: true } },
-      to_user: { select: { id: true, name: true, nip: true, email: true } },
+      from_user: { select: { id: true, name: true, nip: true } },
+      to_user: { select: { id: true, name: true, nip: true } },
       registration: {
         include: {
           publisher: { select: { id: true, legal_name: true, entity_type: true } },
@@ -303,6 +305,10 @@ export const getHandoverDetail = async (handoverId, user) => {
 
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');
+  }
+  if (handover.registration.core_team_number && !isOwner && !user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
+    && ![handover.registration.core_verifier_id, handover.registration.core_distributor_id].includes(user.id)) {
+    fail(403, 'Serah-terima ini bukan tugas Anda.');
   }
 
   return handover;
@@ -328,6 +334,10 @@ export const getRegistrationHandovers = async (registrationId, user) => {
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');
   }
+  if (reg.core_team_number && !isOwner && !user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
+    && ![reg.core_verifier_id, reg.core_distributor_id].includes(user.id)) {
+    fail(403, 'Serah-terima ini bukan tugas Anda.');
+  }
 
   const handovers = await prisma.physicalManuscriptHandover.findMany({
     where: { registration_id: registrationId },
@@ -350,6 +360,10 @@ export const listHandovers = async (query, user) => {
   const { page, limit, skip } = queuePagination(query);
 
   const where = {};
+  if (!user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))) {
+    if (user.roles.includes('DISTRIBUTOR')) where.to_user_id = user.id;
+    else if (user.roles.includes('VERIFIKATOR')) where.from_user_id = user.id;
+  }
 
   if (query.status) {
     where.status = query.status;

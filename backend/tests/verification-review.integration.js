@@ -39,7 +39,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     { code: 'MANUSCRIPT_CONTENT', result: 'SESUAI' },
   ];
 
-  await test('PR-VER-03 Setup: Siapkan naskah dengan penerimaan fisik dan penugasan Kepala LPMQ', async () => {
+  await test('PR-VER-03 Setup: Siapkan naskah dengan penerimaan fisik dan penugasan Admin Internal', async () => {
     reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Uji Review Verifikator' }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', {
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
@@ -48,7 +48,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED', receipt_no: receiptNo, condition: 'Lengkap dan baik', volume_count: 30,
     });
-    const assigned = await expect(`/registrations/${reg.id}/verification-assignments`, kepalaToken, 'POST', {
+    const assigned = await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', {
       verifier_id: verifier.id, nota_no: notaNo, notes: 'Mohon periksa teliti naskah dan kelengkapan',
     }, 201);
     assignment = assigned.assignment;

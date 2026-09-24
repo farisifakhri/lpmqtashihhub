@@ -22,7 +22,7 @@ export const STATUS_DEFINITIONS = {
   READY_FOR_VERIFICATION: {
     phase: 'VERIFICATION',
     statusLabel: 'Menunggu Penugasan Verifikator',
-    statusDescription: 'Naskah telah diajukan dan master fisik diterima loket; menunggu Kepala LPMQ menugaskan verifikator.',
+    statusDescription: 'Naskah telah diajukan dan master fisik diterima loket; menunggu Admin Internal menugaskan verifikator.',
     ownerRole: 'KEPALA_LPMQ',
     ownerRoleLabel: 'Kepala LPMQ',
     nextActionLabel: 'Terbitkan Nota Dinas & tugaskan verifikator',

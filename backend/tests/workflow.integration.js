@@ -94,8 +94,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const calendar = Array.from({ length: 90 }, (_, index) => ({ date: new Date(start.getTime() + (index + 1) * 86400000), is_working_day: true, source: `TEST-${reg.id}` }));
     await prisma.workingDay.createMany({ data: calendar, skipDuplicates: true });
     await expect(`/registrations/${reg.id}/assignments`, publisherToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
-    await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
-    assignments = await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 201);
+    await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
+    assignments = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 201);
     assert.equal(assignments.length, 1);
     assert.ok(assignments[0].due_at);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Belum ada hasil' }, 409);
@@ -119,7 +119,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const submitted = await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
     assert.equal(submitted.status, 'WAITING_DISTRIBUTION');
     assert.deepEqual(submitted.fee_sla_snapshot, before.fee_sla_snapshot);
-    const next = await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'REVISION' }, 201);
+    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'REVISION' }, 201);
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);

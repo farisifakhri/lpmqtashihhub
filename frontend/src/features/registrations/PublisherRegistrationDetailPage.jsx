@@ -27,6 +27,7 @@ import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnership
 import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 import { RegistrationReceiptDialog } from './RegistrationReceiptDialog';
 import { PublisherProgress } from './PublisherProgress';
+import { WorkflowPhaseStatus } from '@/components/common/WorkflowPhaseStatus';
 import { PublisherDocumentList } from './PublisherDocumentList';
 import { publisherAction, dateLabel } from './publisher-status';
 
@@ -277,6 +278,7 @@ export function PublisherRegistrationDetailPage() {
               <div className="pt-2 border-t border-slate-100">
                 <PublisherProgress registration={data} />
               </div>
+              <WorkflowPhaseStatus registration={data} />
             </header>
 
             {/* Workflow Ownership & Action Banner */}

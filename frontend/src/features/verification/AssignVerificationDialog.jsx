@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
 export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
+  const fixedVerifierId = registration?.core_verifier_id;
   const [verifiers, setVerifiers] = useState([]);
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState('');
@@ -12,6 +13,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [notaError, setNotaError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,13 +49,13 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     );
   });
 
-  const selectedVerifier = verifiers.find((v) => v.id === selectedVerifierId) || null;
+  const selectedVerifier = verifiers.find((v) => v.id === (fixedVerifierId || selectedVerifierId)) || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!registration?.id) return;
 
-    if (!selectedVerifierId) {
+    if (!fixedVerifierId && !selectedVerifierId) {
       setError('Silakan pilih verifikator yang akan ditugaskan.');
       return;
     }
@@ -65,10 +67,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
     setSubmitting(true);
     setError(null);
+    setNotaError(false);
 
     try {
       const payload = {
-        verifier_id: selectedVerifierId,
+        ...(fixedVerifierId ? {} : { verifier_id: selectedVerifierId }),
         nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
       };
@@ -78,14 +81,19 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         onSuccess(res?.data);
       }
     } catch (err) {
-      const isConflict = err.status === 409 || err.statusCode === 409 || err.message?.includes('sudah');
-      if (isConflict) {
+      const message = err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.';
+      const isDuplicateNota = (err.status === 409 || err.statusCode === 409) && /nomor nota dinas/i.test(message);
+      const isAssignmentConflict = (err.status === 409 || err.statusCode === 409) && /pengajuan sudah ditugaskan|sudah memiliki verifikator aktif|status pengajuan telah berubah/i.test(message);
+      if (isDuplicateNota) {
+        setNotaError(true);
+        setError(message);
+      } else if (isAssignmentConflict) {
         setError('Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
         if (onConflict) {
           onConflict();
         }
       } else {
-        setError(err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.');
+        setError(message);
       }
     } finally {
       setSubmitting(false);
@@ -119,7 +127,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 Terbitkan Nota Dinas & Tugaskan Verifikator
               </h3>
               <p className="text-xs text-slate-500">
-                Otoritas Kepala LPMQ · Langkah 4 SOP Pentashihan Mushaf
+                Admin Internal · Penugasan Verifikator
               </p>
             </div>
           </div>
@@ -169,7 +177,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Verifier Selection with Search */}
-          <div className="space-y-1.5">
+          {fixedVerifierId ? <p className="rounded-lg bg-emerald-50 p-3 text-emerald-900">Tim inti {registration.core_team_number}: verifikator {selectedVerifier?.name || 'sesuai snapshot pengajuan'}.</p> : <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label htmlFor="verifier-select" className="block font-bold text-slate-800">
                 Pilih Verifikator <span className="text-rose-600">*</span>
@@ -221,7 +229,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
             <p className="text-[11px] text-slate-500">
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
             </p>
-          </div>
+          </div>}
 
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">
@@ -232,13 +240,16 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               id="nota-no-input"
               type="text"
               value={notaNo}
-              onChange={(e) => setNotaNo(e.target.value)}
+              onChange={(e) => { setNotaNo(e.target.value); if (notaError) { setNotaError(false); setError(null); } }}
               disabled={submitting}
+              aria-invalid={notaError}
+              aria-describedby={notaError ? 'nota-no-error' : undefined}
               placeholder="Contoh: ND.01/LPMQ.01/TL.00/09/2026"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 font-mono"
+              className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 font-mono ${notaError ? 'border-rose-500 focus:ring-rose-500/20 focus:border-rose-600' : 'border-slate-300 focus:ring-emerald-700/20 focus:border-emerald-700'}`}
             />
+            {notaError && <p id="nota-no-error" className="text-[11px] font-semibold text-rose-700">Nomor ini sudah digunakan. Masukkan nomor Nota Dinas yang berbeda.</p>}
             <p className="text-[11px] text-slate-500">
-              Nomor resmi Nota Dinas yang diterbitkan oleh Kepala LPMQ sebagai dasar surat tugas verifikator.
+              Masukkan nomor Nota Dinas resmi sebagai dasar penugasan verifikator oleh Admin Internal.
             </p>
           </div>
 

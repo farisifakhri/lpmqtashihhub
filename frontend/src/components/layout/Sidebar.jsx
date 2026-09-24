@@ -9,6 +9,7 @@ import {
   Award,
   Users,
   CheckSquare,
+  UserCheck,
   BookOpen,
   FolderCheck,
   Settings,
@@ -162,6 +163,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Intake naskah fisik A4',
             },
             {
+              label: 'Perlu Penugasan',
+              path: '/internal/verifications?tab=NEED_ASSIGNMENT',
+              icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+              description: 'Admin Internal menugaskan verifikator',
+            },
+            {
               label: 'Verifikasi Pembayaran',
               path: '/internal/payments',
               icon: <CreditCard className="w-4 h-4 shrink-0" />,
@@ -183,12 +190,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               path: '/internal',
               icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
               end: true,
-            },
-            {
-              label: 'Perlu Penugasan',
-              path: '/internal/verifications?tab=NEED_ASSIGNMENT',
-              icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-              description: 'Nota Dinas & verifikator',
             },
             {
               label: 'Persetujuan Verifikasi',
@@ -329,6 +330,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         title: 'PROSES PENTASHIHAN',
         items: [
           {
+            label: '1. Penugasan Verifikator',
+            path: '/internal/verifications?tab=NEED_ASSIGNMENT',
+            icon: <UserCheck className="w-4 h-4 shrink-0" />,
+            description: 'Superadmin dapat menugaskan verifikator',
+          },
+          {
             label: '1. Verifikasi Berkas',
             path: '/internal/verifications',
             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
@@ -380,6 +387,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             path: '/internal/users',
             icon: <Users className="w-4 h-4 shrink-0" />,
             description: 'Akun, peran, dan wewenang',
+          },
+          {
+            label: 'Rotasi Tim Inti',
+            path: '/internal/core-teams',
+            icon: <Users className="w-4 h-4 shrink-0" />,
+            description: 'Roster sembilan tim dan giliran berikutnya',
           },
         ],
       },

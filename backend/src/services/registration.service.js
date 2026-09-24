@@ -6,6 +6,7 @@ import { fail, registration as lockRegistration, audit, requireStatus, requireOw
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
+import { allocateCoreTeam } from './core-team.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -23,9 +24,9 @@ export const TRANSITION_POLICY = {
   },
   READY_FOR_VERIFICATION: {
     VERIFICATION_ASSIGNED: {
-      allowedRoles: ['KEPALA_LPMQ'],
+      allowedRoles: ['ADMIN', 'SUPERADMIN'],
       domainAction: true,
-      description: 'Kepala LPMQ menugaskan verifikator dan menerbitkan Nota Dinas Verifikasi',
+      description: 'Admin Internal menugaskan verifikator tim inti dan mencatat Nota Dinas Verifikasi',
     },
     CANCELLED: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
@@ -594,8 +595,13 @@ export const submitRegistration = async (id, user, req) => {
   const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
   const submitStatus = hasVerifiedPayment ? 'WAITING_DISTRIBUTION' : 'READY_FOR_VERIFICATION';
 
-  // Optimistic concurrency update: cegah race condition submit paralel
+  // Lock registration, then rotation. A failed submit rolls both changes back.
   const updated = await prisma.$transaction(async (tx) => {
+    const current = await lockRegistration(tx, id);
+    if (current.status !== reg.status) fail(409, 'Status pengajuan telah berubah. Muat ulang dan coba kembali.');
+    if (current.status === 'REVISION_REQUIRED' && !current.core_team_number) {
+      fail(409, 'Pengajuan lama ini perlu pemetaan tim inti yang ditinjau admin sebelum diajukan ulang.');
+    }
     const updateResult = await tx.registration.updateMany({
       where: {
         id,
@@ -616,6 +622,8 @@ export const submitRegistration = async (id, user, req) => {
       throw conflictError;
     }
 
+    if (!current.core_team_number) await allocateCoreTeam(tx, id, user, req);
+
     await tx.statusHistory.create({
       data: {
         registration_id: id,
@@ -634,7 +642,7 @@ export const submitRegistration = async (id, user, req) => {
         addons: true,
       },
     });
-  });
+  }, { isolationLevel: 'ReadCommitted' });
 
   await logAudit({
     actorId: user.id,
@@ -798,6 +806,12 @@ export const listRegistrations = async ({
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
+  if (!publisherScope && !user.roles.some(role => ['ADMIN', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
+    if (user.roles.includes('VERIFIKATOR')) where.core_verifier_id = user.id;
+    else if (user.roles.includes('DISTRIBUTOR')) where.core_distributor_id = user.id;
+    else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
+    else if (user.roles.includes('PENTASHIH')) where.assignments = { some: { assignee_id: user.id } };
+  }
 
   // Filter Tugas Saya (Assignment-based, bukan status)
   if (myTasks === 'true' || myTasks === true) {
@@ -943,6 +957,28 @@ export const getDetail = async (id, user) => {
     const error = new Error('Akses ditolak.');
     error.statusCode = 403;
     throw error;
+  }
+
+  if (reg.core_team_number && !user.roles.some(role => ['ADMIN', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
+      && reg.publisher_id !== user.publisherId
+      && ![reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].includes(user.id)
+      && !reg.assignments.some(item => item.assignee_id === user.id)) {
+    fail(403, 'Pengajuan ini bukan tugas Anda.');
+  }
+
+  if (reg.core_team_number) {
+    const members = await prisma.user.findMany({
+      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id] } },
+      select: { id: true, name: true },
+    });
+    const memberById = new Map(members.map(member => [member.id, member]));
+    reg.core_team = {
+      teamNumber: reg.core_team_number,
+      rotationVersion: reg.core_team_version,
+      verifier: memberById.get(reg.core_verifier_id) || null,
+      distributor: memberById.get(reg.core_distributor_id) || null,
+      documenter: memberById.get(reg.core_documenter_id) || null,
+    };
   }
 
   try { await assertManuscriptAccess(reg, user); }

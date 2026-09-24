@@ -55,17 +55,18 @@ export const VerifikatorInboxPage = () => {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN';
+  const isAssignmentAdmin = isAdmin;
 
   const normalizeTab = (tab) => {
     if (tab === 'NEED_APPROVAL') return 'WAITING_APPROVAL';
     return tab;
   };
 
-  const defaultTab = isHead ? 'NEED_ASSIGNMENT' : (isAdmin ? 'WAITING_APPROVAL' : 'ASSIGNED');
+  const defaultTab = isAssignmentAdmin ? 'NEED_ASSIGNMENT' : ((isHead || isAdmin) ? 'WAITING_APPROVAL' : 'ASSIGNED');
   const rawUrlTab = searchParams.get('tab');
   const normalizedUrlTab = normalizeTab(rawUrlTab);
-  const initialTab = (!isHead && normalizedUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (normalizedUrlTab || defaultTab);
+  const initialTab = (!isAssignmentAdmin && normalizedUrlTab === 'NEED_ASSIGNMENT') ? defaultTab : (normalizedUrlTab || defaultTab);
 
   const [assignments, setAssignments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -207,7 +208,7 @@ export const VerifikatorInboxPage = () => {
     const returnReason = selectedAssignment.return_reason;
 
     if (selectedAssignment.isUnassigned) {
-      if (!isHead) return null;
+      if (!isAssignmentAdmin) return null;
       return {
         title: 'Naskah Siap Ditugaskan ke Verifikator',
         description: 'Master fisik telah diterima oleh loket. Terbitkan Nota Dinas dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
@@ -293,7 +294,7 @@ export const VerifikatorInboxPage = () => {
       actionIcon: <FileText className="w-4 h-4" />,
       isStart: false,
     };
-  }, [selectedAssignment, isHead]);
+  }, [selectedAssignment, isAssignmentAdmin]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -301,13 +302,13 @@ export const VerifikatorInboxPage = () => {
       <PageHeader
         breadcrumbs={[
           { label: 'Aplikasi Internal', path: '/internal' },
-          { label: isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi' },
+          { label: isAssignmentAdmin ? 'Penugasan Verifikator' : (isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi') },
         ]}
-        title={isHead ? 'Persetujuan Hasil Verifikasi & Penugasan' : 'Antrean Penugasan Verifikasi Berkas'}
+        title={isAssignmentAdmin ? 'Penugasan Verifikator oleh Admin Internal' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas')}
         subtitle={
-          isHead
-            ? 'Daftar pengajuan naskah mushaf untuk penerbitan Nota Dinas penugasan dan persetujuan draf surat hasil telaah (Langkah 4 SOP).'
-            : 'Daftar naskah mushaf yang ditugaskan oleh Kepala LPMQ melalui Nota Dinas resmi. Pemeriksaan mencakup validasi data pendaftaran, berkas digital, dan master fisik A4.'
+          isAssignmentAdmin
+            ? 'Admin Internal menugaskan verifikator tim inti dan mencatat Nota Dinas setelah master fisik diterima.'
+            : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Admin Internal untuk diperiksa verifikator.'
         }
         actions={
           <Button
@@ -381,8 +382,9 @@ export const VerifikatorInboxPage = () => {
                 <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-3">
                   {/* Segmented Control */}
                   <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold overflow-x-auto">
-                    {isHead ? (
+                    {(isHead || isAssignmentAdmin) ? (
                       <>
+                        {isAssignmentAdmin && (
                         <button
                           type="button"
                           onClick={() => handleTabChange('NEED_ASSIGNMENT')}
@@ -395,6 +397,7 @@ export const VerifikatorInboxPage = () => {
                         >
                           Perlu Penugasan
                         </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleTabChange('WAITING_APPROVAL')}
@@ -713,7 +716,7 @@ export const VerifikatorInboxPage = () => {
                   {!selectedAssignment.isUnassigned && (() => {
                     const notaDoc = selectedAssignment.documents?.find?.((d) => d.document_type === 'NOTA_DINAS_VERIFIKASI') || selectedAssignment.documents?.[0];
                     const isRevoked = selectedAssignment.status === 'REVOKED';
-                    const canReassignOrRevoke = (isHead || isAdmin) && ['ASSIGNED', 'IN_PROGRESS'].includes(selectedAssignment.status);
+                    const canReassignOrRevoke = isAssignmentAdmin && !selectedAssignment.registration?.core_team_number && ['ASSIGNED', 'IN_PROGRESS'].includes(selectedAssignment.status);
 
                     return (
                       <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-xs shadow-2xs">
@@ -802,8 +805,8 @@ export const VerifikatorInboxPage = () => {
         </>
       )}
 
-      {/* Assign Verification Dialog (Langkah 4 SOP: Kepala LPMQ) */}
-      {isHead && assignDialogOpen && selectedAssignment && (
+      {/* Penugasan Verifikator oleh Admin Internal */}
+      {isAssignmentAdmin && assignDialogOpen && selectedAssignment && (
         <AssignVerificationDialog
           registration={selectedAssignment.registration || selectedAssignment}
           onClose={() => setAssignDialogOpen(false)}
@@ -825,7 +828,7 @@ export const VerifikatorInboxPage = () => {
       )}
 
       {/* Revoke Assignment Dialog */}
-      {(isHead || isAdmin) && revokeDialogOpen && selectedAssignment && (
+      {isAssignmentAdmin && revokeDialogOpen && selectedAssignment && (
         <RevokeAssignmentDialog
           assignment={selectedAssignment}
           onClose={() => setRevokeDialogOpen(false)}
@@ -840,7 +843,7 @@ export const VerifikatorInboxPage = () => {
       )}
 
       {/* Reassign Verification Dialog */}
-      {(isHead || isAdmin) && reassignDialogOpen && selectedAssignment && (
+      {isAssignmentAdmin && reassignDialogOpen && selectedAssignment && (
         <ReassignVerificationDialog
           assignment={selectedAssignment}
           onClose={() => setReassignDialogOpen(false)}

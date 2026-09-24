@@ -3,6 +3,7 @@ import { z } from 'zod';
 const idParam = z.object({
   id: z.string().uuid('ID pengguna tidak valid.'),
 });
+const whatsappNumber = z.string().trim().regex(/^\+[1-9]\d{7,14}$/, 'Nomor WhatsApp harus format internasional, misalnya +6281234567890.').nullable();
 
 export const userIdParamSchema = {
   params: idParam,
@@ -33,6 +34,7 @@ export const createUserSchema = {
   body: z.object({
     name: z.string().trim().min(2, 'Nama minimal 2 karakter.').max(191),
     email: z.string().trim().email('Format email tidak valid.').max(191),
+    whatsapp_number: whatsappNumber.optional(),
     password: z.string().min(6, 'Password minimal 6 karakter.').max(100),
     nip: z.string().trim().max(50).nullable().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
@@ -51,6 +53,7 @@ export const updateUserSchema = {
   body: z.object({
     name: z.string().trim().min(2, 'Nama minimal 2 karakter.').max(191).optional(),
     email: z.string().trim().email('Format email tidak valid.').max(191).optional(),
+    whatsapp_number: whatsappNumber.optional(),
     password: z.string().min(6, 'Password minimal 6 karakter.').max(100).optional(),
     nip: z.string().trim().max(50).nullable().optional(),
     status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),

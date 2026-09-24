@@ -1,7 +1,6 @@
 import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
-import { requireManualTeamAssignment } from '../middlewares/admin-internal.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
 import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
@@ -36,7 +35,7 @@ router.post('/payments/:id/confirm', authenticate, authorize('ADMIN_PENERBIT'), 
 router.post('/payments/:id/return', authenticate, authorize('VERIFIKATOR'), validate(returnPaymentSchema), action(req => payment.returnPayment(req.params.id, req.body, req.user, req)));
 router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user, req)));
 
-router.post('/registrations/:id/assignments', authenticate, requireManualTeamAssignment, validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
+router.post('/registrations/:id/assignments', authenticate, authorize('ADMIN', 'SUPERADMIN', 'DISTRIBUTOR'), validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
 router.get('/assignments/my-tasks', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(myTasksQuerySchema), action(req => distribution.listMyAssignments(req.user, req.query)));
 router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN', 'DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));

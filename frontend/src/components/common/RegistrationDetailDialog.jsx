@@ -10,6 +10,7 @@ import { AssignVerificationDialog } from '@/features/verification/AssignVerifica
 import { TOKENS } from '@/app/tokens';
 import { clsx } from 'clsx';
 import { waitingLabel } from './QueueOverview';
+import { WorkflowPhaseStatus } from './WorkflowPhaseStatus';
 
 export function RegistrationDetailDialog({ id, onClose }) {
   const authContext = useOptionalAuth();
@@ -17,7 +18,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN';
+  const isAdmin = userRoles.includes('ADMIN') || userRoles.includes('SUPERADMIN') || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERADMIN';
 
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -94,6 +95,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
               <p className="text-xs text-slate-600 flex gap-2"><Clock className="h-4 w-4" />Tahap ini dimulai: {data.stage_entered_at ? new Date(data.stage_entered_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : 'Belum tercatat'}</p>
               <p className="text-xs text-slate-500">{data.service_type?.name}</p>
             </div>
+            <WorkflowPhaseStatus registration={data} />
             <div><h4 className="text-sm font-bold text-slate-900 mb-3">Riwayat proses</h4>
               {data.status_histories?.length ? <ol className="space-y-4 border-l-2 border-emerald-100 pl-4">{data.status_histories.map(history => <li key={history.id} className="text-xs space-y-1"><StatusBadge status={history.to_status} /><p className="text-slate-500">{new Date(history.changed_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p>{history.notes && <p className="text-slate-700 break-words">{history.notes}</p>}</li>)}</ol> : <p className="text-xs text-slate-500">Belum ada perubahan status tercatat.</p>}
             </div>
@@ -105,7 +107,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 z-10">
           <div className="text-xs text-slate-500">
             {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived ? (
-              <span className="text-emerald-700 font-semibold">Master fisik diterima loket. Siap ditugaskan Kepala LPMQ.</span>
+              <span className="text-emerald-700 font-semibold">Master fisik diterima loket. Siap ditugaskan Admin Internal.</span>
             ) : data.status === 'READY_FOR_VERIFICATION' ? (
               <span className="text-amber-700 font-semibold">Menunggu intake master fisik A4 di loket LPMQ.</span>
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (
@@ -115,7 +117,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived && isHead && (
+            {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived && isAdmin && (
               <Button
                 variant="primary"
                 size="sm"
@@ -126,7 +128,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 Tugaskan Verifikator
               </Button>
             )}
-            {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived && !isHead && (
+            {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived && !isAdmin && (
               <Link
                 to={`/internal/verifications?tab=NEED_ASSIGNMENT&id=${data.id}`}
                 onClick={onClose}

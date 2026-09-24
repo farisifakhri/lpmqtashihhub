@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const statusLabels = {
-  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu penugasan Kepala LPMQ',
+  DRAFT: 'Draf', READY_FOR_VERIFICATION: 'Menunggu penugasan Admin Internal',
   VERIFICATION_ASSIGNED: 'Verifikator ditugaskan', IN_VERIFICATION: 'Sedang diverifikasi',
   REVISION_REQUIRED: 'Perlu perbaikan penerbit', WAITING_VERIFICATION_APPROVAL: 'Menunggu persetujuan Kepala LPMQ',
   VERIFICATION_APPROVED: 'Surat disetujui, menunggu pengiriman verifikator',

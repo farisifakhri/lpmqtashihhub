@@ -53,7 +53,7 @@ test('manual status endpoint cannot bypass payment, assignment, approval, handov
 test('SOP verification separates assignment, approval, sending and physical receipt', () => {
   const policy = TRANSITION_POLICY;
   assert.equal(policy.READY_FOR_VERIFICATION.IN_VERIFICATION, undefined);
-  assert.deepEqual(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['KEPALA_LPMQ']);
+  assert.deepEqual(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['ADMIN', 'SUPERADMIN']);
   assert.equal(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.domainAction, true);
   assert.deepEqual(policy.VERIFICATION_ASSIGNED.IN_VERIFICATION.allowedRoles, ['VERIFIKATOR']);
   assert.equal(policy.WAITING_VERIFICATION_APPROVAL.AWAITING_PAYMENT, undefined);

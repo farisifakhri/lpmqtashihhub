@@ -20,7 +20,7 @@ export const WORKFLOW_PRESENTATION = {
       bgClass: 'bg-sky-50',
       textClass: 'text-sky-800',
       borderClass: 'border-sky-200',
-      description: 'Pengajuan diajukan penerbit, menunggu Kepala LPMQ menugaskan verifikator.',
+      description: 'Pengajuan diajukan penerbit, menunggu Admin Internal menugaskan verifikator.',
       actionOwner: 'Kepala LPMQ',
       nextAction: 'Terbitkan Nota Dinas & tugaskan verifikator',
     },

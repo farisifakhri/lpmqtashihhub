@@ -241,5 +241,32 @@ describe('AssignVerificationDialog Component', () => {
       expect(onConflictMock).toHaveBeenCalledTimes(1);
     });
   });
-});
 
+  it('menampilkan nomor Nota Dinas duplikat sebagai kesalahan field dan mengizinkan perbaikan', async () => {
+    const onConflict = vi.fn();
+    const onSuccess = vi.fn();
+    const duplicateError = new Error('Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
+    duplicateError.status = 409;
+    vi.spyOn(VerificationApiModule.verificationApi, 'createAssignment')
+      .mockRejectedValueOnce(duplicateError)
+      .mockResolvedValueOnce({ data: { id: 'assign-new-2', status: 'ASSIGNED' } });
+
+    render(<AssignVerificationDialog registration={mockRegistration} onClose={vi.fn()} onSuccess={onSuccess} onConflict={onConflict} />);
+    await screen.findByRole('combobox');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'v-1' } });
+    const nota = screen.getByLabelText(/Nomor Nota Dinas Penugasan/i);
+    fireEvent.change(nota, { target: { value: 'ND.01/LPMQ/2026' } });
+    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
+    expect(nota).toHaveValue('ND.01/LPMQ/2026');
+    expect(nota).toHaveAttribute('aria-invalid', 'true');
+    expect(onConflict).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    fireEvent.change(nota, { target: { value: 'ND.02/LPMQ/2026' } });
+    expect(nota).toHaveAttribute('aria-invalid', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i }));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: 'assign-new-2' })));
+  });
+});

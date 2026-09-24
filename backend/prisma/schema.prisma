@@ -18,6 +18,8 @@ model User {
   id            String      @id @default(uuid())
   name          String
   email         String      @unique
+  whatsapp_number String?
+  whatsapp_verified_at DateTime?
   password_hash String
   nip           String?     @unique
   status UserStatus @default(ACTIVE) // ACTIVE, INACTIVE, SUSPENDED
@@ -43,6 +45,9 @@ model User {
   notifications            Notification[]
   audit_logs               AuditLog[]
   status_histories         StatusHistory[]
+  core_roster_verifier     CoreTeamRoster[] @relation("CoreRosterVerifier")
+  core_roster_distributor  CoreTeamRoster[] @relation("CoreRosterDistributor")
+  core_roster_documenter   CoreTeamRoster[] @relation("CoreRosterDocumenter")
 
   @@map("users")
 }
@@ -72,6 +77,32 @@ model UserRole {
 
   @@unique([user_id, role_id])
   @@map("user_roles")
+}
+
+// Tim inti berbeda dari DistributionTeam (kelompok pentashih).
+model CoreTeamRoster {
+  id              String   @id @default(uuid())
+  version         Int
+  team_number     Int
+  verifier_id     String
+  distributor_id  String
+  documenter_id   String
+  created_at      DateTime @default(now())
+  verifier        User @relation("CoreRosterVerifier", fields: [verifier_id], references: [id], onDelete: Restrict)
+  distributor     User @relation("CoreRosterDistributor", fields: [distributor_id], references: [id], onDelete: Restrict)
+  documenter      User @relation("CoreRosterDocumenter", fields: [documenter_id], references: [id], onDelete: Restrict)
+
+  @@unique([version, team_number])
+  @@map("core_team_rosters")
+}
+
+model CoreTeamRotation {
+  id                Int      @id @default(1)
+  active_version    Int      @default(1)
+  next_team_number  Int      @default(1)
+  updated_at        DateTime @updatedAt
+
+  @@map("core_team_rotations")
 }
 
 // -------------------------------------------------------------
@@ -257,6 +288,11 @@ model Registration {
   // DOCUMENTATION_IN_PROGRESS, COMPLETED, CANCELLED
   fee_sla_snapshot         Json?                    // Snapshot snapshot tarif & SLA saat submit (BR-04, BR-05)
   revision_source          String?                  // VERIFICATION, PHYSICAL_HANDOVER
+  core_team_number         Int?
+  core_team_version        Int?
+  core_verifier_id         String?
+  core_distributor_id      String?
+  core_documenter_id       String?
   created_at               DateTime                 @default(now())
   updated_at               DateTime                 @updatedAt
 
@@ -279,6 +315,9 @@ model Registration {
   notifications            Notification[]
 
   @@index([status, stage_entered_at, id])
+  @@index([core_verifier_id, status])
+  @@index([core_distributor_id, status])
+  @@index([core_documenter_id, status])
   @@map("registrations")
 }
 

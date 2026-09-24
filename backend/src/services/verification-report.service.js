@@ -4,7 +4,7 @@ import { fail, requireRole } from './workflow-utils.js';
 // Konfigurasi SLA Resmi SOP Verifikasi LPMQ (VER-I01)
 export const SLA_CONFIG = {
   INTAKE_PHYSICAL_MINUTES: 30,       // Langkah 1: Intake & tanda terima master fisik di loket
-  ASSIGNMENT_HEAD_MINUTES: 30,       // Langkah 2: Penerbitan Nota Dinas penugasan oleh Kepala LPMQ
+  ASSIGNMENT_ADMIN_MINUTES: 30,      // Langkah 2: Penugasan verifikator oleh Admin Internal
   VERIFICATION_REVIEW_DAYS: 2,       // Langkah 3: Telaah berkas & draf hasil verifikasi (48 jam)
   APPROVAL_HEAD_MINUTES: 30,         // Langkah 4: Persetujuan/penolakan draf surat oleh Kepala LPMQ
   SEND_RESULT_MINUTES: 30,           // Langkah 5: Pengiriman surat hasil verifikasi ke penerbit

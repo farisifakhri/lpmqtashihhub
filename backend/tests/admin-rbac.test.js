@@ -29,6 +29,6 @@ test('existing Kepala route guard rejects pure ADMIN and preserves Kepala access
 test('manual team assignment belongs exclusively to ADMIN or SUPERADMIN', () => {
   for (const role of ['ADMIN', 'SUPERADMIN']) assert.equal(check(requireManualTeamAssignment, { roles: [role] }).next, true);
   for (const role of ['DISTRIBUTOR', 'KEPALA_LPMQ', 'ADMIN_PENERBIT', 'PENTASHIH', 'VERIFIKATOR']) assert.equal(check(requireManualTeamAssignment, { roles: [role] }).status, 403);
-  for (const transitions of Object.values(TRANSITION_POLICY)) for (const rule of Object.values(transitions)) assert.equal(rule.allowedRoles.includes('ADMIN'), false);
+  assert.deepEqual(TRANSITION_POLICY.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['ADMIN', 'SUPERADMIN']);
   assert.deepEqual(TRANSITION_POLICY.WAITING_VERIFICATION_APPROVAL.VERIFICATION_APPROVED.allowedRoles, ['KEPALA_LPMQ']);
 });

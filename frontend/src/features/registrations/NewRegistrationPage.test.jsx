@@ -7,6 +7,21 @@ import * as Auth from '@/features/auth/AuthContext';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
 describe('Publisher new registration handoff', () => {
+  it('removes an added ukuran dan oplah row while keeping the required first row', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Ukuran dan Oplah/i }));
+    expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(2);
+    fireEvent.click(screen.getAllByTitle('Hapus baris ini')[1]);
+    expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(1);
+    expect(screen.queryByTitle('Hapus baris ini')).not.toBeInTheDocument();
+  });
+
   it('creates one draft and opens file completion instead of submitting an empty registration', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });

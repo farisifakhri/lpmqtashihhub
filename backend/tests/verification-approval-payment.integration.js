@@ -81,7 +81,7 @@ export async function runVerificationApprovalPaymentTests({
 
     const assigned = await expect(
       `/registrations/${reg.id}/verification-assignments`,
-      kepalaToken,
+      adminToken,
       'POST',
       {
         verifier_id: verifier.id,
@@ -392,8 +392,8 @@ export async function runVerificationApprovalPaymentTests({
     };
 
     const parallelResults = await Promise.all([
-      call(assignPath, kepalaToken, 'POST', { ...assignBody, nota_no: `ND-PAR-01-${Date.now()}` }),
-      call(assignPath, kepalaToken, 'POST', { ...assignBody, nota_no: `ND-PAR-02-${Date.now()}` }),
+      call(assignPath, adminToken, 'POST', { ...assignBody, nota_no: `ND-PAR-01-${Date.now()}` }),
+      call(assignPath, adminToken, 'POST', { ...assignBody, nota_no: `ND-PAR-02-${Date.now()}` }),
     ]);
 
     // Tepat satu request berhasil 201 dan request lainnya ditolak 409

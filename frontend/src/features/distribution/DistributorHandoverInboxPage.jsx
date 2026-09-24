@@ -441,6 +441,8 @@ export const DistributorHandoverInboxPage = () => {
           waitingDistRegistrations={waitingDistRegistrations}
           fetchDistributionData={fetchDistributionData}
           isAdmin={isAdmin}
+          isDistributor={isDistributor}
+          currentUserId={currentUser?.id}
           setAssignmentModalId={setAssignmentModalId}
         />
       )}

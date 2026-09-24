@@ -117,9 +117,9 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     expect(screen.queryByRole('link', { name: /Penugasan Tim/ })).not.toBeInTheDocument();
   });
 
-  it('KEPALA_LPMQ sees Tugaskan Verifikator on READY_FOR_VERIFICATION rows when physical master is received', async () => {
+  it('SUPERADMIN sees Tugaskan Verifikator on READY_FOR_VERIFICATION rows when physical master is received', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { id: 'head-1', roles: ['KEPALA_LPMQ'], role: 'KEPALA_LPMQ' },
+      currentUser: { id: 'superadmin-1', roles: ['SUPERADMIN'], role: 'SUPERADMIN' },
     });
     RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({
       data: [

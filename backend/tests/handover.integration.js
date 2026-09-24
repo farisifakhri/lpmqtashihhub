@@ -86,7 +86,7 @@ export async function runHandoverTests({
 
     const assigned = await expect(
       `/registrations/${reg.id}/verification-assignments`,
-      kepalaToken,
+      adminToken,
       'POST',
       {
         verifier_id: verifierUser.id,
@@ -280,7 +280,7 @@ export async function runHandoverTests({
       condition: 'BAIK',
       volume_count: 30,
     });
-    const asg2 = (await expect(`/registrations/${reg2.id}/verification-assignments`, kepalaToken, 'POST', {
+    const asg2 = (await expect(`/registrations/${reg2.id}/verification-assignments`, adminToken, 'POST', {
       verifier_id: verifierUser.id,
       nota_no: `ND-HO2-${Date.now()}`,
       notes: 'Penugasan reg 2',

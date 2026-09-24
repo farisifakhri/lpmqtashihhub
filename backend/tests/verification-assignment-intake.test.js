@@ -27,18 +27,18 @@ function checkGuard(guard, user) {
   return { next, status, errorJson };
 }
 
-test('RBAC: /verification/verifiers & /verification/unassigned-registrations exclusively allow KEPALA_LPMQ & SUPERADMIN', () => {
-  const guard = authorize('KEPALA_LPMQ', 'SUPERADMIN');
+test('RBAC: /verification/verifiers & /verification/unassigned-registrations allow ADMIN & SUPERADMIN', () => {
+  const guard = authorize('ADMIN', 'SUPERADMIN');
 
   // Allowed
-  assert.equal(checkGuard(guard, { roles: ['KEPALA_LPMQ'] }).next, true);
+  assert.equal(checkGuard(guard, { roles: ['ADMIN'] }).next, true);
   assert.equal(checkGuard(guard, { roles: ['SUPERADMIN'] }).next, true);
   assert.equal(checkGuard(guard, { roles: ['ADMIN', 'KEPALA_LPMQ'] }).next, true);
 
   // Disallowed
-  for (const role of ['VERIFIKATOR', 'ADMIN_PENERBIT', 'DISTRIBUTOR', 'PENTASHIH', 'ADMIN']) {
+  for (const role of ['VERIFIKATOR', 'ADMIN_PENERBIT', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ']) {
     const result = checkGuard(guard, { roles: [role] });
-    assert.equal(result.next, false, `Role "${role}" must not pass authorize('KEPALA_LPMQ', 'SUPERADMIN')`);
+    assert.equal(result.next, false, `Role "${role}" must not pass authorize('ADMIN', 'SUPERADMIN')`);
     assert.equal(result.status, 403);
   }
 
@@ -47,7 +47,7 @@ test('RBAC: /verification/verifiers & /verification/unassigned-registrations exc
   assert.equal(checkGuard(guard, { roles: [] }).status, 403);
 });
 
-test('Validator: createVerificationAssignmentSchema enforces verifier_id UUID and nota_no min length', () => {
+test('Validator: createVerificationAssignmentSchema accepts roster assignment and validates optional verifier_id', () => {
   const validUuid = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
 
   // Valid payload
@@ -74,11 +74,11 @@ test('Validator: createVerificationAssignmentSchema enforces verifier_id UUID an
   });
   assert.equal(invalidVerifier.success, false);
 
-  // Missing verifier_id
+  // New registrations use the verifier stored in their core team snapshot.
   const missingVerifier = createVerificationAssignmentSchema.body.safeParse({
     nota_no: 'ND.01/LPMQ/2026',
   });
-  assert.equal(missingVerifier.success, false);
+  assert.equal(missingVerifier.success, true);
 
   // Short nota_no (< 3 chars)
   const shortNota = createVerificationAssignmentSchema.body.safeParse({

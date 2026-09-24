@@ -65,6 +65,8 @@ export const listUsers = async (query, currentUser) => {
         id: true,
         name: true,
         email: true,
+        whatsapp_number: true,
+        whatsapp_verified_at: true,
         nip: true,
         status: true,
         created_at: true,
@@ -92,6 +94,8 @@ export const listUsers = async (query, currentUser) => {
     id: u.id,
     name: u.name,
     email: u.email,
+    whatsapp_number: u.whatsapp_number,
+    whatsapp_verified_at: u.whatsapp_verified_at,
     nip: u.nip,
     status: u.status,
     created_at: u.created_at,
@@ -133,6 +137,8 @@ export const getUserDetail = async (id, currentUser) => {
     id: user.id,
     name: user.name,
     email: user.email,
+    whatsapp_number: user.whatsapp_number,
+    whatsapp_verified_at: user.whatsapp_verified_at,
     nip: user.nip,
     status: user.status,
     created_at: user.created_at,
@@ -178,6 +184,7 @@ export const createUser = async (data, currentUser, req) => {
       data: {
         name: data.name,
         email: data.email,
+        whatsapp_number: data.whatsapp_number || null,
         password_hash: passwordHash,
         nip: data.nip || null,
         status: data.status || 'ACTIVE',
@@ -209,6 +216,7 @@ export const createUser = async (data, currentUser, req) => {
     await audit(tx, currentUser, 'CREATE_USER', 'User', newUser.id, {
       name: newUser.name,
       email: newUser.email,
+      whatsapp_number: newUser.whatsapp_number,
       roles: data.roles,
       status: newUser.status,
     }, req);
@@ -228,6 +236,30 @@ export const updateUser = async (id, data, currentUser, req) => {
   });
   if (!user) {
     fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if ((data.status && data.status !== 'ACTIVE') || Array.isArray(data.roles)) {
+    const rotation = await prisma.coreTeamRotation.findUnique({ where: { id: 1 } });
+    if (rotation) {
+      const activePositions = await prisma.coreTeamRoster.findMany({
+        where: {
+          version: rotation.active_version,
+          OR: [{ verifier_id: id }, { distributor_id: id }, { documenter_id: id }],
+        },
+        select: { verifier_id: true, distributor_id: true, documenter_id: true },
+      });
+      if (activePositions.length && data.status && data.status !== 'ACTIVE') {
+        fail(409, 'Petugas masih berada dalam tim inti aktif. Ganti petugas pada pengaturan Tim Inti sebelum menonaktifkan akunnya.');
+      }
+      const requiredRoles = new Set(activePositions.flatMap(position => [
+        position.verifier_id === id ? 'VERIFIKATOR' : null,
+        position.distributor_id === id ? 'DISTRIBUTOR' : null,
+        position.documenter_id === id ? 'DOKUMENTATOR' : null,
+      ]).filter(Boolean));
+      if (Array.isArray(data.roles) && [...requiredRoles].some(role => !data.roles.includes(role))) {
+        fail(409, 'Peran petugas masih digunakan tim inti aktif. Ganti petugas pada pengaturan Tim Inti sebelum menghapus perannya.');
+      }
+    }
   }
 
   if (data.email && data.email !== user.email) {
@@ -251,6 +283,10 @@ export const updateUser = async (id, data, currentUser, req) => {
   const updateFields = {};
   if (data.name !== undefined) updateFields.name = data.name;
   if (data.email !== undefined) updateFields.email = data.email;
+  if (data.whatsapp_number !== undefined && data.whatsapp_number !== user.whatsapp_number) {
+    updateFields.whatsapp_number = data.whatsapp_number || null;
+    updateFields.whatsapp_verified_at = null;
+  }
   if (data.nip !== undefined) updateFields.nip = data.nip || null;
   if (data.status !== undefined) updateFields.status = data.status;
 
@@ -323,9 +359,29 @@ export const deleteUser = async (id, currentUser, req) => {
     where: { id },
     include: {
       verification_assignments: { select: { id: true }, take: 1 },
+      verification_assignments_made: { select: { id: true }, take: 1 },
+      verification_assignments_revoked: { select: { id: true }, take: 1 },
       verification_documents_created: { select: { id: true }, take: 1 },
+      verification_documents_approved: { select: { id: true }, take: 1 },
+      physical_master_receipts: { select: { id: true }, take: 1 },
+      physical_handovers_sent: { select: { id: true }, take: 1 },
+      physical_handovers_received: { select: { id: true }, take: 1 },
+      team_memberships: { select: { id: true }, take: 1 },
+      teams_led: { select: { id: true }, take: 1 },
       assignments: { select: { id: true }, take: 1 },
+      document_signatories: { select: { id: true }, take: 1 },
+      verification_signatures: { select: { id: true }, take: 1 },
       audit_logs: { select: { id: true }, take: 1 },
+      status_histories: { select: { id: true }, take: 1 },
+      core_roster_verifier: { select: { version: true } },
+      core_roster_distributor: { select: { version: true } },
+      core_roster_documenter: { select: { version: true } },
+      publisher: {
+        select: {
+          registrations: { select: { id: true }, take: 1 },
+          documents: { select: { id: true }, take: 1 },
+        },
+      },
     },
   });
 
@@ -333,11 +389,18 @@ export const deleteUser = async (id, currentUser, req) => {
     fail(404, 'Pengguna tidak ditemukan.');
   }
 
-  const hasHistory =
-    user.verification_assignments.length > 0 ||
-    user.verification_documents_created.length > 0 ||
-    user.assignments.length > 0 ||
-    user.audit_logs.length > 0;
+  const rotation = await prisma.coreTeamRotation.findUnique({ where: { id: 1 } });
+  const rosterMemberships = [
+    ...user.core_roster_verifier,
+    ...user.core_roster_distributor,
+    ...user.core_roster_documenter,
+  ];
+  if (rosterMemberships.some(member => member.version === rotation?.active_version)) {
+    fail(409, 'Petugas masih berada dalam tim inti aktif. Ganti petugas pada pengaturan Tim Inti sebelum menonaktifkan akunnya.');
+  }
+
+  const hasHistory = Object.values(user).some(value => Array.isArray(value) && value.length > 0) ||
+    Boolean(user.publisher?.registrations.length || user.publisher?.documents.length);
 
   if (hasHistory) {
     // Soft deactivation to preserve audit and legal data integrity

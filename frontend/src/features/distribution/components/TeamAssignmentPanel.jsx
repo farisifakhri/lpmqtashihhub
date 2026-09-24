@@ -2,7 +2,7 @@ import React from 'react';
 import { Users, RefreshCw, CheckCircle2, PackageCheck, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fetchDistributionData, isAdmin, setAssignmentModalId }) => (
+export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fetchDistributionData, isAdmin, isDistributor, currentUserId, setAssignmentModalId }) => (
         <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -94,7 +94,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                         </div>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        {isAdmin ? (
+                        {(reg.core_team_number ? isDistributor && reg.core_distributor_id === currentUserId : isAdmin) ? (
                           <Button
                             variant="primary"
                             size="sm"

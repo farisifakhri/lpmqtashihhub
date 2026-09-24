@@ -65,7 +65,7 @@ export const UnifiedDashboard = () => {
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
   const [verificationAssignReg, setVerificationAssignReg] = useState(null);
   const canAssignTeam = isAdmin;
-  const canAssignVerification = isKepala;
+  const canAssignVerification = isAdmin;
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(searchQuery.trim()); setPage(1); }, 300);

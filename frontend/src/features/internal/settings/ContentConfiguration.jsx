@@ -312,7 +312,7 @@ const generateId = () => `content-${Date.now()}`;
 // ── Komponen Utama ────────────────────────────────────────────────────────────
 export const ContentConfiguration = () => {
   const { currentUser } = useAuth();
-  const [contentItems, setContentItems] = useState(INITIAL_CONTENT_DATA);
+  const [contentItems, setContentItems] = useState([]);
   const [categoriesList, setCategoriesList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -343,7 +343,7 @@ export const ContentConfiguration = () => {
         setCategoriesList(catRes.data);
       }
 
-      if (stRes?.data && stRes.data.length > 0) {
+      if (Array.isArray(stRes?.data)) {
         const mapped = stRes.data.map((st, idx) => ({
           id: st.id,
           name: st.name,
@@ -368,7 +368,7 @@ export const ContentConfiguration = () => {
         setContentItems(mapped);
       }
     } catch (err) {
-      console.warn('Backend master API belum terhubung atau offline, menggunakan fallback data lokal:', err?.message || err);
+      setApiError(err?.message || 'Data layanan belum dapat dimuat.');
     } finally {
       setLoading(false);
     }
@@ -474,7 +474,6 @@ export const ContentConfiguration = () => {
     setIsSubmitting(true);
     setApiError('');
 
-    const now = new Date().toISOString();
     try {
       if (editingItem) {
         // Edit via masterApi
@@ -488,21 +487,9 @@ export const ContentConfiguration = () => {
           dummyDurationDays: Number(formData.dummyDurationDays),
         };
 
-        try {
-          await masterApi.updateServiceType(editingItem.id, payload);
-          setApiSuccess('Konten layanan berhasil diperbarui di database!');
-          await loadData();
-        } catch (apiErr) {
-          console.warn('Gagal sinkron API, memperbarui state lokal:', apiErr?.message || apiErr);
-          setContentItems((prev) =>
-            prev.map((item) =>
-              item.id === editingItem.id
-                ? { ...formData, id: editingItem.id, updatedAt: now }
-                : item
-            )
-          );
-          setApiSuccess('Konten layanan diperbarui (mode lokal).');
-        }
+        await masterApi.updateServiceType(editingItem.id, payload);
+        setApiSuccess('Konten layanan berhasil diperbarui di database!');
+        await loadData();
       } else {
         // Buat baru via masterApi
         const payload = {
@@ -515,20 +502,9 @@ export const ContentConfiguration = () => {
           dummyDurationDays: Number(formData.dummyDurationDays),
         };
 
-        try {
-          await masterApi.createServiceType(payload);
-          setApiSuccess('Konten layanan baru berhasil disimpan ke database!');
-          await loadData();
-        } catch (apiErr) {
-          console.warn('Gagal simpan ke API, menambahkan ke state lokal:', apiErr?.message || apiErr);
-          const newItem = {
-            ...formData,
-            id: generateId(),
-            updatedAt: now,
-          };
-          setContentItems((prev) => [...prev, newItem]);
-          setApiSuccess('Konten layanan ditambahkan (mode lokal).');
-        }
+        await masterApi.createServiceType(payload);
+        setApiSuccess('Konten layanan baru berhasil disimpan ke database!');
+        await loadData();
       }
       handleCloseModal();
       setTimeout(() => setApiSuccess(''), 4000);
@@ -541,17 +517,19 @@ export const ContentConfiguration = () => {
 
   // ── Hapus ─────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
+    setIsSubmitting(true);
+    setApiError('');
     try {
       await masterApi.deleteServiceType(id);
-      setApiSuccess('Konten layanan berhasil dinonaktifkan.');
       await loadData();
-    } catch (apiErr) {
-      console.warn('Gagal hapus via API, menghapus dari state lokal:', apiErr?.message || apiErr);
-      setContentItems((prev) => prev.filter((item) => item.id !== id));
-      setApiSuccess('Konten layanan dihapus (mode lokal).');
+      setApiSuccess('Konten layanan berhasil dinonaktifkan.');
+      setDeleteConfirm(null);
+      setTimeout(() => setApiSuccess(''), 4000);
+    } catch (err) {
+      setApiError(err?.message || 'Konten layanan belum dapat dinonaktifkan.');
+    } finally {
+      setIsSubmitting(false);
     }
-    setDeleteConfirm(null);
-    setTimeout(() => setApiSuccess(''), 4000);
   };
 
   // ── Form change handler ───────────────────────────────────────────────
@@ -816,7 +794,7 @@ export const ContentConfiguration = () => {
                       <span className="text-xs text-neutral-500">{formatDate(item.updatedAt)}</span>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleOpenEdit(item)}
                           className="p-2 rounded-md hover:bg-primary-100 text-neutral-500 hover:text-primary-700 transition-colors"
@@ -827,7 +805,8 @@ export const ContentConfiguration = () => {
                         <button
                           onClick={() => setDeleteConfirm(item)}
                           className="p-2 rounded-md hover:bg-rose-50 text-neutral-500 hover:text-rose-600 transition-colors"
-                          title="Hapus konten"
+                          title="Nonaktifkan konten"
+                          aria-label={`Nonaktifkan ${item.name}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1189,27 +1168,29 @@ export const ContentConfiguration = () => {
               </div>
               <div>
                 <h3 className="text-base font-bold text-neutral-900">
-                  Hapus Konten Layanan
+                  Nonaktifkan Konten Layanan
                 </h3>
                 <p className="text-sm text-neutral-600 mt-1">
                   Anda yakin ingin menghapus{' '}
                   <span className="font-semibold text-neutral-900">
                     "{deleteConfirm.name}"
                   </span>
-                  ? Tindakan ini tidak dapat dibatalkan.
+                  ? Layanan akan dinonaktifkan dan tidak muncul pada pilihan pengajuan baru.
                 </p>
               </div>
             </div>
+            {apiError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{apiError}</p>}
             <div className="flex items-center justify-end gap-3 pt-2">
-              <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>
+              <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={isSubmitting}>
                 Batal
               </Button>
               <Button
                 variant="danger"
                 icon={<Trash2 className="w-4 h-4" />}
                 onClick={() => handleDelete(deleteConfirm.id)}
+                disabled={isSubmitting}
               >
-                Hapus Konten
+                {isSubmitting ? 'Memproses...' : 'Nonaktifkan Konten'}
               </Button>
             </div>
           </div>

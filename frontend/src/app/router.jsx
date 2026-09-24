@@ -38,6 +38,7 @@ const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signature
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
+const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 
@@ -212,6 +213,10 @@ export const router = createBrowserRouter([
             <ContentConfiguration />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'internal/core-teams',
+        element: <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}><CoreTeamPage /></ProtectedRoute>,
       },
       {
         path: 'internal/settings/content',

@@ -46,7 +46,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         { label: 'Pusat Kendali Operasional', desc: 'Dashboard ringkasan tugas hari ini', path: '/internal', icon: FileText, category: 'Navigasi' },
         ...(isHead || isSuperAdmin
           ? [
-              { label: 'Penugasan Verifikator', desc: 'Terbitkan Nota Dinas & penugasan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Kepala LPMQ' },
+              { label: 'Penugasan Verifikator', desc: 'Admin Internal mencatat Nota Dinas dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Admin Internal' },
               { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
               { label: 'Pusat Tanda Tangan Resmi', desc: 'Tandatangani Surat Pemberitahuan & Berita Acara', path: '/internal/signatures', icon: Award, category: 'Kepala LPMQ' },
             ]
@@ -231,4 +231,3 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
 };
 
 export default CommandSearchDialog;
-

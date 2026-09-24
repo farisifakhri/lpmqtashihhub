@@ -46,11 +46,11 @@ try {
   await deny(`/verification-results/${document.id}/approve`);
   await deny(`/verification-documents/${document.id}/return`, 'POST', { reason: 'Tidak berwenang' });
   await deny(`/verification-documents/${document.id}/send`);
-  await deny(`/registrations/${ready.id}/verification-assignments`, 'POST', { verifier_id: verifier.id, nota_no: 'ADMIN-FORBIDDEN-ND' });
+  await call(`/registrations/${ready.id}/verification-assignments`, tokens.ADMIN, 'POST', { verifier_id: verifier.id, nota_no: 'ADMIN-NO-INTAKE-ND' }, 409);
   // Under KB-01: Admin is authorized to receive physical master; Kepala LPMQ and Verifikator are denied 403
   await call(`/registrations/${ready.id}/physical-master/receive`, tokens.KEPALA_LPMQ, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
   await call(`/registrations/${ready.id}/physical-master/receive`, tokens.VERIFIKATOR, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
-  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.ADMIN, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 409);
+  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.ADMIN, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 200);
   await deny('/registrations', 'POST', { service_type_id: service.id, title: 'Forbidden publisher action' });
   await deny(`/registrations/${draft.id}/submit`);
   await deny(`/registrations/${draft.id}/manuscripts`, 'POST', { type: 'COVER', file_id: '00000000-0000-4000-8000-000000000001' });
@@ -64,7 +64,8 @@ try {
   await deny('/master/categories', 'POST', { code: 'FORBIDDEN', name: 'Forbidden' });
   assert.equal((await prisma.registration.findUnique({ where: { id: pending.id } })).status, 'WAITING_VERIFICATION_APPROVAL');
   await call(`/verification-documents/${document.id}/approve`, tokens.SUPERADMIN, 'POST', {}, 403);
-  await call(`/registrations/${ready.id}/verification-assignments`, tokens.SUPERADMIN, 'POST', { verifier_id: verifier.id, nota_no: 'SA-FORBIDDEN-ND' }, 403);
+  await call(`/registrations/${ready.id}/verification-assignments`, tokens.KEPALA_LPMQ, 'POST', { verifier_id: verifier.id, nota_no: 'HEAD-FORBIDDEN-ND' }, 403);
+  await call(`/registrations/${ready.id}/verification-assignments`, tokens.SUPERADMIN, 'POST', { verifier_id: verifier.id, nota_no: 'SA-ALLOWED-ND' }, 201);
   await call('/users', tokens.SUPERADMIN);
 
   // Positive tests fail until narrowly scoped read and assignment routes are opened.

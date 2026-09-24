@@ -61,6 +61,7 @@ export const UserManagementPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    whatsappNumber: '',
     nip: '',
     password: '',
     status: 'ACTIVE',
@@ -106,6 +107,7 @@ export const UserManagementPage = () => {
     setFormData({
       name: '',
       email: '',
+      whatsappNumber: '',
       nip: '',
       password: '',
       status: 'ACTIVE',
@@ -121,6 +123,7 @@ export const UserManagementPage = () => {
     setFormData({
       name: user.name || '',
       email: user.email || '',
+      whatsappNumber: user.whatsapp_number || '',
       nip: user.nip || '',
       password: '', // blank unless resetting
       status: user.status || 'ACTIVE',
@@ -158,6 +161,7 @@ export const UserManagementPage = () => {
       const payload = {
         name: formData.name.trim(),
         email: formData.email.trim(),
+        whatsapp_number: formData.whatsappNumber.trim() || null,
         password: formData.password,
         nip: formData.nip?.trim() || null,
         status: formData.status,
@@ -187,6 +191,7 @@ export const UserManagementPage = () => {
       const payload = {
         name: formData.name.trim(),
         email: formData.email.trim(),
+        whatsapp_number: formData.whatsappNumber.trim() || null,
         nip: formData.nip?.trim() || null,
         status: formData.status,
         roles: formData.roles,
@@ -482,10 +487,10 @@ export const UserManagementPage = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={isSelf}
+                            disabled={isSelf || user.status === 'INACTIVE'}
                             onClick={() => setDeletingUser(user)}
                             className="text-xs px-2.5 py-1 text-rose-600 hover:bg-rose-50 hover:border-rose-300 disabled:opacity-40"
-                            title={isSelf ? 'Anda tidak dapat menghapus akun sendiri' : 'Hapus / Nonaktifkan'}
+                            title={isSelf ? 'Anda tidak dapat menghapus akun sendiri' : user.status === 'INACTIVE' ? 'Akun sudah nonaktif' : 'Hapus / Nonaktifkan'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -592,6 +597,11 @@ export const UserManagementPage = () => {
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700">WhatsApp Petugas (Opsional, +62...)</label>
+                <input type="tel" value={formData.whatsappNumber} onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })} placeholder="Belum diisi / belum diverifikasi" className="w-full px-3 py-2 rounded-lg border border-slate-300" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -766,6 +776,11 @@ export const UserManagementPage = () => {
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-semibold text-slate-700">WhatsApp Petugas (Opsional, +62...)</label>
+                <input type="tel" value={formData.whatsappNumber} onChange={(e) => setFormData({ ...formData, whatsappNumber: e.target.value })} placeholder="Belum diisi / belum diverifikasi" className="w-full px-3 py-2 rounded-lg border border-slate-300" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -37,11 +37,11 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(JSON.stringify(receipt).includes('file_id'), false);
   });
 
-  await test('PR-VER-02: hanya Admin dapat menerima fisik dan hanya Kepala dapat menugaskan verifikator aktif', async () => {
+  await test('PR-VER-02: Admin Internal atau Superadmin dapat menugaskan verifikator aktif', async () => {
     notaNo = `ND-VER-${reg.registration_no}`;
     const assignPath = `/registrations/${reg.id}/verification-assignments`;
-    await expect(assignPath, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
-    await expect(assignPath, adminToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 403);
+    await expect(assignPath, adminToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
+    await expect(assignPath, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 403);
     await expect(`/registrations/${reg.id}/physical-master/receive`, verifikatorToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
     // KB-01: Kepala LPMQ dilarang menerima master fisik
     await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
@@ -50,29 +50,29 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(received.status, 'RECEIVED');
     assert.equal((await expect(`/registrations/${reg.id}/receipt`, publisherToken)).physical_master.receipt_no, `TR-${reg.registration_no}`);
 
-    // P0-01: Verifikasi antrean kandidat penugasan Kepala LPMQ
-    const candidates = await expect('/verification-assignment-candidates', kepalaToken);
+    // P0-01: Verifikasi antrean kandidat penugasan Admin Internal
+    const candidates = await expect('/verification-assignment-candidates', adminToken);
     assert.ok(candidates.items.some(item => item.id === reg.id));
     const candidateItem = candidates.items.find(item => item.id === reg.id);
     assert.equal(candidateItem.operational_state, 'READY_FOR_ASSIGNMENT');
     assert.equal(candidateItem.physical_master.receipt_no, `TR-${reg.registration_no}`);
 
     // P0-02: Verifikasi direktori verifikator aktif
-    const verifiersList = await expect('/verification-verifiers?status=ACTIVE', kepalaToken);
+    const verifiersList = await expect('/verification-verifiers?status=ACTIVE', adminToken);
     assert.ok(Array.isArray(verifiersList));
     assert.ok(verifiersList.some(v => v.id === verifier.id));
     const verifierObj = verifiersList.find(v => v.id === verifier.id);
     assert.equal(typeof verifierObj.active_assignment_count, 'number');
 
-    // P0-03: Notifikasi idempoten ke Kepala LPMQ saat intake RECEIVED
-    const kepalaUser = await prisma.user.findUnique({ where: { email: 'kepala@lpmq.kemenag.go.id' } });
-    const kepalaNotif = await prisma.notification.findFirst({
-      where: { registration_id: reg.id, user_id: kepalaUser.id, type: 'VERIFICATION_ASSIGNMENT_REQUIRED' },
+    // P0-03: Notifikasi idempoten ke Admin Internal saat intake RECEIVED
+    const adminUser = await prisma.user.findUnique({ where: { email: 'admin.internal@lpmq.kemenag.go.id' } });
+    const adminNotif = await prisma.notification.findFirst({
+      where: { registration_id: reg.id, user_id: adminUser.id, type: 'VERIFICATION_ASSIGNMENT_REQUIRED' },
     });
-    assert.ok(kepalaNotif);
-    assert.equal(kepalaNotif.payload.receipt_no, `TR-${reg.registration_no}`);
+    assert.ok(adminNotif);
+    assert.equal(adminNotif.payload.receipt_no, `TR-${reg.registration_no}`);
 
-    await expect(assignPath, kepalaToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
+    await expect(assignPath, adminToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
 
   });
 
@@ -83,8 +83,8 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const nota1 = `${notaNo}-01`;
     const nota2 = `${notaNo}-02`;
     const results = await Promise.all([
-      call(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: nota1, notes: 'Periksa naskah dan dokumen penerbit' }),
-      call(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: nota2, notes: 'Periksa naskah dan dokumen penerbit' }),
+      call(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: nota1, notes: 'Periksa naskah dan dokumen penerbit' }),
+      call(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: nota2, notes: 'Periksa naskah dan dokumen penerbit' }),
     ]);
     assert.deepEqual(results.map(item => item.status).sort(), [201, 409]);
     const created = results.find(item => item.status === 201).json.data;
@@ -109,10 +109,10 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const verifierInbox = await expect('/verification-assignments?my_tasks=true&status=ASSIGNED&limit=2', verifikatorToken);
     assert.ok(verifierInbox.items.some(item => item.registration_id === reg.id && item.documents.some(doc => doc.document_no === createdNotaNo)));
     const headInbox = await expect('/verification-assignments?my_tasks=true&status=ASSIGNED', kepalaToken);
-    assert.ok(headInbox.items.some(item => item.registration_id === reg.id));
+    assert.equal(headInbox.items.some(item => item.registration_id === reg.id), false);
     const adminInbox = await expect('/verification-assignments?status=ASSIGNED', adminToken);
     assert.ok(adminInbox.items.some(item => item.registration_id === reg.id));
-    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-ADMIN-FORBIDDEN' }, 403);
+    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-ADMIN-ALREADY-ASSIGNED' }, 409);
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {
@@ -121,13 +121,13 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });
     const path = `/registrations/${another.id}/verification-assignments`;
-    await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
+    await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);
     const reset = await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     assert.equal(reset.status, 'PENDING');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
     assert.equal((await prisma.physicalMasterIntake.findUnique({ where: { registration_id: another.id } })).status, 'PENDING');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
-    await expect(path, kepalaToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 409);
+    await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 409);
     assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 0);
     assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'READY_FOR_VERIFICATION');
   });
