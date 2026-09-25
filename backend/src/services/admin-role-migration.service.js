@@ -18,7 +18,7 @@ export async function inspectKetuaPentashih(db = prisma) {
   return {
     labelled_candidates: labelled,
     team_leaders_for_manual_review: users.filter(user => user.teams_led.length),
-    existing_admins: users.filter(user => user.roles.some(item => item.role.code === 'ADMIN')),
+    existing_admins: users.filter(user => user.roles.some(item => item.role.code === 'HELPER_ADMIN')),
     note: 'No automatic promotion from team leadership, assignment stage, name or account status. Execution requires reviewed user IDs.',
   };
 }
@@ -33,18 +33,18 @@ export async function migrateReviewedAdmins({ userIds, expected, approvedBy, exe
   const actor = await db.user.findUnique({ where: { id: approvedBy }, include: { roles: { include: { role: true } } } });
   if (!actor || actor.status !== 'ACTIVE' || !actor.roles.some(item => item.role.code === 'SUPERADMIN')) throw new Error('Execution requires an active SUPERADMIN approval actor.');
   return db.$transaction(async tx => {
-    const role = await tx.role.findUnique({ where: { code: 'ADMIN' } });
+    const role = await tx.role.findUnique({ where: { code: 'HELPER_ADMIN' } });
     if (!role) throw new Error('Apply add_admin_role migration first.');
     let changed = 0;
     for (const user of users) {
       const current = await tx.user.findUnique({ where: { id: user.id }, include: { roles: { include: { role: true } } } });
       if (current.status !== 'ACTIVE') throw new Error('Account state changed.');
-      if (current.roles.some(item => item.role.code === 'ADMIN')) continue;
+      if (current.roles.some(item => item.role.code === 'HELPER_ADMIN')) continue;
       await tx.userRole.upsert({ where: { user_id_role_id: { user_id: user.id, role_id: role.id } }, create: { user_id: user.id, role_id: role.id }, update: {} });
       await tx.auditLog.create({ data: {
         actor_id: actor.id, action: 'MIGRATE_KETUA_PENTASHIH_TO_ADMIN', subject_type: 'User', subject_id: user.id,
         before_json: { roles: current.roles.map(item => item.role.code) },
-        after_json: { roles: [...current.roles.map(item => item.role.code), 'ADMIN'], source: 'Reviewed one-time migration', run_id: randomUUID() },
+        after_json: { roles: [...current.roles.map(item => item.role.code), 'HELPER_ADMIN'], source: 'Reviewed one-time migration', run_id: randomUUID() },
       } });
       changed += 1;
     }

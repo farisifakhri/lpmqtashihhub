@@ -1,19 +1,23 @@
-# API alur layanan — implementasi awal
+# API alur layanan
 
 Base URL: `/api/v1`. Seluruh endpoint di bawah memerlukan Bearer token. Respons JSON mengikuti `{ "success": true, "data": ... }`; kesalahan memakai HTTP 400 (input), 403 (izin), 404 (tidak tersedia), atau 409 (konflik status).
 
+## Pembuatan draf penerbit
+
+`POST /registrations` menerima `title` minimal 3 karakter setelah spasi tepi dihapus dan `mushaf_details.penanggung_jawab_produk` berupa nama yang tidak kosong. Keduanya wajib sejak penyimpanan draf. Contoh: `{ "title": "Mushaf Baru", "mushaf_details": { "penanggung_jawab_produk": "Nama Penanggung Jawab" } }`. Validasi gagal mengembalikan HTTP 400 dengan path field terkait.
+
 ## Fondasi SOP Verifikasi (SOP v2.2)
 
-State machine membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → IN_VERIFICATION → WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED → AWAITING_PAYMENT → PAYMENT_VERIFICATION → WAITING_DISTRIBUTOR_RECEIPT → WAITING_DISTRIBUTION` serta jalur koreksi `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`. Penerimaan master fisik permohonan dilakukan oleh `ADMIN` (Staf TU / Layanan). Penugasan verifikator dan penerbitan Nota Dinas dilakukan oleh Kepala LPMQ secara atomik dalam satu transaksi dengan SLA 2 hari kerja kalender `Asia/Jakarta` (cut-off 16:00 WIB). Persetujuan draf dokumen verifikasi dilakukan oleh Kepala LPMQ, penandatanganan digital internal bertingkat dilakukan oleh Verifikator dan Kepala LPMQ, pengiriman surat hasil verifikasi dicatat melalui `EmailOutbox` idempoten dengan mekanisme antrean/retry, dan serah-terima fisik ke distributor disahkan oleh verifikator penugasan. Alur verifikasi internal ini telah selesai diimplementasikan end-to-end dan seluruh rangkaian test suite saat ini lulus.
+State machine membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → IN_VERIFICATION → WAITING_VERIFICATION_APPROVAL → VERIFICATION_APPROVED → AWAITING_PAYMENT → PAYMENT_VERIFICATION → WAITING_DISTRIBUTOR_RECEIPT → WAITING_DISTRIBUTION` serta jalur koreksi `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`. Penerimaan master fisik permohonan dilakukan oleh `HELPER_ADMIN` (Staf TU / Layanan). Penugasan verifikator dan pencatatan Nota Dinas dilakukan oleh HELPER_ADMIN secara atomik dalam satu transaksi dengan SLA 2 hari kerja kalender `Asia/Jakarta` (cut-off 16:00 WIB). Persetujuan draf dokumen verifikasi dilakukan oleh Kepala LPMQ, penandatanganan digital internal bertingkat dilakukan oleh Verifikator dan Kepala LPMQ, pengiriman surat hasil verifikasi dicatat melalui `EmailOutbox` idempoten dengan mekanisme antrean/retry, dan serah-terima fisik ke distributor disahkan oleh verifikator penugasan. Alur verifikasi internal ini telah selesai diimplementasikan end-to-end dan seluruh rangkaian test suite saat ini lulus.
 
 ## Intake master fisik, penugasan, dan dokumen verifikasi
 
 | Endpoint | Aktor | Body / hasil |
 |---|---|---|
 | `PUT /registrations/:id/physical-master` | Penerbit pemilik | `{ "format": "A4", "binding_method": "PER_JUZ", "volume_count": 30, "sent_at": "2026-09-14T10:00:00+07:00", "delivery_method": "KURIR", "notes": "opsional" }`. Membuat atau memperbarui deklarasi berstatus `PENDING` selama DRAFT, READY_FOR_VERIFICATION, atau REVISION_REQUIRED. |
-| `POST /registrations/:id/physical-master/receive` | `ADMIN` / `SUPERADMIN` | `{ "decision": "RECEIVED", "receipt_no": "TR-001", "condition": "Baik", "volume_count": 30 }` atau `RETURNED` dengan `notes` wajib. Memeriksa fisik naskah per juz di loket LPMQ. Kepala LPMQ ditolak (`403`). |
+| `POST /registrations/:id/physical-master/receive` | `HELPER_ADMIN` / `SUPERADMIN` | `{ "decision": "RECEIVED", "receipt_no": "TR-001", "condition": "Baik", "volume_count": 30 }` atau `RETURNED` dengan `notes` wajib. Memeriksa fisik naskah per juz di loket LPMQ. Kepala LPMQ ditolak (`403`). |
 | `GET /registrations/:id/receipt` | Penerbit pemilik, Kepala LPMQ, superadmin | Bukti pendaftaran JSON setelah submit: nomor, penerbit, layanan, judul, waktu submit, daftar metadata berkas digital, dan status master fisik. |
-| `POST /registrations/:id/verification-assignments` | `ADMIN`, `SUPERADMIN` | `{ "verifier_id": "UUID", "nota_no": "ND-001", "notes": "opsional" }`. Admin Internal atau Superadmin menerbitkan Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`) dan menugaskan verifikator secara atomik. Tenggat SLA dihitung tepat 2 hari kerja kalender `Asia/Jakarta` (pukul 16:00 WIB). |
+| `POST /registrations/:id/verification-assignments` | `HELPER_ADMIN`, `SUPERADMIN` | `{ "verifier_id": "UUID", "nota_no": "ND-001", "notes": "opsional" }`. Helper Admin atau Superadmin menerbitkan Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`) dan menugaskan verifikator secara atomik. Tenggat SLA dihitung tepat 2 hari kerja kalender `Asia/Jakarta` (pukul 16:00 WIB). |
 | `GET /verification-assignments` | Kepala LPMQ, Verifikator, superadmin | Inbox penugasan dengan filter `status`, `search`, `my_tasks`, `page`, `limit`. |
 | `POST /verification-documents` | `VERIFIKATOR` penugasan | `{ "decision": "PASSED" / "REVISION_REQUIRED", "notes": "...", "attachment_file_ids": [...] }`. Menyusun draf Surat Pemberitahuan Hasil Verifikasi dan Berita Acara Verifikasi. Lampiran divalidasi kepemilikannya. |
 | `POST /verification-documents/:id/submit` | `VERIFIKATOR` penugasan | Mengajukan draf dokumen hasil verifikasi ke Kepala LPMQ (`WAITING_APPROVAL`). |
@@ -54,13 +58,15 @@ SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dengan tenggat akh
 
 `POST /registrations/:id/official-documents` oleh distributor/dokumentator/superadmin menerima `{ "document_type": "BERITA_ACARA_TASHIH" }` atau SURAT_TANDA_TASHIH. Hanya tersedia pada READY_FOR_STT. Setiap pemanggilan menambah versi dengan snapshot data naskah, tarif/SLA, verifikasi, dan hasil pentashihan.
 
-`GET /official-documents/:id/pdf` menghasilkan PDF snapshot **berlabel DRAF** untuk internal. Ini belum template resmi. Font draf Latin belum mendukung teks Arab; karakter yang tidak didukung menghasilkan 422 tanpa mengubah snapshot. Endpoint publik QR mengembalikan 404 untuk draf; draf juga tidak dikembalikan ke penerbit pada detail pengajuan.
+`GET /official-documents/:id/pdf` menghasilkan PDF snapshot **berlabel DRAF** untuk dokumen yang belum diterbitkan. Ini belum template resmi. Font draf Latin belum mendukung teks Arab; karakter yang tidak didukung menghasilkan 422 tanpa mengubah snapshot. Endpoint publik QR tetap mengembalikan 404 untuk draf.
+
+`GET /registrations/:id/document-archive` menampilkan semua versi dokumen verifikasi dan hasil tashih, termasuk draf dan revisi. Penerbit hanya dapat membaca arsip pengajuannya sendiri. `HELPER_ADMIN` dan `DOKUMENTATOR` dapat membaca arsip semua pengajuan untuk kebutuhan laporan Posdok-Q. Pratinjau menampilkan snapshot isi dokumen; PDF draf hasil tashih diberi penanda DRAF.
 
 `POST /official-documents/:id/sign` belum menerbitkan dokumen: Kepala LPMQ menerima 409 sampai template dan alur penanda tangan disahkan. SUPERADMIN tanpa peran Kepala LPMQ menerima 403. Tidak ada tanda tangan digital/BSrE semu atau penerbitan STT tanpa dasar keputusan. Format, penanda tangan BA, delegasi, PDF final Unicode, dan notifikasi STT masih pekerjaan lanjutan.
 
 ## Status dan notifikasi
 
-Persetujuan hasil verifikasi oleh KEPALA_LPMQ; penolakan draf surat kembali ke IN_VERIFICATION dengan alasan wajib dan tetap ditangani verifikator semula. SUPERADMIN tanpa peran Kepala tidak dapat menggantikan persetujuan ini. Kontrak API lengkap mengacu pada [API_CONTRACT_MODUL_LANJUTAN.md](../../API_CONTRACT_MODUL_LANJUTAN.md).
+Persetujuan hasil verifikasi oleh KEPALA_LPMQ; penolakan draf surat kembali ke IN_VERIFICATION dengan alasan wajib dan tetap ditangani verifikator semula. SUPERADMIN tanpa peran Kepala tidak dapat menggantikan persetujuan ini. Dokumen ini menjadi rujukan kontrak API alur kerja; detail validasi mengikuti route dan validator backend.
 
 Endpoint status umum menolak transisi yang harus melalui submit/pembayaran/assignment/sidang/penetapan. Gunakan `from_status` pada aksi status lama untuk mendeteksi halaman yang sudah kedaluwarsa; ketidaksesuaian menghasilkan 409.
 
@@ -73,7 +79,6 @@ cd backend
 npm ci
 npx prisma generate
 npx prisma migrate deploy
-npm run test:unit
 npm test
 ```
 

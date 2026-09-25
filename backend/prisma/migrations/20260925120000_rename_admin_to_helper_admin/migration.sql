@@ -1,0 +1,14 @@
+-- Keep the existing role ID and user memberships while changing its code.
+ALTER TABLE `roles` MODIFY `code` ENUM(
+  'SUPERADMIN', 'ADMIN', 'HELPER_ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR',
+  'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'
+) NOT NULL;
+
+UPDATE `roles`
+SET `code` = 'HELPER_ADMIN', `name` = 'Helper Admin LPMQ'
+WHERE `code` = 'ADMIN';
+
+ALTER TABLE `roles` MODIFY `code` ENUM(
+  'SUPERADMIN', 'HELPER_ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR',
+  'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'
+) NOT NULL;

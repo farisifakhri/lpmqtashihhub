@@ -32,9 +32,10 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
 export async function getDocument(id, user) {
   const document = await prisma.officialDocument.findUnique({ where: { id }, include: { registration: { select: { publisher_id: true, core_team_number: true, core_distributor_id: true, core_documenter_id: true } } } });
   if (!document) fail(404, 'Dokumen tidak ditemukan.');
-  requireRole(user, ['ADMIN_PENERBIT', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
-  if (user.roles.includes('ADMIN_PENERBIT') && (!user.publisherId || document.registration.publisher_id !== user.publisherId || document.status !== 'ISSUED')) fail(403, 'Dokumen ini belum tersedia untuk akun penerbit Anda. Dokumen hanya dapat diunduh setelah diterbitkan untuk pengajuan milik penerbit Anda.');
-  if (document.registration.core_team_number && !user.roles.some(role => ['ADMIN_PENERBIT', 'KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
+  requireRole(user, ['ADMIN_PENERBIT', 'HELPER_ADMIN', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN'].includes(role))
+    && (!user.publisherId || document.registration.publisher_id !== user.publisherId)) fail(403, 'Dokumen ini bukan milik penerbit Anda.');
+  if (document.registration.core_team_number && !user.roles.some(role => ['ADMIN_PENERBIT', 'HELPER_ADMIN', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
     && ![document.registration.core_distributor_id, document.registration.core_documenter_id].includes(user.id)) fail(403, 'Dokumen ini bukan tugas Anda.');
   return document;
 }

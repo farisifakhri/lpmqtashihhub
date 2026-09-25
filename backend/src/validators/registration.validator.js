@@ -5,7 +5,7 @@ export const createRegistrationSchema = {
     .object({
       publisher_id: z.string().uuid().optional(), // Diisi jika admin membuat atas nama penerbit
       service_type_id: z.string().uuid('ID Layanan tidak valid').optional(),
-      title: z.string().min(3, 'Judul mushaf wajib diisi').optional(),
+      title: z.string().trim().min(3, 'Judul mushaf minimal 3 karakter').optional(),
       manuscripts: z.array(z.object({ title: z.string().min(3, 'Judul naskah minimal 3 karakter') })).optional(),
       registration_type: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).default('NEW'),
       registration_category: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).optional(),
@@ -28,6 +28,13 @@ export const createRegistrationSchema = {
           code: z.ZodIssueCode.custom,
           message: 'Judul naskah mushaf wajib diisi.',
           path: ['title'],
+        });
+      }
+      if (typeof data.mushaf_details?.penanggung_jawab_produk !== 'string' || !data.mushaf_details.penanggung_jawab_produk.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Nama penanggung jawab produk/mushaf wajib diisi.',
+          path: ['mushaf_details', 'penanggung_jawab_produk'],
         });
       }
       if (data.registration_type === 'EXTENSION') {

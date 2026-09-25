@@ -4,7 +4,7 @@ import { fail, requireRole } from './workflow-utils.js';
 // Konfigurasi SLA Resmi SOP Verifikasi LPMQ (VER-I01)
 export const SLA_CONFIG = {
   INTAKE_PHYSICAL_MINUTES: 30,       // Langkah 1: Intake & tanda terima master fisik di loket
-  ASSIGNMENT_ADMIN_MINUTES: 30,      // Langkah 2: Penugasan verifikator oleh Admin Internal
+  ASSIGNMENT_ADMIN_MINUTES: 30,      // Langkah 2: Penugasan verifikator oleh Helper Admin
   VERIFICATION_REVIEW_DAYS: 2,       // Langkah 3: Telaah berkas & draf hasil verifikasi (48 jam)
   APPROVAL_HEAD_MINUTES: 30,         // Langkah 4: Persetujuan/penolakan draf surat oleh Kepala LPMQ
   SEND_RESULT_MINUTES: 30,           // Langkah 5: Pengiriman surat hasil verifikasi ke penerbit
@@ -15,10 +15,10 @@ export const SLA_CONFIG = {
 
 /**
  * Laporan Kinerja dan Analitik Modul Verifikasi (VER-I06)
- * Otoritas: SUPERADMIN, ADMIN, KEPALA_LPMQ, VERIFIKATOR
+ * Otoritas: SUPERADMIN, HELPER_ADMIN, KEPALA_LPMQ, VERIFIKATOR
  */
 export const getVerificationPerformanceReport = async (filters = {}, user) => {
-  requireRole(user, ['SUPERADMIN', 'ADMIN', 'KEPALA_LPMQ', 'VERIFIKATOR']);
+  requireRole(user, ['SUPERADMIN', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'VERIFIKATOR']);
 
   const now = new Date();
 
@@ -209,7 +209,7 @@ export const getVerificationPerformanceReport = async (filters = {}, user) => {
  * Timeline Naskah Lintas Peran (VER-I05)
  * Menyajikan riwayat status yang disanitasi:
  * - Penerbit tidak melihat catatan internal rahasia atau identitas petugas telaah.
- * - Internal (SUPERADMIN, ADMIN, VERIFIKATOR, dll) melihat detail komprehensif.
+ * - Internal (SUPERADMIN, HELPER_ADMIN, VERIFIKATOR, dll) melihat detail komprehensif.
  */
 export const getRegistrationTimeline = async (registrationId, user) => {
   const reg = await prisma.registration.findUnique({

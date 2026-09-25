@@ -150,19 +150,19 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
     const newSuperadminEmail = `test.superadmin.${Date.now()}@lpmq.kemenag.go.id`;
 
     try {
-      await test('User Management: SUPERADMIN dapat membuat akun ADMIN (Admin Internal) dan mengujinya', async () => {
+      await test('User Management: SUPERADMIN dapat membuat akun HELPER_ADMIN (Admin Internal) dan mengujinya', async () => {
         const res = await expect('/users', adminToken, 'POST', {
           name: 'Staf Admin Internal Uji',
           email: adminInternalEmail,
           password: 'password123',
           nip: '199001012015011010',
           status: 'ACTIVE',
-          roles: ['ADMIN'],
+          roles: ['HELPER_ADMIN'],
         }, 201);
 
         assert.ok(res.data.id);
         assert.equal(res.data.email, adminInternalEmail);
-        assert.ok(res.data.roles.includes('ADMIN'));
+        assert.ok(res.data.roles.includes('HELPER_ADMIN'));
         adminInternalId = res.data.id;
 
         // Login sebagai Admin Internal

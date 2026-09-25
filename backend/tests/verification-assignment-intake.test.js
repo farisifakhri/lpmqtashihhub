@@ -27,18 +27,18 @@ function checkGuard(guard, user) {
   return { next, status, errorJson };
 }
 
-test('RBAC: /verification/verifiers & /verification/unassigned-registrations allow ADMIN & SUPERADMIN', () => {
-  const guard = authorize('ADMIN', 'SUPERADMIN');
+test('RBAC: /verification/verifiers & /verification/unassigned-registrations allow HELPER_ADMIN & SUPERADMIN', () => {
+  const guard = authorize('HELPER_ADMIN', 'SUPERADMIN');
 
   // Allowed
-  assert.equal(checkGuard(guard, { roles: ['ADMIN'] }).next, true);
+  assert.equal(checkGuard(guard, { roles: ['HELPER_ADMIN'] }).next, true);
   assert.equal(checkGuard(guard, { roles: ['SUPERADMIN'] }).next, true);
-  assert.equal(checkGuard(guard, { roles: ['ADMIN', 'KEPALA_LPMQ'] }).next, true);
+  assert.equal(checkGuard(guard, { roles: ['HELPER_ADMIN', 'KEPALA_LPMQ'] }).next, true);
 
   // Disallowed
   for (const role of ['VERIFIKATOR', 'ADMIN_PENERBIT', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ']) {
     const result = checkGuard(guard, { roles: [role] });
-    assert.equal(result.next, false, `Role "${role}" must not pass authorize('ADMIN', 'SUPERADMIN')`);
+    assert.equal(result.next, false, `Role "${role}" must not pass authorize('HELPER_ADMIN', 'SUPERADMIN')`);
     assert.equal(result.status, 403);
   }
 

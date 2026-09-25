@@ -22,7 +22,7 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   let notaNo;
 
   await test('PR-VER-02: deklarasi fisik dibatasi pemilik dan bukti pendaftaran aman', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Intake SOP Verifikasi' }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Intake SOP Verifikasi', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherBToken, 'PUT', declaration, 403);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', { ...declaration, format: 'A5' }, 400);
     const intake = await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', declaration);
@@ -112,11 +112,11 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(headInbox.items.some(item => item.registration_id === reg.id), false);
     const adminInbox = await expect('/verification-assignments?status=ASSIGNED', adminToken);
     assert.ok(adminInbox.items.some(item => item.registration_id === reg.id));
-    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-ADMIN-ALREADY-ASSIGNED' }, 409);
+    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-HELPER_ADMIN-ALREADY-ASSIGNED' }, 409);
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {
-    const another = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Master Dikembalikan' }, 201);
+    const another = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Master Dikembalikan', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
     await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });

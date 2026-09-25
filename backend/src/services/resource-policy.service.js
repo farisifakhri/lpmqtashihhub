@@ -21,7 +21,7 @@ export function isKepalaUser(user) {
 }
 
 export function isAdminUser(user) {
-  return user?.roles?.includes('ADMIN') || user?.roles?.includes('SUPERADMIN');
+  return user?.roles?.includes('HELPER_ADMIN') || user?.roles?.includes('SUPERADMIN');
 }
 
 /**

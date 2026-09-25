@@ -37,7 +37,7 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
 export async function workload(id, user) {
   // Read-only workload remains available to Distributor for their own duties.
-  requireRole(user, ['ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
   if (!await prisma.distributionTeam.findUnique({ where: { id } })) fail(404, 'Tim tidak ditemukan.');
   return prisma.assignment.groupBy({ by: ['assignee_id', 'status'], where: { team_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } }, _count: { _all: true } });
 }
@@ -77,8 +77,8 @@ export async function listMyAssignments(user, query = {}) {
     include: {
       registration: {
         include: {
-          publisher: { select: { id: true, legal_name: true, brand_name: true } },
-          service_type: { select: { id: true, name: true, code: true } },
+          publisher: { select: { id: true, legal_name: true } },
+          service_type: { select: { id: true, name: true } },
           manuscript_files: true,
         },
       },

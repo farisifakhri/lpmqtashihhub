@@ -58,7 +58,7 @@ export async function runVerificationApprovalPaymentTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Standar Indonesia Uji Persetujuan & Pembayaran' },
+      { service_type_id: serviceId, title: 'Mushaf Standar Indonesia Uji Persetujuan & Pembayaran', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
 
@@ -358,7 +358,7 @@ export async function runVerificationApprovalPaymentTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: "Mushaf Al-Qur'an Uji Loket Langsung & Konkurensi" },
+      { service_type_id: serviceId, title: "Mushaf Al-Qur'an Uji Loket Langsung & Konkurensi", mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
     await expect(`/registrations/${directReg.id}/submit`, publisherToken, 'POST');
@@ -369,7 +369,7 @@ export async function runVerificationApprovalPaymentTests({
       tracking_no: 'RESI-LOKET-01',
     });
 
-    // 3. Loket ADMIN menerima fisik (auto-inisialisasi physicalMasterIntake)
+    // 3. Loket HELPER_ADMIN menerima fisik (auto-inisialisasi physicalMasterIntake)
     const directIntake = await expect(
       `/registrations/${directReg.id}/physical-master/receive`,
       adminToken,

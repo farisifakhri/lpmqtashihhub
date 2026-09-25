@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import { spawn } from 'node:child_process';
+import { readdir } from 'node:fs/promises';
 
 // Only the uniquely named database created by THIS run may be dropped.
 const database = `lpmq_fifo_${Date.now()}_test`;
@@ -22,16 +23,19 @@ try {
   console.log(`Disposable test database: ${database}`);
   await run(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy']);
   await run(process.execPath, ['prisma/seed.js']);
+  const unitFiles = (await readdir('tests')).filter(name => name.endsWith('.test.js')).map(name => `tests/${name}`);
+  await run(process.execPath, ['--test', ...unitFiles]);
   if (process.argv.includes('--core-team-only')) {
     await run(process.execPath, ['tests/core-team.integration.js']);
   } else {
     await run(process.execPath, ['tests/setup-core-team.fixture.js']);
     if (!process.argv.includes('--rbac-only')) {
       await run(process.execPath, ['tests/queue.integration.js']);
-      await run(process.execPath, ['test-api.js']);
+      await run(process.execPath, ['tests/test-api.integration.js']);
     }
     await run(process.execPath, ['tests/admin-rbac.integration.js']);
     await run(process.execPath, ['tests/publisher-dashboard.integration.js']);
+    await run(process.execPath, ['tests/core-team.integration.js']);
   }
 } catch (error) {
   console.error(error.message);

@@ -40,7 +40,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
   ];
 
   await test('PR-VER-03 Setup: Siapkan naskah dengan penerimaan fisik dan penugasan Admin Internal', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Uji Review Verifikator' }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Uji Review Verifikator', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', {
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
     });

@@ -63,7 +63,7 @@ export async function runHandoverTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Standar Uji Serah Terima Master Fisik' },
+      { service_type_id: serviceId, title: 'Mushaf Standar Uji Serah Terima Master Fisik', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
 
@@ -267,7 +267,7 @@ export async function runHandoverTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Uji Pengembalian Fisik' },
+      { service_type_id: serviceId, title: 'Mushaf Uji Pengembalian Fisik', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
     await expect(`/registrations/${reg2.id}/physical-master`, publisherToken, 'PUT', {

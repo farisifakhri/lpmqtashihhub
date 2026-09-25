@@ -48,7 +48,7 @@ export function requireOwner(reg, user) {
   // SUPERADMIN has access across all tenants
   if (user?.roles?.includes('SUPERADMIN')) return;
 
-  // ADMIN internal cannot touch publisher submissions
+  // HELPER_ADMIN internal cannot touch publisher submissions
   if (!user?.roles?.includes('ADMIN_PENERBIT')) {
     fail(403, 'Tindakan ini khusus untuk akun Penerbit.');
   }

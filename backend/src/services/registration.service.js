@@ -24,9 +24,9 @@ export const TRANSITION_POLICY = {
   },
   READY_FOR_VERIFICATION: {
     VERIFICATION_ASSIGNED: {
-      allowedRoles: ['ADMIN', 'SUPERADMIN'],
+      allowedRoles: ['HELPER_ADMIN', 'SUPERADMIN'],
       domainAction: true,
-      description: 'Admin Internal menugaskan verifikator tim inti dan mencatat Nota Dinas Verifikasi',
+      description: 'Helper Admin menugaskan verifikator tim inti dan mencatat Nota Dinas Verifikasi',
     },
     CANCELLED: {
       allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
@@ -806,7 +806,7 @@ export const listRegistrations = async ({
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
-  if (!publisherScope && !user.roles.some(role => ['ADMIN', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
+  if (!publisherScope && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
     if (user.roles.includes('VERIFIKATOR')) where.core_verifier_id = user.id;
     else if (user.roles.includes('DISTRIBUTOR')) where.core_distributor_id = user.id;
     else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
@@ -828,7 +828,10 @@ export const listRegistrations = async ({
 
   const summaryWhere = { ...where };
   if (segment === 'PUBLISHER_DOCUMENTS') {
-    where.official_documents = { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } };
+    where.OR = [
+      { official_documents: { some: {} } },
+      { verification_documents: { some: {} } },
+    ];
   } else if (status) {
     where.status = status;
   } else if (REGISTRATION_SEGMENTS[segment]) {
@@ -838,11 +841,11 @@ export const listRegistrations = async ({
   }
 
   if (search) {
-    where.OR = [
+    where.AND = [{ OR: [
       { registration_no: { contains: search } },
       { title: { contains: search } },
       { publisher: { legal_name: { contains: search } } },
-    ];
+    ] }];
   }
 
   const paging = queuePagination({ page, limit });
@@ -889,8 +892,8 @@ export const listRegistrations = async ({
       },
       orderBy: fifo ? [{ stage_entered_at: 'asc' }, { id: 'asc' }] : [{ created_at: 'desc' }, { id: 'asc' }],
     }),
-    prisma.registration.groupBy({ by: ['status'], where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}) }, _count: true }),
-    publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { OR: where.OR } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
+    prisma.registration.groupBy({ by: ['status'], where: { ...summaryWhere, ...(search ? { AND: where.AND } : {}) }, _count: true }),
+    publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { AND: where.AND } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
   ]);
 
   return {
@@ -959,7 +962,7 @@ export const getDetail = async (id, user) => {
     throw error;
   }
 
-  if (reg.core_team_number && !user.roles.some(role => ['ADMIN', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
+  if (reg.core_team_number && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
       && reg.publisher_id !== user.publisherId
       && ![reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].includes(user.id)
       && !reg.assignments.some(item => item.assignee_id === user.id)) {

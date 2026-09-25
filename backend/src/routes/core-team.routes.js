@@ -34,7 +34,7 @@ function action(handler, status = 200) {
   };
 }
 
-router.get('/', authenticate, authorize('ADMIN', 'SUPERADMIN'), action(req => getCoreTeamConfig(req.user)));
+router.get('/', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), action(req => getCoreTeamConfig(req.user)));
 router.get('/legacy', authenticate, authorize('SUPERADMIN'), validate(legacyQuerySchema), action(req => listLegacyCoreTeamCases(req.user, req.query)));
 router.put('/roster', authenticate, authorize('SUPERADMIN'), validate(rosterSchema),
   action(req => configureCoreTeams(req.body.teams, req.body.reason, req.user, req)));

@@ -43,7 +43,7 @@ export async function allocateCoreTeam(tx, registrationId, user, req) {
 }
 
 export async function getCoreTeamConfig(user) {
-  requireRole(user, ['SUPERADMIN', 'ADMIN']);
+  requireRole(user, ['SUPERADMIN', 'HELPER_ADMIN']);
   const rotation = await prisma.coreTeamRotation.findUnique({ where: { id: rotationId } });
   if (!rotation) fail(409, 'Konfigurasi rotasi belum tersedia. Jalankan migrasi database.');
   const rosters = await prisma.coreTeamRoster.findMany({

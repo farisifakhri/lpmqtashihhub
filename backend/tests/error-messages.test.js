@@ -40,7 +40,7 @@ test('workflow errors explain current status and required stage without enum cod
 });
 
 test('server distinguishes malformed requests, oversized upload, concurrency and unavailable data', t => {
-  t.mock.method(console, 'error', () => {});
+  const errors = t.mock.method(console, 'error', () => {});
   for (const [error, status, expected] of [
     [{ type: 'entity.parse.failed', status: 400 }, 400, /Muat ulang formulir/],
     [{ type: 'entity.too.large', status: 413 }, 413, /maksimal 10 MB/],
@@ -54,6 +54,7 @@ test('server distinguishes malformed requests, oversized upload, concurrency and
     assert.match(res.body.message, expected);
     assert.doesNotMatch(res.body.message, /secret_table|password_hash|Prisma/);
   }
+  assert.equal(errors.mock.callCount(), 2, 'Only 5xx failures should emit stack traces');
 });
 
 test('database failure during authentication is forwarded instead of falsely reporting invalid session', async t => {

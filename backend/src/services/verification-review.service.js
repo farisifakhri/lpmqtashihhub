@@ -304,7 +304,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 }, transactionOptions);
 
 export const getVerificationAssignmentDetail = async (assignmentId, user) => {
-  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'HELPER_ADMIN', 'SUPERADMIN']);
 
   const assignment = await resolveAssignment(prisma, assignmentId, {
     include: {
@@ -346,7 +346,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   if (!isHead && !isAdmin && assignment.verifier_id !== user.id) {
     fail(403, 'Anda tidak memiliki hak akses untuk memeriksa penugasan verifikator lain.');
   }
@@ -455,7 +455,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
 };
 
 export const getLatestVerificationAssignment = async (registrationId, user) => {
-  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['VERIFIKATOR', 'KEPALA_LPMQ', 'HELPER_ADMIN', 'SUPERADMIN']);
   const assignment = await prisma.verificationAssignment.findFirst({
     where: { registration_id: registrationId },
     orderBy: { assigned_at: 'desc' },
@@ -469,7 +469,7 @@ export const getLatestVerificationAssignment = async (registrationId, user) => {
   }
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   if (!isHead && !isAdmin && assignment.verifier_id !== user.id) {
     fail(403, 'Anda tidak memiliki hak akses untuk memeriksa penugasan verifikator lain.');
   }
@@ -478,7 +478,7 @@ export const getLatestVerificationAssignment = async (registrationId, user) => {
 };
 
 export const revokeVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
     include: { verifier: true },
@@ -535,7 +535,7 @@ export const revokeVerificationAssignment = (assignmentId, data, user, req) => p
 }, transactionOptions);
 
 export const reassignVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
     include: { verifier: true },
@@ -688,7 +688,7 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
   const isAssignedVerifier = user.roles.includes('VERIFIKATOR') && (user.id === doc.created_by_id || user.id === doc.assignment?.verifier_id);
 
@@ -1133,7 +1133,7 @@ export const getVerificationDocument = async (documentId, user) => {
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === doc.registration.publisher_id;
 

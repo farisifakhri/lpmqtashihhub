@@ -36,7 +36,7 @@ export const declarePhysicalMaster = (id, data, user, req) => prisma.$transactio
 export const receivePhysicalMaster = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['ADMIN', 'SUPERADMIN']);
+      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
       let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
@@ -111,12 +111,12 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         payload: { status: data.decision, receipt_no: intake.receipt_no, notes: intake.notes },
       } });
 
-      // Notifikasi kepada Admin Internal untuk penugasan verifikator.
+      // Notifikasi kepada Helper Admin untuk penugasan verifikator.
       if (data.decision === 'RECEIVED') {
         const assignmentAdmins = await tx.user.findMany({
           where: {
             status: 'ACTIVE',
-            roles: { some: { role: { code: 'ADMIN' } } },
+            roles: { some: { role: { code: 'HELPER_ADMIN' } } },
           },
           select: { id: true },
         });
@@ -161,7 +161,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
 export const createVerificationAssignment = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['ADMIN', 'SUPERADMIN']);
+      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
       await tx.$queryRawUnsafe('SELECT id, status FROM registrations WHERE id = ? FOR UPDATE', id);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
@@ -265,7 +265,7 @@ export const getRegistrationReceipt = async (id, user) => {
     },
   });
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
-  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('ADMIN') && reg.publisher_id !== user.publisherId) {
+  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('HELPER_ADMIN') && reg.publisher_id !== user.publisherId) {
     fail(403, 'Bukti pendaftaran hanya dapat dilihat oleh penerbit pemilik atau Kepala LPMQ.');
   }
   if (reg.status === 'DRAFT') fail(409, 'Bukti pendaftaran tersedia setelah pengajuan dikirim.');
@@ -282,10 +282,10 @@ export const getRegistrationReceipt = async (id, user) => {
 };
 
 export const listVerificationAssignments = async (query, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN']);
   const where = {};
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   if (!isHead && !isAdmin) where.verifier_id = user.id;
   if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
@@ -344,7 +344,7 @@ export const listVerificationAssignments = async (query, user) => {
 export const listVerifiers = async (queryOrUser, maybeUser) => {
   const user = maybeUser || queryOrUser;
   const query = maybeUser ? (queryOrUser || {}) : {};
-  requireRole(user, ['ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
 
   const where = {
     status: query.status || 'ACTIVE',
@@ -404,7 +404,7 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
 };
 
 export const listUnassignedRegistrations = async (query = {}, user) => {
-  requireRole(user, ['ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
@@ -461,7 +461,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
       operational_state: 'READY_FOR_ASSIGNMENT',
       physical_master: physicalMaster,
       next_action: {
-        owner_role: 'ADMIN',
+        owner_role: 'HELPER_ADMIN',
         label: 'Tugaskan Verifikator',
       },
     };

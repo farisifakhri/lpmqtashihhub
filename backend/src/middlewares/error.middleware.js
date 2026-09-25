@@ -1,6 +1,4 @@
 export const errorHandler = (err, req, res, next) => {
-  console.error('[Error Handler]:', err);
-
   let statusCode = err.statusCode || err.status || 500;
   if (!Number.isInteger(statusCode) || statusCode < 400 || statusCode > 599) statusCode = 500;
   let message = err.message || 'Permintaan belum dapat diproses. Silakan coba lagi nanti.';
@@ -58,6 +56,10 @@ export const errorHandler = (err, req, res, next) => {
   if (statusCode === 500) {
     message = 'Permintaan belum dapat diproses karena gangguan sistem. Muat ulang untuk memeriksa hasilnya sebelum mencoba lagi. Hubungi administrator jika masalah berlanjut.';
   }
+
+  // Expected input, access, and workflow rejections already have clear HTTP responses.
+  // Keep stack traces for actual server failures only.
+  if (statusCode >= 500) console.error('[Error Handler]:', err);
 
   res.status(statusCode).json({
     success: false,
