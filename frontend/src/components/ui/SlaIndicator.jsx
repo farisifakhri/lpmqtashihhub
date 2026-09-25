@@ -45,15 +45,15 @@ export const SlaIndicator = ({
   }
 
   const badgeStyles = {
-    normal: 'bg-emerald-50 text-emerald-900 border-emerald-300',
-    warning: 'bg-amber-50 text-amber-900 border-amber-300 font-bold',
-    overdue: 'bg-rose-50 text-rose-900 border-rose-300 font-bold',
+    normal: 'bg-brand-50 text-brand-900 border-brand-100',
+    warning: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine font-bold',
+    overdue: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine font-bold',
   };
 
   const barStyles = {
-    normal: 'bg-emerald-700',
-    warning: 'bg-amber-600',
-    overdue: 'bg-rose-600',
+    normal: 'bg-brand-700',
+    warning: 'bg-civic-warning',
+    overdue: 'bg-civic-danger',
   };
 
   return (
@@ -66,7 +66,7 @@ export const SlaIndicator = ({
           )}
         >
           {isOverdue ? (
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-rose-700" aria-hidden="true" />
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-civic-danger" aria-hidden="true" />
           ) : (
             <Clock className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           )}
@@ -80,7 +80,7 @@ export const SlaIndicator = ({
           aria-valuenow={remainingPercent}
           aria-valuemin="0"
           aria-valuemax="100"
-          className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200"
+          className="h-1.5 w-full bg-surface-subtle rounded-full overflow-hidden border border-line"
         >
           <div
             className={clsx('h-full transition-all duration-300', barStyles[statusType])}

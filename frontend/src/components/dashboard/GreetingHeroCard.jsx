@@ -96,22 +96,22 @@ export const GreetingHeroCard = ({
 
   return (
     <section
-      className="relative overflow-hidden rounded-xl bg-primary-900 text-white p-5 sm:p-7 shadow-2xs border border-primary-800"
+      className="relative overflow-hidden rounded-xl bg-brand-900 text-white p-5 sm:p-7 shadow-2xs border border-brand-800"
       aria-labelledby="dashboard-greeting"
     >
       <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         {/* Sisi Kiri: Sapaan & Wewenang Akun */}
         <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gold-400 text-primary-950 text-xs font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-civicGold-500 text-brand-950 text-xs font-bold uppercase tracking-wider">
               <Activity className="w-3.5 h-3.5" /> Pusat Kendali
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 text-xs font-semibold text-primary-100 border border-white/20 shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-gold-400" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 text-xs font-semibold text-brand-100 border border-white/20 shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-civicGold-700" />
               <span>{roleLabel}</span>
             </span>
             {badgeExtra && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-primary-950/70 text-xs font-mono text-gold-300 border border-gold-500/30">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-brand-950/70 text-xs font-mono text-civicGold-700 border border-civicGold-700/30">
                 {badgeExtra}
               </span>
             )}
@@ -119,12 +119,12 @@ export const GreetingHeroCard = ({
             <span
               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
                 isWorkingHours
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/40'
-                  : 'bg-amber-500/20 text-amber-200 border-amber-400/40'
+                  ? 'bg-brand-700/20 text-brand-100 border-brand-700/40'
+                  : 'bg-civic-warning/20 text-civic-warning border-civic-warningLine/40'
               }`}
               title="Jam kerja resmi Kemenag RI: Senin-Jumat 07.30 - 16.00 waktu setempat"
             >
-              <span className={`w-2 h-2 rounded-full ${isWorkingHours ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+              <span className={`w-2 h-2 rounded-full ${isWorkingHours ? 'bg-brand-700 animate-pulse' : 'bg-civic-warningLine'}`} />
               {isWorkingHours ? 'Jam Layanan Aktif (07.30 - 16.00)' : 'Di Luar Jam Layanan'}
             </span>
           </div>
@@ -133,7 +133,7 @@ export const GreetingHeroCard = ({
             <span>{timeGreeting.text}, {userName}!</span>
           </h2>
 
-          <p className="text-xs sm:text-sm text-primary-100/90 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm text-brand-100/90 leading-relaxed font-normal">
             {subtext}
           </p>
         </div>
@@ -141,7 +141,7 @@ export const GreetingHeroCard = ({
         {/* Sisi Kanan: Jam Digital 3 Zona Waktu Indonesia (WIB, WITA, WIT) */}
         <div className="flex flex-col md:items-end justify-center pt-3 md:pt-0 border-t border-white/10 md:border-t-0 space-y-2">
           {/* Zona Waktu Selector */}
-          <div className="flex items-center gap-1 bg-primary-950/80 p-1 rounded-lg border border-white/10" role="tablist" aria-label="Pilih Zona Waktu Indonesia">
+          <div className="flex items-center gap-1 bg-brand-950/80 p-1 rounded-lg border border-white/10" role="tablist" aria-label="Pilih Zona Waktu Indonesia">
             {Object.keys(TIME_ZONES).map((zoneKey) => (
               <button
                 key={zoneKey}
@@ -151,8 +151,8 @@ export const GreetingHeroCard = ({
                 onClick={() => setSelectedZone(zoneKey)}
                 className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
                   selectedZone === zoneKey
-                    ? 'bg-gold-400 text-primary-950 shadow-xs'
-                    : 'text-primary-200 hover:text-white hover:bg-white/10'
+                    ? 'bg-civicGold-500 text-brand-950 shadow-xs'
+                    : 'text-brand-100 hover:text-white hover:bg-white/10'
                 }`}
                 title={TIME_ZONES[zoneKey].description}
               >
@@ -162,15 +162,15 @@ export const GreetingHeroCard = ({
           </div>
 
           <div className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-white drop-shadow-xs tabular-nums flex items-center gap-2.5">
-            <Clock className="w-5 h-5 text-gold-400 opacity-85 hidden sm:inline-block" />
+            <Clock className="w-5 h-5 text-civicGold-700 opacity-85 hidden sm:inline-block" />
             <span>{timeString}</span>
-            <span className="text-xs font-mono font-bold text-gold-400 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+            <span className="text-xs font-mono font-bold text-civicGold-700 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
               {selectedZone}
             </span>
           </div>
 
-          <div className="text-xs sm:text-sm font-medium text-primary-200 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-gold-400 opacity-85" />
+          <div className="text-xs sm:text-sm font-medium text-brand-100 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-civicGold-700 opacity-85" />
             <span>{dateString}</span>
           </div>
         </div>

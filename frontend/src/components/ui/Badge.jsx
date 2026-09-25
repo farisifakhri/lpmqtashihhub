@@ -20,12 +20,12 @@ export const Badge = ({
   ...props
 }) => {
   const variantStyles = {
-    default: 'bg-neutral-100 text-neutral-700 border-neutral-300',
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-    warning: 'bg-amber-50 text-[#C77B2A] border-amber-300',
-    danger: 'bg-rose-50 text-[#B3261E] border-rose-300',
-    info: 'bg-sky-50 text-[#2E6F95] border-sky-300',
-    gold: 'bg-gold-50 text-gold-700 border-gold-400 font-semibold',
+    default: 'bg-surface-subtle text-ink border-line-strong',
+    success: 'bg-brand-50 text-brand-800 border-brand-100',
+    warning: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
+    danger: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine',
+    info: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
+    gold: 'bg-civicGold-100 text-civicGold-700 border-civicGold-700 font-semibold',
   };
 
   return (

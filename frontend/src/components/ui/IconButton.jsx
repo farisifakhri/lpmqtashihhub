@@ -26,7 +26,7 @@ export const IconButton = ({
   const accessibleLabel = label || title;
 
   const baseStyles =
-    'inline-flex items-center justify-center rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed select-none cursor-pointer';
+    'inline-flex items-center justify-center rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed select-none cursor-pointer';
 
   const sizeStyles = {
     sm: 'w-9 h-9 p-1.5 text-xs',
@@ -36,15 +36,15 @@ export const IconButton = ({
 
   const variantStyles = {
     ghost:
-      'bg-transparent text-ink-muted hover:text-ink hover:bg-neutral-100 border border-transparent active:bg-neutral-200/70',
+      'bg-transparent text-ink-muted hover:text-ink hover:bg-surface-subtle border border-transparent active:bg-surface-strong/70',
     outline:
-      'bg-white text-ink hover:text-brand-900 hover:bg-neutral-50 border border-line shadow-2xs',
+      'bg-white text-ink hover:text-brand-900 hover:bg-canvas border border-line shadow-2xs',
     primary:
       'bg-brand-700 hover:bg-brand-800 text-white border border-brand-800 shadow-2xs',
     secondary:
       'bg-brand-50 hover:bg-brand-100 text-brand-900 border border-brand-100 shadow-2xs',
     danger:
-      'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200',
+      'bg-civic-dangerSoft hover:bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine',
   };
 
   return (

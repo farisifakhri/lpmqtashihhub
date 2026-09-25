@@ -30,9 +30,9 @@ export const EmailDeliveryStatus = ({
     <div
       className={clsx(
         'rounded-xl border p-4 text-xs transition-colors space-y-2.5',
-        isSent && 'border-emerald-200 bg-emerald-50/30',
-        isPending && 'border-slate-200 bg-slate-50/60',
-        isFailed && 'border-rose-200 bg-rose-50/50',
+        isSent && 'border-brand-100 bg-brand-50/30',
+        isPending && 'border-line bg-canvas/60',
+        isFailed && 'border-civic-dangerLine bg-civic-dangerSoft/50',
         className
       )}
     >
@@ -41,21 +41,21 @@ export const EmailDeliveryStatus = ({
           <div
             className={clsx(
               'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
-              isSent && 'bg-emerald-800 text-white',
-              isPending && 'bg-slate-200 text-slate-700',
-              isFailed && 'bg-rose-700 text-white'
+              isSent && 'bg-brand-800 text-white',
+              isPending && 'bg-surface-strong text-ink',
+              isFailed && 'bg-civic-danger text-white'
             )}
           >
             <Mail className="w-3.5 h-3.5" />
           </div>
 
           <div>
-            <p className="font-bold text-slate-900">
+            <p className="font-bold text-ink">
               Notifikasi Surat Resmi ke Penerbit
             </p>
             {recipient && (
-              <p className="text-slate-500 text-[11px]">
-                Tujuan: <strong className="text-slate-700 font-mono">{recipient}</strong>
+              <p className="text-ink-muted text-[11px]">
+                Tujuan: <strong className="text-ink font-mono">{recipient}</strong>
               </p>
             )}
           </div>
@@ -63,22 +63,22 @@ export const EmailDeliveryStatus = ({
 
         <div className="flex items-center gap-2 shrink-0">
           {isSent && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300 font-semibold text-xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-100 text-brand-900 border border-brand-100 font-semibold text-xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
               Terkirim {formattedDate ? `· ${formattedDate} WIB` : ''}
             </span>
           )}
 
           {isPending && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-300 font-semibold text-xs">
-              <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-subtle text-ink border border-line-strong font-semibold text-xs">
+              <Clock className="w-3.5 h-3.5 text-ink-muted" />
               Menunggu Pengiriman
             </span>
           )}
 
           {isFailed && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-rose-100 text-rose-900 border border-rose-300 font-bold text-xs">
-              <AlertTriangle className="w-3.5 h-3.5 text-rose-700" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine font-bold text-xs">
+              <AlertTriangle className="w-3.5 h-3.5 text-civic-danger" />
               Pengiriman Gagal
             </span>
           )}
@@ -89,7 +89,7 @@ export const EmailDeliveryStatus = ({
               size="sm"
               onClick={onRetry}
               disabled={retrying}
-              className="text-xs h-8 min-h-0 text-rose-800 border-rose-300 hover:bg-rose-100"
+              className="text-xs h-8 min-h-0 text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft"
             >
               <RefreshCw className={clsx('w-3.5 h-3.5 mr-1', retrying && 'animate-spin')} />
               Kirim Ulang
@@ -99,8 +99,8 @@ export const EmailDeliveryStatus = ({
       </div>
 
       {isFailed && (
-        <div className="p-3 bg-white rounded-lg border border-rose-200 text-[11px] text-rose-800 space-y-1">
-          <p className="font-semibold text-rose-900">Kendala Pengiriman Surat:</p>
+        <div className="p-3 bg-white rounded-lg border border-civic-dangerLine text-[11px] text-civic-danger space-y-1">
+          <p className="font-semibold text-civic-danger">Kendala Pengiriman Surat:</p>
           <p className="leading-relaxed">
             {errorMessage ||
               'Email belum berhasil dikirim ke server pos penerbit. Dokumen surat tetap sah tersimpan di sistem LPMQ. Anda dapat menekan tombol Kirim Ulang di atas.'}

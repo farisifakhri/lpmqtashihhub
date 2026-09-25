@@ -6,33 +6,61 @@
 :root {
   /* Canvas & Surfaces */
   --canvas: #f4f7f5;
+  --canvas-rgb: 244 247 245;
   --surface: #ffffff;
+  --surface-rgb: 255 255 255;
   --surface-subtle: #eef3f0;
+  --surface-subtle-rgb: 238 243 240;
   --surface-strong: #e2ebe6;
+  --surface-strong-rgb: 226 235 230;
 
   /* Brand / Deep Islamic Pine */
   --brand-950: #062d24;
+  --brand-950-rgb: 6 45 36;
   --brand-900: #0a3d31;
+  --brand-900-rgb: 10 61 49;
   --brand-800: #115442;
+  --brand-800-rgb: 17 84 66;
   --brand-700: #176b53;
+  --brand-700-rgb: 23 107 83;
   --brand-100: #dff2e9;
+  --brand-100-rgb: 223 242 233;
   --brand-50: #f0faf6;
+  --brand-50-rgb: 240 250 246;
 
   /* Official Gold / Brass (dokumen resmi, pengesahan, billing) */
   --gold-700: #8a641f;
+  --gold-700-rgb: 138 100 31;
   --gold-500: #b88a32;
+  --gold-500-rgb: 184 138 50;
   --gold-100: #f5e9cb;
+  --gold-100-rgb: 245 233 203;
 
   /* Ink & Lines */
   --ink: #17211d;
+  --ink-rgb: 23 33 29;
   --ink-muted: #5d6b64;
+  --ink-muted-rgb: 93 107 100;
   --line: #d6dfda;
+  --line-rgb: 214 223 218;
   --line-strong: #b8c6bf;
+  --line-strong-rgb: 184 198 191;
 
   /* Semantic Feedback */
   --info: #2563eb;
+  --info-rgb: 37 99 235;
+  --info-soft-rgb: 239 246 255;
+  --info-line-rgb: 191 219 254;
   --warning: #b45309;
+  --warning-rgb: 180 83 9;
+  --warning-soft-rgb: 255 247 237;
+  --warning-line-rgb: 245 213 170;
   --danger: #b42318;
+  --danger-rgb: 180 35 24;
+  --danger-soft-rgb: 255 241 240;
+  --danger-line-rgb: 244 180 172;
   --success: #16805c;
+  --success-rgb: 22 128 92;
+  --success-soft-rgb: 238 250 245;
+  --success-line-rgb: 188 229 210;
 }
-

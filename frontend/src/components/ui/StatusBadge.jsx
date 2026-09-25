@@ -48,17 +48,17 @@ export const StatusBadge = ({
       description = vm.blockedReason;
     }
     if (vm.operationalState === 'WAITING_PHYSICAL_MASTER') {
-      bgClass = 'bg-amber-50';
-      textClass = 'text-amber-900';
-      borderClass = 'border-amber-300';
+      bgClass = 'bg-civic-warningSoft';
+      textClass = 'text-civic-warning';
+      borderClass = 'border-civic-warningLine';
     } else if (vm.operationalState === 'PHYSICAL_MASTER_CORRECTION_REQUIRED') {
-      bgClass = 'bg-rose-50';
-      textClass = 'text-rose-900';
-      borderClass = 'border-rose-300';
+      bgClass = 'bg-civic-dangerSoft';
+      textClass = 'text-civic-danger';
+      borderClass = 'border-civic-dangerLine';
     } else if (vm.operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
-      bgClass = 'bg-emerald-50';
-      textClass = 'text-emerald-900';
-      borderClass = 'border-emerald-300';
+      bgClass = 'bg-brand-50';
+      textClass = 'text-brand-900';
+      borderClass = 'border-brand-100';
     }
   }
 

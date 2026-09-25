@@ -143,7 +143,7 @@ export const AppLayout = () => {
                   end={item.end}
                   className={({ isActive }) =>
                     clsx(
-                      'flex flex-col items-center justify-center min-h-[44px] py-1 text-center transition-colors rounded-lg focus-visible:ring-2 focus-visible:ring-emerald-700',
+                      'flex flex-col items-center justify-center min-h-[44px] py-1 text-center transition-colors rounded-lg focus-visible:ring-2 focus-visible:ring-brand-700',
                       isActive
                         ? 'text-brand-800 font-bold'
                         : 'text-ink-muted hover:text-ink'

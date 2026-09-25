@@ -32,17 +32,17 @@ export const Button = ({
 
   const variantStyles = {
     primary:
-      'bg-primary-700 hover:bg-primary-800 text-white shadow-2xs border border-primary-800 focus:ring-emerald-700',
+      'bg-brand-700 hover:bg-brand-800 text-white shadow-2xs border border-brand-800 focus:ring-brand-700',
     secondary:
-      'bg-primary-50 hover:bg-primary-100 text-primary-900 border border-primary-200 shadow-2xs focus:ring-emerald-700 font-semibold',
+      'bg-brand-50 hover:bg-brand-100 text-brand-900 border border-brand-100 shadow-2xs focus:ring-brand-700 font-semibold',
     outline:
-      'bg-white hover:bg-slate-50 border border-slate-300 hover:border-slate-400 text-slate-800 shadow-2xs focus:ring-emerald-700 font-semibold',
+      'bg-white hover:bg-canvas border border-line-strong hover:border-line-strong text-ink shadow-2xs focus:ring-brand-700 font-semibold',
     danger:
-      'bg-rose-700 hover:bg-rose-800 text-white shadow-2xs border border-rose-800 focus:ring-rose-600',
+      'bg-civic-danger hover:bg-civic-danger/90 text-white shadow-2xs border border-civic-danger focus:ring-civic-danger',
     gold:
-      'bg-gold-500 hover:bg-gold-600 text-slate-950 shadow-2xs border border-gold-600 focus:ring-gold-500 font-bold',
+      'bg-civicGold-500 hover:bg-civicGold-100 text-ink shadow-2xs border border-civicGold-700 focus:ring-civicGold-700 font-bold',
     ghost:
-      'bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200/60 focus:ring-slate-400 shadow-none border-transparent',
+      'bg-transparent text-ink hover:bg-surface-subtle hover:text-ink active:bg-surface-strong/60 focus:ring-line-strong shadow-none border-transparent',
   };
 
   return (

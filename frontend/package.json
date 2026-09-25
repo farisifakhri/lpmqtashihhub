@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "lint:colors": "node scripts/check-colors.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

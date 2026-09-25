@@ -50,18 +50,18 @@ export function getWorkflowPhaseStatus(registration) {
 export function WorkflowPhaseStatus({ registration }) {
   if (!registration) return null;
   const phases = getWorkflowPhaseStatus(registration);
-  return <section aria-label="Status per tahap alur" className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+  return <section aria-label="Status per tahap alur" className="rounded-xl border border-line bg-white p-4 sm:p-5">
     <div className="mb-3">
-      <h3 className="text-sm font-bold text-slate-900">Status per tahap alur</h3>
-      <p className="text-xs text-slate-500">Posisi proses naskah dari pendaftaran sampai selesai.</p>
+      <h3 className="text-sm font-bold text-ink">Status per tahap alur</h3>
+      <p className="text-xs text-ink-muted">Posisi proses naskah dari pendaftaran sampai selesai.</p>
     </div>
     <ol className="grid gap-2 sm:grid-cols-2">
-      {phases.map((phase) => <li key={phase.key} aria-current={phase.state === 'CURRENT' ? 'step' : undefined} className={`rounded-lg border p-3 ${phase.state === 'CURRENT' ? 'border-emerald-400 bg-emerald-50' : phase.state === 'CANCELLED' ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-slate-50'}`}>
+      {phases.map((phase) => <li key={phase.key} aria-current={phase.state === 'CURRENT' ? 'step' : undefined} className={`rounded-lg border p-3 ${phase.state === 'CURRENT' ? 'border-brand-700 bg-brand-50' : phase.state === 'CANCELLED' ? 'border-civic-dangerLine bg-civic-dangerSoft' : 'border-line bg-canvas'}`}>
         <div className="flex items-start gap-2.5">
-          <span aria-hidden="true" className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${phase.state === 'DONE' ? 'bg-emerald-700 text-white' : phase.state === 'CURRENT' ? 'bg-emerald-800 text-white' : phase.state === 'CANCELLED' ? 'bg-rose-700 text-white' : 'bg-slate-200 text-slate-600'}`}>{phase.state === 'DONE' ? '✓' : phase.number}</span>
+          <span aria-hidden="true" className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${phase.state === 'DONE' ? 'bg-brand-700 text-white' : phase.state === 'CURRENT' ? 'bg-brand-800 text-white' : phase.state === 'CANCELLED' ? 'bg-civic-danger text-white' : 'bg-surface-strong text-ink-muted'}`}>{phase.state === 'DONE' ? '✓' : phase.number}</span>
           <div className="min-w-0">
-            <p className="text-xs font-bold text-slate-900">{phase.label}</p>
-            <p className={`mt-0.5 text-xs ${phase.state === 'CURRENT' ? 'font-semibold text-emerald-900' : phase.state === 'CANCELLED' ? 'font-semibold text-rose-800' : 'text-slate-600'}`}>{phase.statusText}</p>
+            <p className="text-xs font-bold text-ink">{phase.label}</p>
+            <p className={`mt-0.5 text-xs ${phase.state === 'CURRENT' ? 'font-semibold text-brand-900' : phase.state === 'CANCELLED' ? 'font-semibold text-civic-danger' : 'text-ink-muted'}`}>{phase.statusText}</p>
           </div>
         </div>
       </li>)}

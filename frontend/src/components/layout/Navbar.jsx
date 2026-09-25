@@ -71,8 +71,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const getRoleConfig = (userRole) => {
     switch (userRole) {
       case 'SUPERADMIN':
-      case 'ADMIN':
-        return { label: 'Administrator Sistem', color: 'bg-slate-100 text-slate-800 border-slate-300' };
+        return { label: 'Administrator Sistem', color: 'bg-surface-subtle text-ink border-line-strong' };
+      case 'HELPER_ADMIN':
+        return { label: 'Helper Admin', color: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
         return { label: 'Verifikator Dokumen', color: 'bg-brand-50 text-brand-900 border-brand-100' };
@@ -86,12 +87,12 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
         return { label: 'Administrator Dokumen', color: 'bg-brand-50 text-brand-900 border-brand-100' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', color: 'bg-amber-50 text-amber-900 border-amber-300' };
+        return { label: 'Kepala LPMQ', color: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit Terverifikasi', color: 'bg-slate-100 text-slate-800 border-slate-300' };
+        return { label: 'Penerbit Terverifikasi', color: 'bg-surface-subtle text-ink border-line-strong' };
       default:
-        return { label: userRole || 'Petugas', color: 'bg-slate-100 text-slate-800 border-slate-300' };
+        return { label: userRole || 'Petugas', color: 'bg-surface-subtle text-ink border-line-strong' };
     }
   };
 
@@ -156,7 +157,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
   return (
     <>
-      <header className="bg-surface/95 backdrop-blur-md border-b border-line sticky top-0 z-40 h-16 transition-colors">
+      <header className="bg-surface border-b border-line sticky top-0 z-40 h-16 shadow-2xs">
         <div className="w-full px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full">
             {/* Left Side: Sidebar Toggler & Breadcrumbs */}
@@ -164,7 +165,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                className="p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-surface-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700"
                 aria-label={sidebarOpen ? 'Tutup navigasi utama' : 'Buka navigasi utama'}
                 title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
               >
@@ -187,7 +188,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <li className="flex items-center">
                     <Link
                       to={homePath}
-                      className="p-1 rounded text-ink-muted hover:text-brand-800 hover:bg-neutral-100 transition-colors"
+                      className="p-1 rounded text-ink-muted hover:text-brand-800 hover:bg-surface-subtle transition-colors"
                       title="Beranda"
                     >
                       <Home className="w-4 h-4 text-brand-700" />
@@ -215,7 +216,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={() => setCommandSearchOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-neutral-200/70 border border-line text-xs text-ink-muted hover:text-ink transition-colors"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-strong/70 border border-line text-xs text-ink-muted hover:text-ink transition-colors"
                 aria-label="Pencarian cepat perintah (Ctrl+K)"
                 title="Pencarian Cepat"
               >
@@ -232,7 +233,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               {/* Public QR Demo Link */}
               <Link
                 to="/verify-documents/DEMO-QR-TOKEN-2026"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-brand-900 bg-surface-subtle hover:bg-neutral-200/70 px-2.5 py-1.5 rounded-lg border border-line transition-colors"
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-brand-900 bg-surface-subtle hover:bg-surface-strong/70 px-2.5 py-1.5 rounded-lg border border-line transition-colors"
                 title="Pratinjau Verifikasi QR Publik"
               >
                 <QrCode className="w-3.5 h-3.5 text-brand-700" />
@@ -245,7 +246,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-neutral-100 border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-emerald-700 cursor-pointer"
+                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-700 cursor-pointer"
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
@@ -254,7 +255,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       <div className="w-8 h-8 rounded-md bg-brand-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                         {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white" />
+                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-brand-700 rounded-full border-2 border-white" />
                     </div>
 
                     <div className="hidden lg:block leading-tight">
@@ -316,7 +317,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                         <button
                           type="button"
                           onClick={handleLogout}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded-lg transition-colors text-left cursor-pointer"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-civic-danger hover:bg-civic-dangerSoft rounded-lg transition-colors text-left cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           <span>Akhiri Sesi</span>

@@ -59,23 +59,23 @@ export const ConfirmationSummaryDialog = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirmation-dialog-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn"
     >
       <div
         ref={dialogRef}
         tabIndex={-1}
-        className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200 outline-none animate-slideUp"
+        className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line outline-none animate-slideUp"
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+        <div className="flex items-start justify-between gap-3 border-b border-line pb-3">
           <div className="flex items-center gap-2.5">
             {icon || (
               <div
                 className={clsx(
                   'p-2 rounded-lg shrink-0',
                   confirmVariant === 'danger'
-                    ? 'bg-rose-100 text-rose-700'
-                    : 'bg-emerald-100 text-emerald-800'
+                    ? 'bg-civic-dangerSoft text-civic-danger'
+                    : 'bg-brand-100 text-brand-800'
                 )}
               >
                 {confirmVariant === 'danger' ? (
@@ -86,10 +86,10 @@ export const ConfirmationSummaryDialog = ({
               </div>
             )}
             <div>
-              <h2 id="confirmation-dialog-title" className="text-base font-bold text-slate-900">
+              <h2 id="confirmation-dialog-title" className="text-base font-bold text-ink">
                 {title}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">{description}</p>
+              <p className="text-xs text-ink-muted mt-0.5">{description}</p>
             </div>
           </div>
 
@@ -97,7 +97,7 @@ export const ConfirmationSummaryDialog = ({
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition-colors"
+            className="text-ink-muted hover:text-ink p-1 rounded-lg transition-colors"
             aria-label="Tutup dialog konfirmasi"
           >
             <X className="w-5 h-5" />
@@ -106,14 +106,14 @@ export const ConfirmationSummaryDialog = ({
 
         {/* Summary Details Table */}
         {allSummaryItems.length > 0 && (
-          <div className="bg-slate-50 rounded-lg p-3.5 border border-slate-200 space-y-2 text-xs">
+          <div className="bg-canvas rounded-lg p-3.5 border border-line space-y-2 text-xs">
             {allSummaryItems.map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-start justify-between gap-2 border-b border-slate-200/60 pb-1.5 last:border-b-0 last:pb-0"
+                className="flex items-start justify-between gap-2 border-b border-line/60 pb-1.5 last:border-b-0 last:pb-0"
               >
-                <span className="text-slate-500 font-medium">{item.label}:</span>
-                <span className="font-semibold text-slate-900 text-right font-mono">
+                <span className="text-ink-muted font-medium">{item.label}:</span>
+                <span className="font-semibold text-ink text-right font-mono">
                   {item.value}
                 </span>
               </div>
@@ -125,9 +125,9 @@ export const ConfirmationSummaryDialog = ({
         {finalImpact && (
           <div
             role="note"
-            className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-200 bg-amber-50 text-xs text-amber-900"
+            className="flex items-start gap-2.5 p-3 rounded-lg border border-civic-warningLine bg-civic-warningSoft text-xs text-civic-warning"
           >
-            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+            <ShieldAlert className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
             <div>
               <span className="font-bold">Akibat Tindakan: </span>
               <span>{finalImpact}</span>
@@ -136,7 +136,7 @@ export const ConfirmationSummaryDialog = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">
           <Button
             variant="outline"
             size="md"

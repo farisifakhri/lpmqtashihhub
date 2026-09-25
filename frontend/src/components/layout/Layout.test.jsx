@@ -117,7 +117,7 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Pengajuan Saya')).toBeDefined();
     expect(screen.getByText('Buat Pengajuan')).toBeDefined();
     expect(screen.getByText('Tagihan')).toBeDefined();
-    expect(screen.getByText('Dokumen Resmi')).toBeDefined();
+    expect(screen.getByText('Arsip Dokumen')).toBeDefined();
   });
 
   it('AppLayout merender navigasi bawah seluler untuk akun Penerbit', () => {

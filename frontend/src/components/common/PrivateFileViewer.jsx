@@ -92,12 +92,12 @@ export const PrivateFileViewer = ({
     return (
       <div
         className={clsx(
-          'flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 p-8 space-y-3',
+          'flex flex-col items-center justify-center rounded-xl border border-line bg-canvas text-ink-muted p-8 space-y-3',
           className
         )}
         style={{ minHeight: height }}
       >
-        <RefreshCw className="w-6 h-6 animate-spin text-emerald-700" />
+        <RefreshCw className="w-6 h-6 animate-spin text-brand-700" />
         <p className="text-xs font-medium">Memuat pratinjau dokumen terenkripsi...</p>
       </div>
     );
@@ -107,14 +107,14 @@ export const PrivateFileViewer = ({
     return (
       <div
         className={clsx(
-          'flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/50 text-rose-800 p-8 space-y-3 text-center',
+          'flex flex-col items-center justify-center rounded-xl border border-civic-dangerLine bg-civic-dangerSoft/50 text-civic-danger p-8 space-y-3 text-center',
           className
         )}
         style={{ minHeight: height }}
       >
-        <AlertCircle className="w-8 h-8 text-rose-600" />
+        <AlertCircle className="w-8 h-8 text-civic-danger" />
         <p className="text-sm font-bold">Berkas Belum Dapat Ditampilkan</p>
-        <p className="text-xs text-rose-700 max-w-sm">{error}</p>
+        <p className="text-xs text-civic-danger max-w-sm">{error}</p>
         <Button variant="outline" size="sm" onClick={fetchPrivateBlob} className="mt-2">
           <RefreshCw className="w-3.5 h-3.5 mr-1" /> Coba Lagi
         </Button>
@@ -125,16 +125,16 @@ export const PrivateFileViewer = ({
   return (
     <div
       className={clsx(
-        'relative rounded-xl border border-slate-200 bg-slate-900/5 overflow-hidden flex flex-col',
+        'relative rounded-xl border border-line bg-ink/5 overflow-hidden flex flex-col',
         className
       )}
       style={{ height }}
     >
       {/* Top Toolbar */}
-      <div className="bg-white border-b border-slate-200 px-4 py-2.5 flex items-center justify-between text-xs shrink-0">
+      <div className="bg-white border-b border-line px-4 py-2.5 flex items-center justify-between text-xs shrink-0">
         <div className="flex items-center gap-2 truncate max-w-md">
-          <FileText className="w-4 h-4 text-emerald-800 shrink-0" />
-          <span className="font-semibold text-slate-800 truncate" title={fileName}>
+          <FileText className="w-4 h-4 text-brand-800 shrink-0" />
+          <span className="font-semibold text-ink truncate" title={fileName}>
             {fileName}
           </span>
         </div>
@@ -144,7 +144,7 @@ export const PrivateFileViewer = ({
             variant="ghost"
             size="sm"
             onClick={handleDownload}
-            className="text-xs text-slate-700 hover:text-emerald-800"
+            className="text-xs text-ink hover:text-brand-800"
             title="Unduh Berkas"
           >
             <Download className="w-3.5 h-3.5 mr-1" /> Unduh
@@ -154,7 +154,7 @@ export const PrivateFileViewer = ({
               href={blobUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 hover:underline px-2 py-1"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-brand-800 hover:underline px-2 py-1"
               title="Buka di Tab Baru"
             >
               <ExternalLink className="w-3.5 h-3.5" /> Tab Baru
@@ -164,7 +164,7 @@ export const PrivateFileViewer = ({
       </div>
 
       {/* Main Preview Container */}
-      <div className="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-2">
+      <div className="flex-1 overflow-auto bg-surface-subtle flex items-center justify-center p-2">
         {isPdf && blobUrl && (
           <iframe
             src={`${blobUrl}#toolbar=0&navpanes=0`}
@@ -182,10 +182,10 @@ export const PrivateFileViewer = ({
         )}
 
         {!isPdf && !isImage && (
-          <div className="text-center p-8 space-y-3 bg-white rounded-xl border border-slate-200 max-w-md shadow-2xs">
-            <FileText className="w-10 h-10 text-slate-400 mx-auto" />
-            <h4 className="text-sm font-bold text-slate-800">{fileName}</h4>
-            <p className="text-xs text-slate-500">{fallbackText}</p>
+          <div className="text-center p-8 space-y-3 bg-white rounded-xl border border-line max-w-md shadow-2xs">
+            <FileText className="w-10 h-10 text-ink-muted mx-auto" />
+            <h4 className="text-sm font-bold text-ink">{fileName}</h4>
+            <p className="text-xs text-ink-muted">{fallbackText}</p>
             <Button variant="primary" size="sm" onClick={handleDownload} className="mx-auto">
               <Download className="w-3.5 h-3.5 mr-1.5" /> Unduh Berkas Sekarang
             </Button>

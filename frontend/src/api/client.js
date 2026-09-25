@@ -2,6 +2,7 @@
  * API Client untuk Sistem Pentashihan Mushaf LPMQ
  * Menangani base URL, header otentikasi JWT, dan error response envelope.
  */
+import { showToast } from '@/components/ui/toast';
 
 const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -102,10 +103,13 @@ export async function apiClient(endpoint, options = {}) {
     return data;
   } catch (error) {
     if (error instanceof ApiError) {
+      if (error.status === 0 || error.status === 401 || error.status === 403 || error.status === 404 || error.status === 429 || error.status >= 500) showToast(error.message);
       throw error;
     }
     if (error.name === 'AbortError') throw new ApiError('Permintaan dibatalkan. Periksa hasilnya sebelum mengirim ulang.', 0);
-    throw new ApiError('Tidak dapat menghubungi server. Periksa koneksi internet Anda, lalu muat ulang untuk memastikan hasil permintaan sebelum mengirim ulang.', 0);
+    const networkError = new ApiError('Tidak dapat menghubungi server. Periksa koneksi internet Anda, lalu muat ulang untuk memastikan hasil permintaan sebelum mengirim ulang.', 0);
+    showToast(networkError.message);
+    throw networkError;
   }
 }
 

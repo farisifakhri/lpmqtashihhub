@@ -53,22 +53,22 @@ export const WorkflowTimeline = ({
   return (
     <section
       className={clsx(
-        'rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs space-y-4',
+        'rounded-xl border border-line bg-white p-5 sm:p-6 shadow-2xs space-y-4',
         className
       )}
       aria-labelledby="workflow-timeline-title"
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-line pb-3">
         <div>
-          <h2 id="workflow-timeline-title" className="text-sm sm:text-base font-bold text-slate-900">
+          <h2 id="workflow-timeline-title" className="text-sm sm:text-base font-bold text-ink">
             Alur Tahapan Pentashihan Mushaf
           </h2>
-          <p className="text-xs text-slate-500">
-            Fase {currentPhaseNumber} dari {WORKFLOW_PHASES.length}: <strong className="text-emerald-800">{statusConfig.phaseLabel || statusConfig.label}</strong>
+          <p className="text-xs text-ink-muted">
+            Fase {currentPhaseNumber} dari {WORKFLOW_PHASES.length}: <strong className="text-brand-800">{statusConfig.phaseLabel || statusConfig.label}</strong>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-surface-subtle text-ink border border-line">
             {statusConfig.label}
           </span>
         </div>
@@ -89,10 +89,10 @@ export const WorkflowTimeline = ({
               <div
                 className={clsx(
                   'w-9 h-9 rounded-lg flex items-center justify-center font-bold text-xs transition-all relative z-10',
-                  isCompleted && 'bg-emerald-800 text-white shadow-2xs',
-                  isCurrent && !isRevision && 'bg-sky-600 text-white ring-4 ring-sky-100 shadow-2xs',
-                  isCurrent && isRevision && 'bg-amber-600 text-white ring-4 ring-amber-100 shadow-2xs',
-                  isUpcoming && 'bg-slate-100 text-slate-400 border border-slate-200'
+                  isCompleted && 'bg-brand-800 text-white shadow-2xs',
+                  isCurrent && !isRevision && 'bg-civic-info text-white ring-4 ring-civic-info shadow-2xs',
+                  isCurrent && isRevision && 'bg-civic-warning text-white ring-4 ring-civic-warning shadow-2xs',
+                  isUpcoming && 'bg-surface-subtle text-ink-muted border border-line'
                 )}
                 title={phase.description}
               >
@@ -109,14 +109,14 @@ export const WorkflowTimeline = ({
               <span
                 className={clsx(
                   'text-xs mt-2 font-semibold transition-colors leading-tight',
-                  isCurrent ? 'text-slate-900 font-bold' : isCompleted ? 'text-emerald-900' : 'text-slate-400'
+                  isCurrent ? 'text-ink font-bold' : isCompleted ? 'text-brand-900' : 'text-ink-muted'
                 )}
               >
                 {phase.shortLabel}
               </span>
 
               {isCurrent && (
-                <span className="text-[11px] font-medium text-sky-700 mt-0.5">
+                <span className="text-[11px] font-medium text-civic-info mt-0.5">
                   {isCancelled ? 'Dibatalkan' : 'Fase Aktif'}
                 </span>
               )}
@@ -140,9 +140,9 @@ export const WorkflowTimeline = ({
               key={phase.key}
               className={clsx(
                 'rounded-lg border p-3 transition-colors text-xs',
-                isCurrent && 'border-sky-300 bg-sky-50/50 shadow-2xs',
-                isCompleted && 'border-emerald-200 bg-emerald-50/30',
-                isUpcoming && 'border-slate-200 bg-white opacity-70'
+                isCurrent && 'border-civic-infoLine bg-civic-infoSoft/50 shadow-2xs',
+                isCompleted && 'border-brand-100 bg-brand-50/30',
+                isUpcoming && 'border-line bg-white opacity-70'
               )}
             >
               <div
@@ -153,10 +153,10 @@ export const WorkflowTimeline = ({
                   <div
                     className={clsx(
                       'w-7 h-7 rounded-md flex items-center justify-center font-bold text-xs shrink-0',
-                      isCompleted && 'bg-emerald-800 text-white',
-                      isCurrent && !isRevision && 'bg-sky-600 text-white',
-                      isCurrent && isRevision && 'bg-amber-600 text-white',
-                      isUpcoming && 'bg-slate-100 text-slate-400 border border-slate-200'
+                      isCompleted && 'bg-brand-800 text-white',
+                      isCurrent && !isRevision && 'bg-civic-info text-white',
+                      isCurrent && isRevision && 'bg-civic-warning text-white',
+                      isUpcoming && 'bg-surface-subtle text-ink-muted border border-line'
                     )}
                   >
                     {isCompleted ? (
@@ -166,29 +166,29 @@ export const WorkflowTimeline = ({
                     )}
                   </div>
                   <div>
-                    <p className={clsx('font-bold', isCurrent ? 'text-slate-900' : isCompleted ? 'text-emerald-950' : 'text-slate-600')}>
+                    <p className={clsx('font-bold', isCurrent ? 'text-ink' : isCompleted ? 'text-brand-950' : 'text-ink-muted')}>
                       {phaseNumber}. {phase.label}
                     </p>
-                    <p className="text-slate-500 text-[11px]">{phase.description}</p>
+                    <p className="text-ink-muted text-[11px]">{phase.description}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isCurrent && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-800">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-civic-infoSoft text-civic-info">
                       {isCancelled ? 'Dibatalkan' : 'Aktif'}
                     </span>
                   )}
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                    <ChevronUp className="w-4 h-4 text-ink-muted" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                    <ChevronDown className="w-4 h-4 text-ink-muted" />
                   )}
                 </div>
               </div>
 
               {isExpanded && (
-                <div className="mt-2.5 pt-2 border-t border-slate-200/80 text-slate-600 text-[11px] space-y-1">
+                <div className="mt-2.5 pt-2 border-t border-line/80 text-ink-muted text-[11px] space-y-1">
                   <p><strong>Deskripsi:</strong> {phase.description}</p>
                   {isCurrent && (
                     <>
@@ -205,13 +205,13 @@ export const WorkflowTimeline = ({
 
       {/* Next Step Instruction Note */}
       {statusConfig.nextAction && (
-        <div className="mt-2 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5 text-xs text-slate-700">
-          <Clock className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
+        <div className="mt-2 p-3 bg-canvas border border-line rounded-lg flex items-start gap-2.5 text-xs text-ink">
+          <Clock className="w-4 h-4 text-brand-800 shrink-0 mt-0.5" />
           <div className="flex-1">
-            <span className="font-bold text-slate-900">Langkah Berikutnya: </span>
+            <span className="font-bold text-ink">Langkah Berikutnya: </span>
             <span>{statusConfig.nextAction}</span>
             {statusConfig.actionOwner && (
-              <span className="text-slate-500 ml-1.5">
+              <span className="text-ink-muted ml-1.5">
                 (Penanggung jawab: <strong>{statusConfig.actionOwner}</strong>)
               </span>
             )}

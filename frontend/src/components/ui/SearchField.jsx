@@ -26,7 +26,7 @@ export const SearchField = ({
         onChange={onChange}
         placeholder={placeholder}
         aria-label={ariaLabel}
-        className="w-full pl-10 pr-16 py-2.5 min-h-[44px] text-sm bg-surface border border-line rounded-lg text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-brand-700 transition-colors"
+        className="w-full pl-10 pr-16 py-2.5 min-h-[44px] text-sm bg-surface border border-line rounded-lg text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 transition-colors"
         {...props}
       />
       <div className="absolute right-2.5 flex items-center gap-1.5">
@@ -34,7 +34,7 @@ export const SearchField = ({
           <button
             type="button"
             onClick={onClear}
-            className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-neutral-100 transition-colors"
+            className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-surface-subtle transition-colors"
             aria-label="Bersihkan pencarian"
           >
             <X className="w-3.5 h-3.5" />

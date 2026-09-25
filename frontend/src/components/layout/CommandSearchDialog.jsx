@@ -30,7 +30,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
   const isHead = role === 'KEPALA_LPMQ' || roles.includes('KEPALA_LPMQ');
   const isSuperAdmin = role === 'SUPERADMIN' || roles.includes('SUPERADMIN');
   const isVerifikator = role === 'VERIFIKATOR' || roles.includes('VERIFIKATOR');
-  const isAdmin = role === 'ADMIN' || roles.includes('ADMIN');
+  const isAdmin = role === 'HELPER_ADMIN' || roles.includes('HELPER_ADMIN');
   const isDistributor = role === 'DISTRIBUTOR' || roles.includes('DISTRIBUTOR');
 
   // Build searchable items based on user role
@@ -46,7 +46,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         { label: 'Pusat Kendali Operasional', desc: 'Dashboard ringkasan tugas hari ini', path: '/internal', icon: FileText, category: 'Navigasi' },
         ...(isHead || isSuperAdmin
           ? [
-              { label: 'Penugasan Verifikator', desc: 'Admin Internal mencatat Nota Dinas dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Admin Internal' },
+              { label: 'Penugasan Verifikator', desc: 'Helper Admin mencatat Nota Dinas dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Helper Admin' },
               { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
               { label: 'Pusat Tanda Tangan Resmi', desc: 'Tandatangani Surat Pemberitahuan & Berita Acara', path: '/internal/signatures', icon: Award, category: 'Kepala LPMQ' },
             ]

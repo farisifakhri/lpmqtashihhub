@@ -45,8 +45,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     roles.includes('SUPERADMIN');
 
   const isAdmin =
-    role === 'ADMIN' ||
-    roles.includes('ADMIN');
+    role === 'HELPER_ADMIN' ||
+    roles.includes('HELPER_ADMIN');
 
   const isVerifikator =
     role === 'VERIFIKATOR' ||
@@ -75,9 +75,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
   const getRoleBadge = (userRole) => {
     switch (userRole) {
       case 'SUPERADMIN':
-        return { label: 'Superadmin', badgeClass: 'bg-slate-100 text-slate-800 border-slate-300' };
-      case 'ADMIN':
-        return { label: 'Admin Internal', badgeClass: 'bg-slate-100 text-slate-800 border-slate-300' };
+        return { label: 'Superadmin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
+      case 'HELPER_ADMIN':
+        return { label: 'Helper Admin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
         return { label: 'Verifikator', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
@@ -91,12 +91,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         return { label: 'Dokumentator', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', badgeClass: 'bg-amber-50 text-amber-900 border-amber-300' };
+        return { label: 'Kepala LPMQ', badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
       case 'ADMIN_PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit', badgeClass: 'bg-slate-100 text-slate-800 border-slate-300' };
+        return { label: 'Penerbit', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       default:
-        return { label: userRole || 'Pengguna', badgeClass: 'bg-slate-100 text-slate-700 border-slate-300' };
+        return { label: userRole || 'Pengguna', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
     }
   };
 
@@ -134,10 +134,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Billing SIMPONI & bukti bayar',
             },
             {
-              label: 'Dokumen Resmi',
+              label: 'Arsip Dokumen',
               path: '/publisher/documents',
               icon: <Award className="w-4 h-4 shrink-0" />,
-              description: 'Surat Tanda Tashih & QR',
+              description: 'Semua versi dokumen',
             },
           ],
         },
@@ -163,10 +163,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Intake naskah fisik A4',
             },
             {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
+            {
               label: 'Perlu Penugasan',
               path: '/internal/verifications?tab=NEED_ASSIGNMENT',
               icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-              description: 'Admin Internal menugaskan verifikator',
+              description: 'Helper Admin menugaskan verifikator',
             },
             {
               label: 'Verifikasi Pembayaran',
@@ -313,6 +319,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       ];
     }
 
+    if (isDokumentator && !isSuperAdmin) {
+      return [{ title: 'DOKUMENTASI', items: [
+        { label: 'Kendali Operasional', path: '/internal', icon: <LayoutDashboard className="w-4 h-4 shrink-0" />, end: true },
+        { label: 'Arsip Dokumen', path: '/internal/archive', icon: <FolderCheck className="w-4 h-4 shrink-0" />, description: 'Semua versi untuk Posdok-Q' },
+        { label: 'Dokumen Tashih', path: '/internal/documents', icon: <FileText className="w-4 h-4 shrink-0" /> },
+      ] }];
+    }
+
     // Role: Superadmin (Akses Penuh & Navigasi Operasional Komprehensif)
     return [
       {
@@ -387,6 +401,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             path: '/internal/users',
             icon: <Users className="w-4 h-4 shrink-0" />,
             description: 'Akun, peran, dan wewenang',
+          },
+          {
+            label: 'Arsip Dokumen',
+            path: '/internal/archive',
+            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+            description: 'Semua versi untuk Posdok-Q',
           },
           {
             label: 'Rotasi Tim Inti',
@@ -480,7 +500,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-emerald-500 rounded-full border-2 border-white"
+                    className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-brand-700 rounded-full border-2 border-white"
                     title="Online"
                   />
                 </div>
