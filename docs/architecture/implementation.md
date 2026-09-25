@@ -1,6 +1,6 @@
 # Implementation Baseline
 
-Implementasi backend awal pembayaran, distribusi, sidang, unggahan privat, enum status, dan SLA beserta batas dokumen draf dijelaskan di [kontrak API workflow](docs/api/workflow.md). Penetapan dokumen, delegasi Kepala LPMQ, dan pemisahan tanggung jawab PusdokQ/arsiparis tetap menunggu keputusan stakeholder. Reviu distributor mengikuti baseline; lampiran audit yang menyebut ketua kelompok belum digunakan sebagai pengganti SOP.
+Implementasi backend awal pembayaran, distribusi, sidang, unggahan privat, enum status, dan SLA beserta batas dokumen draf dijelaskan di [kontrak API workflow](../api/workflow.md). Penetapan dokumen, delegasi Kepala LPMQ, dan pemisahan tanggung jawab PusdokQ/arsiparis tetap menunggu keputusan stakeholder. Reviu distributor mengikuti baseline; lampiran audit yang menyebut ketua kelompok belum digunakan sebagai pengganti SOP.
 
 ## 1. Tujuan
 
@@ -35,7 +35,7 @@ Setiap fitur dikerjakan vertikal: migration, model/domain rule, permission, API/
 
 - Pengajuan melalui portal atau input admin atas nama penerbit.
 - Unggah privat: cover dan halaman Al-Qur'an 1–5 dengan validasi MIME magic bytes, ukuran, dan SHA-256. Akses berkas privat via header `Authorization: Bearer <token>` tanpa query parameter token di URL (`Cache-Control: private, no-store`).
-- Intake berkas master fisik cetak A4 per juz diterima dan diperiksa resmi oleh `ADMIN` (Staf TU / Layanan).
+- Intake berkas master fisik cetak A4 per juz diterima dan diperiksa resmi oleh `HELPER_ADMIN` (Staf TU / Layanan).
 - Penugasan verifikator dan penerbitan Nota Dinas Verifikasi (`NOTA_DINAS_VERIFIKASI`) oleh Kepala LPMQ secara atomik dalam satu transaksi basis data dengan perhitungan tenggat tepat 2 hari kerja kalender `Asia/Jakarta`.
 - Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi (`SURAT_HASIL_VERIFIKASI`), dan Berita Acara Verifikasi (`BERITA_ACARA_VERIFIKASI`).
 - Persetujuan draf dokumen verifikasi oleh Kepala LPMQ dengan inisialisasi daftar penandatangan digital multi-signatory berjenjang (Verifikator & Kepala LPMQ).

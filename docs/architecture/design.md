@@ -28,10 +28,10 @@ flowchart TB
 
 | Modul | Tanggung jawab |
 |---|---|
-| Identity & Access | Pengguna, role (`SUPERADMIN`, `ADMIN_PENERBIT`, `ADMIN`, `VERIFIKATOR`, `DISTRIBUTOR`, `PENTASHIH`, `DOKUMENTATOR`, `KEPALA_LPMQ`), session, akun aktif |
+| Identity & Access | Pengguna, role (`SUPERADMIN`, `ADMIN_PENERBIT`, `HELPER_ADMIN`, `VERIFIKATOR`, `DISTRIBUTOR`, `PENTASHIH`, `DOKUMENTATOR`, `KEPALA_LPMQ`), session, akun aktif |
 | Publisher | Profil penerbit dan dokumen badan hukum |
 | Master Data | Kategori, layanan, SLA, add-on, tarif, kalender kerja, Tim Distribusi |
-| Registration | Pengajuan baru/perpanjangan, metadata, sampel naskah, penerimaan master fisik oleh `ADMIN` |
+| Registration | Pengajuan baru/perpanjangan, metadata, sampel naskah, penerimaan master fisik oleh `HELPER_ADMIN` |
 | Verification | Assignment & Nota Dinas atomik Kepala LPMQ (SLA 2 hari kerja), checklist berkas, draf Surat Hasil & Berita Acara Verifikasi, tanda tangan multi-signatory, outbox email idempoten, Tugas Saya |
 | Billing | Snapshot kalkulasi, billing PNBP, bukti pembayaran, verifikasi bayar oleh Verifikator penugasan |
 | Distribution | Handover fisik ke distributor, penetapan `tashih_due_at`, koreksi fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`), tim berbasis SK, anggota, assignment tahap awal/perbaikan/dumi, reviu distributor |
@@ -46,7 +46,7 @@ flowchart TB
 
 - Cover.
 - Halaman Al-Qur'an 1–5 sebagai sampel/penanda naskah.
-- Master fisik cetak A4 dijilid per juz diserahkan ke loket LPMQ (diterima oleh `ADMIN`).
+- Master fisik cetak A4 dijilid per juz diserahkan ke loket LPMQ (diterima oleh `HELPER_ADMIN`).
 - Dokumen badan hukum dan pembayaran sesuai tahapnya.
 
 ### Keluaran proses
@@ -150,3 +150,9 @@ MVP memakai adapter manual/local. Kontrak adapter harus dapat diuji tanpa akses 
 | ADR-005 | Aturan pembatalan setelah billing/pembayaran | Sebelum Sprint 3 |
 | ADR-006 | Retensi, backup, klasifikasi data, dan antivirus | Sebelum deployment staging |
 | ADR-007 | Akun/antrean PusdokQ dan arsiparis atau hanya tujuan serah terima | Sebelum Sprint 5 |
+
+## 10. Konvensi route dan arsip dokumen
+
+Route melakukan autentikasi, otorisasi, validasi, dan pemetaan respons HTTP. Aturan bisnis serta akses database berada di service. Controller lama tetap menjadi adaptor HTTP pada modul yang sudah memakainya; endpoint baru dapat memakai `action()` langsung pada route selama tidak menyimpan aturan bisnis atau query Prisma di route.
+
+Arsip dokumen menyimpan dan menampilkan semua versi, termasuk draf, revisi, dan dokumen final. Penerbit hanya dapat melihat arsip pengajuannya sendiri. `HELPER_ADMIN` dan `DOKUMENTATOR` dapat melihat seluruh arsip untuk kebutuhan laporan Posdok-Q. `HELPER_ADMIN` menggantikan kode role `ADMIN` lama dengan mempertahankan keanggotaan akun dan kewenangan operasionalnya.
