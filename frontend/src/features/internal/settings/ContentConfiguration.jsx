@@ -559,17 +559,17 @@ export const ContentConfiguration = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-primary-100 text-primary-700">
+            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-brand-100 text-brand-700">
               Role: {currentUser?.role || currentUser?.roles?.[0] || 'SUPERADMIN'}
             </span>
-            <span className="text-xs text-neutral-500">
+            <span className="text-xs text-ink-muted">
               Master Data & Konfigurasi
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mt-1">
+          <h1 className="text-2xl font-bold text-ink mt-1">
             Konfigurasi Konten Layanan Tashih
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="text-sm text-ink-muted">
             Kelola jenis konten layanan pentashihan, biaya PNBP, satuan, dan durasi hari kerja.
           </p>
         </div>
@@ -594,14 +594,14 @@ export const ContentConfiguration = () => {
 
       {/* ── Notifikasi Status API ───────────────────────────────────── */}
       {apiSuccess && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center gap-3 text-emerald-800 text-sm animate-in fade-in">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+        <div className="p-3.5 bg-brand-50 border border-brand-100 rounded-lg flex items-center gap-3 text-brand-800 text-sm animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 text-brand-700 flex-shrink-0" />
           <span>{apiSuccess}</span>
         </div>
       )}
       {apiError && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-lg flex items-center gap-3 text-rose-800 text-sm animate-in fade-in">
-          <AlertTriangle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+        <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg flex items-center gap-3 text-civic-danger text-sm animate-in fade-in">
+          <AlertTriangle className="w-5 h-5 text-civic-danger flex-shrink-0" />
           <span>{apiError}</span>
         </div>
       )}
@@ -609,36 +609,36 @@ export const ContentConfiguration = () => {
       {/* ── Ringkasan Statistik ─────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
             <span>Total Konten</span>
-            <Package className="w-4 h-4 text-primary-500" />
+            <Package className="w-4 h-4 text-brand-700" />
           </div>
-          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.total}</div>
-          <p className="text-[11px] text-neutral-500 mt-1">Jenis layanan terdaftar</p>
+          <div className="text-2xl font-bold text-ink mt-2">{stats.total}</div>
+          <p className="text-[11px] text-ink-muted mt-1">Jenis layanan terdaftar</p>
         </Card>
         <Card className="p-4">
-          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
             <span>Layanan Populer</span>
-            <Star className="w-4 h-4 text-gold-600" />
+            <Star className="w-4 h-4 text-civicGold-700" />
           </div>
-          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.popular}</div>
-          <p className="text-[11px] text-neutral-500 mt-1">Ditandai sebagai unggulan</p>
+          <div className="text-2xl font-bold text-ink mt-2">{stats.popular}</div>
+          <p className="text-[11px] text-ink-muted mt-1">Ditandai sebagai unggulan</p>
         </Card>
         <Card className="p-4">
-          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
             <span>Kategori</span>
-            <FileText className="w-4 h-4 text-status-info" />
+            <FileText className="w-4 h-4 text-civic-info" />
           </div>
-          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.categories}</div>
-          <p className="text-[11px] text-neutral-500 mt-1">Kelompok jenis mushaf</p>
+          <div className="text-2xl font-bold text-ink mt-2">{stats.categories}</div>
+          <p className="text-[11px] text-ink-muted mt-1">Kelompok jenis mushaf</p>
         </Card>
         <Card className="p-4">
-          <div className="flex items-center justify-between text-neutral-500 text-xs font-medium">
+          <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
             <span>Bebas Tarif</span>
-            <Coins className="w-4 h-4 text-emerald-600" />
+            <Coins className="w-4 h-4 text-brand-700" />
           </div>
-          <div className="text-2xl font-bold text-neutral-900 mt-2">{stats.freeServices}</div>
-          <p className="text-[11px] text-neutral-500 mt-1">Tanpa biaya PNBP</p>
+          <div className="text-2xl font-bold text-ink mt-2">{stats.freeServices}</div>
+          <p className="text-[11px] text-ink-muted mt-1">Tanpa biaya PNBP</p>
         </Card>
       </div>
 
@@ -646,18 +646,18 @@ export const ContentConfiguration = () => {
       <Card>
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
             <input
               type="text"
               placeholder="Cari nama konten atau kategori..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-colors"
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 bg-white transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <div className="relative">
             <select
-              className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white cursor-pointer min-w-[180px] transition-colors"
+              className="appearance-none pl-4 pr-10 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 focus:border-brand-700 bg-white cursor-pointer min-w-[180px] transition-colors"
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
@@ -668,7 +668,7 @@ export const ContentConfiguration = () => {
                 </option>
               ))}
             </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
           </div>
         </div>
 
@@ -676,10 +676,10 @@ export const ContentConfiguration = () => {
         <div className="overflow-x-auto -mx-6">
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
-              <tr className="bg-primary-100 text-primary-700 text-xs font-semibold uppercase tracking-wider">
+              <tr className="bg-brand-100 text-brand-700 text-xs font-semibold uppercase tracking-wider">
                 <th className="py-3 px-6 w-8">#</th>
                 <th
-                  className="py-3 px-6 cursor-pointer hover:text-primary-800 select-none"
+                  className="py-3 px-6 cursor-pointer hover:text-brand-800 select-none"
                   onClick={() => handleSort('name')}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -688,7 +688,7 @@ export const ContentConfiguration = () => {
                   </span>
                 </th>
                 <th
-                  className="py-3 px-6 cursor-pointer hover:text-primary-800 select-none"
+                  className="py-3 px-6 cursor-pointer hover:text-brand-800 select-none"
                   onClick={() => handleSort('category')}
                 >
                   <span className="inline-flex items-center gap-1">
@@ -697,7 +697,7 @@ export const ContentConfiguration = () => {
                   </span>
                 </th>
                 <th
-                  className="py-3 px-6 text-right cursor-pointer hover:text-primary-800 select-none"
+                  className="py-3 px-6 text-right cursor-pointer hover:text-brand-800 select-none"
                   onClick={() => handleSort('baseCost')}
                 >
                   <span className="inline-flex items-center gap-1 justify-end">
@@ -711,12 +711,12 @@ export const ContentConfiguration = () => {
                 <th className="py-3 px-6 text-right">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 text-sm">
+            <tbody className="divide-y divide-line text-sm">
               {filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-neutral-500">
+                  <td colSpan={8} className="py-12 text-center text-ink-muted">
                     <div className="flex flex-col items-center gap-2">
-                      <FileText className="w-8 h-8 text-neutral-300" />
+                      <FileText className="w-8 h-8 text-line-strong" />
                       <p className="font-medium">Tidak ada konten ditemukan</p>
                       <p className="text-xs">Coba ubah kata kunci pencarian atau filter kategori.</p>
                     </div>
@@ -726,23 +726,23 @@ export const ContentConfiguration = () => {
                 filteredItems.map((item, index) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-neutral-50 transition-colors group"
+                    className="hover:bg-canvas transition-colors group"
                   >
-                    <td className="py-4 px-6 text-xs text-neutral-500 font-mono">
+                    <td className="py-4 px-6 text-xs text-ink-muted font-mono">
                       {index + 1}
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-start gap-2">
                         <div className="min-w-0">
-                          <span className="font-semibold text-neutral-900 block text-sm leading-tight">
+                          <span className="font-semibold text-ink block text-sm leading-tight">
                             {item.name}
                           </span>
                           {item.description && (
-                            <span className="text-xs text-neutral-500 block mt-0.5 line-clamp-1">
+                            <span className="text-xs text-ink-muted block mt-0.5 line-clamp-1">
                               {item.description}
                             </span>
                           )}
-                          <span className="text-[11px] text-neutral-400 block mt-0.5 font-mono">
+                          <span className="text-[11px] text-ink-muted block mt-0.5 font-mono">
                             {item.unitLabel} · {item.defaultUnitCount} unit default
                           </span>
                         </div>
@@ -752,30 +752,30 @@ export const ContentConfiguration = () => {
                       <Badge variant="default">{item.category}</Badge>
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <span className="font-bold text-neutral-900 block">
+                      <span className="font-bold text-ink block">
                         {item.baseCost === 0 ? (
-                          <span className="text-emerald-700">Gratis</span>
+                          <span className="text-brand-700">Gratis</span>
                         ) : (
                           formatCurrency(item.baseCost)
                         )}
                       </span>
                       {item.costPerUnit > 0 && (
-                        <span className="text-[11px] text-neutral-500 block mt-0.5">
+                        <span className="text-[11px] text-ink-muted block mt-0.5">
                           + {formatCurrency(item.costPerUnit)} / unit
                         </span>
                       )}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-neutral-800">
-                          <Clock className="w-3 h-3 text-primary-500" />
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-ink">
+                          <Clock className="w-3 h-3 text-brand-700" />
                           {item.baseDurationDays} hari
                         </span>
-                        <span className="text-[10px] text-neutral-500">
+                        <span className="text-[10px] text-ink-muted">
                           Revisi: {item.revisionDurationDays}d · Dumi: {item.dummyDurationDays}d
                         </span>
                         {item.durationPer100UnitsDays > 0 && (
-                          <span className="text-[10px] text-neutral-400">
+                          <span className="text-[10px] text-ink-muted">
                             +{item.durationPer100UnitsDays}d / 100 unit
                           </span>
                         )}
@@ -787,24 +787,24 @@ export const ContentConfiguration = () => {
                           Populer
                         </Badge>
                       ) : (
-                        <span className="text-xs text-neutral-400">—</span>
+                        <span className="text-xs text-ink-muted">—</span>
                       )}
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <span className="text-xs text-neutral-500">{formatDate(item.updatedAt)}</span>
+                      <span className="text-xs text-ink-muted">{formatDate(item.updatedAt)}</span>
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 transition-opacity">
                         <button
                           onClick={() => handleOpenEdit(item)}
-                          className="p-2 rounded-md hover:bg-primary-100 text-neutral-500 hover:text-primary-700 transition-colors"
+                          className="p-2 rounded-md hover:bg-brand-100 text-ink-muted hover:text-brand-700 transition-colors"
                           title="Edit konten"
                         >
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(item)}
-                          className="p-2 rounded-md hover:bg-rose-50 text-neutral-500 hover:text-rose-600 transition-colors"
+                          className="p-2 rounded-md hover:bg-civic-dangerSoft text-ink-muted hover:text-civic-danger transition-colors"
                           title="Nonaktifkan konten"
                           aria-label={`Nonaktifkan ${item.name}`}
                         >
@@ -820,8 +820,8 @@ export const ContentConfiguration = () => {
         </div>
 
         {/* Jumlah hasil */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100">
-          <p className="text-xs text-neutral-500">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-line">
+          <p className="text-xs text-ink-muted">
             Menampilkan {filteredItems.length} dari {contentItems.length} konten layanan
           </p>
         </div>
@@ -837,12 +837,12 @@ export const ContentConfiguration = () => {
             className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 animate-in fade-in slide-in-from-top-4"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-line">
               <div>
-                <h2 className="text-lg font-bold text-neutral-900">
+                <h2 className="text-lg font-bold text-ink">
                   {editingItem ? 'Edit Konten Layanan' : 'Tambah Konten Layanan Baru'}
                 </h2>
-                <p className="text-xs text-neutral-500 mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   {editingItem
                     ? `Mengubah: ${editingItem.name}`
                     : 'Isi formulir di bawah untuk menambahkan jenis layanan tashih baru.'}
@@ -850,7 +850,7 @@ export const ContentConfiguration = () => {
               </div>
               <button
                 onClick={handleCloseModal}
-                className="p-2 rounded-md hover:bg-neutral-100 text-neutral-500 transition-colors"
+                className="p-2 rounded-md hover:bg-surface-subtle text-ink-muted transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -861,36 +861,36 @@ export const ContentConfiguration = () => {
               {/* Nama & Kategori */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    Nama Konten <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-semibold text-ink mb-1.5">
+                    Nama Konten <span className="text-civic-danger">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
-                    className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${
+                    className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 transition-colors ${
                       formErrors.name
-                        ? 'border-rose-400 bg-rose-50'
-                        : 'border-neutral-200 bg-white'
+                        ? 'border-civic-dangerLine bg-civic-dangerSoft'
+                        : 'border-line bg-white'
                     }`}
                     placeholder="Contoh: Mushaf Al-Qur'an 30 Juz"
                   />
                   {formErrors.name && (
-                    <p className="text-[11px] text-rose-600 mt-1">{formErrors.name}</p>
+                    <p className="text-[11px] text-civic-danger mt-1">{formErrors.name}</p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
-                    Kategori <span className="text-rose-500">*</span>
+                  <label className="block text-xs font-semibold text-ink mb-1.5">
+                    Kategori <span className="text-civic-danger">*</span>
                   </label>
                   <div className="relative">
                     <select
                       value={formData.category}
                       onChange={(e) => handleChange('category', e.target.value)}
-                      className={`appearance-none w-full px-3 pr-10 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer transition-colors ${
+                      className={`appearance-none w-full px-3 pr-10 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 cursor-pointer transition-colors ${
                         formErrors.category
-                          ? 'border-rose-400 bg-rose-50'
-                          : 'border-neutral-200 bg-white'
+                          ? 'border-civic-dangerLine bg-civic-dangerSoft'
+                          : 'border-line bg-white'
                       }`}
                     >
                       {availableCategoryOptions.map((cat) => (
@@ -899,37 +899,37 @@ export const ContentConfiguration = () => {
                         </option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
                   </div>
                   {formErrors.category && (
-                    <p className="text-[11px] text-rose-600 mt-1">{formErrors.category}</p>
+                    <p className="text-[11px] text-civic-danger mt-1">{formErrors.category}</p>
                   )}
                 </div>
               </div>
 
               {/* Deskripsi */}
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                <label className="block text-xs font-semibold text-ink mb-1.5">
                   Deskripsi
                 </label>
                 <textarea
                   rows={3}
                   value={formData.description}
                   onChange={(e) => handleChange('description', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white resize-none transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white resize-none transition-colors"
                   placeholder="Deskripsi singkat mengenai jenis layanan ini (opsional)"
                 />
               </div>
 
               {/* ── Biaya PNBP ─────────────────────────────────────────── */}
               <div>
-                <h3 className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <Coins className="w-3.5 h-3.5 text-gold-600" />
+                <h3 className="text-xs font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Coins className="w-3.5 h-3.5 text-civicGold-700" />
                   Biaya PNBP
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Biaya Dasar (Rp)
                     </label>
                     <input
@@ -939,16 +939,16 @@ export const ContentConfiguration = () => {
                       onChange={(e) =>
                         handleChange('baseCost', parseInt(e.target.value, 10) || 0)
                       }
-                      className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors ${
-                        formErrors.baseCost ? 'border-rose-400 bg-rose-50' : 'border-neutral-200'
+                      className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white transition-colors ${
+                        formErrors.baseCost ? 'border-civic-dangerLine bg-civic-dangerSoft' : 'border-line'
                       }`}
                     />
                     {formErrors.baseCost && (
-                      <p className="text-[11px] text-rose-600 mt-1">{formErrors.baseCost}</p>
+                      <p className="text-[11px] text-civic-danger mt-1">{formErrors.baseCost}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Biaya per Unit (Rp)
                     </label>
                     <input
@@ -958,18 +958,18 @@ export const ContentConfiguration = () => {
                       onChange={(e) =>
                         handleChange('costPerUnit', parseInt(e.target.value, 10) || 0)
                       }
-                      className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                      className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Satuan Label
                     </label>
                     <input
                       type="text"
                       value={formData.unitLabel}
                       onChange={(e) => handleChange('unitLabel', e.target.value)}
-                      className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                      className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white transition-colors"
                       placeholder="per surat tanda tashih"
                     />
                   </div>
@@ -978,13 +978,13 @@ export const ContentConfiguration = () => {
 
               {/* ── Durasi Hari Kerja ──────────────────────────────────── */}
               <div>
-                <h3 className="text-xs font-bold text-neutral-700 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-primary-500" />
+                <h3 className="text-xs font-bold text-ink uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-brand-700" />
                   Durasi Hari Kerja
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Durasi Dasar
                     </label>
                     <div className="relative">
@@ -995,19 +995,19 @@ export const ContentConfiguration = () => {
                         onChange={(e) =>
                           handleChange('baseDurationDays', parseInt(e.target.value, 10) || 0)
                         }
-                        className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors ${
+                        className={`w-full px-3 py-2.5 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors ${
                           formErrors.baseDurationDays
-                            ? 'border-rose-400 bg-rose-50'
-                            : 'border-neutral-200'
+                            ? 'border-civic-dangerLine bg-civic-dangerSoft'
+                            : 'border-line'
                         }`}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
                         hari
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Durasi Revisi
                     </label>
                     <div className="relative">
@@ -1018,15 +1018,15 @@ export const ContentConfiguration = () => {
                         onChange={(e) =>
                           handleChange('revisionDurationDays', parseInt(e.target.value, 10) || 0)
                         }
-                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                        className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
                         hari
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Durasi Dumi
                     </label>
                     <div className="relative">
@@ -1037,15 +1037,15 @@ export const ContentConfiguration = () => {
                         onChange={(e) =>
                           handleChange('dummyDurationDays', parseInt(e.target.value, 10) || 0)
                         }
-                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                        className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
                         hari
                       </span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                    <label className="block text-xs font-medium text-ink-muted mb-1.5">
                       Per 100 Unit
                     </label>
                     <div className="relative">
@@ -1056,9 +1056,9 @@ export const ContentConfiguration = () => {
                         onChange={(e) =>
                           handleChange('durationPer100UnitsDays', parseInt(e.target.value, 10) || 0)
                         }
-                        className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white pr-12 transition-colors"
+                        className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
                         hari
                       </span>
                     </div>
@@ -1069,7 +1069,7 @@ export const ContentConfiguration = () => {
               {/* ── Pengaturan Tambahan ─────────────────────────────────── */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                  <label className="block text-xs font-medium text-ink-muted mb-1.5">
                     Jumlah Unit Default
                   </label>
                   <input
@@ -1079,11 +1079,11 @@ export const ContentConfiguration = () => {
                     onChange={(e) =>
                       handleChange('defaultUnitCount', parseInt(e.target.value, 10) || 1)
                     }
-                    className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-600 mb-1.5">
+                  <label className="block text-xs font-medium text-ink-muted mb-1.5">
                     Urutan Tampil (Sort Order)
                   </label>
                   <input
@@ -1093,32 +1093,32 @@ export const ContentConfiguration = () => {
                     onChange={(e) =>
                       handleChange('sortOrder', parseInt(e.target.value, 10) || 0)
                     }
-                    className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white transition-colors"
+                    className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white transition-colors"
                   />
                 </div>
               </div>
 
               {/* Catatan Persyaratan */}
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                <label className="block text-xs font-semibold text-ink mb-1.5">
                   Catatan Persyaratan
                 </label>
                 <textarea
                   rows={2}
                   value={formData.requirementsNote}
                   onChange={(e) => handleChange('requirementsNote', e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border border-neutral-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white resize-none transition-colors"
+                  className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white resize-none transition-colors"
                   placeholder="Dokumen atau syarat khusus untuk layanan ini (opsional)"
                 />
               </div>
 
               {/* Toggle Populer */}
-              <div className="flex items-center gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200">
+              <div className="flex items-center gap-3 p-3 bg-canvas rounded-lg border border-line">
                 <button
                   type="button"
                   onClick={() => handleChange('isPopular', !formData.isPopular)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-                    formData.isPopular ? 'bg-primary-700' : 'bg-neutral-300'
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700 focus:ring-offset-2 ${
+                    formData.isPopular ? 'bg-brand-700' : 'bg-line-strong'
                   }`}
                 >
                   <span
@@ -1128,10 +1128,10 @@ export const ContentConfiguration = () => {
                   />
                 </button>
                 <div>
-                  <span className="text-sm font-medium text-neutral-800">
+                  <span className="text-sm font-medium text-ink">
                     Tandai sebagai Layanan Populer
                   </span>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-[11px] text-ink-muted">
                     Layanan ini akan ditampilkan dengan badge "Populer" di formulir pendaftaran.
                   </p>
                 </div>
@@ -1139,7 +1139,7 @@ export const ContentConfiguration = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-neutral-200 bg-neutral-50 rounded-b-xl">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-line bg-canvas rounded-b-xl">
               <Button variant="ghost" onClick={handleCloseModal}>
                 Batal
               </Button>
@@ -1163,23 +1163,23 @@ export const ContentConfiguration = () => {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-4">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
+              <div className="w-10 h-10 rounded-full bg-civic-dangerSoft flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-civic-danger" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">
+                <h3 className="text-base font-bold text-ink">
                   Nonaktifkan Konten Layanan
                 </h3>
-                <p className="text-sm text-neutral-600 mt-1">
+                <p className="text-sm text-ink-muted mt-1">
                   Anda yakin ingin menghapus{' '}
-                  <span className="font-semibold text-neutral-900">
+                  <span className="font-semibold text-ink">
                     "{deleteConfirm.name}"
                   </span>
                   ? Layanan akan dinonaktifkan dan tidak muncul pada pilihan pengajuan baru.
                 </p>
               </div>
             </div>
-            {apiError && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{apiError}</p>}
+            {apiError && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">{apiError}</p>}
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={isSubmitting}>
                 Batal

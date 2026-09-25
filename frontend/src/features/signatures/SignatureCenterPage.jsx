@@ -315,8 +315,8 @@ export const SignatureCenterPage = () => {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200 text-xs font-bold">
-              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-900 border border-brand-100 text-xs font-bold">
+              <ShieldCheck className="w-4 h-4 text-brand-700" />
               Sertifikasi BSrE / E-Sign
             </span>
             <Button
@@ -335,14 +335,14 @@ export const SignatureCenterPage = () => {
 
       {/* Global Alerts */}
       {successMessage && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-900 text-xs shadow-2xs animate-fadeIn">
+        <div className="p-3.5 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between text-brand-900 text-xs shadow-2xs animate-fadeIn">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
             <span className="font-semibold">{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-xs text-emerald-800 hover:underline font-bold px-2 py-0.5"
+            className="text-xs text-brand-800 hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -350,14 +350,14 @@ export const SignatureCenterPage = () => {
       )}
 
       {error && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-900 text-xs shadow-2xs animate-fadeIn">
+        <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center justify-between text-civic-danger text-xs shadow-2xs animate-fadeIn">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
             <span className="font-semibold">{error}</span>
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-xs text-rose-800 hover:underline font-bold px-2 py-0.5"
+            className="text-xs text-civic-danger hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -370,84 +370,84 @@ export const SignatureCenterPage = () => {
           onClick={() => handleTabChange('NEED_MY_SIGN')}
           className={`p-4 rounded-xl border transition-all cursor-pointer ${
             activeTab === 'NEED_MY_SIGN'
-              ? 'bg-emerald-50/70 border-emerald-300 ring-2 ring-emerald-600/20'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-brand-50/70 border-brand-100 ring-2 ring-brand-700/20'
+              : 'bg-white border-line hover:border-line-strong'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">Perlu Tanda Tangan Anda</span>
-            <div className="p-2 rounded-lg bg-emerald-100 text-emerald-800">
+            <span className="text-xs font-bold text-ink-muted">Perlu Tanda Tangan Anda</span>
+            <div className="p-2 rounded-lg bg-brand-100 text-brand-800">
               <PenTool className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{stats.needSign}</span>
-            <span className="text-xs text-slate-500">dokumen aktif</span>
+            <span className="text-2xl font-black text-ink">{stats.needSign}</span>
+            <span className="text-xs text-ink-muted">dokumen aktif</span>
           </div>
-          <p className="text-[11px] text-emerald-700 mt-1 font-medium">Menunggu aksi tanda tangan Anda</p>
+          <p className="text-[11px] text-brand-700 mt-1 font-medium">Menunggu aksi tanda tangan Anda</p>
         </div>
 
         <div
           onClick={() => handleTabChange('WAITING_OTHERS')}
           className={`p-4 rounded-xl border transition-all cursor-pointer ${
             activeTab === 'WAITING_OTHERS'
-              ? 'bg-amber-50/70 border-amber-300 ring-2 ring-amber-600/20'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-civic-warningSoft/70 border-civic-warningLine ring-2 ring-civic-warning/20'
+              : 'bg-white border-line hover:border-line-strong'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">Menunggu Penandatangan Lain</span>
-            <div className="p-2 rounded-lg bg-amber-100 text-amber-800">
+            <span className="text-xs font-bold text-ink-muted">Menunggu Penandatangan Lain</span>
+            <div className="p-2 rounded-lg bg-civic-warningSoft text-civic-warning">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{stats.waitingOthers}</span>
-            <span className="text-xs text-slate-500">dokumen</span>
+            <span className="text-2xl font-black text-ink">{stats.waitingOthers}</span>
+            <span className="text-xs text-ink-muted">dokumen</span>
           </div>
-          <p className="text-[11px] text-amber-700 mt-1 font-medium">Dalam alur urutan multi-sign</p>
+          <p className="text-[11px] text-civic-warning mt-1 font-medium">Dalam alur urutan multi-sign</p>
         </div>
 
         <div
           onClick={() => handleTabChange('SIGNED')}
           className={`p-4 rounded-xl border transition-all cursor-pointer ${
             activeTab === 'SIGNED'
-              ? 'bg-blue-50/70 border-blue-300 ring-2 ring-blue-600/20'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-civic-infoSoft/70 border-civic-infoLine ring-2 ring-civic-info/20'
+              : 'bg-white border-line hover:border-line-strong'
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-600">Selesai Ditandatangani</span>
-            <div className="p-2 rounded-lg bg-blue-100 text-blue-800">
+            <span className="text-xs font-bold text-ink-muted">Selesai Ditandatangani</span>
+            <div className="p-2 rounded-lg bg-civic-infoSoft text-civic-info">
               <CheckCircle2 className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-900">{stats.signedCount}</span>
-            <span className="text-xs text-slate-500">arsip resmi</span>
+            <span className="text-2xl font-black text-ink">{stats.signedCount}</span>
+            <span className="text-xs text-ink-muted">arsip resmi</span>
           </div>
-          <p className="text-[11px] text-blue-700 mt-1 font-medium">Siap kirim & tersimpan dalam log audit</p>
+          <p className="text-[11px] text-civic-info mt-1 font-medium">Siap kirim & tersimpan dalam log audit</p>
         </div>
       </div>
 
       {/* Main Workspace Card */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
+      <div className="bg-white rounded-xl border border-line shadow-2xs overflow-hidden">
         {/* Navigation Tabs Header */}
-        <div className="border-b border-slate-200 bg-slate-50/80 px-4 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="border-b border-line bg-canvas/80 px-4 pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 overflow-x-auto">
             <button
               type="button"
               onClick={() => handleTabChange('NEED_MY_SIGN')}
               className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'NEED_MY_SIGN'
-                  ? 'border-emerald-800 text-emerald-950 font-black'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-brand-800 text-brand-950 font-black'
+                  : 'border-transparent text-ink-muted hover:text-ink'
               }`}
             >
               <PenTool className="w-3.5 h-3.5" />
               <span>Perlu Tanda Tangan Anda</span>
               {stats.needSign > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800 text-[10px] font-mono font-bold">
                   {stats.needSign}
                 </span>
               )}
@@ -458,14 +458,14 @@ export const SignatureCenterPage = () => {
               onClick={() => handleTabChange('WAITING_OTHERS')}
               className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'WAITING_OTHERS'
-                  ? 'border-emerald-800 text-emerald-950 font-black'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-brand-800 text-brand-950 font-black'
+                  : 'border-transparent text-ink-muted hover:text-ink'
               }`}
             >
               <Clock className="w-3.5 h-3.5" />
               <span>Menunggu Penandatangan Lain</span>
               {stats.waitingOthers > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-mono font-bold">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning text-[10px] font-mono font-bold">
                   {stats.waitingOthers}
                 </span>
               )}
@@ -476,13 +476,13 @@ export const SignatureCenterPage = () => {
               onClick={() => handleTabChange('SIGNED')}
               className={`pb-3 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === 'SIGNED'
-                  ? 'border-emerald-800 text-emerald-950 font-black'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                  ? 'border-brand-800 text-brand-950 font-black'
+                  : 'border-transparent text-ink-muted hover:text-ink'
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Selesai Ditandatangani</span>
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px] font-mono font-bold">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-strong text-ink text-[10px] font-mono font-bold">
                 {stats.signedCount}
               </span>
             </button>
@@ -491,7 +491,7 @@ export const SignatureCenterPage = () => {
           {/* Batch Action Bar if items selected */}
           {activeTab === 'NEED_MY_SIGN' && selectedDocIds.length > 0 && (
             <div className="pb-2.5 flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-700">
+              <span className="text-xs font-bold text-ink">
                 {selectedDocIds.length} dokumen terpilih
               </span>
               <Button
@@ -508,7 +508,7 @@ export const SignatureCenterPage = () => {
         </div>
 
         {/* Filter and Search Bar */}
-        <div className="p-4 bg-white border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="p-4 bg-white border-b border-line flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="w-full sm:w-80">
             <SearchField
               value={searchQuery}
@@ -518,14 +518,14 @@ export const SignatureCenterPage = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600">
-              <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+              <Filter className="w-3.5 h-3.5 text-ink-muted" />
               <span>Tipe Dokumen:</span>
             </div>
             <select
               value={filterDocType}
               onChange={(e) => setFilterDocType(e.target.value)}
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 font-medium"
+              className="text-xs px-2.5 py-1.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
             >
               <option value="ALL">Semua Jenis Dokumen</option>
               <option value="SURAT_HASIL_VERIFIKASI">Surat Hasil Verifikasi</option>
@@ -572,17 +572,17 @@ export const SignatureCenterPage = () => {
             <div className="space-y-3">
               {/* Select All Checkbox for active Tab */}
               {activeTab === 'NEED_MY_SIGN' && filteredDocuments.length > 0 && (
-                <div className="px-2 py-1.5 bg-slate-50 rounded-lg flex items-center justify-between text-xs text-slate-600 border border-slate-200">
+                <div className="px-2 py-1.5 bg-canvas rounded-lg flex items-center justify-between text-xs text-ink-muted border border-line">
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={selectedDocIds.length === filteredDocuments.length && filteredDocuments.length > 0}
                       onChange={handleSelectAll}
-                      className="rounded border-slate-300 text-emerald-800 focus:ring-emerald-700"
+                      className="rounded border-line-strong text-brand-800 focus:ring-brand-700"
                     />
                     <span className="font-semibold">Pilih Semua ({filteredDocuments.length} Dokumen)</span>
                   </label>
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-ink-muted">
                     Gunakan centang untuk penandatanganan massal
                   </span>
                 </div>
@@ -592,7 +592,7 @@ export const SignatureCenterPage = () => {
               {filteredDocuments.map((doc) => (
                 <div
                   key={doc.id}
-                  className="p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                  className="p-4 rounded-xl border border-line bg-white hover:border-brand-100 transition-all shadow-2xs flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                 >
                   {/* Document Info Column */}
                   <div className="flex items-start gap-3.5 flex-1 min-w-0">
@@ -601,60 +601,60 @@ export const SignatureCenterPage = () => {
                         type="checkbox"
                         checked={selectedDocIds.includes(doc.id)}
                         onChange={() => handleToggleSelectDoc(doc.id)}
-                        className="mt-1 rounded border-slate-300 text-emerald-800 focus:ring-emerald-700"
+                        className="mt-1 rounded border-line-strong text-brand-800 focus:ring-brand-700"
                         aria-label={`Pilih dokumen ${doc.document_no}`}
                       />
                     )}
 
-                    <div className="p-2.5 rounded-xl bg-slate-100 text-emerald-900 shrink-0 mt-0.5">
+                    <div className="p-2.5 rounded-xl bg-surface-subtle text-brand-900 shrink-0 mt-0.5">
                       <FileCheck className="w-5 h-5" />
                     </div>
 
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-black text-slate-900 font-mono">
+                        <span className="text-xs font-black text-ink font-mono">
                           {doc.document_no}
                         </span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-subtle text-ink border border-line">
                           {doc.document_type === 'BERITA_ACARA_VERIFIKASI'
                             ? 'Berita Acara Verifikasi'
                             : 'Surat Hasil Verifikasi'}
                         </span>
                         {doc.status === 'SIGNED' ? (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-brand-100 text-brand-900 border border-brand-100">
                             Lengkap Ditandatangani
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
                             Menunggu Tanda Tangan
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs text-slate-700">
-                        <strong className="font-semibold text-slate-900">“{doc.manuscript_title}”</strong>
-                        <span className="text-slate-400 mx-1.5">·</span>
-                        <span className="text-slate-600">{doc.publisher_name}</span>
-                        <span className="text-slate-400 mx-1.5">·</span>
-                        <span className="font-mono text-[11px] text-slate-500">#{doc.registration_no}</span>
+                      <div className="text-xs text-ink">
+                        <strong className="font-semibold text-ink">“{doc.manuscript_title}”</strong>
+                        <span className="text-ink-muted mx-1.5">·</span>
+                        <span className="text-ink-muted">{doc.publisher_name}</span>
+                        <span className="text-ink-muted mx-1.5">·</span>
+                        <span className="font-mono text-[11px] text-ink-muted">#{doc.registration_no}</span>
                       </div>
 
                       {/* Signatories progress chips */}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="text-[11px] text-slate-400 font-medium">Penandatangan:</span>
+                        <span className="text-[11px] text-ink-muted font-medium">Penandatangan:</span>
                         {doc.signatories?.map((sig, idx) => (
                           <span
                             key={idx}
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
                               sig.status === 'SIGNED'
-                                ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-brand-50 text-brand-900 border-brand-100'
+                                : 'bg-surface-subtle text-ink-muted border-line'
                             }`}
                           >
                             {sig.status === 'SIGNED' ? (
-                              <CheckCircle2 className="w-3 h-3 text-emerald-700 shrink-0" />
+                              <CheckCircle2 className="w-3 h-3 text-brand-700 shrink-0" />
                             ) : (
-                              <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                              <Clock className="w-3 h-3 text-ink-muted shrink-0" />
                             )}
                             <span>{sig.role_label}: {sig.status === 'SIGNED' ? 'Sudah' : 'Menunggu'}</span>
                           </span>
@@ -664,22 +664,22 @@ export const SignatureCenterPage = () => {
                   </div>
 
                   {/* Actions Column */}
-                  <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                  <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-line">
                     <Button
                       variant="outline"
                       onClick={() => setPreviewDoc(doc)}
                       className="text-xs px-3 py-1.5"
                     >
-                      <Eye className="w-3.5 h-3.5 mr-1 text-slate-500" />
+                      <Eye className="w-3.5 h-3.5 mr-1 text-ink-muted" />
                       Pratinjau
                     </Button>
 
                     <Link
                       to={`/internal/verifications/${doc.assignment_id}`}
-                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-700 font-semibold hover:bg-slate-50"
+                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-line hover:border-line-strong text-ink font-semibold hover:bg-canvas"
                     >
                       <span>Lembar Kerja</span>
-                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                      <ExternalLink className="w-3 h-3 text-ink-muted" />
                     </Link>
 
                     {doc.canUserSign && doc.status !== 'SIGNED' && (
@@ -745,42 +745,42 @@ export const SignatureCenterPage = () => {
 
       {/* Document Preview Modal */}
       {previewDoc && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-emerald-950 font-bold text-sm">
-                <FileCheck className="w-5 h-5 text-emerald-700" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-2xl w-full p-6 space-y-4 shadow-xl border border-line">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
+                <FileCheck className="w-5 h-5 text-brand-700" />
                 Pratinjau Dokumen Resmi
               </div>
               <button
                 onClick={() => setPreviewDoc(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+            <div className="p-4 bg-canvas border border-line rounded-xl space-y-2 text-xs">
               <div className="flex justify-between">
-                <span className="text-slate-500">Nomor Dokumen:</span>
-                <strong className="font-mono text-slate-900">{previewDoc.document_no}</strong>
+                <span className="text-ink-muted">Nomor Dokumen:</span>
+                <strong className="font-mono text-ink">{previewDoc.document_no}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Naskah:</span>
-                <strong className="text-slate-900">{previewDoc.manuscript_title}</strong>
+                <span className="text-ink-muted">Naskah:</span>
+                <strong className="text-ink">{previewDoc.manuscript_title}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Penerbit:</span>
-                <strong className="text-slate-900">{previewDoc.publisher_name}</strong>
+                <span className="text-ink-muted">Penerbit:</span>
+                <strong className="text-ink">{previewDoc.publisher_name}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Status Pengesahan:</span>
-                <span className="font-bold text-emerald-800">{previewDoc.status}</span>
+                <span className="text-ink-muted">Status Pengesahan:</span>
+                <span className="font-bold text-brand-800">{previewDoc.status}</span>
               </div>
             </div>
 
-            <div className="p-4 bg-white border border-slate-200 rounded-xl space-y-2 text-xs leading-relaxed text-slate-700 max-h-64 overflow-y-auto">
-              <h5 className="font-bold text-slate-900 border-b pb-1">
+            <div className="p-4 bg-white border border-line rounded-xl space-y-2 text-xs leading-relaxed text-ink max-h-64 overflow-y-auto">
+              <h5 className="font-bold text-ink border-b pb-1">
                 KEMENTERIAN AGAMA REPUBLIK INDONESIA
                 <br />
                 LAJNAH PENTASHIHAN MUSHAF AL-QUR&apos;AN
@@ -793,7 +793,7 @@ export const SignatureCenterPage = () => {
               </p>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
               <Button
                 variant="outline"
                 onClick={() => setPreviewDoc(null)}

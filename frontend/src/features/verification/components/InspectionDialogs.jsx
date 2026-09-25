@@ -13,29 +13,29 @@ export const InspectionDialogs = ({
   <>
       {/* Return Modal (Kepala LPMQ) */}
       {returnModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
-                <AlertTriangle className="w-5 h-5 text-rose-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-civic-danger font-bold text-sm">
+                <AlertTriangle className="w-5 h-5 text-civic-danger" />
                 Kembalikan Draf ke Verifikator
               </div>
               <button
                 onClick={() => setReturnModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed">
+            <p className="text-xs text-ink-muted leading-relaxed">
               Berikan arahan perbaikan secara spesifik. Draf surat akan dikembalikan ke status pemeriksaan aktif verifikator.
             </p>
 
             <form onSubmit={handleReturnDocument} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Alasan & Arahan Perbaikan <span className="text-rose-600">*</span>
+                <label className="block text-xs font-bold text-ink mb-1.5">
+                  Alasan & Arahan Perbaikan <span className="text-civic-danger">*</span>
                 </label>
                 <textarea
                   value={returnReason}
@@ -43,10 +43,10 @@ export const InspectionDialogs = ({
                   onChange={(e) => setReturnReason(e.target.value)}
                   placeholder="Contoh: Format penulisan rasm pada draf surat perlu disesuaikan dengan ketentuan Surat Keputusan..."
                   rows={4}
-                  className="w-full text-xs p-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+                  className="w-full text-xs p-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-danger/20 focus:border-civic-danger"
                   required
                 />
-                <span className="text-[11px] text-slate-400">Minimal 5 karakter.</span>
+                <span className="text-[11px] text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-2">
@@ -62,7 +62,7 @@ export const InspectionDialogs = ({
                 <Button
                   type="submit"
                   disabled={actionLoading || returnReason.trim().length < 5}
-                  className="text-xs bg-rose-700 hover:bg-rose-800 text-white font-bold"
+                  className="text-xs bg-civic-danger hover:bg-civic-danger text-white font-bold"
                 >
                   {actionLoading ? 'Mengembalikan...' : 'Kembalikan Draf'}
                 </Button>
@@ -74,44 +74,44 @@ export const InspectionDialogs = ({
 
       {/* Modal Serah-Terima Master Fisik ke Distributor (Langkah 7 SOP) */}
       {handoverModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
-                <PackageCheck className="w-5 h-5 text-emerald-700" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-900 font-bold text-sm">
+                <PackageCheck className="w-5 h-5 text-brand-700" />
                 Serah-Terima Master Fisik ke Distributor (Langkah 7 SOP)
               </div>
               <button
                 onClick={() => setHandoverModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg space-y-1 text-xs text-emerald-950">
+            <div className="p-3 bg-brand-50/70 border border-brand-100 rounded-lg space-y-1 text-xs text-brand-950">
               <p className="font-bold">Naskah: {registration.title}</p>
               <p>Nomor Registrasi: {registration.registration_no}</p>
               <p>Penerbit: {publisher.legal_name}</p>
             </div>
 
             {handoverModalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
                 <span>{handoverModalError}</span>
               </div>
             )}
 
             <form onSubmit={handleCreateHandover} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-800 mb-1">
-                  Pilih Petugas Distributor Penerima <span className="text-rose-600">*</span>
+                <label className="block font-bold text-ink mb-1">
+                  Pilih Petugas Distributor Penerima <span className="text-civic-danger">*</span>
                 </label>
                 {distributors.length > 0 ? (
                   <select
                     value={selectedDistributorId}
                     onChange={(e) => setSelectedDistributorId(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 font-medium"
+                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
                     required
                   >
                     {distributors.map((d) => (
@@ -121,7 +121,7 @@ export const InspectionDialogs = ({
                     ))}
                   </select>
                 ) : (
-                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">
+                  <div className="p-2.5 bg-civic-warningSoft border border-civic-warningLine rounded-lg text-civic-warning">
                     Tidak ditemukan petugas Distributor aktif. Hubungi Administrator.
                   </div>
                 )}
@@ -129,13 +129,13 @@ export const InspectionDialogs = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Kondisi Fisik Master <span className="text-rose-600">*</span>
+                  <label className="block font-bold text-ink mb-1">
+                    Kondisi Fisik Master <span className="text-civic-danger">*</span>
                   </label>
                   <select
                     value={handoverCondition}
                     onChange={(e) => setHandoverCondition(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 font-medium"
+                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
                     required
                   >
                     <option value="BAIK">BAIK (Rapi & Lengkap)</option>
@@ -145,8 +145,8 @@ export const InspectionDialogs = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-800 mb-1">
-                    Jumlah Jilid Fisik <span className="text-rose-600">*</span>
+                  <label className="block font-bold text-ink mb-1">
+                    Jumlah Jilid Fisik <span className="text-civic-danger">*</span>
                   </label>
                   <input
                     type="number"
@@ -154,14 +154,14 @@ export const InspectionDialogs = ({
                     max="60"
                     value={handoverVolumeCount}
                     onChange={(e) => setHandoverVolumeCount(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 font-medium"
+                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">
+                <label className="block font-bold text-ink mb-1">
                   Catatan Penyerahan Verifikator (Opsional)
                 </label>
                 <textarea
@@ -170,11 +170,11 @@ export const InspectionDialogs = ({
                   onChange={(e) => setHandoverNotes(e.target.value)}
                   placeholder="Contoh: Master cetak A4 dijilid spiral per juz lengkap 1-30 juz diserahkan di loket pentashihan..."
                   rows={3}
-                  className="w-full p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                  className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <Button
                   type="button"
                   variant="outline"
@@ -187,7 +187,7 @@ export const InspectionDialogs = ({
                 <Button
                   type="submit"
                   disabled={actionLoading || !selectedDistributorId}
-                  className="text-xs bg-emerald-800 hover:bg-emerald-900 text-white font-bold px-5 py-2.5"
+                  className="text-xs bg-brand-800 hover:bg-brand-900 text-white font-bold px-5 py-2.5"
                 >
                   {actionLoading ? 'Menerbitkan BAST...' : 'Serahkan & Terbitkan BAST'}
                 </Button>

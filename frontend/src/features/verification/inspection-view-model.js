@@ -58,7 +58,7 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     : (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN');
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('HELPER_ADMIN');
 
   const isAssignedVerifier = isVerifier && (!assignment.verifier_id || assignment.verifier_id === currentUser?.id || assignment.verifier?.id === currentUser?.id);
   const canVerifierWork = isInProgress && isAssignedVerifier && !isRevoked;

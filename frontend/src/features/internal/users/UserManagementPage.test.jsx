@@ -78,7 +78,7 @@ describe('UserManagementPage Component', () => {
 
     expect(screen.getByPlaceholderText(/Contoh: Dr. H. Ahmad Fauzan, M.Ag/i)).toBeInTheDocument();
     expect(screen.getByText(/Pilih Semua Role \(Akses Penuh\)/i)).toBeInTheDocument();
-    expect(screen.getAllByText('Admin Internal').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText('Helper Admin').length).toBeGreaterThanOrEqual(2);
   });
 });
 

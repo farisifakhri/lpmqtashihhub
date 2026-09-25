@@ -126,11 +126,11 @@ export const RegisterPublisherPage = () => {
   return (
     <div className="min-h-screen bg-[#F3F6F5] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
-      <div className="absolute top-[-10%] right-[-5%] w-[450px] h-[450px] rounded-full bg-emerald-200/40 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-teal-200/30 blur-3xl pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
 
       {/* Main Glass Card Container */}
-      <div className="relative z-10 w-full max-w-5xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-neutral-200 p-2 sm:p-3">
+      <div className="relative z-10 w-full max-w-5xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran & Info */}
@@ -144,24 +144,24 @@ export const RegisterPublisherPage = () => {
             {/* Badge Atas */}
             <div className="relative z-10 p-5 sm:p-6">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/60 shadow-xs">
-                <ShieldCheck className="w-4 h-4 text-primary-700" />
-                <span className="text-xs font-bold tracking-wide text-neutral-800">
+                <ShieldCheck className="w-4 h-4 text-brand-700" />
+                <span className="text-xs font-bold tracking-wide text-ink">
                   Registrasi Resmi LPMQ
                 </span>
               </div>
             </div>
 
             {/* Info Box Bawah */}
-            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-neutral-900/70 via-neutral-900/30 to-transparent pt-12">
+            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent pt-12">
               <div className="backdrop-blur-sm bg-white/20 p-4 rounded-2xl border border-white/30 text-white shadow-sm space-y-1">
-                <p className="text-xs font-semibold text-emerald-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+                <p className="text-xs font-semibold text-brand-100 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
                   Keterbukaan Layanan
                 </p>
                 <h3 className="text-sm font-bold text-white leading-snug">
                   Terbuka untuk Lembaga Penerbit maupun Pemohon Perorangan
                 </h3>
-                <p className="text-[11px] text-neutral-200 leading-relaxed pt-0.5">
+                <p className="text-[11px] text-line-strong leading-relaxed pt-0.5">
                   Setiap mushaf Al-Qur'an, juz 'amma, surah pilihan, braille, maupun kaligrafi yang akan diedarkan wajib ditashih oleh LPMQ Kemenag RI.
                 </p>
               </div>
@@ -172,11 +172,11 @@ export const RegisterPublisherPage = () => {
           <div className="lg:col-span-7 flex flex-col justify-between py-2 sm:py-3 px-2 sm:px-4">
             
             {/* Navigasi Atas */}
-            <div className="flex justify-end items-center text-xs text-neutral-500 mb-3 sm:mb-4">
+            <div className="flex justify-end items-center text-xs text-ink-muted mb-3 sm:mb-4">
               <span>Sudah memiliki akun?&nbsp;</span>
               <Link
                 to="/login"
-                className="font-bold text-primary-700 hover:text-primary-800 hover:underline transition-colors"
+                className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
               >
                 Masuk sekarang
               </Link>
@@ -194,7 +194,7 @@ export const RegisterPublisherPage = () => {
                       className="h-10 w-10 object-contain"
                     />
                   </div>
-                  <div className="h-8 w-[1px] bg-neutral-200" />
+                  <div className="h-8 w-[1px] bg-surface-strong" />
                   <div className="h-12 w-12 flex items-center justify-center">
                     <img
                       src={lpmqLogo}
@@ -204,23 +204,23 @@ export const RegisterPublisherPage = () => {
                   </div>
                 </div>
 
-                <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">
+                <h1 className="text-2xl font-extrabold text-ink tracking-tight">
                   Pendaftaran Akun Pemohon
                 </h1>
-                <p className="text-xs text-neutral-500 mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   Pilih kategori pendaftar untuk pembuatan akun pentashihan resmi.
                 </p>
               </div>
 
               {/* Segmented Switcher: Lembaga vs Perorangan */}
-              <div className="p-1 rounded-2xl bg-neutral-100 border border-neutral-200/80 flex items-center gap-1">
+              <div className="p-1 rounded-2xl bg-surface-subtle border border-line/80 flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleAccountTypeChange('LEMBAGA')}
                   className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                     accountType === 'LEMBAGA'
-                      ? 'bg-white text-primary-800 shadow-xs'
-                      : 'text-neutral-500 hover:text-neutral-800'
+                      ? 'bg-white text-brand-800 shadow-xs'
+                      : 'text-ink-muted hover:text-ink'
                   }`}
                 >
                   <Building className="w-3.5 h-3.5" />
@@ -232,8 +232,8 @@ export const RegisterPublisherPage = () => {
                   onClick={() => handleAccountTypeChange('PERORANGAN')}
                   className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                     accountType === 'PERORANGAN'
-                      ? 'bg-white text-primary-800 shadow-xs'
-                      : 'text-neutral-500 hover:text-neutral-800'
+                      ? 'bg-white text-brand-800 shadow-xs'
+                      : 'text-ink-muted hover:text-ink'
                   }`}
                 >
                   <UserCheck className="w-3.5 h-3.5" />
@@ -243,19 +243,19 @@ export const RegisterPublisherPage = () => {
 
               {/* Success / Error Message */}
               {success ? (
-                <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2.5">
-                  <div className="w-12 h-12 rounded-full bg-emerald-100 text-primary-700 flex items-center justify-center mx-auto">
+                <div className="p-6 rounded-2xl bg-brand-50 border border-brand-100 text-center space-y-2.5">
+                  <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h3 className="text-base font-bold text-neutral-900">Pendaftaran Berhasil!</h3>
-                  <p className="text-xs text-neutral-600">
+                  <h3 className="text-base font-bold text-ink">Pendaftaran Berhasil!</h3>
+                  <p className="text-xs text-ink-muted">
                     Akun pemohon <strong>{formData.legal_name || formData.name}</strong> berhasil dibuat. Mengalihkan ke Portal Pentashihan...
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3">
                   {(error || authError) && (
-                    <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-status-danger text-xs flex items-start gap-2.5">
+                    <div className="p-3 rounded-2xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5">
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       <span>{error || authError}</span>
                     </div>
@@ -264,12 +264,12 @@ export const RegisterPublisherPage = () => {
                   {/* FORM KHUSUS PERORANGAN */}
                   {accountType === 'PERORANGAN' ? (
                     <>
-                      <div className="p-3 rounded-2xl bg-primary-50/60 border border-primary-100 text-xs text-primary-800 leading-relaxed">
+                      <div className="p-3 rounded-2xl bg-brand-50/60 border border-brand-100 text-xs text-brand-800 leading-relaxed">
                         <span className="font-bold">Mode Perorangan:</span> Cocok untuk kaligrafer, penulis naskah, penghafal Al-Qur'an, penerjemah mandiri, atau individu pemohon tashih pribadi tanpa badan hukum PT/CV.
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                        <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                           Nama Lengkap Pemohon (Sesuai KTP) *
                         </label>
                         <div className="relative">
@@ -279,7 +279,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.name}
                             onChange={handleChange}
                             placeholder="Contoh: Muhammad Ilham Pratama, S.Hum"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
@@ -287,7 +287,7 @@ export const RegisterPublisherPage = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Nomor WhatsApp / HP Aktif *
                           </label>
                           <input
@@ -296,13 +296,13 @@ export const RegisterPublisherPage = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="081234567890"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Alamat Domisili / KTP
                           </label>
                           <input
@@ -311,7 +311,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.address}
                             onChange={handleChange}
                             placeholder="Kota / Kabupaten domisili"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                           />
                         </div>
                       </div>
@@ -321,7 +321,7 @@ export const RegisterPublisherPage = () => {
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Nama Lembaga / Penerbit *
                           </label>
                           <input
@@ -330,20 +330,20 @@ export const RegisterPublisherPage = () => {
                             value={formData.legal_name}
                             onChange={handleChange}
                             placeholder="PT Mushaf Berkah Nusantara"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Bentuk Usaha *
                           </label>
                           <select
                             name="entity_type"
                             value={formData.entity_type}
                             onChange={handleChange}
-                            className="w-full px-3 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 cursor-pointer"
+                            className="w-full px-3 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink cursor-pointer"
                           >
                             <option value="PT">PT</option>
                             <option value="CV">CV</option>
@@ -355,7 +355,7 @@ export const RegisterPublisherPage = () => {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Nama Penanggung Jawab (PIC) *
                           </label>
                           <input
@@ -364,13 +364,13 @@ export const RegisterPublisherPage = () => {
                             value={formData.name}
                             onChange={handleChange}
                             placeholder="Ahmad Fauzan, S.Pd"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                             Nomor WhatsApp / Kantor
                           </label>
                           <input
@@ -379,13 +379,13 @@ export const RegisterPublisherPage = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="081234567890"
-                            className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                           />
                         </div>
                       </div>
 
                       <div>
-                        <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                        <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                           Alamat Kantor / Sekretariat
                         </label>
                         <input
@@ -394,7 +394,7 @@ export const RegisterPublisherPage = () => {
                           value={formData.address}
                           onChange={handleChange}
                           placeholder="Jl. Percetakan Mushaf No. 12, Jakarta"
-                          className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                          className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         />
                       </div>
                     </>
@@ -403,7 +403,7 @@ export const RegisterPublisherPage = () => {
                   {/* KREDENSIAL AKUN LOGIN (BERLAKU UNTUK KEDUA TIPE) */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     <div>
-                      <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                      <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                         Email Akun (Untuk Login) *
                       </label>
                       <input
@@ -412,13 +412,13 @@ export const RegisterPublisherPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="nama@email.com"
-                        className="w-full px-4 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                        className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         required
                       />
                     </div>
 
                     <div className="relative">
-                      <label className="block text-[11px] font-bold text-neutral-700 uppercase tracking-wider mb-1">
+                      <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                         Kata Sandi (Min. 8 Karakter) *
                       </label>
                       <input
@@ -427,13 +427,13 @@ export const RegisterPublisherPage = () => {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="••••••••"
-                        className="w-full pl-4 pr-11 py-3 text-sm bg-neutral-50 hover:bg-neutral-100/70 focus:bg-white border border-neutral-200/80 rounded-2xl outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                        className="w-full pl-4 pr-11 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 top-5 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-600 transition-colors"
+                        className="absolute inset-y-0 right-0 top-5 pr-3.5 flex items-center text-ink-muted hover:text-ink-muted transition-colors"
                         aria-label="Toggle password visibility"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -446,7 +446,7 @@ export const RegisterPublisherPage = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-primary-700 to-primary-600 hover:from-primary-800 hover:to-primary-700 active:scale-[0.99] transition-all shadow-lg shadow-primary-700/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                      className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-brand-700 to-brand-700 hover:from-brand-800 hover:to-brand-700 active:scale-[0.99] transition-all shadow-lg shadow-brand-700/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                     >
                       {isLoading ? (
                         <span className="inline-flex items-center gap-2">
@@ -466,7 +466,7 @@ export const RegisterPublisherPage = () => {
             </div>
 
             {/* Footer Bawah */}
-            <div className="pt-4 text-center text-[11px] text-neutral-400">
+            <div className="pt-4 text-center text-[11px] text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
 

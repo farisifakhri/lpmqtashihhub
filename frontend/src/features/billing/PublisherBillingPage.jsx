@@ -266,29 +266,29 @@ export const PublisherBillingPage = () => {
     <div className="max-w-6xl mx-auto space-y-6 pb-24 animate-fadeIn">
       {/* Top Breadcrumbs */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Link to="/publisher" className="hover:text-emerald-700 transition-colors">
+        <div className="flex items-center gap-2 text-xs text-ink-muted">
+          <Link to="/publisher" className="hover:text-brand-700 transition-colors">
             Portal Penerbit
           </Link>
           <span>&bull;</span>
-          <span className="font-bold text-slate-800">Billing PNBP</span>
+          <span className="font-bold text-ink">Billing PNBP</span>
         </div>
 
-        <span className="text-[11px] font-mono font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
+        <span className="text-[11px] font-mono font-semibold px-2.5 py-1 bg-brand-50 text-brand-800 rounded-lg border border-brand-100">
           SLA Pembayaran: 7 Hari Kalender
         </span>
       </div>
 
       {/* Alert Messages */}
       {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800 text-sm shadow-xs animate-fadeIn">
+        <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between text-brand-800 text-sm shadow-xs animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-brand-700 flex-shrink-0" />
             <span className="font-medium">{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-xs text-emerald-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-brand-700 hover:underline font-bold px-2 py-1"
           >
             Tutup
           </button>
@@ -296,14 +296,14 @@ export const PublisherBillingPage = () => {
       )}
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-800 text-sm shadow-xs animate-fadeIn">
+        <div className="p-4 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center justify-between text-civic-danger text-sm shadow-xs animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-civic-danger flex-shrink-0" />
             <span>{error}</span>
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-xs text-rose-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-civic-danger hover:underline font-bold px-2 py-1"
           >
             Tutup
           </button>
@@ -311,19 +311,19 @@ export const PublisherBillingPage = () => {
       )}
 
       {/* Hero Header Banner */}
-      <div className="bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white rounded-2xl border border-emerald-800/80 shadow-md overflow-hidden relative">
+      <div className="bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white rounded-2xl border border-brand-800/80 shadow-md overflow-hidden relative">
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#DFB045_1px,transparent_1px)] [background-size:18px_18px]" />
 
         <div className="relative z-10 p-6 sm:p-8 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="space-y-1.5">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-gold-300 font-bold bg-primary-950/70 px-2.5 py-0.5 rounded border border-gold-400/30">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-civicGold-700 font-bold bg-brand-950/70 px-2.5 py-0.5 rounded border border-civicGold-700/30">
                 Penerimaan Negara Bukan Pajak (PNBP)
               </span>
               <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
                 Billing & Konfirmasi Pembayaran
               </h1>
-              <p className="text-xs sm:text-sm text-emerald-100/80 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-brand-100/80 max-w-2xl leading-relaxed">
                 Kelola kode billing resmi Kementerian Agama, pantau masa berlaku tagihan 7 hari kalender, dan lakukan konfirmasi setoran NTPN secara aman.
               </p>
             </div>
@@ -332,7 +332,7 @@ export const PublisherBillingPage = () => {
               onClick={fetchPayments}
               disabled={loading}
               variant="outline"
-              className="text-xs border-emerald-500/50 text-white hover:bg-emerald-800/60 shrink-0 self-start sm:self-center"
+              className="text-xs border-brand-700/50 text-white hover:bg-brand-800/60 shrink-0 self-start sm:self-center"
             >
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
               Muat Ulang
@@ -342,31 +342,31 @@ export const PublisherBillingPage = () => {
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-amber-400/20 text-amber-300">
+              <div className="p-2.5 rounded-lg bg-civic-warningLine/20 text-civic-warning">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-emerald-200/80 font-medium">Menunggu Bayar</p>
+                <p className="text-[11px] text-brand-100/80 font-medium">Menunggu Bayar</p>
                 <p className="text-lg font-extrabold text-white">{metrics.unpaidCount} Tagihan</p>
               </div>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-indigo-400/20 text-indigo-300">
+              <div className="p-2.5 rounded-lg bg-civic-infoLine/20 text-civic-info">
                 <Receipt className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-emerald-200/80 font-medium">Dalam Verifikasi</p>
+                <p className="text-[11px] text-brand-100/80 font-medium">Dalam Verifikasi</p>
                 <p className="text-lg font-extrabold text-white">{metrics.paidCount} Tagihan</p>
               </div>
             </div>
 
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-emerald-400/20 text-emerald-300">
+              <div className="p-2.5 rounded-lg bg-brand-700/20 text-brand-100">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-emerald-200/80 font-medium">Lunas & Sah</p>
+                <p className="text-[11px] text-brand-100/80 font-medium">Lunas & Sah</p>
                 <p className="text-lg font-extrabold text-white">{metrics.verifiedCount} Tagihan</p>
               </div>
             </div>
@@ -375,10 +375,10 @@ export const PublisherBillingPage = () => {
       </div>
 
       {/* Filter Tabs & Search Controls */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-3">
+      <div className="bg-white rounded-2xl p-4 border border-line shadow-xs space-y-3">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Status Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl w-full sm:w-auto overflow-x-auto text-xs">
+          <div className="flex items-center gap-1.5 p-1 bg-surface-subtle/80 rounded-xl w-full sm:w-auto overflow-x-auto text-xs">
             {[
               { key: 'ALL', label: 'Semua' },
               { key: 'UNPAID', label: 'Menunggu Bayar' },
@@ -393,8 +393,8 @@ export const PublisherBillingPage = () => {
                 }}
                 className={`px-3.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
                   activeTab === tab.key
-                    ? 'bg-white text-emerald-800 shadow-2xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-brand-800 shadow-2xs'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 {tab.label}
@@ -405,13 +405,13 @@ export const PublisherBillingPage = () => {
           {/* Search Bar */}
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:w-80">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari no. billing, judul, naskah..."
-                className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                className="w-full text-xs pl-9 pr-3 py-2 rounded-xl border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
               />
             </div>
             <Button type="submit" variant="outline" className="text-xs py-2 px-3">
@@ -424,14 +424,14 @@ export const PublisherBillingPage = () => {
       {/* Daftar Tagihan */}
       {loading ? (
         <div className="py-16 text-center space-y-3">
-          <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs text-slate-500 font-medium">Memuat data tagihan PNBP...</p>
+          <div className="w-8 h-8 border-3 border-brand-700 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs text-ink-muted font-medium">Memuat data tagihan PNBP...</p>
         </div>
       ) : payments.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
-          <Receipt className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">Tidak Ada Tagihan Ditemukan</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+        <div className="py-16 text-center bg-white rounded-2xl border border-line space-y-3">
+          <Receipt className="w-12 h-12 text-line-strong mx-auto" />
+          <h3 className="text-sm font-bold text-ink">Tidak Ada Tagihan Ditemukan</h3>
+          <p className="text-xs text-ink-muted max-w-sm mx-auto">
             {activeTab !== 'ALL'
               ? `Belum ada tagihan dengan status ${activeTab}.`
               : 'Naskah Anda belum memiliki tagihan PNBP. Tagihan akan otomatis terbit setelah surat hasil verifikasi disahkan.'}
@@ -449,18 +449,18 @@ export const PublisherBillingPage = () => {
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
+                className="bg-white rounded-2xl border border-line/90 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
               >
                 {/* Rejection Alert Banner */}
                 {item.rejection_reason && isUnpaid && (
-                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800 animate-fadeIn">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
+                  <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger animate-fadeIn">
+                    <AlertTriangle className="w-4 h-4 text-civic-danger flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-bold text-rose-900">
+                      <p className="font-bold text-civic-danger">
                         Bukti Pembayaran Sebelumnya Perlu Diperbaiki:
                       </p>
-                      <p className="text-rose-700 mt-0.5 leading-relaxed">{item.rejection_reason}</p>
-                      <p className="text-rose-600 text-[11px] mt-1 italic">
+                      <p className="text-civic-danger mt-0.5 leading-relaxed">{item.rejection_reason}</p>
+                      <p className="text-civic-danger text-[11px] mt-1 italic">
                         Silakan unggah kembali bukti setoran bank yang sah dan pastikan NTPN terbaca jelas.
                       </p>
                     </div>
@@ -468,27 +468,27 @@ export const PublisherBillingPage = () => {
                 )}
 
                 {/* Top Details & Billing Number */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                      <span className="text-[11px] font-mono text-slate-500">No. Billing:</span>
-                      <span className="font-mono text-xs font-bold text-slate-900">
+                    <div className="flex items-center gap-1.5 bg-canvas border border-line px-2.5 py-1 rounded-lg">
+                      <span className="text-[11px] font-mono text-ink-muted">No. Billing:</span>
+                      <span className="font-mono text-xs font-bold text-ink">
                         {item.billing_no}
                       </span>
                       <button
                         onClick={() => handleCopyText(item.billing_no, item.id)}
-                        className="text-slate-400 hover:text-emerald-700 transition-colors ml-1 p-0.5"
+                        className="text-ink-muted hover:text-brand-700 transition-colors ml-1 p-0.5"
                         title="Salin Nomor Billing"
                       >
                         {copiedBilling === item.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-brand-700" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
                       </button>
                     </div>
 
-                    <span className="font-mono text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <span className="font-mono text-[11px] font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
                       {reg.registration_no || '-'}
                     </span>
                   </div>
@@ -498,10 +498,10 @@ export const PublisherBillingPage = () => {
                       <span
                         className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
                           sla.isExpired
-                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            ? 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine'
                             : sla.isWarning
-                            ? 'bg-amber-50 text-amber-700 border-amber-200'
-                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                            ? 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                            : 'bg-canvas text-ink-muted border-line'
                         }`}
                       >
                         <Clock className="w-3 h-3" />
@@ -516,37 +516,37 @@ export const PublisherBillingPage = () => {
                 {/* Main Info Columns */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Judul Naskah Mushaf</p>
-                    <p className="font-bold text-slate-900 text-sm">{reg.title || 'Naskah Mushaf'}</p>
-                    <p className="text-slate-500">{reg.service_type?.name || 'Pentashihan Reguler'}</p>
+                    <p className="text-ink-muted font-medium">Judul Naskah Mushaf</p>
+                    <p className="font-bold text-ink text-sm">{reg.title || 'Naskah Mushaf'}</p>
+                    <p className="text-ink-muted">{reg.service_type?.name || 'Pentashihan Reguler'}</p>
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Nominal Tarif PNBP</p>
-                    <p className="font-black text-slate-900 text-base text-emerald-700">
+                    <p className="text-ink-muted font-medium">Nominal Tarif PNBP</p>
+                    <p className="font-black text-ink text-base text-brand-700">
                       {formatCurrency(item.amount)}
                     </p>
-                    <p className="text-slate-500">Sesuai PP Tarif Kemenag RI</p>
+                    <p className="text-ink-muted">Sesuai PP Tarif Kemenag RI</p>
                   </div>
 
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Status Setoran / NTPN</p>
+                    <p className="text-ink-muted font-medium">Status Setoran / NTPN</p>
                     {item.external_ref ? (
-                      <p className="font-mono font-bold text-slate-800">NTPN: {item.external_ref}</p>
+                      <p className="font-mono font-bold text-ink">NTPN: {item.external_ref}</p>
                     ) : (
-                      <p className="text-amber-700 font-medium italic">Belum ada konfirmasi NTPN</p>
+                      <p className="text-civic-warning font-medium italic">Belum ada konfirmasi NTPN</p>
                     )}
-                    <p className="text-slate-500">
+                    <p className="text-ink-muted">
                       Terbit: {formatDate(item.created_at)}
                     </p>
                   </div>
                 </div>
 
                 {/* Card Action Footer */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                  <div className="text-[11px] text-slate-500">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line">
+                  <div className="text-[11px] text-ink-muted">
                     Metode Pembayaran:{' '}
-                    <span className="font-semibold text-slate-700">
+                    <span className="font-semibold text-ink">
                       Bank Persepsi / SIMPONI Kemenag
                     </span>
                   </div>
@@ -564,15 +564,15 @@ export const PublisherBillingPage = () => {
                     )}
 
                     {isPaid && (
-                      <div className="inline-flex items-center gap-2 text-indigo-700 bg-indigo-50 border border-indigo-200 px-3.5 py-1.5 rounded-xl font-bold text-xs">
+                      <div className="inline-flex items-center gap-2 text-civic-info bg-civic-infoSoft border border-civic-infoLine px-3.5 py-1.5 rounded-xl font-bold text-xs">
                         <Clock className="w-3.5 h-3.5" />
                         Bukti Terkirim (Menunggu Verifikasi Petugas)
                       </div>
                     )}
 
                     {isVerified && (
-                      <div className="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl font-bold text-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <div className="inline-flex items-center gap-1.5 text-brand-700 bg-brand-50 border border-brand-100 px-3.5 py-1.5 rounded-xl font-bold text-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                         Lunas & Terverifikasi Sah
                       </div>
                     )}
@@ -586,41 +586,41 @@ export const PublisherBillingPage = () => {
 
       {/* Modal Konfirmasi Pembayaran */}
       {confirmModalOpen && selectedPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 animate-slideUp">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2 text-emerald-800 font-bold text-base">
-                <CreditCard className="w-5 h-5 text-emerald-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-line animate-slideUp">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-800 font-bold text-base">
+                <CreditCard className="w-5 h-5 text-brand-700" />
                 Konfirmasi Pembayaran PNBP
               </div>
               <button
                 onClick={() => setConfirmModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+                className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {modalError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center gap-2 text-rose-800 text-xs">
-                <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center gap-2 text-civic-danger text-xs">
+                <AlertCircle className="w-4 h-4 text-civic-danger flex-shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
             {/* Tagihan Summary Card */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
+            <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2 text-xs">
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">Nomor Billing:</span>
-                <span className="font-mono font-bold text-slate-800">{selectedPayment.billing_no}</span>
+                <span className="text-ink-muted">Nomor Billing:</span>
+                <span className="font-mono font-bold text-ink">{selectedPayment.billing_no}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">Naskah Mushaf:</span>
-                <span className="font-bold text-slate-800">{selectedPayment.registration?.title || '-'}</span>
+                <span className="text-ink-muted">Naskah Mushaf:</span>
+                <span className="font-bold text-ink">{selectedPayment.registration?.title || '-'}</span>
               </div>
-              <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                <span className="font-bold text-slate-700">Total Tagihan:</span>
-                <span className="font-black text-emerald-700 text-sm">
+              <div className="flex justify-between items-center pt-1 border-t border-line">
+                <span className="font-bold text-ink">Total Tagihan:</span>
+                <span className="font-black text-brand-700 text-sm">
                   {formatCurrency(selectedPayment.amount)}
                 </span>
               </div>
@@ -629,27 +629,27 @@ export const PublisherBillingPage = () => {
             {/* Form Input */}
             <form onSubmit={handleConfirmSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Nomor Transaksi Penerimaan Negara (NTPN) / No. Resi Bank <span className="text-rose-600">*</span>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Nomor Transaksi Penerimaan Negara (NTPN) / No. Resi Bank <span className="text-civic-danger">*</span>
                 </label>
                 <input
                   type="text"
                   value={ntpn}
                   onChange={(e) => setNtpn(e.target.value)}
                   placeholder="Contoh: 8274910284759281 atau No. Resi BSI"
-                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-mono"
+                  className="w-full text-xs p-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono"
                   required
                 />
-                <span className="text-[11px] text-slate-400 mt-1 block">
+                <span className="text-[11px] text-ink-muted mt-1 block">
                   Nomor NTPN tercetak pada bukti setoran bank atau struk teller/ATM.
                 </span>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Unggah Bukti Setor / Transfer <span className="text-rose-600">*</span>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Unggah Bukti Setor / Transfer <span className="text-civic-danger">*</span>
                 </label>
-                <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-50/50">
+                <div className="border-2 border-dashed border-line-strong hover:border-brand-700 rounded-xl p-4 text-center cursor-pointer transition-colors bg-canvas/50">
                   <input
                     type="file"
                     id="receipt-file-input"
@@ -658,18 +658,18 @@ export const PublisherBillingPage = () => {
                     className="hidden"
                   />
                   <label htmlFor="receipt-file-input" className="cursor-pointer block space-y-2">
-                    <UploadCloud className="w-8 h-8 text-slate-400 mx-auto" />
+                    <UploadCloud className="w-8 h-8 text-ink-muted mx-auto" />
                     {receiptFile ? (
                       <div className="text-xs">
-                        <p className="font-bold text-emerald-700">{receiptFile.name}</p>
-                        <p className="text-slate-400 text-[11px]">
+                        <p className="font-bold text-brand-700">{receiptFile.name}</p>
+                        <p className="text-ink-muted text-[11px]">
                           {(receiptFile.size / 1024).toFixed(1)} KB &bull; Klik untuk mengganti
                         </p>
                       </div>
                     ) : (
                       <div className="text-xs">
-                        <p className="font-semibold text-slate-700">Pilih berkas bukti transfer</p>
-                        <p className="text-slate-400 text-[11px]">Format PDF, PNG, atau JPG (Maks 5 MB)</p>
+                        <p className="font-semibold text-ink">Pilih berkas bukti transfer</p>
+                        <p className="text-ink-muted text-[11px]">Format PDF, PNG, atau JPG (Maks 5 MB)</p>
                       </div>
                     )}
                   </label>
@@ -681,12 +681,12 @@ export const PublisherBillingPage = () => {
                   <img
                     src={receiptPreview}
                     alt="Preview Bukti"
-                    className="max-h-36 mx-auto rounded-lg border border-slate-200 object-contain shadow-2xs"
+                    className="max-h-36 mx-auto rounded-lg border border-line object-contain shadow-2xs"
                   />
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <Button
                   type="button"
                   variant="outline"
@@ -710,30 +710,30 @@ export const PublisherBillingPage = () => {
       )}
 
       {/* Petunjuk Pembayaran Resmi SIMPONI */}
-      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 text-xs text-slate-600">
-        <div className="flex items-center gap-2 text-slate-900 font-bold text-sm">
-          <HelpCircle className="w-4 h-4 text-emerald-700" />
+      <div className="bg-canvas border border-line rounded-2xl p-6 space-y-4 text-xs text-ink-muted">
+        <div className="flex items-center gap-2 text-ink font-bold text-sm">
+          <HelpCircle className="w-4 h-4 text-brand-700" />
           Panduan Pembayaran PNBP Pentashihan Mushaf
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
-            <p className="font-bold text-slate-800">1. Salin Kode Billing</p>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+          <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
+            <p className="font-bold text-ink">1. Salin Kode Billing</p>
+            <p className="text-[11px] leading-relaxed text-ink-muted">
               Gunakan Nomor Billing yang tertera di atas. Pastikan pembayaran dilakukan sebelum batas waktu SLA (7 hari kalender).
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
-            <p className="font-bold text-slate-800">2. Setor ke Bank Persepsi</p>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+          <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
+            <p className="font-bold text-ink">2. Setor ke Bank Persepsi</p>
+            <p className="text-[11px] leading-relaxed text-ink-muted">
               Bayar melalui Teller Bank, ATM, atau Mobile Banking mitra SIMPONI (Bank Mandiri, BRI, BNI, BSI, BCA) menggunakan menu Pembayaran Penerimaan Negara.
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs">
-            <p className="font-bold text-slate-800">3. Konfirmasi di Portal</p>
-            <p className="text-[11px] leading-relaxed text-slate-500">
+          <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
+            <p className="font-bold text-ink">3. Konfirmasi di Portal</p>
+            <p className="text-[11px] leading-relaxed text-ink-muted">
               Masukkan Nomor Transaksi Penerimaan Negara (NTPN) serta unggah foto/PDF bukti bayar agar verifikator LPMQ dapat memverifikasi pelunasan.
             </p>
           </div>

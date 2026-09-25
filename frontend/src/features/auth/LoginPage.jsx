@@ -39,16 +39,16 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen bg-[#F3F6F5] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
-      <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] rounded-full bg-emerald-200/40 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-teal-200/30 blur-3xl pointer-events-none" />
-      <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-amber-100/40 blur-2xl pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
+      <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-civic-warningSoft/40 blur-2xl pointer-events-none" />
 
       {/* Main Glass Card Container (Sesuai Desain yang Sudah Diapprove Stakeholder) */}
-      <div className="relative z-10 w-full max-w-6xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-neutral-200 p-2 sm:p-3">
+      <div className="relative z-10 w-full max-w-6xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
           
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran (Frame Melengkung Halus) */}
-          <div className="lg:col-span-6 relative rounded-xl overflow-hidden bg-primary-950 flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
+          <div className="lg:col-span-6 relative rounded-xl overflow-hidden bg-brand-950 flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
             {/* Gambar 3D Quran */}
             <img
               src={quran3dImg}
@@ -59,18 +59,18 @@ export const LoginPage = () => {
             {/* Badge Kemenag Overlay Atas */}
             <div className="relative z-10 p-5 sm:p-5">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-xs">
-                <ShieldCheck className="w-4 h-4 text-primary-700" />
-                <span className="text-xs font-bold tracking-wide text-neutral-800">
+                <ShieldCheck className="w-4 h-4 text-brand-700" />
+                <span className="text-xs font-bold tracking-wide text-ink">
                   Lajnah Pentashihan Mushaf Quran RI
                 </span>
               </div>
             </div>
 
             {/* Caption Glassmorphism Bawah */}
-            <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-neutral-900/60 via-neutral-900/20 to-transparent pt-12">
-              <div className="bg-green-600/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
-                <p className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5 mb-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-gold-400" />
+            <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-ink/60 via-ink/20 to-transparent pt-12">
+              <div className="bg-brand-700/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
+                <p className="text-xs font-semibold text-brand-100 flex items-center gap-1.5 mb-0.5">
+                  <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
                   SIPNA (Sistem Informasi Pentashih Mushaf Quran)
                 </p>
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
@@ -84,11 +84,11 @@ export const LoginPage = () => {
           <div className="lg:col-span-6 flex flex-col justify-between px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
             
             {/* Header Atas: Navigasi Daftar */}
-            <div className="flex justify-end items-center text-xs text-neutral-500 mb-8">
+            <div className="flex justify-end items-center text-xs text-ink-muted mb-8">
               <span>Belum terdaftar?&nbsp;</span>
               <Link
                 to="/register"
-                className="font-bold text-primary-700 hover:text-primary-800 hover:underline transition-colors"
+                className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
               >
                 Registrasi penerbit
               </Link>
@@ -105,7 +105,7 @@ export const LoginPage = () => {
                     alt="Kementerian Agama RI"
                     className="h-14 sm:h-16 w-auto object-contain drop-shadow-sm"
                   />
-                  <div className="h-9 w-[1px] bg-neutral-200" />
+                  <div className="h-9 w-[1px] bg-surface-strong" />
                   <img
                     src={lpmqLogo}
                     alt="LPMQ"
@@ -114,10 +114,10 @@ export const LoginPage = () => {
                 </div>
 
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-neutral-900 tracking-tight">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-ink tracking-tight">
                     Akses Sistem Pentashihan
                   </h1>
-                  <p className="text-xs sm:text-sm text-neutral-500 mt-1">
+                  <p className="text-xs sm:text-sm text-ink-muted mt-1">
                     Gunakan akun resmi untuk mengakses layanan pengajuan, verifikasi, dan pengendalian proses.
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export const LoginPage = () => {
 
               {/* Error Alert */}
               {(error || authError) && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-status-danger text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn">
+                <div className="p-3.5 rounded-2xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{error || authError}</span>
                 </div>
@@ -134,7 +134,7 @@ export const LoginPage = () => {
               {/* Form Input Clean Minimalis */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="mb-2 block text-xs font-bold text-neutral-700">Alamat email</label>
+                  <label htmlFor="email" className="mb-2 block text-xs font-bold text-ink">Alamat email</label>
                   <input
                     id="email"
                     type="email"
@@ -142,13 +142,13 @@ export const LoginPage = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@instansi.go.id"
                     autoComplete="email"
-                    className="w-full px-4 py-3 text-sm bg-neutral-50 focus:bg-white border border-neutral-300 rounded-lg outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                    className="w-full px-4 py-3 text-sm bg-canvas focus:bg-white border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="password" className="mb-2 block text-xs font-bold text-neutral-700">Kata sandi</label>
+                  <label htmlFor="password" className="mb-2 block text-xs font-bold text-ink">Kata sandi</label>
                   <div className="relative">
                   <input
                     id="password"
@@ -157,13 +157,13 @@ export const LoginPage = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi"
                     autoComplete="current-password"
-                    className="w-full pl-4 pr-11 py-3 text-sm bg-neutral-50 focus:bg-white border border-neutral-300 rounded-lg outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-600 transition-all text-neutral-900 placeholder:text-neutral-400"
+                    className="w-full pl-4 pr-11 py-3 text-sm bg-canvas focus:bg-white border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-600 transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-ink-muted hover:text-ink-muted transition-colors"
                     aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -172,14 +172,14 @@ export const LoginPage = () => {
                 </div>
 
                 <div className="flex justify-end pt-0.5">
-                  <span className="text-xs text-neutral-500">Hubungi administrator apabila akses terkunci.</span>
+                  <span className="text-xs text-ink-muted">Hubungi administrator apabila akses terkunci.</span>
                 </div>
 
                 {/* Tombol Masuk / Sign In (Gradien / Bayangan Mewah) */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3.5 px-6 rounded-lg text-white font-bold text-sm bg-primary-700 hover:bg-primary-800 active:scale-[0.99] transition-all shadow-md shadow-primary-900/15 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                  className="w-full py-3.5 px-6 rounded-lg text-white font-bold text-sm bg-brand-700 hover:bg-brand-800 active:scale-[0.99] transition-all shadow-md shadow-brand-900/15 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                 >
                   {isLoading ? (
                     <span className="inline-flex items-center gap-2">
@@ -194,7 +194,7 @@ export const LoginPage = () => {
             </div>
 
             {/* Footer Bawah */}
-            <div className="pt-6 text-center text-[11px] text-neutral-400">
+            <div className="pt-6 text-center text-[11px] text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
 

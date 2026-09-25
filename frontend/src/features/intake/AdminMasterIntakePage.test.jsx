@@ -13,8 +13,8 @@ describe('AdminMasterIntakePage Component', () => {
       currentUser: {
         id: 'admin-1',
         name: 'Petugas Loket LPMQ',
-        role: 'ADMIN',
-        roles: ['ADMIN'],
+        role: 'HELPER_ADMIN',
+        roles: ['HELPER_ADMIN'],
       },
     });
 

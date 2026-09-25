@@ -16,51 +16,51 @@ export const HandoverPanel = ({
         <>
           {/* Summary Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+        <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-amber-700">Perlu Konfirmasi Loket</span>
-            <span className="p-2 rounded-xl bg-amber-50 text-amber-700">
+            <span className="text-xs font-semibold text-civic-warning">Perlu Konfirmasi Loket</span>
+            <span className="p-2 rounded-xl bg-civic-warningSoft text-civic-warning">
               <Clock className="w-4 h-4" />
             </span>
           </div>
-          <p className="text-2xl font-black text-slate-900">{pendingCount}</p>
-          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
+          <p className="text-2xl font-black text-ink">{pendingCount}</p>
+          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+        <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-emerald-700">Telah Diterima & Disahkan</span>
-            <span className="p-2 rounded-xl bg-emerald-50 text-emerald-700">
+            <span className="text-xs font-semibold text-brand-700">Telah Diterima & Disahkan</span>
+            <span className="p-2 rounded-xl bg-brand-50 text-brand-700">
               <CheckSquare className="w-4 h-4" />
             </span>
           </div>
-          <p className="text-2xl font-black text-slate-900">
+          <p className="text-2xl font-black text-ink">
             {handovers.filter((h) => h.status === 'RECEIVED').length}
           </p>
-          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
+          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
         </div>
 
-        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+        <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-rose-700">Dikembalikan / Cacat</span>
-            <span className="p-2 rounded-xl bg-rose-50 text-rose-700">
+            <span className="text-xs font-semibold text-civic-danger">Dikembalikan / Cacat</span>
+            <span className="p-2 rounded-xl bg-civic-dangerSoft text-civic-danger">
               <RotateCcw className="w-4 h-4" />
             </span>
           </div>
-          <p className="text-2xl font-black text-slate-900">
+          <p className="text-2xl font-black text-ink">
             {handovers.filter((h) => h.status === 'RETURNED').length}
           </p>
-          <p className="text-[11px] text-slate-500">Jumlah pada halaman ini</p>
+          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
         </div>
       </div>
 
       {!error && <QueueOverview total={pagination.total} oldest={handovers[0]?.queue_entered_at || handovers[0]?.created_at} fifo={!['RECEIVED', 'RETURNED'].includes(activeTab)} loading={loading} />}
 
       {/* Filter Tabs & Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-4 space-y-4">
+      <div className="bg-white rounded-2xl border border-line shadow-2xs p-4 space-y-4">
         <div className="flex flex-col md:flex-row items-center justify-between gap-3">
           {/* Tabs */}
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100/80 rounded-xl overflow-x-auto w-full md:w-auto">
+          <div className="flex items-center gap-1.5 p-1 bg-surface-subtle/80 rounded-xl overflow-x-auto w-full md:w-auto">
             <button
               onClick={() => {
                 setActiveTab('PENDING');
@@ -68,8 +68,8 @@ export const HandoverPanel = ({
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === 'PENDING'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-brand-800 shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
             >
               Menunggu Konfirmasi
@@ -81,8 +81,8 @@ export const HandoverPanel = ({
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === 'RECEIVED'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-brand-800 shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
             >
               Telah Diterima
@@ -94,8 +94,8 @@ export const HandoverPanel = ({
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === 'RETURNED'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-brand-800 shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
             >
               Dikembalikan
@@ -107,8 +107,8 @@ export const HandoverPanel = ({
               }}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 activeTab === 'ALL'
-                  ? 'bg-white text-emerald-800 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-brand-800 shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
             >
               Semua Riwayat
@@ -117,7 +117,7 @@ export const HandoverPanel = ({
 
           {/* Search Form */}
           <form onSubmit={handleSearchSubmit} className="w-full md:w-80 relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               aria-label="Cari serah-terima naskah"
@@ -125,7 +125,7 @@ export const HandoverPanel = ({
               maxLength={191}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari BAST, no reg, judul..."
-              className="w-full text-xs pl-9 pr-8 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 focus:border-emerald-600"
+              className="w-full text-xs pl-9 pr-8 py-2 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
             />
             {searchQuery && (
               <button
@@ -135,7 +135,7 @@ export const HandoverPanel = ({
                   setSubmittedSearch('');
                   setPagination(prev => ({ ...prev, page: 1 }));
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink-muted p-0.5"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -146,15 +146,15 @@ export const HandoverPanel = ({
 
       {/* Main List Table / Cards */}
       {loading ? (
-        <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
-          <div className="w-9 h-9 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-xs font-medium text-slate-600">Memuat berkas serah-terima fisik...</p>
+        <div className="py-20 text-center bg-white rounded-2xl border border-line space-y-3">
+          <div className="w-9 h-9 border-4 border-brand-700 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-medium text-ink-muted">Memuat berkas serah-terima fisik...</p>
         </div>
       ) : error ? null : handovers.length === 0 ? (
-        <div className="py-20 text-center bg-white rounded-2xl border border-slate-200 space-y-3">
-          <Inbox className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-800">Tidak Ada Serah-Terima Fisik</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
+        <div className="py-20 text-center bg-white rounded-2xl border border-line space-y-3">
+          <Inbox className="w-12 h-12 text-line-strong mx-auto" />
+          <h3 className="text-sm font-bold text-ink">Tidak Ada Serah-Terima Fisik</h3>
+          <p className="text-xs text-ink-muted max-w-md mx-auto">
             {activeTab === 'PENDING'
               ? 'Tidak ada master fisik yang sedang menunggu konfirmasi penerimaan loket saat ini.'
               : `Belum ada data serah-terima dengan status ${activeTab}.`}
@@ -175,35 +175,35 @@ export const HandoverPanel = ({
             return (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
+                className="bg-white rounded-2xl border border-line shadow-2xs hover:shadow-xs transition-shadow p-5 space-y-4"
               >
                 {/* Header Row: BAST No + Status */}
                 <QueueItemMeta item={item} />
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-lg">
-                      <span className="text-[11px] font-mono text-slate-500">BAST:</span>
-                      <span className="font-mono text-xs font-bold text-slate-900">{item.receipt_no}</span>
+                    <div className="flex items-center gap-1.5 bg-canvas border border-line px-2.5 py-1 rounded-lg">
+                      <span className="text-[11px] font-mono text-ink-muted">BAST:</span>
+                      <span className="font-mono text-xs font-bold text-ink">{item.receipt_no}</span>
                       <button
                         onClick={() => handleCopyText(item.receipt_no, item.id)}
-                        className="text-slate-400 hover:text-emerald-700 transition-colors ml-1"
+                        className="text-ink-muted hover:text-brand-700 transition-colors ml-1"
                         title="Salin No. BAST"
                       >
                         {copiedReceipt === item.id ? (
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <Check className="w-3.5 h-3.5 text-brand-700" />
                         ) : (
                           <Copy className="w-3.5 h-3.5" />
                         )}
                       </button>
                     </div>
 
-                    <span className="font-mono text-[11px] font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                    <span className="font-mono text-[11px] font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
                       {reg.registration_no || '-'}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-500">
+                    <span className="text-[11px] text-ink-muted">
                       Diserahkan: {formatDate(item.handed_over_at)}
                     </span>
                     {renderHandoverBadge(item.status)}
@@ -214,37 +214,37 @@ export const HandoverPanel = ({
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
                   {/* Col 1: Title & Publisher */}
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Naskah Mushaf</p>
-                    <p className="font-bold text-slate-900 text-sm">{reg.title || 'Naskah Mushaf'}</p>
-                    <p className="text-slate-600 flex items-center gap-1">
-                      <Building2 className="w-3 h-3 text-slate-400" />
+                    <p className="text-ink-muted font-medium">Naskah Mushaf</p>
+                    <p className="font-bold text-ink text-sm">{reg.title || 'Naskah Mushaf'}</p>
+                    <p className="text-ink-muted flex items-center gap-1">
+                      <Building2 className="w-3 h-3 text-ink-muted" />
                       {pub.legal_name || 'Penerbit Pemohon'}
                     </p>
                   </div>
 
                   {/* Col 2: Physical Details */}
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Kondisi & Kelengkapan Fisik</p>
-                    <p className="font-bold text-slate-900 text-xs">
+                    <p className="text-ink-muted font-medium">Kondisi & Kelengkapan Fisik</p>
+                    <p className="font-bold text-ink text-xs">
                       {item.volume_count} Jilid &bull; Ukuran A4 (Per Juz)
                     </p>
-                    <p className="text-slate-600">
-                      Kondisi: <span className="font-semibold text-slate-800">{item.condition || 'BAIK'}</span>
+                    <p className="text-ink-muted">
+                      Kondisi: <span className="font-semibold text-ink">{item.condition || 'BAIK'}</span>
                     </p>
                   </div>
 
                   {/* Col 3: Actors (From Verifier to Distributor) */}
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Petugas Serah-Terima</p>
-                    <p className="text-slate-700">
+                    <p className="text-ink-muted font-medium">Petugas Serah-Terima</p>
+                    <p className="text-ink">
                       Dari:{' '}
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-ink">
                         {fromUser.name || 'Verifikator'}
                       </span>
                     </p>
-                    <p className="text-slate-700">
+                    <p className="text-ink">
                       Kepada:{' '}
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-ink">
                         {toUser.name || 'Distributor'}
                       </span>
                     </p>
@@ -252,37 +252,37 @@ export const HandoverPanel = ({
 
                   {/* Col 4: Due Date & Status Notes */}
                   <div className="space-y-1">
-                    <p className="text-slate-400 font-medium">Tenggat & Jadwal Sidang</p>
+                    <p className="text-ink-muted font-medium">Tenggat & Jadwal Sidang</p>
                     {item.tashih_due_at ? (
                       <div>
-                        <p className="font-bold text-emerald-800 flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5 text-emerald-600" />
+                        <p className="font-bold text-brand-800 flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5 text-brand-700" />
                           {formatDateOnly(item.tashih_due_at)}
                         </p>
-                        <p className="text-[11px] text-slate-500">Target Sidang Tashih</p>
+                        <p className="text-[11px] text-ink-muted">Target Sidang Tashih</p>
                       </div>
                     ) : isPending ? (
-                      <p className="text-amber-700 font-medium italic">
+                      <p className="text-civic-warning font-medium italic">
                         Menunggu penetapan tenggat oleh Distributor
                       </p>
                     ) : (
-                      <p className="text-slate-400 italic">-</p>
+                      <p className="text-ink-muted italic">-</p>
                     )}
                   </div>
                 </div>
 
                 {/* Notes if available */}
                 {item.notes && (
-                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/70 text-xs text-slate-700 leading-relaxed">
-                    <span className="font-bold text-slate-900 mr-1.5">Catatan BAST:</span>
+                  <div className="p-3 bg-canvas rounded-xl border border-line/70 text-xs text-ink leading-relaxed">
+                    <span className="font-bold text-ink mr-1.5">Catatan BAST:</span>
                     <span className="whitespace-pre-line">{item.notes}</span>
                   </div>
                 )}
 
                 {/* Action Bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-                  <div className="text-[11px] text-slate-500">
-                    Tahap: <span className="font-semibold text-slate-700">{item.stage}</span>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line">
+                  <div className="text-[11px] text-ink-muted">
+                    Tahap: <span className="font-semibold text-ink">{item.stage}</span>
                     {item.received_at && (
                       <span className="ml-2">
                         &bull; Diterima: <span className="font-medium">{formatDate(item.received_at)}</span>
@@ -295,7 +295,7 @@ export const HandoverPanel = ({
                       variant="outline"
                       size="sm"
                       onClick={() => openDetailModal(item)}
-                      className="text-xs text-slate-700"
+                      className="text-xs text-ink"
                     >
                       <Eye className="w-3.5 h-3.5 mr-1" />
                       Detail BAST
@@ -309,7 +309,7 @@ export const HandoverPanel = ({
                             size="sm"
                             onClick={() => openReturnModal(item)}
                             disabled={actionLoading}
-                            className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50 font-semibold"
+                            className="text-xs text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft font-semibold"
                           >
                             <AlertTriangle className="w-3.5 h-3.5 mr-1" />
                             Tolak / Kembalikan Fisik
@@ -327,22 +327,22 @@ export const HandoverPanel = ({
                           </Button>
                         </>
                       ) : (
-                        <span className="text-xs text-slate-500 italic bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                        <span className="text-xs text-ink-muted italic bg-surface-subtle px-3 py-1.5 rounded-lg border border-line">
                           Menunggu Petugas: {toUser.name || 'Distributor Tujuan'}
                         </span>
                       )
                     )}
 
                     {isReceived && (
-                      <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 inline-flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-xs font-semibold text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg border border-brand-100 inline-flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                         Siap Distribusi Tim Sidang
                       </span>
                     )}
 
                     {isReturned && (
-                      <span className="text-xs font-semibold text-rose-800 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 inline-flex items-center gap-1.5">
-                        <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+                      <span className="text-xs font-semibold text-civic-danger bg-civic-dangerSoft px-3 py-1.5 rounded-lg border border-civic-dangerLine inline-flex items-center gap-1.5">
+                        <RotateCcw className="w-3.5 h-3.5 text-civic-danger" />
                         Naskah Dikembalikan (Revisi)
                       </span>
                     )}
@@ -356,7 +356,7 @@ export const HandoverPanel = ({
 
       {/* Pagination Controls */}
       {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-xs text-slate-600">
+        <div className="flex items-center justify-between border-t border-line pt-4 text-xs text-ink-muted">
           <span>
             Halaman {pagination.page} dari {pagination.totalPages} ({pagination.total} data)
           </span>

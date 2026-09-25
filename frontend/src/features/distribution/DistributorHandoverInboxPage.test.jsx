@@ -179,7 +179,7 @@ describe('DistributorHandoverInboxPage Component', () => {
   });
 
   it('membuka dialog penugasan dari antrean distributor untuk admin', async () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'ADMIN', roles: ['ADMIN'] } });
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'HELPER_ADMIN', roles: ['HELPER_ADMIN'] } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }] });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
     vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });

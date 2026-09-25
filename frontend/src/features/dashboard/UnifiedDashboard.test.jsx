@@ -99,8 +99,8 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Verifikasi \(/ }));
     await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, segment: 'VERIFICATION' })));
   });
-  it('ADMIN sees team assignment but not operational or system-admin shortcuts', async () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-internal', roles: ['ADMIN'], role: 'ADMIN' } });
+  it('HELPER_ADMIN sees team assignment but not operational or system-admin shortcuts', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-internal', roles: ['HELPER_ADMIN'], role: 'HELPER_ADMIN' } });
     RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Siap ditugaskan', status: 'WAITING_DISTRIBUTION', created_at: new Date().toISOString() }] });
     render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
     await screen.findByText('Siap ditugaskan');
@@ -144,9 +144,9 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     expect(screen.getByRole('button', { name: /Tugaskan Verifikator/i })).toBeInTheDocument();
   });
 
-  it('ADMIN sees Intake Master Fisik action link on READY_FOR_VERIFICATION rows when physical master is pending', async () => {
+  it('HELPER_ADMIN sees Intake Master Fisik action link on READY_FOR_VERIFICATION rows when physical master is pending', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-      currentUser: { id: 'admin-loket', roles: ['ADMIN'], role: 'ADMIN' },
+      currentUser: { id: 'admin-loket', roles: ['HELPER_ADMIN'], role: 'HELPER_ADMIN' },
     });
     RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({
       data: [

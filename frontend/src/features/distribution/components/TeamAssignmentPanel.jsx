@@ -3,14 +3,14 @@ import { Users, RefreshCw, CheckCircle2, PackageCheck, Clock } from 'lucide-reac
 import { Button } from '@/components/ui/Button';
 
 export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fetchDistributionData, isAdmin, isDistributor, currentUserId, setAssignmentModalId }) => (
-        <div className="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-          <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
+          <div className="p-5 sm:p-6 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Users className="w-5 h-5 text-emerald-700" />
+              <h3 className="text-base font-bold text-ink flex items-center gap-2">
+                <Users className="w-5 h-5 text-brand-700" />
                 Naskah Siap Penugasan Tim Pentashih (Langkah 1 SOP)
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 Naskah yang telah lolos verifikasi, lunas PNBP, dan fisik master telah diterima loket distributor.
               </p>
             </div>
@@ -26,17 +26,17 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
           </div>
 
           {distLoading ? (
-            <div className="py-16 text-center text-slate-500">
-              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-emerald-700" />
+            <div className="py-16 text-center text-ink-muted">
+              <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-brand-700" />
               <p className="text-xs font-semibold">Memuat naskah siap distribusi...</p>
             </div>
           ) : waitingDistRegistrations.length === 0 ? (
-            <div className="py-16 text-center text-slate-500 max-w-sm mx-auto">
-              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+            <div className="py-16 text-center text-ink-muted max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-full bg-surface-subtle text-ink-muted flex items-center justify-center mx-auto mb-2.5">
                 <Users className="w-6 h-6" />
               </div>
-              <p className="text-sm font-bold text-slate-800">Tidak ada naskah yang menunggu penugasan</p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-sm font-bold text-ink">Tidak ada naskah yang menunggu penugasan</p>
+              <p className="text-xs text-ink-muted mt-1">
                 Seluruh naskah yang telah diterima fisiknya sudah ditetapkan SK Tim Pentashihnya.
               </p>
             </div>
@@ -44,7 +44,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-slate-50/80 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                  <tr className="bg-canvas/80 text-ink-muted text-[11px] font-bold uppercase tracking-wider border-b border-line">
                     <th className="py-3 px-6">Nomor & Tanggal</th>
                     <th className="py-3 px-6">Judul Naskah & Penerbit</th>
                     <th className="py-3 px-6">Layanan</th>
@@ -52,14 +52,14 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                     <th className="py-3 px-6 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-xs">
+                <tbody className="divide-y divide-line text-xs">
                   {waitingDistRegistrations.map((reg) => (
-                    <tr key={reg.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={reg.id} className="hover:bg-canvas/60 transition-colors">
                       <td className="py-4 px-6">
-                        <span className="font-mono font-bold text-slate-900 block">
+                        <span className="font-mono font-bold text-ink block">
                           {reg.registration_no}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-ink-muted">
                           {new Date(reg.created_at).toLocaleDateString('id-ID', {
                             day: 'numeric',
                             month: 'short',
@@ -68,27 +68,27 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-bold text-slate-900 block line-clamp-1">
+                        <span className="font-bold text-ink block line-clamp-1">
                           {reg.title}
                         </span>
-                        <span className="text-emerald-800 font-semibold text-[11px]">
+                        <span className="text-brand-800 font-semibold text-[11px]">
                           {reg.publisher?.legal_name || 'Penerbit'}
                         </span>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-medium text-slate-800 block">
+                        <span className="font-medium text-ink block">
                           {reg.service_type?.name}
                         </span>
-                        <span className="text-[11px] text-slate-400">
+                        <span className="text-[11px] text-ink-muted">
                           {reg.service_type?.category?.name || 'Mushaf Cetak'}
                         </span>
                       </td>
                       <td className="py-4 px-6">
                         <div className="space-y-1">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-800 border border-brand-100">
                             <CheckCircle2 className="w-3 h-3" /> PNBP Lunas
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 border border-blue-200 block w-fit">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-civic-infoSoft text-civic-info border border-civic-infoLine block w-fit">
                             <PackageCheck className="w-3 h-3" /> Fisik Diterima
                           </span>
                         </div>
@@ -99,13 +99,13 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                             variant="primary"
                             size="sm"
                             onClick={() => setAssignmentModalId(reg.id)}
-                            className="text-xs bg-emerald-700 hover:bg-emerald-800 text-white font-bold"
+                            className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold"
                             icon={<Users className="w-3.5 h-3.5" />}
                           >
                             Tetapkan Tim Sidang
                           </Button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-500 font-medium bg-slate-100 px-2.5 py-1 rounded-lg">
+                          <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted font-medium bg-surface-subtle px-2.5 py-1 rounded-lg">
                             <Clock className="w-3.5 h-3.5" /> Menunggu penetapan oleh Admin
                           </span>
                         )}

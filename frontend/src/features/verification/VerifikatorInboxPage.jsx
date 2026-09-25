@@ -55,7 +55,7 @@ export const VerifikatorInboxPage = () => {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'HELPER_ADMIN';
   const isAssignmentAdmin = isAdmin;
 
   const normalizeTab = (tab) => {
@@ -304,11 +304,11 @@ export const VerifikatorInboxPage = () => {
           { label: 'Aplikasi Internal', path: '/internal' },
           { label: isAssignmentAdmin ? 'Penugasan Verifikator' : (isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi') },
         ]}
-        title={isAssignmentAdmin ? 'Penugasan Verifikator oleh Admin Internal' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas')}
+        title={isAssignmentAdmin ? 'Penugasan Verifikator oleh Helper Admin' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas')}
         subtitle={
           isAssignmentAdmin
-            ? 'Admin Internal menugaskan verifikator tim inti dan mencatat Nota Dinas setelah master fisik diterima.'
-            : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Admin Internal untuk diperiksa verifikator.'
+            ? 'Helper Admin menugaskan verifikator tim inti dan mencatat Nota Dinas setelah master fisik diterima.'
+            : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.'
         }
         actions={
           <Button
@@ -335,16 +335,16 @@ export const VerifikatorInboxPage = () => {
         <>
           {/* Success Notification Banner */}
           {successMessage && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between gap-3 text-xs text-emerald-900 shadow-2xs">
+            <div className="bg-brand-50 border border-brand-100 rounded-xl p-4 flex items-center justify-between gap-3 text-xs text-brand-900 shadow-2xs">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
                 <span className="font-semibold">
                   {typeof successMessage === 'string' ? successMessage : successMessage.text}
                 </span>
                 {typeof successMessage === 'object' && successMessage.assignmentId && (
                   <Link
                     to={`/internal/verifications/${successMessage.assignmentId}`}
-                    className="ml-2 font-bold text-emerald-800 underline hover:text-emerald-950"
+                    className="ml-2 font-bold text-brand-800 underline hover:text-brand-950"
                   >
                     Buka Detail Penugasan &rarr;
                   </Link>
@@ -353,7 +353,7 @@ export const VerifikatorInboxPage = () => {
               <button
                 type="button"
                 onClick={() => setSuccessMessage(null)}
-                className="text-emerald-700 hover:text-emerald-900 p-1 rounded-md"
+                className="text-brand-700 hover:text-brand-900 p-1 rounded-md"
                 aria-label="Tutup pesan sukses"
               >
                 <X className="w-3.5 h-3.5" />
@@ -379,9 +379,9 @@ export const VerifikatorInboxPage = () => {
             masterContent={
               <div className="space-y-3">
                 {/* Controlled Filter & Search Box */}
-                <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-2xs space-y-3">
+                <div className="bg-white rounded-xl border border-line p-3.5 shadow-2xs space-y-3">
                   {/* Segmented Control */}
-                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg text-xs font-semibold overflow-x-auto">
+                  <div className="flex items-center gap-1 p-1 bg-surface-subtle rounded-lg text-xs font-semibold overflow-x-auto">
                     {(isHead || isAssignmentAdmin) ? (
                       <>
                         {isAssignmentAdmin && (
@@ -391,8 +391,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'NEED_ASSIGNMENT'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Perlu Penugasan
@@ -404,8 +404,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Menunggu Persetujuan
@@ -416,8 +416,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_SIGNATURE'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Tanda Tangan
@@ -428,8 +428,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'COMPLETED'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Riwayat
@@ -443,8 +443,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Menunggu Persetujuan
@@ -455,8 +455,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_SIGNATURE'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Tanda Tangan
@@ -467,8 +467,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'COMPLETED'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Riwayat
@@ -482,8 +482,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'ASSIGNED'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Tugas Baru
@@ -494,8 +494,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'IN_PROGRESS'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Sedang Diperiksa
@@ -506,8 +506,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Menunggu Pihak Lain
@@ -518,8 +518,8 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
                             activeTab === 'READY_TO_SEND'
-                              ? 'bg-white text-emerald-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
                           )}
                         >
                           Siap Dikirim
@@ -531,14 +531,14 @@ export const VerifikatorInboxPage = () => {
                   {/* Search Form */}
                   <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
                     <div className="relative flex-1">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                       <input
                         type="text"
                         aria-label="Cari penugasan verifikasi"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Cari reg no, judul, penerbit..."
-                        className="w-full text-xs pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
+                        className="w-full text-xs pl-8 pr-3 py-2 rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
                       />
                     </div>
                     <Button type="submit" variant="outline" size="sm" className="text-xs px-3">
@@ -549,9 +549,9 @@ export const VerifikatorInboxPage = () => {
 
                 {/* Queue List Cards */}
                 {loading ? (
-                  <div className="py-12 text-center space-y-2 bg-white rounded-xl border border-slate-200 p-6">
-                    <RefreshCw className="w-6 h-6 animate-spin text-emerald-800 mx-auto" />
-                    <p className="text-xs text-slate-500 font-medium">Memuat antrean tugas...</p>
+                  <div className="py-12 text-center space-y-2 bg-white rounded-xl border border-line p-6">
+                    <RefreshCw className="w-6 h-6 animate-spin text-brand-800 mx-auto" />
+                    <p className="text-xs text-ink-muted font-medium">Memuat antrean tugas...</p>
                   </div>
                 ) : assignments.length === 0 ? (
                   <EmptyState
@@ -572,16 +572,16 @@ export const VerifikatorInboxPage = () => {
                           className={clsx(
                             'p-4 rounded-xl border cursor-pointer transition-all duration-150 text-xs space-y-2',
                             isSelected
-                              ? 'border-emerald-700 bg-emerald-50/40 shadow-xs ring-1 ring-emerald-700'
-                              : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
+                              ? 'border-brand-700 bg-brand-50/40 shadow-xs ring-1 ring-brand-700'
+                              : 'border-line bg-white hover:border-line-strong hover:bg-canvas/50 shadow-2xs'
                           )}
                         >
                           <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                            <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
                               {reg.registration_no || '-'}
                             </span>
                             {item.isUnassigned ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
                                 Siap ditugaskan
                               </span>
                             ) : (
@@ -590,21 +590,21 @@ export const VerifikatorInboxPage = () => {
                           </div>
 
                           <div>
-                            <h4 className="font-bold text-slate-900 text-sm line-clamp-1">
+                            <h4 className="font-bold text-ink text-sm line-clamp-1">
                               {reg.title || 'Naskah Mushaf'}
                             </h4>
-                            <p className="text-slate-500 line-clamp-1">{pub.legal_name || '-'}</p>
+                            <p className="text-ink-muted line-clamp-1">{pub.legal_name || '-'}</p>
                           </div>
 
                           {item.isUnassigned ? (
-                            <div className="bg-slate-50 p-2 rounded-lg border border-slate-200/60 text-[11px] space-y-1 text-slate-600">
+                            <div className="bg-canvas p-2 rounded-lg border border-line/60 text-[11px] space-y-1 text-ink-muted">
                               <div className="flex items-center justify-between">
-                                <span className="font-mono text-slate-700">
+                                <span className="font-mono text-ink">
                                   TT: <strong>{reg.physical_master?.receipt_no || reg.physical_master_intake?.receipt_no || '-'}</strong>
                                 </span>
                                 <span>{(reg.physical_master?.volume_count ?? reg.physical_master_intake?.volume_count ?? 30)} jilid</span>
                               </div>
-                              <div className="flex items-center justify-between text-slate-500 text-[10px]">
+                              <div className="flex items-center justify-between text-ink-muted text-[10px]">
                                 <span>
                                   Diterima: {(reg.physical_master?.received_at || reg.physical_master_intake?.received_at) ? new Date(reg.physical_master?.received_at || reg.physical_master_intake?.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
                                 </span>
@@ -615,16 +615,16 @@ export const VerifikatorInboxPage = () => {
                             </div>
                           ) : null}
 
-                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 text-[11px] text-slate-500">
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-line text-[11px] text-ink-muted">
                             {item.due_at ? (
                               <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
                             ) : item.isUnassigned ? (
-                              <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                              <span className="text-brand-700 font-semibold flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 Siap Ditugaskan
                               </span>
                             ) : null}
-                            <ChevronRight className={clsx('w-3.5 h-3.5 text-slate-400 transition-transform', isSelected && 'rotate-90 text-emerald-800')} />
+                            <ChevronRight className={clsx('w-3.5 h-3.5 text-ink-muted transition-transform', isSelected && 'rotate-90 text-brand-800')} />
                           </div>
                         </div>
                       );
@@ -665,12 +665,12 @@ export const VerifikatorInboxPage = () => {
                   {/* Key Metadata Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Publisher & Registration Info */}
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs shadow-2xs">
-                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-emerald-800" />
+                    <div className="rounded-xl border border-line bg-white p-4 space-y-2 text-xs shadow-2xs">
+                      <h4 className="font-bold text-ink border-b border-line pb-1.5 flex items-center gap-1.5">
+                        <Building2 className="w-4 h-4 text-brand-800" />
                         Identitas Pemohon
                       </h4>
-                      <div className="space-y-1 text-slate-600">
+                      <div className="space-y-1 text-ink-muted">
                         <p><strong>Pemohon:</strong> {selectedAssignment.registration?.publisher?.legal_name ? `${selectedAssignment.registration.publisher.legal_name} (Terdaftar)` : '-'}</p>
                         <p><strong>Naskah:</strong> “{selectedAssignment.registration?.title || '-'}”</p>
                         <p><strong>Tanggal Masuk:</strong> {new Date(selectedAssignment.assigned_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
@@ -678,24 +678,24 @@ export const VerifikatorInboxPage = () => {
                     </div>
 
                     {/* Master Physical Intake Status */}
-                    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs shadow-2xs">
-                      <h4 className="font-bold text-slate-900 border-b border-slate-100 pb-1.5 flex items-center gap-1.5">
-                        <PackageCheck className="w-4 h-4 text-emerald-800" />
+                    <div className="rounded-xl border border-line bg-white p-4 space-y-2 text-xs shadow-2xs">
+                      <h4 className="font-bold text-ink border-b border-line pb-1.5 flex items-center gap-1.5">
+                        <PackageCheck className="w-4 h-4 text-brand-800" />
                         Penerimaan Master Fisik Loket
                       </h4>
-                      <div className="space-y-1 text-slate-600">
+                      <div className="space-y-1 text-ink-muted">
                         <p>
                           <strong>Status:</strong>{' '}
                           {selectedAssignment.registration?.physical_master_intake?.status === 'RECEIVED' ? (
-                            <span className="text-emerald-800 font-bold">Sudah Diterima Loket</span>
+                            <span className="text-brand-800 font-bold">Sudah Diterima Loket</span>
                           ) : (
-                            <span className="text-amber-800 font-bold">Menunggu Penerimaan Loket</span>
+                            <span className="text-civic-warning font-bold">Menunggu Penerimaan Loket</span>
                           )}
                         </p>
                         {selectedAssignment.registration?.physical_master_intake?.receipt_no && (
                           <p>
                             <strong>No. Tanda Terima:</strong>{' '}
-                            <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                            <span className="font-mono bg-surface-subtle px-1.5 py-0.5 rounded border border-line">
                               {selectedAssignment.registration?.physical_master_intake?.receipt_no}
                             </span>
                           </p>
@@ -703,7 +703,7 @@ export const VerifikatorInboxPage = () => {
                         {selectedAssignment.isUnassigned && (
                           <p>
                             <strong>Status Penugasan:</strong>{' '}
-                            <span className="text-slate-500 italic">
+                            <span className="text-ink-muted italic">
                               Belum Ada (Menunggu Nota Dinas)
                             </span>
                           </p>
@@ -719,66 +719,66 @@ export const VerifikatorInboxPage = () => {
                     const canReassignOrRevoke = isAssignmentAdmin && !selectedAssignment.registration?.core_team_number && ['ASSIGNED', 'IN_PROGRESS'].includes(selectedAssignment.status);
 
                     return (
-                      <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-xs shadow-2xs">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                          <h4 className="font-bold text-slate-900 flex items-center gap-1.5">
-                            <ShieldCheck className="w-4 h-4 text-emerald-800" />
+                      <div className="rounded-xl border border-line bg-white p-4 space-y-3 text-xs shadow-2xs">
+                        <div className="flex items-center justify-between border-b border-line pb-2">
+                          <h4 className="font-bold text-ink flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-brand-800" />
                             Informasi Penugasan & SLA Verifikasi
                           </h4>
                           {isRevoked ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                               Penugasan Dicabut (Revoked)
                             </span>
                           ) : null}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-ink-muted">
                           <div>
-                            <span className="text-slate-400 block text-[11px]">Verifikator Ditugaskan:</span>
-                            <span className="font-semibold text-slate-900">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
+                            <span className="text-ink-muted block text-[11px]">Verifikator Ditugaskan:</span>
+                            <span className="font-semibold text-ink">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block text-[11px]">Nomor Nota Dinas:</span>
-                            <span className="font-mono font-semibold text-slate-900">{notaDoc?.document_no || '-'}</span>
+                            <span className="text-ink-muted block text-[11px]">Nomor Nota Dinas:</span>
+                            <span className="font-mono font-semibold text-ink">{notaDoc?.document_no || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block text-[11px]">Waktu Penugasan:</span>
+                            <span className="text-ink-muted block text-[11px]">Waktu Penugasan:</span>
                             <span>{selectedAssignment.assigned_at ? new Date(selectedAssignment.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block text-[11px]">Target Selesai (SLA):</span>
+                            <span className="text-ink-muted block text-[11px]">Target Selesai (SLA):</span>
                             <span>{selectedAssignment.due_at ? new Date(selectedAssignment.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '2 Hari Kerja'}</span>
                           </div>
                         </div>
 
                         {isRevoked && selectedAssignment.revocation_reason && (
-                          <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-800 text-[11px]">
+                          <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-[11px]">
                             <strong>Alasan Pencabutan:</strong> {selectedAssignment.revocation_reason}
                           </div>
                         )}
 
                         {['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(selectedAssignment.status) && (
-                          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-900 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-lg text-brand-900 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <span>
                               Pemeriksaan verifikator telah diajukan. Tanggung jawab saat ini:{' '}
                               <strong>
                                 {selectedAssignment.status === 'WAITING_APPROVAL' ? 'Kepala LPMQ (Persetujuan Draf)' : (selectedAssignment.status === 'WAITING_SIGNATURE' ? 'Tim Penandatangan' : 'Pengiriman Resmi')}
                               </strong>
                             </span>
-                            <span className="font-bold text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200 self-start sm:self-auto">
+                            <span className="font-bold text-brand-800 bg-white px-2 py-0.5 rounded border border-brand-100 self-start sm:self-auto">
                               SLA Verifikator Selesai
                             </span>
                           </div>
                         )}
 
                         {canReassignOrRevoke && (
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                          <div className="pt-2 border-t border-line flex items-center justify-end gap-2">
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => setReassignDialogOpen(true)}
-                              className="text-indigo-700 border-indigo-200 hover:bg-indigo-50 text-xs"
+                              className="text-civic-info border-civic-infoLine hover:bg-civic-infoSoft text-xs"
                             >
                               <RefreshCw className="w-3.5 h-3.5 mr-1" />
                               Tugaskan Ulang (Reassign)
@@ -788,7 +788,7 @@ export const VerifikatorInboxPage = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => setRevokeDialogOpen(true)}
-                              className="text-rose-700 border-rose-200 hover:bg-rose-50 text-xs"
+                              className="text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft text-xs"
                             >
                               <X className="w-3.5 h-3.5 mr-1" />
                               Cabut Penugasan (Revoke)
@@ -805,7 +805,7 @@ export const VerifikatorInboxPage = () => {
         </>
       )}
 
-      {/* Penugasan Verifikator oleh Admin Internal */}
+      {/* Penugasan Verifikator oleh Helper Admin */}
       {isAssignmentAdmin && assignDialogOpen && selectedAssignment && (
         <AssignVerificationDialog
           registration={selectedAssignment.registration || selectedAssignment}

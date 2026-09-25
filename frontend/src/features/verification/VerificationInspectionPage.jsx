@@ -441,8 +441,8 @@ export const VerificationInspectionPage = () => {
   if (loading) {
     return (
       <div className="max-w-6xl mx-auto py-16 text-center space-y-3">
-        <div className="w-9 h-9 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-semibold text-slate-700">Memuat berkas dan lembar kerja pemeriksaan...</p>
+        <div className="w-9 h-9 border-3 border-brand-700 border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-xs font-semibold text-ink">Memuat berkas dan lembar kerja pemeriksaan...</p>
       </div>
     );
   }
@@ -483,12 +483,12 @@ export const VerificationInspectionPage = () => {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 border border-slate-300 px-2.5 py-1 rounded-md">
+            <span className="font-mono text-xs font-bold text-ink bg-surface-subtle border border-line-strong px-2.5 py-1 rounded-md">
               {registration.registration_no}
             </span>
             <StatusBadge status={registration.status} />
             {isHead && (
-              <span className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
+              <span className="px-2.5 py-1 rounded-md bg-civic-warningSoft text-civic-warning border border-civic-warningLine text-xs font-bold">
                 Otoritas Kepala LPMQ
               </span>
             )}
@@ -498,14 +498,14 @@ export const VerificationInspectionPage = () => {
 
       {/* Global Alerts */}
       {successMessage && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-900 text-xs shadow-2xs animate-fadeIn">
+        <div className="p-3.5 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between text-brand-900 text-xs shadow-2xs animate-fadeIn">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
             <span className="font-semibold">{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-xs text-emerald-800 hover:underline font-bold px-2 py-0.5"
+            className="text-xs text-brand-800 hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -513,14 +513,14 @@ export const VerificationInspectionPage = () => {
       )}
 
       {error && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-900 text-xs shadow-2xs animate-fadeIn">
+        <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center justify-between text-civic-danger text-xs shadow-2xs animate-fadeIn">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
             <span className="font-semibold">{error}</span>
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-xs text-rose-800 hover:underline font-bold px-2 py-0.5"
+            className="text-xs text-civic-danger hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -529,17 +529,17 @@ export const VerificationInspectionPage = () => {
 
       {/* Revocation Banner if REVOKED */}
       {isRevoked && (
-        <div className="p-4 rounded-xl border border-rose-300 bg-rose-50 text-rose-900 flex items-start gap-3 shadow-2xs">
-          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft text-civic-danger flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-civic-danger shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <h4 className="font-bold text-rose-800 text-sm">
+            <h4 className="font-bold text-civic-danger text-sm">
               Penugasan Verifikasi Ini Telah Dicabut (REVOKED)
             </h4>
             <p className="leading-relaxed">
               Penugasan ini dicabut oleh {assignment.revoked_by?.name || 'Kepala LPMQ'} pada {assignment.revoked_at ? new Date(assignment.revoked_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}. Lembar pemeriksaan berstatus hanya-baca (read-only).
             </p>
             {assignment.revocation_reason && (
-              <p className="p-2 bg-white rounded border border-rose-200 font-medium">
+              <p className="p-2 bg-white rounded border border-civic-dangerLine font-medium">
                 Alasan pencabutan: &ldquo;{assignment.revocation_reason}&rdquo;
               </p>
             )}
@@ -549,13 +549,13 @@ export const VerificationInspectionPage = () => {
 
       {/* SLA & Start Banner if ASSIGNED */}
       {isAssigned && (
-        <div className="p-5 rounded-xl border border-gold-400/50 bg-gradient-to-r from-[#083224] to-[#0E5139] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-5 rounded-xl border border-civicGold-700/50 bg-gradient-to-r from-[#083224] to-[#0E5139] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
           <div className="space-y-1">
-            <h4 className="text-sm font-bold text-gold-200 flex items-center gap-2">
-              <Info className="w-4 h-4 text-gold-400" />
+            <h4 className="text-sm font-bold text-civicGold-100 flex items-center gap-2">
+              <Info className="w-4 h-4 text-civicGold-700" />
               Pemeriksaan Belum Dimulai
             </h4>
-            <p className="text-xs text-emerald-100/80 max-w-xl leading-relaxed">
+            <p className="text-xs text-brand-100/80 max-w-xl leading-relaxed">
               Sesuai SOP, Anda harus memulai penelaahan secara resmi sebelum mengisi checklist dan menyusun draf hasil verifikasi.
             </p>
           </div>
@@ -581,16 +581,16 @@ export const VerificationInspectionPage = () => {
 
       {/* Return reason alert banner if returned by Kepala */}
       {assignment.status === 'IN_PROGRESS' && assignment.return_reason && (
-        <div className="p-4 rounded-xl border border-rose-300 bg-rose-50/70 text-rose-900 flex items-start gap-3 shadow-2xs">
-          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft/70 text-civic-danger flex items-start gap-3 shadow-2xs">
+          <AlertTriangle className="w-5 h-5 text-civic-danger shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <h4 className="font-bold text-rose-900">
+            <h4 className="font-bold text-civic-danger">
               Draf Dikembalikan oleh Kepala LPMQ
             </h4>
-            <p className="text-rose-800 leading-relaxed">
+            <p className="text-civic-danger leading-relaxed">
               <strong>Catatan Perbaikan:</strong> &ldquo;{assignment.return_reason}&rdquo;
             </p>
-            <p className="text-rose-600 text-[11px]">
+            <p className="text-civic-danger text-[11px]">
               Silakan periksa kembali berkas/checklist yang perlu disesuaikan, lalu ajukan draf perbaikan.
             </p>
           </div>
@@ -599,13 +599,13 @@ export const VerificationInspectionPage = () => {
 
       {/* Info banner if WAITING_APPROVAL */}
       {assignment.status === 'WAITING_APPROVAL' && !canHeadApprove && (
-        <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/70 text-amber-900 flex items-start gap-3 shadow-2xs">
-          <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl border border-civic-warningLine bg-civic-warningSoft/70 text-civic-warning flex items-start gap-3 shadow-2xs">
+          <Clock className="w-5 h-5 text-civic-warning shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <h4 className="font-bold text-amber-900">
+            <h4 className="font-bold text-civic-warning">
               Draf Sedang Diperiksa Kepala LPMQ
             </h4>
-            <p className="text-amber-800 leading-relaxed">
+            <p className="text-civic-warning leading-relaxed">
               Draf hasil telaah dan Berita Acara telah diajukan. Tidak ada tindakan yang diperlukan dari Verifikator saat ini.
             </p>
           </div>
@@ -614,13 +614,13 @@ export const VerificationInspectionPage = () => {
 
       {/* Info banner if READY_TO_SEND */}
       {assignment.status === 'READY_TO_SEND' && (
-        <div className="p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 flex items-start gap-3 shadow-2xs">
-          <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+        <div className="p-4 rounded-xl border border-brand-100 bg-brand-50 text-brand-900 flex items-start gap-3 shadow-2xs">
+          <CheckCircle2 className="w-5 h-5 text-brand-700 shrink-0 mt-0.5" />
           <div className="space-y-1 text-xs">
-            <h4 className="font-bold text-emerald-900">
+            <h4 className="font-bold text-brand-900">
               Dokumen Telah Lengkap Ditandatangani
             </h4>
-            <p className="text-emerald-800 leading-relaxed">
+            <p className="text-brand-800 leading-relaxed">
               Surat Pemberitahuan dan Berita Acara telah ditandatangani secara digital. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
             </p>
           </div>
@@ -628,12 +628,12 @@ export const VerificationInspectionPage = () => {
       )}
 
       {/* Responsive View Switcher for Screen < 1024px */}
-      <div className="lg:hidden flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
+      <div className="lg:hidden flex items-center p-1 bg-surface-subtle rounded-xl border border-line text-xs font-semibold">
         <button
           type="button"
           onClick={() => setActiveMobileTab('ringkasan')}
           className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'ringkasan' ? 'bg-white text-emerald-900 shadow-2xs font-bold' : 'text-slate-600'
+            activeMobileTab === 'ringkasan' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
           }`}
         >
           Ringkasan
@@ -642,7 +642,7 @@ export const VerificationInspectionPage = () => {
           type="button"
           onClick={() => setActiveMobileTab('dokumen')}
           className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'dokumen' ? 'bg-white text-emerald-900 shadow-2xs font-bold' : 'text-slate-600'
+            activeMobileTab === 'dokumen' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
           }`}
         >
           Dokumen
@@ -651,7 +651,7 @@ export const VerificationInspectionPage = () => {
           type="button"
           onClick={() => setActiveMobileTab('checklist')}
           className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'checklist' ? 'bg-white text-emerald-900 shadow-2xs font-bold' : 'text-slate-600'
+            activeMobileTab === 'checklist' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
           }`}
         >
           Checklist
@@ -660,7 +660,7 @@ export const VerificationInspectionPage = () => {
           type="button"
           onClick={() => setActiveMobileTab('hasil')}
           className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'hasil' ? 'bg-white text-emerald-900 shadow-2xs font-bold' : 'text-slate-600'
+            activeMobileTab === 'hasil' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
           }`}
         >
           Hasil & Surat
@@ -769,16 +769,16 @@ export const VerificationInspectionPage = () => {
 
       {/* SOP Step 7: Serah Terima Master Fisik Panel */}
       {canVerifierHandover && (
-        <div className="p-5 bg-emerald-50 border border-emerald-300 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xs">
+        <div className="p-5 bg-brand-50 border border-brand-100 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-start gap-3">
-            <div className="p-2.5 bg-emerald-200 text-emerald-900 rounded-xl shrink-0">
+            <div className="p-2.5 bg-brand-100 text-brand-900 rounded-xl shrink-0">
               <PackageCheck className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+              <h4 className="text-sm font-bold text-ink flex items-center gap-1.5">
                 Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor
               </h4>
-              <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+              <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
                 Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.
               </p>
             </div>

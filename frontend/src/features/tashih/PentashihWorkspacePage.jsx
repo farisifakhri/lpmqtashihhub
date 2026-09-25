@@ -127,7 +127,7 @@ export const PentashihWorkspacePage = () => {
       <PageHeader
         title="Ruang Sidang Pentashihan Mushaf"
         subtitle="Pencatatan telaah rasm usmani, harakat, dabt, waqaf, dan tanda baca per naskah master sesuai SOP Sidang Reguler LPMQ"
-        icon={<BookOpen className="w-6 h-6 text-emerald-700" />}
+        icon={<BookOpen className="w-6 h-6 text-brand-700" />}
         action={
           <Button
             variant="outline"
@@ -143,14 +143,14 @@ export const PentashihWorkspacePage = () => {
 
       {/* Pesan Sukses */}
       {successMessage && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-brand-50 border border-brand-100 text-brand-800 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-brand-700 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
+            className="text-brand-700 hover:text-brand-900 font-bold"
           >
             Tutup
           </button>

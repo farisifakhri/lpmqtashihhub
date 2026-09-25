@@ -22,7 +22,7 @@ export const STATUS_DEFINITIONS = {
   READY_FOR_VERIFICATION: {
     phase: 'VERIFICATION',
     statusLabel: 'Menunggu Penugasan Verifikator',
-    statusDescription: 'Naskah telah diajukan dan master fisik diterima loket; menunggu Admin Internal menugaskan verifikator.',
+    statusDescription: 'Naskah telah diajukan dan master fisik diterima loket; menunggu Helper Admin menugaskan verifikator.',
     ownerRole: 'KEPALA_LPMQ',
     ownerRoleLabel: 'Kepala LPMQ',
     nextActionLabel: 'Terbitkan Nota Dinas & tugaskan verifikator',
@@ -196,7 +196,7 @@ export function getWorkflowViewModel(registration, currentUser) {
     if (!intake || intake.status !== 'RECEIVED' || !intake.receipt_no) {
       operationalState = 'WAITING_PHYSICAL_MASTER';
       operationalStatusLabel = 'Menunggu penerimaan master fisik';
-      operationalOwnerRole = 'ADMIN';
+      operationalOwnerRole = 'HELPER_ADMIN';
       operationalOwnerRoleLabel = 'Admin Loket';
       operationalNextAction = 'Periksa master fisik';
       blockedReason = 'Menunggu penyerahan dan intake master fisik A4 di loket LPMQ.';
@@ -300,7 +300,7 @@ export function getWorkflowViewModel(registration, currentUser) {
     canUserAct = userRoles.includes('DOKUMENTATOR') || currentUser?.role === 'DOKUMENTATOR';
   }
 
-  if (operationalState === 'WAITING_PHYSICAL_MASTER' && (userRoles.includes('ADMIN') || currentUser?.role === 'ADMIN')) {
+  if (operationalState === 'WAITING_PHYSICAL_MASTER' && (userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN')) {
     canUserAct = true;
   }
 

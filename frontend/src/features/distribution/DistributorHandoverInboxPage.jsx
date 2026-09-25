@@ -79,7 +79,7 @@ export const DistributorHandoverInboxPage = () => {
     : [];
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
-  const isAdmin = isSuperAdmin || userRoles.includes('ADMIN');
+  const isAdmin = isSuperAdmin || userRoles.includes('HELPER_ADMIN');
   const canConfirm = isDistributor || isSuperAdmin;
 
   const fetchHandovers = async () => {
@@ -246,28 +246,28 @@ export const DistributorHandoverInboxPage = () => {
     switch (status) {
       case 'PENDING':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
-            <Clock className="w-3.5 h-3.5 text-amber-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+            <Clock className="w-3.5 h-3.5 text-civic-warning" />
             Menunggu Konfirmasi
           </span>
         );
       case 'RECEIVED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-brand-50 text-brand-800 border border-brand-100">
+            <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
             Diterima di Meja Pentashihan
           </span>
         );
       case 'RETURNED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-300">
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+            <AlertTriangle className="w-3.5 h-3.5 text-civic-danger" />
             Dikembalikan (Cacat Fisik)
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-surface-subtle text-ink border border-line">
             {status}
           </span>
         );
@@ -292,8 +292,8 @@ export const DistributorHandoverInboxPage = () => {
         ]}
         actions={
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-800 border border-brand-100">
+              <ShieldCheck className="w-3.5 h-3.5 text-brand-700" />
               SOP v2.2 &bull; Langkah 8
             </span>
             <Button
@@ -312,14 +312,14 @@ export const DistributorHandoverInboxPage = () => {
 
       {/* Alert Notices */}
       {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-emerald-800 text-sm shadow-xs animate-fadeIn">
+        <div className="p-4 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between text-brand-800 text-sm shadow-xs animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-brand-700 flex-shrink-0" />
             <span className="font-medium">{successMessage}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-xs text-emerald-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-brand-700 hover:underline font-bold px-2 py-1"
           >
             Tutup
           </button>
@@ -327,14 +327,14 @@ export const DistributorHandoverInboxPage = () => {
       )}
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-800 text-sm shadow-xs animate-fadeIn">
+        <div className="p-4 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center justify-between text-civic-danger text-sm shadow-xs animate-fadeIn">
           <div className="flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-civic-danger flex-shrink-0" />
             <span>{error}</span>
           </div>
           <button
             onClick={() => setError(null)}
-            className="text-xs text-rose-700 hover:underline font-bold px-2 py-1"
+            className="text-xs text-civic-danger hover:underline font-bold px-2 py-1"
           >
             Tutup
           </button>
@@ -342,7 +342,7 @@ export const DistributorHandoverInboxPage = () => {
       )}
 
       {/* 3-Stage Workflow Hub Navigation */}
-      <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 overflow-x-auto">
+      <div className="flex items-center gap-2 p-1.5 bg-surface-subtle/90 rounded-2xl border border-line overflow-x-auto">
         <button
           type="button"
           onClick={() => {
@@ -352,13 +352,13 @@ export const DistributorHandoverInboxPage = () => {
           className={clsx(
             'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             hubStage === 'HANDOVER'
-              ? 'bg-white text-emerald-800 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white text-brand-800 shadow-xs'
+              : 'text-ink-muted hover:text-ink'
           )}
         >
           <PackageCheck className="w-4 h-4" />
           <span>1. Serah-Terima Fisik dari Verifikator</span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
             {pendingCount}
           </span>
         </button>
@@ -372,13 +372,13 @@ export const DistributorHandoverInboxPage = () => {
           className={clsx(
             'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             hubStage === 'ASSIGNMENT'
-              ? 'bg-white text-emerald-800 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white text-brand-800 shadow-xs'
+              : 'text-ink-muted hover:text-ink'
           )}
         >
           <Users className="w-4 h-4" />
           <span>2. Siap Penugasan Tim SK</span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
             {waitingDistRegistrations.length}
           </span>
         </button>
@@ -392,13 +392,13 @@ export const DistributorHandoverInboxPage = () => {
           className={clsx(
             'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
             hubStage === 'MONITORING'
-              ? 'bg-white text-emerald-800 shadow-xs'
-              : 'text-slate-600 hover:text-slate-900'
+              ? 'bg-white text-brand-800 shadow-xs'
+              : 'text-ink-muted hover:text-ink'
           )}
         >
           <ShieldCheck className="w-4 h-4" />
           <span>3. Monitoring Sidang & Reviu</span>
-          <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
             {inProgressRegistrations.length}
           </span>
         </button>
