@@ -11,8 +11,8 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const PageFallback = () => (
   <div className="flex items-center justify-center min-h-[400px]">
     <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs font-semibold text-slate-500">Memuat modul...</span>
+      <div className="w-8 h-8 border-3 border-brand-700 border-t-transparent rounded-full animate-spin" />
+      <span className="text-xs font-semibold text-ink-muted">Memuat modul...</span>
     </div>
   </div>
 );
@@ -36,6 +36,7 @@ const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/veri
 const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
 const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signatures/SignatureCenterPage').then(m => ({ default: m.SignatureCenterPage }))));
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
+const DocumentArchivePage = withSuspense(lazy(() => import('@/features/internal/DocumentArchivePage').then(m => ({ default: m.DocumentArchivePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
 const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
@@ -108,6 +109,10 @@ export const router = createBrowserRouter([
 
       // Rute Aplikasi Internal LPMQ
       {
+        path: 'internal/archive',
+        element: <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
+      },
+      {
         path: 'internal',
         element: (
           <ProtectedRoute portalType="internal">
@@ -150,7 +155,7 @@ export const router = createBrowserRouter([
       {
         path: 'internal/distributions',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'HELPER_ADMIN', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
           </ProtectedRoute>
         ),
@@ -158,7 +163,7 @@ export const router = createBrowserRouter([
       {
         path: 'internal/master-intake',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'SUPERADMIN']}>
             <AdminMasterIntakePage />
           </ProtectedRoute>
         ),
