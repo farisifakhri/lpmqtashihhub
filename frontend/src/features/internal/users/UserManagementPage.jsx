@@ -55,6 +55,7 @@ export const UserManagementPage = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [deletingUser, setDeletingUser] = useState(null);
+  const [forceDelete, setForceDelete] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState(null);
 
@@ -221,8 +222,9 @@ export const UserManagementPage = () => {
     setModalLoading(true);
     setModalError(null);
     try {
-      const res = await userApi.deleteUser(deletingUser.id);
+      const res = await userApi.deleteUser(deletingUser.id, forceDelete);
       setDeletingUser(null);
+      setForceDelete(false);
       setSuccessMessage(res?.data?.message || 'Pengguna berhasil dihapus / dinonaktifkan.');
       fetchUsers();
     } catch (err) {
@@ -488,10 +490,13 @@ export const UserManagementPage = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            disabled={isSelf || user.status === 'INACTIVE'}
-                            onClick={() => setDeletingUser(user)}
+                            disabled={isSelf}
+                            onClick={() => {
+                              setDeletingUser(user);
+                              setForceDelete(user.status === 'INACTIVE');
+                            }}
                             className="text-xs px-2.5 py-1 text-civic-danger hover:bg-civic-dangerSoft hover:border-civic-dangerLine disabled:opacity-40"
-                            title={isSelf ? 'Anda tidak dapat menghapus akun sendiri' : user.status === 'INACTIVE' ? 'Akun sudah nonaktif' : 'Hapus / Nonaktifkan'}
+                            title={isSelf ? 'Anda tidak dapat menghapus akun sendiri' : user.status === 'INACTIVE' ? 'Hapus permanen akun nonaktif' : 'Hapus / Nonaktifkan'}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
@@ -916,10 +921,23 @@ export const UserManagementPage = () => {
                 Ketentuan Keamanan Data:
               </p>
               <p className="mt-0.5 text-ink-muted">
-                Jika akun ini memiliki riwayat transaksi atau audit penugasan, sistem akan
-                mengubah statusnya menjadi <strong>TIDAK AKTIF</strong> untuk melindungi integritas hukum.
+                Jika akun ini memiliki riwayat transaksi resmi, sistem secara otomatis
+                mengubah statusnya menjadi <strong>TIDAK AKTIF</strong> agar integritas penugasan dan tanda tangan tetap terlindungi.
               </p>
             </div>
+
+            <label className="flex items-start gap-2.5 p-3 rounded-lg border border-line bg-surface-subtle cursor-pointer hover:bg-surface-neutral transition-colors">
+              <input
+                type="checkbox"
+                checked={forceDelete}
+                onChange={(e) => setForceDelete(e.target.checked)}
+                className="mt-0.5 rounded border-line text-civic-danger focus:ring-civic-danger"
+              />
+              <span className="text-xs text-ink leading-relaxed">
+                <strong className="block text-ink font-semibold">Hapus Permanen dari Database (Hard Delete)</strong>
+                Gunakan opsi ini jika akun ini salah dibuat / salah ketik, atau ingin dibersihkan secara total dari sistem.
+              </span>
+            </label>
 
             {modalError && (
               <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
@@ -942,7 +960,7 @@ export const UserManagementPage = () => {
                 disabled={modalLoading}
                 className="bg-civic-danger hover:bg-civic-danger text-white font-semibold text-xs"
               >
-                {modalLoading ? 'Memproses...' : 'Ya, Hapus / Nonaktifkan'}
+                {modalLoading ? 'Memproses...' : forceDelete ? 'Ya, Hapus Permanen' : 'Ya, Hapus / Nonaktifkan'}
               </Button>
             </div>
           </div>

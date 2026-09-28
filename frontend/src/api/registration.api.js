@@ -1,4 +1,4 @@
-import apiClient from './client';
+import apiClient, { getAuthToken } from './client';
 
 export const registrationApi = {
   listRegistrations: async (params = {}) => {
@@ -44,6 +44,25 @@ export const registrationApi = {
   declarePhysicalMaster: async (id, payload) => apiClient(`/registrations/${id}/physical-master`, { method: 'PUT', body: payload }),
   dispatchPhysical: async (id, payload) => apiClient(`/registrations/${id}/dispatch-physical`, { method: 'POST', body: payload }),
   createAssignments: async (id, payload) => apiClient(`/registrations/${id}/assignments`, { method: 'POST', body: payload }),
+  deleteRegistration: async (id) => apiClient(`/registrations/${id}`, { method: 'DELETE' }),
+  downloadReceiptPdf: async (id, filename = 'Tanda-Terima.pdf') => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/registrations/${encodeURIComponent(id)}/receipt-pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    });
+    if (!response.ok) {
+      throw new Error('Gagal mengunduh tanda terima PDF.');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename.replace(/[\\/:*?"<>|]/g, '-');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };
 
 export default registrationApi;

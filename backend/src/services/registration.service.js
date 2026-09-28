@@ -7,6 +7,9 @@ import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 import { allocateCoreTeam } from './core-team.service.js';
+import { sendOutboxEmail } from './email-provider.service.js';
+import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
+import { renderRegistrationReceiptPdf } from './registration-receipt-pdf.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -654,8 +657,107 @@ export const submitRegistration = async (id, user, req) => {
     req,
   });
 
+  // Kirim notifikasi konfirmasi pendaftaran melalui email dan WhatsApp
+  sendSubmissionNotifications(updated, user, req).catch(() => {});
+
   return updated;
 };
+
+export async function sendSubmissionNotifications(reg, user, req) {
+  try {
+    const meta = reg.foreign_metadata || {};
+    const recipientEmail = meta.penanggung_jawab_email || reg.publisher?.email || user.email;
+    const recipientName = meta.penanggung_jawab_produk || reg.publisher?.legal_name || reg.publisher?.name || user.name;
+    const recipientPhone = meta.penanggung_jawab_wa || user.whatsapp_number || reg.publisher?.phone;
+    const namaMushaf = meta.nama_mushaf || reg.title;
+    const jenisMushaf = meta.jenis_mushaf || 'Mushaf Standar Usmani';
+
+    // 1. Kirim Email Tanda Terima via Email Outbox
+    if (recipientEmail && recipientEmail.includes('@')) {
+      const idempotencyKey = `submit_${reg.id}_${Date.now()}`;
+      try {
+        await sendOutboxEmail(prisma, {
+          registrationId: reg.id,
+          idempotencyKey,
+          recipientEmail,
+          recipientName,
+          subject: `[LPMQ] Tanda Terima Pengajuan Pentashihan Mushaf - ${reg.registration_no}`,
+          template: 'REGISTRATION_SUBMITTED',
+          payload: {
+            registration_no: reg.registration_no,
+            title: reg.title,
+            nama_mushaf: namaMushaf,
+            jenis_mushaf: jenisMushaf,
+            penanggung_jawab: recipientName,
+            penanggung_jawab_wa: recipientPhone,
+            penanggung_jawab_email: recipientEmail,
+            submitted_at: new Date().toISOString(),
+          },
+        });
+      } catch (emailErr) {
+        console.warn(`[RegistrationService] Pengiriman email outbox tercatat/gagal: ${emailErr.message}`);
+      }
+    }
+
+    // 2. Kirim Pesan WhatsApp via WhatsApp Provider
+    if (recipientPhone) {
+      const waMessage = `Assalamu'alaikum Wr. Wb.\n\n` +
+        `Yth. Bpk/Ibu ${recipientName},\n\n` +
+        `Pengajuan permohonan tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
+        `Jenis Standar: ${jenisMushaf}\n` +
+        `Status: ${statusLabel(reg.status || 'READY_FOR_VERIFICATION')}\n\n` +
+        `Tanda terima pengajuan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
+        `Wassalamu'alaikum Wr. Wb.\n` +
+        `LPMQ Kemenag RI`;
+
+      await sendWhatsAppNotification({
+        registrationId: reg.id,
+        recipientPhone,
+        recipientName,
+        message: waMessage,
+        payload: {
+          registration_no: reg.registration_no,
+          title: reg.title,
+          template: 'REGISTRATION_SUBMITTED',
+        },
+      });
+    }
+
+    // 3. Buat In-app Notification untuk Penerbit
+    try {
+      await prisma.notification.create({
+        data: {
+          user_id: user.id,
+          registration_id: reg.id,
+          type: 'REGISTRATION_SUBMITTED',
+          title: `Pengajuan ${reg.registration_no} Berhasil Disubmit`,
+          payload: {
+            registration_no: reg.registration_no,
+            title: reg.title,
+            link: `/publisher/registrations/${reg.id}`,
+          },
+        },
+      });
+    } catch {}
+
+    // 4. Log Audit Event
+    await logAudit({
+      actorId: user.id,
+      action: 'SEND_SUBMISSION_NOTIFICATION',
+      subjectType: 'Registration',
+      subjectId: reg.id,
+      afterJson: {
+        registration_no: reg.registration_no,
+        recipientEmail,
+        recipientPhone,
+        notified_at: new Date().toISOString(),
+      },
+      req,
+    });
+  } catch (err) {
+    console.error('[RegistrationService] notifyRegistrationSubmission error:', err.message);
+  }
+}
 
 export const transitionStatus = async (id, toStatus, notes, user, req, expectedFromStatus) => {
   if (['READY_FOR_VERIFICATION', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS', 'READY_FOR_STT', 'STT_ISSUED'].includes(toStatus)) {
@@ -1110,6 +1212,107 @@ export const listManuscriptFiles = async (registrationId, user) => {
   });
 };
 
+export const deleteRegistration = async (id, user, req) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: { publisher: true },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isSuperadmin = user.roles.includes('SUPERADMIN');
+  const isPublisher = user.roles.includes('ADMIN_PENERBIT');
+
+  if (isPublisher && !isSuperadmin) {
+    if (reg.publisher_id !== user.publisherId) {
+      const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk menghapus pengajuan ini.');
+      error.statusCode = 403;
+      throw error;
+    }
+    if (reg.status !== 'DRAFT') {
+      const error = new Error('Hanya draf permohonan yang dapat dihapus. Permohonan yang telah disubmit ke LPMQ tidak dapat dihapus.');
+      error.statusCode = 400;
+      throw error;
+    }
+  } else if (!isSuperadmin) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk menghapus pengajuan.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Putuskan relasi sirkular pengajuan
+    await tx.registration.updateMany({
+      where: { previous_registration_id: id },
+      data: { previous_registration_id: null },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actor_id: user.id,
+        action: 'DELETE_REGISTRATION',
+        subject_type: 'Registration',
+        subject_id: id,
+        before_json: {
+          registration_no: reg.registration_no,
+          title: reg.title,
+          status: reg.status,
+          publisher_id: reg.publisher_id,
+        },
+        after_json: null,
+        ip_address: req?.ip || req?.headers?.['x-forwarded-for'] || req?.socket?.remoteAddress || null,
+        user_agent: req?.headers?.['user-agent'] || null,
+      },
+    });
+
+    await tx.registration.delete({
+      where: { id },
+    });
+  });
+
+  return {
+    success: true,
+    message: isPublisher && reg.status === 'DRAFT'
+      ? 'Draf permohonan berhasil dihapus.'
+      : 'Pengajuan pentashihan berhasil dihapus dari sistem.',
+  };
+};
+
+export const generateReceiptPdf = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: {
+      publisher: true,
+      service_type: true,
+    },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isInternal = user.roles.some((r) =>
+    ['SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+  );
+  if (!isInternal && reg.publisher_id !== user.publisherId) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh bukti permohonan ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const buffer = await renderRegistrationReceiptPdf(reg);
+  const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const filename = `Tanda-Terima-${safeRegNo}.pdf`;
+
+  return { buffer, filename };
+};
+
 export default {
   createDraft,
   submitRegistration,
@@ -1119,5 +1322,7 @@ export default {
   getDetail,
   addManuscriptFile,
   listManuscriptFiles,
+  deleteRegistration,
+  generateReceiptPdf,
   TRANSITION_POLICY,
 };
