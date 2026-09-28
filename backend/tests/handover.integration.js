@@ -113,7 +113,12 @@ export async function runHandoverTests({
     );
 
     // Kepala LPMQ setujui
-    await expect(`/verification-documents/${doc.id}/approve`, kepalaToken, 'POST');
+    await expect(`/verification-documents/${doc.id}/approve`, kepalaToken, 'POST', {
+      document_numbers: {
+        SURAT_HASIL_VERIFIKASI: 'B-777/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-777/LPMQ.01/TL.00/09/2026',
+      },
+    });
 
     // Tanda tangani dokumen sebelum kirim
     const baDoc = await prisma.verificationDocument.findFirst({
@@ -289,7 +294,12 @@ export async function runHandoverTests({
     const doc2 = await expect(`/verification-assignments/${asg2.id}/result-drafts`, verifikatorToken, 'POST', {
       decision: 'PASSED', checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
     }, 201);
-    await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST');
+    await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST', {
+      document_numbers: {
+        SURAT_HASIL_VERIFIKASI: `B-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
+        BERITA_ACARA_VERIFIKASI: `BA-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
+      },
+    });
     const baDoc2 = await prisma.verificationDocument.findFirst({
       where: { assignment_id: asg2.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
     });

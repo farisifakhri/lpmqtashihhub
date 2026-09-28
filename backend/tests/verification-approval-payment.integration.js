@@ -168,16 +168,30 @@ export async function runVerificationApprovalPaymentTests({
       // Endpoint mengharuskan KEPALA_LPMQ
     }
 
-    // Sukses: Kepala LPMQ menyetujui draf surat (persetujuan administratif tanpa memalsukan TTE)
-    const approved = await expect(approvePath, kepalaToken, 'POST');
+    // Negative: Persetujuan tanpa nomor surat/berita acara ditolak (400)
+    await expect(approvePath, kepalaToken, 'POST', {}, 400);
+
+    // Sukses: Kepala LPMQ menyetujui draf surat (persetujuan administratif dengan nomor resmi)
+    const approved = await expect(approvePath, kepalaToken, 'POST', {
+      document_numbers: {
+        [doc.document_type]: 'B-101/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-101/LPMQ.01/TL.00/09/2026',
+      },
+    });
     assert.equal(approved.status, 'APPROVED');
     assert.ok(approved.approved_at);
+    assert.equal(approved.document_no, 'B-101/LPMQ.01/TL.00/09/2026');
     assert.equal(approved.signature_status, 'PENDING');
     assert.equal(approved.signed_at, null);
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_APPROVED');
 
     // Negative: Dokumen yang sudah disetujui tidak dapat disetujui ulang (409)
-    await expect(approvePath, kepalaToken, 'POST', {}, 409);
+    await expect(approvePath, kepalaToken, 'POST', {
+      document_numbers: {
+        [doc.document_type]: 'B-102/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-102/LPMQ.01/TL.00/09/2026',
+      },
+    }, 409);
 
     // P1: Isolasi Verifikator — Verifikator lain dilarang mengakses dokumen yang bukan miliknya (403)
     let verifier2 = await prisma.user.findUnique({ where: { email: 'verifikator2@lpmq.kemenag.go.id' } });

@@ -42,6 +42,7 @@ const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal
 const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
+const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
 export const router = createBrowserRouter([
   // Rute Autentikasi Mandiri
@@ -237,6 +238,10 @@ export const router = createBrowserRouter([
   {
     path: '/verify-documents/:token',
     element: <PublicDocumentVerification />,
+  },
+  {
+    path: '/verify-internal/:token',
+    element: <InternalDocumentVerification />,
   },
 ], {
   future: {

@@ -270,7 +270,7 @@ export const VerifikatorInboxPage = () => {
     if (status === 'WAITING_SIGNATURE') {
       return {
         title: 'Menunggu Penandatanganan Dokumen',
-        description: 'Draf telah disetujui Kepala LPMQ. Proses penandatanganan digital Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
+        description: 'Draf telah disetujui Kepala LPMQ. Konfirmasi internal Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
         actionLabel: 'Buka Lembar Penandatanganan',
         actionIcon: <ShieldCheck className="w-4 h-4" />,
         isStart: false,
@@ -280,7 +280,7 @@ export const VerifikatorInboxPage = () => {
     if (status === 'READY_TO_SEND') {
       return {
         title: 'Dokumen Siap Dikirim kepada Penerbit',
-        description: 'Seluruh tanda tangan digital telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
+        description: 'Seluruh konfirmasi internal telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
         actionLabel: 'Kirim Dokumen ke Penerbit',
         actionIcon: <ArrowRight className="w-4 h-4" />,
         isStart: false,
@@ -420,7 +420,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-ink-muted hover:text-ink'
                           )}
                         >
-                          Tanda Tangan
+                          Konfirmasi Internal
                         </button>
                         <button
                           type="button"
@@ -459,7 +459,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-ink-muted hover:text-ink'
                           )}
                         >
-                          Tanda Tangan
+                          Konfirmasi Internal
                         </button>
                         <button
                           type="button"

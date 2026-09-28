@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
+import { getAuthToken } from '@/api/client';
 import { handoverApi } from '@/api/handover.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -81,6 +82,9 @@ export const VerificationInspectionPage = () => {
   const [returnReason, setReturnReason] = useState('');
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [resultDocumentNo, setResultDocumentNo] = useState('');
+  const [minutesDocumentNo, setMinutesDocumentNo] = useState('');
+  const [approveModalError, setApproveModalError] = useState(null);
 
   // Handover to Distributor State (Langkah 7 SOP)
   const [distributors, setDistributors] = useState([]);
@@ -129,6 +133,8 @@ export const VerificationInspectionPage = () => {
     if (draft.decision) setDecision(draft.decision);
     if (draft.notes) setNotes(draft.notes);
     if (draft.letterText) setLetterText(draft.letterText);
+    if (data.latest_result_document?.document_no) setResultDocumentNo(data.latest_result_document.document_no);
+    if (data.berita_acara?.document_no) setMinutesDocumentNo(data.berita_acara.document_no);
   });
   const assignmentId = detail?.assignment?.id || id;
   const workflowVm = useMemo(() => {
@@ -290,17 +296,42 @@ export const VerificationInspectionPage = () => {
   };
 
   const handleConfirmApprove = async () => {
-    if (!latestResultDoc?.id) return;
-    setApproveConfirmOpen(false);
+    const targetDoc = latestResultDoc || detail?.latest_result_document;
+    const targetBaDoc = beritaAcaraDoc || detail?.berita_acara;
+    if (!targetDoc?.id) return;
+
+    const resNo = resultDocumentNo.trim();
+    const minNo = minutesDocumentNo.trim();
+
+    if (!resNo || resNo.length < 3) {
+      setApproveModalError('Nomor surat hasil wajib diisi (minimal 3 karakter).');
+      return;
+    }
+    if (targetBaDoc && (!minNo || minNo.length < 3)) {
+      setApproveModalError('Nomor berita acara wajib diisi (minimal 3 karakter).');
+      return;
+    }
+    if (resNo.length > 191 || (targetBaDoc && minNo.length > 191)) {
+      setApproveModalError('Nomor dokumen tidak boleh melebihi 191 karakter.');
+      return;
+    }
+
     setActionLoading(true);
+    setApproveModalError(null);
     setError(null);
     setSuccessMessage(null);
     try {
-      await verificationApi.approveDocument(latestResultDoc.id);
-      setSuccessMessage('Draf surat hasil verifikasi berhasil disetujui. Proses penandatanganan dokumen telah dimulai.');
+      await verificationApi.approveDocument(targetDoc.id, {
+        document_numbers: {
+          [targetDoc.document_type]: resNo,
+          ...(targetBaDoc ? { BERITA_ACARA_VERIFIKASI: minNo } : {}),
+        },
+      });
+      setApproveConfirmOpen(false);
+      setSuccessMessage('Dokumen berhasil disetujui secara internal. Nomor resmi tercatat pada PDF final dan halaman QR.');
       await fetchDetail();
     } catch (err) {
-      setError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
+      setApproveModalError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
     } finally {
       setActionLoading(false);
     }
@@ -331,19 +362,32 @@ export const VerificationInspectionPage = () => {
 
   const handleSignDocument = async (docId) => {
     if (!docId) return;
-    if (!window.confirm('Bubuhkan tanda tangan digital pada dokumen resmi ini?')) return;
+    if (!window.confirm('Konfirmasi persetujuan internal dokumen ini?')) return;
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
       await verificationApi.signDocument(docId);
-      setSuccessMessage('Dokumen berhasil ditandatangani secara digital.');
+      setSuccessMessage('Persetujuan internal berhasil dicatat.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal menandatangani dokumen.');
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const openDocumentPdf = async docId => {
+    try {
+      const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
+      const url = URL.createObjectURL(await response.blob());
+      window.open(url, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (reason) { setError(reason.message); }
   };
 
   const handleRetryEmail = async (docId) => {
@@ -496,6 +540,18 @@ export const VerificationInspectionPage = () => {
         }
       />
 
+      <section className="rounded-xl border border-line bg-white p-4 space-y-2 text-sm" aria-label="PDF dokumen verifikasi">
+        <h2 className="font-bold">PDF dokumen verifikasi</h2>
+        <p className="text-ink-muted">PDF draf berlabel DRAF. PDF final memuat QR untuk melihat status terkini dan memeriksa integritas arsip.</p>
+        <div className="flex flex-wrap gap-2">
+          {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
+            <Button key={doc.id} variant="outline" className="text-xs" onClick={() => openDocumentPdf(doc.id)}>
+              Buka PDF {title}
+            </Button>
+          ))}
+        </div>
+      </section>
+
       {/* Global Alerts */}
       {successMessage && (
         <div className="p-3.5 bg-brand-50 border border-brand-100 rounded-xl flex items-center justify-between text-brand-900 text-xs shadow-2xs animate-fadeIn">
@@ -621,7 +677,7 @@ export const VerificationInspectionPage = () => {
               Dokumen Telah Lengkap Ditandatangani
             </h4>
             <p className="text-brand-800 leading-relaxed">
-              Surat Pemberitahuan dan Berita Acara telah ditandatangani secara digital. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
+              Surat Pemberitahuan dan Berita Acara telah dikonfirmasi secara internal. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
             </p>
           </div>
         </div>
@@ -738,7 +794,7 @@ export const VerificationInspectionPage = () => {
                 className="text-xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Tanda Tangani Surat Pemberitahuan
+                Konfirmasi Internal Surat Pemberitahuan
               </Button>
             )}
             {canUserSignBa && (
@@ -749,7 +805,7 @@ export const VerificationInspectionPage = () => {
                 className="text-xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Tanda Tangani Berita Acara Verifikasi
+                Konfirmasi Internal Berita Acara
               </Button>
             )}
           </div>
@@ -820,6 +876,14 @@ export const VerificationInspectionPage = () => {
         decision={decision}
         approveConfirmOpen={approveConfirmOpen}
         handleConfirmApprove={handleConfirmApprove}
+        resultDocumentNo={resultDocumentNo}
+        setResultDocumentNo={setResultDocumentNo}
+        minutesDocumentNo={minutesDocumentNo}
+        setMinutesDocumentNo={setMinutesDocumentNo}
+        latestResultDoc={latestResultDoc}
+        beritaAcaraDoc={beritaAcaraDoc}
+        approveModalError={approveModalError}
+        setApproveModalError={setApproveModalError}
       />
       <InspectionDialogs
         returnModalOpen={returnModalOpen}

@@ -267,7 +267,7 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       await verificationApi.signDocument(signDialogDoc.id);
-      setSuccessMessage(`Dokumen ${signDialogDoc.document_no} berhasil ditandatangani secara digital.`);
+      setSuccessMessage(`Persetujuan internal dokumen ${signDialogDoc.document_no} berhasil dicatat.`);
       setSignDialogDoc(null);
       await fetchAssignments();
     } catch (err) {
@@ -292,7 +292,7 @@ export const SignatureCenterPage = () => {
           // continue with remaining
         }
       }
-      setSuccessMessage(`${successCount} dokumen berhasil ditandatangani secara elektronik.`);
+      setSuccessMessage(`Persetujuan internal ${successCount} dokumen berhasil dicatat.`);
       setBatchSignOpen(false);
       setSelectedDocIds([]);
       await fetchAssignments();
@@ -307,17 +307,17 @@ export const SignatureCenterPage = () => {
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
       {/* Top Header */}
       <PageHeader
-        title="Pusat Tanda Tangan & Pengesahan Digital"
-        subtitle="Kelola penandatanganan elektronik resmi Surat Pemberitahuan, Berita Acara, dan Dokumen Hasil Verifikasi LPMQ."
+        title="Pusat Persetujuan Internal"
+        subtitle="Kelola konfirmasi internal Surat Pemberitahuan, Berita Acara, dan Dokumen Hasil Verifikasi LPMQ."
         breadcrumbs={[
           { label: 'Aplikasi Internal', href: '/internal' },
-          { label: 'Pusat Tanda Tangan' },
+          { label: 'Pusat Persetujuan Internal' },
         ]}
         actions={
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-50 text-brand-900 border border-brand-100 text-xs font-bold">
               <ShieldCheck className="w-4 h-4 text-brand-700" />
-              Sertifikasi BSrE / E-Sign
+              Verifikasi internal LPMQ
             </span>
             <Button
               variant="outline"
@@ -375,7 +375,7 @@ export const SignatureCenterPage = () => {
           }`}
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-ink-muted">Perlu Tanda Tangan Anda</span>
+            <span className="text-xs font-bold text-ink-muted">Perlu Konfirmasi Anda</span>
             <div className="p-2 rounded-lg bg-brand-100 text-brand-800">
               <PenTool className="w-4 h-4" />
             </div>
@@ -384,7 +384,7 @@ export const SignatureCenterPage = () => {
             <span className="text-2xl font-black text-ink">{stats.needSign}</span>
             <span className="text-xs text-ink-muted">dokumen aktif</span>
           </div>
-          <p className="text-[11px] text-brand-700 mt-1 font-medium">Menunggu aksi tanda tangan Anda</p>
+          <p className="text-[11px] text-brand-700 mt-1 font-medium">Menunggu konfirmasi internal Anda</p>
         </div>
 
         <div
@@ -445,7 +445,7 @@ export const SignatureCenterPage = () => {
               }`}
             >
               <PenTool className="w-3.5 h-3.5" />
-              <span>Perlu Tanda Tangan Anda</span>
+              <span>Perlu Konfirmasi Anda</span>
               {stats.needSign > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800 text-[10px] font-mono font-bold">
                   {stats.needSign}
@@ -501,7 +501,7 @@ export const SignatureCenterPage = () => {
                 className="text-xs px-3 py-1.5 font-bold"
               >
                 <PenTool className="w-3.5 h-3.5 mr-1" />
-                Tanda Tangani Terpilih ({selectedDocIds.length})
+                Konfirmasi Terpilih ({selectedDocIds.length})
               </Button>
             </div>
           )}
@@ -547,7 +547,7 @@ export const SignatureCenterPage = () => {
             <EmptyState
               title={
                 activeTab === 'NEED_MY_SIGN'
-                  ? 'Tidak Ada Dokumen Menunggu Tanda Tangan Anda'
+                  ? 'Tidak Ada Dokumen Menunggu Konfirmasi Anda'
                   : activeTab === 'WAITING_OTHERS'
                   ? 'Tidak Ada Dokumen Menunggu Pihak Lain'
                   : 'Belum Ada Arsip Dokumen Ditandatangani'
@@ -555,7 +555,7 @@ export const SignatureCenterPage = () => {
               description={
                 activeTab === 'NEED_MY_SIGN'
                   ? 'Seluruh dokumen verifikasi naskah telah Anda tandatangani atau belum ada draf yang disetujui.'
-                  : 'Semua antrean dokumen tanda tangan berada pada status terbaru.'
+                  : 'Semua antrean dokumen berada pada status terbaru.'
               }
               action={
                 <Button
@@ -626,7 +626,7 @@ export const SignatureCenterPage = () => {
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
-                            Menunggu Tanda Tangan
+                            Menunggu Konfirmasi
                           </span>
                         )}
                       </div>
@@ -690,7 +690,7 @@ export const SignatureCenterPage = () => {
                         className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
-                        Tanda Tangani
+                        Konfirmasi
                       </Button>
                     )}
                   </div>
@@ -707,19 +707,19 @@ export const SignatureCenterPage = () => {
           isOpen={Boolean(signDialogDoc)}
           onClose={() => setSignDialogDoc(null)}
           onConfirm={handleConfirmSignSingle}
-          title="Tanda Tangani Dokumen Resmi"
-          description="Pastikan draf naskah dan dokumen telah sesuai sebelum melakukan pembubuhan tanda tangan elektronik resmi."
+          title="Konfirmasi Dokumen Internal"
+          description="Pastikan dokumen telah sesuai sebelum mencatat konfirmasi internal."
           objectName={`${signDialogDoc.document_type === 'BERITA_ACARA_VERIFIKASI' ? 'Berita Acara' : 'Surat Pemberitahuan'}: ${signDialogDoc.document_no}`}
           nextActor="Penandatangan Selanjutnya / Penerbit"
           statusChange="SIGNING -> SIGNED"
-          irreversibleConsequence="Tanda tangan elektronik ini memiliki kekuatan hukum sah Kementerian Agama RI. Dokumen yang telah ditandatangani tidak dapat ditarik kembali tanpa penerbitan surat pembatalan resmi."
+          irreversibleConsequence="Konfirmasi ini tercatat dalam jejak audit sistem LPMQ dan bukan tanda tangan elektronik tersertifikasi."
           summaryItems={[
             { label: 'Nomor Dokumen', value: signDialogDoc.document_no },
             { label: 'Naskah Mushaf', value: signDialogDoc.manuscript_title },
             { label: 'Penerbit Pemohon', value: signDialogDoc.publisher_name },
             { label: 'Nomor Registrasi', value: signDialogDoc.registration_no },
           ]}
-          confirmLabel="Tanda Tangani Secara Digital"
+          confirmLabel="Catat Konfirmasi Internal"
           confirmVariant="primary"
           loading={actionLoading}
         />
@@ -731,13 +731,13 @@ export const SignatureCenterPage = () => {
           isOpen={batchSignOpen}
           onClose={() => setBatchSignOpen(false)}
           onConfirm={handleConfirmBatchSign}
-          title={`Tanda Tangani ${selectedDocIds.length} Dokumen Terpilih`}
-          description="Anda akan membubuhkan tanda tangan elektronik resmi pada seluruh dokumen yang dipilih secara sekaligus."
+          title={`Konfirmasi ${selectedDocIds.length} Dokumen Terpilih`}
+          description="Anda akan mencatat konfirmasi internal pada seluruh dokumen yang dipilih."
           objectName={`${selectedDocIds.length} Dokumen Hasil Verifikasi`}
           nextActor="Tahap Selanjutnya / Penerbit"
           statusChange="SIGNING -> SIGNED (Massal)"
-          irreversibleConsequence="Setiap pembubuhan tanda tangan bersifat mengikat secara hukum. Pastikan seluruh dokumen telah ditelaah."
-          confirmLabel={`Tanda Tangani Semua (${selectedDocIds.length})`}
+          irreversibleConsequence="Setiap konfirmasi dicatat dalam jejak audit. Pastikan seluruh dokumen telah ditelaah."
+          confirmLabel={`Konfirmasi Semua (${selectedDocIds.length})`}
           confirmVariant="primary"
           loading={actionLoading}
         />
@@ -789,7 +789,7 @@ export const SignatureCenterPage = () => {
                 Berdasarkan hasil pemeriksaan administrasi berkas dan master fisik mushaf atas pengajuan pendaftaran Nomor {previewDoc.registration_no} dari pemohon {previewDoc.publisher_name} untuk naskah &ldquo;{previewDoc.manuscript_title}&rdquo;, dokumen ini telah disusun dan diverifikasi sesuai ketentuan SOP Pentashihan Mushaf Al-Qur&apos;an.
               </p>
               <p>
-                Dokumen ini memiliki kekuatan hukum resmi dan ditandatangani secara elektronik bersertifikat BSrE BSSN.
+                Dokumen ini diperiksa dan disetujui secara internal pada sistem LPMQ. QR pada PDF final menampilkan status dan integritas arsip.
               </p>
             </div>
 
@@ -812,7 +812,7 @@ export const SignatureCenterPage = () => {
                   className="text-xs font-bold"
                 >
                   <PenTool className="w-3.5 h-3.5 mr-1" />
-                  Lanjutkan Tanda Tangan
+                  Lanjutkan Konfirmasi
                 </Button>
               )}
             </div>
