@@ -10,11 +10,24 @@ describe('LoginPage Protected Area Verification', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem('lpmq-login-theme');
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       login: mockLogin,
       isLoading: false,
       authError: '',
     });
+  });
+
+  it('toggles the login theme without changing the global document theme', () => {
+    const { container } = render(<MemoryRouter><LoginPage /></MemoryRouter>);
+    const page = container.firstElementChild;
+    expect(page).not.toHaveClass('login-dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode gelap' }));
+    expect(page).toHaveClass('login-dark');
+    expect(localStorage.getItem('lpmq-login-theme')).toBe('dark');
+    expect(document.documentElement).not.toHaveClass('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode terang' }));
+    expect(page).not.toHaveClass('login-dark');
   });
 
   it('renders all key elements of the protected login screen intact', () => {
