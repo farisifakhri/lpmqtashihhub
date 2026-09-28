@@ -24,8 +24,10 @@ describe('Manual team assignment', () => {
     expect(screen.queryByText('Petugas bukan pentashih')).not.toBeInTheDocument();
     expect(screen.queryByText('Pentashih nonaktif')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih aktif' }));
+    expect(screen.getByRole('button', { name: 'Tetapkan penugasan' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Juz 1 untuk Pentashih aktif' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
-    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', { team_id: 't1', assignee_ids: ['u1'], stage: 'INITIAL' }));
+    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', { team_id: 't1', juz_assignments: [{ assignee_id: 'u1', juz_numbers: [1] }], stage: 'INITIAL' }));
     expect(assigned).toHaveBeenCalledOnce();
   });
   it('does not let HELPER_ADMIN skip verification or payment prerequisites', async () => {
@@ -42,6 +44,7 @@ describe('Manual team assignment', () => {
     await screen.findByText('Naskah siap distribusi');
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 't1' } });
     fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih aktif' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Juz 1 untuk Pentashih aktif' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Status pengajuan telah berubah');
   });

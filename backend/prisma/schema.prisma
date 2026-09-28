@@ -549,8 +549,24 @@ model Assignment {
   team            DistributionTeam? @relation(fields: [team_id], references: [id], onDelete: SetNull)
   assignee        User              @relation(fields: [assignee_id], references: [id])
   reviews         TashihReview[]
+  juz_items       AssignmentJuz[]
 
   @@map("assignments")
+}
+
+model AssignmentJuz {
+  id            String       @id @default(uuid())
+  assignment_id String
+  juz_number    Int
+  result        ReviewResult?
+  notes         String?      @db.Text
+  completed_at  DateTime?
+  updated_at    DateTime     @updatedAt
+
+  assignment    Assignment   @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+
+  @@unique([assignment_id, juz_number])
+  @@map("assignment_juz")
 }
 
 model TashihReview {

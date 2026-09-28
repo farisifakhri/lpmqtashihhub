@@ -60,11 +60,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
           // Kompilasi catatan otomatis dari pentashih
           const compiled = currentAssignments
             .filter((a) => a.reviews?.some((r) => r.result === 'REVISION_REQUIRED'))
-            .map((a) => `[${a.assignee?.name || 'Pentashih'}]: ${a.reviews?.[0]?.notes || ''}`)
+            .map((a) => {
+              const corrections = a.juz_items?.filter(item => item.result === 'REVISION_REQUIRED') || [];
+              return corrections.length
+                ? corrections.map(item => `[${a.assignee?.name || 'Pentashih'} · Juz ${item.juz_number}]: ${item.notes}`).join('\n')
+                : `[${a.assignee?.name || 'Pentashih'}]: ${a.reviews?.[0]?.notes || ''}`;
+            })
             .join('\n\n');
           setDistributorNotes(
             compiled
-              ? `Hasil sidang pentashihan memerlukan perbaikan naskah sebagai berikut:\n${compiled}`
+              ? `Hasil sidang pentashihan memerlukan perbaikan naskah sebagai berikut:\n${compiled}`.slice(0, 10000)
               : 'Hasil sidang pentashihan memerlukan perbaikan naskah oleh penerbit.'
           );
         } else {
@@ -256,6 +261,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             Menunggu input hasil sidang dari pentashih bersangkutan.
                           </div>
                         )}
+                        {a.juz_items?.length > 0 && <div className="space-y-1.5 pt-2 border-t border-line">{a.juz_items.map(item => <div key={item.id} className="text-[11px] text-ink"><strong>Juz {item.juz_number}:</strong> {item.result === 'PASSED' ? 'Selesai' : item.result === 'REVISION_REQUIRED' ? 'Perlu perbaikan' : 'Menunggu checklist'}{item.notes ? ` — ${item.notes}` : ''}</div>)}</div>}
                       </div>
                     );
                   })}

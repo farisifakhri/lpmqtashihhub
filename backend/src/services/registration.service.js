@@ -936,6 +936,7 @@ export const getDetail = async (id, user) => {
         include: {
           assignee: { select: { id: true, name: true } },
           reviews: true,
+          juz_items: { orderBy: { juz_number: 'asc' } },
         },
       },
       documentation_items: true,
@@ -995,6 +996,7 @@ export const getDetail = async (id, user) => {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
         id: a.id,
         status: a.status,
+        juz_numbers: a.juz_items?.map(item => item.juz_number) || [],
         assigned_at: a.assigned_at,
         verifier: a.verifier ? { name: a.verifier.name } : null,
       }));
