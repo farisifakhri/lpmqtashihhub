@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { VerificationInspectionPage } from './VerificationInspectionPage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
@@ -219,6 +219,80 @@ describe('VerificationInspectionPage Component', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Setujui Draf Hasil Verifikasi/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Kembalikan Draf/i })).toBeInTheDocument();
+    });
+  });
+
+  it('meminta nomor surat hasil dan berita acara di dialog persetujuan Kepala LPMQ', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'head-1',
+        name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
+        role: 'KEPALA_LPMQ',
+        roles: ['KEPALA_LPMQ'],
+      },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'WAITING_APPROVAL',
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: "Mushaf Al-Qur'an Standar Kemenag",
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED' },
+        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED' },
+        result_documents: [],
+      },
+    });
+
+    const approveSpy = vi.spyOn(VerificationApiModule.verificationApi, 'approveDocument').mockResolvedValue({
+      success: true,
+      data: { id: 'doc-1', status: 'APPROVED' },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const approveButton = await screen.findByRole('button', { name: /Setujui Draf Hasil Verifikasi/i });
+    fireEvent.click(approveButton);
+
+    // Dialog persetujuan terbuka dengan kolom pengisian nomor
+    expect(await screen.findByRole('heading', { name: 'Setujui Draf Hasil Verifikasi' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nomor Surat Hasil Verifikasi/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Nomor Berita Acara Verifikasi/i)).toBeInTheDocument();
+
+    // Isi nomor dokumen resmi
+    fireEvent.change(screen.getByLabelText(/Nomor Surat Hasil Verifikasi/i), {
+      target: { value: 'B-100/LPMQ.01/TL.00/09/2026' },
+    });
+    fireEvent.change(screen.getByLabelText(/Nomor Berita Acara Verifikasi/i), {
+      target: { value: 'BA-100/LPMQ.01/TL.00/09/2026' },
+    });
+
+    // Klik tombol setujui dokumen
+    fireEvent.click(screen.getByRole('button', { name: /Setujui Dokumen/i }));
+
+    await waitFor(() => {
+      expect(approveSpy).toHaveBeenCalledWith('doc-1', {
+        document_numbers: {
+          SURAT_HASIL_VERIFIKASI: 'B-100/LPMQ.01/TL.00/09/2026',
+          BERITA_ACARA_VERIFIKASI: 'BA-100/LPMQ.01/TL.00/09/2026',
+        },
+      });
     });
   });
 });

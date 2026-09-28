@@ -65,9 +65,10 @@ export const verificationApi = {
    * Menyetujui draf hasil verifikasi oleh Kepala LPMQ (melanjutkan ke proses penandatanganan)
    * @param {string} documentId - Verification Document ID
    */
-  approveDocument: async (documentId) => {
+  approveDocument: async (documentId, payload = {}) => {
     return apiClient(`/verification-documents/${documentId}/approve`, {
       method: 'POST',
+      body: payload,
     });
   },
 

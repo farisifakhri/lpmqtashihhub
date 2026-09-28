@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRight, Sun, Moon } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -15,6 +15,18 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return window.localStorage.getItem('lpmq-login-theme') === 'dark'; }
+    catch { return false; }
+  });
+
+  const toggleDarkMode = () => {
+    setDarkMode(previous => {
+      try { window.localStorage.setItem('lpmq-login-theme', previous ? 'light' : 'dark'); }
+      catch { /* The visual toggle still works when storage is unavailable. */ }
+      return !previous;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,14 +49,14 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F6F5] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className={`${darkMode ? 'login-dark' : ''} min-h-screen bg-canvas relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8`}>
       {/* Background Soft Glow Orbs */}
       <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
       <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-civic-warningSoft/40 blur-2xl pointer-events-none" />
 
       {/* Main Glass Card Container (Sesuai Desain yang Sudah Diapprove Stakeholder) */}
-      <div className="relative z-10 w-full max-w-6xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
+      <div className="relative z-10 w-full max-w-6xl bg-surface rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
           
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran (Frame Melengkung Halus) */}
@@ -60,7 +72,7 @@ export const LoginPage = () => {
             <div className="relative z-10 p-5 sm:p-5">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-xs">
                 <ShieldCheck className="w-4 h-4 text-brand-700" />
-                <span className="text-xs font-bold tracking-wide text-ink">
+                <span className="text-xs font-bold tracking-wide text-brand-950">
                   Lajnah Pentashihan Mushaf Quran RI
                 </span>
               </div>
@@ -69,7 +81,7 @@ export const LoginPage = () => {
             {/* Caption Glassmorphism Bawah */}
             <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-ink/60 via-ink/20 to-transparent pt-12">
               <div className="bg-brand-700/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
-                <p className="text-xs font-semibold text-brand-100 flex items-center gap-1.5 mb-0.5">
+                <p className="text-xs font-semibold text-white flex items-center gap-1.5 mb-0.5">
                   <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
                   SIPNA (Sistem Informasi Pentashih Mushaf Quran)
                 </p>
@@ -84,14 +96,19 @@ export const LoginPage = () => {
           <div className="lg:col-span-6 flex flex-col justify-between px-5 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10">
             
             {/* Header Atas: Navigasi Daftar */}
-            <div className="flex justify-end items-center text-xs text-ink-muted mb-8">
-              <span>Belum terdaftar?&nbsp;</span>
+            <div className="flex justify-between items-center gap-3 text-xs text-ink-muted mb-8">
+              <button type="button" onClick={toggleDarkMode} aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'} aria-pressed={darkMode} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-ink hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-700">
+                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {darkMode ? 'Terang' : 'Gelap'}
+              </button>
+              <div><span>Belum terdaftar?&nbsp;</span>
               <Link
                 to="/register"
-                className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
+                className="login-register-link font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
               >
                 Registrasi penerbit
               </Link>
+              </div>
             </div>
 
             {/* Tengah: Logo Clean Putih, Heading & Form Input */}
@@ -99,7 +116,7 @@ export const LoginPage = () => {
               
               {/* Logo Area (Clean & Latar Putih Sesuai Permintaan User) */}
               <div className="text-center sm:text-left space-y-3">
-                <div className="inline-flex items-center gap-4 bg-white py-1">
+                <div className="inline-flex items-center gap-4 py-1">
                   <img
                     src={kemenagLogo}
                     alt="Kementerian Agama RI"
@@ -142,7 +159,7 @@ export const LoginPage = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@instansi.go.id"
                     autoComplete="email"
-                    className="w-full px-4 py-3 text-sm bg-canvas focus:bg-white border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                    className="w-full px-4 py-3 text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                     required
                   />
                 </div>
@@ -157,7 +174,7 @@ export const LoginPage = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Masukkan kata sandi"
                     autoComplete="current-password"
-                    className="w-full pl-4 pr-11 py-3 text-sm bg-canvas focus:bg-white border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                    className="w-full pl-4 pr-11 py-3 text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                     required
                   />
                   <button

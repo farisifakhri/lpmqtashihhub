@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { audit, fail, requireRole } from './workflow-utils.js';
+import { readStoredFile } from './storage.service.js';
 
 /**
  * P0-02 & §4.3: Layanan Penandatanganan Dokumen Verifikasi Multi-Signatory
@@ -25,7 +26,7 @@ export async function initVerificationSignatories(tx, document, verifierUser, ke
           signer_user_id: kepalaUser.id,
           name_position_snapshot: `${kepalaUser.name} (Kepala LPMQ)`,
           sign_order: 1,
-          method: 'DIGITAL',
+          method: 'INTERNAL_APPROVAL',
           status: 'PENDING',
         },
       });
@@ -39,7 +40,7 @@ export async function initVerificationSignatories(tx, document, verifierUser, ke
           signer_user_id: verifierUser.id,
           name_position_snapshot: `${verifierUser.name} (Verifikator Naskah)`,
           sign_order: 1,
-          method: 'DIGITAL',
+          method: 'INTERNAL_APPROVAL',
           status: 'PENDING',
         },
       });
@@ -51,7 +52,7 @@ export async function initVerificationSignatories(tx, document, verifierUser, ke
           signer_user_id: kepalaUser.id,
           name_position_snapshot: `${kepalaUser.name} (Kepala LPMQ)`,
           sign_order: 2,
-          method: 'DIGITAL',
+          method: 'INTERNAL_APPROVAL',
           status: 'PENDING',
         },
       });
@@ -99,7 +100,14 @@ export async function signVerificationDocument(documentId, user, req) {
     }
 
     const now = new Date();
-    const hash = computeDocumentHash(doc);
+    if (!doc.file_id) fail(409, 'PDF final belum tersedia untuk persetujuan internal.');
+    const file = await tx.storedFile.findUnique({ where: { id: doc.file_id } });
+    if (!file || file.mime_type !== 'application/pdf') fail(409, 'Arsip PDF final tidak ditemukan.');
+    let bytes;
+    try { bytes = await readStoredFile(file.id); }
+    catch (error) { if (error.code === 'ENOENT') fail(409, 'Arsip PDF final tidak ditemukan.'); throw error; }
+    const hash = createHash('sha256').update(bytes).digest('hex');
+    if (hash !== file.checksum) fail(409, 'Integritas PDF final tidak cocok dengan arsip sistem.');
 
     // Update signatory record
     await tx.verificationDocumentSignatory.update({

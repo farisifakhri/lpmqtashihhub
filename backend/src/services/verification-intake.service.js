@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
 import { calculateDueAt } from './sla.service.js';
@@ -159,6 +160,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
 };
 
 export const createVerificationAssignment = async (id, data, user, req) => {
+  const createdFiles = [];
   try {
     return await prisma.$transaction(async tx => {
       requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
@@ -215,6 +217,8 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         version: (previousNota?.version || 0) + 1,
         status: 'ISSUED',
         created_by_id: user.id,
+        approved_by_id: user.id,
+        approved_at: assignedAt,
         content_snapshot: {
           registration_no: reg.registration_no,
           title: reg.title,
@@ -229,9 +233,11 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           notes: data.notes || null,
         },
       } });
+      const fileId = await archiveVerificationPdf(tx, document, user, assignedAt, createdFiles);
+      const issuedDocument = await tx.verificationDocument.update({ where: { id: document.id }, data: { file_id: fileId } });
       await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Nota Dinas ${data.nota_no} diterbitkan untuk ${verifier.name}`, req);
       await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', assignment.id, assignment, req);
-      await audit(tx, user, 'ISSUE_VERIFICATION_MEMO', 'VerificationDocument', document.id, document, req);
+      await audit(tx, user, 'APPROVE_INTERNAL_VERIFICATION_MEMO', 'VerificationDocument', document.id, { file_id: fileId, approved_at: assignedAt }, req);
       await tx.notification.create({ data: {
         user_id: verifier.id,
         registration_id: id,
@@ -245,9 +251,10 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           due_at: dueAt.toISOString(),
         },
       } });
-      return { assignment, nota_dinas: document };
+      return { assignment, nota_dinas: issuedDocument };
     }, transactionOptions);
   } catch (error) {
+    await cleanupGeneratedFiles(createdFiles);
     if (error.code === 'P2002') fail(409, 'Nomor Nota Dinas atau versi dokumen sudah digunakan. Muat ulang data dan coba lagi.');
     throw error;
   }

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { readVerifiedPdf, renderVerificationPdf } from '../services/verification-document-pdf.service.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -62,5 +63,15 @@ router.post('/verification-documents/:id/send', authenticate, authorize('VERIFIK
 router.post('/verification-results/:id/send', authenticate, authorize('VERIFIKATOR'), validate(sendVerificationSchema), action(req => review.sendVerificationResult(req.params.id, req.body, req.user, req)));
 
 router.get('/verification-documents/:id', authenticate, validate(documentIdSchema), action(req => review.getVerificationDocument(req.params.id, req.user)));
+router.get('/verification-documents/:id/pdf', authenticate, validate(documentIdSchema), async (req, res, next) => {
+  try {
+    const doc = await review.getVerificationDocument(req.params.id, req.user);
+    const bytes = doc.file_id ? await readVerifiedPdf(doc) : await renderVerificationPdf(doc, { draft: true });
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="verifikasi-${doc.id}.pdf"`);
+    res.set('Cache-Control', 'private, no-store');
+    res.send(bytes);
+  } catch (error) { next(error); }
+});
 
 export default router;

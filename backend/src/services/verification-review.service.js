@@ -6,6 +6,7 @@ import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { initVerificationSignatories, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt } from './sla.service.js';
+import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -511,6 +512,10 @@ export const revokeVerificationAssignment = (assignmentId, data, user, req) => p
       revocation_reason: data.reason,
     },
   });
+  await tx.verificationDocument.updateMany({
+    where: { assignment_id: assignment.id, document_type: 'NOTA_DINAS_VERIFIKASI', status: 'ISSUED' },
+    data: { status: 'REVOKED' },
+  });
 
   await move(tx, reg, 'READY_FOR_VERIFICATION', user, `Penugasan verifikasi dicabut oleh ${user.name}: ${data.reason}`, req);
   await audit(tx, user, 'REVOKE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', assignment.id, updatedAssignment, req);
@@ -534,7 +539,9 @@ export const revokeVerificationAssignment = (assignmentId, data, user, req) => p
   return updatedAssignment;
 }, transactionOptions);
 
-export const reassignVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
+export const reassignVerificationAssignment = async (assignmentId, data, user, req) => {
+const createdFiles = [];
+try { return await prisma.$transaction(async tx => {
   requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
@@ -586,6 +593,10 @@ export const reassignVerificationAssignment = (assignmentId, data, user, req) =>
       revocation_reason: data.reason,
     },
   });
+  await tx.verificationDocument.updateMany({
+    where: { assignment_id: assignment.id, document_type: 'NOTA_DINAS_VERIFIKASI', status: 'ISSUED' },
+    data: { status: 'REVOKED' },
+  });
   await audit(tx, user, 'REVOKE_FOR_REASSIGNMENT', 'VerificationAssignment', assignment.id, revokedAssignment, req);
 
   const assignedAt = new Date();
@@ -618,6 +629,8 @@ export const reassignVerificationAssignment = (assignmentId, data, user, req) =>
       version: (previousNota?.version || 0) + 1,
       status: 'ISSUED',
       created_by_id: user.id,
+      approved_by_id: user.id,
+      approved_at: assignedAt,
       content_snapshot: {
         registration_no: reg.registration_no,
         title: reg.title,
@@ -635,6 +648,8 @@ export const reassignVerificationAssignment = (assignmentId, data, user, req) =>
       },
     },
   });
+  const fileId = await archiveVerificationPdf(tx, newNota, user, assignedAt, createdFiles);
+  const issuedNota = await tx.verificationDocument.update({ where: { id: newNota.id }, data: { file_id: fileId } });
 
   if (reg.status !== 'VERIFICATION_ASSIGNED') {
     await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Penugasan dialihkan kepada ${newVerifier.name} via Nota Dinas ${data.nota_no}: ${data.reason}`, req);
@@ -643,7 +658,7 @@ export const reassignVerificationAssignment = (assignmentId, data, user, req) =>
   }
 
   await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', newAssignment.id, newAssignment, req);
-  await audit(tx, user, 'ISSUE_VERIFICATION_MEMO', 'VerificationDocument', newNota.id, newNota, req);
+  await audit(tx, user, 'APPROVE_INTERNAL_VERIFICATION_MEMO', 'VerificationDocument', newNota.id, { file_id: fileId, approved_at: assignedAt }, req);
 
   await tx.notification.create({
     data: {
@@ -677,8 +692,10 @@ export const reassignVerificationAssignment = (assignmentId, data, user, req) =>
     },
   });
 
-  return { assignment: newAssignment, nota_dinas: newNota, old_assignment: revokedAssignment };
-}, transactionOptions);
+  return { assignment: newAssignment, nota_dinas: issuedNota, old_assignment: revokedAssignment };
+}, transactionOptions); }
+catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
+};
 
 export const getVerificationAttachment = async (documentId, fileId, user) => {
   const doc = await prisma.verificationDocument.findUnique({
@@ -712,7 +729,9 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 };
 
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E)
-export const approveVerificationDocument = (documentId, user, req) => prisma.$transaction(async tx => {
+export const approveVerificationDocument = async (documentId, user, req) => {
+const createdFiles = [];
+try { return await prisma.$transaction(async tx => {
   if (!user.roles.includes('KEPALA_LPMQ')) {
     fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }
@@ -749,12 +768,24 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
 
   const updatedDocs = [];
   for (const rDoc of relatedDocs) {
+    const suppliedNumber = req?.body?.document_numbers?.[rDoc.document_type];
+    const documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
+    if (documentNo.length < 3 || documentNo.length > 191) {
+      fail(400, `Nomor resmi ${rDoc.document_type} wajib diisi (3–191 karakter) sebelum persetujuan.`);
+    }
+    if (await tx.verificationDocument.findFirst({ where: { document_no: documentNo, id: { not: rDoc.id } }, select: { id: true } })) {
+      fail(409, `Nomor dokumen ${documentNo} sudah digunakan.`);
+    }
+    const numberedDoc = { ...rDoc, document_no: documentNo };
+    const fileId = await archiveVerificationPdf(tx, numberedDoc, user, now, createdFiles);
     const updated = await tx.verificationDocument.update({
       where: { id: rDoc.id },
       data: {
         status: 'APPROVED',
         approved_by_id: user.id,
         approved_at: now,
+        file_id: fileId,
+        document_no: documentNo,
         signature_status: 'PENDING',
       },
     });
@@ -773,7 +804,7 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
     });
   }
 
-  await move(tx, reg, 'VERIFICATION_APPROVED', user, `Draf hasil verifikasi disetujui oleh Kepala LPMQ (${user.name}). Proses penandatanganan dimulai.`, req);
+  await move(tx, reg, 'VERIFICATION_APPROVED', user, `Draf hasil verifikasi disetujui secara internal oleh Kepala LPMQ (${user.name}).`, req);
   await audit(tx, user, 'APPROVE_VERIFICATION_RESULT', 'VerificationDocument', documentId, primaryUpdated, req);
 
   // Notifikasi ke Verifikator: draft disetujui, mulai tanda tangan
@@ -783,7 +814,7 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
         user_id: doc.created_by_id,
         registration_id: reg.id,
         type: 'DOCUMENT_APPROVED',
-        title: `Draf disetujui — mulai penandatanganan: ${reg.registration_no}`,
+        title: `Draf disetujui secara internal: ${reg.registration_no}`,
         payload: {
           document_id: documentId,
           registration_no: reg.registration_no,
@@ -795,7 +826,9 @@ export const approveVerificationDocument = (documentId, user, req) => prisma.$tr
   }
 
   return primaryUpdated;
-}, transactionOptions);
+}, transactionOptions); }
+catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
+};
 
 export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
   if (!user.roles.includes('KEPALA_LPMQ')) {

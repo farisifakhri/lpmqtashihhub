@@ -429,6 +429,7 @@ model PhysicalMasterIntake {
 
 model VerificationDocument {
   id              String @id @default(uuid())
+  qr_token        String @unique @default(uuid())
   registration_id String
   assignment_id   String?
   document_type   VerificationDocumentType
@@ -464,7 +465,7 @@ model VerificationDocumentSignatory {
   signer_user_id         String
   name_position_snapshot String
   sign_order             Int                     @default(1)
-  method                 String                  @default("DIGITAL") // DIGITAL, BSRE, MANUAL
+  method                 String                  @default("INTERNAL_APPROVAL") // Persetujuan internal; bukan TTE tersertifikasi
   status                 SigningStatus           @default(PENDING) // PENDING, SIGNED, REJECTED
   signed_at              DateTime?
   document_hash          String?
