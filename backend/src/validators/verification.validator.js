@@ -37,7 +37,7 @@ export const receivePhysicalMasterSchema = {
 export const createVerificationAssignmentSchema = {
   params: idParams,
   body: z.object({
-    verifier_id: z.string().uuid('ID verifikator tidak valid.'),
+    verifier_id: z.string().uuid('ID verifikator tidak valid.').optional(),
     nota_no: z.string().trim().min(3).max(191),
     notes: z.string().trim().max(191).optional(),
   }).strict(),

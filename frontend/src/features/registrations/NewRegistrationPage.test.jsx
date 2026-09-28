@@ -7,6 +7,56 @@ import * as Auth from '@/features/auth/AuthContext';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
 describe('Publisher new registration handoff', () => {
+  it('menahan judul kurang dari 3 karakter dan menampilkan validasi di field', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    const createDraft = vi.spyOn(registrationApi, 'createDraft');
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    const title = await screen.findByRole('textbox', { name: /Nama Produk\/Mushaf/i });
+    fireEvent.change(title, { target: { value: ' A ' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Simpan Draf' })[0]);
+
+    expect(await screen.findByText('Nama produk/mushaf minimal 3 karakter.')).toBeInTheDocument();
+    expect(title).toHaveAttribute('aria-invalid', 'true');
+    expect(createDraft).not.toHaveBeenCalled();
+  });
+
+  it('removes an added ukuran dan oplah row while keeping the required first row', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    await waitFor(() => expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Ukuran dan Oplah/i }));
+    expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(2);
+    fireEvent.click(screen.getAllByTitle('Hapus baris ini')[1]);
+    expect(screen.getAllByPlaceholderText('Tulis oplah')).toHaveLength(1);
+    expect(screen.queryByTitle('Hapus baris ini')).not.toBeInTheDocument();
+  });
+
+  it('mewajibkan nama penanggung jawab sejak simpan draf', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    const createDraft = vi.spyOn(registrationApi, 'createDraft');
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    const title = await screen.findByRole('textbox', { name: /Nama Produk\/Mushaf/i });
+    fireEvent.change(title, { target: { value: 'Mushaf Baru' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Simpan Draf' })[0]);
+
+    const owner = screen.getByRole('textbox', { name: /Nama Penanggung Jawab Produk\/Mushaf/i });
+    expect(await screen.findByText('Nama penanggung jawab produk/mushaf wajib diisi.')).toBeInTheDocument();
+    expect(owner).toHaveAttribute('aria-invalid', 'true');
+    expect(createDraft).not.toHaveBeenCalled();
+  });
+
   it('creates one draft and opens file completion instead of submitting an empty registration', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
@@ -18,6 +68,7 @@ describe('Publisher new registration handoff', () => {
     const continueButtons = screen.getAllByRole('button', { name: 'Lanjutkan ke Berkas' });
     await waitFor(() => expect(continueButtons[0]).toBeEnabled());
     fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Naskah baru penerbit' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Penanggung Jawab Penerbit' } });
     fireEvent.click(continueButtons[0]);
     expect(await screen.findByText('Lengkapi berkas draf baru')).toBeInTheDocument();
     expect(registrationApi.createDraft).toHaveBeenCalledTimes(1);
@@ -67,6 +118,7 @@ describe('Publisher new registration handoff', () => {
 
     // Fill form
     fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Mushaf Madinah King Fahd' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Penanggung Jawab Penerbit' } });
     fireEvent.change(screen.getByDisplayValue('Pilih negara asal mushaf'), { target: { value: 'Arab Saudi' } });
     fireEvent.change(screen.getByPlaceholderText('Tulis Nama penerbit asal Mushaf'), { target: { value: 'Mujamma Al Malik Fahd' } });
     fireEvent.change(screen.getByPlaceholderText('Tulis Nama lembaga pentashih asal Mushaf'), { target: { value: 'Lajnah Ilmiyyah Madinah' } });

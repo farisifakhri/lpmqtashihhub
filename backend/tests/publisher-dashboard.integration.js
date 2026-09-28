@@ -52,7 +52,7 @@ try {
   const filtered = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_PROCESSING`, token);
   assert.equal(filtered.pagination.total, 1);
   const documents = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_DOCUMENTS`, token);
-  assert.equal(documents.pagination.total, 1);
+  assert.equal(documents.pagination.total, 2);
   assert.deepEqual(documents.data[0].official_documents.map(item => item.id), [issued.id]);
   const drafts = await call(`/registrations?search=${encodeURIComponent(prefix)}&status=DRAFT`, token);
   assert.deepEqual(drafts.data[0].official_documents, []);
@@ -81,7 +81,10 @@ try {
   const processing = filtered.data[0];
   await call(`/registrations/${processing.id}/manuscripts`, token, 'POST', uploadPayload, 409);
 
-  await call(`/official-documents/${draftDoc.id}/pdf`, token, 'GET', undefined, 403);
+  const archive = await call(`/registrations/${draft.id}/document-archive`, token);
+  assert.equal(archive.data.some(item => item.id === draftDoc.id && item.status === 'DRAFT'), true);
+  await call(`/registrations/${foreignReg.id}/document-archive`, token, 'GET', undefined, 403);
+  await call(`/official-documents/${draftDoc.id}/pdf`, token, 'GET', undefined, 409);
   await call(`/official-documents/${foreignDoc.id}/pdf`, token, 'GET', undefined, 403);
   await call(`/official-documents/${issued.id}/pdf`, token, 'GET', undefined, 409);
   await prisma.officialDocument.update({ where: { id: issued.id }, data: { file_id: file.id } });
@@ -94,7 +97,7 @@ try {
   await prisma.storedFile.update({ where: { id: file.id }, data: { checksum: file.checksum } });
   await call(`/official-documents/${issued.id}/pdf`, staffToken, 'GET', undefined, 403);
   await prisma.officialDocument.update({ where: { id: issued.id }, data: { status: 'REVOKED' } });
-  await call(`/official-documents/${issued.id}/pdf`, token, 'GET', undefined, 403);
+  await call(`/official-documents/${issued.id}/pdf`, token, 'GET', undefined, 409);
   await prisma.officialDocument.update({ where: { id: issued.id }, data: { status: 'ISSUED', valid_until: new Date('2000-01-01T00:00:00Z') } });
   await call(`/official-documents/${issued.id}/pdf`, token, 'GET', undefined, 409);
   console.log(`Publisher dashboard integration passed: ${checks} HTTP checks plus scoped totals, pagination, versioning and immutable PDF assertions.`);

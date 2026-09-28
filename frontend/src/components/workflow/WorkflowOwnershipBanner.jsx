@@ -47,7 +47,7 @@ export const WorkflowOwnershipBanner = ({
     <div
       className={clsx(
         'rounded-xl border bg-surface p-4 sm:p-5 shadow-2xs space-y-3.5 transition-all',
-        isOverdue ? 'border-rose-300 bg-rose-50/30' : 'border-line',
+        isOverdue ? 'border-civic-dangerLine bg-civic-dangerSoft/30' : 'border-line',
         className
       )}
       role="region"
@@ -86,9 +86,9 @@ export const WorkflowOwnershipBanner = ({
       {blockedReason && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-300 bg-amber-50/80 text-xs text-amber-900"
+          className="flex items-start gap-2.5 p-3 rounded-lg border border-civic-warningLine bg-civic-warningSoft/80 text-xs text-civic-warning"
         >
-          <AlertCircle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+          <AlertCircle className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <span className="font-bold">Pekerjaan Tertahan (Blocker): </span>
             <span>{blockedReason}</span>
@@ -100,11 +100,11 @@ export const WorkflowOwnershipBanner = ({
       <div className="pt-2 border-t border-line/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
         {/* SLA Information */}
         <div className="flex items-center gap-2 text-ink-muted">
-          <Clock className={clsx('w-4 h-4 shrink-0', isOverdue ? 'text-rose-600' : 'text-brand-700')} />
+          <Clock className={clsx('w-4 h-4 shrink-0', isOverdue ? 'text-civic-danger' : 'text-brand-700')} />
           {formattedDue ? (
             <span>
               Target SLA:{' '}
-              <strong className={clsx('font-semibold', isOverdue ? 'text-rose-700 font-bold' : 'text-ink')}>
+              <strong className={clsx('font-semibold', isOverdue ? 'text-civic-danger font-bold' : 'text-ink')}>
                 {formattedDue} {isOverdue && '(Terlambat)'}
               </strong>
             </span>

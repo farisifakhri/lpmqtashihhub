@@ -13,8 +13,8 @@ describe('AdminMasterIntakePage Component', () => {
       currentUser: {
         id: 'admin-1',
         name: 'Petugas Loket LPMQ',
-        role: 'ADMIN',
-        roles: ['ADMIN'],
+        role: 'HELPER_ADMIN',
+        roles: ['HELPER_ADMIN'],
       },
     });
 
@@ -122,10 +122,10 @@ describe('AdminMasterIntakePage Component', () => {
   it('merender tombol aksi penugasan verifikator saat master fisik telah diterima', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
-        id: 'kepala-1',
-        name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
-        role: 'KEPALA_LPMQ',
-        roles: ['KEPALA_LPMQ'],
+        id: 'superadmin-1',
+        name: 'Superadmin LPMQ',
+        role: 'SUPERADMIN',
+        roles: ['SUPERADMIN'],
       },
     });
 

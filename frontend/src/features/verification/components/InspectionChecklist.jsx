@@ -17,21 +17,21 @@ export const InspectionChecklist = ({
         >
           {/* Section Checklist (Always accessible or active on mobile checklist tab) */}
           <div
-            className={`p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4 ${
+            className={`p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4 ${
               activeMobileTab === 'hasil' ? 'hidden lg:block' : 'block'
             }`}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4 text-emerald-800" />
+                <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+                  <CheckSquare className="w-4 h-4 text-brand-800" />
                   Lembar Kerja Checklist Pemeriksaan
                 </h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">
+                <p className="text-[11px] text-ink-muted mt-0.5">
                   Evaluasi 4 butir standar verifikasi administrasi & rasm
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-900 border border-emerald-200">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-900 border border-brand-100">
                 {sesuaiCount + tidakBerlakuCount}/4 Lengkap
               </span>
             </div>
@@ -51,30 +51,30 @@ export const InspectionChecklist = ({
                     key={def.code}
                     className={`p-3.5 rounded-xl border transition-all ${
                       currentItem.result === 'SESUAI'
-                        ? 'bg-emerald-50/20 border-emerald-200'
+                        ? 'bg-brand-50/20 border-brand-100'
                         : currentItem.result === 'TIDAK_SESUAI'
-                        ? 'bg-rose-50/20 border-rose-200'
-                        : 'bg-slate-50 border-slate-200'
+                        ? 'bg-civic-dangerSoft/20 border-civic-dangerLine'
+                        : 'bg-canvas border-line'
                     }`}
                   >
                     <div className="space-y-1">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-bold text-xs text-slate-900">
+                        <span className="font-bold text-xs text-ink">
                           {def.title}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                      <p className="text-[11px] text-ink-muted leading-relaxed">
                         {def.description}
                       </p>
                     </div>
 
                     {/* Radio Results */}
-                    <div className="mt-3 flex items-center gap-1.5 p-1 bg-white rounded-lg border border-slate-200 text-xs">
+                    <div className="mt-3 flex items-center gap-1.5 p-1 bg-white rounded-lg border border-line text-xs">
                       <label
                         className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                           currentItem.result === 'SESUAI'
-                            ? 'bg-emerald-800 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-brand-800 text-white shadow-2xs'
+                            : 'text-ink-muted hover:text-ink'
                         } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
                       >
                         <input
@@ -92,8 +92,8 @@ export const InspectionChecklist = ({
                       <label
                         className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                           currentItem.result === 'TIDAK_SESUAI'
-                            ? 'bg-rose-700 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-civic-danger text-white shadow-2xs'
+                            : 'text-ink-muted hover:text-ink'
                         } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
                       >
                         <input
@@ -111,8 +111,8 @@ export const InspectionChecklist = ({
                       <label
                         className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                           currentItem.result === 'TIDAK_BERLAKU'
-                            ? 'bg-slate-700 text-white shadow-2xs'
-                            : 'text-slate-600 hover:text-slate-900'
+                            ? 'bg-ink text-white shadow-2xs'
+                            : 'text-ink-muted hover:text-ink'
                         } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
                       >
                         <input
@@ -143,11 +143,11 @@ export const InspectionChecklist = ({
                         }
                         className={`w-full px-3 py-1.5 text-xs rounded-lg border bg-white focus:outline-none focus:ring-2 ${
                           itemError
-                            ? 'border-rose-300 focus:ring-rose-500/20'
-                            : 'border-slate-200 focus:ring-emerald-700/20 focus:border-emerald-700'
-                        } ${isReadOnly ? 'bg-slate-50 text-slate-600' : ''}`}
+                            ? 'border-civic-dangerLine focus:ring-civic-danger/20'
+                            : 'border-line focus:ring-brand-700/20 focus:border-brand-700'
+                        } ${isReadOnly ? 'bg-canvas text-ink-muted' : ''}`}
                       />
-                      {itemError && <p className="text-[11px] text-rose-600 mt-0.5 font-medium">{itemError}</p>}
+                      {itemError && <p className="text-[11px] text-civic-danger mt-0.5 font-medium">{itemError}</p>}
                     </div>
                   </div>
                 );

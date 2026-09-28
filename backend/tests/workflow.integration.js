@@ -24,7 +24,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
   const team = await prisma.distributionTeam.findFirst({ where: { members: { some: { user_id: assignee.id } }, status: 'ACTIVE' } });
 
   await test('Workflow: unggahan server, isolasi berkas, dan pembatasan metadata naskah', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Pengujian Alur Pembayaran dan Sidang' }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Pengujian Alur Pembayaran dan Sidang', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
     file = await upload();
     assert.equal(file.checksum.length, 64);
     await expect(`/registrations/${reg.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: file.id }, 201);
@@ -94,10 +94,12 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const calendar = Array.from({ length: 90 }, (_, index) => ({ date: new Date(start.getTime() + (index + 1) * 86400000), is_working_day: true, source: `TEST-${reg.id}` }));
     await prisma.workingDay.createMany({ data: calendar, skipDuplicates: true });
     await expect(`/registrations/${reg.id}/assignments`, publisherToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
-    await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
-    assignments = await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 201);
+    await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 403);
+    assignments = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'INITIAL' }, 201);
     assert.equal(assignments.length, 1);
     assert.ok(assignments[0].due_at);
+    const myTasks = await expect('/assignments/my-tasks?status=ACTIVE&page=1&limit=20', pentashih);
+    assert.ok(myTasks.some(item => item.id === assignments[0].id && item.registration.publisher.legal_name));
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Belum ada hasil' }, 409);
     await expect(`/assignments/${assignments[0].id}/review`, distributor, 'POST', { result: 'PASSED', notes: 'Tidak berwenang' }, 403);
     const overdueDate = new Date(Date.now() - 86400000);
@@ -119,7 +121,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const submitted = await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
     assert.equal(submitted.status, 'WAITING_DISTRIBUTION');
     assert.deepEqual(submitted.fee_sla_snapshot, before.fee_sla_snapshot);
-    const next = await expect(`/registrations/${reg.id}/assignments`, adminToken, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'REVISION' }, 201);
+    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'REVISION' }, 201);
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
@@ -135,7 +137,9 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const pdf = await fetch(`${base}/official-documents/${doc.id}/pdf`, { headers: { Authorization: `Bearer ${dokumentatorToken}` } });
     assert.equal(pdf.status, 200);
     assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
-    await expect(`/official-documents/${doc.id}/pdf`, publisherToken, 'GET', undefined, 403);
+    const publisherPdf = await fetch(`${base}/official-documents/${doc.id}/pdf`, { headers: { Authorization: `Bearer ${publisherToken}` } });
+    assert.equal(publisherPdf.status, 200);
+    assert.equal(Buffer.from(await publisherPdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
     await expect(`/official-documents/${doc.id}/sign`, adminToken, 'POST', {}, 403);
     await expect(`/official-documents/${doc.id}/sign`, kepala, 'POST', {}, 409);
     assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}`)).status, 404);

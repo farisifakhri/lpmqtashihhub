@@ -71,11 +71,11 @@ describe('Centralized Workflow View Model', () => {
       status: 'READY_FOR_VERIFICATION',
       physical_master_intake: { status: 'PENDING' },
     };
-    const adminUser = { role: 'ADMIN' };
+    const adminUser = { role: 'HELPER_ADMIN' };
     const pendingVm = getWorkflowViewModel(pendingReg, adminUser);
     expect(pendingVm.operationalState).toBe('WAITING_PHYSICAL_MASTER');
     expect(pendingVm.operationalStatusLabel).toBe('Menunggu penerimaan master fisik');
-    expect(pendingVm.operationalOwnerRole).toBe('ADMIN');
+    expect(pendingVm.operationalOwnerRole).toBe('HELPER_ADMIN');
     expect(pendingVm.operationalNextAction).toBe('Periksa master fisik');
     expect(pendingVm.canUserAct).toBe(true);
     expect(pendingVm.nextActionPath).toBe('/internal/master-intake');

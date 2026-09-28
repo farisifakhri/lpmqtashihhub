@@ -12,10 +12,10 @@ export const Card = ({
   ...props
 }) => {
   const variantStyles = {
-    default: 'bg-white border-slate-200 text-slate-800 shadow-2xs',
-    billing: 'bg-gold-50/70 border-gold-300 text-slate-900 shadow-2xs',
-    subtle: 'bg-slate-50 border-slate-200 text-slate-700',
-    elevated: 'bg-white border-slate-200 text-slate-800 shadow-md',
+    default: 'bg-white border-line text-ink shadow-2xs',
+    billing: 'bg-civicGold-100/70 border-civicGold-700 text-ink shadow-2xs',
+    subtle: 'bg-canvas border-line text-ink',
+    elevated: 'bg-white border-line text-ink shadow-md',
   };
 
   return (
@@ -26,10 +26,10 @@ export const Card = ({
       {...props}
     >
       {(title || subtitle || headerAction) && (
-        <div className="flex items-start justify-between mb-4 border-b border-slate-100 pb-3">
+        <div className="flex items-start justify-between mb-4 border-b border-line pb-3">
           <div>
-            {title && <h3 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">{title}</h3>}
-            {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+            {title && <h3 className="text-base sm:text-lg font-bold text-ink tracking-tight">{title}</h3>}
+            {subtitle && <p className="text-xs text-ink-muted mt-0.5">{subtitle}</p>}
           </div>
           {headerAction && <div className="flex-shrink-0">{headerAction}</div>}
         </div>

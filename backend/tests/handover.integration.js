@@ -63,7 +63,7 @@ export async function runHandoverTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Standar Uji Serah Terima Master Fisik' },
+      { service_type_id: serviceId, title: 'Mushaf Standar Uji Serah Terima Master Fisik', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
 
@@ -86,7 +86,7 @@ export async function runHandoverTests({
 
     const assigned = await expect(
       `/registrations/${reg.id}/verification-assignments`,
-      kepalaToken,
+      adminToken,
       'POST',
       {
         verifier_id: verifierUser.id,
@@ -267,7 +267,7 @@ export async function runHandoverTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Uji Pengembalian Fisik' },
+      { service_type_id: serviceId, title: 'Mushaf Uji Pengembalian Fisik', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
       201
     );
     await expect(`/registrations/${reg2.id}/physical-master`, publisherToken, 'PUT', {
@@ -280,7 +280,7 @@ export async function runHandoverTests({
       condition: 'BAIK',
       volume_count: 30,
     });
-    const asg2 = (await expect(`/registrations/${reg2.id}/verification-assignments`, kepalaToken, 'POST', {
+    const asg2 = (await expect(`/registrations/${reg2.id}/verification-assignments`, adminToken, 'POST', {
       verifier_id: verifierUser.id,
       nota_no: `ND-HO2-${Date.now()}`,
       notes: 'Penugasan reg 2',

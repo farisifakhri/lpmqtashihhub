@@ -25,7 +25,7 @@ export const FormField = ({
           className="block text-[13px] font-semibold text-ink leading-tight"
         >
           {label}
-          {required && <span className="text-rose-600 ml-1" aria-hidden="true">*</span>}
+          {required && <span className="text-civic-danger ml-1" aria-hidden="true">*</span>}
         </label>
       )}
 
@@ -44,7 +44,7 @@ export const FormField = ({
       {error && (
         <p
           id={errorId}
-          className="flex items-center gap-1.5 text-xs text-rose-700 font-medium mt-1"
+          className="flex items-center gap-1.5 text-xs text-civic-danger font-medium mt-1"
           role="alert"
         >
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />

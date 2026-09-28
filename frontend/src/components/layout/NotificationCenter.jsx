@@ -151,15 +151,15 @@ export const NotificationCenter = () => {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-neutral-100 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-700 cursor-pointer"
+        className="relative p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-surface-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700 cursor-pointer"
         aria-label={`Pemberitahuan, ${unreadCount} perlu tindakan`}
         title="Pemberitahuan"
       >
         <Bell className="w-5 h-5" />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-600" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-civic-warningLine opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-civic-warning" />
           </span>
         )}
       </button>
@@ -226,7 +226,7 @@ export const NotificationCenter = () => {
                 <span>Memuat pemberitahuan...</span>
               </div>
             ) : error && notifications.length === 0 ? (
-              <div className="py-6 text-center text-xs text-rose-600 space-y-2">
+              <div className="py-6 text-center text-xs text-civic-danger space-y-2">
                 <p>{error}</p>
                 <button
                   type="button"

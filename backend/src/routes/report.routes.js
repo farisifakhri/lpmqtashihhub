@@ -18,7 +18,7 @@ const action = (fn, status = 200) => async (req, res, next) => {
 router.get(
   '/reports/verification-performance',
   authenticate,
-  authorize('SUPERADMIN', 'ADMIN', 'KEPALA_LPMQ', 'VERIFIKATOR'),
+  authorize('SUPERADMIN', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'VERIFIKATOR'),
   action((req) => reportService.getVerificationPerformanceReport(req.query, req.user))
 );
 
@@ -26,7 +26,7 @@ router.get(
 router.get(
   '/registrations/:id/timeline',
   authenticate,
-  authorize('ADMIN_PENERBIT', 'SUPERADMIN', 'ADMIN', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'),
+  authorize('ADMIN_PENERBIT', 'SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'),
   action((req) => reportService.getRegistrationTimeline(req.params.id, req.user))
 );
 

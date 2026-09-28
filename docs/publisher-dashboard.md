@@ -35,7 +35,7 @@ jumlah naskah yang punya STT ISSUED, bukan sekadar status READY_FOR_STT.
 Penerbit tanpa publisherId mendapat 403 (fail closed). Detail, timeline,
 manuscript, billing, dan PDF tetap diperiksa ownership-nya di server.
 Penerbit melihat pengajuan terbaru terlebih dahulu, tanpa nomor antrean FIFO.
-Urutan FIFO tim internal serta RBAC assignment ADMIN/SUPERADMIN tidak berubah.
+Urutan FIFO tim internal serta RBAC assignment HELPER_ADMIN/SUPERADMIN tidak berubah.
 
 Endpoint PDF existing tetap merender draf untuk petugas yang berwenang.
 Untuk dokumen ISSUED, server membaca **PDF existing tanpa mengubah bytes** dari

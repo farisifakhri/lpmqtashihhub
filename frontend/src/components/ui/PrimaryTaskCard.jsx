@@ -20,9 +20,9 @@ export const PrimaryTaskCard = ({
   priority = 'normal', // 'normal' | 'urgent' | 'warning'
 }) => {
   const priorityStyles = {
-    normal: 'border-slate-200 bg-white shadow-2xs',
-    urgent: 'border-rose-300 bg-rose-50/40 shadow-2xs',
-    warning: 'border-amber-300 bg-amber-50/40 shadow-2xs',
+    normal: 'border-line bg-white shadow-2xs',
+    urgent: 'border-civic-dangerLine bg-civic-dangerSoft/40 shadow-2xs',
+    warning: 'border-civic-warningLine bg-civic-warningSoft/40 shadow-2xs',
   };
 
   return (
@@ -35,16 +35,16 @@ export const PrimaryTaskCard = ({
       aria-labelledby="primary-task-title"
     >
       {/* Header Meta & Ownership */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs text-ink-muted">
         <div className="flex flex-wrap items-center gap-2">
           {objectRef && (
-            <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+            <span className="font-mono font-bold text-ink bg-surface-subtle px-2.5 py-1 rounded-md border border-line">
               {objectRef}
             </span>
           )}
           {ownerLabel && (
-            <span className="font-medium text-slate-600">
-              Pemilik Tindakan: <strong className="text-slate-900">{ownerLabel}</strong>
+            <span className="font-medium text-ink-muted">
+              Pemilik Tindakan: <strong className="text-ink">{ownerLabel}</strong>
             </span>
           )}
         </div>
@@ -54,8 +54,8 @@ export const PrimaryTaskCard = ({
             className={clsx(
               'inline-flex items-center gap-1.5 font-semibold px-2.5 py-1 rounded-md border text-xs',
               slaOverdue
-                ? 'bg-rose-50 text-rose-800 border-rose-200 font-bold'
-                : 'bg-amber-50 text-amber-900 border-amber-200'
+                ? 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine font-bold'
+                : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
             )}
           >
             <Clock className="w-3.5 h-3.5" aria-hidden="true" />
@@ -66,10 +66,10 @@ export const PrimaryTaskCard = ({
 
       {/* Task Content */}
       <div className="space-y-1.5">
-        <h3 id="primary-task-title" className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+        <h3 id="primary-task-title" className="text-base sm:text-lg font-bold text-ink tracking-tight">
           {title}
         </h3>
-        <p className="text-sm text-slate-600 leading-relaxed max-w-3xl">
+        <p className="text-sm text-ink-muted leading-relaxed max-w-3xl">
           {description}
         </p>
       </div>
@@ -78,9 +78,9 @@ export const PrimaryTaskCard = ({
       {disabled && disabledReason && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-900"
+          className="flex items-start gap-2.5 rounded-lg border border-civic-warningLine bg-civic-warningSoft/80 p-3 text-xs text-civic-warning"
         >
-          <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
+          <ShieldAlert className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" aria-hidden="true" />
           <div>
             <span className="font-bold">Aksi tertahan: </span>
             <span>{disabledReason}</span>

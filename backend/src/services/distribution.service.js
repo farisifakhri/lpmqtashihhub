@@ -4,8 +4,13 @@ import { fail, requireRole, registration, requireStatus, move, audit } from './w
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
-  requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   const reg = await registration(tx, id);
+  if (reg.core_team_number) {
+    requireRole(user, ['DISTRIBUTOR']);
+    if (reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat membagikan tugas pentashih.');
+  } else {
+    requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
+  }
   requireStatus(reg, ['WAITING_DISTRIBUTION']);
   if (!await tx.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } })) fail(409, 'Penugasan belum dapat dibuat karena pembayaran belum dinyatakan lunas. Minta verifikator memeriksa bukti pembayaran terlebih dahulu.');
   const previous = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
@@ -32,7 +37,7 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
 export async function workload(id, user) {
   // Read-only workload remains available to Distributor for their own duties.
-  requireRole(user, ['ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
   if (!await prisma.distributionTeam.findUnique({ where: { id } })) fail(404, 'Tim tidak ditemukan.');
   return prisma.assignment.groupBy({ by: ['assignee_id', 'status'], where: { team_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } }, _count: { _all: true } });
 }
@@ -72,8 +77,8 @@ export async function listMyAssignments(user, query = {}) {
     include: {
       registration: {
         include: {
-          publisher: { select: { id: true, legal_name: true, brand_name: true } },
-          service_type: { select: { id: true, name: true, code: true } },
+          publisher: { select: { id: true, legal_name: true } },
+          service_type: { select: { id: true, name: true } },
           manuscript_files: true,
         },
       },
@@ -88,6 +93,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
+  if (reg.core_team_number && reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mereviu hasil pentashih.');
   const last = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true } });

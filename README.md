@@ -5,7 +5,7 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 ## Status implementasi
 
 Alur internal SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite saat ini lulus:
-- Pemeriksaan berkas fisik (intake) dan serah-terima fisik oleh `ADMIN` (Staf TU / Layanan).
+- Pemeriksaan berkas fisik (intake) dan serah-terima fisik oleh `HELPER_ADMIN` (Staf TU / Layanan).
 - Penerbitan Nota Dinas Verifikasi dan penugasan verifikator oleh Kepala LPMQ secara atomik dengan SLA 2 hari kerja kalender kerja (`Asia/Jakarta`, cut-off 16:00 WIB).
 - Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi, dan Berita Acara Verifikasi.
 - Penandatanganan digital bertingkat (multi-signatory) internal untuk Kepala LPMQ dan Verifikator.
@@ -15,7 +15,7 @@ Alur internal SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) telah selesai diimpleme
 - Akses berkas privat terproteksi tanpa token query URL.
 - Penanganan sinkronisasi ke sistem eksternal dengan status terverifikasi (`PENDING`, `SYNCED`, `FAILED`) tanpa false-success.
 
-Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [API_CONTRACT_MODUL_LANJUTAN.md](API_CONTRACT_MODUL_LANJUTAN.md).
+Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md).
 
 ## Prasyarat
 
@@ -52,7 +52,6 @@ Frontend tersedia di `http://localhost:5173` dan API di `http://localhost:5000/a
 cd backend
 npx prisma validate
 cd ..
-npm --prefix backend run test:unit
 npm --prefix backend test
 npm --prefix frontend test
 npm --prefix frontend run build
@@ -71,10 +70,10 @@ frontend/src/            Router, halaman, komponen, konteks autentikasi
 docs/                    Dokumentasi teknis, RBAC admin, dashboard, FIFO
 docs/api/                Kontrak workflow dan siklus SOP
 .github/workflows/ci.yml Quality gate CI
-API_CONTRACT_MODUL_LANJUTAN.md Spesifikasi kontrak API modul lanjutan (Live)
-DESIGN.MD                Rancangan arsitektur dan domain
-IMPLEMENTATION.md        Rencana implementasi & status sprint
-USER_FLOWS.md            Alur pengguna per peran
+docs/api/workflow.md    Kontrak API alur layanan
+docs/architecture/design.md          Rancangan arsitektur dan domain
+docs/architecture/implementation.md  Rencana implementasi & status sprint
+docs/architecture/user-flows.md      Alur pengguna per peran
 ```
 
 SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Alur SOP Verifikasi v2.2 (penerimaan fisik oleh Admin, penugasan Kepala LPMQ dengan SLA 2 hari kerja kalender dan cut-off 16:00 WIB, penyusunan draf Surat Hasil & Berita Acara Verifikasi, tanda tangan digital internal multi-signatory, outbox email idempoten, verifikasi pembayaran internal, serta serah-terima fisik distributor dengan penanganan koreksi fisik cacat) telah selesai diimplementasikan secara end-to-end dan seluruh test suite saat ini lulus. Integrasi produksi tingkat lanjut (gateway SIMPONI, sertifikat digital BSrE, SMTP produksi, dan implementasi penuh UI Pentashihan/Dokumentasi) disiapkan sebagai tahapan implementasi berikutnya.

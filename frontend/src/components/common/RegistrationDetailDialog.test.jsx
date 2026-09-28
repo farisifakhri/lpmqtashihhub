@@ -13,6 +13,7 @@ describe('Registration detail', () => {
     render(<RegistrationDetailDialog id="r1" onClose={close} />);
     expect(await screen.findByText('Naskah tertua')).toBeInTheDocument();
     expect(screen.getByText('Pengajuan diterima')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Status per tahap alur' })).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
     expect(screen.getByRole('button', { name: 'Tutup detail naskah' })).toHaveFocus();
     fireEvent.keyDown(document, { key: 'Escape' });

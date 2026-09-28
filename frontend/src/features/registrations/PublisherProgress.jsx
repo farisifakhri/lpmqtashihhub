@@ -2,13 +2,13 @@ import React from 'react';
 import { RefreshCw, CheckCircle2, Clock, AlertTriangle, Send } from 'lucide-react';
 
 const STAGE_STEPS = [
-  { key: 'DRAFT', label: 'Permohonan', percent: 15, color: 'bg-slate-500', text: 'text-slate-700' },
-  { key: 'DISPATCH', label: 'Kirim Berkas ke LPMQ', percent: 30, color: 'bg-amber-500', text: 'text-amber-800' },
-  { key: 'VERIFICATION', label: 'Sedang Diverifikasi', percent: 45, color: 'bg-sky-500', text: 'text-sky-800' },
-  { key: 'PAYMENT', label: 'Pembayaran', percent: 60, color: 'bg-indigo-500', text: 'text-indigo-800' },
-  { key: 'TASHIH', label: 'Sedang Proses Tashih', percent: 75, color: 'bg-blue-600', text: 'text-blue-800' },
-  { key: 'STT', label: 'STT Terbit', percent: 90, color: 'bg-emerald-600', text: 'text-emerald-800' },
-  { key: 'COMPLETED', label: 'Selesai', percent: 100, color: 'bg-emerald-700', text: 'text-emerald-900' },
+  { key: 'DRAFT', label: 'Permohonan', percent: 15, color: 'bg-line-strong', text: 'text-ink' },
+  { key: 'DISPATCH', label: 'Kirim Berkas ke LPMQ', percent: 30, color: 'bg-civic-warning', text: 'text-civic-warning' },
+  { key: 'VERIFICATION', label: 'Sedang Diverifikasi', percent: 45, color: 'bg-civic-info', text: 'text-civic-info' },
+  { key: 'PAYMENT', label: 'Pembayaran', percent: 60, color: 'bg-civic-info', text: 'text-civic-info' },
+  { key: 'TASHIH', label: 'Sedang Proses Tashih', percent: 75, color: 'bg-civic-info', text: 'text-civic-info' },
+  { key: 'STT', label: 'STT Terbit', percent: 90, color: 'bg-brand-700', text: 'text-brand-800' },
+  { key: 'COMPLETED', label: 'Selesai', percent: 100, color: 'bg-brand-700', text: 'text-brand-900' },
 ];
 
 export function getDetailedStage(registration) {
@@ -20,8 +20,8 @@ export function getDetailedStage(registration) {
       index: 0,
       label: 'Draf Permohonan',
       percent: 15,
-      color: 'bg-slate-400',
-      badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+      color: 'bg-line-strong',
+      badgeClass: 'bg-surface-subtle text-ink border-line',
       description: 'Lengkapi dokumen awal dan sampel naskah',
     };
   }
@@ -32,8 +32,8 @@ export function getDetailedStage(registration) {
         index: 2,
         label: 'Sedang Diverifikasi',
         percent: 45,
-        color: 'bg-sky-500',
-        badgeClass: 'bg-sky-50 text-sky-800 border-sky-200',
+        color: 'bg-civic-info',
+        badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
         description: 'Berkas fisik terkirim; verifikator memeriksa kelengkapan',
       };
     }
@@ -41,8 +41,8 @@ export function getDetailedStage(registration) {
       index: 1,
       label: 'Kirim Berkas ke LPMQ',
       percent: 30,
-      color: 'bg-amber-500',
-      badgeClass: 'bg-amber-50 text-amber-900 border-amber-300',
+      color: 'bg-civic-warning',
+      badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
       description: 'Menunggu pengiriman naskah master fisik A4 ke loket LPMQ',
     };
   }
@@ -52,8 +52,8 @@ export function getDetailedStage(registration) {
       index: 2,
       label: 'Sedang Diverifikasi',
       percent: 45,
-      color: 'bg-sky-500',
-      badgeClass: 'bg-sky-50 text-sky-800 border-sky-200',
+      color: 'bg-civic-info',
+      badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
       description: 'Pemeriksaan administrasi dan naskah fisik oleh verifikator',
     };
   }
@@ -69,8 +69,8 @@ export function getDetailedStage(registration) {
         index: 1,
         label: 'Perlu Perbaikan Master Fisik',
         percent: 35,
-        color: 'bg-rose-500',
-        badgeClass: 'bg-rose-50 text-rose-900 border-rose-300',
+        color: 'bg-civic-danger',
+        badgeClass: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine',
         description: 'Master fisik dikembalikan loket; serahkan perbaikan jilid naskah ke Loket LPMQ',
         isLoop: false,
       };
@@ -80,8 +80,8 @@ export function getDetailedStage(registration) {
       index: isTashihRevision ? 4 : 2,
       label: 'Dalam Proses Perbaikan',
       percent: isTashihRevision ? 70 : 40,
-      color: 'bg-amber-500',
-      badgeClass: 'bg-amber-50 text-amber-900 border-amber-300',
+      color: 'bg-civic-warning',
+      badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
       description: isTashihRevision ? 'Catatan perbaikan sidang tashih (siklus perbaikan ⇄ pentashihan)' : 'Perlu revisi berkas administrasi verifikasi',
       isLoop: isTashihRevision,
     };
@@ -92,8 +92,8 @@ export function getDetailedStage(registration) {
       index: 3,
       label: 'Pembayaran PNBP',
       percent: 60,
-      color: 'bg-indigo-500',
-      badgeClass: 'bg-indigo-50 text-indigo-900 border-indigo-200',
+      color: 'bg-civic-info',
+      badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
       description: 'Penerbitan kode billing SIMPONI dan konfirmasi pembayaran',
     };
   }
@@ -103,8 +103,8 @@ export function getDetailedStage(registration) {
       index: 4,
       label: 'Sedang Proses Tashih',
       percent: 75,
-      color: 'bg-blue-600',
-      badgeClass: 'bg-blue-50 text-blue-900 border-blue-200',
+      color: 'bg-civic-info',
+      badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
       description: 'Sidang pentashihan naskah oleh tim pentashih (dapat berulang jika ada koreksi)',
       isLoop: true,
     };
@@ -115,8 +115,8 @@ export function getDetailedStage(registration) {
       index: 5,
       label: 'STT Terbit',
       percent: 90,
-      color: 'bg-emerald-600',
-      badgeClass: 'bg-emerald-50 text-emerald-900 border-emerald-300',
+      color: 'bg-brand-700',
+      badgeClass: 'bg-brand-50 text-brand-900 border-brand-100',
       description: 'Surat Tanda Tashih (STT) resmi telah diterbitkan Kepala LPMQ',
     };
   }
@@ -126,8 +126,8 @@ export function getDetailedStage(registration) {
       index: 6,
       label: 'Selesai',
       percent: 100,
-      color: 'bg-emerald-700',
-      badgeClass: 'bg-emerald-100 text-emerald-950 border-emerald-400',
+      color: 'bg-brand-700',
+      badgeClass: 'bg-brand-100 text-brand-950 border-brand-700',
       description: 'Seluruh tahapan pentashihan dan dokumentasi tuntas',
     };
   }
@@ -137,8 +137,8 @@ export function getDetailedStage(registration) {
       index: -1,
       label: 'Dibatalkan',
       percent: 0,
-      color: 'bg-rose-500',
-      badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
+      color: 'bg-civic-danger',
+      badgeClass: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine',
       description: 'Permohonan dibatalkan',
     };
   }
@@ -147,8 +147,8 @@ export function getDetailedStage(registration) {
     index: 0,
     label: 'Diproses',
     percent: 20,
-    color: 'bg-slate-400',
-    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
+    color: 'bg-line-strong',
+    badgeClass: 'bg-surface-subtle text-ink border-line',
     description: 'Tahapan proses sedang berjalan',
   };
 }
@@ -160,7 +160,7 @@ export function PublisherProgress({ registration }) {
 
   if (stage.index === -1) {
     return (
-      <div className="flex items-center gap-2 text-xs font-semibold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200">
+      <div className="flex items-center gap-2 text-xs font-semibold text-civic-danger bg-civic-dangerSoft px-3 py-1.5 rounded-lg border border-civic-dangerLine">
         <span>Permohonan dibatalkan.</span>
       </div>
     );
@@ -176,21 +176,21 @@ export function PublisherProgress({ registration }) {
             <span>{stage.label}</span>
           </span>
           {stage.isLoop && (
-            <span className="text-[10px] text-slate-500 font-medium hidden sm:inline">
+            <span className="text-[10px] text-ink-muted font-medium hidden sm:inline">
               (Proses Tashih ⇄ Perbaikan)
             </span>
           )}
         </div>
 
         {/* Indikator Persentase Resmi */}
-        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-          <span className="text-[10px] text-slate-500 uppercase">Progres</span>
-          <span className="text-slate-900">{stage.percent}%</span>
+        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
+          <span className="text-[10px] text-ink-muted uppercase">Progres</span>
+          <span className="text-ink">{stage.percent}%</span>
         </div>
       </div>
 
       {/* Progress Multi-segment Bar */}
-      <div className="relative w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200">
+      <div className="relative w-full bg-surface-subtle rounded-full h-2 overflow-hidden border border-line">
         <div
           className={`h-full transition-all duration-500 rounded-full ${stage.color}`}
           style={{ width: `${stage.percent}%` }}
@@ -198,7 +198,7 @@ export function PublisherProgress({ registration }) {
       </div>
 
       {/* Rincian Keterangan Tahapan */}
-      <div className="flex items-center justify-between text-[11px] text-slate-500">
+      <div className="flex items-center justify-between text-[11px] text-ink-muted">
         <span className="truncate pr-2">{stage.description}</span>
         <span className="shrink-0 font-medium">Langkah {stage.index + 1} dari 7</span>
       </div>

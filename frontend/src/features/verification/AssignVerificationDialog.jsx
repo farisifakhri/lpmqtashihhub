@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
 export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
+  const fixedVerifierId = registration?.core_verifier_id;
   const [verifiers, setVerifiers] = useState([]);
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState('');
@@ -12,6 +13,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [notaError, setNotaError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -47,13 +49,13 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     );
   });
 
-  const selectedVerifier = verifiers.find((v) => v.id === selectedVerifierId) || null;
+  const selectedVerifier = verifiers.find((v) => v.id === (fixedVerifierId || selectedVerifierId)) || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!registration?.id) return;
 
-    if (!selectedVerifierId) {
+    if (!fixedVerifierId && !selectedVerifierId) {
       setError('Silakan pilih verifikator yang akan ditugaskan.');
       return;
     }
@@ -65,10 +67,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
     setSubmitting(true);
     setError(null);
+    setNotaError(false);
 
     try {
       const payload = {
-        verifier_id: selectedVerifierId,
+        ...(fixedVerifierId ? {} : { verifier_id: selectedVerifierId }),
         nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
       };
@@ -78,14 +81,19 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         onSuccess(res?.data);
       }
     } catch (err) {
-      const isConflict = err.status === 409 || err.statusCode === 409 || err.message?.includes('sudah');
-      if (isConflict) {
+      const message = err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.';
+      const isDuplicateNota = (err.status === 409 || err.statusCode === 409) && /nomor nota dinas/i.test(message);
+      const isAssignmentConflict = (err.status === 409 || err.statusCode === 409) && /pengajuan sudah ditugaskan|sudah memiliki verifikator aktif|status pengajuan telah berubah/i.test(message);
+      if (isDuplicateNota) {
+        setNotaError(true);
+        setError(message);
+      } else if (isAssignmentConflict) {
         setError('Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
         if (onConflict) {
           onConflict();
         }
       } else {
-        setError(err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.');
+        setError(message);
       }
     } finally {
       setSubmitting(false);
@@ -105,21 +113,21 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
       role="dialog"
       aria-modal="true"
       aria-labelledby="assign-verifier-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn"
     >
-      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-line max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-emerald-100 text-emerald-800">
+            <div className="p-2 rounded-xl bg-brand-100 text-brand-800">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="assign-verifier-title" className="text-base font-bold text-slate-900">
+              <h3 id="assign-verifier-title" className="text-base font-bold text-ink">
                 Terbitkan Nota Dinas & Tugaskan Verifikator
               </h3>
-              <p className="text-xs text-slate-500">
-                Otoritas Kepala LPMQ · Langkah 4 SOP Pentashihan Mushaf
+              <p className="text-xs text-ink-muted">
+                Helper Admin · Penugasan Verifikator
               </p>
             </div>
           </div>
@@ -128,7 +136,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
             onClick={onClose}
             disabled={submitting}
             aria-label="Tutup modal penugasan"
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-ink-muted hover:text-ink-muted p-1.5 rounded-lg hover:bg-surface-subtle transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -136,30 +144,30 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
         {/* Error Alert */}
         {error && (
-          <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Manuscript Context Summary */}
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2">
-          <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-            <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+        <div className="p-3.5 bg-canvas border border-line rounded-xl text-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-line/60 pb-2">
+            <span className="font-mono font-bold text-ink bg-white px-2 py-0.5 rounded border border-line">
               {registration?.registration_no || '-'}
             </span>
-            <span className="text-slate-600 font-medium">
-              Pemohon: <strong className="text-slate-900">{publisher.legal_name || '-'}</strong>
+            <span className="text-ink-muted font-medium">
+              Pemohon: <strong className="text-ink">{publisher.legal_name || '-'}</strong>
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-ink-muted">
             <div>
-              <span className="text-slate-500 block text-[11px]">Judul Naskah:</span>
-              <span className="font-semibold text-slate-900">{registration?.title || '-'}</span>
+              <span className="text-ink-muted block text-[11px]">Judul Naskah:</span>
+              <span className="font-semibold text-ink">{registration?.title || '-'}</span>
             </div>
             <div>
-              <span className="text-slate-500 block text-[11px]">Master Fisik Loket:</span>
-              <span className="font-mono text-emerald-800 font-semibold">
+              <span className="text-ink-muted block text-[11px]">Master Fisik Loket:</span>
+              <span className="font-mono text-brand-800 font-semibold">
                 {physicalMaster.receipt_no || 'Diterima'} ({physicalMaster.volume_count ?? 30} jilid)
               </span>
             </div>
@@ -169,20 +177,20 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           {/* Verifier Selection with Search */}
-          <div className="space-y-1.5">
+          {fixedVerifierId ? <p className="rounded-lg bg-brand-50 p-3 text-brand-900">Tim inti {registration.core_team_number}: verifikator {selectedVerifier?.name || 'sesuai snapshot pengajuan'}.</p> : <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="verifier-select" className="block font-bold text-slate-800">
-                Pilih Verifikator <span className="text-rose-600">*</span>
+              <label htmlFor="verifier-select" className="block font-bold text-ink">
+                Pilih Verifikator <span className="text-civic-danger">*</span>
               </label>
               {verifiers.length > 3 && (
-                <span className="text-[11px] text-slate-500">
+                <span className="text-[11px] text-ink-muted">
                   {filteredVerifiers.length} dari {verifiers.length} petugas
                 </span>
               )}
             </div>
 
             {loading ? (
-              <p className="text-slate-500 italic py-2">Memuat daftar verifikator...</p>
+              <p className="text-ink-muted italic py-2">Memuat daftar verifikator...</p>
             ) : (
               <div className="space-y-1.5">
                 {verifiers.length > 3 && (
@@ -192,7 +200,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                     onChange={(e) => setVerifierSearch(e.target.value)}
                     placeholder="Ketik untuk memfilter nama / NIP verifikator..."
                     aria-label="Filter verifikator"
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-line focus:outline-none focus:ring-1 focus:ring-brand-700"
                   />
                 )}
                 <select
@@ -201,7 +209,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                   value={selectedVerifierId}
                   onChange={(e) => setSelectedVerifierId(e.target.value)}
                   disabled={submitting}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-white"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 bg-white"
                 >
                   <option value="">-- Pilih Petugas Verifikator --</option>
                   {filteredVerifiers.map((v) => {
@@ -218,33 +226,36 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 </select>
               </div>
             )}
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-ink-muted">
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
             </p>
-          </div>
+          </div>}
 
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">
-            <label htmlFor="nota-no-input" className="block font-bold text-slate-800">
-              Nomor Nota Dinas Penugasan <span className="text-rose-600">*</span>
+            <label htmlFor="nota-no-input" className="block font-bold text-ink">
+              Nomor Nota Dinas Penugasan <span className="text-civic-danger">*</span>
             </label>
             <input
               id="nota-no-input"
               type="text"
               value={notaNo}
-              onChange={(e) => setNotaNo(e.target.value)}
+              onChange={(e) => { setNotaNo(e.target.value); if (notaError) { setNotaError(false); setError(null); } }}
               disabled={submitting}
+              aria-invalid={notaError}
+              aria-describedby={notaError ? 'nota-no-error' : undefined}
               placeholder="Contoh: ND.01/LPMQ.01/TL.00/09/2026"
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 font-mono"
+              className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 font-mono ${notaError ? 'border-civic-danger focus:ring-civic-danger/20 focus:border-civic-danger' : 'border-line-strong focus:ring-brand-700/20 focus:border-brand-700'}`}
             />
-            <p className="text-[11px] text-slate-500">
-              Nomor resmi Nota Dinas yang diterbitkan oleh Kepala LPMQ sebagai dasar surat tugas verifikator.
+            {notaError && <p id="nota-no-error" className="text-[11px] font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Nota Dinas yang berbeda.</p>}
+            <p className="text-[11px] text-ink-muted">
+              Masukkan nomor Nota Dinas resmi sebagai dasar penugasan verifikator oleh Helper Admin.
             </p>
           </div>
 
           {/* Assignment Notes */}
           <div className="space-y-1.5">
-            <label htmlFor="notes-input" className="block font-bold text-slate-800">
+            <label htmlFor="notes-input" className="block font-bold text-ink">
               Catatan Khusus Penugasan (Opsional)
             </label>
             <textarea
@@ -254,48 +265,48 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               onChange={(e) => setNotes(e.target.value)}
               disabled={submitting}
               placeholder="Tambahkan arahan atau atensi khusus untuk verifikator..."
-              className="w-full p-2.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700"
+              className="w-full p-2.5 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
             />
           </div>
 
           {/* Confirmation Summary (P0-08) */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
-            <div className="font-bold text-slate-800 border-b border-slate-200/60 pb-1.5 flex items-center justify-between">
+          <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2 text-xs">
+            <div className="font-bold text-ink border-b border-line/60 pb-1.5 flex items-center justify-between">
               <span>Ringkasan Konfirmasi Penugasan</span>
-              <span className="text-[11px] font-normal text-slate-500">Mulai: saat dikonfirmasi</span>
+              <span className="text-[11px] font-normal text-ink-muted">Mulai: saat dikonfirmasi</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-slate-600">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-ink-muted">
               <div>
-                <span className="text-slate-500 text-[11px] block">Registrasi:</span>
-                <span className="font-mono font-semibold text-slate-900">{registration?.registration_no || '-'}</span>
+                <span className="text-ink-muted text-[11px] block">Registrasi:</span>
+                <span className="font-mono font-semibold text-ink">{registration?.registration_no || '-'}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[11px] block">Penerbit:</span>
-                <span className="font-semibold text-slate-900 truncate block">{publisher.legal_name || '-'}</span>
+                <span className="text-ink-muted text-[11px] block">Penerbit:</span>
+                <span className="font-semibold text-ink truncate block">{publisher.legal_name || '-'}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[11px] block">Verifikator:</span>
-                <span className="font-semibold text-slate-900">{selectedVerifier?.name || '(Belum dipilih)'}</span>
+                <span className="text-ink-muted text-[11px] block">Verifikator:</span>
+                <span className="font-semibold text-ink">{selectedVerifier?.name || '(Belum dipilih)'}</span>
               </div>
               <div>
-                <span className="text-slate-500 text-[11px] block">Nomor Nota Dinas:</span>
-                <span className="font-mono font-semibold text-slate-900">{notaNo.trim() || '(Belum diisi)'}</span>
+                <span className="text-ink-muted text-[11px] block">Nomor Nota Dinas:</span>
+                <span className="font-mono font-semibold text-ink">{notaNo.trim() || '(Belum diisi)'}</span>
               </div>
             </div>
-            <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-emerald-900">
+            <div className="pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-brand-900">
               <span className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <Clock className="w-3.5 h-3.5 text-brand-700 shrink-0" />
                 <span>Tanggal: <strong>{todayFormatted}</strong></span>
               </span>
               <span className="flex items-center gap-1.5">
-                <UserCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <UserCheck className="w-3.5 h-3.5 text-brand-700 shrink-0" />
                 <span>Tenggat Target: <strong>2 Hari Kerja (Asia/Jakarta)</strong></span>
               </span>
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
             <Button
               type="button"
               variant="outline"

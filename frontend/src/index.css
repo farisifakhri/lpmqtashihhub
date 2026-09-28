@@ -7,36 +7,36 @@
 
 @layer base {
   body {
-    @apply bg-neutral-50 text-neutral-700 font-sans antialiased min-h-screen text-[14px] leading-relaxed;
+    @apply bg-canvas text-ink font-sans antialiased min-h-screen text-[14px] leading-relaxed;
     margin: 0;
   }
 
   * {
-    @apply border-neutral-200;
+    @apply border-line;
   }
 
   ::selection {
-    @apply bg-primary-100 text-primary-950;
+    @apply bg-brand-100 text-brand-950;
   }
 
   button, a, input, select, textarea {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply text-neutral-900 font-semibold tracking-tight;
+    @apply text-ink font-semibold tracking-tight;
   }
 }
 
 @layer components {
   /* Komponen kartu formal sesuai standar portal kementerian: latar putih, radius 12-16px, border 1px neutral-200 */
   .lpmq-card {
-    @apply bg-white rounded-xl border border-neutral-200 shadow-2xs p-6;
+    @apply bg-white rounded-xl border border-line shadow-2xs p-6;
   }
 
   /* Kartu ringkasan tarif/billing dengan latar emas muda */
   .lpmq-billing-card {
-    @apply bg-gold-50 rounded-xl border border-gold-400/80 p-6 shadow-2xs;
+    @apply bg-civicGold-100 rounded-xl border border-civicGold-700/80 p-6 shadow-2xs;
   }
 
   /* Tombol aksi formal dengan target sentuh min 44px */
@@ -46,14 +46,14 @@
 
   /* Background motif geometris Islami halus hanya untuk login/auth hero terisolasi */
   .lpmq-pattern-bg {
-    background-color: #083224;
+    background-color: var(--brand-950);
     background-image: radial-gradient(rgba(223, 176, 69, 0.08) 1px, transparent 1px), radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
     background-size: 24px 24px;
     background-position: 0 0, 12px 12px;
   }
 
   .lpmq-light-pattern {
-    background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px);
+    background-image: radial-gradient(var(--line-strong) 0.75px, transparent 0.75px);
     background-size: 16px 16px;
   }
 }
@@ -78,10 +78,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: var(--line);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: var(--line-strong);
 }

@@ -58,7 +58,7 @@ describe('VerifikatorInboxPage Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText(/Antrean Penugasan Verifikasi Berkas/i)).toBeInTheDocument();
+    expect(screen.getByText(/Antrean Verifikasi Berkas/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('REG-2026-001')).toBeInTheDocument();
@@ -178,13 +178,13 @@ describe('VerifikatorInboxPage Component', () => {
     });
   });
 
-  it('untuk peran KEPALA_LPMQ: memuat tab Perlu Penugasan secara default dan membuka dialog penugasan', async () => {
+  it('untuk peran SUPERADMIN: memuat tab Perlu Penugasan secara default dan membuka dialog penugasan', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
-        id: 'kepala-1',
-        name: 'Dr. H. Muchlis M. Hanafi, M.A.',
-        role: 'KEPALA_LPMQ',
-        roles: ['KEPALA_LPMQ'],
+        id: 'superadmin-1',
+        name: 'Superadmin LPMQ',
+        role: 'SUPERADMIN',
+        roles: ['SUPERADMIN'],
       },
     });
 
@@ -233,13 +233,13 @@ describe('VerifikatorInboxPage Component', () => {
     });
   });
 
-  it('untuk peran ADMIN / SUPERADMIN: tidak menampilkan tab Perlu Penugasan dan tombol Tugaskan Verifikator', async () => {
+  it('untuk peran KEPALA_LPMQ: menampilkan tab persetujuan tanpa tombol penugasan', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
-        id: 'admin-1',
-        name: 'Staf Administrasi LPMQ',
-        role: 'ADMIN',
-        roles: ['ADMIN'],
+        id: 'kepala-1',
+        name: 'Kepala LPMQ',
+        role: 'KEPALA_LPMQ',
+        roles: ['KEPALA_LPMQ'],
       },
     });
 

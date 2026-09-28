@@ -189,9 +189,9 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
       return cb(createMockTx({}));
     };
 
-    // 1. ADMIN or PENTASHIH is rejected with 403
+    // 1. HELPER_ADMIN or PENTASHIH is rejected with 403
     await assert.rejects(
-      approveDistribution('reg-1', { result: 'PASSED', notes: 'OK' }, { id: 'u1', roles: ['ADMIN'] }),
+      approveDistribution('reg-1', { result: 'PASSED', notes: 'OK' }, { id: 'u1', roles: ['HELPER_ADMIN'] }),
       (err) => err.statusCode === 403
     );
     await assert.rejects(

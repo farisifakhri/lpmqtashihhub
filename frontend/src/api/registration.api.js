@@ -19,6 +19,7 @@ export const registrationApi = {
   getDetail: async (id) => {
     return apiClient(`/registrations/${id}`);
   },
+  getDocumentArchive: async (id) => apiClient(`/registrations/${id}/document-archive`),
 
   createDraft: async (payload) => {
     return apiClient('/registrations', {

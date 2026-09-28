@@ -131,6 +131,8 @@ export const NewRegistrationPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [error, setError] = useState('');
+  const [titleError, setTitleError] = useState('');
+  const [penanggungJawabError, setPenanggungJawabError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [createdReceipt, setCreatedReceipt] = useState(null);
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
@@ -224,10 +226,17 @@ export const NewRegistrationPage = () => {
   // Submit / Save Draft
   const handleSave = async (isDirectSubmit = false) => {
     setError('');
+    setTitleError('');
+    setPenanggungJawabError('');
     setSuccessMsg('');
 
-    if (!title.trim()) {
-      setError('Nama / Brand Mushaf wajib diisi.');
+    if (title.trim().length < 3) {
+      setTitleError('Nama produk/mushaf minimal 3 karakter.');
+      return;
+    }
+
+    if (!penanggungJawabProduk.trim()) {
+      setPenanggungJawabError('Nama penanggung jawab produk/mushaf wajib diisi.');
       return;
     }
 
@@ -378,19 +387,19 @@ export const NewRegistrationPage = () => {
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-28 lg:pb-12 animate-fadeIn">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-line">
         <div>
           <Link
             to="/publisher"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-700 font-semibold mb-1 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-brand-700 font-semibold mb-1 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Kembali ke Dasbor
           </Link>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">
             Formulir Permohonan Naskah Mushaf Al-Qur'an
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Layanan Pentashihan Mushaf Al-Qur'an — Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kemenag RI
           </p>
         </div>
@@ -403,7 +412,7 @@ export const NewRegistrationPage = () => {
             size="sm"
             disabled={isSubmitting || loadingMaster}
             onClick={() => handleSave(false)}
-            icon={<Save className="w-3.5 h-3.5 text-slate-600" />}
+            icon={<Save className="w-3.5 h-3.5 text-ink-muted" />}
             className="text-xs"
           >
             Simpan Draf
@@ -425,7 +434,7 @@ export const NewRegistrationPage = () => {
 
       {/* Notices */}
       {error && (
-        <div role="alert" className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+        <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">Terjadi Kesalahan: </span>
@@ -435,8 +444,8 @@ export const NewRegistrationPage = () => {
       )}
 
       {successMsg && (
-        <div role="status" className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
-          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-emerald-600" />
+        <div role="status" className="p-4 rounded-xl bg-brand-50 border border-brand-100 text-brand-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+          <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-700" />
           <div>
             <span className="font-bold">Berhasil: </span>
             {successMsg}
@@ -447,67 +456,83 @@ export const NewRegistrationPage = () => {
       {/* ========================================================================= */}
       {/* BAGIAN I. INFORMASI DATA MUSHAF */}
       {/* ========================================================================= */}
-      <section aria-labelledby="section-1-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
-        <div className="border-b border-slate-100 pb-3">
-          <h2 id="section-1-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-emerald-700" />
+      <section aria-labelledby="section-1-title" className="bg-white rounded-2xl border border-line/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-line pb-3">
+          <h2 id="section-1-title" className="text-base font-bold text-ink flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-brand-700" />
             <span>I. Informasi Data Mushaf</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Lengkapi data teknis dan identitas naskah mushaf yang diajukan pentashihan.
           </p>
         </div>
 
         {/* 1. Nama / Brand Mushaf */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
-            Nama Produk/Mushaf <span className="text-rose-500">*</span>
+          <label htmlFor="registration-title" className="block text-xs font-bold text-ink">
+            Nama Produk/Mushaf <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Diisi dengan nama produk/mushaf al-qur'an yang akan didaftarkan pentashihan. Misal: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir, dll
           </p>
           <input
             type="text"
+            id="registration-title"
             required
+            minLength={3}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (titleError) setTitleError('');
+            }}
+            aria-invalid={Boolean(titleError)}
+            aria-describedby={titleError ? 'registration-title-error' : undefined}
             placeholder="Contoh: Mushaf Al-Qur'an, Al-Qur'an dan Terjemahnya, Mushaf Alkabir"
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+            className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white ${titleError ? 'border-civic-danger' : 'border-line-strong'}`}
           />
+          {titleError && <p id="registration-title-error" className="text-xs text-civic-danger">{titleError}</p>}
         </div>
 
         {/* 2. Nama Penanggung Jawab Produk/Mushaf */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
-            Nama Penanggung Jawab Produk/Mushaf<span className="text-rose-500">*</span>
+          <label htmlFor="registration-product-owner" className="block text-xs font-bold text-ink">
+            Nama Penanggung Jawab Produk/Mushaf<span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Isi nama penanggung jawab Produk/Mushaf
           </p>
           <input
             type="text"
+            id="registration-product-owner"
+            required
             value={penanggungJawabProduk}
-            onChange={(e) => setPenanggungJawabProduk(e.target.value)}
+            onChange={(e) => {
+              setPenanggungJawabProduk(e.target.value);
+              if (penanggungJawabError) setPenanggungJawabError('');
+            }}
+            aria-invalid={Boolean(penanggungJawabError)}
+            aria-describedby={penanggungJawabError ? 'registration-product-owner-error' : undefined}
             placeholder="Tulis nama penanggung jawab Produk/Mushaf"
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+            className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white ${penanggungJawabError ? 'border-civic-danger' : 'border-line-strong'}`}
           />
+          {penanggungJawabError && <p id="registration-product-owner-error" className="text-xs text-civic-danger">{penanggungJawabError}</p>}
         </div>
 
         {/* 3. Ukuran (cm) dan Oplah (Dinamis Multi-row) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <span className="block text-xs font-bold text-slate-800">
-                Ukuran (cm) & oplah <span className="text-rose-500">*</span>
+              <span className="block text-xs font-bold text-ink">
+                Ukuran (cm) & oplah <span className="text-civic-danger">*</span>
               </span>
-              <p className="text-[11px] text-slate-500">
+              <p className="text-[11px] text-ink-muted">
                 Daftar ukuran fisik (panjang x lebar) dan rencana oplah cetak
               </p>
             </div>
             <button
               type="button"
               onClick={handleAddSizeRow}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs transition-colors shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Tambah Ukuran dan Oplah</span>
@@ -516,12 +541,12 @@ export const NewRegistrationPage = () => {
 
           <div className="space-y-2 pt-1">
             {sizes.map((row, idx) => (
-              <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start bg-slate-50/70 p-3 rounded-xl border border-slate-200">
+              <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start bg-canvas/70 p-3 rounded-xl border border-line">
                 <div className="sm:col-span-6 space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">
-                    Ukuran (cm) {idx === 0 && <span className="text-rose-500">*</span>}
+                  <label className="block text-[11px] font-bold text-ink">
+                    Ukuran (cm) {idx === 0 && <span className="text-civic-danger">*</span>}
                   </label>
-                  <p className="text-[10px] text-emerald-700 leading-tight">
+                  <p className="text-[10px] text-brand-700 leading-tight">
                     Format: panjang x lebar (cm). Misal: 29,7 x 20 (tanpa cm)
                   </p>
                   <input
@@ -529,14 +554,14 @@ export const NewRegistrationPage = () => {
                     value={row.ukuran}
                     onChange={(e) => handleSizeChange(idx, 'ukuran', e.target.value)}
                     placeholder="Tulis ukuran (cth: 29,7 x 20)"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700"
                   />
                 </div>
                 <div className="sm:col-span-5 space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-700">
-                    Oplah {idx === 0 && <span className="text-rose-500">*</span>}
+                  <label className="block text-[11px] font-bold text-ink">
+                    Oplah {idx === 0 && <span className="text-civic-danger">*</span>}
                   </label>
-                  <p className="text-[10px] text-emerald-700 leading-tight">
+                  <p className="text-[10px] text-brand-700 leading-tight">
                     Rencana oplah cetak. Misal: 100000 eksemplar, 50000 eksemplar, dll
                   </p>
                   <input
@@ -544,7 +569,7 @@ export const NewRegistrationPage = () => {
                     value={row.oplah}
                     onChange={(e) => handleSizeChange(idx, 'oplah', e.target.value)}
                     placeholder="Tulis oplah"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700"
                   />
                 </div>
                 <div className="sm:col-span-1 pt-6 sm:pt-7 text-right">
@@ -553,7 +578,7 @@ export const NewRegistrationPage = () => {
                       type="button"
                       onClick={() => handleRemoveSizeRow(idx)}
                       title="Hapus baris ini"
-                      className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors"
+                      className="p-2 text-civic-danger hover:text-civic-danger hover:bg-civic-dangerSoft rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -566,14 +591,14 @@ export const NewRegistrationPage = () => {
 
         {/* 4. Jenis Naskah (Checklist 2 Kolom) */}
         <div className="space-y-2 pt-2">
-          <label className="block text-xs font-bold text-slate-800">
-            Jenis Naskah <span className="text-rose-500">*</span>
+          <label className="block text-xs font-bold text-ink">
+            Jenis Naskah <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-emerald-700 leading-relaxed">
+          <p className="text-[11px] text-brand-700 leading-relaxed">
             Pilih jenis naskah yang sesuai dengan mushaf yang akan Anda terbitkan. Pilihan boleh lebih dari satu. Jika mushaf yang akan diterbitkan adalah mushaf digital, maka wajib mengunggah file apk
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5 p-4 rounded-xl bg-canvas border border-line">
             {JENIS_NASKAH_OPTIONS.map((colItems, colIdx) => (
               <div key={colIdx} className="space-y-2">
                 {colItems.map((item) => {
@@ -581,15 +606,15 @@ export const NewRegistrationPage = () => {
                   return (
                     <label
                       key={item}
-                      className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-900 cursor-pointer select-none py-0.5"
+                      className="flex items-center gap-2.5 text-xs text-ink hover:text-ink cursor-pointer select-none py-0.5"
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => toggleJenisNaskah(item)}
-                        className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-700 w-4 h-4"
+                        className="rounded border-line-strong text-brand-700 focus:ring-brand-700 w-4 h-4"
                       />
-                      <span className={isChecked ? 'font-bold text-emerald-950' : ''}>
+                      <span className={isChecked ? 'font-bold text-brand-950' : ''}>
                         {item}
                       </span>
                     </label>
@@ -602,10 +627,10 @@ export const NewRegistrationPage = () => {
 
         {/* 5. Jenis Mushaf (Dropdown) */}
         <div className="space-y-1.5 pt-2">
-          <label htmlFor="jenis-mushaf" className="block text-xs font-bold text-slate-800">
-            Jenis Pendaftaran Mushaf <span className="text-rose-500">*</span>
+          <label htmlFor="jenis-mushaf" className="block text-xs font-bold text-ink">
+            Jenis Pendaftaran Mushaf <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Pilih jenis mushaf yang sesuai dengan mushaf yang akan Anda terbitkan.
           </p>
           <select
@@ -613,7 +638,7 @@ export const NewRegistrationPage = () => {
             aria-label="Jenis Mushaf"
             value={jenisMushaf}
             onChange={(e) => handleJenisMushafChange(e.target.value)}
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 font-semibold"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink font-semibold"
           >
             <option value="Mushaf Baru">Mushaf Baru</option>
             <option value="Perpanjangan Tanda Tashih">Perpanjangan Tanda Tashih</option>
@@ -624,10 +649,10 @@ export const NewRegistrationPage = () => {
         {/* 6. Nama Percetakan (Hanya untuk Mushaf Domestik / Baru / Perpanjangan) */}
         {!isLuarNegeri && (
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-800">
-              Nama Percetakan <span className="text-rose-500">*</span>
+            <label className="block text-xs font-bold text-ink">
+              Nama Percetakan <span className="text-civic-danger">*</span>
             </label>
-            <p className="text-[11px] text-emerald-700">
+            <p className="text-[11px] text-brand-700">
               Diisi dengan nama percetakan tempat mushaf yang didaftarkan akan dicetak. Misal: Gramedia, Bekasi.
             </p>
             <input
@@ -635,17 +660,17 @@ export const NewRegistrationPage = () => {
               value={namaPercetakan}
               onChange={(e) => setNamaPercetakan(e.target.value)}
               placeholder="Tulis nama percetakan"
-              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
             />
           </div>
         )}
 
         {/* 7. Deskripsi Mushaf */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
-            Deskripsi Mushaf <span className="text-rose-500">*</span>
+          <label className="block text-xs font-bold text-ink">
+            Deskripsi Mushaf <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Diisi dengan deskripsi mushaf yang didaftarkan.
           </p>
           <textarea
@@ -653,7 +678,7 @@ export const NewRegistrationPage = () => {
             value={deskripsiMushaf}
             onChange={(e) => setDeskripsiMushaf(e.target.value)}
             placeholder="Tulis deskripsi mushaf"
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
           />
         </div>
 
@@ -662,10 +687,10 @@ export const NewRegistrationPage = () => {
           <div className="space-y-4 pt-1">
             {/* Negara Asal Mushaf */}
             <div className="space-y-1.5">
-              <label htmlFor="negara-asal-mushaf" className="block text-xs font-bold text-slate-800">
-                Negara asal mushaf <span className="text-rose-500">*</span>
+              <label htmlFor="negara-asal-mushaf" className="block text-xs font-bold text-ink">
+                Negara asal mushaf <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Pilih negara asal mushaf yang didaftarkan.
               </p>
               <select
@@ -673,7 +698,7 @@ export const NewRegistrationPage = () => {
                 aria-label="Negara asal mushaf"
                 value={negaraAsalMushaf}
                 onChange={(e) => setNegaraAsalMushaf(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 font-medium"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink font-medium"
               >
                 <option value="">Pilih negara asal mushaf</option>
                 {NEGARA_ASAL_OPTIONS.map((country) => (
@@ -686,10 +711,10 @@ export const NewRegistrationPage = () => {
 
             {/* Penerbit Asal Mushaf */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Penerbit asal mushaf <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Penerbit asal mushaf <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Diisi nama penerbit mushaf asal.
               </p>
               <input
@@ -697,16 +722,16 @@ export const NewRegistrationPage = () => {
                 value={penerbitAsalMushaf}
                 onChange={(e) => setPenerbitAsalMushaf(e.target.value)}
                 placeholder="Tulis Nama penerbit asal Mushaf"
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
               />
             </div>
 
             {/* Lembaga Pentashih Asal Mushaf */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Lembaga pentashih asal mushaf <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Lembaga pentashih asal mushaf <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Diisi nama lembaga pentashih mushaf asal.
               </p>
               <input
@@ -714,23 +739,23 @@ export const NewRegistrationPage = () => {
                 value={lembagaPentashihAsal}
                 onChange={(e) => setLembagaPentashihAsal(e.target.value)}
                 placeholder="Tulis Nama lembaga pentashih asal Mushaf"
-                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+                className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
               />
             </div>
 
             {/* Bukti Tashih Lembaga Pentashih Asal Mushaf */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Bukti tashih Lembaga pentashih asal mushaf <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Bukti tashih Lembaga pentashih asal mushaf <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Unggah tanda tashih dari lembaga pentashih mushaf asal dengan format file pdf. Ukuran maksimal 500 kb.
               </p>
               <input
                 type="file"
                 accept=".pdf,application/pdf"
                 onChange={(e) => setBuktiTashihFile(e.target.files?.[0] || null)}
-                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-700 file:text-white hover:file:bg-emerald-800 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+                className="w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-700 file:text-white hover:file:bg-brand-800 cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
               />
             </div>
           </div>
@@ -738,17 +763,17 @@ export const NewRegistrationPage = () => {
 
         {/* Blok Khusus: Jika Jenis Mushaf === 'Perpanjangan Tanda Tashih' */}
         {isPerpanjangan && (
-          <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-              <Layers className="w-4 h-4 text-amber-700" />
+          <div className="p-4 rounded-xl bg-civic-warningSoft/70 border border-civic-warningLine space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-civic-warning flex items-center gap-1.5">
+              <Layers className="w-4 h-4 text-civic-warning" />
               <span>Data Riwayat Perpanjangan STT</span>
             </h3>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                No. Pendaftaran mushaf lama <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                No. Pendaftaran mushaf lama <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Pilih No. pendaftaran mushaf lama yang ingin diperpanjang tanda tashihnya.
               </p>
               <input
@@ -756,15 +781,15 @@ export const NewRegistrationPage = () => {
                 value={noPendaftaranLama}
                 onChange={(e) => setNoPendaftaranLama(e.target.value)}
                 placeholder="Tulis nomor pendaftaran mushaf lama"
-                className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 bg-white"
+                className="w-full text-xs px-3.5 py-2 rounded-lg border border-line-strong bg-white"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Nomor, kode dan ukuran tanda tashih mushaf lama <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Nomor, kode dan ukuran tanda tashih mushaf lama <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Pilih Nomor, kode dan ukuran tanda tashih mushaf lama yang ingin diperpanjang tanda tashihnya.
               </p>
               <input
@@ -772,22 +797,22 @@ export const NewRegistrationPage = () => {
                 value={nomorKodeUkuranLama}
                 onChange={(e) => setNomorKodeUkuranLama(e.target.value)}
                 placeholder="Contoh: 123/LPMQ.01/TL.02/2021, A4 (21 x 29.7 cm)"
-                className="w-full text-xs px-3.5 py-2 rounded-lg border border-slate-300 bg-white"
+                className="w-full text-xs px-3.5 py-2 rounded-lg border border-line-strong bg-white"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-800">
-                Surat Pernyataan tidak ada perubahan pada master naskah <span className="text-rose-500">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Surat Pernyataan tidak ada perubahan pada master naskah <span className="text-civic-danger">*</span>
               </label>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-brand-700">
                 Upload Surat Pernyataan tidak ada perubahan pada master naskah dengan format file pdf. Ukuran maksimal 500 kb.
               </p>
               <input
                 type="file"
                 accept=".pdf,application/pdf"
                 onChange={(e) => setSuratPernyataanFile(e.target.files?.[0] || null)}
-                className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-700 file:text-white hover:file:bg-emerald-800 cursor-pointer"
+                className="w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-700 file:text-white hover:file:bg-brand-800 cursor-pointer"
               />
             </div>
           </div>
@@ -797,41 +822,41 @@ export const NewRegistrationPage = () => {
       {/* ========================================================================= */}
       {/* BAGIAN II. INFORMASI DATA MATERI TAMBAHAN PADA MUSHAF */}
       {/* ========================================================================= */}
-      <section aria-labelledby="section-2-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
-        <div className="border-b border-slate-100 pb-3">
-          <h2 id="section-2-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Layers className="w-5 h-5 text-emerald-700" />
+      <section aria-labelledby="section-2-title" className="bg-white rounded-2xl border border-line/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-line pb-3">
+          <h2 id="section-2-title" className="text-base font-bold text-ink flex items-center gap-2">
+            <Layers className="w-5 h-5 text-brand-700" />
             <span>II. Informasi Data Materi Tambahan pada Mushaf</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Isikan data materi tambahan pada mushaf yang Anda daftarkan.
           </p>
         </div>
 
         {/* Checklist Materi Tambahan */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-800">
+          <label className="block text-xs font-bold text-ink">
             Materi tambahan pada mushaf
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Pilih materi tambahan yang terdapat pada mushaf yang akan Anda terbitkan. Pilihan boleh lebih dari satu.
           </p>
 
-          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="flex flex-wrap gap-4 p-4 rounded-xl bg-canvas border border-line">
             {MATERI_TAMBAHAN_OPTIONS.map((item) => {
               const isChecked = selectedMateriTambahan.includes(item);
               return (
                 <label
                   key={item}
-                  className="flex items-center gap-2 text-xs text-slate-700 hover:text-slate-900 cursor-pointer select-none"
+                  className="flex items-center gap-2 text-xs text-ink hover:text-ink cursor-pointer select-none"
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={() => toggleMateriTambahan(item)}
-                    className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-700 w-4 h-4"
+                    className="rounded border-line-strong text-brand-700 focus:ring-brand-700 w-4 h-4"
                   />
-                  <span className={isChecked ? 'font-bold text-emerald-950' : ''}>
+                  <span className={isChecked ? 'font-bold text-brand-950' : ''}>
                     {item}
                   </span>
                 </label>
@@ -842,10 +867,10 @@ export const NewRegistrationPage = () => {
 
         {/* Penanggung Jawab Materi Tambahan */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
+          <label className="block text-xs font-bold text-ink">
             Penanggung Jawab Materi Tambahan
           </label>
-          <p className="text-[11px] text-emerald-700">
+          <p className="text-[11px] text-brand-700">
             Isi penanggung jawab materi tambahan
           </p>
           <textarea
@@ -853,7 +878,7 @@ export const NewRegistrationPage = () => {
             value={penanggungJawabMateri}
             onChange={(e) => setPenanggungJawabMateri(e.target.value)}
             placeholder="Tulis nama penanggung jawab materi tambahan. Dapat diisi lebih dari 1 orang, dan dipisahkan oleh tanda koma. misal: Andi Fulan, Ilham Fulan, Ridwan Fulan"
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 transition-all text-slate-900 bg-white"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
           />
         </div>
       </section>
@@ -861,72 +886,72 @@ export const NewRegistrationPage = () => {
       {/* ========================================================================= */}
       {/* BAGIAN III. INFORMASI DOKUMEN MUSHAF */}
       {/* ========================================================================= */}
-      <section aria-labelledby="section-3-title" className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 space-y-5">
-        <div className="border-b border-slate-100 pb-3">
-          <h2 id="section-3-title" className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-5 h-5 text-emerald-700" />
+      <section aria-labelledby="section-3-title" className="bg-white rounded-2xl border border-line/90 shadow-xs p-6 space-y-5">
+        <div className="border-b border-line pb-3">
+          <h2 id="section-3-title" className="text-base font-bold text-ink flex items-center gap-2">
+            <FileText className="w-5 h-5 text-brand-700" />
             <span>III. Informasi Dokumen Mushaf</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Unggah dokumen mushaf pendukung permohonan.
           </p>
         </div>
 
         {/* 1. Surat Permohonan */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
-            Surat permohonan tanda tashih <span className="text-rose-500">*</span>
+          <label className="block text-xs font-bold text-ink">
+            Surat permohonan tanda tashih <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-ink-muted">
             Unggah surat permohonan penerbitan / perpanjangan tanda tashih dengan format file PDF.
           </p>
           <input
             type="file"
             accept=".pdf,application/pdf"
             onChange={(e) => setSuratPermohonanFile(e.target.files?.[0] || null)}
-            className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+            className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
           />
         </div>
 
         {/* 2. Gambar Cover */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-slate-800">
-            Gambar Cover <span className="text-rose-500">*</span>
+          <label className="block text-xs font-bold text-ink">
+            Gambar Cover <span className="text-civic-danger">*</span>
           </label>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-[11px] text-ink-muted">
             Unggah gambar cover/sampul mushaf (JPG, PNG, atau PDF).
           </p>
           <input
             type="file"
             accept="image/*,.pdf"
             onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-            className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-800 hover:file:bg-slate-200 cursor-pointer p-1 rounded-xl border border-slate-300 bg-white"
+            className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
           />
         </div>
 
         {/* 3. File APK jika Digital */}
         {isDigital && (
-          <div className="space-y-1.5 p-4 rounded-xl bg-sky-50 border border-sky-200">
-            <label className="block text-xs font-bold text-sky-900">
-              File Aplikasi Mushaf Digital (.apk) <span className="text-rose-500">*</span>
+          <div className="space-y-1.5 p-4 rounded-xl bg-civic-infoSoft border border-civic-infoLine">
+            <label className="block text-xs font-bold text-civic-info">
+              File Aplikasi Mushaf Digital (.apk) <span className="text-civic-danger">*</span>
             </label>
-            <p className="text-[11px] text-sky-700">
+            <p className="text-[11px] text-civic-info">
               Karena Anda memilih jenis naskah "2. Digital", maka wajib mengunggah file installer aplikasi Android (.apk).
             </p>
             <input
               type="file"
               accept=".apk"
               onChange={(e) => setApkFile(e.target.files?.[0] || null)}
-              className="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-sky-700 file:text-white hover:file:bg-sky-800 cursor-pointer p-1 rounded-xl border border-sky-300 bg-white"
+              className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-civic-info file:text-white hover:file:bg-civic-info cursor-pointer p-1 rounded-xl border border-civic-infoLine bg-white"
             />
           </div>
         )}
       </section>
 
       {/* Sticky Bottom Actions */}
-      <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-slate-200/90 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="text-xs text-slate-500">
-          Pastikan semua data bertanda bintang (<span className="text-rose-500 font-bold">*</span>) telah terisi dengan benar sebelum mengirim.
+      <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-2xl border border-line/90 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="text-xs text-ink-muted">
+          Pastikan semua data bertanda bintang (<span className="text-civic-danger font-bold">*</span>) telah terisi dengan benar sebelum mengirim.
         </div>
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
           <Button
@@ -935,7 +960,7 @@ export const NewRegistrationPage = () => {
             size="md"
             disabled={isSubmitting || loadingMaster}
             onClick={() => handleSave(false)}
-            icon={<Save className="w-4 h-4 text-slate-600" />}
+            icon={<Save className="w-4 h-4 text-ink-muted" />}
             className="text-xs w-full sm:w-auto"
           >
             Simpan Draf

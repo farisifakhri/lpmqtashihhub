@@ -9,7 +9,7 @@ async function main() {
   // 1. Roles
   const rolesData = [
     { code: 'SUPERADMIN', name: 'Administrator Sistem LPMQ' },
-    { code: 'ADMIN', name: 'Administrator Internal LPMQ' },
+    { code: 'HELPER_ADMIN', name: 'Helper Admin LPMQ' },
     { code: 'ADMIN_PENERBIT', name: 'Penerbit / Pemohon Pentashihan' },
     { code: 'VERIFIKATOR', name: 'Verifikator Berkas & Naskah' },
     { code: 'DISTRIBUTOR', name: 'Distributor Naskah Pentashihan' },
@@ -51,10 +51,10 @@ async function main() {
       role: 'SUPERADMIN',
     },
     {
-      name: 'Budi Santoso, S.Kom (Admin Internal)',
+      name: 'Budi Santoso, S.Kom (Helper Admin)',
       email: 'admin.internal@lpmq.kemenag.go.id',
       nip: '198701012015011005',
-      role: 'ADMIN',
+      role: 'HELPER_ADMIN',
     },
     {
       name: 'Ahmad Verifikator, S.Ag',

@@ -28,31 +28,31 @@ export const DocumentPreview = ({
   return (
     <div
       className={clsx(
-        'rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden flex flex-col',
+        'rounded-xl border border-line bg-white shadow-2xs overflow-hidden flex flex-col',
         className
       )}
     >
       {/* Header Bar */}
-      <div className="bg-slate-50 border-b border-slate-200 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      <div className="bg-canvas border-b border-line p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-slate-900 text-sm">{title}</h3>
+            <h3 className="font-bold text-ink text-sm">{title}</h3>
             {documentNo && (
-              <span className="font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-800 font-semibold">
+              <span className="font-mono bg-white border border-line px-2 py-0.5 rounded text-ink font-semibold">
                 {documentNo}
               </span>
             )}
             {version && (
-              <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded font-semibold">
+              <span className="bg-brand-50 text-brand-800 border border-brand-100 px-2 py-0.5 rounded font-semibold">
                 Versi {version}
               </span>
             )}
           </div>
           {metadata.length > 0 && (
-            <div className="flex flex-wrap items-center gap-3 text-slate-500 pt-0.5">
+            <div className="flex flex-wrap items-center gap-3 text-ink-muted pt-0.5">
               {metadata.map((item, idx) => (
                 <span key={idx}>
-                  {item.label}: <strong className="text-slate-700">{item.value}</strong>
+                  {item.label}: <strong className="text-ink">{item.value}</strong>
                 </span>
               ))}
             </div>
@@ -89,15 +89,15 @@ export const DocumentPreview = ({
           <PrivateFileViewer fileId={fileId} fileName={fileName} height="550px" />
         ) : letterHtml ? (
           <div
-            className="prose prose-sm max-w-none text-slate-800 leading-relaxed font-sans bg-white p-6 rounded-lg border border-slate-100 shadow-2xs print:border-0 print:p-0"
+            className="prose prose-sm max-w-none text-ink leading-relaxed font-sans bg-white p-6 rounded-lg border border-line shadow-2xs print:border-0 print:p-0"
             dangerouslySetInnerHTML={{ __html: letterHtml }}
           />
         ) : letterText ? (
-          <div className="bg-white p-6 rounded-lg border border-slate-100 shadow-2xs font-sans text-slate-800 text-sm whitespace-pre-wrap leading-relaxed">
+          <div className="bg-white p-6 rounded-lg border border-line shadow-2xs font-sans text-ink text-sm whitespace-pre-wrap leading-relaxed">
             {letterText}
           </div>
         ) : (
-          <div className="text-center py-12 text-slate-400 space-y-2">
+          <div className="text-center py-12 text-ink-muted space-y-2">
             <FileText className="w-10 h-10 mx-auto stroke-1" />
             <p className="text-xs">Konten dokumen belum tersedia untuk ditampilkan.</p>
           </div>

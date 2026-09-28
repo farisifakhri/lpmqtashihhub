@@ -109,24 +109,24 @@ export const WorkflowStepper = ({
   const isRevision = currentStatus === 'REVISION_REQUIRED';
 
   return (
-    <div className={twMerge('bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 sm:p-6 overflow-hidden', className)}>
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-slate-100">
+    <div className={twMerge('bg-white rounded-2xl border border-line/90 shadow-xs p-5 sm:p-6 overflow-hidden', className)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-line">
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+          <h4 className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-brand-700 animate-pulse" />
             <span>Alur Proses & Siklus Layanan Pentashihan (SOP LPMQ)</span>
           </h4>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Tahap <span className="font-bold text-emerald-800">{activeStage}</span> dari 8 —{' '}
-            <span className="font-semibold text-slate-700">
+          <p className="text-xs text-ink-muted mt-0.5">
+            Tahap <span className="font-bold text-brand-800">{activeStage}</span> dari 8 —{' '}
+            <span className="font-semibold text-ink">
               {WORKFLOW_STAGES.find((s) => s.id === activeStage)?.name}
             </span>
           </p>
         </div>
 
         {isRevision && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-300">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+            <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
             Status: Perlu Revisi Penerbit
           </span>
         )}
@@ -137,11 +137,11 @@ export const WorkflowStepper = ({
         <div className="overflow-x-auto pb-3 pt-1 scrollbar-thin">
           <div className="flex items-start justify-between min-w-[720px] relative">
             {/* Background connecting bar */}
-            <div className="absolute top-5 left-6 right-6 h-0.5 bg-slate-200 -z-0 pointer-events-none" />
+            <div className="absolute top-5 left-6 right-6 h-0.5 bg-surface-strong -z-0 pointer-events-none" />
 
             {/* Progress line filled */}
             <div
-              className="absolute top-5 left-6 h-0.5 bg-gradient-to-r from-emerald-600 via-emerald-700 to-gold-500 -z-0 transition-all duration-500"
+              className="absolute top-5 left-6 h-0.5 bg-gradient-to-r from-brand-700 via-brand-700 to-civicGold-500 -z-0 transition-all duration-500"
               style={{
                 width: `${Math.max(0, Math.min(100, ((activeStage - 1) / (WORKFLOW_STAGES.length - 1)) * 100))}%`,
               }}
@@ -163,17 +163,17 @@ export const WorkflowStepper = ({
                     className={clsx(
                       'w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 select-none shadow-2xs',
                       isPast &&
-                        'bg-emerald-700 text-white shadow-emerald-950/20 border-2 border-emerald-700 hover:scale-105',
+                        'bg-brand-700 text-white shadow-brand-950/20 border-2 border-brand-700 hover:scale-105',
                       isCurrent &&
-                        'bg-gradient-to-br from-primary-800 via-primary-700 to-emerald-600 text-white ring-4 ring-gold-400/40 border-2 border-gold-400 shadow-md shadow-emerald-900/30 scale-110',
+                        'bg-gradient-to-br from-brand-800 via-brand-700 to-brand-700 text-white ring-4 ring-civicGold-700/40 border-2 border-civicGold-700 shadow-md shadow-brand-900/30 scale-110',
                       isFuture &&
-                        'bg-white text-slate-400 border-2 border-slate-300 group-hover:border-slate-400 group-hover:text-slate-600'
+                        'bg-white text-ink-muted border-2 border-line-strong group-hover:border-line-strong group-hover:text-ink-muted'
                     )}
                   >
                     {isPast ? (
                       <CheckCircle2 className="w-5 h-5 text-white" />
                     ) : isCurrent ? (
-                      <Icon className="w-5 h-5 text-gold-300 animate-pulse" />
+                      <Icon className="w-5 h-5 text-civicGold-700 animate-pulse" />
                     ) : (
                       <span>{stage.id}</span>
                     )}
@@ -184,15 +184,15 @@ export const WorkflowStepper = ({
                     <p
                       className={clsx(
                         'text-[11px] leading-tight font-semibold transition-colors',
-                        isPast && 'text-slate-700',
-                        isCurrent && 'text-primary-900 font-bold',
-                        isFuture && 'text-slate-400'
+                        isPast && 'text-ink',
+                        isCurrent && 'text-brand-900 font-bold',
+                        isFuture && 'text-ink-muted'
                       )}
                     >
                       {compact ? stage.shortName : stage.name}
                     </p>
                     {isCurrent && (
-                      <span className="inline-block text-[10px] font-bold text-gold-600 bg-gold-50 border border-gold-300/80 px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
+                      <span className="inline-block text-[10px] font-bold text-civicGold-700 bg-civicGold-100 border border-civicGold-700/80 px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
                         Sedang Berjalan
                       </span>
                     )}

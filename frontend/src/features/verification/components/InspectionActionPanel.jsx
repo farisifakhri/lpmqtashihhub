@@ -18,32 +18,32 @@ export const InspectionActionPanel = ({
         statusMessage={
           isInProgress ? (
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-ink">
                 Checklist: {sesuaiCount + tidakBerlakuCount}/4 Butir Selesai
               </span>
               <span>·</span>
-              <span className="text-slate-500 font-mono text-[11px]">
+              <span className="text-ink-muted font-mono text-[11px]">
                 {isDirty ? 'Ada perubahan belum disimpan' : 'Tersimpan otomatis'}
               </span>
             </div>
           ) : canHeadApprove ? (
-            <span className="font-bold text-amber-900">
+            <span className="font-bold text-civic-warning">
               Menunggu Persetujuan Draf oleh Kepala LPMQ
             </span>
           ) : assignment.status === 'WAITING_APPROVAL' ? (
-            <span className="font-bold text-amber-900">
+            <span className="font-bold text-civic-warning">
               Draf Sedang Diperiksa Kepala LPMQ
             </span>
           ) : assignment.status === 'WAITING_SIGNATURE' ? (
-            <span className="font-bold text-indigo-900">
+            <span className="font-bold text-civic-info">
               Menunggu Penandatanganan Dokumen Resmi
             </span>
           ) : assignment.status === 'READY_TO_SEND' ? (
-            <span className="font-bold text-emerald-900">
+            <span className="font-bold text-brand-900">
               Dokumen Telah Lengkap Ditandatangani — Siap Dikirim ke Penerbit
             </span>
           ) : isSent ? (
-            <span className="font-bold text-emerald-900">
+            <span className="font-bold text-brand-900">
               Surat Resmi Telah Terkirim ke Penerbit
             </span>
           ) : null
@@ -66,9 +66,9 @@ export const InspectionActionPanel = ({
                 variant="outline"
                 onClick={() => setReturnModalOpen(true)}
                 disabled={actionLoading}
-                className="text-xs text-rose-700 border-rose-300 hover:bg-rose-50"
+                className="text-xs text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft"
               >
-                <AlertTriangle className="w-3.5 h-3.5 mr-1 text-rose-600" />
+                <AlertTriangle className="w-3.5 h-3.5 mr-1 text-civic-danger" />
                 Kembalikan Draf
               </Button>
             )}

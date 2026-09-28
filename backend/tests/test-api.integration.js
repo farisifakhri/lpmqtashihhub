@@ -1,17 +1,18 @@
 process.env.NODE_ENV = 'test';
 import assert from 'node:assert/strict';
-import app from './src/app.js';
-import { prisma } from './src/config/database.js';
+import { test as nodeTest } from 'node:test';
+import app from '../src/app.js';
+import { prisma } from '../src/config/database.js';
 import bcrypt from 'bcryptjs';
-import { assertIsolatedTestDatabase } from './src/utils/test-database.js';
-import { runWorkflowTests } from './tests/workflow.integration.js';
-import { runMasterTests } from './tests/master.integration.js';
-import { runVerificationIntakeTests } from './tests/verification-intake.integration.js';
-import { runVerificationReviewTests } from './tests/verification-review.integration.js';
-import { runVerificationApprovalPaymentTests } from './tests/verification-approval-payment.integration.js';
-import { runHandoverTests } from './tests/handover.integration.js';
-import { runUserManagementTests } from './tests/user-management.integration.js';
-import { runVerificationPerformanceRbacTests } from './tests/verification-performance-rbac.integration.js';
+import { assertIsolatedTestDatabase } from '../src/utils/test-database.js';
+import { runWorkflowTests } from './workflow.integration.js';
+import { runMasterTests } from './master.integration.js';
+import { runVerificationIntakeTests } from './verification-intake.integration.js';
+import { runVerificationReviewTests } from './verification-review.integration.js';
+import { runVerificationApprovalPaymentTests } from './verification-approval-payment.integration.js';
+import { runHandoverTests } from './handover.integration.js';
+import { runUserManagementTests } from './user-management.integration.js';
+import { runVerificationPerformanceRbacTests } from './verification-performance-rbac.integration.js';
 
 const PORT = 5005;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
@@ -22,15 +23,13 @@ let failedTests = 0;
 
 async function test(name, fn) {
   totalTests++;
-  try {
-    await fn();
-    passedTests++;
-    console.log(`  ✅ PASS: ${name}`);
-  } catch (err) {
-    failedTests++;
-    console.error(`  ❌ FAIL: ${name}`);
-    console.error(`     Error: ${err.message}`);
-  }
+  let failure;
+  await nodeTest(name, async () => {
+    try { await fn(); }
+    catch (error) { failure = error; throw error; }
+  });
+  if (failure) failedTests++;
+  else passedTests++;
 }
 
 async function runTests() {
@@ -172,6 +171,7 @@ async function runTests() {
           body: JSON.stringify({
             service_type_id: selectedService.id,
             title: 'Mushaf Al-Qur\'an Standar Indonesia Uji Coba Sprint 0',
+            mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'NEW',
           }),
         });
@@ -194,6 +194,7 @@ async function runTests() {
           body: JSON.stringify({
             service_type_id: selectedService.id,
             title: 'Mushaf Cacat Validasi',
+            mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'NEW',
             previous_registration_id: 'a0000000-0000-0000-0000-000000000001',
           }),
@@ -211,6 +212,7 @@ async function runTests() {
           body: JSON.stringify({
             service_type_id: selectedService.id,
             title: 'Mushaf Perpanjangan Tanpa Rujukan',
+            mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'EXTENSION',
           }),
         });
@@ -227,6 +229,7 @@ async function runTests() {
           body: JSON.stringify({
             service_type_id: selectedService.id,
             title: 'Mushaf Addon Fiktif',
+            mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'NEW',
             addons: ['00000000-0000-0000-0000-000000000099'],
           }),
@@ -399,7 +402,7 @@ async function runTests() {
       await test('Unggah berkas privat lalu tautkan naskah COVER', async () => {
         const draft = await fetch(`${BASE_URL}/registrations`, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publisherToken}` },
-          body: JSON.stringify({ service_type_id: selectedService.id, title: 'Naskah Unggah Privat' }),
+          body: JSON.stringify({ service_type_id: selectedService.id, title: 'Naskah Unggah Privat', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' } }),
         });
         assert.equal(draft.status, 201);
         validRegId = (await draft.json()).data.id;

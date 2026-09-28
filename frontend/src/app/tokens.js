@@ -48,12 +48,12 @@ export const TOKENS = {
 
     // 5 Keluarga Semantik
     semantic: {
-      neutral: { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300' },
-      info:    { bg: 'bg-sky-50',    text: 'text-sky-800',    border: 'border-sky-300' },
-      warning: { bg: 'bg-amber-50',  text: 'text-amber-900',  border: 'border-amber-300' },
-      danger:  { bg: 'bg-rose-50',   text: 'text-rose-900',   border: 'border-rose-300' },
-      success: { bg: 'bg-emerald-50',text: 'text-emerald-900',border: 'border-emerald-300' },
-      gold:    { bg: 'bg-gold-50',   text: 'text-gold-900',   border: 'border-gold-300' },
+      neutral: { bg: 'bg-surface-subtle', text: 'text-ink', border: 'border-line-strong' },
+      info:    { bg: 'bg-civic-infoSoft',    text: 'text-civic-info',    border: 'border-civic-infoLine' },
+      warning: { bg: 'bg-civic-warningSoft',  text: 'text-civic-warning',  border: 'border-civic-warningLine' },
+      danger:  { bg: 'bg-civic-dangerSoft',   text: 'text-civic-danger',   border: 'border-civic-dangerLine' },
+      success: { bg: 'bg-brand-50',text: 'text-brand-900',border: 'border-brand-100' },
+      gold:    { bg: 'bg-civicGold-100',   text: 'text-civicGold-700',   border: 'border-civicGold-700' },
     },
   },
 

@@ -89,31 +89,31 @@ export const DailyQuranWidget = () => {
 
   return (
     <section
-      className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xs transition-shadow"
+      className="rounded-xl border border-line bg-white p-5 sm:p-6 shadow-2xs transition-shadow"
       aria-labelledby="quran-widget-title"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-800 text-white shadow-2xs">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-800 text-white shadow-2xs">
             <BookOpen className="h-4 w-4" />
           </div>
           <div>
-            <h3 id="quran-widget-title" className="text-sm font-bold text-slate-900">
+            <h3 id="quran-widget-title" className="text-sm font-bold text-ink">
               Ayat Al-Qur'an dalam 1 Menit
             </h3>
-            <p className="text-xs text-slate-500">Penyemangat & Pengingat Tugas Layanan</p>
+            <p className="text-xs text-ink-muted">Penyemangat & Pengingat Tugas Layanan</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="hidden text-xs text-slate-500 sm:inline">
-            Berganti dalam <strong className="font-mono text-emerald-800 font-bold">{countdown}s</strong>
+          <span className="hidden text-xs text-ink-muted sm:inline">
+            Berganti dalam <strong className="font-mono text-brand-800 font-bold">{countdown}s</strong>
           </span>
           <button
             type="button"
             onClick={loadRandomAyah}
             disabled={isLoading}
-            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:text-slate-900 disabled:cursor-wait disabled:opacity-60 transition-colors"
+            className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-subtle hover:text-ink disabled:cursor-wait disabled:opacity-60 transition-colors"
             title="Muat ayat lain"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
@@ -123,19 +123,19 @@ export const DailyQuranWidget = () => {
       </div>
 
       {usesFallback && (
-        <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-50 p-2 rounded-lg border border-amber-200" role="status">
+        <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-civic-warning bg-civic-warningSoft p-2 rounded-lg border border-civic-warningLine" role="status">
           <WifiOff className="h-3.5 w-3.5" /> Referensi naskah lokal ditampilkan.
         </div>
       )}
 
       <div className={`mt-4 transition-opacity ${isLoading ? 'opacity-50' : 'opacity-100'}`} aria-busy={isLoading}>
-        <span className="inline-block rounded-md bg-emerald-800 px-2.5 py-1 text-xs font-bold text-white shadow-2xs">
+        <span className="inline-block rounded-md bg-brand-800 px-2.5 py-1 text-xs font-bold text-white shadow-2xs">
           {ayah.source}
         </span>
-        <p dir="rtl" className="py-4 text-right font-serif text-xl sm:text-2xl font-normal leading-[2.4] tracking-wide text-slate-950">
+        <p dir="rtl" className="py-4 text-right font-serif text-xl sm:text-2xl font-normal leading-[2.4] tracking-wide text-ink">
           {ayah.arabic}
         </p>
-        <p className="rounded-r-lg border-l-4 border-gold-500 bg-slate-50 py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-slate-700">
+        <p className="rounded-r-lg border-l-4 border-civicGold-700 bg-canvas py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-ink">
           “{ayah.translation}”
         </p>
       </div>

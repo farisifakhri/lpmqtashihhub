@@ -4,9 +4,11 @@ import { ArrowLeft, Search, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { QueuePagination } from '@/components/common/QueueOverview';
 import { PublisherRegistrationCard } from './PublisherRegistrationCard';
 import { PublisherDocumentList } from './PublisherDocumentList';
+import { DocumentArchive } from '@/components/common/DocumentArchive';
 
 const options = [
   ['ALL', 'Semua permohonan'], ['actions', 'Perlu tindakan'], ['processing', 'Sedang diproses'],
@@ -42,10 +44,22 @@ export function PublisherRegistrationsPage({ documents = false }) {
     return () => { active = false; };
   }, [currentUser?.id, documents, page, query, view, refresh]);
   return <div className="max-w-6xl mx-auto space-y-6 pb-12">
-    <Link to="/publisher" className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-emerald-800"><ArrowLeft className="h-4 w-4" />Dashboard penerbit</Link>
-    <header className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-slate-900">{documents ? 'Arsip Surat Tanda Tashih' : 'Riwayat permohonan naskah'}</h1><p className="text-sm text-slate-500 mt-2">{documents ? 'Hanya STT yang sudah diterbitkan. Draf dan dokumen yang dicabut tidak ditampilkan.' : 'Cari naskah, lihat progres, dan lanjutkan tindakan sesuai tahapnya.'}</p></div>{!documents && <Link to="/publisher/new-registration" className="inline-flex gap-2 items-center rounded-xl bg-emerald-700 text-white p-3 text-sm font-bold hover:bg-emerald-800"><Plus className="h-4 w-4" />Buat Permohonan Baru</Link>}</header>
-    <div className="flex flex-col sm:flex-row gap-3 bg-white border border-slate-200 rounded-2xl p-4"><div className="relative flex-1"><label htmlFor="publisher-history-search" className="sr-only">Cari judul atau nomor permohonan</label><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><input id="publisher-history-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Cari judul atau nomor permohonan…" className="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600" /></div>{!documents && <><label htmlFor="publisher-history-filter" className="sr-only">Filter permohonan</label><select id="publisher-history-filter" value={view} onChange={event => change({ view: event.target.value, page: null })} className="rounded-xl border border-slate-300 p-2.5 text-sm">{options.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></>}<Button variant="outline" size="sm" disabled={loading} onClick={() => setRefresh(value => value + 1)}><RefreshCw className="h-4 w-4" />Muat ulang</Button></div>
-    {error && <p role="alert" className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-800">{error}</p>}
-    {loading ? <p role="status" className="text-sm text-slate-500">Memuat {documents ? 'arsip STT' : 'permohonan'}…</p> : !error && <>{data?.data?.length ? <div className={`grid gap-4 ${documents ? '' : 'md:grid-cols-2'}`}>{data.data.map(registration => documents ? <article key={registration.id} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4"><div><Link to={`/publisher/registrations/${registration.id}`} className="font-bold text-slate-900 hover:text-emerald-800">{registration.title}</Link><p className="font-mono text-xs text-slate-500 mt-1">{registration.registration_no}</p></div><PublisherDocumentList documents={registration.official_documents} /></article> : <PublisherRegistrationCard key={registration.id} registration={registration} />)}</div> : <p className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">{query || view !== 'ALL' ? 'Tidak ada permohonan yang cocok. Ubah pencarian atau filter Anda.' : documents ? 'Belum ada STT yang diterbitkan untuk naskah Anda.' : 'Belum ada permohonan. Mulai dengan membuat draf naskah baru.'}</p>}{data?.pagination && <QueuePagination label="Navigasi riwayat permohonan" pagination={data.pagination} loading={loading} onPageChange={value => change({ page: value })} />}</>}
+    <Link to="/publisher" className="inline-flex items-center gap-2 text-sm text-ink-muted hover:text-brand-800"><ArrowLeft className="h-4 w-4" />Dashboard penerbit</Link>
+    <header className="flex flex-wrap items-center justify-between gap-4"><div><h1 className="text-2xl font-bold text-ink">{documents ? 'Arsip Dokumen' : 'Riwayat permohonan naskah'}</h1><p className="text-sm text-ink-muted mt-2">{documents ? 'Surat pemberitahuan, nota dinas, hasil tashih, dan semua versi dokumen termasuk draf serta revisi.' : 'Cari naskah, lihat progres, dan lanjutkan tindakan sesuai tahapnya.'}</p></div>{!documents && <Link to="/publisher/new-registration" className="inline-flex gap-2 items-center rounded-xl bg-brand-700 text-white p-3 text-sm font-bold hover:bg-brand-800"><Plus className="h-4 w-4" />Buat Permohonan Baru</Link>}</header>
+    <div className="flex flex-col sm:flex-row gap-3 bg-white border border-line rounded-2xl p-4"><div className="relative flex-1"><label htmlFor="publisher-history-search" className="sr-only">Cari judul atau nomor permohonan</label><Search className="absolute left-3 top-3 h-4 w-4 text-ink-muted" /><input id="publisher-history-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Cari judul atau nomor permohonan…" className="w-full rounded-xl border border-line-strong py-2.5 pl-9 pr-3 text-sm focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700" /></div>{!documents && <><label htmlFor="publisher-history-filter" className="sr-only">Filter permohonan</label><select id="publisher-history-filter" value={view} onChange={event => change({ view: event.target.value, page: null })} className="rounded-xl border border-line-strong p-2.5 text-sm">{options.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></>}<Button variant="outline" size="sm" disabled={loading} onClick={() => setRefresh(value => value + 1)}><RefreshCw className="h-4 w-4" />Muat ulang</Button></div>
+    {error && <p role="alert" className="rounded-xl bg-civic-dangerSoft border border-civic-dangerLine p-4 text-sm text-civic-danger">{error}</p>}
+    {loading ? <p role="status" className="text-sm text-ink-muted">Memuat {documents ? 'arsip dokumen' : 'permohonan'}…</p> : !error && <>
+      {data?.data?.length ? <div className={`grid gap-4 ${documents ? '' : 'md:grid-cols-2'}`}>
+        {data.data.map(registration => documents ? <article key={registration.id} className="rounded-2xl border border-line bg-white p-5 space-y-4">
+          <div><Link to={`/publisher/registrations/${registration.id}`} className="font-bold text-ink hover:text-brand-800">{registration.title}</Link><p className="font-mono text-xs text-ink-muted mt-1">{registration.registration_no}</p></div>
+          <PublisherDocumentList documents={registration.official_documents} />
+          <DocumentArchive registrationId={registration.id} />
+        </article> : <PublisherRegistrationCard key={registration.id} registration={registration} />)}
+      </div> : <EmptyState
+        title={query || view !== 'ALL' ? 'Permohonan tidak ditemukan' : documents ? 'Arsip dokumen belum tersedia' : 'Belum ada permohonan'}
+        description={query || view !== 'ALL' ? 'Ubah pencarian atau filter Anda.' : documents ? 'Belum ada dokumen dalam arsip naskah Anda.' : 'Mulai dengan membuat draf naskah baru.'}
+      />}
+      {data?.pagination && <QueuePagination label="Navigasi riwayat permohonan" pagination={data.pagination} loading={loading} onPageChange={value => change({ page: value })} />}
+    </>}
   </div>;
 }

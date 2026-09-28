@@ -25,10 +25,10 @@ describe('Publisher registration history', () => {
     fireEvent.change(screen.getByLabelText(/Cari judul atau nomor (permohonan|pengajuan)/), { target: { value: 'alfarisi' } });
     await waitFor(() => expect(registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'alfarisi', page: 1 })));
   });
-  it('requests only issued STT registrations for the archive', async () => {
+  it('requests archived document registrations', async () => {
     registrationApi.listRegistrations.mockResolvedValue({ data: [], pagination: { total: 0, page: 1, totalPages: 0 } });
     render(<MemoryRouter><PublisherRegistrationsPage documents /></MemoryRouter>);
-    expect(await screen.findByText('Belum ada STT yang diterbitkan untuk naskah Anda.')).toBeInTheDocument();
+    expect(await screen.findByText('Belum ada dokumen dalam arsip naskah Anda.')).toBeInTheDocument();
     expect(registrationApi.listRegistrations).toHaveBeenCalledWith(expect.objectContaining({ segment: 'PUBLISHER_DOCUMENTS' }));
   });
 });

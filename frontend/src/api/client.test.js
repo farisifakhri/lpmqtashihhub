@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from './client';
+import { subscribeToasts } from '@/components/ui/toast';
 
 afterEach(() => { vi.unstubAllGlobals(); localStorage.clear(); });
 const reply = (status, data, contentType = 'application/json') => ({
@@ -22,8 +23,12 @@ describe('pesan kesalahan API', () => {
     await expect(apiClient('/test')).rejects.toMatchObject({ status: 0, message: expect.stringContaining('Periksa koneksi internet') });
   });
   it('menggunakan pesan layanan untuk halaman error HTML dari proxy', async () => {
+    const received = [];
+    const unsubscribe = subscribeToasts(toast => received.push(toast.message));
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply(503, '<html>internal proxy configuration</html>', 'text/html')));
     await expect(apiClient('/test')).rejects.toMatchObject({ status: 503, message: 'Layanan sedang sibuk atau belum tersedia. Coba lagi beberapa saat kemudian.' });
+    expect(received).toContain('Layanan sedang sibuk atau belum tersedia. Coba lagi beberapa saat kemudian.');
+    unsubscribe();
   });
   it('membedakan respons JSON rusak dari putus koneksi', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ...reply(200), json: async () => { throw new SyntaxError('Unexpected token'); } }));

@@ -27,9 +27,9 @@ describe('ProtectedRoute Security Guard', () => {
     );
   };
 
-  it.each([['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['DISTRIBUTOR', 'SUPERADMIN'], ['PENTASHIH', 'SUPERADMIN'], ['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['SUPERADMIN']])('ADMIN cannot enter an operational/admin module guarded by %j', (...roles) => {
+  it.each([['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['DISTRIBUTOR', 'SUPERADMIN'], ['PENTASHIH', 'SUPERADMIN'], ['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['SUPERADMIN']])('HELPER_ADMIN cannot enter an operational/admin module guarded by %j', (...roles) => {
     renderWithRouter(
-      { id: 'internal-admin', role: 'ADMIN', roles: ['ADMIN'] },
+      { id: 'internal-admin', role: 'HELPER_ADMIN', roles: ['HELPER_ADMIN'] },
       <ProtectedRoute portalType="internal" allowedRoles={roles}><div>Restricted module</div></ProtectedRoute>
     );
     expect(screen.getByText('Portal Internal')).toBeInTheDocument();

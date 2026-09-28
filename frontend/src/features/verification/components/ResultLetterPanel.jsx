@@ -7,13 +7,13 @@ export const ResultLetterPanel = ({
   letterText, setLetterText,
 }) => (
           <div
-            className={`p-5 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-4 ${
+            className={`p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4 ${
               activeMobileTab === 'checklist' ? 'hidden lg:block' : 'block'
             }`}
           >
-            <div className="border-b border-slate-100 pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Keputusan Hasil Pemeriksaan</h3>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+            <div className="border-b border-line pb-3">
+              <h3 className="text-sm font-bold text-ink">Keputusan Hasil Pemeriksaan</h3>
+              <p className="text-[11px] text-ink-muted mt-0.5">
                 Kesimpulan akhir verifikasi berkas administrasi dan naskah
               </p>
             </div>
@@ -23,8 +23,8 @@ export const ResultLetterPanel = ({
               <label
                 className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${
                   decision === 'PASSED'
-                    ? 'border-emerald-700 bg-emerald-50/40 shadow-2xs'
-                    : 'border-slate-200 bg-white hover:border-emerald-300'
+                    ? 'border-brand-700 bg-brand-50/40 shadow-2xs'
+                    : 'border-line bg-white hover:border-brand-100'
                 } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
               >
                 <input
@@ -41,11 +41,11 @@ export const ResultLetterPanel = ({
                   className="mt-0.5"
                 />
                 <div className="text-xs">
-                  <strong className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                  <strong className="font-bold text-ink flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                     Lolos Verifikasi (PASSED)
                   </strong>
-                  <p className="text-slate-600 text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-ink-muted text-[11px] mt-0.5 leading-relaxed">
                     Seluruh butir terpenuhi. Rekomendasikan penerbitan billing PNBP.
                   </p>
                 </div>
@@ -54,8 +54,8 @@ export const ResultLetterPanel = ({
               <label
                 className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex items-start gap-2.5 ${
                   decision === 'REVISION_REQUIRED'
-                    ? 'border-amber-600 bg-amber-50/40 shadow-2xs'
-                    : 'border-slate-200 bg-white hover:border-amber-300'
+                    ? 'border-civic-warning bg-civic-warningSoft/40 shadow-2xs'
+                    : 'border-line bg-white hover:border-civic-warningLine'
                 } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
               >
                 <input
@@ -72,11 +72,11 @@ export const ResultLetterPanel = ({
                   className="mt-0.5"
                 />
                 <div className="text-xs">
-                  <strong className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                  <strong className="font-bold text-ink flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
                     Perlu Perbaikan Penerbit (REVISION_REQUIRED)
                   </strong>
-                  <p className="text-slate-600 text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-ink-muted text-[11px] mt-0.5 leading-relaxed">
                     Terdapat butir tidak sesuai yang wajib diperbaiki pemohon.
                   </p>
                 </div>
@@ -84,19 +84,19 @@ export const ResultLetterPanel = ({
             </div>
 
             {validationErrors.decision && (
-              <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-civic-danger" />
                 <span>{validationErrors.decision}</span>
               </div>
             )}
 
             {/* Notes textarea */}
             <div className="space-y-1 text-xs">
-              <label className="font-semibold text-slate-800 flex items-center justify-between">
+              <label className="font-semibold text-ink flex items-center justify-between">
                 <span>
                   Catatan Kesimpulan / Alasan Keputusan:
                   {decision === 'REVISION_REQUIRED' && (
-                    <span className="text-rose-600 ml-1 font-bold">*Wajib</span>
+                    <span className="text-civic-danger ml-1 font-bold">*Wajib</span>
                   )}
                 </span>
               </label>
@@ -114,15 +114,15 @@ export const ResultLetterPanel = ({
                     ? 'Tuliskan rincian kekurangan yang wajib diperbaiki penerbit...'
                     : 'Catatan tambahan jika diperlukan (opsional)...'
                 }
-                className="w-full p-2.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                className="w-full p-2.5 text-xs rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20"
               />
             </div>
 
             {/* Draf Surat Teks */}
-            <div className="space-y-2 text-xs pt-2 border-t border-slate-100">
+            <div className="space-y-2 text-xs pt-2 border-t border-line">
               <div className="flex items-center justify-between">
-                <label className="font-bold text-slate-900 flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5 text-emerald-800" />
+                <label className="font-bold text-ink flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-brand-800" />
                   Teks Draf Surat Hasil Verifikasi
                 </label>
                 <div className="flex items-center gap-1">
@@ -130,7 +130,7 @@ export const ResultLetterPanel = ({
                     type="button"
                     onClick={() => setLetterTab('editor')}
                     className={`px-2 py-0.5 text-[11px] rounded font-semibold ${
-                      letterTab === 'editor' ? 'bg-slate-200 text-slate-900' : 'text-slate-500'
+                      letterTab === 'editor' ? 'bg-surface-strong text-ink' : 'text-ink-muted'
                     }`}
                   >
                     Editor
@@ -139,7 +139,7 @@ export const ResultLetterPanel = ({
                     type="button"
                     onClick={() => setLetterTab('preview')}
                     className={`px-2 py-0.5 text-[11px] rounded font-semibold ${
-                      letterTab === 'preview' ? 'bg-slate-200 text-slate-900' : 'text-slate-500'
+                      letterTab === 'preview' ? 'bg-surface-strong text-ink' : 'text-ink-muted'
                     }`}
                   >
                     Pratinjau
@@ -158,10 +158,10 @@ export const ResultLetterPanel = ({
                   }}
                   disabled={isReadOnly}
                   placeholder="Tuliskan teks draf surat hasil verifikasi resmi..."
-                  className="w-full p-2.5 text-xs rounded-lg border border-slate-200 font-sans focus:outline-none focus:ring-2 focus:ring-emerald-700/20"
+                  className="w-full p-2.5 text-xs rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                 />
               ) : (
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs whitespace-pre-line text-slate-800 max-h-60 overflow-y-auto leading-relaxed">
+                <div className="p-3 bg-canvas border border-line rounded-lg text-xs whitespace-pre-line text-ink max-h-60 overflow-y-auto leading-relaxed">
                   {letterText}
                 </div>
               )}

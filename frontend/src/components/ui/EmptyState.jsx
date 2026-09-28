@@ -8,13 +8,13 @@ const renderIcon = (icon) => {
   if (React.isValidElement(icon)) return icon;
   if (typeof icon === 'function' || (typeof icon === 'object' && icon !== null && icon.$$typeof)) {
     const IconComponent = icon;
-    return <IconComponent className="w-10 h-10 text-slate-300 stroke-1" />;
+    return <IconComponent className="w-10 h-10 text-line-strong stroke-1" />;
   }
   return icon;
 };
 
 export const EmptyState = ({
-  icon = <Inbox className="w-10 h-10 text-slate-300 stroke-1" />,
+  icon = <Inbox className="w-10 h-10 text-line-strong stroke-1" />,
   title = 'Tidak Ada Data',
   description = 'Belum ada data atau berkas yang tercatat dalam daftar ini.',
   actionLabel,
@@ -26,17 +26,17 @@ export const EmptyState = ({
   return (
     <div
       className={clsx(
-        'rounded-xl border border-dashed border-slate-300 bg-white p-8 sm:p-12 text-center space-y-3.5 shadow-2xs',
+        'rounded-xl border border-dashed border-line-strong bg-white p-8 sm:p-12 text-center space-y-3.5 shadow-2xs',
         className
       )}
     >
       <div className="flex justify-center">{renderIcon(icon)}</div>
 
       <div className="space-y-1 max-w-sm mx-auto">
-        <h3 className="text-sm sm:text-base font-bold text-slate-800 tracking-tight">
+        <h3 className="text-sm sm:text-base font-bold text-ink tracking-tight">
           {title}
         </h3>
-        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+        <p className="text-xs sm:text-sm text-ink-muted leading-relaxed font-normal">
           {description}
         </p>
       </div>

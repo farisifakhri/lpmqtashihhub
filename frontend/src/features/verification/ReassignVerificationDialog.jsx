@@ -104,20 +104,20 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
       role="dialog"
       aria-modal="true"
       aria-labelledby="reassign-verifier-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn"
     >
-      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl border border-line max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-line pb-3">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-100 text-indigo-800">
+            <div className="p-2 rounded-xl bg-civic-infoSoft text-civic-info">
               <RefreshCw className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="reassign-verifier-title" className="text-base font-bold text-slate-900">
+              <h3 id="reassign-verifier-title" className="text-base font-bold text-ink">
                 Tugaskan Ulang (Reassign) Verifikator
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-ink-muted">
                 Otoritas Kepala LPMQ · Pengalihan Tugas & Nota Dinas Baru
               </p>
             </div>
@@ -127,7 +127,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
             onClick={onClose}
             disabled={submitting}
             aria-label="Tutup modal pengalihan"
-            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            className="text-ink-muted hover:text-ink-muted p-1.5 rounded-lg hover:bg-surface-subtle transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -135,36 +135,36 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
 
         {/* Error Alert */}
         {error && (
-          <div role="alert" className="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-2.5 text-xs text-rose-800">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Current Assignment Context Summary */}
-        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-2">
-          <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
-            <span className="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">
+        <div className="p-3.5 bg-canvas border border-line rounded-xl text-xs space-y-2">
+          <div className="flex items-center justify-between border-b border-line/60 pb-2">
+            <span className="font-mono font-bold text-ink bg-white px-2 py-0.5 rounded border border-line">
               {reg.registration_no || '-'}
             </span>
-            <span className="text-slate-500">
-              Nota Dinas Lama: <strong className="text-slate-800">{oldNotaNo}</strong>
+            <span className="text-ink-muted">
+              Nota Dinas Lama: <strong className="text-ink">{oldNotaNo}</strong>
             </span>
           </div>
           <div className="space-y-1">
-            <div className="font-semibold text-slate-900">{reg.title || 'Naskah Mushaf'}</div>
-            <div className="text-slate-500">
-              Verifikator saat ini: <strong className="text-slate-800">{currentVerifierName}</strong>
+            <div className="font-semibold text-ink">{reg.title || 'Naskah Mushaf'}</div>
+            <div className="text-ink-muted">
+              Verifikator saat ini: <strong className="text-ink">{currentVerifierName}</strong>
             </div>
           </div>
         </div>
 
         {/* Notice Box */}
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5 text-xs text-blue-900">
-          <AlertTriangle className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+        <div className="p-3 bg-civic-infoSoft border border-civic-infoLine rounded-xl flex items-start gap-2.5 text-xs text-civic-info">
+          <AlertTriangle className="w-4 h-4 text-civic-info shrink-0 mt-0.5" />
           <div>
             <strong>Ketentuan Alur Reassignment:</strong>
-            <p className="mt-0.5 text-blue-800">
+            <p className="mt-0.5 text-civic-info">
               Penugasan lama akan dicabut secara audit (<code>REVOKED</code>). Verifikator pengganti akan menerima penugasan baru dengan Nota Dinas baru dan target SLA 2 hari kerja dihitung dari hari ini.
             </p>
           </div>
@@ -175,10 +175,10 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
           {/* Verifier Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-slate-700">
-                Pilih Verifikator Pengganti <span className="text-rose-600">*</span>
+              <label className="block text-xs font-bold text-ink">
+                Pilih Verifikator Pengganti <span className="text-civic-danger">*</span>
               </label>
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-ink-muted">
                 {verifiers.length} verifikator tersedia
               </span>
             </div>
@@ -188,19 +188,19 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               value={verifierSearch}
               onChange={(e) => setVerifierSearch(e.target.value)}
               placeholder="Cari nama atau NIP verifikator..."
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-700/20 focus:border-indigo-700"
+              className="w-full text-xs p-2.5 rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info"
             />
 
             {loading ? (
-              <div className="p-4 text-center text-xs text-slate-500">
+              <div className="p-4 text-center text-xs text-ink-muted">
                 Memuat daftar verifikator...
               </div>
             ) : filteredVerifiers.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500 bg-slate-50 rounded-lg border border-slate-200">
+              <div className="p-4 text-center text-xs text-ink-muted bg-canvas rounded-lg border border-line">
                 Tidak ada verifikator lain yang cocok.
               </div>
             ) : (
-              <div className="max-h-40 overflow-y-auto space-y-1.5 border border-slate-200 rounded-xl p-2 bg-slate-50/50">
+              <div className="max-h-40 overflow-y-auto space-y-1.5 border border-line rounded-xl p-2 bg-canvas/50">
                 {filteredVerifiers.map((v) => {
                   const isSelected = selectedVerifierId === v.id;
                   return (
@@ -209,16 +209,16 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
                       onClick={() => setSelectedVerifierId(v.id)}
                       className={`p-2.5 rounded-lg border cursor-pointer transition-all text-xs flex items-center justify-between ${
                         isSelected
-                          ? 'border-indigo-600 bg-indigo-50/60 ring-1 ring-indigo-600'
-                          : 'border-slate-200 bg-white hover:border-slate-300'
+                          ? 'border-civic-info bg-civic-infoSoft/60 ring-1 ring-civic-info'
+                          : 'border-line bg-white hover:border-line-strong'
                       }`}
                     >
                       <div>
-                        <div className="font-bold text-slate-900">{v.name}</div>
-                        <div className="text-[11px] text-slate-500">NIP: {v.nip || '-'}</div>
+                        <div className="font-bold text-ink">{v.name}</div>
+                        <div className="text-[11px] text-ink-muted">NIP: {v.nip || '-'}</div>
                       </div>
                       <div className="text-right">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-subtle text-ink">
                           {v.active_assignment_count || 0} tugas aktif
                         </span>
                       </div>
@@ -231,8 +231,8 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
 
           {/* New Nota Dinas Number */}
           <div>
-            <label htmlFor="new-nota-no" className="block text-xs font-bold text-slate-700 mb-1.5">
-              Nomor Nota Dinas Baru <span className="text-rose-600">*</span>
+            <label htmlFor="new-nota-no" className="block text-xs font-bold text-ink mb-1.5">
+              Nomor Nota Dinas Baru <span className="text-civic-danger">*</span>
             </label>
             <input
               id="new-nota-no"
@@ -241,14 +241,14 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               value={notaNo}
               onChange={(e) => setNotaNo(e.target.value)}
               placeholder="Contoh: ND-2026/09/REV-001"
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 font-mono"
+              className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info font-mono"
             />
           </div>
 
           {/* Reassignment Reason */}
           <div>
-            <label htmlFor="reassign-reason" className="block text-xs font-bold text-slate-700 mb-1.5">
-              Alasan Pengalihan Tugas <span className="text-rose-600">*</span>
+            <label htmlFor="reassign-reason" className="block text-xs font-bold text-ink mb-1.5">
+              Alasan Pengalihan Tugas <span className="text-civic-danger">*</span>
             </label>
             <textarea
               id="reassign-reason"
@@ -257,13 +257,13 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder="Jelaskan alasan resmi pengalihan tugas (contoh: Pemerataan beban kerja, verifikator sebelumnya berhalangan, dsb)..."
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none"
+              className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info resize-none"
             />
           </div>
 
           {/* Optional Notes */}
           <div>
-            <label htmlFor="reassign-notes" className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label htmlFor="reassign-notes" className="block text-xs font-bold text-ink mb-1.5">
               Catatan untuk Verifikator Pengganti (Opsional)
             </label>
             <input
@@ -272,12 +272,12 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Contoh: Perhatikan catatan juz 1-5"
-              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+              className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">
             <Button
               type="button"
               variant="outline"
@@ -291,7 +291,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               type="submit"
               size="sm"
               disabled={submitting || !selectedVerifierId || !notaNo.trim() || reason.trim().length < 5}
-              className="bg-indigo-700 hover:bg-indigo-800 text-white"
+              className="bg-civic-info hover:bg-civic-info text-white"
             >
               {submitting ? 'Mengalihkan...' : 'Terbitkan & Tugaskan Ulang'}
             </Button>

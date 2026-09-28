@@ -42,16 +42,16 @@ export async function runVerificationPerformanceRbacTests({
     return result.json.data;
   };
 
-  // 1. Setup Admin Internal Murni (Role ADMIN saja, bukan SUPERADMIN)
+  // 1. Setup Admin Internal Murni (Role HELPER_ADMIN saja, bukan SUPERADMIN)
   let internalAdminToken = null;
   const internalAdminEmail = `admin.internal.${Date.now()}@lpmq.kemenag.go.id`;
 
-  // Pastikan role ADMIN ada di database
-  let adminRole = await prisma.role.findUnique({ where: { code: 'ADMIN' } });
+  // Pastikan role HELPER_ADMIN ada di database
+  let adminRole = await prisma.role.findUnique({ where: { code: 'HELPER_ADMIN' } });
   if (!adminRole) {
     adminRole = await prisma.role.create({
       data: {
-        code: 'ADMIN',
+        code: 'HELPER_ADMIN',
         name: 'Administrator Internal LPMQ',
       },
     });
@@ -103,7 +103,7 @@ export async function runVerificationPerformanceRbacTests({
     assert.equal(typeof data.handovers.total_handovers, 'number');
   });
 
-  await test('Laporan Kinerja: ADMIN internal dapat mengakses laporan kinerja verifikasi', async () => {
+  await test('Laporan Kinerja: HELPER_ADMIN internal dapat mengakses laporan kinerja verifikasi', async () => {
     const data = await expect('/reports/verification-performance', internalAdminToken, 'GET', undefined, 200);
     assert.ok(data.summary);
     assert.ok(data.status_distribution);
@@ -115,12 +115,13 @@ export async function runVerificationPerformanceRbacTests({
   });
 
   // -------------------------------------------------------------
-  // TEST SUITE: RBAC HARDENING (SUPERADMIN vs ADMIN INTERNAL)
+  // TEST SUITE: RBAC HARDENING (SUPERADMIN vs HELPER_ADMIN INTERNAL)
   // -------------------------------------------------------------
   await test('RBAC Hardening: Buat naskah baru oleh Penerbit A untuk pengujian batas wewenang', async () => {
     const regPayload = {
       service_type_id: serviceId,
       title: 'Mushaf Al-Qur\'an Uji RBAC Hardening PR-VER-07',
+      mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
       estimated_juz: 30,
       notes: 'Pengujian batas akses Super Admin vs Admin Internal',
     };
@@ -128,7 +129,7 @@ export async function runVerificationPerformanceRbacTests({
     assert.ok(testReg.id);
   });
 
-  await test('RBAC Hardening: ADMIN internal DITOLAK saat membatalkan naskah penerbit via portal publisher (403)', async () => {
+  await test('RBAC Hardening: HELPER_ADMIN internal DITOLAK saat membatalkan naskah penerbit via portal publisher (403)', async () => {
     // Admin internal tidak punya publisherId dan bukan ADMIN_PENERBIT / SUPERADMIN
     const res = await call(`/registrations/${testReg.id}/status`, internalAdminToken, 'PATCH', {
       to_status: 'CANCELLED',
@@ -155,6 +156,7 @@ export async function runVerificationPerformanceRbacTests({
     timelineReg = await expect('/registrations', publisherToken, 'POST', {
       service_type_id: serviceId,
       title: 'Mushaf Pengujian Timeline Lintas Peran Sanitasi',
+      mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
       estimated_juz: 30,
     }, 201);
 
@@ -173,7 +175,7 @@ export async function runVerificationPerformanceRbacTests({
     });
   });
 
-  await test('Timeline: Internal (ADMIN / SUPERADMIN) melihat detail lengkap tanpa sanitasi', async () => {
+  await test('Timeline: Internal (HELPER_ADMIN / SUPERADMIN) melihat detail lengkap tanpa sanitasi', async () => {
     const data = await expect(`/registrations/${timelineReg.id}/timeline`, adminToken, 'GET', undefined, 200);
     assert.equal(data.is_sanitized, false, 'Timeline untuk internal tidak disanitasi');
     assert.ok(Array.isArray(data.timeline));

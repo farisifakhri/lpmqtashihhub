@@ -47,7 +47,7 @@ Skrip ini bukan endpoint aplikasi dan tidak menambahkan hak delete untuk role.
 - FIFO menentukan urutan tampilan/prioritas; tidak otomatis menugaskan atau
   memproses naskah, dan tidak memblokir tindakan pada item berikutnya jika item
   tertua belum siap. SLA dan otoritas SOP/RBAC tetap berlaku.
-  *(Catatan: Penambahan role ADMIN serta kewenangan intake fisik dan penugasan tim pentashihan telah diimplementasikan pada migrasi berikutnya `20260916140000_add_admin_role`, lihat `docs/admin-rbac.md`)*.
+  *(Catatan: Penambahan role HELPER_ADMIN serta kewenangan intake fisik dan penugasan tim pentashihan telah diimplementasikan pada migrasi berikutnya `20260916140000_add_admin_role`, lihat `docs/admin-rbac.md`)*.
 
 ## Pengujian tanpa mencemari database aplikasi
 

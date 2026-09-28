@@ -7,7 +7,7 @@ Kepala LPMQ, bersumber tashih.kemenag.go.id):
 - SOP Distribusi Naskah Master Mushaf Al-Qur'an (nama file: "Pentashihan Master")
 - SOP Dokumentasi Mushaf Al-Qur'an
 
-Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](diagrams/user-flow.mermaid)
+Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user-flow.mermaid)
 
 > ⚠️ **Masih menunggu**: SOP Penerbitan Surat Tanda Tashih. Bagian
 > penetapan dokumen oleh Kepala LPMQ di bawah ini adalah **rekonstruksi
@@ -37,7 +37,7 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](diagrams/user-fl
 
 ---
 
-## 2. Staf TU / Layanan (`ADMIN`)
+## 2. Staf TU / Layanan (`HELPER_ADMIN`)
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
@@ -158,7 +158,7 @@ menangani hal yang sama di unit berbeda?
    Surat Tanda Tashih.
 3. Pembagian tugas pasti PusdokQ vs Arsiparis.
 4. Mekanisme delegasi Kepala LPMQ untuk dua titik approval bila
-   berhalangan (lihat `IMPLEMENTATION.md` §3.1 dan §7).
+   berhalangan (lihat [implementation.md](implementation.md) §3.1 dan §7).
 
 ## Sudah Terjawab (klarifikasi terbaru)
 
@@ -179,7 +179,7 @@ menangani hal yang sama di unit berbeda?
   kinerja Dokumentator.
 - ✅ Naskah digital/audio tidak melalui proses eksemplar fisik sama
   sekali — dokumentasi selesai begitu berkas digital lengkap.
-- ✅ Intake naskah master fisik A4 per juz dilakukan oleh Staf TU / Admin (`ADMIN`) di loket LPMQ, bukan oleh Kepala LPMQ ataupun Verifikator.
+- ✅ Intake naskah master fisik A4 per juz dilakukan oleh Staf TU / Admin (`HELPER_ADMIN`) di loket LPMQ, bukan oleh Kepala LPMQ ataupun Verifikator.
 - ✅ Penugasan Verifikator dilakukan secara atomik bersama Nota Dinas Verifikasi oleh Kepala LPMQ dengan SLA 2 hari kerja kalender `Asia/Jakarta`.
 - ✅ Pemisahan dokumen verifikasi (Nota Dinas, Surat Hasil Verifikasi, Berita Acara Verifikasi) dengan penandatanganan digital bertingkat (multi-signatory).
 - ✅ Pengiriman Surat Hasil Verifikasi dilakukan secara nyata dan andal melalui modul `EmailOutbox` dengan idempotency key dan mekanisme retry.

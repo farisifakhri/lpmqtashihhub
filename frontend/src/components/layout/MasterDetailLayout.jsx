@@ -51,10 +51,10 @@ export const MasterDetailLayout = ({
         {hasSelection ? (
           detailContent
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500 space-y-3 shadow-2xs">
-            <Inbox className="w-12 h-12 text-slate-300 mx-auto stroke-1" />
-            <h3 className="text-sm font-bold text-slate-800">Antrean Siap Diperiksa</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+          <div className="rounded-xl border border-dashed border-line-strong bg-white p-12 text-center text-ink-muted space-y-3 shadow-2xs">
+            <Inbox className="w-12 h-12 text-line-strong mx-auto stroke-1" />
+            <h3 className="text-sm font-bold text-ink">Antrean Siap Diperiksa</h3>
+            <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
               {emptyDetailText}
             </p>
           </div>

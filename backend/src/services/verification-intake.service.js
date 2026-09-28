@@ -36,7 +36,7 @@ export const declarePhysicalMaster = (id, data, user, req) => prisma.$transactio
 export const receivePhysicalMaster = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['ADMIN', 'SUPERADMIN']);
+      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
       let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
@@ -111,17 +111,17 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         payload: { status: data.decision, receipt_no: intake.receipt_no, notes: intake.notes },
       } });
 
-      // Notifikasi ke Kepala LPMQ: master fisik diterima, siap ditugaskan (P0-03)
+      // Notifikasi kepada Helper Admin untuk penugasan verifikator.
       if (data.decision === 'RECEIVED') {
-        const kepalaUsers = await tx.user.findMany({
+        const assignmentAdmins = await tx.user.findMany({
           where: {
             status: 'ACTIVE',
-            roles: { some: { role: { code: 'KEPALA_LPMQ' } } },
+            roles: { some: { role: { code: 'HELPER_ADMIN' } } },
           },
           select: { id: true },
         });
         const receivedAt = intake.received_at ? new Date(intake.received_at).toISOString() : new Date().toISOString();
-        for (const k of kepalaUsers) {
+        for (const k of assignmentAdmins) {
           const existing = await tx.notification.findFirst({
             where: {
               user_id: k.id,
@@ -161,10 +161,14 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
 export const createVerificationAssignment = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['KEPALA_LPMQ']);
+      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
       await tx.$queryRawUnsafe('SELECT id, status FROM registrations WHERE id = ? FOR UPDATE', id);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
+      if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {
+        fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+      }
+      if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -177,7 +181,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       });
       if (active) fail(409, 'Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
       const verifier = await tx.user.findUnique({
-        where: { id: data.verifier_id },
+        where: { id: reg.core_verifier_id || data.verifier_id },
         include: { roles: { include: { role: true } } },
       });
       if (!verifier || verifier.status !== 'ACTIVE' || !verifier.roles.some(item => item.role.code === 'VERIFIKATOR')) {
@@ -261,7 +265,7 @@ export const getRegistrationReceipt = async (id, user) => {
     },
   });
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
-  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('ADMIN') && reg.publisher_id !== user.publisherId) {
+  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('HELPER_ADMIN') && reg.publisher_id !== user.publisherId) {
     fail(403, 'Bukti pendaftaran hanya dapat dilihat oleh penerbit pemilik atau Kepala LPMQ.');
   }
   if (reg.status === 'DRAFT') fail(409, 'Bukti pendaftaran tersedia setelah pengajuan dikirim.');
@@ -278,10 +282,10 @@ export const getRegistrationReceipt = async (id, user) => {
 };
 
 export const listVerificationAssignments = async (query, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN']);
   const where = {};
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
   if (!isHead && !isAdmin) where.verifier_id = user.id;
   if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
@@ -312,7 +316,7 @@ export const listVerificationAssignments = async (query, user) => {
       include: {
         verifier: { select: { id: true, name: true } },
         assigned_by: { select: { id: true, name: true } },
-        registration: { select: { id: true, registration_no: true, title: true, status: true, stage_entered_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
+        registration: { select: { id: true, registration_no: true, title: true, status: true, core_team_number: true, stage_entered_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
         documents: {
           orderBy: { version: 'desc' },
           select: {
@@ -340,7 +344,7 @@ export const listVerificationAssignments = async (query, user) => {
 export const listVerifiers = async (queryOrUser, maybeUser) => {
   const user = maybeUser || queryOrUser;
   const query = maybeUser ? (queryOrUser || {}) : {};
-  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
 
   const where = {
     status: query.status || 'ACTIVE',
@@ -400,7 +404,7 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
 };
 
 export const listUnassignedRegistrations = async (query = {}, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
@@ -457,7 +461,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
       operational_state: 'READY_FOR_ASSIGNMENT',
       physical_master: physicalMaster,
       next_action: {
-        owner_role: 'KEPALA_LPMQ',
+        owner_role: 'HELPER_ADMIN',
         label: 'Tugaskan Verifikator',
       },
     };

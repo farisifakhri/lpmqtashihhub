@@ -113,7 +113,7 @@ const BUSINESS_TABLE_MAP = {
 // Kamus Penamaan Peran Resmi
 const ROLE_LABELS = {
   SUPERADMIN: 'Administrator Sistem LPMQ',
-  ADMIN: 'Administrator Sistem LPMQ',
+  HELPER_ADMIN: 'Administrator Sistem LPMQ',
   ADMIN_PENERBIT: 'Penerbit / Pemohon Pentashihan',
   PUBLISHER: 'Penerbit / Pemohon Pentashihan',
   VERIFIKATOR: 'Petugas Verifikator Berkas & Naskah',
@@ -246,7 +246,7 @@ export const ModulePlaceholder = ({
   };
 
   // Cek wewenang peran
-  const isSuperadmin = currentRoles.includes('SUPERADMIN') || currentRoles.includes('ADMIN');
+  const isSuperadmin = currentRoles.includes('SUPERADMIN') || currentRoles.includes('HELPER_ADMIN');
   const isAuthorized =
     isSuperadmin ||
     allowedRoles.some((role) => currentRoles.includes(role));
@@ -275,48 +275,48 @@ export const ModulePlaceholder = ({
   return (
     <div className="space-y-6">
       {/* Header Halaman dengan Tombol Pengalih Bahasa Bisnis vs Teknis */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-4 border-b border-neutral-200">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 pb-4 border-b border-line">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-primary-100 text-primary-800 tracking-wide">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-brand-100 text-brand-800 tracking-wide">
               {viewMode === 'business' ? `Tahap Layanan: ${cleanCode}` : `Kode: ${cleanCode}`}
             </span>
-            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-neutral-100 text-neutral-700">
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-surface-subtle text-ink">
               {viewMode === 'business' ? `Tahap Roadmap: ${sprintTarget}` : `Sprint: ${sprintTarget}`}
             </span>
-            <span className="text-xs font-medium px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+            <span className="text-xs font-medium px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
               {viewMode === 'business' ? 'SOP Resmi Kemenag RI v2.2' : 'Modular Monolith Service'}
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900">{title}</h1>
-          <p className="text-sm text-neutral-600 mt-1 leading-relaxed max-w-3xl">{description}</p>
+          <h1 className="text-2xl font-bold text-ink">{title}</h1>
+          <p className="text-sm text-ink-muted mt-1 leading-relaxed max-w-3xl">{description}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {/* Toggle Bahasa Bisnis / Teknis */}
-          <div className="inline-flex rounded-lg border border-neutral-300 p-0.5 bg-neutral-100 text-xs font-medium">
+          <div className="inline-flex rounded-lg border border-line-strong p-0.5 bg-surface-subtle text-xs font-medium">
             <button
               onClick={() => setViewMode('business')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
                 viewMode === 'business'
-                  ? 'bg-white text-primary-800 font-bold shadow-xs'
-                  : 'text-neutral-600 hover:text-neutral-900'
+                  ? 'bg-white text-brand-800 font-bold shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
               title="Tampilkan dalam bahasa proses bisnis layanan pentashihan LPMQ"
             >
-              <BookOpen className="w-3.5 h-3.5 text-primary-700" />
+              <BookOpen className="w-3.5 h-3.5 text-brand-700" />
               <span>Bahasa Bisnis</span>
             </button>
             <button
               onClick={() => setViewMode('technical')}
               className={`px-3 py-1.5 rounded-md transition-all flex items-center gap-1.5 ${
                 viewMode === 'technical'
-                  ? 'bg-white text-primary-800 font-bold shadow-xs'
-                  : 'text-neutral-600 hover:text-neutral-900'
+                  ? 'bg-white text-brand-800 font-bold shadow-xs'
+                  : 'text-ink-muted hover:text-ink'
               }`}
               title="Tampilkan detail teknis backend, route API, dan database MySQL"
             >
-              <Sliders className="w-3.5 h-3.5 text-neutral-600" />
+              <Sliders className="w-3.5 h-3.5 text-ink-muted" />
               <span>Inspeksi Teknis</span>
             </button>
           </div>
@@ -326,7 +326,7 @@ export const ModulePlaceholder = ({
             size="sm"
             onClick={handleRefresh}
             disabled={refreshing || loading}
-            icon={<RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-primary-600' : ''}`} />}
+            icon={<RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-brand-700' : ''}`} />}
           >
             {refreshing ? 'Memeriksa...' : viewMode === 'business' ? 'Cek Status Layanan' : 'Refresh Status'}
           </Button>
@@ -342,26 +342,26 @@ export const ModulePlaceholder = ({
       {/* Tiga Kartu Status Kesiapan Layanan (Disesuaikan dengan Bahasa Bisnis / Teknis) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Kartu 1: Sistem Aplikasi / Backend */}
-        <Card className="p-4 border-l-4 border-l-primary-600 shadow-xs">
+        <Card className="p-4 border-l-4 border-l-brand-700 shadow-xs">
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                isBackendUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                isBackendUp ? 'bg-brand-50 text-brand-700' : 'bg-civic-dangerSoft text-civic-danger'
               }`}
             >
               <Server className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-neutral-500">
+              <p className="text-xs font-semibold text-ink-muted">
                 {viewMode === 'business' ? 'Layanan Digital Pentashihan' : 'Backend Express API'}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-bold text-neutral-900 truncate">
+                <span className="text-sm font-bold text-ink truncate">
                   {viewMode === 'business' ? 'Siap Melayani Permohonan' : healthData?.system || 'LPMQ Backend'}
                 </span>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                    isBackendUp ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    isBackendUp ? 'bg-brand-100 text-brand-800' : 'bg-civic-dangerSoft text-civic-danger'
                   }`}
                 >
                   {isBackendUp ? (viewMode === 'business' ? 'AKTIF' : 'UP (200)') : 'TERPUTUS'}
@@ -369,35 +369,35 @@ export const ModulePlaceholder = ({
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+          <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs text-ink-muted">
             <span>{viewMode === 'business' ? 'Kecepatan Respon Layanan' : 'Latensi Server'}</span>
-            <span className="font-semibold text-neutral-800">
+            <span className="font-semibold text-ink">
               {healthData?.latency_ms !== undefined ? `${healthData.latency_ms} ms` : '-'}
             </span>
           </div>
         </Card>
 
         {/* Kartu 2: Pusat Data & Arsip / Database */}
-        <Card className="p-4 border-l-4 border-l-gold-500 shadow-xs">
+        <Card className="p-4 border-l-4 border-l-civicGold-500 shadow-xs">
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                isDbConnected ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                isDbConnected ? 'bg-brand-50 text-brand-700' : 'bg-civic-dangerSoft text-civic-danger'
               }`}
             >
               <Database className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-neutral-500">
+              <p className="text-xs font-semibold text-ink-muted">
                 {viewMode === 'business' ? 'Pusat Data & Arsip Naskah' : 'Basis Data MySQL (Prisma)'}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-bold text-neutral-900 truncate">
+                <span className="text-sm font-bold text-ink truncate">
                   {viewMode === 'business' ? 'Pangkalan Data Mushaf' : healthData?.database?.database_name || 'lpmq_db'}
                 </span>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                    isDbConnected ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                    isDbConnected ? 'bg-brand-100 text-brand-800' : 'bg-civic-dangerSoft text-civic-danger'
                   }`}
                 >
                   {isDbConnected ? (viewMode === 'business' ? 'TERSINKRON' : 'CONNECTED') : 'TERPUTUS'}
@@ -405,9 +405,9 @@ export const ModulePlaceholder = ({
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+          <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs text-ink-muted">
             <span>{viewMode === 'business' ? 'Waktu Akses Arsip Data' : 'Query Ping Latency'}</span>
-            <span className="font-semibold text-neutral-800">
+            <span className="font-semibold text-ink">
               {healthData?.database?.latency_ms !== null && healthData?.database?.latency_ms !== undefined
                 ? `${healthData.database.latency_ms} ms`
                 : '-'}
@@ -416,26 +416,26 @@ export const ModulePlaceholder = ({
         </Card>
 
         {/* Kartu 3: Wewenang Pejabat / RBAC */}
-        <Card className="p-4 border-l-4 border-l-sky-600 shadow-xs">
+        <Card className="p-4 border-l-4 border-l-civic-info shadow-xs">
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                isAuthorized ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'
+                isAuthorized ? 'bg-civic-infoSoft text-civic-info' : 'bg-civic-warningSoft text-civic-warning'
               }`}
             >
               {isAuthorized ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-neutral-500">
+              <p className="text-xs font-semibold text-ink-muted">
                 {viewMode === 'business' ? 'Hak Wewenang & Tanggung Jawab' : 'Otorisasi Peran (RBAC)'}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm font-bold text-neutral-900 truncate" title={currentRoleName}>
+                <span className="text-sm font-bold text-ink truncate" title={currentRoleName}>
                   {currentRoleName}
                 </span>
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
-                    isAuthorized ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'
+                    isAuthorized ? 'bg-civic-infoSoft text-civic-info' : 'bg-civic-warningSoft text-civic-warning'
                   }`}
                 >
                   {isAuthorized
@@ -445,9 +445,9 @@ export const ModulePlaceholder = ({
               </div>
             </div>
           </div>
-          <div className="mt-3 pt-2.5 border-t border-neutral-100 flex items-center justify-between text-xs text-neutral-500">
+          <div className="mt-3 pt-2.5 border-t border-line flex items-center justify-between text-xs text-ink-muted">
             <span>{viewMode === 'business' ? 'Kewenangan Sesuai SOP' : 'Peran Diperbolehkan'}</span>
-            <span className="font-semibold text-neutral-800 truncate max-w-[150px]" title={allowedRoles.map(r => ROLE_LABELS[r] || r).join(', ')}>
+            <span className="font-semibold text-ink truncate max-w-[150px]" title={allowedRoles.map(r => ROLE_LABELS[r] || r).join(', ')}>
               {viewMode === 'business'
                 ? allowedRoles.map(r => ROLE_LABELS[r] || r).join(', ')
                 : allowedRoles.join(', ')}
@@ -457,14 +457,14 @@ export const ModulePlaceholder = ({
       </div>
 
       {/* Navigasi Tab dalam Bahasa Bisnis */}
-      <div className="border-b border-neutral-200">
+      <div className="border-b border-line">
         <nav className="flex space-x-6">
           <button
             onClick={() => setActiveTab('diagnostic')}
             className={`pb-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'diagnostic'
-                ? 'border-primary-700 text-primary-800 font-bold'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                ? 'border-brand-700 text-brand-800 font-bold'
+                : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
             <Server className="w-4 h-4" />
@@ -479,8 +479,8 @@ export const ModulePlaceholder = ({
             onClick={() => setActiveTab('data')}
             className={`pb-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'data'
-                ? 'border-primary-700 text-primary-800 font-bold'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                ? 'border-brand-700 text-brand-800 font-bold'
+                : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
             <Table className="w-4 h-4" />
@@ -495,8 +495,8 @@ export const ModulePlaceholder = ({
             onClick={() => setActiveTab('spec')}
             className={`pb-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
               activeTab === 'spec'
-                ? 'border-primary-700 text-primary-800 font-bold'
-                : 'border-transparent text-neutral-500 hover:text-neutral-700'
+                ? 'border-brand-700 text-brand-800 font-bold'
+                : 'border-transparent text-ink-muted hover:text-ink'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -517,18 +517,18 @@ export const ModulePlaceholder = ({
             <Card className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Database className="w-5 h-5 text-primary-700" />
-                  <h3 className="font-bold text-neutral-900">
+                  <Database className="w-5 h-5 text-brand-700" />
+                  <h3 className="font-bold text-ink">
                     {viewMode === 'business'
                       ? 'Buku Register & Pencatatan Resmi Layanan'
                       : 'Tabel Basis Data Terkait'}
                   </h3>
                 </div>
-                <span className="text-xs text-neutral-500 font-medium">
+                <span className="text-xs text-ink-muted font-medium">
                   {viewMode === 'business' ? 'Arsip Resmi Terakreditasi' : 'MySQL Schema v2.2'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-600 leading-relaxed">
+              <p className="text-xs text-ink-muted leading-relaxed">
                 {viewMode === 'business'
                   ? 'Buku pencatatan administrasi resmi yang digunakan untuk membukukan transaksi pada tahapan layanan ini:'
                   : `Tabel di basis data lpmq_db yang menyimpan data transaksi dan entitas modul ini:`}
@@ -544,27 +544,27 @@ export const ModulePlaceholder = ({
                   return (
                     <div
                       key={tbl.name}
-                      className="p-3 bg-neutral-50 rounded-lg border border-neutral-200 flex items-center justify-between gap-3"
+                      className="p-3 bg-canvas rounded-lg border border-line flex items-center justify-between gap-3"
                     >
                       <div className="space-y-0.5 min-w-0">
                         <div className="flex items-center gap-2">
-                          <Table className="w-4 h-4 text-neutral-500 shrink-0" />
-                          <span className="text-xs font-bold text-neutral-900">
+                          <Table className="w-4 h-4 text-ink-muted shrink-0" />
+                          <span className="text-xs font-bold text-ink">
                             {viewMode === 'business' ? bMeta.title : tbl.name}
                           </span>
                         </div>
                         {viewMode === 'business' ? (
-                          <p className="text-[11px] text-neutral-500 leading-snug">{bMeta.desc}</p>
+                          <p className="text-[11px] text-ink-muted leading-snug">{bMeta.desc}</p>
                         ) : (
-                          <p className="text-[11px] text-neutral-500 font-mono">Tabel MySQL: {tbl.name}</p>
+                          <p className="text-[11px] text-ink-muted font-mono">Tabel MySQL: {tbl.name}</p>
                         )}
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded bg-primary-100 text-primary-800">
+                        <span className="text-xs font-semibold px-2.5 py-1 rounded bg-brand-100 text-brand-800">
                           {tbl.row_count !== undefined ? `${tbl.row_count} rekod` : 'Tersedia'}
                         </span>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800">
                           {viewMode === 'business' ? 'SIAP' : 'READY'}
                         </span>
                       </div>
@@ -578,18 +578,18 @@ export const ModulePlaceholder = ({
             <Card className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Code className="w-5 h-5 text-primary-700" />
-                  <h3 className="font-bold text-neutral-900">
+                  <Code className="w-5 h-5 text-brand-700" />
+                  <h3 className="font-bold text-ink">
                     {viewMode === 'business'
                       ? 'Saluran Alur Data Pelayanan (API Services)'
                       : 'Endpoint API Backend'}
                   </h3>
                 </div>
-                <span className="text-xs text-neutral-500 font-medium">
+                <span className="text-xs text-ink-muted font-medium">
                   {viewMode === 'business' ? 'Jalur Terproteksi' : 'REST Express v2.2'}
                 </span>
               </div>
-              <p className="text-xs text-neutral-600 leading-relaxed">
+              <p className="text-xs text-ink-muted leading-relaxed">
                 {viewMode === 'business'
                   ? 'Layanan integrasi digital resmi yang menghubungkan antarmuka pengguna dengan pangkalan data pentashihan:'
                   : 'Rute endpoint resmi yang menangani operasi modul ini pada backend:'}
@@ -604,8 +604,8 @@ export const ModulePlaceholder = ({
                       onClick={() => setSelectedEndpoint(ep)}
                       className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-3 ${
                         isSelected
-                          ? 'border-primary-600 bg-primary-50/60 ring-1 ring-primary-500'
-                          : 'border-neutral-200 bg-white hover:bg-neutral-50'
+                          ? 'border-brand-700 bg-brand-50/60 ring-1 ring-brand-700'
+                          : 'border-line bg-white hover:bg-canvas'
                       }`}
                     >
                       <div className="space-y-1 min-w-0">
@@ -613,23 +613,23 @@ export const ModulePlaceholder = ({
                           <span
                             className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                               ep.method === 'GET'
-                                ? 'bg-sky-100 text-sky-800'
+                                ? 'bg-civic-infoSoft text-civic-info'
                                 : ep.method === 'POST'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-amber-100 text-amber-800'
+                                ? 'bg-brand-100 text-brand-800'
+                                : 'bg-civic-warningSoft text-civic-warning'
                             }`}
                           >
                             {ep.method || 'GET'}
                           </span>
-                          <span className="text-xs font-bold text-neutral-900 truncate">
+                          <span className="text-xs font-bold text-ink truncate">
                             {ep.desc || ep.description}
                           </span>
                         </div>
                         {viewMode === 'technical' && (
-                          <p className="text-[11px] text-neutral-500 font-mono">{ep.path}</p>
+                          <p className="text-[11px] text-ink-muted font-mono">{ep.path}</p>
                         )}
                       </div>
-                      <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-primary-700' : 'text-neutral-400'}`} />
+                      <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-brand-700' : 'text-ink-muted'}`} />
                     </div>
                   );
                 })}
@@ -638,18 +638,18 @@ export const ModulePlaceholder = ({
           </div>
 
           {/* Kotak Pengujian Alur Layanan / Interactive Tester */}
-          <Card className="p-5 space-y-4 bg-gradient-to-br from-white to-neutral-50 border-neutral-200">
+          <Card className="p-5 space-y-4 bg-gradient-to-br from-white to-canvas border-line">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <Play className="w-5 h-5 text-primary-700" />
-                  <h3 className="font-bold text-neutral-900">
+                  <Play className="w-5 h-5 text-brand-700" />
+                  <h3 className="font-bold text-ink">
                     {viewMode === 'business'
                       ? 'Simulasi & Uji Kelancaran Aliran Data Layanan'
                       : 'Uji Langsung Endpoint & Query DB'}
                   </h3>
                 </div>
-                <p className="text-xs text-neutral-600 mt-0.5">
+                <p className="text-xs text-ink-muted mt-0.5">
                   {viewMode === 'business'
                     ? 'Verifikasi bahwa sistem dapat membaca dan memproses data tahapan ini langsung dari pangkalan data resmi.'
                     : 'Jalankan HTTP request langsung ke backend dan periksa respon data dari database MySQL.'}
@@ -674,16 +674,16 @@ export const ModulePlaceholder = ({
             </div>
 
             {selectedEndpoint && (
-              <div className="p-3 bg-neutral-100 rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-neutral-800">
+              <div className="p-3 bg-surface-subtle rounded-md flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-ink">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-primary-800">
+                  <span className="font-bold text-brand-800">
                     {viewMode === 'business' ? 'Layanan Terpilih:' : selectedEndpoint.method || 'GET'}
                   </span>
-                  <span className="font-medium text-neutral-900">
+                  <span className="font-medium text-ink">
                     {selectedEndpoint.desc || selectedEndpoint.description}
                   </span>
                 </div>
-                <span className="text-[11px] text-neutral-500 font-mono">
+                <span className="text-[11px] text-ink-muted font-mono">
                   {selectedEndpoint.path}
                 </span>
               </div>
@@ -691,21 +691,21 @@ export const ModulePlaceholder = ({
 
             {/* Hasil Eksekusi Test */}
             {testResult && (
-              <div className="space-y-3 mt-4 pt-4 border-t border-neutral-200">
+              <div className="space-y-3 mt-4 pt-4 border-t border-line">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span
                       className={`inline-flex items-center px-2.5 py-1 rounded text-xs font-bold ${
                         testResult.success
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-rose-100 text-rose-800'
+                          ? 'bg-brand-100 text-brand-800'
+                          : 'bg-civic-dangerSoft text-civic-danger'
                       }`}
                     >
                       {testResult.success
                         ? viewMode === 'business' ? 'ALIRAN DATA LANCAR (OK)' : `HTTP ${testResult.status} OK`
                         : viewMode === 'business' ? 'KENDALA KONEKSI DATA' : `HTTP ${testResult.status} ERROR`}
                     </span>
-                    <span className="text-xs text-neutral-600">
+                    <span className="text-xs text-ink-muted">
                       {viewMode === 'business' ? 'Kecepatan Respon:' : 'Waktu eksekusi:'}{' '}
                       <strong className="font-mono">{testResult.elapsed_ms} ms</strong>
                     </span>
@@ -714,22 +714,22 @@ export const ModulePlaceholder = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setShowJsonRaw(!showJsonRaw)}
-                      className="text-xs text-primary-700 font-semibold hover:underline"
+                      className="text-xs text-brand-700 font-semibold hover:underline"
                     >
                       {showJsonRaw ? 'Sembunyikan Rincian Teknis' : 'Tampilkan Rincian Teknis (JSON)'}
                     </button>
-                    <span className="text-[11px] text-neutral-500 font-mono">
+                    <span className="text-[11px] text-ink-muted font-mono">
                       {new Date().toLocaleTimeString('id-ID')}
                     </span>
                   </div>
                 </div>
 
                 {viewMode === 'business' && !showJsonRaw && (
-                  <div className="p-3.5 bg-emerald-50 rounded-lg border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <div className="p-3.5 bg-brand-50 rounded-lg border border-brand-100 text-xs text-brand-900 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-bold">Sambungan Data Layanan Terverifikasi Sukses</p>
-                      <p className="text-emerald-800 mt-0.5 leading-relaxed">
+                      <p className="text-brand-800 mt-0.5 leading-relaxed">
                         Data berhasil ditarik dari pangkalan data resmi LPMQ tanpa hambatan. Petugas dan pemohon dapat menjalankan aktivitas administrasi pada tahapan ini secara normal.
                       </p>
                     </div>
@@ -737,7 +737,7 @@ export const ModulePlaceholder = ({
                 )}
 
                 {(showJsonRaw || viewMode === 'technical') && (
-                  <div className="bg-neutral-900 text-neutral-100 p-4 rounded-lg font-mono text-xs overflow-x-auto max-h-80 scrollbar-thin">
+                  <div className="bg-ink text-surface p-4 rounded-lg font-mono text-xs overflow-x-auto max-h-80 scrollbar-thin">
                     <pre>{JSON.stringify(testResult.payload || testResult.error, null, 2)}</pre>
                   </div>
                 )}
@@ -752,41 +752,41 @@ export const ModulePlaceholder = ({
         <Card className="p-5 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-bold text-neutral-900">
+              <h3 className="font-bold text-ink">
                 {viewMode === 'business'
                   ? 'Buku Register Dokumen & Data Layanan Aktif'
                   : 'Data Riil dari Database MySQL'}
               </h3>
-              <p className="text-xs text-neutral-500 mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 {viewMode === 'business'
                   ? 'Daftar permohonan atau rekod data resmi yang tersimpan di pangkalan data LPMQ.'
                   : 'Mengambil langsung baris data aktual yang tersimpan di lpmq_db.'}
               </p>
             </div>
-            <span className="text-xs font-semibold px-2.5 py-1 rounded bg-emerald-100 text-emerald-800 self-start sm:self-auto">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded bg-brand-100 text-brand-800 self-start sm:self-auto">
               {sampleRecords.length} Rekod Tersedia
             </span>
           </div>
 
           {sampleRecords.length === 0 ? (
-            <div className="text-center py-10 bg-neutral-50 rounded-lg border border-neutral-200 space-y-2">
-              <Table className="w-8 h-8 text-neutral-400 mx-auto" />
-              <p className="text-sm font-semibold text-neutral-700">
+            <div className="text-center py-10 bg-canvas rounded-lg border border-line space-y-2">
+              <Table className="w-8 h-8 text-ink-muted mx-auto" />
+              <p className="text-sm font-semibold text-ink">
                 {viewMode === 'business'
                   ? 'Belum ada rekod transaksi pada tahapan ini'
                   : 'Belum ada baris data transaksi pada tabel ini'}
               </p>
-              <p className="text-xs text-neutral-500 max-w-md mx-auto">
+              <p className="text-xs text-ink-muted max-w-md mx-auto">
                 {viewMode === 'business'
                   ? 'Buku register sudah siap dan akan mencatat otomatis begitu berkas permohonan penerbit masuk ke tahapan ini.'
                   : 'Tabel di basis data sudah terbentuk dan siap menampung data ketika transaksi pada tahapan ini dijalankan.'}
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-neutral-200 rounded-lg">
+            <div className="overflow-x-auto border border-line rounded-lg">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-700 font-semibold uppercase tracking-wider text-[11px]">
+                  <tr className="bg-canvas border-b border-line text-ink font-semibold uppercase tracking-wider text-[11px]">
                     <th className="p-3">Nomor Registrasi / Kode</th>
                     <th className="p-3">Judul Naskah / Nama Dokumen</th>
                     <th className="p-3">Penerbit Pemohon / Instansi</th>
@@ -795,7 +795,7 @@ export const ModulePlaceholder = ({
                     <th className="p-3 text-right">Tanggal Pembukuan</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
+                <tbody className="divide-y divide-line">
                   {sampleRecords.map((item, idx) => {
                     const identifier = item.registration_no || item.code || item.decree_no || item.id?.slice(0, 8);
                     const mainTitle = item.title || item.name || item.legal_name || 'Item Dokumen';
@@ -809,21 +809,21 @@ export const ModulePlaceholder = ({
                     const dateStr = item.created_at || item.updated_at || new Date().toISOString();
 
                     return (
-                      <tr key={item.id || idx} className="hover:bg-neutral-50 transition-colors">
-                        <td className="p-3 font-mono font-bold text-primary-800">{identifier}</td>
-                        <td className="p-3 font-medium text-neutral-900 max-w-xs truncate">{mainTitle}</td>
-                        <td className="p-3 text-neutral-700">{publisherName}</td>
-                        <td className="p-3 text-neutral-600">{categoryOrKind}</td>
+                      <tr key={item.id || idx} className="hover:bg-canvas transition-colors">
+                        <td className="p-3 font-mono font-bold text-brand-800">{identifier}</td>
+                        <td className="p-3 font-medium text-ink max-w-xs truncate">{mainTitle}</td>
+                        <td className="p-3 text-ink">{publisherName}</td>
+                        <td className="p-3 text-ink-muted">{categoryOrKind}</td>
                         <td className="p-3">
                           {TOKENS.registrationStatus[statusText] ? (
                             <StatusBadge status={statusText} />
                           ) : (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-neutral-100 text-neutral-800">
+                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-surface-subtle text-ink">
                               {statusText}
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-right text-neutral-500 font-mono text-[11px]">
+                        <td className="p-3 text-right text-ink-muted font-mono text-[11px]">
                           {new Date(dateStr).toLocaleDateString('id-ID', {
                             day: 'numeric',
                             month: 'short',
@@ -845,26 +845,26 @@ export const ModulePlaceholder = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary-700" />
-              <h3 className="font-bold text-neutral-900">
+              <FileText className="w-5 h-5 text-brand-700" />
+              <h3 className="font-bold text-ink">
                 {viewMode === 'business'
                   ? 'Landasan Hukum & Standar Operasional Prosedur (SOP)'
                   : 'Rujukan SOP & Regulasi Resmi'}
               </h3>
             </div>
-            <div className="space-y-3 text-xs text-neutral-700 leading-relaxed">
-              <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-200 space-y-1">
-                <span className="font-bold text-primary-800 block">{sopReference}</span>
-                <p className="text-neutral-600">
+            <div className="space-y-3 text-xs text-ink leading-relaxed">
+              <div className="p-3 bg-canvas rounded-lg border border-line space-y-1">
+                <span className="font-bold text-brand-800 block">{sopReference}</span>
+                <p className="text-ink-muted">
                   Ditetapkan oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ), Badan Litbang dan Diklat Kementerian Agama Republik Indonesia.
                 </p>
               </div>
 
               <div>
-                <h4 className="font-bold text-neutral-900 mb-1.5">
+                <h4 className="font-bold text-ink mb-1.5">
                   {viewMode === 'business' ? 'Ketentuan Pokok Pelayanan:' : 'Aturan Bisnis Kunci:'}
                 </h4>
-                <ul className="list-disc list-inside space-y-1 text-neutral-600">
+                <ul className="list-disc list-inside space-y-1 text-ink-muted">
                   <li>Validasi server-side wajib menjadi sumber kebenaran tunggal untuk seluruh perubahan status.</li>
                   <li>Besaran tarif dan batas waktu (SLA) mengacu pada ketetapan resmi dan disimpan sebagai snapshot permanen saat pendaftaran.</li>
                   <li>Setiap perubahan status dan tindakan material dicatat dalam audit trail demi akuntabilitas dokumen resmi negara.</li>
@@ -878,29 +878,29 @@ export const ModulePlaceholder = ({
 
           <Card className="p-5 space-y-4">
             <div className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary-700" />
-              <h3 className="font-bold text-neutral-900">
+              <Building2 className="w-5 h-5 text-brand-700" />
+              <h3 className="font-bold text-ink">
                 {viewMode === 'business'
                   ? 'Pejabat Penanggung Jawab & Kewenangan'
                   : 'Komponen Arsitektur Terkait'}
               </h3>
             </div>
             <div className="space-y-2 text-xs">
-              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200">
-                <span className="font-semibold text-neutral-700 block">Pejabat yang Berwenang:</span>
-                <span className="text-primary-800 font-bold">
+              <div className="p-2.5 bg-canvas rounded border border-line">
+                <span className="font-semibold text-ink block">Pejabat yang Berwenang:</span>
+                <span className="text-brand-800 font-bold">
                   {allowedRoles.map((r) => ROLE_LABELS[r] || r).join(', ')}
                 </span>
               </div>
-              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200">
-                <span className="font-semibold text-neutral-700 block">Buku Registrasi Resmi:</span>
-                <span className="text-neutral-600">
+              <div className="p-2.5 bg-canvas rounded border border-line">
+                <span className="font-semibold text-ink block">Buku Registrasi Resmi:</span>
+                <span className="text-ink-muted">
                   {displayTables.map((t) => BUSINESS_TABLE_MAP[t.name]?.title || t.name).join(', ')}
                 </span>
               </div>
-              <div className="p-2.5 bg-neutral-50 rounded border border-neutral-200">
-                <span className="font-semibold text-neutral-700 block">Kriteria Penyelesaian (Definition of Done):</span>
-                <span className="text-neutral-600">
+              <div className="p-2.5 bg-canvas rounded border border-line">
+                <span className="font-semibold text-ink block">Kriteria Penyelesaian (Definition of Done):</span>
+                <span className="text-ink-muted">
                   Memenuhi kriteria penerimaan SOP, memiliki pengujian otorisasi, mencatat riwayat audit, dan data terverifikasi di basis data.
                 </span>
               </div>
