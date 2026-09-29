@@ -514,7 +514,7 @@ export const InternalPaymentQueuePage = () => {
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Link
-                  to={`/internal/verifications/${assignmentId}`}
+                  to={`/internal/verifications/${assignmentId}${isHandedOver ? '' : '?handover=1'}`}
                   className="inline-flex items-center gap-1.5 font-bold text-white bg-brand-700 hover:bg-brand-800 px-3.5 py-2 rounded-lg shadow-xs transition-colors"
                 >
                   <PackageCheck className="w-4 h-4" />

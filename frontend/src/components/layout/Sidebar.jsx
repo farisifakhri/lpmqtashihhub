@@ -257,10 +257,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Validasi setoran SIMPONI',
             },
             {
-              label: 'Serah-terima Master',
-              path: '/internal/distributions',
-              icon: <Users className="w-4 h-4 shrink-0" />,
-              description: 'BAST ke tim distribusi',
+              label: 'Siap Serah Terima',
+              path: '/internal/verifications?tab=BAST_READY',
+              icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+              description: 'Pembayaran sah, terbitkan BAST',
             },
           ],
         },
@@ -281,13 +281,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             },
             {
               label: 'Master Menunggu Diterima',
-              path: '/internal/distributions',
+              path: '/internal/distributions?stage=HANDOVER',
               icon: <PackageCheck className="w-4 h-4 shrink-0" />,
               description: 'Konfirmasi fisik master',
             },
             {
               label: 'Distribusi Tim',
-              path: '/internal/distributions',
+              path: '/internal/distributions?stage=ASSIGNMENT',
               icon: <Users className="w-4 h-4 shrink-0" />,
               description: 'Bagi tugas anggota sidang',
             },
@@ -431,6 +431,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
   };
 
   const navSections = getNavSections();
+  const isCurrentItem = (item, isActive) => {
+    if (!isActive || !item.path.startsWith('/internal/distributions?')) return isActive;
+    const targetStage = new URLSearchParams(item.path.split('?')[1]).get('stage');
+    const currentStage = new URLSearchParams(location.search).get('stage') || 'HANDOVER';
+    return targetStage === currentStage;
+  };
 
   return (
     <>
@@ -543,7 +549,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                       className={({ isActive }) =>
                         clsx(
                           'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors group',
-                          isActive
+                          isCurrentItem(item, isActive)
                             ? 'bg-brand-50 border border-brand-100 text-brand-950 font-bold'
                             : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
                         )
@@ -554,14 +560,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'transition-colors shrink-0',
-                              isActive ? 'text-brand-700' : 'text-ink-muted group-hover:text-brand-700'
+                              isCurrentItem(item, isActive) ? 'text-brand-700' : 'text-ink-muted group-hover:text-brand-700'
                             )}
                           >
                             {item.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="block leading-tight truncate">{item.label}</span>
-                            {item.description && !isActive && (
+                            {item.description && !isCurrentItem(item, isActive) && (
                               <span className="block text-[10px] text-ink-muted truncate mt-0.5">
                                 {item.description}
                               </span>

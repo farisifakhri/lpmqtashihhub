@@ -24,7 +24,10 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     const member = team.members.find(member => member.user_id === id);
     if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
   }
-  const due_at = await calculateDueAt(tx, now, reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]);
+  const receivedHandover = data.stage === 'REVISION' ? null : await tx.physicalManuscriptHandover.findFirst({
+    where: { registration_id: id, status: 'RECEIVED' }, orderBy: { received_at: 'desc' }, select: { tashih_due_at: true },
+  });
+  const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, now, Number(reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]));
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
     const assignment = await tx.assignment.create({ data: {

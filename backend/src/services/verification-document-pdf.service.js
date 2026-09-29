@@ -105,7 +105,7 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     line(`Nomor: ${document.document_no || 'Belum diberi nomor'}`);
     line(`Tanggal: ${dateLabel}`);
     line('Sifat: Biasa');
-    line('Lampiran: -');
+    line(`Lampiran: ${content.billing_file_id ? '1 berkas billing PNBP' : '-'}`);
     line(`Hal: ${content.decision === 'PASSED' ? 'Hasil verifikasi dan pemberitahuan PNBP' : 'Hasil verifikasi - tidak lolos'}`);
     y -= 10;
     line(`Yth. Pimpinan ${content.publisher_name || 'Penerbit'}`);

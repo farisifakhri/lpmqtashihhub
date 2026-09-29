@@ -73,8 +73,11 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
   requireStatus(reg, ['IN_VERIFICATION']);
   const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id }, select: { legal_name: true, address: true } });
 
-  if (data.attachment_file_ids?.length) {
-    await assertAttachmentFileOwnership(tx, data.attachment_file_ids, user, reg.id);
+  const draftAttachments = [...new Set([...(data.attachment_file_ids || []), ...(data.billing_file_id ? [data.billing_file_id] : [])])];
+  if (draftAttachments.length) await assertAttachmentFileOwnership(tx, draftAttachments, user, reg.id);
+  if (data.billing_file_id) {
+    const billingFile = await tx.storedFile.findUnique({ where: { id: data.billing_file_id }, select: { mime_type: true } });
+    if (billingFile?.mime_type !== 'application/pdf') fail(422, 'Lampiran billing PNBP harus berupa PDF.');
   }
 
   const existingDraft = await tx.verificationDocument.findFirst({
@@ -99,7 +102,8 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
     notes: data.notes || null,
     letter_text: data.letter_text || '',
     billing_no: data.decision === 'PASSED' ? data.billing_no || null : null,
-    attachment_file_ids: data.attachment_file_ids || [],
+    billing_file_id: data.decision === 'PASSED' ? data.billing_file_id || null : null,
+    attachment_file_ids: draftAttachments,
     saved_at: new Date().toISOString(),
   };
 
@@ -172,8 +176,11 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     await audit(tx, user, 'RECORD_BILLING', 'PaymentRecord', payment.id, payment, req);
   }
 
-  if (data.attachment_file_ids?.length) {
-    await assertAttachmentFileOwnership(tx, data.attachment_file_ids, user, reg.id);
+  const attachments = [...new Set([...(data.attachment_file_ids || []), ...(data.billing_file_id ? [data.billing_file_id] : [])])];
+  if (attachments.length) await assertAttachmentFileOwnership(tx, attachments, user, reg.id);
+  if (data.billing_file_id) {
+    const billingFile = await tx.storedFile.findUnique({ where: { id: data.billing_file_id }, select: { mime_type: true } });
+    if (billingFile?.mime_type !== 'application/pdf') fail(422, 'Lampiran billing PNBP harus berupa PDF.');
   }
 
   const existingDraft = await tx.verificationDocument.findFirst({
@@ -208,7 +215,8 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     letter_text: data.letter_text,
     billing_no: payment?.billing_no || null,
     billing_amount: payment ? String(payment.amount) : null,
-    attachment_file_ids: data.attachment_file_ids || [],
+    billing_file_id: payment ? data.billing_file_id || null : null,
+    attachment_file_ids: attachments,
     submitted_at: new Date().toISOString(),
   };
 
@@ -459,6 +467,9 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   const resultDocuments = assignment.documents.filter(d => ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'].includes(d.document_type));
   const latestDraft = resultDocuments.find(d => ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(d.document_type)) || resultDocuments[0] || null;
   const beritaAcara = assignment.documents.find(d => d.document_type === 'BERITA_ACARA_VERIFIKASI') || null;
+  const coreDistributor = assignment.registration.core_distributor_id
+    ? await prisma.user.findUnique({ where: { id: assignment.registration.core_distributor_id }, select: { id: true, name: true, nip: true } })
+    : null;
 
   return {
     assignment: {
@@ -490,7 +501,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
         verifier_performance: verifierPerformance,
       },
     },
-    registration: assignment.registration,
+    registration: { ...assignment.registration, core_distributor: coreDistributor },
     assignment_history: assignmentHistory,
     nota_dinas: notaDinas,
     latest_result_document: latestDraft,
@@ -744,7 +755,7 @@ catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
 export const getVerificationAttachment = async (documentId, fileId, user) => {
   const doc = await prisma.verificationDocument.findUnique({
     where: { id: documentId },
-    include: { registration: true },
+    include: { registration: true, assignment: true },
   });
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
 import { getAuthToken } from '@/api/client';
 import { handoverApi } from '@/api/handover.api';
+import { fileApi } from '@/api/file.api';
+import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { WorkflowStepper } from '@/components/common/WorkflowStepper';
@@ -62,6 +64,7 @@ const CHECKLIST_DEFINITIONS = [
 export const VerificationInspectionPage = () => {
   const { id } = useParams(); // assignmentId
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -93,9 +96,7 @@ export const VerificationInspectionPage = () => {
   }, [pdfPreview]);
 
   // Handover to Distributor State (Langkah 7 SOP)
-  const [distributors, setDistributors] = useState([]);
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
-  const [selectedDistributorId, setSelectedDistributorId] = useState('');
   const [handoverCondition, setHandoverCondition] = useState('BAIK');
   const [handoverVolumeCount, setHandoverVolumeCount] = useState(30);
   const [handoverNotes, setHandoverNotes] = useState('');
@@ -113,6 +114,9 @@ export const VerificationInspectionPage = () => {
   const [notes, setNotes] = useState('');
   const [letterText, setLetterText] = useState('');
   const [billingNo, setBillingNo] = useState('');
+  const [billingFileId, setBillingFileId] = useState('');
+  const [billingFileName, setBillingFileName] = useState('');
+  const [billingUploading, setBillingUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -121,18 +125,11 @@ export const VerificationInspectionPage = () => {
       navigate(`/internal/verifications/${data.assignment.id}`, { replace: true });
     }
 
-    try {
-      const distRes = await handoverApi.listDistributors();
-      if (Array.isArray(distRes?.data)) {
-        setDistributors(distRes.data);
-        if (distRes.data.length > 0 && !selectedDistributorId) setSelectedDistributorId(distRes.data[0].id);
-      }
-    } catch {
-      // Listing distributor may be unavailable for a read-only viewer.
-    }
-
     if (data.registration?.manuscript_files?.length > 0 && !selectedFileId) {
       setSelectedFileId(data.registration.manuscript_files[0].id);
+    }
+    if (data.registration?.physical_master_intake?.volume_count) {
+      setHandoverVolumeCount(data.registration.physical_master_intake.volume_count);
     }
 
     const draft = getInspectionDraft(data, CHECKLIST_DEFINITIONS);
@@ -141,10 +138,16 @@ export const VerificationInspectionPage = () => {
     if (draft.notes) setNotes(draft.notes);
     if (draft.letterText) setLetterText(draft.letterText);
     if (data.latest_result_document?.content_snapshot?.billing_no) setBillingNo(data.latest_result_document.content_snapshot.billing_no);
+    setBillingFileId(data.latest_result_document?.content_snapshot?.billing_file_id || '');
     if (data.latest_result_document?.document_no) setResultDocumentNo(data.latest_result_document.document_no);
     if (data.berita_acara?.document_no) setMinutesDocumentNo(data.berita_acara.document_no);
   });
   const assignmentId = detail?.assignment?.id || id;
+  useEffect(() => {
+    if (!detail?.registration || new URLSearchParams(location.search).get('handover') !== '1') return;
+    if (detail.registration.core_distributor_id) setHandoverModalOpen(true);
+    navigate(location.pathname, { replace: true });
+  }, [detail, location.pathname, location.search, navigate]);
   const workflowVm = useMemo(() => {
     return detail?.registration ? getWorkflowViewModel(detail.registration, currentUser) : null;
   }, [detail, currentUser]);
@@ -223,6 +226,7 @@ export const VerificationInspectionPage = () => {
     if (notes.trim().length > 2000) errors.notes = 'Catatan kesimpulan maksimal 2000 karakter.';
     if (letterText.trim().length > 10000) errors.letter_text = 'Teks draf surat maksimal 10000 karakter.';
     if (isSubmit && decision === 'PASSED' && billingNo.trim().length < 3) errors.billing_no = 'Kode billing PNBP wajib diisi sebelum surat lolos diajukan.';
+    if (isSubmit && decision === 'PASSED' && !billingFileId) errors.billing_file_id = 'Unggah dokumen billing PNBP dalam format PDF sebelum surat diajukan.';
 
     if (decision === 'PASSED') {
       const hasTidakSesuai = checklist.some((i) => i.result === 'TIDAK_SESUAI');
@@ -265,6 +269,7 @@ export const VerificationInspectionPage = () => {
         notes: notes.trim() || undefined,
         letter_text: letterText.trim() || undefined,
         billing_no: decision === 'PASSED' ? billingNo.trim() || undefined : undefined,
+        billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
       };
       await verificationApi.saveDraft(assignmentId, payload);
       setIsDirty(false);
@@ -295,6 +300,7 @@ export const VerificationInspectionPage = () => {
         notes: notes.trim() || undefined,
         letter_text: letterText.trim(),
         billing_no: decision === 'PASSED' ? billingNo.trim() : undefined,
+        billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
       setSubmitConfirmOpen(false);
@@ -399,6 +405,28 @@ export const VerificationInspectionPage = () => {
     return URL.createObjectURL(await response.blob());
   };
 
+  const handleBillingFile = async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = '';
+    if (file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024 || file.size === 0) {
+      setValidationErrors(previous => ({ ...previous, billing_file_id: 'Pilih PDF billing PNBP berisi data, maksimal 10 MB.' }));
+      return;
+    }
+    setBillingUploading(true);
+    setValidationErrors(previous => ({ ...previous, billing_file_id: undefined }));
+    try {
+      const uploaded = await fileApi.upload(file);
+      setBillingFileId(uploaded.id);
+      setBillingFileName(file.name);
+      setIsDirty(true);
+    } catch (reason) {
+      setValidationErrors(previous => ({ ...previous, billing_file_id: reason.message || 'Dokumen billing belum berhasil diunggah.' }));
+    } finally {
+      setBillingUploading(false);
+    }
+  };
+
   const showDocumentPdf = async (docId, title) => {
     try {
       const url = await getDocumentPdfUrl(docId);
@@ -442,8 +470,8 @@ export const VerificationInspectionPage = () => {
   const handleCreateHandover = async (e) => {
     e?.preventDefault();
     if (!detail?.registration?.id) return;
-    if (!selectedDistributorId) {
-      setHandoverModalError('Silakan pilih petugas Distributor penerima naskah.');
+    if (!detail.registration.core_distributor_id) {
+      setHandoverModalError('Distributor tim inti belum ditetapkan. Hubungi administrator.');
       return;
     }
 
@@ -451,7 +479,6 @@ export const VerificationInspectionPage = () => {
     setHandoverModalError(null);
     try {
       const payload = {
-        to_user_id: selectedDistributorId,
         condition: handoverCondition.trim() || 'BAIK',
         volume_count: Number(handoverVolumeCount) || 30,
         notes: handoverNotes.trim() || undefined,
@@ -824,9 +851,15 @@ export const VerificationInspectionPage = () => {
         setLetterText={setLetterText}
         billingNo={billingNo}
         setBillingNo={setBillingNo}
+        billingFileId={billingFileId}
+        billingFileName={billingFileName}
+        billingUploading={billingUploading}
+        handleBillingFile={handleBillingFile}
+        resultDocumentId={latestResultDoc?.id}
         registration={registration}
         publisher={publisher}
       />
+      <DocumentArchive registrationId={registration.id} />
 
       {/* Multi-Signatory Progress & Email Status Banners */}
       {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
@@ -903,7 +936,9 @@ export const VerificationInspectionPage = () => {
                 Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor
               </h4>
               <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
-                Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.
+                {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'
+                  ? 'Master fisik telah diperbaiki. Periksa kembali lalu serahkan ke Distributor dengan BAST baru; pembayaran tetap sah.'
+                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.'}
               </p>
             </div>
           </div>
@@ -914,9 +949,26 @@ export const VerificationInspectionPage = () => {
             className="w-full md:w-auto text-xs shrink-0"
           >
             <PackageCheck className="w-4 h-4 mr-1.5" />
-            Serahkan Master Fisik & Terbitkan BAST
+            {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED' ? 'Serahkan Kembali & Terbitkan BAST Baru' : 'Serahkan Master Fisik & Terbitkan BAST'}
           </Button>
         </div>
+      )}
+
+      {latestHandover && (
+        <section className="rounded-xl border border-line bg-white p-5 text-xs shadow-2xs" aria-label="Status serah terima master fisik">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-ink">Serah terima master fisik ke distributor</h4>
+              <p className="text-ink-muted">BAST {latestHandover.receipt_no} · {latestHandover.volume_count} jilid · {latestHandover.to_user?.name || 'Distributor'}</p>
+              <p className="font-semibold text-brand-800">
+                {latestHandover.status === 'RECEIVED' ? 'Sudah diterima distributor' : latestHandover.status === 'RETURNED' ? 'Dikembalikan distributor untuk perbaikan' : 'Menunggu konfirmasi penerimaan distributor'}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => handoverApi.downloadHandoverPdf(latestHandover.id, latestHandover.receipt_no).catch(err => setError(err.message))}>
+              Unduh PDF BAST
+            </Button>
+          </div>
+        </section>
       )}
 
       <InspectionActionPanel
@@ -966,9 +1018,6 @@ export const VerificationInspectionPage = () => {
         publisher={publisher}
         handoverModalError={handoverModalError}
         handleCreateHandover={handleCreateHandover}
-        distributors={distributors}
-        selectedDistributorId={selectedDistributorId}
-        setSelectedDistributorId={setSelectedDistributorId}
         handoverCondition={handoverCondition}
         setHandoverCondition={setHandoverCondition}
         handoverVolumeCount={handoverVolumeCount}

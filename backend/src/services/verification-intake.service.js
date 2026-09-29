@@ -326,18 +326,30 @@ export const listVerificationAssignments = async (query, user) => {
   if (query.registration_status) {
     where.registration = { ...(where.registration || {}), status: query.registration_status };
   }
-  if (query.search) {
+  if (query.handover_ready === 'true') {
+    where.status = 'COMPLETED';
     where.registration = {
       ...(where.registration || {}),
+      core_distributor_id: { not: null },
+      payment_records: { some: { status: 'VERIFIED' } },
       OR: [
-        { registration_no: { contains: query.search } },
-        { title: { contains: query.search } },
-        { publisher: { legal_name: { contains: query.search } } },
+        { status: 'PAYMENT_VERIFICATION', physical_handovers: { none: { status: 'PENDING' } } },
+        { status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', physical_handovers: { some: { status: 'RETURNED' } } },
       ],
     };
   }
+  if (query.search) {
+    where.registration = {
+      ...(where.registration || {}),
+      AND: [{ OR: [
+        { registration_no: { contains: query.search } },
+        { title: { contains: query.search } },
+        { publisher: { legal_name: { contains: query.search } } },
+      ] }],
+    };
+  }
   const skip = (query.page - 1) * query.limit;
-  const byStage = Boolean(query.registration_status) || query.status === 'IN_PROGRESS';
+  const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
     prisma.verificationAssignment.count({ where }),
     prisma.verificationAssignment.findMany({

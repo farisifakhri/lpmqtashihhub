@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { VerificationInspectionPage } from './VerificationInspectionPage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as VerificationApiModule from '@/api/verification.api';
+import { fileApi } from '@/api/file.api';
 
 describe('VerificationInspectionPage Component', () => {
   beforeEach(() => {
@@ -102,6 +103,17 @@ describe('VerificationInspectionPage Component', () => {
     expect(screen.getByText('Yth. Pimpinan PT Mushaf Nusantara')).toBeInTheDocument();
   });
 
+  it('mengunggah PDF billing PNBP dan menyertakannya pada draf surat', async () => {
+    vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: '00000000-0000-0000-0000-000000000123' });
+    vi.spyOn(VerificationApiModule.verificationApi, 'saveDraft').mockResolvedValue({ success: true });
+    render(<MemoryRouter initialEntries={['/internal/verifications/assign-1']}><Routes><Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} /></Routes></MemoryRouter>);
+    const input = await screen.findByLabelText(/Dokumen billing PNBP \(PDF\)/i);
+    fireEvent.change(input, { target: { files: [new File(['%PDF-1.4'], 'billing-pnbp.pdf', { type: 'application/pdf' })] } });
+    expect(await screen.findByText('Lampiran tersimpan: billing-pnbp.pdf')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan Draf Pemeriksaan' }));
+    await waitFor(() => expect(VerificationApiModule.verificationApi.saveDraft).toHaveBeenCalledWith('assign-1', expect.objectContaining({ billing_file_id: '00000000-0000-0000-0000-000000000123' })));
+  });
+
   it('merender panel Serah-Terima Master Fisik ke Distributor jika pembayaran PNBP telah diverifikasi sah', async () => {
     vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
       success: true,
@@ -116,6 +128,7 @@ describe('VerificationInspectionPage Component', () => {
           registration_no: 'REG-2026-001',
           title: 'Mushaf Al-Qur\'an Standar Kemenag',
           status: 'PAYMENT_VERIFICATION',
+          core_distributor_id: 'dist-1', core_distributor: { name: 'Distributor Tim Inti' },
           publisher: { legal_name: 'PT Mushaf Nusantara' },
           payment_records: [
             {
@@ -144,6 +157,30 @@ describe('VerificationInspectionPage Component', () => {
       expect(screen.getByText(/Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor/i)).toBeInTheDocument();
       expect(screen.getByText(/Serahkan Master Fisik & Terbitkan BAST/i)).toBeInTheDocument();
     });
+    fireEvent.click(screen.getByRole('button', { name: 'Serahkan Master Fisik & Terbitkan BAST' }));
+    expect(screen.getByText('Distributor Tim Inti')).toBeInTheDocument();
+    expect(screen.queryByText(/Pilih Petugas Distributor Penerima/i)).not.toBeInTheDocument();
+  });
+
+  it('menawarkan BAST baru setelah distributor mengembalikan fisik tanpa meminta validasi pembayaran ulang', async () => {
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: { id: 'assign-1', status: 'COMPLETED', verifier_id: 'verif-1' },
+        registration: {
+          id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji',
+          status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', publisher: { legal_name: 'Penerbit Uji' },
+          core_distributor_id: 'dist-1', core_distributor: { name: 'Distributor Tim Inti' },
+          payment_records: [{ id: 'pay-1', status: 'VERIFIED' }],
+          physical_handovers: [{ id: 'ho-1', receipt_no: 'BAST-001', status: 'RETURNED', volume_count: 30, to_user: { name: 'Distributor Uji' } }],
+        },
+        latest_result_document: { status: 'SENT' },
+      },
+    });
+    render(<MemoryRouter initialEntries={['/internal/verifications/assign-1']}><Routes><Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} /></Routes></MemoryRouter>);
+    expect(await screen.findByRole('button', { name: 'Serahkan Kembali & Terbitkan BAST Baru' })).toBeInTheDocument();
+    expect(screen.getByText('Dikembalikan distributor untuk perbaikan')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Unduh PDF BAST' })).toBeInTheDocument();
   });
 
   it('merender banner catatan pengembalian jika draf dikembalikan oleh Kepala LPMQ', async () => {

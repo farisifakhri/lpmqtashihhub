@@ -1,11 +1,13 @@
 import React from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
+import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 
 export const ResultLetterPanel = ({
   activeMobileTab, decision, setDecision, loadOfficialTemplate, setIsDirty,
   isReadOnly, validationErrors, notes, setNotes, letterTab, setLetterTab,
   letterText, setLetterText,
   billingNo, setBillingNo,
+  billingFileId, billingFileName, billingUploading, handleBillingFile, resultDocumentId,
   registration, publisher,
 }) => (
           <div
@@ -20,9 +22,9 @@ export const ResultLetterPanel = ({
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,0.75fr)_minmax(0,1.5fr)] gap-6 items-start">
-            <div className="space-y-4">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-ink-muted">1. Keputusan & catatan</h4>
+            <div className="space-y-8">
+            <div className="space-y-4 border-b border-line pb-7">
+              <h4 className="text-sm font-semibold text-ink">Keputusan pemeriksaan</h4>
 
             {/* Decision Radio Boxes */}
             <div className="space-y-2.5">
@@ -97,7 +99,7 @@ export const ResultLetterPanel = ({
             )}
 
             {decision === 'PASSED' && (
-              <div className="space-y-1 text-xs rounded-xl border border-brand-100 bg-brand-50/50 p-3">
+              <div className="space-y-3 text-xs border-l-2 border-brand-700 pl-4 py-1">
                 <label htmlFor="verification-billing-no" className="block font-bold text-ink">Kode billing PNBP <span className="text-civic-danger">*</span></label>
                 <input
                   id="verification-billing-no"
@@ -111,6 +113,17 @@ export const ResultLetterPanel = ({
                 />
                 <p className="text-[11px] text-ink-muted">Kode ini akan tercantum pada PDF surat hasil dan tagihan penerbit.</p>
                 {validationErrors.billing_no && <p className="text-civic-danger font-semibold">{validationErrors.billing_no}</p>}
+                <div className="border-t border-line pt-3 space-y-2">
+                  <label htmlFor="verification-billing-file" className="block font-bold text-ink">Dokumen billing PNBP (PDF) <span className="text-civic-danger">*</span></label>
+                  {!isReadOnly && <input id="verification-billing-file" type="file" accept="application/pdf,.pdf" onChange={handleBillingFile} disabled={billingUploading} className="block w-full rounded-lg border border-line bg-white p-2 text-xs" />}
+                  {billingUploading && <p role="status">Mengunggah dokumen billing…</p>}
+                  {billingFileId && <p className="font-medium text-brand-900">Lampiran tersimpan: {billingFileName || 'Dokumen billing PNBP.pdf'}</p>}
+                  {validationErrors.billing_file_id && <p role="alert" className="text-civic-danger font-semibold">{validationErrors.billing_file_id}</p>}
+                  {billingFileId && <details className="rounded-lg border border-line bg-white p-3">
+                    <summary className="cursor-pointer font-semibold text-brand-900">Tinjau lampiran billing</summary>
+                    <div className="pt-3"><PrivateFileViewer fileId={billingFileId} fileName={billingFileName || 'billing-pnbp.pdf'} mimeType="application/pdf" height="360px" endpoint={isReadOnly && resultDocumentId ? `/verification-documents/${resultDocumentId}/attachments/${billingFileId}` : undefined} /></div>
+                  </details>}
+                </div>
               </div>
             )}
 
@@ -145,7 +158,7 @@ export const ResultLetterPanel = ({
 
             {/* Draf Surat Teks */}
             <div className="space-y-3 text-xs min-w-0">
-              <h4 className="text-xs font-bold uppercase tracking-wide text-ink-muted">2. Isi surat untuk penerbit</h4>
+              <h4 className="text-sm font-semibold text-ink">Naskah surat untuk penerbit</h4>
               <div className="flex items-center justify-between">
                 <label className="font-bold text-ink flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-brand-800" />
@@ -209,14 +222,14 @@ export const ResultLetterPanel = ({
                   <div className="space-y-1 mb-6">
                     <p>Nomor: <span className="text-ink-muted">Diisi saat persetujuan</span></p>
                     <p>Sifat: Biasa</p>
-                    <p>Lampiran: -</p>
+                    <p>Lampiran: {decision === 'PASSED' && billingFileId ? '1 berkas billing PNBP' : '-'}</p>
                     <p>Hal: {decision === 'PASSED' ? 'Hasil verifikasi dan pemberitahuan PNBP' : 'Hasil verifikasi - tidak lolos'}</p>
                   </div>
                   <p>Yth. Pimpinan {publisher?.legal_name || 'Penerbit'}</p>
                   <p>di {publisher?.address || 'alamat terdaftar'}</p>
                   <p className="mt-6">Assalamu'alaikum wr. wb.</p>
                   <p className="mt-4 whitespace-pre-wrap">{letterText || 'Isi surat belum diisi.'}</p>
-                  {decision === 'PASSED' && billingNo && <p className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 font-bold">Kode billing PNBP: {billingNo}</p>}
+                  {decision === 'PASSED' && billingNo && <p className="mt-4 font-bold">Kode billing PNBP: {billingNo}</p>}
                   <p className="mt-4">Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.</p>
                   <p className="mt-4">Wassalamu'alaikum wr. wb.</p>
                   <div className="mt-8 text-right">

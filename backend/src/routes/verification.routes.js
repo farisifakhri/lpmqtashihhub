@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { readVerifiedPdf, renderVerificationPdf } from '../services/verification-document-pdf.service.js';
 import { renderPhysicalMasterReceiptPdf } from '../services/physical-master-receipt-pdf.service.js';
+import { readStoredFile } from '../services/storage.service.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -58,7 +59,13 @@ router.post('/verification-assignments/:id/revoke', authenticate, authorize('HEL
 router.post('/verification-assignments/:id/reassign', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(reassignAssignmentSchema), action(req => review.reassignVerificationAssignment(req.params.id, req.body, req.user, req)));
 router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
-router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), action(req => review.getVerificationAttachment(req.params.documentId, req.params.fileId, req.user)));
+router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), async (req, res, next) => {
+  try {
+    const file = await review.getVerificationAttachment(req.params.documentId, req.params.fileId, req.user);
+    res.set({ 'Content-Type': file.mime_type, 'Content-Disposition': `inline; filename="lampiran-${file.id}.pdf"`, 'Cache-Control': 'private, no-store' });
+    res.send(await readStoredFile(file.id));
+  } catch (error) { next(error); }
+});
 
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E) & Pengiriman Hasil Verifikasi (Epic F)
 router.post('/verification-documents/:id/sign', authenticate, authorize('VERIFIKATOR', 'KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.signVerificationDocumentHandler(req.params.id, req.user, req)));

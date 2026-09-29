@@ -79,9 +79,10 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const latestHandover = registration.physical_handovers?.[0];
   const isPaymentVerified = latestPayment?.status === 'VERIFIED';
   const canVerifierHandover =
-    (isVerifier || isAdmin) &&
-    registration.status === 'PAYMENT_VERIFICATION' &&
+    isAssignedVerifier &&
+    ['PAYMENT_VERIFICATION', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'].includes(registration.status) &&
     isPaymentVerified &&
+    Boolean(registration.core_distributor_id) &&
     (!latestHandover || latestHandover.status === 'RETURNED');
   const isWaitingDistributor = registration.status === 'WAITING_DISTRIBUTOR_RECEIPT';
   const isHandoverReceived =

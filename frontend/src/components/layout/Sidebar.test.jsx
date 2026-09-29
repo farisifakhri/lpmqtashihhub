@@ -26,3 +26,11 @@ describe('Helper Admin navigation', () => {
     }
   });
 });
+
+describe('Distributor navigation', () => {
+  it('membuka antrean penerimaan dan penugasan tim pada tab yang berbeda', () => {
+    show('DISTRIBUTOR');
+    expect(screen.getByRole('link', { name: /Master Menunggu Diterima/ })).toHaveAttribute('href', '/internal/distributions?stage=HANDOVER');
+    expect(screen.getByRole('link', { name: /Distribusi Tim/ })).toHaveAttribute('href', '/internal/distributions?stage=ASSIGNMENT');
+  });
+});

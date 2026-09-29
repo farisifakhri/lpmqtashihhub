@@ -183,10 +183,17 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
   await test('PR-VER-03: Pengajuan draf hasil verifikasi ke Kepala LPMQ berhasil atomik', async () => {
     const submitPath = `/verification-assignments/${assignment.id}/result-drafts`;
     const letterText = 'Berdasarkan hasil pemeriksaan berkas administrasi dan master fisik, naskah dinyatakan memenuhi standar verifikasi LPMQ Kemenag RI.';
+    const uploadResponse = await fetch(`${base}/uploads`, {
+      method: 'POST', headers: { Authorization: `Bearer ${verifikatorToken}`, 'Content-Type': 'application/pdf' },
+      body: Buffer.from('%PDF-1.4\nDokumen billing PNBP\n%%EOF'),
+    });
+    assert.equal(uploadResponse.status, 201);
+    const billingFileId = (await uploadResponse.json()).data.id;
 
     const submitted = await expect(submitPath, verifikatorToken, 'POST', {
       decision: 'PASSED',
       billing_no: `SIMPONI-${reg.id}`,
+      billing_file_id: billingFileId,
       checklist: validChecklistPassed,
       letter_text: letterText,
     }, 201);
@@ -195,6 +202,11 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     assert.equal(submitted.status, 'SUBMITTED');
     assert.equal(submitted.content_snapshot.decision, 'PASSED');
     assert.equal(submitted.content_snapshot.checklist.length, 4);
+    assert.equal(submitted.content_snapshot.billing_file_id, billingFileId);
+    const attachmentResponse = await fetch(`${base}/verification-documents/${submitted.id}/attachments/${billingFileId}`, { headers: { Authorization: `Bearer ${kepalaToken}` } });
+    assert.equal(attachmentResponse.status, 200);
+    assert.match(attachmentResponse.headers.get('content-type') || '', /application\/pdf/);
+    assert.equal(Buffer.from(await attachmentResponse.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
 
     // Registrasi berpindah ke WAITING_VERIFICATION_APPROVAL
     const currentReg = await prisma.registration.findUnique({ where: { id: reg.id } });
