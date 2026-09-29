@@ -86,6 +86,11 @@ export const VerificationInspectionPage = () => {
   const [resultDocumentNo, setResultDocumentNo] = useState('');
   const [minutesDocumentNo, setMinutesDocumentNo] = useState('');
   const [approveModalError, setApproveModalError] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState(null);
+
+  useEffect(() => () => {
+    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+  }, [pdfPreview]);
 
   // Handover to Distributor State (Langkah 7 SOP)
   const [distributors, setDistributors] = useState([]);
@@ -389,32 +394,10 @@ export const VerificationInspectionPage = () => {
     return URL.createObjectURL(await response.blob());
   };
 
-  const openDocumentPdf = async docId => {
+  const showDocumentPdf = async (docId, title) => {
     try {
       const url = await getDocumentPdfUrl(docId);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (reason) { setError(reason.message); }
-  };
-
-  const printDocumentPdf = async docId => {
-    try {
-      const url = await getDocumentPdfUrl(docId);
-      // The frame contains only the PDF response, so the application page is never printed.
-      const frame = document.createElement('iframe');
-      frame.title = 'Cetak PDF dokumen verifikasi';
-      frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0';
-      frame.src = url;
-      frame.onload = () => {
-        try {
-          frame.contentWindow?.focus();
-          frame.contentWindow?.print();
-        } catch {
-          setError('Dialog cetak tidak dapat dibuka. Buka PDF lalu cetak dari penampil PDF.');
-        }
-        window.setTimeout(() => { frame.remove(); URL.revokeObjectURL(url); }, 60_000);
-      };
-      document.body.appendChild(frame);
+      setPdfPreview({ url, title });
     } catch (reason) { setError(reason.message); }
   };
 
@@ -588,21 +571,34 @@ export const VerificationInspectionPage = () => {
         </ol>
         <div className="border-t border-line pt-3 space-y-2">
           <h3 className="font-semibold text-ink text-xs">PDF dokumen verifikasi</h3>
-          <p className="text-xs text-ink-muted">Buka PDF Nota Dinas sebelum memulai pemeriksaan. PDF draf berlabel DRAF; PDF final memuat QR untuk memeriksa arsip.</p>
+          <p className="text-xs text-ink-muted">Periksa Nota Dinas sebelum memulai pemeriksaan. Penampil PDF menyediakan kontrol cetak dan unduh untuk tiap dokumen.</p>
           <div className="flex flex-wrap gap-2">
             {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
-              <div key={doc.id} className="inline-flex flex-wrap gap-1.5 rounded-lg border border-line bg-canvas p-1.5">
-                <Button variant="outline" className="text-xs" onClick={() => openDocumentPdf(doc.id)}>
-                  Buka PDF {title}
-                </Button>
-                <Button variant="outline" className="text-xs" onClick={() => printDocumentPdf(doc.id)}>
-                  Cetak PDF {title}
-                </Button>
-              </div>
+              <Button key={doc.id} variant="outline" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
+                Lihat / Cetak PDF {title}
+              </Button>
             ))}
           </div>
         </div>
       </section>
+
+      {pdfPreview && (
+        <div role="dialog" aria-modal="true" aria-label={`PDF ${pdfPreview.title}`} className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">PDF {pdfPreview.title}</h2>
+                <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF untuk mencetak dokumen ini.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={pdfPreview.url} download={`${pdfPreview.title.replace(/\s+/g, '-')}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+                <Button variant="outline" className="text-xs" onClick={() => setPdfPreview(null)}>Tutup</Button>
+              </div>
+            </div>
+            <iframe title={`Penampil PDF ${pdfPreview.title}`} src={pdfPreview.url} className="flex-1 w-full border-0" />
+          </div>
+        </div>
+      )}
 
       {/* Global Alerts */}
       {successMessage && (

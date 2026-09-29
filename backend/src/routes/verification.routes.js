@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { readVerifiedPdf, renderVerificationPdf } from '../services/verification-document-pdf.service.js';
+import { renderPhysicalMasterReceiptPdf } from '../services/physical-master-receipt-pdf.service.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -32,6 +33,16 @@ const action = (fn, status = 200) => async (req, res, next) => {
 router.put('/registrations/:id/physical-master', authenticate, authorize('ADMIN_PENERBIT'), validate(declarePhysicalMasterSchema), action(req => intake.declarePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/physical-master/receive', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
+router.get('/registrations/:id/physical-master/receipt-pdf', authenticate, validate(registrationIdSchema), async (req, res, next) => {
+  try {
+    const receipt = await intake.getPhysicalMasterReceipt(req.params.id, req.user);
+    const bytes = await renderPhysicalMasterReceiptPdf(receipt);
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="tanda-terima-${receipt.registration_no}.pdf"`);
+    res.set('Cache-Control', 'private, no-store');
+    res.send(bytes);
+  } catch (error) { next(error); }
+});
 router.get('/registrations/:id/latest-verification-assignment', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN'), validate(latestAssignmentSchema), action(req => review.getLatestVerificationAssignment(req.params.id, req.user)));
 router.post('/registrations/:id/verification-assignments', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));

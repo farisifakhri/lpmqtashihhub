@@ -1,6 +1,18 @@
 import apiClient from './client';
+import { getAuthToken } from './client';
 
 export const verificationApi = {
+  getPhysicalReceiptPdf: async (registrationId) => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/registrations/${registrationId}/physical-master/receipt-pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' },
+    });
+    if (!response.ok) {
+      const details = await response.json().catch(() => null);
+      throw new Error(details?.message || 'PDF tanda terima belum dapat dibuka.');
+    }
+    return response.blob();
+  },
   /**
    * Mengambil daftar penugasan verifikasi
    * @param {Object} params - { status, my_tasks, search, page, limit }

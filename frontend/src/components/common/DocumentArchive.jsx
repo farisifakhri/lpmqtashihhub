@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { registrationApi } from '@/api/registration.api';
 import { fileApi } from '@/api/file.api';
+import { getAuthToken } from '@/api/client';
 import { DocumentVersionHistory } from './DocumentVersionHistory';
 import { DocumentPreview } from './DocumentPreview';
 
@@ -18,6 +19,26 @@ export function DocumentArchive({ registrationId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pdfUrl, setPdfUrl] = useState(null);
+
+  useEffect(() => () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
+
+  const printPdf = async document => {
+    setError('');
+    try {
+      const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+      const path = document.source === 'OFFICIAL'
+        ? `/official-documents/${document.id}/pdf`
+        : `/verification-documents/${document.id}/pdf`;
+      const response = await fetch(`${base}${path}`, { headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' } });
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) throw new Error('PDF dokumen belum dapat dibuka.');
+      setPdfUrl(URL.createObjectURL(await response.blob()));
+    } catch (reason) {
+      setError(reason.message || 'PDF dokumen belum dapat dibuka.');
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -60,7 +81,23 @@ export function DocumentArchive({ registrationId }) {
       documentNo={selected.document_no}
       version={selected.version}
       letterText={text}
+      onPrint={() => printPdf(selected)}
       onDownload={selected.source === 'OFFICIAL' ? () => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`) : undefined}
     />}
+    {pdfUrl && <div role="dialog" aria-modal="true" aria-label="PDF arsip dokumen" className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+      <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+          <div>
+            <h2 className="text-sm font-bold text-ink">PDF {labels[selected?.document_type] || selected?.document_type}</h2>
+            <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a href={pdfUrl} download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+            <button type="button" onClick={() => setPdfUrl(null)} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink">Tutup</button>
+          </div>
+        </div>
+        <iframe title="Penampil PDF arsip dokumen" src={pdfUrl} className="flex-1 w-full border-0" />
+      </div>
+    </div>}
   </section>;
 }

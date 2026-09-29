@@ -22,6 +22,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
+import { verificationApi } from '@/api/verification.api';
 import { reportApi } from '@/api/report.api';
 import { fileApi } from '@/api/file.api';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -99,6 +100,24 @@ export function PublisherRegistrationDetailPage() {
   const [volumeCount, setVolumeCount] = useState(30);
   const [refresh, setRefresh] = useState(0);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [physicalReceiptUrl, setPhysicalReceiptUrl] = useState(null);
+
+  useEffect(() => () => {
+    if (physicalReceiptUrl) URL.revokeObjectURL(physicalReceiptUrl);
+  }, [physicalReceiptUrl]);
+
+  const showPhysicalReceipt = async () => {
+    setActionLoading(true);
+    setError('');
+    try {
+      const blob = await verificationApi.getPhysicalReceiptPdf(id);
+      setPhysicalReceiptUrl(URL.createObjectURL(blob));
+    } catch (reason) {
+      setError(reason.message || 'PDF tanda terima fisik belum dapat dibuka.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
   const [dispatchData, setDispatchData] = useState({
     courier: 'LOKET_LPMQ',
     tracking_no: '',
@@ -492,6 +511,12 @@ export function PublisherRegistrationDetailPage() {
                         ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator.'
                         : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik. Verifikasi dimulai setelah berkas diterima dan verifikator ditugaskan.'}
                     </p>
+                    {data.physical_master_intake?.status === 'RECEIVED' && (
+                      <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">
+                        <Printer className="w-3.5 h-3.5 mr-1.5" />
+                        Lihat / Cetak PDF Tanda Terima Fisik
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <form onSubmit={handleDispatch} className="p-4 bg-white rounded-xl border border-civic-warningLine space-y-3">
@@ -1044,6 +1069,23 @@ export function PublisherRegistrationDetailPage() {
       )}
 
       {/* Dialog Bukti Pendaftaran Resmi */}
+      {physicalReceiptUrl && (
+        <div role="dialog" aria-modal="true" aria-label="PDF tanda terima fisik" className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">Tanda Terima Master Fisik</h2>
+                <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF untuk mencetak dokumen berkop LPMQ.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={physicalReceiptUrl} download={`tanda-terima-${data?.registration_no || 'master-fisik'}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+                <Button variant="outline" className="text-xs" onClick={() => setPhysicalReceiptUrl(null)}>Tutup</Button>
+              </div>
+            </div>
+            <iframe title="Penampil PDF tanda terima master fisik" src={physicalReceiptUrl} className="flex-1 w-full border-0" />
+          </div>
+        </div>
+      )}
       <RegistrationReceiptDialog
         isOpen={showReceipt}
         onClose={() => {

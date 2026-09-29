@@ -21,6 +21,11 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState('');
   const [viewMode, setViewMode] = useState('dialog'); // 'dialog' | 'print_preview'
+  const [pdfUrl, setPdfUrl] = useState(null);
+
+  useEffect(() => () => {
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+  }, [pdfUrl]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -34,8 +39,17 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
 
   if (!isOpen || !registration) return null;
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      const blob = await registrationApi.getReceiptPdf(registration.id);
+      setPdfUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      setDownloadError(err.message || 'Gagal membuka tanda terima PDF.');
+    } finally {
+      setDownloading(false);
+    }
   };
 
   const handleDownloadPdf = async () => {
@@ -84,6 +98,23 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
         if (e.target === e.currentTarget) onClose();
       }}
     >
+      {pdfUrl && (
+        <div role="dialog" aria-modal="true" aria-label="PDF tanda terima pendaftaran" className="fixed inset-0 z-[60] bg-ink/70 p-3 sm:p-6 flex items-center justify-center" onClick={event => event.stopPropagation()}>
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">PDF Tanda Terima Pendaftaran</h2>
+                <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF untuk mencetak dokumen berkop LPMQ.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={pdfUrl} download={`tanda-terima-${regNo}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+                <Button variant="outline" className="text-xs" onClick={() => setPdfUrl(null)}>Tutup</Button>
+              </div>
+            </div>
+            <iframe title="Penampil PDF tanda terima pendaftaran" src={pdfUrl} className="flex-1 w-full border-0" />
+          </div>
+        </div>
+      )}
       <div
         className={`relative bg-white rounded-2xl shadow-2xl w-full max-h-[92vh] flex flex-col border border-line overflow-hidden transition-all duration-200 print:max-h-none print:shadow-none print:border-none print:w-full ${
           viewMode === 'print_preview' ? 'max-w-3xl' : 'max-w-2xl'

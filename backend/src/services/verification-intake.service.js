@@ -288,6 +288,33 @@ export const getRegistrationReceipt = async (id, user) => {
   };
 };
 
+export const getPhysicalMasterReceipt = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    select: {
+      id: true, registration_no: true, publisher_id: true, title: true,
+      publisher: { select: { legal_name: true } },
+      service_type: { select: { name: true } },
+      physical_master_intake: {
+        select: {
+          status: true, receipt_no: true, received_at: true, condition: true,
+          volume_count: true, format: true, binding_method: true, notes: true,
+          received_by: { select: { name: true } },
+        },
+      },
+    },
+  });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+  const internalRoles = ['SUPERADMIN', 'KEPALA_LPMQ', 'HELPER_ADMIN', 'VERIFIKATOR'];
+  if (!user.roles.some(role => internalRoles.includes(role)) && reg.publisher_id !== user.publisherId) {
+    fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
+  }
+  if (reg.physical_master_intake?.status !== 'RECEIVED' || !reg.physical_master_intake.receipt_no) {
+    fail(409, 'Tanda terima master fisik tersedia setelah master diterima di loket.');
+  }
+  return reg;
+};
+
 export const listVerificationAssignments = async (query, user) => {
   requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN']);
   const where = {};

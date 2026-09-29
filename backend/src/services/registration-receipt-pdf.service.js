@@ -1,5 +1,9 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import QRCode from 'qrcode';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+
+const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
 function safeText(value, font) {
   const text = String(value ?? '');
@@ -17,6 +21,7 @@ export async function renderRegistrationReceiptPdf(reg) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const logo = await pdf.embedPng(await readFile(letterheadLogo));
   const page = pdf.addPage([595.28, 841.89]); // A4 portrait (points)
 
   const { width, height } = page.getSize();
@@ -31,43 +36,12 @@ export async function renderRegistrationReceiptPdf(reg) {
   const borderGray = rgb(0.82, 0.84, 0.86);
 
   // 1. Kop Surat Resmi
-  page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', {
-    x: width / 2 - font.widthOfTextAtSize('KEMENTERIAN AGAMA REPUBLIK INDONESIA', 10.5) / 2,
-    y,
-    size: 10.5,
-    font: bold,
-    color: black,
-  });
-  y -= 13;
-
-  page.drawText('BADAN PENELITIAN DAN PENGEMBANGAN SERTA PENDIDIKAN DAN PELATIHAN', {
-    x: width / 2 - font.widthOfTextAtSize('BADAN PENELITIAN DAN PENGEMBANGAN SERTA PENDIDIKAN DAN PELATIHAN', 8.5) / 2,
-    y,
-    size: 8.5,
-    font: bold,
-    color: black,
-  });
-  y -= 14;
-
-  const lpmqTitle = "LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN";
-  page.drawText(lpmqTitle, {
-    x: width / 2 - bold.widthOfTextAtSize(lpmqTitle, 12) / 2,
-    y,
-    size: 12,
-    font: bold,
-    color: darkGreen,
-  });
-  y -= 11;
-
-  const addrText = 'Gedung Bayt Al-Quran & Museum Istiqlal, TMII, Jakarta Timur 13560 | Website: tashih.kemenag.go.id';
-  page.drawText(addrText, {
-    x: width / 2 - font.widthOfTextAtSize(addrText, 7.5) / 2,
-    y,
-    size: 7.5,
-    font,
-    color: gray,
-  });
-  y -= 9;
+  page.drawImage(logo, { x: 42, y: 747, width: 58, height: 55 });
+  page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', { x: 111, y: 791, font: bold, size: 11, color: black });
+  page.drawText('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', { x: 111, y: 774, font: bold, size: 11, color: darkGreen });
+  page.drawText('Gedung Bayt Al-Quran & Museum Istiqlal, Jl. Raya TMII Pintu I', { x: 111, y: 758, font, size: 8, color: gray });
+  page.drawText('Jakarta Timur 13560  |  lajnah@kemenag.go.id', { x: 111, y: 746, font, size: 8, color: gray });
+  y = 738;
 
   // Double horizontal rule
   page.drawLine({
