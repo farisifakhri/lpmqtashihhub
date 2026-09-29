@@ -10,6 +10,7 @@ import {
   dispatchPhysicalSchema,
   transitionStatusSchema,
   createManuscriptFileSchema,
+  registrationIdParamSchema,
 } from '../validators/registration.validator.js';
 
 const router = Router();
@@ -22,6 +23,18 @@ router.use(authorize('HELPER_ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUT
 router.get('/', registrationController.listRegistrations);
 router.post('/', authorize('ADMIN_PENERBIT'), registrationRateLimiter, validate(createRegistrationSchema), registrationController.createDraft);
 router.get('/:id', registrationController.getDetail);
+router.get(
+  '/:id/receipt-pdf',
+  authorize('ADMIN_PENERBIT', 'SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR'),
+  validate(registrationIdParamSchema),
+  registrationController.downloadReceiptPdf
+);
+router.delete(
+  '/:id',
+  authorize('ADMIN_PENERBIT', 'SUPERADMIN'),
+  validate(registrationIdParamSchema),
+  registrationController.deleteRegistration
+);
 router.get('/:id/document-archive', authorize('ADMIN_PENERBIT', 'HELPER_ADMIN', 'DOKUMENTATOR'), async (req, res, next) => {
   try { res.json({ success: true, data: await listDocumentArchive(req.params.id, req.user) }); }
   catch (error) { next(error); }

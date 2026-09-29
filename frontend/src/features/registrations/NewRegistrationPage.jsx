@@ -57,6 +57,13 @@ const MATERI_TAMBAHAN_OPTIONS = [
   'Lainnya',
 ];
 
+const JENIS_STANDAR_MUSHAF_OPTIONS = [
+  'Mushaf Standar Usmani',
+  'Mushaf Standar Bahriyah (Bahria/Pojok)',
+  'Mushaf Standar Braille',
+  "Mushaf Al-Qur'an Isyarat",
+];
+
 const NEGARA_ASAL_OPTIONS = [
   'Arab Saudi',
   'Mesir',
@@ -95,11 +102,15 @@ export const NewRegistrationPage = () => {
 
   // Bagian I. Informasi Data Mushaf
   const [title, setTitle] = useState('');
+  const [namaMushaf, setNamaMushaf] = useState('');
+  const [namaPercetakan, setNamaPercetakan] = useState('');
   const [penanggungJawabProduk, setPenanggungJawabProduk] = useState('');
+  const [penanggungJawabWa, setPenanggungJawabWa] = useState('');
+  const [penanggungJawabEmail, setPenanggungJawabEmail] = useState('');
   const [sizes, setSizes] = useState([{ ukuran: '', oplah: '' }]);
   const [selectedJenisNaskah, setSelectedJenisNaskah] = useState(["1. Al-Qur'an 30 Juz"]);
-  const [jenisMushaf, setJenisMushaf] = useState('Mushaf Baru'); // 'Mushaf Baru' | 'Perpanjangan Tanda Tashih' | 'Mushaf Luar Negeri'
-  const [namaPercetakan, setNamaPercetakan] = useState('');
+  const [jenisStandarMushaf, setJenisStandarMushaf] = useState('Mushaf Standar Usmani');
+  const [kategoriPendaftaran, setKategoriPendaftaran] = useState('Mushaf Baru'); // 'Mushaf Baru' | 'Perpanjangan Tanda Tashih' | 'Mushaf Luar Negeri'
   const [deskripsiMushaf, setDeskripsiMushaf] = useState('');
 
   // Field Khusus Perpanjangan Tanda Tashih
@@ -184,18 +195,18 @@ export const NewRegistrationPage = () => {
       const next = willInclude ? [...prev, item] : prev.filter((i) => i !== item);
       if (item === "1. Mushaf Al-Qur'an Luar Negeri") {
         if (willInclude) {
-          setJenisMushaf('Mushaf Luar Negeri');
-        } else if (jenisMushaf === 'Mushaf Luar Negeri') {
-          setJenisMushaf('Mushaf Baru');
+          setKategoriPendaftaran('Mushaf Luar Negeri');
+        } else if (kategoriPendaftaran === 'Mushaf Luar Negeri') {
+          setKategoriPendaftaran('Mushaf Baru');
         }
       }
       return next;
     });
   };
 
-  // Change Jenis Mushaf Dropdown
-  const handleJenisMushafChange = (val) => {
-    setJenisMushaf(val);
+  // Change Kategori Pendaftaran Dropdown
+  const handleKategoriPendaftaranChange = (val) => {
+    setKategoriPendaftaran(val);
     if (val === 'Mushaf Luar Negeri') {
       setSelectedJenisNaskah((prev) =>
         prev.includes("1. Mushaf Al-Qur'an Luar Negeri")
@@ -245,7 +256,7 @@ export const NewRegistrationPage = () => {
       return;
     }
 
-    if (isDirectSubmit && jenisMushaf === 'Mushaf Luar Negeri') {
+    if (isDirectSubmit && kategoriPendaftaran === 'Mushaf Luar Negeri') {
       if (!negaraAsalMushaf.trim()) {
         setError('Negara asal mushaf wajib dipilih.');
         return;
@@ -300,10 +311,10 @@ export const NewRegistrationPage = () => {
       // Tentukan registration_type dan registration_category
       let regType = 'NEW';
       let regCategory = 'NEW';
-      if (jenisMushaf === 'Perpanjangan Tanda Tashih') {
+      if (kategoriPendaftaran === 'Perpanjangan Tanda Tashih') {
         regType = 'EXTENSION';
         regCategory = 'EXTENSION';
-      } else if (jenisMushaf === 'Mushaf Luar Negeri') {
+      } else if (kategoriPendaftaran === 'Mushaf Luar Negeri') {
         regType = 'FOREIGN_MANUSCRIPT';
         regCategory = 'FOREIGN_MANUSCRIPT';
       }
@@ -317,22 +328,27 @@ export const NewRegistrationPage = () => {
       });
 
       const mushafDetails = {
+        nama_produk: title.trim(),
+        nama_mushaf: namaMushaf.trim(),
         penanggung_jawab_produk: penanggungJawabProduk.trim(),
+        penanggung_jawab_wa: penanggungJawabWa.trim(),
+        penanggung_jawab_email: penanggungJawabEmail.trim(),
         sizes: sizes.filter((s) => s.ukuran.trim() || s.oplah),
         jenis_naskah: selectedJenisNaskah,
-        jenis_mushaf: jenisMushaf,
-        nama_percetakan: jenisMushaf === 'Mushaf Luar Negeri' ? '' : namaPercetakan.trim(),
+        jenis_mushaf: jenisStandarMushaf, // 4 Standar LPMQ
+        kategori_pendaftaran: kategoriPendaftaran,
+        nama_percetakan: kategoriPendaftaran === 'Mushaf Luar Negeri' ? '' : namaPercetakan.trim(),
         deskripsi_mushaf: deskripsiMushaf.trim(),
         materi_tambahan: selectedMateriTambahan,
         penanggung_jawab_materi_tambahan: penanggungJawabMateri.trim(),
-        ...(jenisMushaf === 'Perpanjangan Tanda Tashih'
+        ...(kategoriPendaftaran === 'Perpanjangan Tanda Tashih'
           ? {
               nomor_pendaftaran_lama: noPendaftaranLama.trim(),
               nomor_kode_ukuran_lama: nomorKodeUkuranLama.trim(),
               surat_pernyataan_file_id: uploadedPernyataanId,
             }
           : {}),
-        ...(jenisMushaf === 'Mushaf Luar Negeri'
+        ...(kategoriPendaftaran === 'Mushaf Luar Negeri'
           ? {
               country_of_origin: negaraAsalMushaf,
               negara_asal_mushaf: negaraAsalMushaf,
@@ -345,8 +361,12 @@ export const NewRegistrationPage = () => {
           : {}),
       };
 
+      const finalTitle = namaMushaf.trim()
+        ? (title.trim() ? `${title.trim()} (${namaMushaf.trim()})` : namaMushaf.trim())
+        : title.trim();
+
       const payload = {
-        title: title.trim(),
+        title: finalTitle,
         registration_type: regType,
         registration_category: regCategory,
         service_type_id: matchedService?.id || serviceTypes[0]?.id,
@@ -367,7 +387,7 @@ export const NewRegistrationPage = () => {
 
       if (isDirectSubmit) {
         setSuccessMsg(`Permohonan "${title}" (${created.registration_no}) berhasil dibuat.`);
-        navigate(`/publisher/registrations/${created.id}`);
+        navigate(`/publisher/registrations/${created.id}`, { state: { showReceipt: true } });
       } else {
         setSuccessMsg(`Draf permohonan (${created.registration_no}) berhasil disimpan.`);
         setShowReceiptDialog(true);
@@ -381,8 +401,8 @@ export const NewRegistrationPage = () => {
   };
 
   const isDigital = selectedJenisNaskah.includes('2. Digital');
-  const isPerpanjangan = jenisMushaf === 'Perpanjangan Tanda Tashih';
-  const isLuarNegeri = jenisMushaf === 'Mushaf Luar Negeri' || selectedJenisNaskah.includes("1. Mushaf Al-Qur'an Luar Negeri");
+  const isPerpanjangan = kategoriPendaftaran === 'Perpanjangan Tanda Tashih';
+  const isLuarNegeri = kategoriPendaftaran === 'Mushaf Luar Negeri' || selectedJenisNaskah.includes("1. Mushaf Al-Qur'an Luar Negeri");
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-28 lg:pb-12 animate-fadeIn">
@@ -467,7 +487,7 @@ export const NewRegistrationPage = () => {
           </p>
         </div>
 
-        {/* 1. Nama / Brand Mushaf */}
+        {/* 1. Nama / Brand Produk */}
         <div className="space-y-1.5">
           <label htmlFor="registration-title" className="block text-xs font-bold text-ink">
             Nama Produk/Mushaf <span className="text-civic-danger">*</span>
@@ -493,7 +513,45 @@ export const NewRegistrationPage = () => {
           {titleError && <p id="registration-title-error" className="text-xs text-civic-danger">{titleError}</p>}
         </div>
 
-        {/* 2. Nama Penanggung Jawab Produk/Mushaf */}
+        {/* 2. Nama Mushaf (BARU DITAMBAHKAN) */}
+        <div className="space-y-1.5">
+          <label htmlFor="registration-nama-mushaf" className="block text-xs font-bold text-ink">
+            Nama Mushaf
+          </label>
+          <p className="text-[11px] text-brand-700">
+            Tulis nama spesifik naskah mushaf Al-Qur'an (misal: Mushaf Al-Bayan, Mushaf At-Taqwa, Mushaf Al-Hufaz, dll)
+          </p>
+          <input
+            type="text"
+            id="registration-nama-mushaf"
+            value={namaMushaf}
+            onChange={(e) => setNamaMushaf(e.target.value)}
+            placeholder="Tulis nama mushaf (cth: Mushaf Al-Bayan, Mushaf At-Taqwa)"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink"
+          />
+        </div>
+
+        {/* 3. Nama Percetakan (DIGESER KE ATAS) */}
+        {!isLuarNegeri && (
+          <div className="space-y-1.5">
+            <label htmlFor="nama-percetakan" className="block text-xs font-bold text-ink">
+              Nama Percetakan
+            </label>
+            <p className="text-[11px] text-brand-700">
+              Diisi dengan nama percetakan tempat mushaf yang didaftarkan akan dicetak. Misal: Gramedia, Bekasi.
+            </p>
+            <input
+              type="text"
+              id="nama-percetakan"
+              value={namaPercetakan}
+              onChange={(e) => setNamaPercetakan(e.target.value)}
+              placeholder="Tulis nama percetakan"
+              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
+            />
+          </div>
+        )}
+
+        {/* 4. Nama Penanggung Jawab Produk/Mushaf */}
         <div className="space-y-1.5">
           <label htmlFor="registration-product-owner" className="block text-xs font-bold text-ink">
             Nama Penanggung Jawab Produk/Mushaf<span className="text-civic-danger">*</span>
@@ -516,6 +574,42 @@ export const NewRegistrationPage = () => {
             className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white ${penanggungJawabError ? 'border-civic-danger' : 'border-line-strong'}`}
           />
           {penanggungJawabError && <p id="registration-product-owner-error" className="text-xs text-civic-danger">{penanggungJawabError}</p>}
+        </div>
+
+        {/* Nomor WhatsApp Penanggung Jawab */}
+        <div className="space-y-1.5">
+          <label htmlFor="registration-pj-wa" className="block text-xs font-bold text-ink">
+            Nomor WhatsApp Penanggung Jawab
+          </label>
+          <p className="text-[11px] text-brand-700">
+            Nomor WhatsApp aktif penanggung jawab untuk notifikasi otomatis perkembangan status tanda tashih via WhatsApp (cth: +6281234567890 / 081234567890).
+          </p>
+          <input
+            type="tel"
+            id="registration-pj-wa"
+            value={penanggungJawabWa}
+            onChange={(e) => setPenanggungJawabWa(e.target.value)}
+            placeholder="Tulis nomor WhatsApp (cth: +6281234567890)"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
+          />
+        </div>
+
+        {/* Email Penanggung Jawab */}
+        <div className="space-y-1.5">
+          <label htmlFor="registration-pj-email" className="block text-xs font-bold text-ink">
+            Email Penanggung Jawab
+          </label>
+          <p className="text-[11px] text-brand-700">
+            Alamat email aktif penanggung jawab untuk pengiriman tanda terima resmi pengajuan dan surat hasil verifikasi LPMQ.
+          </p>
+          <input
+            type="email"
+            id="registration-pj-email"
+            value={penanggungJawabEmail}
+            onChange={(e) => setPenanggungJawabEmail(e.target.value)}
+            placeholder="Tulis email penanggung jawab (cth: pj.mushaf@penerbit.com)"
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
+          />
         </div>
 
         {/* 3. Ukuran (cm) dan Oplah (Dinamis Multi-row) */}
@@ -625,19 +719,42 @@ export const NewRegistrationPage = () => {
           </div>
         </div>
 
-        {/* 5. Jenis Mushaf (Dropdown) */}
+        {/* Jenis Mushaf (POSISI DI BAWAH JENIS NASKAH: 4 STANDAR LPMQ KEMENAG RI) */}
         <div className="space-y-1.5 pt-2">
-          <label htmlFor="jenis-mushaf" className="block text-xs font-bold text-ink">
-            Jenis Pendaftaran Mushaf <span className="text-civic-danger">*</span>
+          <label htmlFor="jenis-standar-mushaf" className="block text-xs font-bold text-ink">
+            Jenis Mushaf <span className="text-civic-danger">*</span>
           </label>
           <p className="text-[11px] text-brand-700">
-            Pilih jenis mushaf yang sesuai dengan mushaf yang akan Anda terbitkan.
+            Pilih jenis standar mushaf Al-Qur'an (4 Standar LPMQ Kemenag RI).
           </p>
           <select
-            id="jenis-mushaf"
+            id="jenis-standar-mushaf"
             aria-label="Jenis Mushaf"
-            value={jenisMushaf}
-            onChange={(e) => handleJenisMushafChange(e.target.value)}
+            value={jenisStandarMushaf}
+            onChange={(e) => setJenisStandarMushaf(e.target.value)}
+            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink font-semibold"
+          >
+            {JENIS_STANDAR_MUSHAF_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Kategori Pendaftaran (Mushaf Baru | Perpanjangan Tanda Tashih | Mushaf Luar Negeri) */}
+        <div className="space-y-1.5 pt-2">
+          <label htmlFor="kategori-pendaftaran" className="block text-xs font-bold text-ink">
+            Kategori Pendaftaran Mushaf <span className="text-civic-danger">*</span>
+          </label>
+          <p className="text-[11px] text-brand-700">
+            Pilih kategori pendaftaran (Permohonan Baru, Perpanjangan Tanda Tashih, atau Mushaf Luar Negeri).
+          </p>
+          <select
+            id="kategori-pendaftaran"
+            aria-label="Kategori Pendaftaran Mushaf"
+            value={kategoriPendaftaran}
+            onChange={(e) => handleKategoriPendaftaranChange(e.target.value)}
             className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink font-semibold"
           >
             <option value="Mushaf Baru">Mushaf Baru</option>
@@ -645,25 +762,6 @@ export const NewRegistrationPage = () => {
             <option value="Mushaf Luar Negeri">Mushaf Luar Negeri</option>
           </select>
         </div>
-
-        {/* 6. Nama Percetakan (Hanya untuk Mushaf Domestik / Baru / Perpanjangan) */}
-        {!isLuarNegeri && (
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-ink">
-              Nama Percetakan <span className="text-civic-danger">*</span>
-            </label>
-            <p className="text-[11px] text-brand-700">
-              Diisi dengan nama percetakan tempat mushaf yang didaftarkan akan dicetak. Misal: Gramedia, Bekasi.
-            </p>
-            <input
-              type="text"
-              value={namaPercetakan}
-              onChange={(e) => setNamaPercetakan(e.target.value)}
-              placeholder="Tulis nama percetakan"
-              className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
-            />
-          </div>
-        )}
 
         {/* 7. Deskripsi Mushaf */}
         <div className="space-y-1.5">
@@ -984,6 +1082,7 @@ export const NewRegistrationPage = () => {
       {showReceiptDialog && createdReceipt && (
         <RegistrationReceiptDialog
           key={createdReceipt.id}
+          isOpen={true}
           registration={createdReceipt}
           onClose={() => {
             setShowReceiptDialog(false);

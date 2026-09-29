@@ -188,7 +188,7 @@ export const getPaymentDetail = async (id, user) => {
       expires_at: payment.expires_at,
       is_overdue: Boolean(isOverdue),
       remaining_ms: remainingMs,
-      duration_target: '7 hari kalender',
+      duration_target: expiresAt ? 'Sesuai masa berlaku kode billing' : 'Belum dicatat',
     },
   };
 };

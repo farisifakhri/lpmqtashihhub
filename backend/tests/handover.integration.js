@@ -105,6 +105,7 @@ export async function runHandoverTests({
       'POST',
       {
         decision: 'PASSED',
+        billing_no: `SIMPONI-HO-${reg.id}`,
         checklist: validChecklistPassed,
         notes: 'Semua butir sesuai kriteria',
         letter_text: 'Naskah dinyatakan lolos verifikasi administrasi dan format.',
@@ -113,17 +114,12 @@ export async function runHandoverTests({
     );
 
     // Kepala LPMQ setujui
-    await expect(`/verification-documents/${doc.id}/approve`, kepalaToken, 'POST');
-
-    // Tanda tangani dokumen sebelum kirim
-    const baDoc = await prisma.verificationDocument.findFirst({
-      where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    await expect(`/verification-documents/${doc.id}/approve`, kepalaToken, 'POST', {
+      document_numbers: {
+        SURAT_HASIL_VERIFIKASI: 'B-777/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-777/LPMQ.01/TL.00/09/2026',
+      },
     });
-    if (baDoc) {
-      await expect(`/verification-documents/${baDoc.id}/sign`, verifikatorToken, 'POST');
-      await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST');
-    }
-    await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST');
 
     // Verifikator kirim surat resmi -> AWAITING_PAYMENT & Payment terbit
     const sent = await expect(`/verification-documents/${doc.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
@@ -171,6 +167,11 @@ export async function runHandoverTests({
   await test('PR-VER-06: Verifikator mengesahkan pembayaran lalu menyerahkan master fisik ke Distributor', async () => {
     // 1. Verifikator mengesahkan pembayaran PNBP
     await expect(`/payments/${payment.id}/verify`, verifikatorToken, 'PATCH');
+    await prisma.registration.update({ where: { id: reg.id }, data: {
+      core_team_number: 1, core_verifier_id: verifierUser.id, core_distributor_id: distributorUser.id,
+    } });
+    const readyQueue = await expect('/verification-assignments?handover_ready=true', verifikatorToken);
+    assert.ok(readyQueue.items.some(item => item.id === assignment.id));
 
     // 2. Mengambil daftar distributor aktif
     const distributors = await expect('/master/distributors', verifikatorToken);
@@ -185,9 +186,8 @@ export async function runHandoverTests({
     // 4. Negative: Memilih user penerima yang bukan distributor
     await expect(handoverPath, verifikatorToken, 'POST', { to_user_id: verifierUser.id }, 400);
 
-    // 5. Sukses: Verifikator menyerahkan master fisik ke Distributor
+    // 5. Distributor tujuan diambil langsung dari tim inti tanpa input ulang.
     const created = await expect(handoverPath, verifikatorToken, 'POST', {
-      to_user_id: distributorUser.id,
       condition: 'LENGKAP_30_JUZ',
       volume_count: 30,
       notes: 'Master fisik ukuran A4 rapi dalam box naskah.',
@@ -199,6 +199,16 @@ export async function runHandoverTests({
     assert.equal(created.handover.volume_count, 30);
     assert.ok(created.handover.receipt_no.startsWith('BAST-VER-DIST-'));
     handover = created.handover;
+    const afterHandoverQueue = await expect('/verification-assignments?handover_ready=true', verifikatorToken);
+    assert.ok(!afterHandoverQueue.items.some(item => item.id === assignment.id));
+
+    const pdfPath = `${base}/physical-master/handovers/${handover.id}/pdf`;
+    const pdfResponse = await fetch(pdfPath, { headers: { Authorization: `Bearer ${verifikatorToken}` } });
+    assert.equal(pdfResponse.status, 200);
+    assert.match(pdfResponse.headers.get('content-type') || '', /application\/pdf/);
+    assert.equal(Buffer.from(await pdfResponse.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
+    const unrelatedResponse = await fetch(pdfPath, { headers: { Authorization: `Bearer ${distributor2Token}` } });
+    assert.equal(unrelatedResponse.status, 403);
 
     // Status registrasi berpindah ke WAITING_DISTRIBUTOR_RECEIPT
     const regCheck = await prisma.registration.findUnique({ where: { id: reg.id } });
@@ -241,7 +251,7 @@ export async function runHandoverTests({
     assert.equal(crossDistributorReceive.status, 403);
     assert.match(crossDistributorReceive.json.message || '', /bukan petugas Distributor tujuan/i);
 
-    // 2. Sukses: Distributor A mengonfirmasi penerimaan fisik tanpa default hardcode 30 hari (tashih_due_at dibiarkan null)
+    // 2. Tenggat mengikuti SLA layanan dan kalender hari kerja saat diterima.
     const received = await expect(receivePath, distributorToken, 'POST', {
       condition: 'BAIK_SESUAI_LOKET',
       volume_count: 30,
@@ -251,7 +261,11 @@ export async function runHandoverTests({
     assert.equal(received.handover.status, 'RECEIVED');
     assert.ok(received.handover.received_at);
     assert.equal(received.handover.condition, 'BAIK_SESUAI_LOKET');
-    assert.equal(received.handover.tashih_due_at, null); // Pentashihan backlog: tidak ada asumsi 30 hari bawaan!
+    assert.ok(received.handover.tashih_due_at);
+    const dueDate = new Date(received.handover.tashih_due_at);
+    const jakartaDueDate = new Date(dueDate.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+    const calendarDay = await prisma.workingDay.findUnique({ where: { date: new Date(`${jakartaDueDate}T00:00:00Z`) } });
+    assert.equal(calendarDay?.is_working_day, true);
 
     // 3. Status registrasi resmi berpindah ke WAITING_DISTRIBUTION (Modul Verifikasi Selesai)
     const regFinal = await prisma.registration.findUnique({ where: { id: reg.id } });
@@ -287,17 +301,14 @@ export async function runHandoverTests({
     }, 201)).assignment;
     await expect(`/verification-assignments/${asg2.id}/start`, verifikatorToken, 'PATCH');
     const doc2 = await expect(`/verification-assignments/${asg2.id}/result-drafts`, verifikatorToken, 'POST', {
-      decision: 'PASSED', checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
+      decision: 'PASSED', billing_no: `SIMPONI-HO2-${reg2.id}`, checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
     }, 201);
-    await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST');
-    const baDoc2 = await prisma.verificationDocument.findFirst({
-      where: { assignment_id: asg2.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
+    await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST', {
+      document_numbers: {
+        SURAT_HASIL_VERIFIKASI: `B-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
+        BERITA_ACARA_VERIFIKASI: `BA-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
+      },
     });
-    if (baDoc2) {
-      await expect(`/verification-documents/${baDoc2.id}/sign`, verifikatorToken, 'POST');
-      await expect(`/verification-documents/${baDoc2.id}/sign`, kepalaToken, 'POST');
-    }
-    await expect(`/verification-documents/${doc2.id}/sign`, kepalaToken, 'POST');
     const sent2 = await expect(`/verification-documents/${doc2.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
     await expect(`/payments/${sent2.payment.id}/confirm`, publisherToken, 'POST', {
       receipt_file_id: receiptFile.id, external_ref: 'NTPN-REG2',
@@ -333,6 +344,21 @@ export async function runHandoverTests({
     const reg2Check = await prisma.registration.findUnique({ where: { id: reg2.id } });
     assert.equal(reg2Check.status, 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED');
     assert.equal(reg2Check.revision_source, 'PHYSICAL_HANDOVER');
+
+    const replacement = (await expect(`/registrations/${reg2.id}/physical-master/handovers`, verifikatorToken, 'POST', {
+      to_user_id: distributorUser.id, condition: 'SUDAH_DIPERBAIKI', volume_count: 30,
+      notes: 'Jilid juz 15 diganti dan halaman diperiksa ulang.',
+    }, 201)).handover;
+    assert.notEqual(replacement.receipt_no, ho2.receipt_no);
+    assert.equal(replacement.status, 'PENDING');
+    const afterResubmit = await prisma.registration.findUnique({ where: { id: reg2.id } });
+    assert.equal(afterResubmit.status, 'WAITING_DISTRIBUTOR_RECEIPT');
+    assert.equal(afterResubmit.revision_source, null);
+    const originalPayment = await prisma.paymentRecord.findUnique({ where: { id: sent2.payment.id } });
+    assert.equal(originalPayment.status, 'VERIFIED');
+    await expect(`/physical-master/handovers/${replacement.id}/receive`, distributorToken, 'POST', {
+      condition: 'BAIK', volume_count: 30,
+    });
   });
 }
 

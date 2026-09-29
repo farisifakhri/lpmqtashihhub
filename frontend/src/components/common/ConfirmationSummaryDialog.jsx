@@ -20,7 +20,9 @@ export const ConfirmationSummaryDialog = ({
   cancelLabel = 'Batal',
   confirmVariant = 'primary', // 'primary' | 'danger' | 'gold'
   loading = false,
+  confirmDisabled = false,
   icon,
+  children,
 }) => {
   const dialogRef = useRef(null);
 
@@ -121,6 +123,9 @@ export const ConfirmationSummaryDialog = ({
           </div>
         )}
 
+        {/* Custom form controls / children */}
+        {children}
+
         {/* Impact Message */}
         {finalImpact && (
           <div
@@ -151,7 +156,7 @@ export const ConfirmationSummaryDialog = ({
             variant={confirmVariant}
             size="md"
             onClick={onConfirm}
-            disabled={loading}
+            disabled={loading || confirmDisabled}
             className="text-xs"
           >
             {confirmLabel}

@@ -64,6 +64,14 @@ export const syncNationalHolidays = async (user, year = 2026) => {
   }
 
   return prisma.$transaction(async tx => {
+    const firstDate = new Date(`${year}-01-01T00:00:00Z`);
+    const endDate = new Date(`${year + 1}-01-01T00:00:00Z`);
+    const calendarDays = [];
+    for (let date = firstDate; date < endDate; date = new Date(date.getTime() + 86400000)) {
+      const weekend = date.getUTCDay() === 0 || date.getUTCDay() === 6;
+      calendarDays.push({ date, is_working_day: !weekend, description: weekend ? 'Akhir pekan' : 'Hari kerja', source: 'CALENDAR_BASELINE', updated_by: user.id });
+    }
+    await tx.workingDay.createMany({ data: calendarDays, skipDuplicates: true });
     let syncedCount = 0;
     for (const h of holidays) {
       if (!h.date) continue;

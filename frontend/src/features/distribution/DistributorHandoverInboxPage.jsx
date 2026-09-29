@@ -35,6 +35,10 @@ export const DistributorHandoverInboxPage = () => {
       ? 'ASSIGNMENT'
       : 'HANDOVER'
   );
+  useEffect(() => {
+    setHubStage(urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+      ? 'MONITORING' : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT' ? 'ASSIGNMENT' : 'HANDOVER');
+  }, [urlTab]);
 
   const { waitingDistRegistrations, inProgressRegistrations, distLoading, fetchDistributionData } = useDistributionQueues(hubStage);
 
@@ -59,7 +63,6 @@ export const DistributorHandoverInboxPage = () => {
   const [selectedHandover, setSelectedHandover] = useState(null);
   const [receiveCondition, setReceiveCondition] = useState('BAIK');
   const [receiveVolumeCount, setReceiveVolumeCount] = useState(30);
-  const [tashihDueAt, setTashihDueAt] = useState('');
   const [receiveNotes, setReceiveNotes] = useState('');
   const [receiveModalError, setReceiveModalError] = useState(null);
 
@@ -80,7 +83,7 @@ export const DistributorHandoverInboxPage = () => {
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
   const isAdmin = isSuperAdmin || userRoles.includes('HELPER_ADMIN');
-  const canConfirm = isDistributor || isSuperAdmin;
+  const canConfirm = isDistributor;
 
   const fetchHandovers = async () => {
     const request = ++requestId.current;
@@ -152,18 +155,10 @@ export const DistributorHandoverInboxPage = () => {
     });
   };
 
-  // Setup Default Due Date (30 hari dari hari ini)
-  const getDefaultDueDate = () => {
-    const d = new Date();
-    d.setDate(d.getDate() + 30);
-    return d.toISOString().split('T')[0];
-  };
-
   const openReceiveModal = (item) => {
     setSelectedHandover(item);
     setReceiveCondition(item.condition || 'BAIK');
     setReceiveVolumeCount(item.volume_count || 30);
-    setTashihDueAt(getDefaultDueDate());
     setReceiveNotes('');
     setReceiveModalError(null);
     setReceiveModalOpen(true);
@@ -176,16 +171,9 @@ export const DistributorHandoverInboxPage = () => {
     setActionLoading(true);
     setReceiveModalError(null);
     try {
-      if (!tashihDueAt) {
-        setReceiveModalError('Tenggat waktu pentashihan (tashih_due_at) wajib ditetapkan oleh Distributor.');
-        setActionLoading(false);
-        return;
-      }
-      const isoDueAt = new Date(tashihDueAt).toISOString();
       const payload = {
         condition: receiveCondition.trim() || 'BAIK',
         volume_count: Number(receiveVolumeCount) || 30,
-        tashih_due_at: isoDueAt,
         notes: receiveNotes.trim() || undefined,
       };
 
@@ -194,7 +182,8 @@ export const DistributorHandoverInboxPage = () => {
         `Master fisik ${selectedHandover.receipt_no} resmi diterima. Naskah berpindah status ke 'Menunggu Distribusi' (WAITING_DISTRIBUTION).`
       );
       setReceiveModalOpen(false);
-      await fetchHandovers();
+      setActiveTab('RECEIVED');
+      setPagination(prev => ({ ...prev, page: 1 }));
     } catch (err) {
       setReceiveModalError(err.message || 'Gagal mengonfirmasi penerimaan master fisik.');
     } finally {
@@ -225,10 +214,11 @@ export const DistributorHandoverInboxPage = () => {
         reason: returnReason.trim(),
       });
       setSuccessMessage(
-        `Master fisik ${selectedHandover.receipt_no} berhasil dikembalikan ke Verifikator. Registrasi kini berstatus 'Perlu Perbaikan' (REVISION_REQUIRED).`
+        `Master fisik ${selectedHandover.receipt_no} dikembalikan ke Verifikator untuk perbaikan fisik.`
       );
       setReturnModalOpen(false);
-      await fetchHandovers();
+      setActiveTab('RETURNED');
+      setPagination(prev => ({ ...prev, page: 1 }));
     } catch (err) {
       setReturnModalError(err.message || 'Gagal mengembalikan master fisik.');
     } finally {
@@ -239,6 +229,12 @@ export const DistributorHandoverInboxPage = () => {
   const openDetailModal = (item) => {
     setDetailHandover(item);
     setDetailModalOpen(true);
+  };
+
+  const handleDownloadHandoverPdf = async item => {
+    setError(null);
+    try { await handoverApi.downloadHandoverPdf(item.id, item.receipt_no); }
+    catch (err) { setError(err.message || 'Gagal mengunduh PDF BAST.'); }
   };
 
   // Helper Badge status Handover
@@ -425,6 +421,7 @@ export const DistributorHandoverInboxPage = () => {
           formatDateOnly={formatDateOnly}
           renderHandoverBadge={renderHandoverBadge}
           openDetailModal={openDetailModal}
+          handleDownloadHandoverPdf={handleDownloadHandoverPdf}
           canConfirm={canConfirm}
           openReturnModal={openReturnModal}
           openReceiveModal={openReceiveModal}
@@ -489,8 +486,6 @@ export const DistributorHandoverInboxPage = () => {
         setReceiveCondition={setReceiveCondition}
         receiveVolumeCount={receiveVolumeCount}
         setReceiveVolumeCount={setReceiveVolumeCount}
-        tashihDueAt={tashihDueAt}
-        setTashihDueAt={setTashihDueAt}
         receiveNotes={receiveNotes}
         setReceiveNotes={setReceiveNotes}
         actionLoading={actionLoading}

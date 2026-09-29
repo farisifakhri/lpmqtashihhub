@@ -111,10 +111,11 @@ describe('DistributorHandoverInboxPage Component', () => {
       expect(screen.getByText(/30 Jilid/i)).toBeInTheDocument();
       expect(screen.getByText('Konfirmasi Diterima (Langkah 8)')).toBeInTheDocument();
       expect(screen.getByText('Tolak / Kembalikan Fisik')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'PDF BAST' })).toBeInTheDocument();
     });
   });
 
-  it('dapat membuka modal konfirmasi penerimaan fisik dan menetapkan tenggat pentashihan', async () => {
+  it('dapat menerima fisik dengan tenggat pentashihan otomatis', async () => {
     render(
       <MemoryRouter>
         <DistributorHandoverInboxPage />
@@ -132,6 +133,7 @@ describe('DistributorHandoverInboxPage Component', () => {
       expect(screen.getByText('Sahkan Penerimaan & Lanjut Distribusi')).toBeInTheDocument();
     });
 
+    expect(screen.getByText(/Tenggat pentashihan dihitung otomatis/i)).toBeInTheDocument();
     // Submit form modal penerimaan
     fireEvent.click(screen.getByText('Sahkan Penerimaan & Lanjut Distribusi'));
 
@@ -143,6 +145,7 @@ describe('DistributorHandoverInboxPage Component', () => {
           volume_count: 30,
         })
       );
+      expect(HandoverApiModule.handoverApi.receiveHandover.mock.calls[0][1]).not.toHaveProperty('tashih_due_at');
     });
   });
 
@@ -180,7 +183,7 @@ describe('DistributorHandoverInboxPage Component', () => {
 
   it('membuka dialog penugasan dari antrean distributor untuk admin', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'HELPER_ADMIN', roles: ['HELPER_ADMIN'] } });
-    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }] });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: { items: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }], pagination: { total: 1 } } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
     vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });
     render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
@@ -190,7 +193,7 @@ describe('DistributorHandoverInboxPage Component', () => {
   });
 
   it('membuka dialog reviu dari panel monitoring', async () => {
-    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] }] });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: { items: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] }], pagination: { total: 1 } } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] } });
     render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
     fireEvent.click(screen.getByRole('button', { name: /Monitoring Sidang/i }));

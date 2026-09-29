@@ -160,7 +160,9 @@ export const InternalPaymentQueuePage = () => {
         `Pembayaran untuk nomor billing ${selectedPayment.billing_no} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
       );
       setVerifyConfirmOpen(false);
-      await fetchPayments();
+      setSelectedPaymentId(selectedPayment.id);
+      setActiveTab('VERIFIED');
+      setPagination(prev => ({ ...prev, page: 1 }));
     } catch (err) {
       setError(err.message || 'Gagal memverifikasi pembayaran.');
     } finally {
@@ -512,7 +514,7 @@ export const InternalPaymentQueuePage = () => {
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Link
-                  to={`/internal/verifications/${assignmentId}`}
+                  to={`/internal/verifications/${assignmentId}${isHandedOver ? '' : '?handover=1'}`}
                   className="inline-flex items-center gap-1.5 font-bold text-white bg-brand-700 hover:bg-brand-800 px-3.5 py-2 rounded-lg shadow-xs transition-colors"
                 >
                   <PackageCheck className="w-4 h-4" />

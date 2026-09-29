@@ -8,6 +8,7 @@ const baseApiUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE
 
 export const PrivateFileViewer = ({
   fileId,
+  endpoint,
   fileName = 'dokumen',
   mimeType,
   className,
@@ -27,7 +28,7 @@ export const PrivateFileViewer = ({
 
     try {
       const token = getAuthToken();
-      const response = await fetch(`${baseApiUrl}/uploads/${encodeURIComponent(fileId)}`, {
+      const response = await fetch(`${baseApiUrl}${endpoint || `/uploads/${encodeURIComponent(fileId)}`}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -73,7 +74,7 @@ export const PrivateFileViewer = ({
         activeUrlRef.current = null;
       }
     };
-  }, [fileId]);
+  }, [fileId, endpoint]);
 
   const handleDownload = () => {
     if (!blobUrl) return;

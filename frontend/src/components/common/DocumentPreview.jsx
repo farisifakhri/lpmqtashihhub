@@ -17,14 +17,6 @@ export const DocumentPreview = ({
   onDownload,
   className,
 }) => {
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-      return;
-    }
-    window.print();
-  };
-
   return (
     <div
       className={clsx(
@@ -60,15 +52,15 @@ export const DocumentPreview = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Button
+          {onPrint && <Button
             variant="outline"
             size="sm"
-            onClick={handlePrint}
+            onClick={onPrint}
             className="text-xs"
             title="Cetak Dokumen"
           >
             <Printer className="w-3.5 h-3.5 mr-1" /> Cetak
-          </Button>
+          </Button>}
           {onDownload && (
             <Button
               variant="outline"

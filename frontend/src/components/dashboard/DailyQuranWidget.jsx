@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, RefreshCw, WifiOff } from 'lucide-react';
+import { getAuthToken } from '@/api/client';
 
 const SURAH_AYAH_COUNTS = [
   7,286,200,176,120,165,206,75,129,109,123,111,43,52,99,128,
@@ -17,44 +18,42 @@ const FALLBACK_AYAH = {
   source: 'QS. Al-Hijr: 9',
 };
 
-const API_BASE_URL = 'https://quran-api-id.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const DailyQuranWidget = () => {
   const [ayah, setAyah] = useState(FALLBACK_AYAH);
-  const [countdown, setCountdown] = useState(60);
   const [isLoading, setIsLoading] = useState(false);
-  const [usesFallback, setUsesFallback] = useState(false);
+  const [usesFallback, setUsesFallback] = useState(true);
   const requestController = useRef(null);
 
-  const loadRandomAyah = useCallback(async () => {
+  const loadRandomAyah = useCallback(async (manual = false) => {
     requestController.current?.abort();
     const controller = new AbortController();
     requestController.current = controller;
     const timeoutId = setTimeout(() => controller.abort(), 10000);
-    const surahNumber = Math.floor(Math.random() * 114) + 1;
-    const ayahNumber = Math.floor(Math.random() * SURAH_AYAH_COUNTS[surahNumber - 1]) + 1;
+    const seed = Math.floor(Date.now() / 86400000);
+    const surahNumber = manual ? Math.floor(Math.random() * 114) + 1 : (seed % 114) + 1;
+    const ayahNumber = manual ? Math.floor(Math.random() * SURAH_AYAH_COUNTS[surahNumber - 1]) + 1 : (seed % SURAH_AYAH_COUNTS[surahNumber - 1]) + 1;
 
     setIsLoading(true);
     setUsesFallback(false);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/surah/${surahNumber}/${ayahNumber}`, {
+      const response = await fetch(`${API_BASE_URL}/quran/verses/${surahNumber}/${ayahNumber}`, {
         signal: controller.signal,
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
       });
       if (!response.ok) throw new Error('Respons API tidak berhasil.');
 
       const payload = await response.json();
       const data = payload?.data;
-      const arabic = data?.text?.arab;
-      const translation = data?.translation?.id;
-      if (payload?.code !== 200 || !arabic || !translation) {
+      const arabic = data?.arabic;
+      const translation = data?.translation;
+      if (!arabic) {
         throw new Error('Struktur respons API tidak valid.');
       }
 
-      const surahName = data?.surah?.name?.transliteration?.id || `Surah ${surahNumber}`;
-      const resolvedAyahNumber = data?.number?.inSurah || ayahNumber;
-      setAyah({ arabic, translation, source: `QS. ${surahName}: ${resolvedAyahNumber}` });
-      setCountdown(60);
+      setAyah({ arabic, translation, footnote: data.footnote, source: data.source || `QS. Surah ${surahNumber}: ${ayahNumber}` });
     } catch (error) {
       if (requestController.current !== controller) return;
       setUsesFallback(true);
@@ -74,22 +73,9 @@ export const DailyQuranWidget = () => {
     };
   }, [loadRandomAyah]);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((current) => {
-        if (current <= 1) {
-          loadRandomAyah();
-          return 60;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [loadRandomAyah]);
-
   return (
     <section
-      className="rounded-xl border border-line bg-white p-5 sm:p-6 shadow-2xs transition-shadow"
+      className="h-full min-w-0 rounded-xl border border-line bg-white p-5 sm:p-6 shadow-2xs transition-shadow"
       aria-labelledby="quran-widget-title"
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
@@ -99,19 +85,16 @@ export const DailyQuranWidget = () => {
           </div>
           <div>
             <h3 id="quran-widget-title" className="text-sm font-bold text-ink">
-              Ayat Al-Qur'an dalam 1 Menit
+              Ayat Al-Qur'an
             </h3>
-            <p className="text-xs text-ink-muted">Penyemangat & Pengingat Tugas Layanan</p>
+            <p className="text-xs text-ink-muted">Rujukan Qur'an Kemenag · LPMQ</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
-          <span className="hidden text-xs text-ink-muted sm:inline">
-            Berganti dalam <strong className="font-mono text-brand-800 font-bold">{countdown}s</strong>
-          </span>
           <button
             type="button"
-            onClick={loadRandomAyah}
+            onClick={() => loadRandomAyah(true)}
             disabled={isLoading}
             className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg border border-line bg-canvas px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-subtle hover:text-ink disabled:cursor-wait disabled:opacity-60 transition-colors"
             title="Muat ayat lain"
@@ -124,7 +107,7 @@ export const DailyQuranWidget = () => {
 
       {usesFallback && (
         <div className="mt-3 flex items-center gap-1.5 text-xs font-medium text-civic-warning bg-civic-warningSoft p-2 rounded-lg border border-civic-warningLine" role="status">
-          <WifiOff className="h-3.5 w-3.5" /> Referensi naskah lokal ditampilkan.
+          <WifiOff className="h-3.5 w-3.5" /> Ayat contoh lokal ditampilkan. Akses API resmi LPMQ belum tersedia.
         </div>
       )}
 
@@ -135,9 +118,10 @@ export const DailyQuranWidget = () => {
         <p dir="rtl" className="py-4 text-right font-serif text-xl sm:text-2xl font-normal leading-[2.4] tracking-wide text-ink">
           {ayah.arabic}
         </p>
-        <p className="rounded-r-lg border-l-4 border-civicGold-700 bg-canvas py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-ink">
+        {ayah.translation && <p className="rounded-r-lg border-l-4 border-civicGold-700 bg-canvas py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-ink">
           “{ayah.translation}”
-        </p>
+        </p>}
+        {ayah.footnote && <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">{ayah.footnote}</p>}
       </div>
     </section>
   );

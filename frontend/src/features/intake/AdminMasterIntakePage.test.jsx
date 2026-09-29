@@ -162,7 +162,7 @@ describe('AdminMasterIntakePage Component', () => {
     await waitFor(() => {
       expect(screen.getByText('Master Fisik Telah Resmi Diterima di Loket LPMQ')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Tugaskan Verifikator Sekarang/i })).toBeInTheDocument();
-      expect(screen.getByText('Cetak Tanda Terima')).toBeInTheDocument();
+      expect(screen.getByText('Lihat / Cetak PDF Tanda Terima')).toBeInTheDocument();
     });
   });
 

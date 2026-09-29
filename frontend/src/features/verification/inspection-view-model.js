@@ -64,7 +64,14 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const canVerifierWork = isInProgress && isAssignedVerifier && !isRevoked;
   const isReadOnly = !canVerifierWork;
 
-  const canHeadApprove = isHead && (registration.status === 'WAITING_VERIFICATION_APPROVAL' || latestResultDoc?.status === 'SUBMITTED');
+  const verifierSignedResult = latestResultDoc?.signatories?.some(sig => sig.status === 'SIGNED' && sig.signer_user_id === assignment.verifier?.id);
+  const verifierSignedBa = !beritaAcaraDoc || beritaAcaraDoc.signatories?.some(sig => sig.status === 'SIGNED' && sig.signer_user_id === assignment.verifier?.id);
+  const billingReady = latestResultDoc?.content_snapshot?.decision !== 'PASSED' || (
+    Boolean(latestResultDoc?.content_snapshot?.billing_no)
+    && registration.payment_records?.some(item => item.billing_no === latestResultDoc.content_snapshot.billing_no)
+  );
+  const approvalReady = Boolean(verifierSignedResult && verifierSignedBa && billingReady);
+  const canHeadApprove = isHead && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL' && approvalReady;
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
   const canVerifierSend = isAssignedVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
 
@@ -72,9 +79,10 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const latestHandover = registration.physical_handovers?.[0];
   const isPaymentVerified = latestPayment?.status === 'VERIFIED';
   const canVerifierHandover =
-    (isVerifier || isAdmin) &&
-    registration.status === 'PAYMENT_VERIFICATION' &&
+    isAssignedVerifier &&
+    ['PAYMENT_VERIFICATION', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'].includes(registration.status) &&
     isPaymentVerified &&
+    Boolean(registration.core_distributor_id) &&
     (!latestHandover || latestHandover.status === 'RETURNED');
   const isWaitingDistributor = registration.status === 'WAITING_DISTRIBUTOR_RECEIPT';
   const isHandoverReceived =
@@ -94,7 +102,7 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
-    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, isSent,
+    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
     canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,

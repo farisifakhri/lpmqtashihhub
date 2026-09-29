@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { tashihApi } from '@/api/tashih.api';
 import { ReviewForm } from './components/ReviewForm';
 import { AssignmentListPanel } from './components/AssignmentListPanel';
+import { JuzChecklistForm } from './components/JuzChecklistForm';
 import { useAssignments } from './hooks/useAssignments';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -55,6 +56,15 @@ export const PentashihWorkspacePage = () => {
       (a) => a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0)
     ).length;
   }, [assignments]);
+
+  const handleJuzSaved = updated => {
+    setSelectedAssignment(previous => previous ? {
+      ...previous,
+      juz_items: previous.juz_items.map(item => item.id === updated.id ? updated : item),
+    } : previous);
+    setSuccessMessage(`Checklist juz ${updated.juz_number} berhasil disimpan.`);
+    fetchAssignments();
+  };
 
   const openReviewModal = (assignment) => {
     setSelectedAssignment(assignment);
@@ -126,7 +136,7 @@ export const PentashihWorkspacePage = () => {
       {/* 1. Header Halaman */}
       <PageHeader
         title="Ruang Sidang Pentashihan Mushaf"
-        subtitle="Pencatatan telaah rasm usmani, harakat, dabt, waqaf, dan tanda baca per naskah master sesuai SOP Sidang Reguler LPMQ"
+        subtitle="Checklist hasil tashih per juz untuk naskah yang ditugaskan Distributor"
         icon={<BookOpen className="w-6 h-6 text-brand-700" />}
         action={
           <Button
@@ -175,7 +185,11 @@ export const PentashihWorkspacePage = () => {
         hasMore={hasMore}
       />
       {/* 4. Modal Formulir Telaah Sidang Pentashihan */}
-      <ReviewForm
+      {reviewModalOpen && selectedAssignment?.juz_items?.length ? <JuzChecklistForm
+        assignment={selectedAssignment}
+        onClose={closeReviewModal}
+        onSaved={handleJuzSaved}
+      /> : <ReviewForm
         selectedAssignment={reviewModalOpen ? selectedAssignment : null}
         reviewResult={reviewResult}
         setReviewResult={setReviewResult}
@@ -186,7 +200,7 @@ export const PentashihWorkspacePage = () => {
         closeReviewModal={closeReviewModal}
         handleReviewSubmit={handleReviewSubmit}
         getStageLabel={getStageLabel}
-      />
+      />}
     </div>
   );
 };

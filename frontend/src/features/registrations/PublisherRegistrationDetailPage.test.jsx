@@ -47,6 +47,31 @@ describe('Publisher detail and revision', () => {
     expect(screen.queryByLabelText('Pilih berkas naskah')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Kirim pengajuan|Ajukan ulang/ })).not.toBeInTheDocument();
   });
+  it('shows intake as the next step after the publisher dispatches physical files', async () => {
+    registrationApi.getDetail.mockResolvedValue({ data: {
+      ...data,
+      status: 'READY_FOR_VERIFICATION',
+      physical_dispatch_status: 'DISPATCHED',
+      physical_master_intake: { status: 'PENDING' },
+    } });
+    show();
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.getByText('Berkas Dikirim · Menunggu Penerimaan Loket')).toBeInTheDocument();
+    expect(screen.getByText(/petugas loket menerima dan memeriksa master fisik/)).toBeInTheDocument();
+    expect(screen.queryByText('Berkas Telah Dikirim · Sedang Verifikasi')).not.toBeInTheDocument();
+  });
+  it('shows assignment as the next step once the intake is received', async () => {
+    registrationApi.getDetail.mockResolvedValue({ data: {
+      ...data,
+      status: 'READY_FOR_VERIFICATION',
+      physical_dispatch_status: 'DISPATCHED',
+      physical_master_intake: { status: 'RECEIVED', receipt_no: 'TT-1' },
+    } });
+    show();
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.getByText('Master Fisik Diterima Loket · Menunggu Penugasan')).toBeInTheDocument();
+    expect(screen.getByText(/Langkah berikutnya: petugas menugaskan verifikator/)).toBeInTheDocument();
+  });
   it('refuses to expose a detail page after an ownership error', async () => {
     registrationApi.getDetail.mockRejectedValue(new Error('Akses ditolak'));
     show(); expect(await screen.findByRole('alert')).toHaveTextContent('Akses ditolak');

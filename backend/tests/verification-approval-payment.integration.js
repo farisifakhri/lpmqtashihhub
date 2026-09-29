@@ -100,6 +100,7 @@ export async function runVerificationApprovalPaymentTests({
       'POST',
       {
         decision: 'PASSED',
+        billing_no: `SIMPONI-${reg.id}`,
         checklist: validChecklistPassed,
         notes: 'Semua butir sesuai kriteria SOP LPMQ',
         letter_text: 'Berdasarkan telaah verifikator, naskah dinyatakan memenuhi ketentuan untuk dilanjutkan ke sidang pentashihan.',
@@ -145,6 +146,7 @@ export async function runVerificationApprovalPaymentTests({
       'POST',
       {
         decision: 'PASSED',
+        billing_no: `SIMPONI-${reg.id}`,
         checklist: validChecklistPassed,
         notes: 'Penomoran ayat telah diperbaiki dan diverifikasi ulang',
         letter_text: 'Naskah telah diperbaiki dan dinyatakan memenuhi ketentuan SOP LPMQ.',
@@ -168,16 +170,30 @@ export async function runVerificationApprovalPaymentTests({
       // Endpoint mengharuskan KEPALA_LPMQ
     }
 
-    // Sukses: Kepala LPMQ menyetujui draf surat (persetujuan administratif tanpa memalsukan TTE)
-    const approved = await expect(approvePath, kepalaToken, 'POST');
-    assert.equal(approved.status, 'APPROVED');
+    // Negative: Persetujuan tanpa nomor surat/berita acara ditolak (400)
+    await expect(approvePath, kepalaToken, 'POST', {}, 400);
+
+    // Sukses: Kepala LPMQ menyetujui draf surat (persetujuan administratif dengan nomor resmi)
+    const approved = await expect(approvePath, kepalaToken, 'POST', {
+      document_numbers: {
+        [doc.document_type]: 'B-101/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-101/LPMQ.01/TL.00/09/2026',
+      },
+    });
+    assert.equal(approved.status, 'SIGNED');
     assert.ok(approved.approved_at);
-    assert.equal(approved.signature_status, 'PENDING');
-    assert.equal(approved.signed_at, null);
+    assert.equal(approved.document_no, 'B-101/LPMQ.01/TL.00/09/2026');
+    assert.equal(approved.signature_status, 'SIGNED');
+    assert.ok(approved.signed_at);
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_APPROVED');
 
     // Negative: Dokumen yang sudah disetujui tidak dapat disetujui ulang (409)
-    await expect(approvePath, kepalaToken, 'POST', {}, 409);
+    await expect(approvePath, kepalaToken, 'POST', {
+      document_numbers: {
+        [doc.document_type]: 'B-102/LPMQ.01/TL.00/09/2026',
+        BERITA_ACARA_VERIFIKASI: 'BA-102/LPMQ.01/TL.00/09/2026',
+      },
+    }, 409);
 
     // P1: Isolasi Verifikator — Verifikator lain dilarang mengakses dokumen yang bukan miliknya (403)
     let verifier2 = await prisma.user.findUnique({ where: { email: 'verifikator2@lpmq.kemenag.go.id' } });
@@ -197,9 +213,9 @@ export async function runVerificationApprovalPaymentTests({
     await expect(`/verification-documents/${doc.id}`, verifier2Token, 'GET', undefined, 403);
 
     // P0: Pusat Tanda Tangan — GET /verification-assignments mengembalikan semua dokumen dengan signatories lengkap
-    const inboxAsgs = await expect('/verification-assignments?status=WAITING_SIGNATURE', kepalaToken);
+    const inboxAsgs = await expect('/verification-assignments?status=READY_TO_SEND', kepalaToken);
     const targetAsg = inboxAsgs.items.find(item => item.id === assignment.id);
-    assert.ok(targetAsg, 'Assignment berstatus WAITING_SIGNATURE harus ada di inbox');
+    assert.ok(targetAsg, 'Assignment berstatus READY_TO_SEND harus ada di inbox');
     assert.ok(Array.isArray(targetAsg.documents), 'Documents harus berupa array');
     const hasResultDoc = targetAsg.documents.some(d => ['SURAT_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'].includes(d.document_type));
     assert.ok(hasResultDoc, 'Dokumen hasil verifikasi harus dikembalikan bersama penugasan');
@@ -220,29 +236,14 @@ export async function runVerificationApprovalPaymentTests({
     await expect(sendPath, publisherToken, 'POST', {}, 403);
     await expect(sendPath, kepalaToken, 'POST', {}, 403);
 
-    // Negative: Kirim ditolak jika dokumen belum ditandatangani (409)
-    await expect(sendPath, verifikatorToken, 'POST', { channel: 'IN_APP' }, 409);
-
     // Cari Berita Acara Verifikasi yang dihasilkan saat submit
     const baDoc = await prisma.verificationDocument.findFirst({
       where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
     });
     assert.ok(baDoc, 'Berita Acara Verifikasi harus terbentuk');
 
-    // Negative: Kepala LPMQ dilarang menandatangani Berita Acara sebelum Verifikator (urutan sign_order)
-    await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST', undefined, 409);
-
-    // 1. Verifikator menandatangani Berita Acara (Urutan 1)
-    const verifierSignedBA = await expect(`/verification-documents/${baDoc.id}/sign`, verifikatorToken, 'POST');
-    assert.equal(verifierSignedBA.status, 'SIGNING');
-
-    // 2. Kepala LPMQ menandatangani Berita Acara (Urutan 2)
-    const kepalaSignedBA = await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST');
-    assert.equal(kepalaSignedBA.status, 'SIGNED');
-
-    // 3. Kepala LPMQ menandatangani Surat Pemberitahuan
-    const kepalaSignedDoc = await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST');
-    assert.equal(kepalaSignedDoc.status, 'SIGNED');
+    assert.equal(baDoc.status, 'SIGNED');
+    await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST', undefined, 409);
 
     // Sukses: Verifikator mengirim surat hasil telaah ke penerbit
     const sendResult = await expect(sendPath, verifikatorToken, 'POST', { channel: 'IN_APP' });
@@ -255,10 +256,10 @@ export async function runVerificationApprovalPaymentTests({
     assert.equal(asgCheck.status, 'COMPLETED');
     assert.ok(asgCheck.completed_at);
 
-    // Tagihan pembayaran otomatis terbit dengan SLA 7 hari
+    // Kode billing yang dicatat Verifikator tetap sama saat surat dikirim.
     assert.ok(sendResult.payment);
     assert.equal(sendResult.payment.status, 'UNPAID');
-    assert.ok(sendResult.payment.expires_at);
+    assert.equal(sendResult.payment.billing_no, `SIMPONI-${reg.id}`);
     payment = sendResult.payment;
 
     // Sukses: Penerbit pemilik kini diizinkan membaca dokumen surat yang telah dikirimkan
@@ -278,8 +279,7 @@ export async function runVerificationApprovalPaymentTests({
     const billDetail = await expect(`/payments/${payment.id}`, publisherToken);
     assert.equal(billDetail.id, payment.id);
     assert.equal(billDetail.status, 'UNPAID');
-    assert.ok(billDetail.sla.expires_at);
-    assert.equal(billDetail.sla.duration_target, '7 hari kalender');
+    assert.equal(billDetail.billing_no, `SIMPONI-${reg.id}`);
 
     // Sukses: Penerbit melihat billing lewat endpoint registrasi
     const regBill = await expect(`/registrations/${reg.id}/payment`, publisherToken);

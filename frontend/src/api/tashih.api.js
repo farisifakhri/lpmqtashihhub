@@ -26,6 +26,10 @@ export const tashihApi = {
     });
   },
 
+  recordJuzChecklist: async (assignmentId, juzNumber, payload) => apiClient(`/assignments/${assignmentId}/juz/${juzNumber}`, {
+    method: 'PATCH', body: payload,
+  }),
+
   /**
    * Distributor mengompilasi dan mereviu rekomendasi seluruh pentashih
    * @param {string} registrationId - UUID Registrasi

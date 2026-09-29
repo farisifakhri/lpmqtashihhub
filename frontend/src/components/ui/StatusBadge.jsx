@@ -41,6 +41,14 @@ export const StatusBadge = ({
   let borderClass = config.borderClass;
 
   if (vm) {
+    if (status === 'READY_FOR_VERIFICATION') {
+      description = vm.blockedReason || vm.statusDescription;
+      if (vm.operationalState === 'WAITING_PHYSICAL_MASTER') {
+        bgClass = 'bg-civic-warningSoft';
+        textClass = 'text-civic-warning';
+        borderClass = 'border-civic-warningLine';
+      }
+    }
     if (vm.operationalStatusLabel) {
       label = vm.operationalStatusLabel;
     }

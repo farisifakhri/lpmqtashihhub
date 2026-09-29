@@ -19,14 +19,22 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   const now = new Date();
   const team = await tx.distributionTeam.findUnique({ where: { id: data.team_id }, include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } } });
   if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) fail(409, 'Tim yang dipilih tidak tersedia atau masa berlaku SK-nya belum dimulai/sudah berakhir. Pilih tim dengan SK aktif atau minta administrator memperbarui data tim.');
-  for (const id of data.assignee_ids) {
+  const entries = data.juz_assignments || data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] }));
+  for (const { assignee_id: id } of entries) {
     const member = team.members.find(member => member.user_id === id);
     if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
   }
-  const due_at = await calculateDueAt(tx, now, reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]);
+  const receivedHandover = data.stage === 'REVISION' ? null : await tx.physicalManuscriptHandover.findFirst({
+    where: { registration_id: id, status: 'RECEIVED' }, orderBy: { received_at: 'desc' }, select: { tashih_due_at: true },
+  });
+  const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, now, Number(reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]));
   const assignments = [];
-  for (const assignee_id of data.assignee_ids) {
-    const assignment = await tx.assignment.create({ data: { registration_id: id, team_id: team.id, assignee_id, stage: data.stage, iteration: (previous?.iteration || 0) + 1, due_at } });
+  for (const { assignee_id, juz_numbers } of entries) {
+    const assignment = await tx.assignment.create({ data: {
+      registration_id: id, team_id: team.id, assignee_id, stage: data.stage,
+      iteration: (previous?.iteration || 0) + 1, due_at,
+      ...(juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
+    } });
     assignments.push(assignment);
     await audit(tx, user, 'CREATE_ASSIGNMENT', 'Assignment', assignment.id, assignment);
     await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
@@ -48,13 +56,44 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (!initial) fail(404, 'Penugasan tidak ditemukan.');
   const reg = await registration(tx, initial.registration_id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
-  const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true } });
+  const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true, juz_items: true } });
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
+  if (assignment.juz_items?.length) fail(409, 'Penugasan ini memakai checklist per juz. Isi hasil setiap juz di ruang kerja Anda.');
   if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
   const review = await tx.tashihReview.create({ data: { assignment_id: id, ...data } });
   await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
   await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
   return review;
+}, { isolationLevel: 'ReadCommitted' });
+
+export const recordJuzChecklist = (id, juzNumber, data, user) => prisma.$transaction(async tx => {
+  requireRole(user, ['PENTASHIH']);
+  const initial = await tx.assignment.findUnique({ where: { id }, select: { registration_id: true } });
+  if (!initial) fail(404, 'Penugasan tidak ditemukan.');
+  const reg = await registration(tx, initial.registration_id);
+  requireStatus(reg, ['TASHIH_IN_PROGRESS']);
+  const assignment = await tx.assignment.findUnique({ where: { id }, include: { juz_items: true, reviews: true } });
+  if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
+  if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Checklist penugasan ini sudah selesai.');
+  const item = assignment.juz_items.find(row => row.juz_number === Number(juzNumber));
+  if (!item) fail(404, 'Juz ini tidak ditugaskan kepada Anda.');
+  if (item.result) fail(409, 'Checklist juz ini sudah disimpan dan tidak dapat ditimpa.');
+  const updated = await tx.assignmentJuz.update({ where: { id: item.id }, data: {
+    result: data.result, notes: data.notes || null, completed_at: new Date(),
+  } });
+  await audit(tx, user, 'TASHIH_JUZ_CHECKLIST', 'AssignmentJuz', item.id, updated);
+  const all = assignment.juz_items.map(row => row.id === item.id ? updated : row);
+  if (all.every(row => row.result)) {
+    const result = all.some(row => row.result === 'REVISION_REQUIRED') ? 'REVISION_REQUIRED' : 'PASSED';
+    const flagged = all.filter(row => row.result === 'REVISION_REQUIRED').map(row => row.juz_number);
+    const notes = flagged.length ? `Perlu perbaikan pada juz ${flagged.join(', ')}. Lihat checklist per juz.` : `Seluruh ${all.length} juz yang ditugaskan selesai ditashih.`;
+    const review = await tx.tashihReview.create({ data: { assignment_id: id, result, notes } });
+    await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
+    await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
+  } else if (assignment.status === 'ASSIGNED') {
+    await tx.assignment.update({ where: { id }, data: { status: 'IN_PROGRESS' } });
+  }
+  return updated;
 }, { isolationLevel: 'ReadCommitted' });
 
 export async function listMyAssignments(user, query = {}) {
@@ -84,6 +123,7 @@ export async function listMyAssignments(user, query = {}) {
       },
       team: { select: { id: true, name: true, decree_no: true } },
       reviews: { orderBy: { completed_at: 'desc' } },
+      juz_items: { orderBy: { juz_number: 'asc' } },
     },
     orderBy: { created_at: 'desc' },
   });

@@ -143,6 +143,19 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
       createdUserId = null;
     });
 
+    // 10b. Force Delete User
+    await test('User Management: SUPERADMIN dapat melakukan force delete pada user', async () => {
+      const tempEmail = `test.force.delete.${Date.now()}@lpmq.kemenag.go.id`;
+      const created = await expect('/users', adminToken, 'POST', {
+        name: 'User Force Delete',
+        email: tempEmail,
+        password: 'password123',
+        roles: ['VERIFIKATOR'],
+      }, 201);
+      const res = await expect(`/users/${created.data.id}?force=true`, adminToken, 'DELETE');
+      assert.equal(res.data.action, 'DELETED');
+    });
+
     // 11. Create Admin Internal & Super Admin explicitly
     let adminInternalId = null;
     let newSuperadminId = null;

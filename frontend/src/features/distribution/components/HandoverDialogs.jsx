@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 export const HandoverDialogs = ({
   receiveModalOpen, selectedHandover, setReceiveModalOpen, receiveModalError,
   handleReceiveSubmit, receiveCondition, setReceiveCondition, receiveVolumeCount,
-  setReceiveVolumeCount, tashihDueAt, setTashihDueAt, receiveNotes, setReceiveNotes,
+  setReceiveVolumeCount, receiveNotes, setReceiveNotes,
   actionLoading, returnModalOpen, setReturnModalOpen, returnModalError,
   handleReturnSubmit, returnReason, setReturnReason, detailModalOpen, detailHandover,
   setDetailModalOpen, formatDate, formatDateOnly, renderHandoverBadge,
@@ -75,21 +75,9 @@ export const HandoverDialogs = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-ink mb-1">
-                  Tenggat Waktu Pentashihan (Tashih Due At) <span className="text-civic-danger">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={tashihDueAt}
-                  onChange={(e) => setTashihDueAt(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-semibold text-ink"
-                  required
-                />
-                <span className="text-[11px] text-ink-muted mt-1 block">
-                  Standar target pentashihan tim sidang adalah 30 hari kalender sejak master fisik diterima resmi di loket.
-                </span>
-              </div>
+              <p className="rounded-xl border border-brand-100 bg-brand-50 p-3 text-brand-900">
+                Tenggat pentashihan dihitung otomatis saat penerimaan disahkan, berdasarkan durasi layanan dan kalender hari kerja termasuk libur serta cuti bersama.
+              </p>
 
               <div>
                 <label className="block font-bold text-ink mb-1">

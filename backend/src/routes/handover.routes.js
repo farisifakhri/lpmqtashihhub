@@ -3,6 +3,7 @@ import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import * as handoverService from '../services/handover.service.js';
+import { renderHandoverPdf } from '../services/handover-pdf.service.js';
 import {
   createHandoverSchema,
   receiveHandoverSchema,
@@ -52,6 +53,18 @@ router.get(
   authenticate,
   action((req) => handoverService.getHandoverDetail(req.params.id, req.user))
 );
+
+router.get('/physical-master/handovers/:id/pdf', authenticate, async (req, res, next) => {
+  try {
+    const handover = await handoverService.getHandoverDetail(req.params.id, req.user);
+    const bytes = await renderHandoverPdf(handover);
+    const filename = `BAST-${handover.receipt_no || handover.id}`.replace(/[^A-Za-z0-9._-]/g, '-');
+    res.set('Content-Type', 'application/pdf');
+    res.set('Content-Disposition', `inline; filename="${filename}.pdf"`);
+    res.set('Cache-Control', 'private, no-store');
+    res.send(bytes);
+  } catch (error) { next(error); }
+});
 
 // 5. Distributor mengonfirmasi penerimaan fisik dan tenggat pentashihan (Langkah 8 SOP)
 router.post(

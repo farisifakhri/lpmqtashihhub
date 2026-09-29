@@ -27,14 +27,24 @@ export function getDetailedStage(registration) {
   }
 
   if (status === 'READY_FOR_VERIFICATION') {
-    if (dispatchStatus === 'DISPATCHED') {
+    if (registration.physical_master_intake?.status === 'RECEIVED' || registration.physical_master?.status === 'RECEIVED') {
       return {
         index: 2,
-        label: 'Sedang Diverifikasi',
+        label: 'Menunggu Penugasan Verifikator',
         percent: 45,
         color: 'bg-civic-info',
         badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
-        description: 'Berkas fisik terkirim; verifikator memeriksa kelengkapan',
+        description: 'Master fisik diterima loket; menunggu penugasan verifikator',
+      };
+    }
+    if (dispatchStatus === 'DISPATCHED') {
+      return {
+        index: 1,
+        label: 'Menunggu Penerimaan Berkas',
+        percent: 35,
+        color: 'bg-civic-warning',
+        badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
+        description: 'Pengiriman dicatat; loket LPMQ belum menerima master fisik',
       };
     }
     return {
