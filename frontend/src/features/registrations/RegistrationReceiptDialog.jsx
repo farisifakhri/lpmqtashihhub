@@ -184,7 +184,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
         <div
           className={`flex-1 overflow-y-auto ${
             viewMode === 'print_preview'
-              ? 'p-4 sm:p-8 bg-slate-100 flex justify-center'
+              ? 'p-4 sm:p-8 bg-surface-subtle flex justify-center'
               : 'p-4 sm:p-6 bg-white'
           }`}
         >
@@ -193,7 +193,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
             ref={printRef}
             className={`w-full text-ink printable-receipt bg-white ${
               viewMode === 'print_preview'
-                ? 'max-w-[210mm] min-h-[280mm] p-8 sm:p-10 shadow-lg border border-slate-300 rounded-sm space-y-5 my-auto'
+                ? 'max-w-[210mm] min-h-[280mm] p-8 sm:p-10 shadow-lg border border-line-strong rounded-sm space-y-5 my-auto'
                 : 'space-y-4'
             }`}
           >

@@ -54,4 +54,18 @@ describe('StatusBadge Component (LPMQ Official State Machine)', () => {
     const badge = screen.getByTitle(TOKENS.registrationStatus.REVISION_REQUIRED.description);
     expect(badge).toBeInTheDocument();
   });
+
+  it('shows the intake state for submitted registrations', () => {
+    const registration = {
+      id: 'reg-1',
+      status: 'READY_FOR_VERIFICATION',
+      physical_dispatch_status: 'DISPATCHED',
+      physical_master_intake: { status: 'PENDING' },
+    };
+    const { rerender } = render(<StatusBadge registration={registration} />);
+    expect(screen.getByText('Menunggu penerimaan master fisik')).toBeInTheDocument();
+
+    rerender(<StatusBadge registration={{ ...registration, physical_master_intake: { status: 'RECEIVED', receipt_no: 'TT-1' } }} />);
+    expect(screen.getByText('Siap ditugaskan')).toBeInTheDocument();
+  });
 });

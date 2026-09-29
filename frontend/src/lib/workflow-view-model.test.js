@@ -32,7 +32,7 @@ describe('Centralized Workflow View Model', () => {
     expect(vm.phase).toBe('VERIFICATION');
     expect(vm.statusLabel).toBe('Menunggu Penugasan Verifikator');
     expect(vm.ownerRole).toBe('KEPALA_LPMQ');
-    expect(vm.blockedReason).toContain('Menunggu penyerahan dan intake master fisik');
+    expect(vm.blockedReason).toContain('Menunggu penerbit mengirim');
     expect(vm.canUserAct).toBe(true);
   });
 
@@ -69,6 +69,7 @@ describe('Centralized Workflow View Model', () => {
     const pendingReg = {
       id: 'reg-pending',
       status: 'READY_FOR_VERIFICATION',
+      physical_dispatch_status: 'DISPATCHED',
       physical_master_intake: { status: 'PENDING' },
     };
     const adminUser = { role: 'HELPER_ADMIN' };
@@ -76,7 +77,7 @@ describe('Centralized Workflow View Model', () => {
     expect(pendingVm.operationalState).toBe('WAITING_PHYSICAL_MASTER');
     expect(pendingVm.operationalStatusLabel).toBe('Menunggu penerimaan master fisik');
     expect(pendingVm.operationalOwnerRole).toBe('HELPER_ADMIN');
-    expect(pendingVm.operationalNextAction).toBe('Periksa master fisik');
+    expect(pendingVm.operationalNextAction).toBe('Terima dan periksa master fisik di loket');
     expect(pendingVm.canUserAct).toBe(true);
     expect(pendingVm.nextActionPath).toBe('/internal/master-intake');
 
@@ -133,4 +134,3 @@ describe('Centralized Workflow View Model', () => {
     expect(tashihVm.operationalNextAction).toBe('Unggah perbaikan naskah / dumi');
   });
 });
-

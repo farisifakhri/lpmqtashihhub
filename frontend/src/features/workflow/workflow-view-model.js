@@ -195,11 +195,14 @@ export function getWorkflowViewModel(registration, currentUser) {
     const intake = registration.physical_master_intake || registration.physical_master;
     if (!intake || intake.status !== 'RECEIVED' || !intake.receipt_no) {
       operationalState = 'WAITING_PHYSICAL_MASTER';
-      operationalStatusLabel = 'Menunggu penerimaan master fisik';
+      const dispatched = registration.physical_dispatch_status === 'DISPATCHED';
+      operationalStatusLabel = dispatched ? 'Menunggu penerimaan master fisik' : 'Menunggu pengiriman master fisik';
       operationalOwnerRole = 'HELPER_ADMIN';
       operationalOwnerRoleLabel = 'Admin Loket';
-      operationalNextAction = 'Periksa master fisik';
-      blockedReason = 'Menunggu penyerahan dan intake master fisik A4 di loket LPMQ.';
+      operationalNextAction = dispatched ? 'Terima dan periksa master fisik di loket' : 'Tunggu pengiriman master fisik dari penerbit';
+      blockedReason = dispatched
+        ? 'Berkas dilaporkan terkirim; master fisik A4 belum diterima dan dicatat oleh loket LPMQ.'
+        : 'Menunggu penerbit mengirim dan menyerahkan master fisik A4 ke loket LPMQ.';
     } else {
       operationalState = 'READY_FOR_ASSIGNMENT';
       operationalStatusLabel = 'Siap ditugaskan';

@@ -323,7 +323,7 @@ export function PublisherRegistrationDetailPage() {
                 </div>
 
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
-                  <StatusBadge status={data.status} />
+                  <StatusBadge registration={data} />
                   <Button
                     variant="outline"
                     size="sm"
@@ -424,15 +424,15 @@ export function PublisherRegistrationDetailPage() {
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${
                       data.manuscript_files?.some((f) => f.type === 'COVER')
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                        ? 'bg-brand-50 text-brand-800 border-brand-100'
+                        : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
                     }`}>
                       {data.manuscript_files?.some((f) => f.type === 'COVER') ? '✓ Sampul Terunggah' : '⚠️ Sampul Belum Diunggah'}
                     </span>
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium ${
                       data.manuscript_files?.some((f) => f.type === 'SAMPLE_PAGE_1_5')
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                        : 'bg-amber-50 text-amber-800 border-amber-200'
+                        ? 'bg-brand-50 text-brand-800 border-brand-100'
+                        : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
                     }`}>
                       {data.manuscript_files?.some((f) => f.type === 'SAMPLE_PAGE_1_5') ? '✓ Sampel Hal 1–5 Terunggah' : '⚠️ Sampel Hal 1–5 Belum Diunggah'}
                     </span>
@@ -465,17 +465,19 @@ export function PublisherRegistrationDetailPage() {
                     </div>
                   </div>
                   <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
-                    data.physical_dispatch_status === 'DISPATCHED'
+                    data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED'
                       ? 'bg-brand-100 text-brand-800 border-brand-100'
                       : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
                   }`}>
-                    {data.physical_dispatch_status === 'DISPATCHED'
-                      ? 'Berkas Telah Dikirim · Sedang Verifikasi'
-                      : 'Menunggu Pengiriman Berkas Fisik'}
+                    {data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'Master Fisik Diterima Loket · Menunggu Penugasan'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'Berkas Dikirim · Menunggu Penerimaan Loket'
+                        : 'Menunggu Pengiriman Berkas Fisik'}
                   </span>
                 </div>
 
-                {data.physical_dispatch_status === 'DISPATCHED' ? (
+                {data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED' ? (
                   <div className="p-4 bg-white rounded-xl border border-civic-warningLine text-xs text-ink space-y-2">
                     <p className="font-bold text-brand-800 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4 text-brand-700" />
@@ -486,7 +488,9 @@ export function PublisherRegistrationDetailPage() {
                       {data.dispatch_tracking_no ? ` · Nomor Resi / Tanda Terima: ${data.dispatch_tracking_no}` : ''}
                     </p>
                     <p className="text-[11px] text-civic-info font-semibold bg-civic-infoSoft p-2 rounded-lg border border-civic-infoLine">
-                      Naskah telah diindikasikan masuk ke tahap: <strong>Sedang Proses Verifikasi</strong>. Verifikator LPMQ sedang memeriksa administrasi dan fisik naskah.
+                      {data.physical_master_intake?.status === 'RECEIVED'
+                        ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator.'
+                        : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik. Verifikasi dimulai setelah berkas diterima dan verifikator ditugaskan.'}
                     </p>
                   </div>
                 ) : (
@@ -613,10 +617,10 @@ export function PublisherRegistrationDetailPage() {
 
             {/* STT Issued Callout */}
             {['STT_ISSUED', 'READY_FOR_STT', 'COMPLETED'].includes(data.status) && (
-              <section className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-5 space-y-3 shadow-2xs">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/80 pb-3">
+              <section className="rounded-xl border border-brand-100 bg-brand-50/70 p-5 space-y-3 shadow-2xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-100/80 pb-3">
                   <div className="flex items-center gap-2.5">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-brand-700 shrink-0" />
                     <div>
                       <h2 className="font-bold text-ink text-sm">Alhamdulillah, Surat Tanda Tashih (STT) Telah Terbit</h2>
                       <p className="text-[11px] text-ink-muted">
@@ -627,7 +631,7 @@ export function PublisherRegistrationDetailPage() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('dokumen')}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
                   >
                     Unduh Dokumen STT
                   </button>
@@ -1055,4 +1059,3 @@ export function PublisherRegistrationDetailPage() {
 }
 
 export default PublisherRegistrationDetailPage;
-

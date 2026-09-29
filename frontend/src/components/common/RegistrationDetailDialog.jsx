@@ -79,7 +79,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
             {(isAdmin || userRoles.includes('DOKUMENTATOR')) && <DocumentArchive registrationId={data.id} />}
             <div className="rounded-xl bg-canvas border border-line p-4 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <StatusBadge status={data.status} />
+                <StatusBadge registration={data} />
                 {data.external_sync_status && (
                   <span
                     className={clsx(

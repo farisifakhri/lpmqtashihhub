@@ -793,9 +793,13 @@ export const AdminMasterIntakePage = () => {
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                               Dikembalikan (Revisi)
                             </span>
+                          ) : item.physical_dispatch_status === 'DISPATCHED' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                              Dikirim · Menunggu Penerimaan
+                            </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
-                              Menunggu Fisik A4
+                              Belum Dikirim Penerbit
                             </span>
                           )}
                         </td>

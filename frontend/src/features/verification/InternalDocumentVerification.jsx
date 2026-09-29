@@ -45,7 +45,7 @@ export default function InternalDocumentVerification() {
       <header><p className="text-xs font-semibold uppercase tracking-wide text-brand-700">LPMQ Kementerian Agama RI</p>
         <h1 className="mt-2 text-2xl font-bold">Verifikasi dokumen internal</h1>
         <p className="mt-2 text-sm text-ink-muted">Status di bawah berasal dari catatan sistem saat halaman ini dibuka. QR ini bukan tanda tangan elektronik tersertifikasi.</p></header>
-      {error && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-danger">{error}</p>}
+      {error && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">{error}</p>}
       {!data && !error && <p role="status">Memeriksa dokumen…</p>}
       {data && <>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
