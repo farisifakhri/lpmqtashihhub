@@ -72,6 +72,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
   const actualAssignmentId = assignment.id;
   const reg = await registration(tx, assignment.registration_id);
   requireStatus(reg, ['IN_VERIFICATION']);
+  const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id }, select: { legal_name: true, address: true } });
 
   if (data.attachment_file_ids?.length) {
     await assertAttachmentFileOwnership(tx, data.attachment_file_ids, user, reg.id);
@@ -90,6 +91,8 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
     registration_no: reg.registration_no,
     title: reg.title,
     publisher_id: reg.publisher_id,
+    publisher_name: publisher?.legal_name || null,
+    publisher_address: publisher?.address || null,
     verifier_id: user.id,
     verifier_name: user.name,
     checklist: data.checklist || [],
@@ -147,6 +150,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
   const actualAssignmentId = assignment.id;
   const reg = await registration(tx, assignment.registration_id);
   requireStatus(reg, ['IN_VERIFICATION']);
+  const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id }, select: { legal_name: true, address: true } });
 
   if (data.attachment_file_ids?.length) {
     await assertAttachmentFileOwnership(tx, data.attachment_file_ids, user, reg.id);
@@ -174,6 +178,8 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     registration_no: reg.registration_no,
     title: reg.title,
     publisher_id: reg.publisher_id,
+    publisher_name: publisher?.legal_name || null,
+    publisher_address: publisher?.address || null,
     verifier_id: user.id,
     verifier_name: user.name,
     checklist: data.checklist,

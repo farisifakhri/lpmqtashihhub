@@ -10,6 +10,7 @@ import { fail } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
 
 const storageRoot = fileURLToPath(new URL('../../storage/private/', import.meta.url));
+const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 const label = {
   NOTA_DINAS_VERIFIKASI: 'NOTA DINAS PENUGASAN VERIFIKASI',
   SURAT_HASIL_VERIFIKASI: 'SURAT HASIL VERIFIKASI',
@@ -20,7 +21,12 @@ export const fileHash = bytes => createHash('sha256').update(bytes).digest('hex'
 export const verificationUrl = token => `${ENV.PUBLIC_APP_URL?.replace(/\/$/, '')}/verify-internal/${token}`;
 
 function safeText(value, font) {
-  const text = String(value ?? '');
+  const text = String(value ?? '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00A0/g, ' ');
   for (const character of text) {
     try { font.encodeText(character); }
     catch { fail(422, 'PDF belum dapat dibuat karena ada karakter yang belum didukung oleh font dokumen. Hubungi administrator untuk dukungan font tersebut.'); }
@@ -33,12 +39,19 @@ export async function renderVerificationPdf(document, { draft = false, approver 
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const logo = await pdf.embedPng(await readFile(letterheadLogo));
   let page;
   let y;
   const newPage = () => {
     page = pdf.addPage([595, 842]);
-    y = 760;
-    if (draft) page.drawText('DRAF - BELUM DISETUJUI', { x: 42, y: 800, font: bold, size: 11, color: rgb(0.7, 0.1, 0.1) });
+    page.drawImage(logo, { x: 42, y: 747, width: 58, height: 55 });
+    page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', { x: 111, y: 791, font: bold, size: 11 });
+    page.drawText('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', { x: 111, y: 774, font: bold, size: 11 });
+    page.drawText('Gedung Bayt Al-Quran & Museum Istiqlal, Jl. Raya TMII Pintu I', { x: 111, y: 758, font, size: 8 });
+    page.drawText('Jakarta Timur 13560  |  lajnah@kemenag.go.id', { x: 111, y: 746, font, size: 8 });
+    page.drawLine({ start: { x: 42, y: 738 }, end: { x: 553, y: 738 }, thickness: 1.4 });
+    y = 710;
+    if (draft) page.drawText('DRAF - BELUM DISETUJUI', { x: 409, y: 810, font: bold, size: 9, color: rgb(0.7, 0.1, 0.1) });
   };
   const line = (value, emphasized = false) => {
     const face = emphasized ? bold : font;
@@ -59,24 +72,68 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     }
     flush();
   };
+  const content = document.content_snapshot || {};
+  const date = approvedAt || (content.assigned_at ? new Date(content.assigned_at) : new Date(content.submitted_at || content.saved_at || Date.now()));
+  const dateLabel = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' });
   newPage();
-  line('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', true);
-  line(label[document.document_type] || document.document_type, true);
-  y -= 8;
-  line(`Nomor: ${document.document_no || 'Belum diberi nomor'}`);
-  line(`Versi: ${document.version}`);
-  line(`Pengajuan: ${document.content_snapshot?.registration_no || '-'}`);
-  line(`Naskah: ${document.content_snapshot?.title || '-'}`);
   if (document.document_type === 'NOTA_DINAS_VERIFIKASI') {
-    line(`Verifikator: ${document.content_snapshot?.verifier_name || '-'}`);
-    line(`Tanggal penugasan: ${document.content_snapshot?.assigned_at || '-'}`);
-    line(`Batas penugasan: ${document.content_snapshot?.due_at || '-'}`);
-    line(`Catatan: ${document.content_snapshot?.notes || '-'}`);
-  } else {
-    line(`Keputusan: ${document.content_snapshot?.decision || '-'}`);
-    line(`Verifikator: ${document.content_snapshot?.verifier_name || '-'}`);
+    line('NOTA DINAS', true);
+    line(`Nomor: ${document.document_no || 'Belum diberi nomor'}`);
     y -= 8;
-    for (const paragraph of String(document.content_snapshot?.letter_text || document.content_snapshot?.notes || '').split(/\r?\n/)) {
+    line(`Tanggal: ${dateLabel}`);
+    line(`Dari: ${content.assigned_by_name || 'Helper Admin LPMQ'}`);
+    line(`Kepada: ${content.verifier_name || '-'}`);
+    line('Hal: Penugasan verifikasi naskah mushaf Al-Quran');
+    y -= 12;
+    line(`Dengan ini Saudara ditugaskan memeriksa naskah ${content.title || '-'} dengan nomor registrasi ${content.registration_no || '-'}.`);
+    line(`Master fisik diterima di loket dengan tanda terima ${content.physical_receipt_no || '-'} (${content.volume_count || '-'} jilid).`);
+    line(`Batas penyelesaian: ${content.due_at ? new Date(content.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'}.`);
+    y -= 8;
+    line('Ruang lingkup pemeriksaan:', true);
+    line('1. Kesesuaian data registrasi dan identitas penerbit.');
+    line('2. Kelengkapan dan keabsahan berkas digital.');
+    line('3. Kesesuaian master fisik A4 per juz dengan tanda terima loket.');
+    line('4. Pemeriksaan awal format rasm, harakat, dan tanda baca.');
+    if (content.notes) { y -= 8; line(`Catatan penugasan: ${content.notes}`); }
+    y -= 12;
+    line('Demikian nota dinas ini dibuat untuk dilaksanakan dengan penuh tanggung jawab.');
+    y -= 15;
+    line('Helper Admin LPMQ,');
+    y -= 30;
+    line(content.assigned_by_name || '-');
+  } else if (['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(document.document_type)) {
+    line(`Nomor: ${document.document_no || 'Belum diberi nomor'}`);
+    line(`Tanggal: ${dateLabel}`);
+    line('Sifat: Biasa');
+    line('Lampiran: -');
+    line(`Hal: ${content.decision === 'PASSED' ? 'Hasil verifikasi dan pemberitahuan PNBP' : 'Hasil verifikasi - tidak lolos'}`);
+    y -= 10;
+    line(`Yth. Pimpinan ${content.publisher_name || 'Penerbit'}`);
+    line(`di ${content.publisher_address || 'alamat terdaftar'}`);
+    y -= 8;
+    line("Assalamu'alaikum wr. wb.");
+    y -= 8;
+    for (const paragraph of String(content.letter_text || content.notes || '').split(/\r?\n/)) {
+      if (paragraph.trim()) line(paragraph);
+      else y -= 9;
+    }
+    y -= 8;
+    line('Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.');
+    y -= 8;
+    line("Wassalamu'alaikum wr. wb.");
+    y -= 12;
+    line("Kepala Lajnah Pentashihan Mushaf Al-Quran,");
+    y -= 28;
+    line(draft ? '(Menunggu persetujuan)' : approver?.name || '-');
+  } else {
+    line(label[document.document_type] || document.document_type, true);
+    line(`Nomor: ${document.document_no || 'Belum diberi nomor'}`);
+    line(`Pengajuan: ${content.registration_no || '-'}`);
+    line(`Naskah: ${content.title || '-'}`);
+    line(`Keputusan: ${content.decision || '-'}`);
+    line(`Verifikator: ${content.verifier_name || '-'}`);
+    y -= 8;
+    for (const paragraph of String(content.letter_text || content.notes || '').split(/\r?\n/)) {
       line(paragraph || ' ');
       y -= 3;
     }

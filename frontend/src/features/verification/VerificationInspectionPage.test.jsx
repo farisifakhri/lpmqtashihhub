@@ -93,7 +93,14 @@ describe('VerificationInspectionPage Component', () => {
       expect(screen.getByText(/4. Format & Rasm Naskah Awal/i)).toBeInTheDocument();
       expect(screen.getByText('Simpan Draf Pemeriksaan')).toBeInTheDocument();
       expect(screen.getByText('Ajukan Draf ke Kepala LPMQ')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Buka PDF Nota Dinas' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Cetak PDF Nota Dinas' })).toBeInTheDocument();
+      expect(screen.getByText('Periksa PDF Nota Dinas')).toBeInTheDocument();
+      expect(screen.getByText('Hasil Pemeriksaan & Draf Surat')).toBeInTheDocument();
     });
+    fireEvent.click(screen.getByRole('button', { name: 'Pratinjau' }));
+    expect(screen.getByText('KEMENTERIAN AGAMA REPUBLIK INDONESIA')).toBeInTheDocument();
+    expect(screen.getByText('Yth. Pimpinan PT Mushaf Nusantara')).toBeInTheDocument();
   });
 
   it('merender panel Serah-Terima Master Fisik ke Distributor jika pembayaran PNBP telah diverifikasi sah', async () => {
@@ -268,6 +275,8 @@ describe('VerificationInspectionPage Component', () => {
     );
 
     const approveButton = await screen.findByRole('button', { name: /Setujui Draf Hasil Verifikasi/i });
+    expect(screen.getByRole('button', { name: 'Cetak PDF Surat hasil' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Cetak PDF Berita acara' })).toBeInTheDocument();
     fireEvent.click(approveButton);
 
     // Dialog persetujuan terbuka dengan kolom pengisian nomor

@@ -10,6 +10,7 @@ import { WorkflowStepper } from '@/components/common/WorkflowStepper';
 import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnershipBanner';
 import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 import { InspectionChecklist } from './components/InspectionChecklist';
+import { ResultLetterPanel } from './components/ResultLetterPanel';
 import { InspectionReferencePanels } from './components/InspectionReferencePanels';
 import { InspectionDialogs } from './components/InspectionDialogs';
 import { InspectionActionPanel } from './components/InspectionActionPanel';
@@ -161,15 +162,17 @@ export const VerificationInspectionPage = () => {
     const regNo = reg.registration_no || 'NOMOR_REGISTRASI';
     const publisher = reg.publisher?.legal_name || 'PENERBIT';
     const title = reg.title || 'NASKAH MUSHAF';
-    const notaNo = detail.nota_dinas?.document_no || 'NOTA_DINAS';
+    const findings = checklist.filter(item => item.result === 'TIDAK_SESUAI')
+      .map((item, index) => `${index + 1}. ${CHECKLIST_DEFINITIONS.find(def => def.code === item.code)?.title || item.code}: ${item.notes || 'perlu diperbaiki'}`)
+      .join('\n');
 
     if (dec === 'PASSED') {
       setLetterText(
-        `Berdasarkan hasil pemeriksaan administrasi berkas dan master fisik mushaf atas pengajuan pendaftaran Nomor ${regNo} dari pemohon ${publisher} untuk naskah '${title}' (menindaklanjuti Nota Dinas Penugasan No. ${notaNo}), dengan ini dinyatakan:\n\n1. Seluruh dokumen pendaftaran dan berkas digital telah diperiksa dan dinyatakan LENGKAP dan SESUAI.\n2. Master fisik mushaf ukuran A4 yang dijilid per juz telah diterima dan diverifikasi sesuai ketentuan SOP.\n3. Format penulisan rasm, harakat, dan tanda baca awal memenuhi standar pentashihan LPMQ Kementerian Agama RI.\n\nKesimpulan: Pengajuan dinyatakan LOLOS VERIFIKASI ADMINISTRASI & NASKAH, dan direkomendasikan untuk melanjutkan ke tahapan penerbitan kode billing PNBP serta penyerahan master fisik kepada Distributor Pentashihan.`
+        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih sesuai kode billing dan tanggal kedaluwarsa yang akan diinformasikan melalui sistem. Bukti pembayaran perlu diunggah pada portal layanan untuk diverifikasi petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima dan diverifikasi oleh LPMQ.`
       );
     } else {
       setLetterText(
-        `Berdasarkan hasil pemeriksaan administrasi berkas dan master fisik mushaf atas pengajuan pendaftaran Nomor ${regNo} dari pemohon ${publisher} untuk naskah '${title}' (menindaklanjuti Nota Dinas Penugasan No. ${notaNo}), dengan ini disampaikan bahwa pengajuan dinyatakan MEMERLUKAN PERBAIKAN (REVISI PENERBIT).\n\nAdapun butir perbaikan yang wajib dipenuhi penerbit tertera pada rincian catatan pemeriksaan. Mohon penerbit untuk memperbaiki dan memperbarui berkas yang bersangkutan melalui portal resmi LPMQ agar proses verifikasi dapat dilanjutkan kembali.`
+        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut belum lolos verifikasi.\n\nAspek yang perlu diperbaiki:\n${findings || '1. Lengkapi rincian ketidaksesuaian pada catatan pemeriksaan.'}\n\nMaster mushaf dikembalikan kepada penerbit untuk diperbaiki. Setelah seluruh catatan dipenuhi, penerbit dapat mengajukan kembali naskah melalui portal layanan LPMQ.`
       );
     }
   };
@@ -377,16 +380,41 @@ export const VerificationInspectionPage = () => {
     }
   };
 
+  const getDocumentPdfUrl = async docId => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    });
+    if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
+    return URL.createObjectURL(await response.blob());
+  };
+
   const openDocumentPdf = async docId => {
     try {
-      const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
-      const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` },
-      });
-      if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
-      const url = URL.createObjectURL(await response.blob());
+      const url = await getDocumentPdfUrl(docId);
       window.open(url, '_blank', 'noopener,noreferrer');
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (reason) { setError(reason.message); }
+  };
+
+  const printDocumentPdf = async docId => {
+    try {
+      const url = await getDocumentPdfUrl(docId);
+      // The frame contains only the PDF response, so the application page is never printed.
+      const frame = document.createElement('iframe');
+      frame.title = 'Cetak PDF dokumen verifikasi';
+      frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0';
+      frame.src = url;
+      frame.onload = () => {
+        try {
+          frame.contentWindow?.focus();
+          frame.contentWindow?.print();
+        } catch {
+          setError('Dialog cetak tidak dapat dibuka. Buka PDF lalu cetak dari penampil PDF.');
+        }
+        window.setTimeout(() => { frame.remove(); URL.revokeObjectURL(url); }, 60_000);
+      };
+      document.body.appendChild(frame);
     } catch (reason) { setError(reason.message); }
   };
 
@@ -540,15 +568,39 @@ export const VerificationInspectionPage = () => {
         }
       />
 
-      <section className="rounded-xl border border-line bg-white p-4 space-y-2 text-sm" aria-label="PDF dokumen verifikasi">
-        <h2 className="font-bold">PDF dokumen verifikasi</h2>
-        <p className="text-ink-muted">PDF draf berlabel DRAF. PDF final memuat QR untuk melihat status terkini dan memeriksa integritas arsip.</p>
-        <div className="flex flex-wrap gap-2">
-          {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
-            <Button key={doc.id} variant="outline" className="text-xs" onClick={() => openDocumentPdf(doc.id)}>
-              Buka PDF {title}
-            </Button>
+      <section className="rounded-xl border border-line bg-white p-4 sm:p-5 space-y-4 text-sm" aria-label="Alur penugasan dan dokumen verifikasi">
+        <div>
+          <h2 className="font-bold text-ink">Alur penugasan dan verifikasi</h2>
+          <p className="text-xs text-ink-muted mt-1">Ikuti urutan ini dari nota dinas sampai surat hasil dikirim ke penerbit.</p>
+        </div>
+        <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
+          {[
+            ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Nota Dinas ${notaDinas.document_no || 'belum terbit'}.`],
+            ['2', 'Periksa PDF Nota Dinas', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
+            ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
+            ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
+          ].map(([number, title, description]) => (
+            <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
+              <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
+            </li>
           ))}
+        </ol>
+        <div className="border-t border-line pt-3 space-y-2">
+          <h3 className="font-semibold text-ink text-xs">PDF dokumen verifikasi</h3>
+          <p className="text-xs text-ink-muted">Buka PDF Nota Dinas sebelum memulai pemeriksaan. PDF draf berlabel DRAF; PDF final memuat QR untuk memeriksa arsip.</p>
+          <div className="flex flex-wrap gap-2">
+            {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
+              <div key={doc.id} className="inline-flex flex-wrap gap-1.5 rounded-lg border border-line bg-canvas p-1.5">
+                <Button variant="outline" className="text-xs" onClick={() => openDocumentPdf(doc.id)}>
+                  Buka PDF {title}
+                </Button>
+                <Button variant="outline" className="text-xs" onClick={() => printDocumentPdf(doc.id)}>
+                  Cetak PDF {title}
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -723,7 +775,7 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
-      {/* 3-Area Desktop Workspace Grid */}
+      {/* Workspace references and checklist */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* AREA 1: Navigation, Ringkasan Naskah & SLA (~3 cols on desktop) */}
         <InspectionReferencePanels
@@ -751,19 +803,27 @@ export const VerificationInspectionPage = () => {
           validationErrors={validationErrors}
           isReadOnly={isReadOnly}
           handleChecklistChange={handleChecklistChange}
-          decision={decision}
-          setDecision={setDecision}
-          loadOfficialTemplate={loadOfficialTemplate}
-          setIsDirty={setIsDirty}
-          notes={notes}
-          setNotes={setNotes}
-          letterTab={letterTab}
-          setLetterTab={setLetterTab}
-          letterText={letterText}
-          setLetterText={setLetterText}
           definitions={CHECKLIST_DEFINITIONS}
         />
       </div>
+
+      <ResultLetterPanel
+        activeMobileTab={activeMobileTab}
+        decision={decision}
+        setDecision={setDecision}
+        loadOfficialTemplate={loadOfficialTemplate}
+        setIsDirty={setIsDirty}
+        isReadOnly={isReadOnly}
+        validationErrors={validationErrors}
+        notes={notes}
+        setNotes={setNotes}
+        letterTab={letterTab}
+        setLetterTab={setLetterTab}
+        letterText={letterText}
+        setLetterText={setLetterText}
+        registration={registration}
+        publisher={publisher}
+      />
 
       {/* Multi-Signatory Progress & Email Status Banners */}
       {(['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (

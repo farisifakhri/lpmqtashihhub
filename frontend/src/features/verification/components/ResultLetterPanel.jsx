@@ -5,18 +5,23 @@ export const ResultLetterPanel = ({
   activeMobileTab, decision, setDecision, loadOfficialTemplate, setIsDirty,
   isReadOnly, validationErrors, notes, setNotes, letterTab, setLetterTab,
   letterText, setLetterText,
+  registration, publisher,
 }) => (
           <div
-            className={`p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4 ${
-              activeMobileTab === 'checklist' ? 'hidden lg:block' : 'block'
+            className={`p-5 sm:p-6 bg-white rounded-xl border border-line shadow-2xs space-y-5 ${
+              activeMobileTab === 'hasil' ? 'block' : 'hidden lg:block'
             }`}
           >
             <div className="border-b border-line pb-3">
-              <h3 className="text-sm font-bold text-ink">Keputusan Hasil Pemeriksaan</h3>
+              <h3 className="text-base font-bold text-ink">Hasil Pemeriksaan & Draf Surat</h3>
               <p className="text-[11px] text-ink-muted mt-0.5">
-                Kesimpulan akhir verifikasi berkas administrasi dan naskah
+                Tentukan hasil pemeriksaan, tulis alasan, lalu periksa surat sebelum diajukan ke Kepala LPMQ.
               </p>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,0.75fr)_minmax(0,1.5fr)] gap-6 items-start">
+            <div className="space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-ink-muted">1. Keputusan & catatan</h4>
 
             {/* Decision Radio Boxes */}
             <div className="space-y-2.5">
@@ -117,9 +122,11 @@ export const ResultLetterPanel = ({
                 className="w-full p-2.5 text-xs rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20"
               />
             </div>
+            </div>
 
             {/* Draf Surat Teks */}
-            <div className="space-y-2 text-xs pt-2 border-t border-line">
+            <div className="space-y-3 text-xs min-w-0">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-ink-muted">2. Isi surat untuk penerbit</h4>
               <div className="flex items-center justify-between">
                 <label className="font-bold text-ink flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-brand-800" />
@@ -147,9 +154,14 @@ export const ResultLetterPanel = ({
                 </div>
               </div>
 
+              <p className="text-[11px] text-ink-muted leading-relaxed">
+                Kop, nomor surat, alamat penerbit, dan penutup ditambahkan otomatis pada PDF. Tulis isi surat di bawah ini.
+              </p>
+
               {letterTab === 'editor' ? (
+                <div className="space-y-2">
                 <textarea
-                  rows={6}
+                  rows={15}
                   value={letterText}
                   maxLength={10000}
                   onChange={(e) => {
@@ -158,13 +170,43 @@ export const ResultLetterPanel = ({
                   }}
                   disabled={isReadOnly}
                   placeholder="Tuliskan teks draf surat hasil verifikasi resmi..."
-                  className="w-full p-2.5 text-xs rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                  className="w-full min-h-[320px] p-4 text-sm leading-relaxed rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20 resize-y"
                 />
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
+                  <span>{letterText.length}/10000 karakter</span>
+                  {!isReadOnly && <button type="button" onClick={() => loadOfficialTemplate(decision)} className="font-semibold text-brand-800 hover:underline">Isi ulang dari contoh surat</button>}
+                </div>
+                </div>
               ) : (
-                <div className="p-3 bg-canvas border border-line rounded-lg text-xs whitespace-pre-line text-ink max-h-60 overflow-y-auto leading-relaxed">
-                  {letterText}
+                <div className="mx-auto max-w-[680px] min-h-[520px] bg-white border border-line-strong shadow-sm p-6 sm:p-10 text-[12px] leading-relaxed text-ink">
+                  <div className="flex items-center gap-3 border-b-2 border-ink pb-3 mb-6">
+                    <img src="/assets/logo-kemenag.png" alt="Lambang Kementerian Agama" className="h-14 w-14 object-contain shrink-0" />
+                    <div className="text-center flex-1">
+                      <p className="font-bold">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+                      <p className="font-bold">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
+                      <p className="text-[10px]">Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I, Jakarta Timur 13560</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mb-6">
+                    <p>Nomor: <span className="text-ink-muted">Diisi saat persetujuan</span></p>
+                    <p>Sifat: Biasa</p>
+                    <p>Lampiran: -</p>
+                    <p>Hal: {decision === 'PASSED' ? 'Hasil verifikasi dan pemberitahuan PNBP' : 'Hasil verifikasi - tidak lolos'}</p>
+                  </div>
+                  <p>Yth. Pimpinan {publisher?.legal_name || 'Penerbit'}</p>
+                  <p>di {publisher?.address || 'alamat terdaftar'}</p>
+                  <p className="mt-6">Assalamu'alaikum wr. wb.</p>
+                  <p className="mt-4 whitespace-pre-wrap">{letterText || 'Isi surat belum diisi.'}</p>
+                  <p className="mt-4">Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.</p>
+                  <p className="mt-4">Wassalamu'alaikum wr. wb.</p>
+                  <div className="mt-8 text-right">
+                    <p>Kepala Lajnah Pentashihan Mushaf Al-Qur'an,</p>
+                    <p className="mt-8 text-ink-muted">Menunggu persetujuan</p>
+                  </div>
+                  <p className="mt-8 text-[10px] text-ink-muted">Pratinjau isi · {registration?.registration_no || '-'}</p>
                 </div>
               )}
+            </div>
             </div>
           </div>
 );
