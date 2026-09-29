@@ -183,7 +183,7 @@ describe('VerificationInspectionPage Component', () => {
     });
   });
 
-  it('merender tombol "Setujui Draf Hasil Verifikasi" untuk Kepala LPMQ saat draf SUBMITTED', async () => {
+  it('merender tombol persetujuan Kepala LPMQ saat draf SUBMITTED', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
         id: 'kepala-1',
@@ -199,6 +199,7 @@ describe('VerificationInspectionPage Component', () => {
         assignment: {
           id: 'assign-1',
           status: 'WAITING_APPROVAL',
+          verifier: { id: 'verifier-1' },
         },
         registration: {
           id: 'reg-1',
@@ -209,7 +210,7 @@ describe('VerificationInspectionPage Component', () => {
           manuscript_files: [],
         },
         nota_dinas: { document_no: 'ND-001' },
-        latest_result_document: { id: 'doc-1', status: 'SUBMITTED' },
+        latest_result_document: { id: 'doc-1', status: 'SUBMITTED', content_snapshot: { decision: 'REVISION_REQUIRED' }, signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
         result_documents: [],
       },
     });
@@ -223,7 +224,7 @@ describe('VerificationInspectionPage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Setujui Draf Hasil Verifikasi/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Kembalikan Draf/i })).toBeInTheDocument();
     });
   });
@@ -244,6 +245,7 @@ describe('VerificationInspectionPage Component', () => {
         assignment: {
           id: 'assign-1',
           status: 'WAITING_APPROVAL',
+          verifier: { id: 'verifier-1' },
         },
         registration: {
           id: 'reg-1',
@@ -254,8 +256,8 @@ describe('VerificationInspectionPage Component', () => {
           manuscript_files: [],
         },
         nota_dinas: { document_no: 'ND-001' },
-        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED' },
-        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED' },
+        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED', content_snapshot: { decision: 'REVISION_REQUIRED' }, signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED', signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
         result_documents: [],
       },
     });
@@ -273,13 +275,13 @@ describe('VerificationInspectionPage Component', () => {
       </MemoryRouter>
     );
 
-    const approveButton = await screen.findByRole('button', { name: /Setujui Draf Hasil Verifikasi/i });
+    const approveButton = await screen.findByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i });
     expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Surat hasil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Berita acara' })).toBeInTheDocument();
     fireEvent.click(approveButton);
 
     // Dialog persetujuan terbuka dengan kolom pengisian nomor
-    expect(await screen.findByRole('heading', { name: 'Setujui Draf Hasil Verifikasi' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Sahkan Surat Hasil Verifikasi' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Nomor Surat Hasil Verifikasi/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Nomor Berita Acara Verifikasi/i)).toBeInTheDocument();
 
@@ -292,7 +294,7 @@ describe('VerificationInspectionPage Component', () => {
     });
 
     // Klik tombol setujui dokumen
-    fireEvent.click(screen.getByRole('button', { name: /Setujui Dokumen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Sahkan dan Terbitkan PDF/i }));
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('doc-1', {

@@ -8,7 +8,12 @@ import { readStoredFile } from './storage.service.js';
  */
 
 export function computeDocumentHash(document) {
-  const content = JSON.stringify(document.content_snapshot || {});
+  const canonical = value => Array.isArray(value)
+    ? value.map(canonical)
+    : value && typeof value === 'object'
+      ? Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]))
+      : value;
+  const content = JSON.stringify(canonical(document.content_snapshot || {}));
   const payload = `${document.id}:${document.document_type}:${document.version}:${content}`;
   return createHash('sha256').update(payload).digest('hex');
 }

@@ -11,6 +11,7 @@ import handoverRoutes from './handover.routes.js';
 import reportRoutes from './report.routes.js';
 import userRoutes from './user.routes.js';
 import coreTeamRoutes from './core-team.routes.js';
+import lpmqQuranRoutes from './lpmq-quran.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -73,6 +74,7 @@ router.use('/publishers', publisherRoutes);
 router.use('/registrations', registrationRoutes);
 router.use('/users', userRoutes);
 router.use('/core-teams', coreTeamRoutes);
+router.use(lpmqQuranRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 

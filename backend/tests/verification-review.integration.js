@@ -186,6 +186,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
 
     const submitted = await expect(submitPath, verifikatorToken, 'POST', {
       decision: 'PASSED',
+      billing_no: `SIMPONI-${reg.id}`,
       checklist: validChecklistPassed,
       letter_text: letterText,
     }, 201);

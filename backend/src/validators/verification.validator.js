@@ -72,11 +72,14 @@ export const verificationDraftSchema = {
     checklist: z.array(checklistItem).length(4),
     notes: z.string().trim().max(2000).optional(),
     letter_text: z.string().trim().min(20).max(10000),
+    billing_no: z.string().trim().min(3).max(191).optional(),
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
   }).strict().superRefine((data, ctx) => {
     const codes = data.checklist.map(item => item.code);
     if (new Set(codes).size !== 4) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Keempat butir checklist harus diisi masing-masing satu kali.' });
     if (data.decision === 'PASSED' && data.checklist.some(item => item.result === 'TIDAK_SESUAI')) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['decision'], message: 'Hasil lolos memerlukan seluruh butir checklist sesuai atau tidak berlaku.' });
+    if (data.decision === 'PASSED' && !data.billing_no) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['billing_no'], message: 'Kode billing PNBP wajib diisi sebelum surat lolos diajukan.' });
+    if (data.decision === 'REVISION_REQUIRED' && data.billing_no) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['billing_no'], message: 'Kode billing hanya untuk surat yang lolos verifikasi.' });
     if (data.decision === 'REVISION_REQUIRED' && !data.checklist.some(item => item.result === 'TIDAK_SESUAI')) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['decision'], message: 'Perbaikan penerbit memerlukan minimal satu butir tidak sesuai.' });
     if (data.decision === 'REVISION_REQUIRED' && !data.notes) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['notes'], message: 'Alasan perbaikan penerbit wajib diisi.' });
     if (new Set(data.attachment_file_ids).size !== data.attachment_file_ids.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['attachment_file_ids'], message: 'Lampiran yang sama tidak boleh dipilih dua kali.' });
@@ -92,6 +95,7 @@ export const saveChecklistSchema = {
     decision: z.enum(['PASSED', 'REVISION_REQUIRED']).optional(),
     notes: z.string().trim().max(2000).optional(),
     letter_text: z.string().trim().max(10000).optional(),
+    billing_no: z.string().trim().max(191).optional(),
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
   }).strict(),
 };

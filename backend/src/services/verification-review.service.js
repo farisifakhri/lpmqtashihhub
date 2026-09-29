@@ -1,9 +1,8 @@
-import { randomUUID } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
-import { initVerificationSignatories, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
+import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt } from './sla.service.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
@@ -99,6 +98,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
     decision: data.decision || null,
     notes: data.notes || null,
     letter_text: data.letter_text || '',
+    billing_no: data.decision === 'PASSED' ? data.billing_no || null : null,
     attachment_file_ids: data.attachment_file_ids || [],
     saved_at: new Date().toISOString(),
   };
@@ -152,6 +152,26 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
   requireStatus(reg, ['IN_VERIFICATION']);
   const publisher = await tx.publisher.findUnique({ where: { id: reg.publisher_id }, select: { legal_name: true, address: true } });
 
+  let payment = null;
+  if (data.decision === 'PASSED') {
+    const billingNo = data.billing_no?.trim();
+    if (!billingNo) fail(422, 'Kode billing PNBP wajib diisi untuk surat hasil yang lolos.');
+    const total = reg.fee_sla_snapshot?.total_fee;
+    if (total === undefined || total === null || !Number.isFinite(Number(total)) || Number(total) < 0) {
+      fail(409, 'Tarif PNBP pada pendaftaran belum lengkap.');
+    }
+    const duplicate = await tx.paymentRecord.findUnique({ where: { billing_no: billingNo } });
+    if (duplicate && duplicate.registration_id !== reg.id) fail(409, 'Kode billing PNBP sudah digunakan pada pengajuan lain.');
+    const existingPayment = await tx.paymentRecord.findFirst({ where: { registration_id: reg.id }, orderBy: { created_at: 'desc' } });
+    if (existingPayment && !['UNPAID', 'EXPIRED', 'CANCELLED'].includes(existingPayment.status)) {
+      fail(409, 'Kode billing tidak dapat diganti karena pembayaran sudah diproses.');
+    }
+    payment = existingPayment
+      ? await tx.paymentRecord.update({ where: { id: existingPayment.id }, data: { billing_no: billingNo, amount: new Prisma.Decimal(total), status: 'UNPAID', provider: 'SIMPONI' } })
+      : await tx.paymentRecord.create({ data: { registration_id: reg.id, billing_no: billingNo, amount: new Prisma.Decimal(total), provider: 'SIMPONI', status: 'UNPAID' } });
+    await audit(tx, user, 'RECORD_BILLING', 'PaymentRecord', payment.id, payment, req);
+  }
+
   if (data.attachment_file_ids?.length) {
     await assertAttachmentFileOwnership(tx, data.attachment_file_ids, user, reg.id);
   }
@@ -186,6 +206,8 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     decision: data.decision,
     notes: data.notes || null,
     letter_text: data.letter_text,
+    billing_no: payment?.billing_no || null,
+    billing_amount: payment ? String(payment.amount) : null,
     attachment_file_ids: data.attachment_file_ids || [],
     submitted_at: new Date().toISOString(),
   };
@@ -210,6 +232,14 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
         },
       });
 
+  await tx.verificationDocumentSignatory.deleteMany({ where: { document_id: document.id } });
+  await tx.verificationDocumentSignatory.create({ data: {
+    document_id: document.id, signer_user_id: user.id,
+    name_position_snapshot: `${user.name} (Verifikator Naskah)`, sign_order: 1,
+    method: 'INTERNAL_APPROVAL', status: 'SIGNED', signed_at: new Date(),
+    document_hash: computeDocumentHash(document),
+  } });
+
   // Buat atau perbarui Berita Acara Verifikasi (KB-03 & §4.1)
   const existingBADraft = await tx.verificationDocument.findFirst({
     where: {
@@ -233,8 +263,9 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     submitted_at: new Date().toISOString(),
   };
 
+  let baDocument;
   if (existingBADraft) {
-    await tx.verificationDocument.update({
+    baDocument = await tx.verificationDocument.update({
       where: { id: existingBADraft.id },
       data: {
         status: 'SUBMITTED',
@@ -242,7 +273,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
       },
     });
   } else {
-    await tx.verificationDocument.create({
+    baDocument = await tx.verificationDocument.create({
       data: {
         registration_id: reg.id,
         assignment_id: actualAssignmentId,
@@ -254,6 +285,13 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
       },
     });
   }
+  await tx.verificationDocumentSignatory.deleteMany({ where: { document_id: baDocument.id } });
+  await tx.verificationDocumentSignatory.create({ data: {
+    document_id: baDocument.id, signer_user_id: user.id,
+    name_position_snapshot: `${user.name} (Verifikator Naskah)`, sign_order: 1,
+    method: 'INTERNAL_APPROVAL', status: 'SIGNED', signed_at: new Date(),
+    document_hash: computeDocumentHash(baDocument),
+  } });
 
   const submittedAt = new Date();
   await tx.verificationAssignment.update({
@@ -772,8 +810,25 @@ try { return await prisma.$transaction(async tx => {
     ? await tx.user.findUnique({ where: { id: doc.assignment.verifier_id } })
     : (doc.created_by_id ? await tx.user.findUnique({ where: { id: doc.created_by_id } }) : null);
 
+  const passedResult = relatedDocs.find(item =>
+    ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(item.document_type)
+    && item.content_snapshot?.decision === 'PASSED'
+  );
+  let payment = null;
+  if (passedResult) {
+    payment = await tx.paymentRecord.findFirst({ where: { registration_id: reg.id }, orderBy: { created_at: 'desc' } });
+    if (!payment || !passedResult.content_snapshot?.billing_no || payment.billing_no !== passedResult.content_snapshot.billing_no) {
+      fail(409, 'Surat lolos belum dapat disahkan: kode billing PNBP harus dicatat dan ditandatangani Verifikator terlebih dahulu.');
+    }
+  }
   const updatedDocs = [];
   for (const rDoc of relatedDocs) {
+    const verifierSignature = await tx.verificationDocumentSignatory.findFirst({
+      where: { document_id: rDoc.id, signer_user_id: verifierUser?.id, status: 'SIGNED' },
+    });
+    if (!verifierSignature || verifierSignature.document_hash !== computeDocumentHash(rDoc)) {
+      fail(409, 'Kepala LPMQ hanya dapat mengesahkan dokumen yang telah ditandatangani Verifikator dan belum berubah isinya.');
+    }
     const suppliedNumber = req?.body?.document_numbers?.[rDoc.document_type];
     const documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
     if (documentNo.length < 3 || documentNo.length > 191) {
@@ -782,45 +837,57 @@ try { return await prisma.$transaction(async tx => {
     if (await tx.verificationDocument.findFirst({ where: { document_no: documentNo, id: { not: rDoc.id } }, select: { id: true } })) {
       fail(409, `Nomor dokumen ${documentNo} sudah digunakan.`);
     }
-    const numberedDoc = { ...rDoc, document_no: documentNo };
+    const contentSnapshot = rDoc.content_snapshot;
+    const numberedDoc = { ...rDoc, document_no: documentNo, content_snapshot: contentSnapshot };
     const fileId = await archiveVerificationPdf(tx, numberedDoc, user, now, createdFiles);
     const updated = await tx.verificationDocument.update({
       where: { id: rDoc.id },
       data: {
-        status: 'APPROVED',
+        status: 'SIGNED',
         approved_by_id: user.id,
         approved_at: now,
         file_id: fileId,
         document_no: documentNo,
-        signature_status: 'PENDING',
+        content_snapshot: contentSnapshot,
+        signature_status: 'SIGNED',
+        signed_at: now,
       },
     });
-    // Inisialisasi signatories untuk dokumen ini
-    await initVerificationSignatories(tx, updated, verifierUser, user);
+    const archivedFile = await tx.storedFile.findUnique({ where: { id: fileId }, select: { checksum: true } });
+    await tx.verificationDocumentSignatory.create({ data: {
+      document_id: updated.id,
+      signer_user_id: user.id,
+      name_position_snapshot: `${user.name} (Kepala LPMQ)`,
+      sign_order: 2,
+      method: 'INTERNAL_APPROVAL',
+      status: 'SIGNED',
+      signed_at: now,
+      document_hash: archivedFile.checksum,
+    } });
     updatedDocs.push(updated);
   }
 
   const primaryUpdated = updatedDocs.find(d => d.id === documentId) || updatedDocs[0];
 
-  // Transisi assignment ke WAITING_SIGNATURE
+  // Verifikator menandatangani saat menyerahkan draf; Kepala mengesahkan sekali.
   if (doc.assignment_id) {
     await tx.verificationAssignment.update({
       where: { id: doc.assignment_id },
-      data: { status: 'WAITING_SIGNATURE' },
+      data: { status: 'READY_TO_SEND' },
     });
   }
 
   await move(tx, reg, 'VERIFICATION_APPROVED', user, `Draf hasil verifikasi disetujui secara internal oleh Kepala LPMQ (${user.name}).`, req);
   await audit(tx, user, 'APPROVE_VERIFICATION_RESULT', 'VerificationDocument', documentId, primaryUpdated, req);
 
-  // Notifikasi ke Verifikator: draft disetujui, mulai tanda tangan
+  // Notifikasi ke Verifikator: dokumen telah disahkan dan siap dikirim.
   if (doc.created_by_id) {
     await tx.notification.create({
       data: {
         user_id: doc.created_by_id,
         registration_id: reg.id,
         type: 'DOCUMENT_APPROVED',
-        title: `Draf disetujui secara internal: ${reg.registration_no}`,
+        title: `Surat hasil siap dikirim: ${reg.registration_no}`,
         payload: {
           document_id: documentId,
           registration_no: reg.registration_no,
@@ -970,6 +1037,12 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
   }
   const recipientName = reg.publisher?.legal_name || 'Penerbit';
   const decision = doc.content_snapshot?.decision || doc.assignment?.decision || 'PASSED';
+  const approvedPayment = decision === 'PASSED'
+    ? await prisma.paymentRecord.findFirst({ where: { registration_id: reg.id }, orderBy: { created_at: 'desc' } })
+    : null;
+  if (decision === 'PASSED' && (!approvedPayment || approvedPayment.billing_no !== doc.content_snapshot?.billing_no)) {
+    fail(409, 'Surat belum dapat dikirim karena kode billing pada surat tidak cocok dengan tagihan PNBP.');
+  }
   const idempotencyKey = `send_verification_${doc.id}_v${doc.version}`;
 
   const subject = decision === 'PASSED'
@@ -992,6 +1065,9 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
         decision,
         notes: doc.content_snapshot?.notes || '',
         letter_text: doc.content_snapshot?.letter_text || '',
+        billing_no: approvedPayment?.billing_no || null,
+        billing_amount: approvedPayment ? String(approvedPayment.amount) : null,
+        billing_expires_at: approvedPayment?.expires_at || null,
       },
     });
   } catch (error) {
@@ -1049,32 +1125,7 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
     if (decision === 'PASSED') {
       await move(tx, reg, 'AWAITING_PAYMENT', user, `Surat hasil telaah disahkan dan dikirimkan kepada penerbit (${recipientName})`, req);
 
-      const existingPayment = await tx.paymentRecord.findFirst({
-        where: { registration_id: reg.id },
-      });
-
-      if (!existingPayment) {
-        const total = reg.fee_sla_snapshot?.total_fee;
-        if (total === undefined || total === null || !Number.isFinite(Number(total)) || Number(total) < 0) {
-          fail(409, 'Tagihan belum dapat dibuat karena rincian tarif saat pendaftaran tidak lengkap. Hubungi administrator.');
-        }
-        const cleanRegNo = reg.registration_no.replace(/[^A-Za-z0-9]/g, '');
-        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-        payment = await tx.paymentRecord.create({
-          data: {
-            registration_id: reg.id,
-            billing_no: `BILL-${cleanRegNo}-${randomUUID().slice(0, 6).toUpperCase()}`,
-            amount: new Prisma.Decimal(total),
-            provider: 'MANUAL',
-            status: 'UNPAID',
-            expires_at: expiresAt,
-          },
-        });
-        await audit(tx, user, 'CREATE_BILLING', 'PaymentRecord', payment.id, payment, req);
-      } else {
-        payment = existingPayment;
-      }
+      payment = approvedPayment;
 
       if (reg.publisher?.user_id) {
         await tx.notification.create({

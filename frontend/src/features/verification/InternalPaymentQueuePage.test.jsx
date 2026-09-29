@@ -83,5 +83,29 @@ describe('InternalPaymentQueuePage Component', () => {
       expect(screen.getByText('Sahkan & Tetapkan Lunas')).toBeInTheDocument();
     });
   });
+
+  it('langsung menampilkan aksi serah terima setelah satu pemeriksaan bukti bayar', async () => {
+    PaymentApiModule.paymentApi.listPayments.mockImplementation(async params => ({
+      data: {
+        items: [{
+          id: 'pay-1', billing_no: 'BILL-2026-001', amount: 5000000,
+          status: params.status === 'VERIFIED' ? 'VERIFIED' : 'PAID',
+          receipt_file_id: 'file-slip-1',
+          registration: {
+            id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Standar',
+            publisher: { legal_name: 'PT Mushaf Nusantara' },
+            verification_assignments: [{ id: 'assign-1' }], physical_handovers: [],
+          },
+        }],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      },
+    }));
+    vi.spyOn(PaymentApiModule.paymentApi, 'verifyPayment').mockResolvedValue({ success: true });
+    render(<MemoryRouter><InternalPaymentQueuePage /></MemoryRouter>);
+    fireEvent.click(await screen.findByText('Sahkan Pembayaran (Lunas)'));
+    fireEvent.click(screen.getByText('Sahkan & Tetapkan Lunas'));
+    expect(await screen.findByText('Lakukan Serah-Terima Fisik (BAST)')).toBeInTheDocument();
+    expect(PaymentApiModule.paymentApi.verifyPayment).toHaveBeenCalledWith('pay-1');
+  });
 });
 

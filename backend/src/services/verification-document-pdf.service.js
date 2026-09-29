@@ -117,11 +117,21 @@ export async function renderVerificationPdf(document, { draft = false, approver 
       if (paragraph.trim()) line(paragraph);
       else y -= 9;
     }
+    if (content.decision === 'PASSED' && content.billing_no) {
+      y -= 10;
+      line('Informasi pembayaran PNBP', true);
+      line(`Kode billing: ${content.billing_no}`, true);
+      line(`Jumlah tagihan: Rp ${Number(content.billing_amount || 0).toLocaleString('id-ID')}`);
+      if (content.billing_expires_at) line(`Berlaku sampai: ${new Date(content.billing_expires_at).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB`);
+      line('Gunakan kode billing di atas untuk pembayaran, lalu unggah bukti bayar pada portal LPMQ.');
+    }
     y -= 8;
     line('Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.');
     y -= 8;
     line("Wassalamu'alaikum wr. wb.");
     y -= 12;
+    line(`Diperiksa dan ditandatangani internal oleh Verifikator: ${content.verifier_name || '-'}`);
+    y -= 8;
     line("Kepala Lajnah Pentashihan Mushaf Al-Quran,");
     y -= 28;
     line(draft ? '(Menunggu persetujuan)' : approver?.name || '-');

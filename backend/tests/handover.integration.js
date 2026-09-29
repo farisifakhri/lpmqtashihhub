@@ -105,6 +105,7 @@ export async function runHandoverTests({
       'POST',
       {
         decision: 'PASSED',
+        billing_no: `SIMPONI-HO-${reg.id}`,
         checklist: validChecklistPassed,
         notes: 'Semua butir sesuai kriteria',
         letter_text: 'Naskah dinyatakan lolos verifikasi administrasi dan format.',
@@ -119,16 +120,6 @@ export async function runHandoverTests({
         BERITA_ACARA_VERIFIKASI: 'BA-777/LPMQ.01/TL.00/09/2026',
       },
     });
-
-    // Tanda tangani dokumen sebelum kirim
-    const baDoc = await prisma.verificationDocument.findFirst({
-      where: { assignment_id: assignment.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
-    });
-    if (baDoc) {
-      await expect(`/verification-documents/${baDoc.id}/sign`, verifikatorToken, 'POST');
-      await expect(`/verification-documents/${baDoc.id}/sign`, kepalaToken, 'POST');
-    }
-    await expect(`/verification-documents/${doc.id}/sign`, kepalaToken, 'POST');
 
     // Verifikator kirim surat resmi -> AWAITING_PAYMENT & Payment terbit
     const sent = await expect(`/verification-documents/${doc.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
@@ -292,7 +283,7 @@ export async function runHandoverTests({
     }, 201)).assignment;
     await expect(`/verification-assignments/${asg2.id}/start`, verifikatorToken, 'PATCH');
     const doc2 = await expect(`/verification-assignments/${asg2.id}/result-drafts`, verifikatorToken, 'POST', {
-      decision: 'PASSED', checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
+      decision: 'PASSED', billing_no: `SIMPONI-HO2-${reg2.id}`, checklist: validChecklistPassed, letter_text: 'Naskah dinyatakan memenuhi syarat verifikasi administrasi dan format.',
     }, 201);
     await expect(`/verification-documents/${doc2.id}/approve`, kepalaToken, 'POST', {
       document_numbers: {
@@ -300,14 +291,6 @@ export async function runHandoverTests({
         BERITA_ACARA_VERIFIKASI: `BA-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
       },
     });
-    const baDoc2 = await prisma.verificationDocument.findFirst({
-      where: { assignment_id: asg2.id, document_type: 'BERITA_ACARA_VERIFIKASI' },
-    });
-    if (baDoc2) {
-      await expect(`/verification-documents/${baDoc2.id}/sign`, verifikatorToken, 'POST');
-      await expect(`/verification-documents/${baDoc2.id}/sign`, kepalaToken, 'POST');
-    }
-    await expect(`/verification-documents/${doc2.id}/sign`, kepalaToken, 'POST');
     const sent2 = await expect(`/verification-documents/${doc2.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
     await expect(`/payments/${sent2.payment.id}/confirm`, publisherToken, 'POST', {
       receipt_file_id: receiptFile.id, external_ref: 'NTPN-REG2',

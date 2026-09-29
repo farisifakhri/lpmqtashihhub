@@ -40,3 +40,20 @@ test('nota dinas and result letters render as readable PDF drafts with the LPMQ 
     assert.ok(pdf.getPages().every(page => page.getWidth() === 595 && page.getHeight() === 842));
   }
 });
+
+test('surat hasil lolos dengan kode billing menghasilkan PDF final', async () => {
+  const document = {
+    document_type: 'SURAT_HASIL_VERIFIKASI', document_no: 'B-001/LPMQ',
+    qr_token: '00000000-0000-4000-8000-000000000001',
+    content_snapshot: {
+      decision: 'PASSED', registration_no: 'REG-001', title: 'Mushaf Standar',
+      publisher_name: 'PT Mushaf Nusantara', verifier_name: 'Verifikator LPMQ',
+      letter_text: 'Naskah memenuhi syarat untuk tahap pembayaran PNBP.',
+      billing_no: 'SIMPONI-001', billing_amount: '5000000',
+    },
+  };
+  const bytes = await renderVerificationPdf(document, { approver: { name: 'Kepala LPMQ' }, approvedAt: new Date('2026-09-29T00:00:00Z') });
+  assert.equal(bytes.subarray(0, 5).toString(), '%PDF-');
+  const pdf = await PDFDocument.load(bytes);
+  assert.ok(pdf.getPageCount() >= 1);
+});

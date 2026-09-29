@@ -5,6 +5,7 @@ export const ResultLetterPanel = ({
   activeMobileTab, decision, setDecision, loadOfficialTemplate, setIsDirty,
   isReadOnly, validationErrors, notes, setNotes, letterTab, setLetterTab,
   letterText, setLetterText,
+  billingNo, setBillingNo,
   registration, publisher,
 }) => (
           <div
@@ -92,6 +93,24 @@ export const ResultLetterPanel = ({
               <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 text-civic-danger" />
                 <span>{validationErrors.decision}</span>
+              </div>
+            )}
+
+            {decision === 'PASSED' && (
+              <div className="space-y-1 text-xs rounded-xl border border-brand-100 bg-brand-50/50 p-3">
+                <label htmlFor="verification-billing-no" className="block font-bold text-ink">Kode billing PNBP <span className="text-civic-danger">*</span></label>
+                <input
+                  id="verification-billing-no"
+                  type="text"
+                  value={billingNo || ''}
+                  onChange={event => { setBillingNo(event.target.value); setIsDirty(true); }}
+                  disabled={isReadOnly}
+                  maxLength={191}
+                  placeholder="Masukkan kode billing yang sudah diterbitkan"
+                  className="w-full rounded-lg border border-line-strong bg-white p-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                />
+                <p className="text-[11px] text-ink-muted">Kode ini akan tercantum pada PDF surat hasil dan tagihan penerbit.</p>
+                {validationErrors.billing_no && <p className="text-civic-danger font-semibold">{validationErrors.billing_no}</p>}
               </div>
             )}
 
@@ -197,6 +216,7 @@ export const ResultLetterPanel = ({
                   <p>di {publisher?.address || 'alamat terdaftar'}</p>
                   <p className="mt-6">Assalamu'alaikum wr. wb.</p>
                   <p className="mt-4 whitespace-pre-wrap">{letterText || 'Isi surat belum diisi.'}</p>
+                  {decision === 'PASSED' && billingNo && <p className="mt-4 rounded-lg border border-brand-100 bg-brand-50 p-3 font-bold">Kode billing PNBP: {billingNo}</p>}
                   <p className="mt-4">Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.</p>
                   <p className="mt-4">Wassalamu'alaikum wr. wb.</p>
                   <div className="mt-8 text-right">

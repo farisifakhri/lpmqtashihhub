@@ -160,7 +160,9 @@ export const InternalPaymentQueuePage = () => {
         `Pembayaran untuk nomor billing ${selectedPayment.billing_no} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
       );
       setVerifyConfirmOpen(false);
-      await fetchPayments();
+      setSelectedPaymentId(selectedPayment.id);
+      setActiveTab('VERIFIED');
+      setPagination(prev => ({ ...prev, page: 1 }));
     } catch (err) {
       setError(err.message || 'Gagal memverifikasi pembayaran.');
     } finally {

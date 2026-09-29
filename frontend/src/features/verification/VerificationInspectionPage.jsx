@@ -112,6 +112,7 @@ export const VerificationInspectionPage = () => {
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [notes, setNotes] = useState('');
   const [letterText, setLetterText] = useState('');
+  const [billingNo, setBillingNo] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -139,6 +140,7 @@ export const VerificationInspectionPage = () => {
     if (draft.decision) setDecision(draft.decision);
     if (draft.notes) setNotes(draft.notes);
     if (draft.letterText) setLetterText(draft.letterText);
+    if (data.latest_result_document?.content_snapshot?.billing_no) setBillingNo(data.latest_result_document.content_snapshot.billing_no);
     if (data.latest_result_document?.document_no) setResultDocumentNo(data.latest_result_document.document_no);
     if (data.berita_acara?.document_no) setMinutesDocumentNo(data.berita_acara.document_no);
   });
@@ -173,7 +175,7 @@ export const VerificationInspectionPage = () => {
 
     if (dec === 'PASSED') {
       setLetterText(
-        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih sesuai kode billing dan tanggal kedaluwarsa yang akan diinformasikan melalui sistem. Bukti pembayaran perlu diunggah pada portal layanan untuk diverifikasi petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima dan diverifikasi oleh LPMQ.`
+        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih menggunakan kode billing yang tercantum pada surat ini. Bukti pembayaran perlu diunggah pada portal layanan untuk diperiksa satu kali oleh petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima oleh LPMQ.`
       );
     } else {
       setLetterText(
@@ -220,6 +222,7 @@ export const VerificationInspectionPage = () => {
 
     if (notes.trim().length > 2000) errors.notes = 'Catatan kesimpulan maksimal 2000 karakter.';
     if (letterText.trim().length > 10000) errors.letter_text = 'Teks draf surat maksimal 10000 karakter.';
+    if (isSubmit && decision === 'PASSED' && billingNo.trim().length < 3) errors.billing_no = 'Kode billing PNBP wajib diisi sebelum surat lolos diajukan.';
 
     if (decision === 'PASSED') {
       const hasTidakSesuai = checklist.some((i) => i.result === 'TIDAK_SESUAI');
@@ -261,6 +264,7 @@ export const VerificationInspectionPage = () => {
         decision,
         notes: notes.trim() || undefined,
         letter_text: letterText.trim() || undefined,
+        billing_no: decision === 'PASSED' ? billingNo.trim() || undefined : undefined,
       };
       await verificationApi.saveDraft(assignmentId, payload);
       setIsDirty(false);
@@ -290,11 +294,12 @@ export const VerificationInspectionPage = () => {
         decision,
         notes: notes.trim() || undefined,
         letter_text: letterText.trim(),
+        billing_no: decision === 'PASSED' ? billingNo.trim() : undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
       setSubmitConfirmOpen(false);
       setIsDirty(false);
-      setSuccessMessage('Draf surat hasil verifikasi berhasil diajukan kepada Kepala LPMQ.');
+      setSuccessMessage('Surat hasil telah ditandatangani internal oleh Verifikator dan diajukan bersama kode billing kepada Kepala LPMQ.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal mengajukan draf hasil verifikasi.');
@@ -336,7 +341,7 @@ export const VerificationInspectionPage = () => {
         },
       });
       setApproveConfirmOpen(false);
-      setSuccessMessage('Dokumen berhasil disetujui secara internal. Nomor resmi tercatat pada PDF final dan halaman QR.');
+      setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Kode billing tercantum pada PDF surat hasil; verifikator dapat langsung mengirimkannya.');
       await fetchDetail();
     } catch (err) {
       setApproveModalError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
@@ -520,7 +525,7 @@ export const VerificationInspectionPage = () => {
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
-    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, isSent,
+    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
     canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,
@@ -817,21 +822,28 @@ export const VerificationInspectionPage = () => {
         setLetterTab={setLetterTab}
         letterText={letterText}
         setLetterText={setLetterText}
+        billingNo={billingNo}
+        setBillingNo={setBillingNo}
         registration={registration}
         publisher={publisher}
       />
 
       {/* Multi-Signatory Progress & Email Status Banners */}
-      {(['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+      {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+        <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
+          Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
+        </div>
+      )}
+      {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
         <div className="space-y-4">
           <SignatoryProgress
             signatories={[
-              {
-                role_label: 'Kepala LPMQ (Surat Pemberitahuan)',
-                name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
-                status: latestSignatory?.status || 'PENDING',
-                signed_at: latestSignatory?.signed_at,
-              },
+              ...(latestResultDoc?.signatories || []).map(sig => ({
+                role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
+                name: sig.name_position_snapshot,
+                status: sig.status,
+                signed_at: sig.signed_at,
+              })),
               ...baSignatories.map((sig) => ({
                 role_label: `Berita Acara - Urutan ${sig.sign_order}`,
                 name: sig.name_position_snapshot,

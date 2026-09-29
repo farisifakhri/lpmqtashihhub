@@ -100,7 +100,7 @@ export const InspectionActionPanel = ({
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui Draf Hasil Verifikasi'}
+              {actionLoading ? 'Memproses...' : 'Setujui Surat Bertanda Tangan Verifikator'}
             </Button>
           ) : canVerifierSend ? (
             <Button
@@ -110,7 +110,7 @@ export const InspectionActionPanel = ({
               className="text-xs"
             >
               <Send className="w-3.5 h-3.5 mr-1.5" />
-              Kirim Surat Resmi & Terbitkan Billing PNBP
+              Kirim Surat Resmi ke Penerbit
             </Button>
           ) : null
         }
@@ -138,7 +138,7 @@ export const InspectionActionPanel = ({
         ]}
         impactMessage={
           decision === 'PASSED'
-            ? 'Draf surat kelolosan akan dikirim ke Kepala LPMQ untuk persetujuan internal sebelum proses billing PNBP.'
+            ? 'Kode billing wajib terbit dan dicantumkan. Saat diajukan, Verifikator menandatangani isi draf secara internal sebelum Kepala LPMQ menyetujui.'
             : 'Surat catatan kekurangan akan dikirim ke Kepala LPMQ untuk pengesahan sebelum diteruskan kepada penerbit untuk perbaikan berkas.'
         }
         confirmLabel={decision === 'PASSED' ? 'Ajukan Kelolosan' : 'Ajukan Perbaikan'}
@@ -154,13 +154,13 @@ export const InspectionActionPanel = ({
           setApproveConfirmOpen(false);
         }}
         onConfirm={handleConfirmApprove}
-        title="Setujui Draf Hasil Verifikasi"
-        description="Tetapkan nomor resmi surat dan berita acara sebelum pengesahan persetujuan internal."
+        title="Sahkan Surat Hasil Verifikasi"
+        description="Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan setujui surat."
         objectName={`Surat Hasil Verifikasi (${registration.registration_no || '-'})`}
-        nextActor="Pihak konfirmasi internal (Kepala LPMQ & Verifikator)"
-        statusChange="SUBMITTED -> APPROVED (PDF final diarsipkan)"
+        nextActor="Verifikator untuk pengiriman surat"
+        statusChange="SUBMITTED -> SIGNED (PDF final diarsipkan)"
         irreversibleConsequence="Setelah disetujui, nomor dokumen dan isi draf dikunci. PDF final dan QR menampilkan nomor ini."
-        confirmLabel="Setujui Dokumen"
+        confirmLabel="Sahkan dan Terbitkan PDF"
         confirmVariant="primary"
         loading={actionLoading}
       >
