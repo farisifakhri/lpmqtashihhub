@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRight, Sun, Moon } from 'lucide-react';
-import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.png';
+import kemenagLogo from '@/assets/kemenag1.png';
+import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
+import Switcher from '../darkmode/Switcher';
 
 export const LoginPage = () => {
   const { login, isLoading, authError } = useAuth();
@@ -15,18 +16,7 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [darkMode, setDarkMode] = useState(() => {
-    try { return window.localStorage.getItem('lpmq-login-theme') === 'dark'; }
-    catch { return false; }
-  });
 
-  const toggleDarkMode = () => {
-    setDarkMode(previous => {
-      try { window.localStorage.setItem('lpmq-login-theme', previous ? 'light' : 'dark'); }
-      catch { /* The visual toggle still works when storage is unavailable. */ }
-      return !previous;
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,7 +39,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className={`${darkMode ? 'login-dark' : ''} min-h-screen bg-canvas relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8`}>
+    <div className="min-h-screen bg-canvas relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
       <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
@@ -60,7 +50,7 @@ export const LoginPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
           
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran (Frame Melengkung Halus) */}
-          <div className="lg:col-span-6 relative rounded-xl overflow-hidden bg-brand-950 flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
+          <div className="hidden lg:col-span-6 relative rounded-xl overflow-hidden bg-brand-950 lg:flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
             {/* Gambar 3D Quran */}
             <img
               src={quran3dImg}
@@ -97,14 +87,11 @@ export const LoginPage = () => {
             
             {/* Header Atas: Navigasi Daftar */}
             <div className="flex justify-between items-center gap-3 text-xs text-ink-muted mb-8">
-              <button type="button" onClick={toggleDarkMode} aria-label={darkMode ? 'Aktifkan mode terang' : 'Aktifkan mode gelap'} aria-pressed={darkMode} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-ink hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-700">
-                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                {darkMode ? 'Terang' : 'Gelap'}
-              </button>
+              <Switcher />
               <div><span>Belum terdaftar?&nbsp;</span>
               <Link
                 to="/register"
-                className="login-register-link font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
+                className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
               >
                 Registrasi penerbit
               </Link>
@@ -214,7 +201,6 @@ export const LoginPage = () => {
             <div className="pt-6 text-center text-[11px] text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
-
           </div>
         </div>
       </div>
@@ -223,3 +209,4 @@ export const LoginPage = () => {
 };
 
 export default LoginPage;
+
