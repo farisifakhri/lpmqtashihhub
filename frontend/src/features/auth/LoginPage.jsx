@@ -5,7 +5,7 @@ import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRigh
 import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
-import Switcher from '../darkmode/switcher';
+import Switcher from '../darkmode/Switcher';
 
 export const LoginPage = () => {
   const { login, isLoading, authError } = useAuth();
@@ -201,7 +201,6 @@ export const LoginPage = () => {
             <div className="pt-6 text-center text-[11px] text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
-
           </div>
         </div>
       </div>

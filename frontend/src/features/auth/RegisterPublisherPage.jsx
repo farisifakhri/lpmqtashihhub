@@ -20,7 +20,7 @@ import {
 import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
-import Switcher from '../darkmode/switcher';
+import Switcher from '../darkmode/Switcher';
 
 export const RegisterPublisherPage = () => {
   const { registerPublisher, login, currentUser, isLoading, authError } = useAuth();
