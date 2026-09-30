@@ -17,9 +17,10 @@ import {
   Users,
   UserCheck,
 } from 'lucide-react';
-import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.png';
+import kemenagLogo from '@/assets/kemenag1.png';
+import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
+import Switcher from '../darkmode/switcher';
 
 export const RegisterPublisherPage = () => {
   const { registerPublisher, login, currentUser, isLoading, authError } = useAuth();
@@ -124,17 +125,17 @@ export const RegisterPublisherPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F6F5] relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-canvas  relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
       {/* Background Soft Glow Orbs */}
       <div className="absolute top-[-10%] right-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
+      <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-civic-warningSoft/40 blur-2xl pointer-events-none" />
 
       {/* Main Glass Card Container */}
-      <div className="relative z-10 w-full max-w-5xl bg-white rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
+      <div className="relative z-10 w-full max-w-5xl bg-surface rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-          
           {/* SISI KIRI: Ilustrasi Animasi 3D Quran & Info */}
-          <div className="lg:col-span-5 relative rounded-[26px] sm:rounded-[30px] overflow-hidden bg-gradient-to-b from-[#E2F0EA] to-[#D0E6DC] flex flex-col justify-between shadow-inner min-h-[340px] lg:min-h-[640px]">
+          <div className="lg:col-span-5 relative rounded-[26px] sm:rounded-[30px] overflow-hidden bg-brand-950 flex flex-col justify-between shadow-inner min-h-[340px] lg:min-h-[640px]">
             <img
               src={quran3dImg}
               alt="Ilustrasi Pentashihan Al-Qur'an 3D"
@@ -152,17 +153,19 @@ export const RegisterPublisherPage = () => {
             </div>
 
             {/* Info Box Bawah */}
-            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-ink/70 via-ink/30 to-transparent pt-12">
-              <div className="backdrop-blur-sm bg-white/20 p-4 rounded-2xl border border-white/30 text-white shadow-sm space-y-1">
-                <p className="text-xs font-semibold text-brand-100 flex items-center gap-1.5">
+             <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-ink/60 via-ink/20 to-transparent pt-12">
+              <div className="bg-brand-700/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm space-y-1">
+                <p className="text-xs font-semibold text-white flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
                   Keterbukaan Layanan
                 </p>
                 <h3 className="text-sm font-bold text-white leading-snug">
                   Terbuka untuk Lembaga Penerbit maupun Pemohon Perorangan
                 </h3>
-                <p className="text-[11px] text-line-strong leading-relaxed pt-0.5">
-                  Setiap mushaf Al-Qur'an, juz 'amma, surah pilihan, braille, maupun kaligrafi yang akan diedarkan wajib ditashih oleh LPMQ Kemenag RI.
+                <p className="text-[11px] text-white/80 leading-relaxed pt-0.5">
+                  Setiap mushaf Al-Qur'an, juz 'amma, surah pilihan, braille,
+                  maupun kaligrafi yang akan diedarkan wajib ditashih oleh
+                  LPMQ Kemenag RI.
                 </p>
               </div>
             </div>
@@ -173,20 +176,26 @@ export const RegisterPublisherPage = () => {
             
             {/* Navigasi Atas */}
             <div className="flex justify-end items-center text-xs text-ink-muted mb-3 sm:mb-4">
+              <Switcher />
+              <div className="ml-auto flex items-center gap-1.5">
               <span>Sudah memiliki akun?&nbsp;</span>
-              <Link
-                to="/login"
-                className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
-              >
-                Masuk sekarang
-              </Link>
+                <Link
+                  to="/login"
+                  className="font-bold text-brand-700 hover:text-brand-800 hover:underline transition-colors"
+                >
+                  Masuk sekarang
+                </Link>
+              </div>
             </div>
 
             <div className="max-w-xl w-full mx-auto space-y-4">
               
               {/* Header & Logo Clean Putih */}
               <div>
-                <div className="inline-flex items-center gap-3 bg-white py-1 mb-2" aria-label="Identitas Kementerian Agama dan LPMQ">
+                <div
+                  className="inline-flex items-center gap-3 py-1 mb-2"
+                  aria-label="Identitas Kementerian Agama dan LPMQ"
+                >
                   <div className="h-12 w-12 flex items-center justify-center">
                     <img
                       src={kemenagLogo}
@@ -194,12 +203,14 @@ export const RegisterPublisherPage = () => {
                       className="h-10 w-10 object-contain"
                     />
                   </div>
+
                   <div className="h-8 w-[1px] bg-surface-strong" />
-                  <div className="h-12 w-12 flex items-center justify-center">
+
+                  <div className="h-12 w-100 flex items-center justify-center">
                     <img
                       src={lpmqLogo}
                       alt="LPMQ"
-                      className="h-10 w-10 object-contain rounded-md"
+                      className="h-10 w-100 object-contain rounded-md"
                     />
                   </div>
                 </div>
@@ -213,13 +224,13 @@ export const RegisterPublisherPage = () => {
               </div>
 
               {/* Segmented Switcher: Lembaga vs Perorangan */}
-              <div className="p-1 rounded-2xl bg-surface-subtle border border-line/80 flex items-center gap-1">
+             <div className="p-1 rounded-2xl bg-surface-subtle border border-line/80 flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleAccountTypeChange('LEMBAGA')}
                   className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                     accountType === 'LEMBAGA'
-                      ? 'bg-white text-brand-800 shadow-xs'
+                      ? 'bg-surface text-brand-800 shadow-xs'
                       : 'text-ink-muted hover:text-ink'
                   }`}
                 >
@@ -232,7 +243,7 @@ export const RegisterPublisherPage = () => {
                   onClick={() => handleAccountTypeChange('PERORANGAN')}
                   className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
                     accountType === 'PERORANGAN'
-                      ? 'bg-white text-brand-800 shadow-xs'
+                      ? 'bg-surface text-brand-800 shadow-xs'
                       : 'text-ink-muted hover:text-ink'
                   }`}
                 >
@@ -244,16 +255,26 @@ export const RegisterPublisherPage = () => {
               {/* Success / Error Message */}
               {success ? (
                 <div className="p-6 rounded-2xl bg-brand-50 border border-brand-100 text-center space-y-2.5">
+
                   <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-7 h-7" />
                   </div>
-                  <h3 className="text-base font-bold text-ink">Pendaftaran Berhasil!</h3>
+
+                  <h3 className="text-base font-bold text-ink">
+                    Pendaftaran Berhasil!
+                  </h3>
+
                   <p className="text-xs text-ink-muted">
-                    Akun pemohon <strong>{formData.legal_name || formData.name}</strong> berhasil dibuat. Mengalihkan ke Portal Pentashihan...
+                    Akun pemohon{' '}
+                    <strong>
+                      {formData.legal_name || formData.name}
+                    </strong>{' '}
+                    berhasil dibuat. Mengalihkan ke Portal Pentashihan...
                   </p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-3">
+                  {/* Error */}
                   {(error || authError) && (
                     <div className="p-3 rounded-2xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5">
                       <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
@@ -265,26 +286,30 @@ export const RegisterPublisherPage = () => {
                   {accountType === 'PERORANGAN' ? (
                     <>
                       <div className="p-3 rounded-2xl bg-brand-50/60 border border-brand-100 text-xs text-brand-800 leading-relaxed">
-                        <span className="font-bold">Mode Perorangan:</span> Cocok untuk kaligrafer, penulis naskah, penghafal Al-Qur'an, penerjemah mandiri, atau individu pemohon tashih pribadi tanpa badan hukum PT/CV.
+                        <span className="font-bold">Mode Perorangan:</span>{' '}
+                        Cocok untuk kaligrafer, penulis naskah, penghafal
+                        Al-Qur'an, penerjemah mandiri, atau individu pemohon
+                        tashih pribadi tanpa badan hukum PT/CV.
                       </div>
 
+                      {/* Nama */}
                       <div>
                         <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                           Nama Lengkap Pemohon (Sesuai KTP) *
                         </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="Contoh: Muhammad Ilham Pratama, S.Hum"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
-                            required
-                          />
-                        </div>
+
+                        <input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          placeholder="Contoh: Muhammad Ilham Pratama, S.Hum"
+                          className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                          required
+                        />
                       </div>
 
+                      {/* Phone + Address */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
@@ -296,7 +321,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="081234567890"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
@@ -311,7 +336,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.address}
                             onChange={handleChange}
                             placeholder="Kota / Kabupaten domisili"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                           />
                         </div>
                       </div>
@@ -330,7 +355,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.legal_name}
                             onChange={handleChange}
                             placeholder="PT Mushaf Berkah Nusantara"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
@@ -343,16 +368,21 @@ export const RegisterPublisherPage = () => {
                             name="entity_type"
                             value={formData.entity_type}
                             onChange={handleChange}
-                            className="w-full px-3 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink cursor-pointer"
+                            className="w-full px-3 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink cursor-pointer"
                           >
                             <option value="PT">PT</option>
                             <option value="CV">CV</option>
-                            <option value="YAYASAN">Yayasan / Pesantren</option>
-                            <option value="LAINNYA">Lembaga Lainnya</option>
+                            <option value="YAYASAN">
+                              Yayasan / Pesantren
+                            </option>
+                            <option value="LAINNYA">
+                              Lembaga Lainnya
+                            </option>
                           </select>
                         </div>
                       </div>
 
+                      {/* PIC + Phone */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
@@ -364,7 +394,7 @@ export const RegisterPublisherPage = () => {
                             value={formData.name}
                             onChange={handleChange}
                             placeholder="Ahmad Fauzan, S.Pd"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                             required
                           />
                         </div>
@@ -379,11 +409,12 @@ export const RegisterPublisherPage = () => {
                             value={formData.phone}
                             onChange={handleChange}
                             placeholder="081234567890"
-                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                            className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                           />
                         </div>
                       </div>
 
+                      {/* Address */}
                       <div>
                         <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                           Alamat Kantor / Sekretariat
@@ -394,14 +425,16 @@ export const RegisterPublisherPage = () => {
                           value={formData.address}
                           onChange={handleChange}
                           placeholder="Jl. Percetakan Mushaf No. 12, Jakarta"
-                          className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                          className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         />
                       </div>
                     </>
                   )}
 
                   {/* KREDENSIAL AKUN LOGIN (BERLAKU UNTUK KEDUA TIPE) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+
+                    {/* Email */}
                     <div>
                       <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                         Email Akun (Untuk Login) *
@@ -412,11 +445,12 @@ export const RegisterPublisherPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="nama@email.com"
-                        className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                        className="w-full px-4 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         required
                       />
                     </div>
 
+                    {/* Password */}
                     <div className="relative">
                       <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
                         Kata Sandi (Min. 8 Karakter) *
@@ -427,16 +461,20 @@ export const RegisterPublisherPage = () => {
                         value={formData.password}
                         onChange={handleChange}
                         placeholder="••••••••"
-                        className="w-full pl-4 pr-11 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-white border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
+                        className="w-full pl-4 pr-11 py-3 text-sm bg-canvas hover:bg-surface-subtle/70 focus:bg-surface border border-line/80 rounded-2xl outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 top-5 pr-3.5 flex items-center text-ink-muted hover:text-ink-muted transition-colors"
+                        className="absolute inset-y-0 right-0 top-5 pr-3.5 flex items-center text-ink-muted hover:text-ink transition-colors"
                         aria-label="Toggle password visibility"
                       >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
