@@ -681,7 +681,7 @@ export async function sendSubmissionNotifications(reg, user, req) {
           idempotencyKey,
           recipientEmail,
           recipientName,
-          subject: `[LPMQ] Tanda Terima Pengajuan Pentashihan Mushaf - ${reg.registration_no}`,
+          subject: `[LPMQ] Tanda Terima Permohonan Surat Tanda Tashih - ${reg.registration_no}`,
           template: 'REGISTRATION_SUBMITTED',
           payload: {
             registration_no: reg.registration_no,
@@ -703,10 +703,10 @@ export async function sendSubmissionNotifications(reg, user, req) {
     if (recipientPhone) {
       const waMessage = `Assalamu'alaikum Wr. Wb.\n\n` +
         `Yth. Bpk/Ibu ${recipientName},\n\n` +
-        `Pengajuan permohonan tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
+        `Permohonan surat tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
         `Jenis Standar: ${jenisMushaf}\n` +
         `Status: ${statusLabel(reg.status || 'READY_FOR_VERIFICATION')}\n\n` +
-        `Tanda terima pengajuan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
+        `Tanda terima permohonan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
         `Wassalamu'alaikum Wr. Wb.\n` +
         `LPMQ Kemenag RI`;
 

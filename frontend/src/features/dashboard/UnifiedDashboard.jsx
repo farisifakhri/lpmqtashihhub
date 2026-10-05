@@ -542,8 +542,8 @@ export const UnifiedDashboard = () => {
                 <div className="text-2xl sm:text-3xl font-black text-civic-info tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-bold text-civic-info mt-1">Total Pengajuan</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Semua riwayat pengajuan</div>
+                <div className="text-xs font-bold text-civic-info mt-1">Total Permohonan</div>
+                <div className="text-[11px] text-ink-muted mt-0.5">Semua riwayat permohonan</div>
               </div>
             </div>
           </div>
@@ -644,7 +644,7 @@ export const UnifiedDashboard = () => {
             <div>
               <h3 className="text-base font-bold text-ink">
                 {isPublisher
-                  ? 'Portofolio Pengajuan Terkini'
+                  ? 'Portofolio Permohonan Terkini'
                   : 'Antrean Kerja Pentashihan'}
               </h3>
               <p className="text-xs text-ink-muted mt-0.5">
@@ -657,7 +657,7 @@ export const UnifiedDashboard = () => {
               <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                aria-label="Cari pengajuan naskah"
+                aria-label="Cari permohonan naskah"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nomor, judul, penerbit..."

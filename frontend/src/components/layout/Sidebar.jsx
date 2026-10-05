@@ -117,13 +117,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               end: true,
             },
             {
-              label: 'Pengajuan Saya',
+              label: 'Permohonan Saya',
               path: '/publisher/registrations',
               icon: <FileText className="w-4 h-4 shrink-0" />,
               description: 'Portofolio naskah & riwayat',
             },
             {
-              label: 'Buat Pengajuan',
+              label: 'Buat Permohonan',
               path: '/publisher/new-registration',
               icon: <FilePlus className="w-4 h-4 shrink-0" />,
               description: 'Pendaftaran naskah baru',

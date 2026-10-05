@@ -206,7 +206,7 @@ export const PublisherDashboard = () => {
 
         {loading ? (
           <p role="status" className="py-4 text-xs text-ink-muted">
-            Memuat pengajuan…
+            Memuat permohonan…
           </p>
         ) : !error && (
           <div className="space-y-3">

@@ -417,10 +417,10 @@ export const NewRegistrationPage = () => {
             Kembali ke Dasbor
           </Link>
           <h1 className="text-xl sm:text-2xl font-black text-ink tracking-tight">
-            Formulir Permohonan Naskah Mushaf Al-Qur'an
+            Formulir Permohonan Surat Tanda Tashih
           </h1>
           <p className="text-xs text-ink-muted mt-0.5">
-            Layanan Pentashihan Mushaf Al-Qur'an — Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kemenag RI
+            Layanan Surat Tanda Tashih — Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kemenag RI
           </p>
         </div>
 
@@ -600,7 +600,7 @@ export const NewRegistrationPage = () => {
             Email Penanggung Jawab
           </label>
           <p className="text-[11px] text-brand-700">
-            Alamat email aktif penanggung jawab untuk pengiriman tanda terima resmi pengajuan dan surat hasil verifikasi LPMQ.
+            Alamat email aktif penanggung jawab untuk pengiriman tanda terima resmi permohonan dan surat hasil verifikasi LPMQ.
           </p>
           <input
             type="email"

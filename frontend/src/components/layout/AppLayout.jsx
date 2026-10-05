@@ -20,7 +20,7 @@ const publisherMobileBottomItems = [
     end: true,
   },
   {
-    label: 'Pengajuan',
+    label: 'Permohonan',
     path: '/publisher/registrations',
     icon: FileText,
   },

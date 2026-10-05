@@ -262,7 +262,7 @@ export function PublisherRegistrationDetailPage() {
         className="inline-flex gap-2 items-center text-xs font-semibold text-ink-muted hover:text-brand-800 transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        Riwayat pengajuan
+        Riwayat permohonan
       </Link>
 
       {/* Error Alert */}
@@ -482,8 +482,8 @@ export function PublisherRegistrationDetailPage() {
 
                   <p className="text-[11px] text-ink-muted">
                     {requiredFiles
-                      ? 'Berkas wajib lengkap. Silakan kirimkan pengajuan pada formulir di bawah.'
-                      : 'Lengkapi berkas wajib di tab di bawah untuk mengirimkan pengajuan.'}
+                      ? 'Berkas wajib lengkap. Silakan kirimkan permohonan pada formulir di bawah.'
+                      : 'Lengkapi berkas wajib di tab di bawah untuk mengirimkan permohonan.'}
                   </p>
                 </div>
               </section>
@@ -524,7 +524,7 @@ export function PublisherRegistrationDetailPage() {
                       onClick={() => handleTabChange('berkas-fisik')}
                       className="text-xs font-bold"
                     >
-                      Buka Pengajuan Berkas Fisik
+                      Buka Penyerahan Berkas Fisik
                     </Button>
                   </div>
                 </div>
@@ -541,7 +541,7 @@ export function PublisherRegistrationDetailPage() {
                   <p className="text-ink-muted leading-relaxed">
                     {data.physical_master_intake?.status === 'RECEIVED'
                       ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
-                      : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik yang dikirimkan. Silakan buka tab Pengajuan Berkas Fisik untuk memeriksa status atau mengisi nomor resi pengiriman.'}
+                      : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik yang dikirimkan. Silakan buka tab Penyerahan Berkas Fisik untuk memeriksa status atau mengisi nomor resi pengiriman.'}
                   </p>
                   {data.physical_master_intake?.status === 'RECEIVED' && (
                     <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">
@@ -570,7 +570,7 @@ export function PublisherRegistrationDetailPage() {
                     'Petugas meminta perbaikan. Hubungi pengelola layanan bila rincian belum tersedia.'}
                 </p>
                 <p className="text-[11px] text-civic-warning font-medium pl-7">
-                  Unggah versi terbaru tanpa menghapus riwayat berkas, kemudian ajukan ulang pada bagian Kirim Pengajuan di bawah.
+                  Unggah versi terbaru tanpa menghapus riwayat berkas, kemudian ajukan ulang pada bagian Kirim Permohonan di bawah.
                 </p>
               </section>
             )}
@@ -663,7 +663,7 @@ export function PublisherRegistrationDetailPage() {
 
             {/* 3. Structured Tab Navigation */}
             <div className="border-b border-line pt-2">
-              <nav className="flex items-center gap-2 overflow-x-auto" aria-label="Navigasi Pengajuan">
+              <nav className="flex items-center gap-2 overflow-x-auto" aria-label="Navigasi Permohonan">
                 <button
                   type="button"
                   onClick={() => handleTabChange('berkas')}
@@ -690,7 +690,7 @@ export function PublisherRegistrationDetailPage() {
                   }`}
                 >
                   <PackageCheck className="w-4 h-4" />
-                  <span>Pengajuan Berkas Fisik</span>
+                  <span>Penyerahan Berkas Fisik</span>
                   <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full border ${
                     data.physical_master_intake?.status === 'RECEIVED'
                       ? 'bg-brand-100 text-brand-800 border-brand-200'
@@ -856,7 +856,7 @@ export function PublisherRegistrationDetailPage() {
                 <div className="space-y-6">
                   {editable ? (
                     <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
-                      <h2 className="font-bold text-ink text-sm">Kirim pengajuan</h2>
+                      <h2 className="font-bold text-ink text-sm">Kirim permohonan</h2>
                       <p className="text-xs text-ink-muted leading-relaxed">
                         Periksa kelengkapan berkas digital sebelum mengirim permohonan ke LPMQ.
                       </p>
@@ -870,23 +870,23 @@ export function PublisherRegistrationDetailPage() {
                         onClick={() =>
                           run(
                             () => registrationApi.submitRegistration(id),
-                            revision ? 'Perbaikan berhasil diajukan ulang.' : 'Pengajuan berhasil dikirim.'
+                            revision ? 'Perbaikan berhasil diajukan ulang.' : 'Permohonan berhasil dikirim.'
                           )
                         }
                         className="text-xs w-full sm:w-auto"
                       >
                         <Send className="h-3.5 w-3.5 mr-1.5" />
-                        {revision ? 'Ajukan ulang perbaikan' : 'Kirim pengajuan'}
+                        {revision ? 'Ajukan ulang perbaikan' : 'Kirim permohonan'}
                       </Button>
                     </section>
                   ) : (
                     <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
                       <h2 className="font-bold text-ink text-sm flex items-center gap-1.5">
                         <PackageCheck className="w-4 h-4 text-brand-800" />
-                        Pengajuan Berkas Fisik
+                        Penyerahan Berkas Fisik
                       </h2>
                       <p className="text-xs text-ink-muted leading-relaxed">
-                        Pengajuan berkas fisik (A4 dijilid per juz) kini berada pada tab terpisah. Buka tab <strong>Pengajuan Berkas Fisik</strong> untuk memeriksa status penerimaan atau mengisi nomor resi pengiriman.
+                        Penyerahan berkas fisik (A4 dijilid per juz) kini berada pada tab terpisah. Buka tab <strong>Penyerahan Berkas Fisik</strong> untuk memeriksa status penerimaan atau mengisi nomor resi pengiriman.
                       </p>
                       <Button
                         variant="outline"
@@ -1150,7 +1150,7 @@ export function PublisherRegistrationDetailPage() {
                     Dokumen Permohonan & Kelengkapan Penerbit
                   </h2>
                   <p className="text-[11px] text-ink-muted mt-0.5">
-                    Berkas resmi yang diunggah penerbit saat pengajuan permohonan tanda tashih.
+                    Berkas resmi yang diunggah penerbit saat permohonan tanda tashih.
                   </p>
                 </div>
 

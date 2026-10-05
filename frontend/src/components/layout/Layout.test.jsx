@@ -114,8 +114,8 @@ describe('Komponen tata letak portal operasional', () => {
 
     // Menu penerbit sesuai alur baru Mandat Bab 6
     expect(screen.getByText('Beranda')).toBeDefined();
-    expect(screen.getByText('Pengajuan Saya')).toBeDefined();
-    expect(screen.getByText('Buat Pengajuan')).toBeDefined();
+    expect(screen.getByText('Permohonan Saya')).toBeDefined();
+    expect(screen.getByText('Buat Permohonan')).toBeDefined();
     expect(screen.getByText('Tagihan')).toBeDefined();
     expect(screen.getByText('Arsip Dokumen')).toBeDefined();
   });
@@ -136,7 +136,7 @@ describe('Komponen tata letak portal operasional', () => {
     const bottomNav = screen.getByRole('navigation', { name: /navigasi bawah seluler/i });
     expect(bottomNav).toBeDefined();
     expect(screen.getAllByText('Beranda').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pengajuan').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Permohonan').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Tagihan').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Dokumen').length).toBeGreaterThan(0);
   });

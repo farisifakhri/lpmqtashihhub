@@ -3,13 +3,13 @@ export const WORKFLOW_PRESENTATION = {
   // State Machine Status Mapping (Backlog UX-03, UX-04, §9)
   registrationStatus: {
     DRAFT: {
-      label: 'Draf Pengajuan',
+      label: 'Draf Permohonan',
       phaseKey: 'REGISTRATION',
       phaseLabel: 'Pendaftaran',
       bgClass: 'bg-surface-subtle',
       textClass: 'text-ink',
       borderClass: 'border-line-strong',
-      description: 'Pengajuan baru, berkas atau data naskah belum lengkap.',
+      description: 'Permohonan baru, berkas atau data naskah belum lengkap.',
       actionOwner: 'Penerbit',
       nextAction: 'Lengkapi berkas & ajukan',
     },
@@ -20,7 +20,7 @@ export const WORKFLOW_PRESENTATION = {
       bgClass: 'bg-civic-infoSoft',
       textClass: 'text-civic-info',
       borderClass: 'border-civic-infoLine',
-      description: 'Pengajuan diajukan penerbit, menunggu Helper Admin menugaskan verifikator.',
+      description: 'Permohonan diajukan penerbit, menunggu Helper Admin menugaskan verifikator.',
       actionOwner: 'Kepala LPMQ',
       nextAction: 'Terbitkan Nota Dinas & tugaskan verifikator',
     },
@@ -207,7 +207,7 @@ export const WORKFLOW_PRESENTATION = {
       bgClass: 'bg-civic-dangerSoft',
       textClass: 'text-civic-danger',
       borderClass: 'border-civic-dangerLine',
-      description: 'Pengajuan dibatalkan sebelum tahapan pembayaran atau penetapan.',
+      description: 'Permohonan dibatalkan sebelum tahapan pembayaran atau penetapan.',
       actionOwner: 'Penerbit / Admin',
       nextAction: 'Tidak ada tindakan lanjutan',
     },
@@ -254,7 +254,7 @@ export const WORKFLOW_PRESENTATION = {
       bgClass: 'bg-civic-infoSoft',
       textClass: 'text-civic-info',
       borderClass: 'border-civic-infoLine',
-      description: 'Pengajuan dikecualikan dari tarif PNBP sesuai ketentuan',
+      description: 'Permohonan dikecualikan dari tarif PNBP sesuai ketentuan',
     },
   },
 

@@ -24,11 +24,11 @@ export function DocumentArchivePage() {
 
   return <main className="mx-auto max-w-6xl space-y-5 pb-12">
     <header><h1 className="text-2xl font-bold text-ink">Arsip Dokumen</h1><p className="text-sm text-ink-muted">Semua versi surat, nota dinas, dan hasil tashih untuk laporan Posdok-Q.</p></header>
-    <label className="block text-sm">Cari naskah atau nomor pengajuan
+    <label className="block text-sm">Cari naskah atau nomor permohonan
       <input className="mt-1 w-full rounded-lg border border-line-strong p-2" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} />
     </label>
     {error && <p role="alert" className="text-sm text-civic-danger">{error}</p>}
-    {!error && !items.length && <p className="text-sm text-ink-muted">Belum ada pengajuan yang cocok.</p>}
+    {!error && !items.length && <p className="text-sm text-ink-muted">Belum ada permohonan yang cocok.</p>}
     {items.map(item => <article key={item.id} className="rounded-xl border border-line bg-white p-5 space-y-4">
       <div><h2 className="font-semibold text-ink">{item.title}</h2><p className="text-xs text-ink-muted">{item.registration_no} · {item.publisher?.legal_name}</p></div>
       <DocumentArchive registrationId={item.id} />
