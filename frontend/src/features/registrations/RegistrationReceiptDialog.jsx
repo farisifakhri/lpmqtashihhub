@@ -362,7 +362,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
                   Saluran Notifikasi Otomatis Aktif
                 </p>
                 <p className="text-brand-800 leading-snug">
-                  Pemberitahuan verifikasi berkas, tagihan PNBP (SIMPONI), sidang tashih, hingga STT akan dikirim ke:
+                  Pemberitahuan verifikasi berkas, tagihan PNBP (SIMPONI), hingga STT akan dikirim ke:
                   {pjEmail && <span className="font-semibold"> Email ({pjEmail})</span>}
                   {pjEmail && pjWa && <span> dan </span>}
                   {pjWa && <span className="font-semibold"> WhatsApp ({pjWa})</span>}.

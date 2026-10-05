@@ -354,6 +354,7 @@ export const createDraft = async (data, user, req) => {
             ...(data.mushaf_details || {}),
             ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
             ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
+            ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
             ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
             ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
             ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
@@ -389,13 +390,14 @@ export const createDraft = async (data, user, req) => {
             } catch {}
           }
 
-          if (data.surat_permohonan_file_id) {
+          const samplePageFileId = data.contoh_halaman_file_id || data.surat_permohonan_file_id;
+          if (samplePageFileId) {
             try {
               await tx.manuscriptFile.create({
                 data: {
                   registration_id: created.id,
                   type: 'SAMPLE_PAGE_1_5',
-                  file_id: data.surat_permohonan_file_id,
+                  file_id: samplePageFileId,
                   version: 1,
                 },
               });
