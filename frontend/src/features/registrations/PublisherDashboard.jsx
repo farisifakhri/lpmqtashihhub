@@ -131,7 +131,7 @@ export const PublisherDashboard = () => {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-800 hover:bg-brand-900 text-white font-bold text-xs shadow-xs transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Buat Permohonan Baru
+            Permohonan Tanda Tashih Baru
           </Link>
           <Button
             variant="outline"

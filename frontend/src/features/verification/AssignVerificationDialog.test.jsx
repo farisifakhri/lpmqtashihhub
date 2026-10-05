@@ -69,7 +69,7 @@ describe('AssignVerificationDialog Component', () => {
       />
     );
 
-    expect(screen.getByText('Terbitkan Nota Dinas & Tugaskan Verifikator')).toBeInTheDocument();
+    expect(screen.getByText('Terbitkan Disposisi & Tugaskan Verifikator')).toBeInTheDocument();
     expect(screen.getAllByText('REG-2026-LPMQ-001').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/PT Percetakan Menara Kudus/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/TT-LPMQ-2026-888/)).toBeInTheDocument();
@@ -94,17 +94,17 @@ describe('AssignVerificationDialog Component', () => {
     });
 
     // Isi nomor nota saja, belum pilih verifikator
-    const notaInput = screen.getByLabelText(/Nomor Nota Dinas Penugasan/i);
+    const notaInput = screen.getByLabelText(/Nomor Disposisi Penugasan/i);
     fireEvent.change(notaInput, { target: { value: 'ND.01/LPMQ/2026' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i });
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
     fireEvent.click(submitBtn);
 
     expect(screen.getByText(/Silakan pilih verifikator yang akan ditugaskan/i)).toBeInTheDocument();
     expect(VerificationApiModule.verificationApi.createAssignment).not.toHaveBeenCalled();
   });
 
-  it('menampilkan pesan validasi jika nomor Nota Dinas kosong atau kurang dari 3 karakter', async () => {
+  it('menampilkan pesan validasi jika nomor Disposisi kosong atau kurang dari 3 karakter', async () => {
     render(
       <AssignVerificationDialog
         registration={mockRegistration}
@@ -120,10 +120,10 @@ describe('AssignVerificationDialog Component', () => {
     const select = screen.getByRole('combobox');
     fireEvent.change(select, { target: { value: 'v-1' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i });
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
     fireEvent.click(submitBtn);
 
-    expect(screen.getByText(/Nomor Nota Dinas wajib diisi/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nomor Disposisi wajib diisi/i)).toBeInTheDocument();
     expect(VerificationApiModule.verificationApi.createAssignment).not.toHaveBeenCalled();
   });
 
@@ -142,14 +142,14 @@ describe('AssignVerificationDialog Component', () => {
     });
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'v-2' } });
-    fireEvent.change(screen.getByLabelText(/Nomor Nota Dinas Penugasan/i), {
+    fireEvent.change(screen.getByLabelText(/Nomor Disposisi Penugasan/i), {
       target: { value: 'ND.02/LPMQ.01/HM.01/09/2026' },
     });
     fireEvent.change(screen.getByPlaceholderText(/Tambahkan arahan atau atensi khusus/i), {
       target: { value: 'Periksa master fisik juz 1-30 sesuai master loket.' },
     });
 
-    const submitBtn = screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i });
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -227,11 +227,11 @@ describe('AssignVerificationDialog Component', () => {
     });
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'v-1' } });
-    fireEvent.change(screen.getByLabelText(/Nomor Nota Dinas Penugasan/i), {
+    fireEvent.change(screen.getByLabelText(/Nomor Disposisi Penugasan/i), {
       target: { value: 'ND.01/LPMQ/2026' },
     });
 
-    const submitBtn = screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i });
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
@@ -242,7 +242,7 @@ describe('AssignVerificationDialog Component', () => {
     });
   });
 
-  it('menampilkan nomor Nota Dinas duplikat sebagai kesalahan field dan mengizinkan perbaikan', async () => {
+  it('menampilkan nomor Disposisi duplikat sebagai kesalahan field dan mengizinkan perbaikan', async () => {
     const onConflict = vi.fn();
     const onSuccess = vi.fn();
     const duplicateError = new Error('Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
@@ -254,9 +254,9 @@ describe('AssignVerificationDialog Component', () => {
     render(<AssignVerificationDialog registration={mockRegistration} onClose={vi.fn()} onSuccess={onSuccess} onConflict={onConflict} />);
     await screen.findByRole('combobox');
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'v-1' } });
-    const nota = screen.getByLabelText(/Nomor Nota Dinas Penugasan/i);
+    const nota = screen.getByLabelText(/Nomor Disposisi Penugasan/i);
     fireEvent.change(nota, { target: { value: 'ND.01/LPMQ/2026' } });
-    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
     expect(nota).toHaveValue('ND.01/LPMQ/2026');
@@ -266,7 +266,7 @@ describe('AssignVerificationDialog Component', () => {
 
     fireEvent.change(nota, { target: { value: 'ND.02/LPMQ/2026' } });
     expect(nota).toHaveAttribute('aria-invalid', 'false');
-    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Nota Dinas & Tugaskan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: 'assign-new-2' })));
   });
 });

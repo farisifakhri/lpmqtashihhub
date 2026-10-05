@@ -23,7 +23,7 @@ export function DocumentArchivePage() {
   }, [page, search]);
 
   return <main className="mx-auto max-w-6xl space-y-5 pb-12">
-    <header><h1 className="text-2xl font-bold text-ink">Arsip Dokumen</h1><p className="text-sm text-ink-muted">Semua versi surat, nota dinas, dan hasil tashih untuk laporan Posdok-Q.</p></header>
+    <header><h1 className="text-2xl font-bold text-ink">Arsip Dokumen</h1><p className="text-sm text-ink-muted">Semua versi surat, disposisi, dan hasil tashih untuk laporan Posdok-Q.</p></header>
     <label className="block text-sm">Cari naskah atau nomor permohonan
       <input className="mt-1 w-full rounded-lg border border-line-strong p-2" value={search} onChange={event => { setSearch(event.target.value); setPage(1); }} />
     </label>

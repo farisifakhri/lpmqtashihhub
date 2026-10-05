@@ -104,7 +104,7 @@ export const InspectionReferencePanels = ({
 
             {notaDinas.document_no && (
               <div className="border-t border-line pt-2.5 space-y-1">
-                <span className="text-ink-muted block text-[11px]">Dasar Penugasan Resmi</span>
+                <span className="text-ink-muted block text-[11px]">Nomor Disposisi Penugasan</span>
                 <span className="font-mono font-semibold text-brand-900 block">
                   {notaDinas.document_no}
                 </span>
@@ -149,7 +149,7 @@ export const InspectionReferencePanels = ({
             )}
           </div>
 
-          {/* Riwayat Penugasan & Nota Dinas (if multiple assignments exist) */}
+          {/* Riwayat Penugasan & Disposisi (if multiple assignments exist) */}
           {detail?.assignment_history?.length > 1 && (
             <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-2 text-xs">
               <div className="flex items-center gap-1.5 font-bold text-ink border-b border-line pb-2">
@@ -170,7 +170,7 @@ export const InspectionReferencePanels = ({
                       </div>
                       {hNota?.document_no && (
                         <div className="font-mono text-[10px] text-ink-muted">
-                          ND: {hNota.document_no}
+                          Disp: {hNota.document_no}
                         </div>
                       )}
                       {h.revocation_reason && (

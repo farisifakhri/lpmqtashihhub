@@ -123,7 +123,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Portofolio naskah & riwayat',
             },
             {
-              label: 'Buat Permohonan',
+              label: 'Permohonan Tanda Tashih Baru',
               path: '/publisher/new-registration',
               icon: <FilePlus className="w-4 h-4 shrink-0" />,
               description: 'Pendaftaran naskah baru',

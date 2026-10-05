@@ -88,7 +88,7 @@ export const RevokeAssignmentDialog = ({ assignment, onClose, onSuccess }) => {
               {reg.registration_no || '-'}
             </span>
             <span className="text-ink-muted">
-              Nota Dinas: <strong className="text-ink">{notaNo}</strong>
+              Disposisi: <strong className="text-ink">{notaNo}</strong>
             </span>
           </div>
           <div className="space-y-1">

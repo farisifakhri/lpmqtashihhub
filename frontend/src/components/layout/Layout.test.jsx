@@ -115,7 +115,7 @@ describe('Komponen tata letak portal operasional', () => {
     // Menu penerbit sesuai alur baru Mandat Bab 6
     expect(screen.getByText('Beranda')).toBeDefined();
     expect(screen.getByText('Permohonan Saya')).toBeDefined();
-    expect(screen.getByText('Buat Permohonan')).toBeDefined();
+    expect(screen.getByText('Permohonan Tanda Tashih Baru')).toBeDefined();
     expect(screen.getByText('Tagihan')).toBeDefined();
     expect(screen.getByText('Arsip Dokumen')).toBeDefined();
   });

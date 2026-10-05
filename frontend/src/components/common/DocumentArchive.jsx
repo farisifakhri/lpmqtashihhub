@@ -7,7 +7,7 @@ import { DocumentPreview } from './DocumentPreview';
 import { PrivateFileViewer } from './PrivateFileViewer';
 
 const labels = {
-  NOTA_DINAS_VERIFIKASI: 'Nota Dinas Verifikasi',
+  NOTA_DINAS_VERIFIKASI: 'Disposisi Verifikasi',
   SURAT_HASIL_VERIFIKASI: 'Surat Hasil Verifikasi',
   SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI: 'Surat Pemberitahuan Hasil Verifikasi',
   BERITA_ACARA_VERIFIKASI: 'Berita Acara Verifikasi',

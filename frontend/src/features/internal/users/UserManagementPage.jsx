@@ -34,7 +34,7 @@ export const ROLE_OPTIONS = [
   { code: 'DISTRIBUTOR', label: 'Distributor Sidang', desc: 'Penugasan tim pentashih dan tanda terima' },
   { code: 'PENTASHIH', label: 'Pentashih', desc: 'Penelaahan lafazh, ayat, rasm, dan harakat' },
   { code: 'DOKUMENTATOR', label: 'Dokumentator', desc: 'Pemberkasan eksemplar pasca-STT' },
-  { code: 'KEPALA_LPMQ', label: 'Kepala LPMQ', desc: 'Nota dinas penugasan dan pengesahan STT' },
+  { code: 'KEPALA_LPMQ', label: 'Kepala LPMQ', desc: 'Disposisi penugasan dan pengesahan STT' },
 ];
 
 export const UserManagementPage = () => {

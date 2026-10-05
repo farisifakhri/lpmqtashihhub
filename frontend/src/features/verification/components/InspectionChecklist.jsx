@@ -4,12 +4,12 @@ import { CheckSquare } from 'lucide-react';
 export const InspectionChecklist = ({
   activeMobileTab, sesuaiCount, tidakBerlakuCount, checklist, validationErrors,
   isReadOnly, handleChecklistChange,
-  definitions,
+  definitions, className,
 }) => {
   const CHECKLIST_DEFINITIONS = definitions;
   return (
         <div
-          className={`lg:col-span-4 space-y-4 ${
+          className={className || `lg:col-span-4 space-y-4 ${
             activeMobileTab === 'checklist' ? 'block' : 'hidden lg:block'
           }`}
         >

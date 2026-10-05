@@ -207,7 +207,7 @@ export const UnifiedDashboard = () => {
       },
       {
         title: isKepala ? 'Persetujuan Verifikasi' : 'Verifikasi Berkas',
-        desc: isKepala ? 'Nota dinas penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
+        desc: isKepala ? 'Disposisi penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
         iconBg: 'bg-gradient-to-br from-civic-info to-civic-info text-white shadow-xs',
@@ -846,7 +846,7 @@ export const UnifiedDashboard = () => {
           onClose={() => setVerificationAssignReg(null)}
           onSuccess={() => {
             setVerificationAssignReg(null);
-            setAssignmentSuccess('Verifikator berhasil ditugaskan dan Nota Dinas telah diterbitkan.');
+            setAssignmentSuccess('Verifikator berhasil ditugaskan dan Disposisi telah diterbitkan.');
             fetchRegistrations();
           }}
           onConflict={() => {
