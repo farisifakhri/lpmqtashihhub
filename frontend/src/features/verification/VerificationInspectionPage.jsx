@@ -32,6 +32,10 @@ import {
   Send,
   Play,
   Info,
+  Printer,
+  FileText,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 
 const CHECKLIST_DEFINITIONS = [
@@ -80,6 +84,7 @@ export const VerificationInspectionPage = () => {
   // Official letter editor/preview toggle
   const [letterTab, setLetterTab] = useState('editor'); // 'editor' | 'preview'
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+  const [showWorkflowGuide, setShowWorkflowGuide] = useState(false);
 
   // Modals state
   const [returnModalOpen, setReturnModalOpen] = useState(false);
@@ -583,34 +588,50 @@ export const VerificationInspectionPage = () => {
         }
       />
 
-      <section className="rounded-xl border border-line bg-white p-4 sm:p-5 space-y-4 text-sm" aria-label="Alur penugasan dan dokumen verifikasi">
-        <div>
-          <h2 className="font-bold text-ink">Alur penugasan dan verifikasi</h2>
-          <p className="text-xs text-ink-muted mt-1">Ikuti urutan ini dari nota dinas sampai surat hasil dikirim ke penerbit.</p>
-        </div>
-        <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
-          {[
-            ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Nota Dinas ${notaDinas.document_no || 'belum terbit'}.`],
-            ['2', 'Periksa PDF Nota Dinas', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
-            ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
-            ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
-          ].map(([number, title, description]) => (
-            <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
-              <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
-            </li>
-          ))}
-        </ol>
-        <div className="border-t border-line pt-3 space-y-2">
-          <h3 className="font-semibold text-ink text-xs">PDF dokumen verifikasi</h3>
-          <p className="text-xs text-ink-muted">Periksa Nota Dinas sebelum memulai pemeriksaan. Penampil PDF menyediakan kontrol cetak dan unduh untuk tiap dokumen.</p>
-          <div className="flex flex-wrap gap-2">
-            {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
-              <Button key={doc.id} variant="outline" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
-                Lihat / Cetak PDF {title}
-              </Button>
-            ))}
+      <section className="rounded-xl border border-line bg-white p-4 space-y-3 text-sm shadow-2xs" aria-label="Alur penugasan dan dokumen verifikasi">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-bold text-ink text-sm flex items-center gap-1.5 mr-1">
+              <FileText className="w-4 h-4 text-brand-800" />
+              Dokumen Verifikasi Resmi
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
+                <Button key={doc.id} variant="outline" size="sm" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
+                  <Printer className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                  Lihat / Cetak PDF {title}
+                </Button>
+              ))}
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
+            className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer"
+          >
+            {showWorkflowGuide ? (
+              <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
+            ) : (
+              <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
+            )}
+          </button>
+        </div>
+
+        <div className={showWorkflowGuide ? 'pt-3 border-t border-line space-y-3 animate-fadeIn' : 'hidden'}>
+          <p className="text-xs text-ink-muted">Ikuti urutan ini dari nota dinas sampai surat hasil dikirim ke penerbit:</p>
+          <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
+            {[
+              ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Nota Dinas ${notaDinas.document_no || 'belum terbit'}.`],
+              ['2', 'Periksa PDF Nota Dinas', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
+              ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
+              ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
+            ].map(([number, title, description]) => (
+              <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
+                <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 

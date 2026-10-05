@@ -38,6 +38,7 @@ const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signature
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const DocumentArchivePage = withSuspense(lazy(() => import('@/features/internal/DocumentArchivePage').then(m => ({ default: m.DocumentArchivePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
+const PublisherVerificationPage = withSuspense(lazy(() => import('@/features/internal/publishers/PublisherVerificationPage').then(m => ({ default: m.PublisherVerificationPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
 const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
@@ -209,6 +210,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
             <UserManagementPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/publishers',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'VERIFIKATOR']}>
+            <PublisherVerificationPage />
           </ProtectedRoute>
         ),
       },

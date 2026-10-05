@@ -101,11 +101,12 @@ export function DocumentArchive({ registrationId }) {
         <div className="pt-4"><PrivateFileViewer fileId={snapshot.billing_file_id} fileName="billing-pnbp.pdf" mimeType="application/pdf" height="480px" endpoint={`/verification-documents/${selected.id}/attachments/${snapshot.billing_file_id}`} /></div>
       </details>}
       <DocumentPreview
-      title={labels[selected.document_type] || selected.document_type}
-      documentNo={selected.document_no}
-      version={selected.version}
-      letterText={text}
-      onDownload={selected.source === 'OFFICIAL' ? () => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`) : undefined}
+        title={labels[selected.document_type] || selected.document_type}
+        documentNo={selected.document_no}
+        version={selected.version}
+        snapshot={snapshot}
+        letterText={text}
+        onDownload={selected.source === 'OFFICIAL' ? () => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`) : undefined}
       />
     </section>}
     {pdfUrl && <div role="dialog" aria-modal="true" aria-label="PDF arsip dokumen" className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">

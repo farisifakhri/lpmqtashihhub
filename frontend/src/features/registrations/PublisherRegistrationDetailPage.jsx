@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Upload,
@@ -20,6 +20,10 @@ import {
   ChevronDown,
   ChevronUp,
   CreditCard,
+  Download,
+  Eye,
+  MapPin,
+  Truck,
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { verificationApi } from '@/api/verification.api';
@@ -36,6 +40,7 @@ import { PublisherProgress } from './PublisherProgress';
 import { WorkflowPhaseStatus } from '@/components/common/WorkflowPhaseStatus';
 import { PublisherDocumentList } from './PublisherDocumentList';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
+import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 import { publisherAction, dateLabel } from './publisher-status';
 
 const fileTypes = {
@@ -50,12 +55,13 @@ export function PublisherRegistrationDetailPage() {
   const { id } = useParams();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [previewFile, setPreviewFile] = useState(null);
 
   useEffect(() => {
     if (location.state?.showReceipt) {
@@ -228,8 +234,25 @@ export function PublisherRegistrationDetailPage() {
     );
   };
 
-  const [activeTab, setActiveTab] = useState('berkas');
+  const initialTab = searchParams.get('tab') || 'berkas';
+  const [activeTab, setActiveTab] = useState(
+    ['berkas', 'berkas-fisik', 'timeline', 'dokumen'].includes(initialTab) ? initialTab : 'berkas'
+  );
   const [showPhaseDetails, setShowPhaseDetails] = useState(false);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['berkas', 'berkas-fisik', 'timeline', 'dokumen'].includes(tabFromUrl)) {
+      setActiveTab(tabFromUrl);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('tab', newTab);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16 animate-fadeIn">
@@ -483,85 +506,50 @@ export function PublisherRegistrationDetailPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
-                    data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED'
-                      ? 'bg-brand-100 text-brand-800 border-brand-100'
-                      : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
-                  }`}>
-                    {data.physical_master_intake?.status === 'RECEIVED'
-                      ? 'Master Fisik Diterima Loket · Menunggu Penugasan'
-                      : data.physical_dispatch_status === 'DISPATCHED'
-                        ? 'Berkas Dikirim · Menunggu Penerimaan Loket'
-                        : 'Menunggu Pengiriman Berkas Fisik'}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                      data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'bg-brand-100 text-brand-800 border-brand-100'
+                        : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                    }`}>
+                      {data.physical_master_intake?.status === 'RECEIVED'
+                        ? 'Master Fisik Diterima Loket · Menunggu Penugasan'
+                        : data.physical_dispatch_status === 'DISPATCHED'
+                          ? 'Berkas Dikirim · Menunggu Penerimaan Loket'
+                          : 'Menunggu Pengiriman Berkas Fisik'}
+                    </span>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleTabChange('berkas-fisik')}
+                      className="text-xs font-bold"
+                    >
+                      Buka Pengajuan Berkas Fisik
+                    </Button>
+                  </div>
                 </div>
 
-                {data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED' ? (
-                  <div className="p-4 bg-white rounded-xl border border-civic-warningLine text-xs text-ink space-y-2">
-                    <p className="font-bold text-brand-800 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-brand-700" />
-                      Konfirmasi Pengiriman Berkas Tercatat di Sistem
-                    </p>
-                    <p className="text-ink-muted leading-relaxed">
-                      Metode Pengantaran: <strong>{data.dispatch_courier || 'Loket LPMQ'}</strong>
-                      {data.dispatch_tracking_no ? ` · Nomor Resi / Tanda Terima: ${data.dispatch_tracking_no}` : ''}
-                    </p>
-                    <p className="text-[11px] text-civic-info font-semibold bg-civic-infoSoft p-2 rounded-lg border border-civic-infoLine">
-                      {data.physical_master_intake?.status === 'RECEIVED'
-                        ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator.'
-                        : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik. Verifikasi dimulai setelah berkas diterima dan verifikator ditugaskan.'}
-                    </p>
-                    {data.physical_master_intake?.status === 'RECEIVED' && (
-                      <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">
-                        <Printer className="w-3.5 h-3.5 mr-1.5" />
-                        Lihat / Cetak PDF Tanda Terima Fisik
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  <form onSubmit={handleDispatch} className="p-4 bg-white rounded-xl border border-civic-warningLine space-y-3">
-                    <p className="text-xs text-ink leading-relaxed">
-                      Silakan bawa berkas master fisik (A4 dijilid per juz) ke <strong>Loket Pelayanan LPMQ Gedung Bayt Al-Qur'an & Museum Istiqlal, TMII Jakarta</strong> atau kirim melalui ekspedisi terpercaya, lalu konfirmasikan pada formulir di bawah ini:
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs font-bold text-ink mb-1">
-                          Metode Pengiriman
-                        </label>
-                        <select
-                          disabled={busy}
-                          value={dispatchData.courier}
-                          onChange={(e) => setDispatchData({ ...dispatchData, courier: e.target.value })}
-                          className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
-                        >
-                          <option value="LOKET_LPMQ">Antar Langsung ke Loket LPMQ TMII</option>
-                          <option value="JNE">JNE Express</option>
-                          <option value="POS_INDONESIA">Pos Indonesia</option>
-                          <option value="TIKI">TIKI</option>
-                          <option value="SICEPAT">SiCepat</option>
-                          <option value="LAINNYA">Kurir / Ekspedisi Lainnya</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-ink mb-1">
-                          Nomor Resi / Keterangan Tanda Kirim
-                        </label>
-                        <input
-                          type="text"
-                          disabled={busy}
-                          value={dispatchData.tracking_no}
-                          onChange={(e) => setDispatchData({ ...dispatchData, tracking_no: e.target.value })}
-                          placeholder="Contoh: Resi JNE12345678 atau Diserahkan Staf PT"
-                          className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
-                        />
-                      </div>
-                    </div>
-                    <Button type="submit" disabled={busy} variant="primary" size="sm" className="text-xs font-bold">
-                      <Send className="w-3.5 h-3.5 mr-1.5" />
-                      Kirimkan Berkas ke LPMQ (Konfirmasi Pengiriman)
+                <div className="p-4 bg-white rounded-xl border border-civic-warningLine text-xs text-ink space-y-2">
+                  <p className="font-bold text-brand-800 flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-brand-700" />
+                    {data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'Master Fisik Diterima Loket LPMQ'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'Konfirmasi Pengiriman Berkas Tercatat di Sistem'
+                        : 'Petunjuk Pengiriman Master Fisik'}
+                  </p>
+                  <p className="text-ink-muted leading-relaxed">
+                    {data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
+                      : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik yang dikirimkan. Silakan buka tab Pengajuan Berkas Fisik untuk memeriksa status atau mengisi nomor resi pengiriman.'}
+                  </p>
+                  {data.physical_master_intake?.status === 'RECEIVED' && (
+                    <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">
+                      <Printer className="w-3.5 h-3.5 mr-1.5" />
+                      Lihat / Cetak PDF Tanda Terima Fisik
                     </Button>
-                  </form>
-                )}
+                  )}
+                </div>
               </section>
             )}
 
@@ -675,18 +663,18 @@ export function PublisherRegistrationDetailPage() {
 
             {/* 3. Structured Tab Navigation */}
             <div className="border-b border-line pt-2">
-              <nav className="flex items-center gap-2" aria-label="Navigasi Pengajuan">
+              <nav className="flex items-center gap-2 overflow-x-auto" aria-label="Navigasi Pengajuan">
                 <button
                   type="button"
-                  onClick={() => setActiveTab('berkas')}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                  onClick={() => handleTabChange('berkas')}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'berkas'
                       ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
                       : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
                   }`}
                 >
                   <FileText className="w-4 h-4" />
-                  <span>Berkas & Master Fisik</span>
+                  <span>Berkas Digital</span>
                   <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-subtle border border-line text-ink">
                     {data.manuscript_files?.length || 0}
                   </span>
@@ -694,8 +682,34 @@ export function PublisherRegistrationDetailPage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('timeline')}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                  onClick={() => handleTabChange('berkas-fisik')}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                    activeTab === 'berkas-fisik'
+                      ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
+                      : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
+                  }`}
+                >
+                  <PackageCheck className="w-4 h-4" />
+                  <span>Pengajuan Berkas Fisik</span>
+                  <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full border ${
+                    data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'bg-brand-100 text-brand-800 border-brand-200'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'bg-civic-infoSoft text-civic-info border-civic-infoLine'
+                        : 'bg-surface-subtle text-ink border-line'
+                  }`}>
+                    {data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'Diterima'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'Dikirim'
+                        : `${volumeCount} Jilid`}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('timeline')}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'timeline'
                       ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
                       : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
@@ -710,8 +724,8 @@ export function PublisherRegistrationDetailPage() {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab('dokumen')}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                  onClick={() => handleTabChange('dokumen')}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                     activeTab === 'dokumen'
                       ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
                       : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
@@ -719,16 +733,16 @@ export function PublisherRegistrationDetailPage() {
                 >
                   <Building2 className="w-4 h-4" />
                   <span>Dokumen Resmi</span>
-                  {(data.official_documents?.length > 0) && (
+                  {(data.official_documents?.length > 0 || data.foreign_metadata?.surat_permohonan_file_id) && (
                     <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
-                      {data.official_documents.length}
+                      {(data.official_documents?.length || 0) + (data.foreign_metadata?.surat_permohonan_file_id ? 1 : 0)}
                     </span>
                   )}
                 </button>
               </nav>
             </div>
 
-            {/* TAB 1: Berkas & Master Fisik */}
+            {/* TAB 1: Berkas Digital */}
             <div className={activeTab === 'berkas' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
               <div className="grid lg:grid-cols-[1.3fr_1fr] gap-6 items-start">
                 {/* Kolom Kiri: Berkas Digital */}
@@ -737,10 +751,10 @@ export function PublisherRegistrationDetailPage() {
                     <div className="border-b border-line pb-3">
                       <h2 className="font-bold text-ink text-sm flex items-center gap-2">
                         <FileText className="w-4 h-4 text-brand-800" />
-                        Berkas naskah
+                        Berkas naskah digital
                       </h2>
                       <p className="text-[11px] text-ink-muted mt-0.5">
-                        Sampul dan halaman 1–5 adalah berkas awal. PDF, PNG, atau JPEG (maksimal 10 MB).
+                        Sampul dan halaman 1–5 adalah berkas awal naskah digital (PDF, PNG, atau JPEG maksimal 10 MB).
                       </p>
                     </div>
 
@@ -757,9 +771,21 @@ export function PublisherRegistrationDetailPage() {
                                 {fileTypes[item.type] || item.type}
                               </span>
                             </div>
-                            <span className="font-mono text-[11px] text-ink-muted bg-white border border-line px-2 py-0.5 rounded">
-                              Versi {item.version}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[11px] text-ink-muted bg-white border border-line px-2 py-0.5 rounded">
+                                Versi {item.version}
+                              </span>
+                              {item.file_id && (
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewFile({ id: item.file_id, name: `${fileTypes[item.type] || item.type}.pdf` })}
+                                  className="text-xs text-brand-800 hover:text-brand-900 font-semibold p-1 hover:bg-brand-50 rounded cursor-pointer"
+                                  title="Lihat Berkas"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -826,58 +852,13 @@ export function PublisherRegistrationDetailPage() {
                   </section>
                 </div>
 
-                {/* Kolom Kanan: Master Fisik & Tombol Pengajuan */}
+                {/* Kolom Kanan: Panduan Berkas & Tombol Pengajuan */}
                 <div className="space-y-6">
-                  {/* Master Fisik Declaration */}
-                  <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
-                    <div className="flex items-center justify-between border-b border-line pb-2.5">
-                      <h2 className="font-bold text-ink text-sm flex items-center gap-1.5">
-                        <PackageCheck className="w-4 h-4 text-brand-800" />
-                        Master fisik
-                      </h2>
-                      <span className="text-[11px] text-ink-muted">Format A4 Dijilid Per Juz</span>
-                    </div>
-                    <p className="text-xs text-ink">
-                      {data.physical_master_intake
-                        ? `${data.physical_master_intake.volume_count} jilid · ${
-                            data.physical_master_intake.status === 'RECEIVED'
-                              ? 'Sudah diterima LPMQ'
-                              : 'Menunggu tindak lanjut petugas'
-                          }`
-                        : 'Belum ada pernyataan master fisik.'}
-                    </p>
-                    {editable && data.physical_master_intake?.status !== 'RECEIVED' && (
-                      <form onSubmit={savePhysical} className="space-y-3 pt-2">
-                        <label
-                          htmlFor="publisher-master-count"
-                          className="block text-xs font-bold text-ink"
-                        >
-                          Jumlah jilid master fisik
-                        </label>
-                        <input
-                          id="publisher-master-count"
-                          type="number"
-                          min="1"
-                          max="100"
-                          required
-                          disabled={busy}
-                          value={volumeCount}
-                          onChange={(event) => setVolumeCount(event.target.value)}
-                          className="w-full rounded-lg border border-line-strong p-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-700/20"
-                        />
-                        <Button type="submit" variant="outline" size="sm" disabled={busy} className="text-xs">
-                          Simpan pernyataan fisik
-                        </Button>
-                      </form>
-                    )}
-                  </section>
-
-                  {/* Kirim Pengajuan Form */}
-                  {editable && (
+                  {editable ? (
                     <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
                       <h2 className="font-bold text-ink text-sm">Kirim pengajuan</h2>
                       <p className="text-xs text-ink-muted leading-relaxed">
-                        Periksa kelengkapan sebelum mengirim. Status verifikasi penerbit dan tahapan berikutnya diperiksa oleh sistem.
+                        Periksa kelengkapan berkas digital sebelum mengirim permohonan ke LPMQ.
                       </p>
                       {!requiredFiles && (
                         <p className="text-xs text-civic-warning font-semibold">
@@ -898,12 +879,228 @@ export function PublisherRegistrationDetailPage() {
                         {revision ? 'Ajukan ulang perbaikan' : 'Kirim pengajuan'}
                       </Button>
                     </section>
+                  ) : (
+                    <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
+                      <h2 className="font-bold text-ink text-sm flex items-center gap-1.5">
+                        <PackageCheck className="w-4 h-4 text-brand-800" />
+                        Pengajuan Berkas Fisik
+                      </h2>
+                      <p className="text-xs text-ink-muted leading-relaxed">
+                        Pengajuan berkas fisik (A4 dijilid per juz) kini berada pada tab terpisah. Buka tab <strong>Pengajuan Berkas Fisik</strong> untuk memeriksa status penerimaan atau mengisi nomor resi pengiriman.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTabChange('berkas-fisik')}
+                        className="text-xs font-semibold text-brand-800"
+                      >
+                        Buka Tab Berkas Fisik
+                      </Button>
+                    </section>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* TAB 2: Riwayat & Lacak Proses */}
+            {/* TAB 2: Pengajuan Berkas Fisik */}
+            <div className={activeTab === 'berkas-fisik' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
+              {/* Petunjuk & Alamat Loket LPMQ */}
+              <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-3">
+                  <div>
+                    <h2 className="font-bold text-ink text-sm flex items-center gap-2">
+                      <PackageCheck className="w-4 h-4 text-brand-800" />
+                      Petunjuk & Ketentuan Master Fisik
+                    </h2>
+                    <p className="text-[11px] text-ink-muted mt-0.5">
+                      Sesuai SOP LPMQ Kemenag RI, pemeriksaan fisik naskah memerlukan master fisik lengkap.
+                    </p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-md border ${
+                    data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'bg-brand-100 text-brand-800 border-brand-200'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'bg-civic-infoSoft text-civic-info border-civic-infoLine'
+                        : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                  }`}>
+                    {data.physical_master_intake?.status === 'RECEIVED'
+                      ? 'Master Fisik Diterima Loket LPMQ'
+                      : data.physical_dispatch_status === 'DISPATCHED'
+                        ? 'Berkas Dikirim · Menunggu Penerimaan'
+                        : 'Menunggu Pengiriman Berkas Fisik'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="p-4 bg-canvas rounded-xl border border-line space-y-2">
+                    <p className="font-bold text-ink flex items-center gap-1.5">
+                      <BookOpen className="w-4 h-4 text-brand-700" />
+                      Ketentuan Master Fisik:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-ink-muted leading-relaxed text-[11px]">
+                      <li>Dicetak pada kertas ukuran <strong>A4</strong> dengan resolusi tinggi dan jelas.</li>
+                      <li>Naskah wajib dijilid rapi <strong>per juz</strong> (total 30 jilid).</li>
+                      <li>Mencantumkan lembar tanda terima/nomor registrasi: <strong className="font-mono text-ink">{data.registration_no}</strong>.</li>
+                      <li>Pastikan kondisi fisik rapi, tidak ada halaman hilang atau tinta buram.</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 bg-canvas rounded-xl border border-line space-y-2">
+                    <p className="font-bold text-ink flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-brand-700" />
+                      Alamat Penyerahan / Pengiriman:
+                    </p>
+                    <div className="text-ink-muted space-y-1 text-[11px] leading-relaxed">
+                      <p className="font-bold text-ink">Loket Pelayanan Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)</p>
+                      <p>Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I</p>
+                      <p>Kel. Pinang Ranti, Kec. Makasar, Jakarta Timur 13560</p>
+                      <p className="pt-1 text-ink">Jam Layanan Loket: Senin – Jumat, 08.00 – 15.00 WIB</p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <div className="grid lg:grid-cols-2 gap-6 items-start">
+                {/* Form 1: Pernyataan Jumlah Jilid Master Fisik */}
+                <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
+                  <div className="border-b border-line pb-3">
+                    <h3 className="font-bold text-ink text-sm flex items-center gap-2">
+                      <PackageCheck className="w-4 h-4 text-brand-800" />
+                      Pernyataan Jumlah Jilid Fisik
+                    </h3>
+                    <p className="text-[11px] text-ink-muted mt-0.5">
+                      Deklarasikan jumlah jilid master fisik yang diserahkan ke LPMQ.
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-canvas rounded-lg border border-line text-xs space-y-1">
+                    <p className="text-ink">
+                      Status Saat Ini: <strong>{data.physical_master_intake
+                        ? `${data.physical_master_intake.volume_count} Jilid · ${
+                            data.physical_master_intake.status === 'RECEIVED'
+                              ? 'Telah Diterima Loket LPMQ'
+                              : 'Menunggu Verifikasi Loket'
+                          }`
+                        : 'Belum dideklarasikan (standar 30 jilid)'}</strong>
+                    </p>
+                    {data.physical_master_intake?.received_at && (
+                      <p className="text-[11px] text-ink-muted">
+                        Diterima loket pada: {new Date(data.physical_master_intake.received_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB
+                      </p>
+                    )}
+                  </div>
+
+                  {editable && data.physical_master_intake?.status !== 'RECEIVED' ? (
+                    <form onSubmit={savePhysical} className="space-y-3">
+                      <div>
+                        <label htmlFor="publisher-master-count" className="block text-xs font-bold text-ink mb-1">
+                          Jumlah jilid master fisik
+                        </label>
+                        <input
+                          id="publisher-master-count"
+                          type="number"
+                          min="1"
+                          max="100"
+                          required
+                          disabled={busy}
+                          value={volumeCount}
+                          onChange={(event) => setVolumeCount(event.target.value)}
+                          className="w-full rounded-lg border border-line-strong p-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                        />
+                      </div>
+                      <Button type="submit" variant="outline" size="sm" disabled={busy} className="text-xs">
+                        Simpan pernyataan fisik
+                      </Button>
+                    </form>
+                  ) : null}
+
+                  {data.physical_master_intake?.status === 'RECEIVED' && (
+                    <div className="pt-2">
+                      <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs font-bold text-brand-800">
+                        <Printer className="w-3.5 h-3.5 mr-1.5 text-brand-700" />
+                        Lihat / Cetak PDF Tanda Terima Fisik
+                      </Button>
+                    </div>
+                  )}
+                </section>
+
+                {/* Form 2: Konfirmasi Pengiriman Berkas Fisik */}
+                <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
+                  <div className="border-b border-line pb-3">
+                    <h3 className="font-bold text-ink text-sm flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-brand-800" />
+                      Konfirmasi Pengiriman Berkas Fisik
+                    </h3>
+                    <p className="text-[11px] text-ink-muted mt-0.5">
+                      Catat kurir dan nomor resi pengiriman untuk memudahkan pelacakan loket.
+                    </p>
+                  </div>
+
+                  {data.physical_master_intake?.status === 'RECEIVED' || data.physical_dispatch_status === 'DISPATCHED' ? (
+                    <div className="p-4 bg-brand-50/50 rounded-xl border border-brand-100 text-xs text-ink space-y-2.5">
+                      <p className="font-bold text-brand-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
+                        Konfirmasi Pengiriman Tercatat di Sistem
+                      </p>
+                      <div className="text-xs text-ink space-y-1">
+                        <p>Metode Pengantaran: <strong>{data.dispatch_courier || 'Loket LPMQ'}</strong></p>
+                        {data.dispatch_tracking_no && (
+                          <p>Nomor Resi / Keterangan: <strong className="font-mono text-brand-800">{data.dispatch_tracking_no}</strong></p>
+                        )}
+                        {data.dispatch_date && (
+                          <p className="text-ink-muted text-[11px]">Tanggal Kirim: {new Date(data.dispatch_date).toLocaleDateString('id-ID')}</p>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-civic-info font-medium bg-white p-2.5 rounded-lg border border-line">
+                        {data.physical_master_intake?.status === 'RECEIVED'
+                          ? '✅ Berkas master fisik telah diterima loket LPMQ dan diverifikasi kelengkapannya.'
+                          : '⏳ Berkas dalam proses pengantaran. Petugas loket LPMQ akan mengonfirmasi saat paket tiba di TMII.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleDispatch} className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-ink mb-1">
+                          Metode Pengantaran / Ekspedisi
+                        </label>
+                        <select
+                          disabled={busy}
+                          value={dispatchData.courier}
+                          onChange={(e) => setDispatchData({ ...dispatchData, courier: e.target.value })}
+                          className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
+                        >
+                          <option value="LOKET_LPMQ">Antar Langsung ke Loket LPMQ TMII</option>
+                          <option value="JNE">JNE Express</option>
+                          <option value="POS_INDONESIA">Pos Indonesia</option>
+                          <option value="TIKI">TIKI</option>
+                          <option value="SICEPAT">SiCepat</option>
+                          <option value="LAINNYA">Kurir / Ekspedisi Lainnya</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-ink mb-1">
+                          Nomor Resi / Keterangan Tanda Kirim
+                        </label>
+                        <input
+                          type="text"
+                          disabled={busy}
+                          value={dispatchData.tracking_no}
+                          onChange={(e) => setDispatchData({ ...dispatchData, tracking_no: e.target.value })}
+                          placeholder="Contoh: Resi JNE12345678 atau Diserahkan Staf PT"
+                          className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
+                        />
+                      </div>
+                      <Button type="submit" disabled={busy} variant="primary" size="sm" className="text-xs font-bold w-full sm:w-auto">
+                        <Send className="w-3.5 h-3.5 mr-1.5" />
+                        Konfirmasi Pengiriman Berkas ke LPMQ
+                      </Button>
+                    </form>
+                  )}
+                </section>
+              </div>
+            </div>
+
+            {/* TAB 3: Riwayat & Lacak Proses */}
             <div className={activeTab === 'timeline' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
               <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
                 <div className="border-b border-line pb-3">
@@ -943,9 +1140,144 @@ export function PublisherRegistrationDetailPage() {
               </section>
             </div>
 
-            {/* TAB 3: Dokumen Resmi */}
+            {/* TAB 4: Dokumen Resmi */}
             <div className={activeTab === 'dokumen' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
-              {/* Bukti Pendaftaran Card */}
+              {/* Bagian 1: Dokumen Permohonan Penerbit */}
+              <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
+                <div className="border-b border-line pb-3">
+                  <h2 className="font-bold text-ink text-sm flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-brand-800" />
+                    Dokumen Permohonan & Kelengkapan Penerbit
+                  </h2>
+                  <p className="text-[11px] text-ink-muted mt-0.5">
+                    Berkas resmi yang diunggah penerbit saat pengajuan permohonan tanda tashih.
+                  </p>
+                </div>
+
+                <div className="grid gap-3">
+                  {/* Surat Permohonan Tanda Tashih */}
+                  {data.foreign_metadata?.surat_permohonan_file_id ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-canvas p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-brand-50 border border-brand-100 text-brand-800 shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Surat Permohonan Tanda Tashih</p>
+                          <p className="text-xs text-ink-muted mt-0.5">
+                            Surat permohonan resmi berkop penerbit yang diajukan ke Kepala LPMQ.
+                          </p>
+                          <span className="inline-block mt-1 font-mono text-[10px] text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">
+                            Dokumen Resmi Penerbit
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewFile({ id: data.foreign_metadata.surat_permohonan_file_id, name: `Surat-Permohonan-${data.registration_no}.pdf` })}
+                          className="text-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Lihat Berkas
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileApi.downloadPrivateFile(data.foreign_metadata.surat_permohonan_file_id, `Surat-Permohonan-${data.registration_no}.pdf`)}
+                          className="text-xs"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Unduh
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Surat Pernyataan Perubahan */}
+                  {data.foreign_metadata?.surat_pernyataan_perubahan_file_id && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-canvas p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-surface-subtle border border-line text-ink shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Surat Pernyataan Perubahan</p>
+                          <p className="text-xs text-ink-muted mt-0.5">
+                            Surat pernyataan resmi perubahan data naskah atau identitas penerbit.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewFile({ id: data.foreign_metadata.surat_pernyataan_perubahan_file_id, name: `Surat-Pernyataan-${data.registration_no}.pdf` })}
+                          className="text-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Lihat Berkas
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileApi.downloadPrivateFile(data.foreign_metadata.surat_pernyataan_perubahan_file_id, `Surat-Pernyataan-${data.registration_no}.pdf`)}
+                          className="text-xs"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Unduh
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bukti Tashih Asal (Luar Negeri) */}
+                  {data.foreign_metadata?.bukti_tashih_file_id && (
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-canvas p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-civic-infoSoft border border-civic-infoLine text-civic-info shrink-0">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-ink">Bukti Tashih Lembaga Asal</p>
+                          <p className="text-xs text-ink-muted mt-0.5">
+                            Sertifikat / bukti tashih dari lembaga pentashih luar negeri asal mushaf.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewFile({ id: data.foreign_metadata.bukti_tashih_file_id, name: `Bukti-Tashih-Asal-${data.registration_no}.pdf` })}
+                          className="text-xs"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Lihat Berkas
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileApi.downloadPrivateFile(data.foreign_metadata.bukti_tashih_file_id, `Bukti-Tashih-Asal-${data.registration_no}.pdf`)}
+                          className="text-xs"
+                        >
+                          <Download className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                          Unduh
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {!data.foreign_metadata?.surat_permohonan_file_id && !data.foreign_metadata?.surat_pernyataan_perubahan_file_id && !data.foreign_metadata?.bukti_tashih_file_id && (
+                    <p className="text-xs text-ink-muted italic p-3 bg-canvas rounded-lg">
+                      Tidak ada dokumen lampiran khusus pada permohonan ini.
+                    </p>
+                  )}
+                </div>
+              </section>
+
+              {/* Bagian 2: Bukti Pendaftaran Card */}
               <section className="rounded-xl border border-line bg-white p-5 space-y-3 shadow-2xs">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-3">
                   <div>
@@ -973,15 +1305,38 @@ export function PublisherRegistrationDetailPage() {
                 </div>
               </section>
 
-              {/* Surat Tanda Tashih Section */}
+              {/* Bagian 3: Surat Tanda Tashih & Dokumen Resmi LPMQ */}
               <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
-                <h2 className="font-bold text-ink text-sm">Surat Tanda Tashih</h2>
-                <PublisherDocumentList documents={data.official_documents} />
+                <h2 className="font-bold text-ink text-sm">Surat Tanda Tashih & Arsip Penetapan LPMQ</h2>
+                <PublisherDocumentList documents={data.official_documents} registration={data} />
                 <DocumentArchive registrationId={data.id} />
               </section>
             </div>
           </>
         )
+      )}
+
+      {/* Modal Preview Berkas Permohonan */}
+      {previewFile && (
+        <div role="dialog" aria-modal="true" aria-label={`Pratinjau ${previewFile.name}`} className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">{previewFile.name}</h2>
+                <p className="text-xs text-ink-muted">Pratinjau berkas dokumen permohonan resmi.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" className="text-xs" onClick={() => fileApi.downloadPrivateFile(previewFile.id, previewFile.name)}>
+                  <Download className="w-3.5 h-3.5 mr-1 text-brand-700" /> Unduh Berkas
+                </Button>
+                <Button variant="outline" className="text-xs" onClick={() => setPreviewFile(null)}>Tutup</Button>
+              </div>
+            </div>
+            <div className="flex-1 w-full overflow-hidden p-2">
+              <PrivateFileViewer fileId={previewFile.id} fileName={previewFile.name} height="100%" />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal Hapus Draf */}

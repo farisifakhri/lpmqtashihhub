@@ -52,7 +52,7 @@ export function PublisherRegistrationsPage({ documents = false }) {
       {data?.data?.length ? <div className={`grid gap-4 ${documents ? '' : 'md:grid-cols-2'}`}>
         {data.data.map(registration => documents ? <article key={registration.id} className="rounded-2xl border border-line bg-white p-5 space-y-4">
           <div><Link to={`/publisher/registrations/${registration.id}`} className="font-bold text-ink hover:text-brand-800">{registration.title}</Link><p className="font-mono text-xs text-ink-muted mt-1">{registration.registration_no}</p></div>
-          <PublisherDocumentList documents={registration.official_documents} />
+          <PublisherDocumentList documents={registration.official_documents} registration={registration} />
           <DocumentArchive registrationId={registration.id} />
         </article> : <PublisherRegistrationCard key={registration.id} registration={registration} />)}
       </div> : <EmptyState

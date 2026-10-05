@@ -8,6 +8,7 @@ import {
   CreditCard,
   Award,
   Users,
+  Building2,
   CheckSquare,
   UserCheck,
   BookOpen,
@@ -239,6 +240,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               description: 'Pemeriksaan naskah & draf',
             },
             {
+              label: 'Verifikasi Penerbit',
+              path: '/internal/publishers',
+              icon: <Building2 className="w-4 h-4 shrink-0" />,
+              description: 'Periksa dan setujui profil penerbit',
+            },
+            {
               label: 'Tanda Tangan Saya',
               path: '/internal/signatures',
               icon: <PenTool className="w-4 h-4 shrink-0" />,
@@ -401,6 +408,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             path: '/internal/users',
             icon: <Users className="w-4 h-4 shrink-0" />,
             description: 'Akun, peran, dan wewenang',
+          },
+          {
+            label: 'Verifikasi Penerbit',
+            path: '/internal/publishers',
+            icon: <Building2 className="w-4 h-4 shrink-0" />,
+            description: 'Periksa dan setujui profil penerbit',
           },
           {
             label: 'Arsip Dokumen',
