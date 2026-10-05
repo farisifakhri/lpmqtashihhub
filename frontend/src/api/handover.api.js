@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { getAuthToken } from './client';
 
 export const handoverApi = {
   /**
@@ -45,6 +46,24 @@ export const handoverApi = {
    */
   getHandoverDetail: async (id) => {
     return apiClient(`/physical-master/handovers/${id}`);
+  },
+  downloadHandoverPdf: async (id, receiptNo) => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/physical-master/handovers/${encodeURIComponent(id)}/pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' },
+    });
+    if (!response.ok) {
+      const details = await response.json().catch(() => null);
+      throw new Error(details?.message || 'PDF BAST belum dapat diunduh.');
+    }
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `BAST-${receiptNo || id}.pdf`.replace(/[\\/:*?"<>|]/g, '-');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
 
   /**

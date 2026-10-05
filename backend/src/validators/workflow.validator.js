@@ -6,9 +6,30 @@ export const confirmPaymentSchema = { params, body: z.object({
   receipt_file_id: z.string().uuid(), external_ref: z.string().trim().min(1).max(191).optional(),
 }).strict() };
 export const assignmentSchema = { params, body: z.object({
-  team_id: z.string().min(1).max(191), assignee_ids: z.array(z.string().uuid()).min(1).max(50),
+  team_id: z.string().min(1).max(191),
+  assignee_ids: z.array(z.string().uuid()).min(1).max(50).optional(),
+  juz_assignments: z.array(z.object({
+    assignee_id: z.string().uuid(),
+    juz_numbers: z.array(z.number().int().min(1).max(30)).min(1).max(30),
+  }).strict()).min(1).max(50).optional(),
   stage: z.enum(['INITIAL', 'REVISION', 'DUMMY']),
-}).strict().refine(data => new Set(data.assignee_ids).size === data.assignee_ids.length, 'Anggota tidak boleh duplikat.') };
+}).strict().superRefine((data, ctx) => {
+  if (Boolean(data.assignee_ids) === Boolean(data.juz_assignments)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Pilih penugasan per juz atau format lama.' });
+    return;
+  }
+  const assignees = data.assignee_ids || data.juz_assignments.map(item => item.assignee_id);
+  if (new Set(assignees).size !== assignees.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Anggota tidak boleh duplikat.' });
+  const juz = data.juz_assignments?.flatMap(item => item.juz_numbers) || [];
+  if (new Set(juz).size !== juz.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Setiap juz hanya boleh ditugaskan kepada satu pentashih pada iterasi ini.' });
+}) };
+export const juzChecklistSchema = {
+  params: z.object({ id: z.string().uuid(), juzNumber: z.coerce.number().int().min(1).max(30) }),
+  body: z.object({
+    result: z.enum(['PASSED', 'REVISION_REQUIRED']),
+    notes: z.string().trim().max(2000).default(''),
+  }).strict().refine(data => data.result === 'PASSED' || data.notes.length > 0, 'Catatan koreksi wajib diisi bila juz perlu perbaikan.'),
+};
 export const reviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']), notes: z.string().trim().min(1).max(10000),
 }).strict() };

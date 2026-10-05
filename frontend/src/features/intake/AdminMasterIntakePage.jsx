@@ -63,6 +63,25 @@ export const AdminMasterIntakePage = () => {
   const [returnReason, setReturnReason] = useState('');
   const [copiedReceipt, setCopiedReceipt] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [receiptPdfUrl, setReceiptPdfUrl] = useState(null);
+
+  useEffect(() => () => {
+    if (receiptPdfUrl) URL.revokeObjectURL(receiptPdfUrl);
+  }, [receiptPdfUrl]);
+
+  const showReceiptPdf = async () => {
+    if (!selectedReg?.id) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      const blob = await verificationApi.getPhysicalReceiptPdf(selectedReg.id);
+      setReceiptPdfUrl(URL.createObjectURL(blob));
+    } catch (reason) {
+      setError(reason.message || 'PDF tanda terima belum dapat dibuka.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Auto-generate official intake receipt number format: TT-LPMQ-YYYY-XXXX
   const generateReceiptNo = () => {
@@ -393,11 +412,12 @@ export const AdminMasterIntakePage = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.print()}
+                  onClick={showReceiptPdf}
+                  disabled={actionLoading}
                   className="text-xs bg-white"
                 >
                   <Printer className="w-3.5 h-3.5 mr-1" />
-                  Cetak Tanda Terima
+                  Lihat / Cetak PDF Tanda Terima
                 </Button>
                 {!isAssigned ? (
                   canAssign ? (
@@ -793,9 +813,13 @@ export const AdminMasterIntakePage = () => {
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                               Dikembalikan (Revisi)
                             </span>
+                          ) : item.physical_dispatch_status === 'DISPATCHED' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                              Dikirim · Menunggu Penerimaan
+                            </span>
                           ) : (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
-                              Menunggu Fisik A4
+                              Belum Dikirim Penerbit
                             </span>
                           )}
                         </td>
@@ -821,6 +845,24 @@ export const AdminMasterIntakePage = () => {
       )}
 
       {/* Confirmation Dialog for Receiving Physical Master */}
+      {receiptPdfUrl && (
+        <div role="dialog" aria-modal="true" aria-label="PDF tanda terima master fisik" className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">Tanda Terima Master Fisik</h2>
+                <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF untuk mencetak dokumen berkop LPMQ.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={receiptPdfUrl} download={`tanda-terima-${selectedReg?.registration_no || 'master-fisik'}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+                <Button variant="outline" className="text-xs" onClick={() => setReceiptPdfUrl(null)}>Tutup</Button>
+              </div>
+            </div>
+            <iframe title="Penampil PDF tanda terima master fisik" src={receiptPdfUrl} className="flex-1 w-full border-0" />
+          </div>
+        </div>
+      )}
+
       {selectedReg && (
         <ConfirmationSummaryDialog
           isOpen={confirmReceiveOpen}

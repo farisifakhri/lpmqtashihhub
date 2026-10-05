@@ -9,16 +9,18 @@ export async function listDocumentArchive(registrationId, user, db = prisma) {
   if (!registration) fail(404, 'Pengajuan tidak ditemukan.');
 
   const roles = user.roles || [];
-  const internal = roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN'].includes(role));
+  const internal = roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role));
   const owner = roles.includes('ADMIN_PENERBIT') && user.publisherId === registration.publisher_id;
-  if (!internal && !owner) fail(403, 'Akses arsip dokumen ditolak.');
+  const assignedVerifier = roles.includes('VERIFIKATOR') && Boolean(await db.verificationAssignment.findFirst({ where: { registration_id: registrationId, verifier_id: user.id }, select: { id: true } }));
+  if (!internal && !owner && !assignedVerifier) fail(403, 'Akses arsip dokumen ditolak.');
 
   const [verification, official] = await Promise.all([
     db.verificationDocument.findMany({
       where: { registration_id: registrationId },
       select: {
         id: true, document_type: true, document_no: true, version: true,
-        status: true, content_snapshot: true, file_id: true, created_at: true,
+        status: true, content_snapshot: true, file_id: true, created_at: true, updated_at: true, sent_at: true,
+        created_by: { select: { name: true } },
       },
       orderBy: [{ document_type: 'asc' }, { version: 'desc' }],
     }),

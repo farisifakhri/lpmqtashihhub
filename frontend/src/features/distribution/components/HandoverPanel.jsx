@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { QueueOverview, QueueItemMeta } from '@/components/common/QueueOverview';
-import { PackageCheck, Search, RefreshCw, Clock, AlertCircle, CheckCircle2, AlertTriangle, FileText, Copy, Check, Building2, Calendar, Eye, Layers, ShieldCheck, ArrowRight, Inbox, RotateCcw, CheckSquare, Users, BookOpen } from 'lucide-react';
+import { PackageCheck, Search, RefreshCw, Clock, AlertCircle, CheckCircle2, AlertTriangle, FileText, Copy, Check, Building2, Calendar, Eye, Layers, ShieldCheck, ArrowRight, Inbox, RotateCcw, CheckSquare, Users, BookOpen, X, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 
 export const HandoverPanel = ({
   pendingCount, handovers, error, pagination, activeTab, setActiveTab, loading,
   setPagination, searchQuery, setSearchQuery, submittedSearch, setSubmittedSearch,
   handleSearchSubmit, handleCopyText, copiedReceipt, formatDate, formatDateOnly,
-  renderHandoverBadge, openDetailModal, canConfirm, openReturnModal, openReceiveModal,
+  renderHandoverBadge, openDetailModal, handleDownloadHandoverPdf, canConfirm, openReturnModal, openReceiveModal,
   isSuperAdmin, currentUser, actionLoading,
 }) => (
         <>
@@ -170,7 +170,7 @@ export const HandoverPanel = ({
             const isPending = item.status === 'PENDING';
             const isReceived = item.status === 'RECEIVED';
             const isReturned = item.status === 'RETURNED';
-            const isTargetOfficer = isSuperAdmin || (item.to_user_id || toUser.id) === currentUser?.id;
+            const isTargetOfficer = (item.to_user_id || toUser.id) === currentUser?.id;
 
             return (
               <div
@@ -291,6 +291,9 @@ export const HandoverPanel = ({
                   </div>
 
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <Button variant="outline" size="sm" onClick={() => handleDownloadHandoverPdf(item)} className="text-xs text-ink">
+                      <Download className="w-3.5 h-3.5 mr-1" /> PDF BAST
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

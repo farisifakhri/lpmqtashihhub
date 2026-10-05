@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
+import { getAuthToken } from '@/api/client';
 import { handoverApi } from '@/api/handover.api';
+import { fileApi } from '@/api/file.api';
+import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { WorkflowStepper } from '@/components/common/WorkflowStepper';
 import { WorkflowOwnershipBanner } from '@/components/workflow/WorkflowOwnershipBanner';
 import { getWorkflowViewModel } from '@/lib/workflow-view-model';
 import { InspectionChecklist } from './components/InspectionChecklist';
+import { ResultLetterPanel } from './components/ResultLetterPanel';
 import { InspectionReferencePanels } from './components/InspectionReferencePanels';
 import { InspectionDialogs } from './components/InspectionDialogs';
 import { InspectionActionPanel } from './components/InspectionActionPanel';
@@ -60,6 +64,7 @@ const CHECKLIST_DEFINITIONS = [
 export const VerificationInspectionPage = () => {
   const { id } = useParams(); // assignmentId
   const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -81,11 +86,17 @@ export const VerificationInspectionPage = () => {
   const [returnReason, setReturnReason] = useState('');
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [resultDocumentNo, setResultDocumentNo] = useState('');
+  const [minutesDocumentNo, setMinutesDocumentNo] = useState('');
+  const [approveModalError, setApproveModalError] = useState(null);
+  const [pdfPreview, setPdfPreview] = useState(null);
+
+  useEffect(() => () => {
+    if (pdfPreview?.url) URL.revokeObjectURL(pdfPreview.url);
+  }, [pdfPreview]);
 
   // Handover to Distributor State (Langkah 7 SOP)
-  const [distributors, setDistributors] = useState([]);
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
-  const [selectedDistributorId, setSelectedDistributorId] = useState('');
   const [handoverCondition, setHandoverCondition] = useState('BAIK');
   const [handoverVolumeCount, setHandoverVolumeCount] = useState(30);
   const [handoverNotes, setHandoverNotes] = useState('');
@@ -102,6 +113,10 @@ export const VerificationInspectionPage = () => {
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [notes, setNotes] = useState('');
   const [letterText, setLetterText] = useState('');
+  const [billingNo, setBillingNo] = useState('');
+  const [billingFileId, setBillingFileId] = useState('');
+  const [billingFileName, setBillingFileName] = useState('');
+  const [billingUploading, setBillingUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [isDirty, setIsDirty] = useState(false);
 
@@ -110,18 +125,11 @@ export const VerificationInspectionPage = () => {
       navigate(`/internal/verifications/${data.assignment.id}`, { replace: true });
     }
 
-    try {
-      const distRes = await handoverApi.listDistributors();
-      if (Array.isArray(distRes?.data)) {
-        setDistributors(distRes.data);
-        if (distRes.data.length > 0 && !selectedDistributorId) setSelectedDistributorId(distRes.data[0].id);
-      }
-    } catch {
-      // Listing distributor may be unavailable for a read-only viewer.
-    }
-
     if (data.registration?.manuscript_files?.length > 0 && !selectedFileId) {
       setSelectedFileId(data.registration.manuscript_files[0].id);
+    }
+    if (data.registration?.physical_master_intake?.volume_count) {
+      setHandoverVolumeCount(data.registration.physical_master_intake.volume_count);
     }
 
     const draft = getInspectionDraft(data, CHECKLIST_DEFINITIONS);
@@ -129,8 +137,17 @@ export const VerificationInspectionPage = () => {
     if (draft.decision) setDecision(draft.decision);
     if (draft.notes) setNotes(draft.notes);
     if (draft.letterText) setLetterText(draft.letterText);
+    if (data.latest_result_document?.content_snapshot?.billing_no) setBillingNo(data.latest_result_document.content_snapshot.billing_no);
+    setBillingFileId(data.latest_result_document?.content_snapshot?.billing_file_id || '');
+    if (data.latest_result_document?.document_no) setResultDocumentNo(data.latest_result_document.document_no);
+    if (data.berita_acara?.document_no) setMinutesDocumentNo(data.berita_acara.document_no);
   });
   const assignmentId = detail?.assignment?.id || id;
+  useEffect(() => {
+    if (!detail?.registration || new URLSearchParams(location.search).get('handover') !== '1') return;
+    if (detail.registration.core_distributor_id) setHandoverModalOpen(true);
+    navigate(location.pathname, { replace: true });
+  }, [detail, location.pathname, location.search, navigate]);
   const workflowVm = useMemo(() => {
     return detail?.registration ? getWorkflowViewModel(detail.registration, currentUser) : null;
   }, [detail, currentUser]);
@@ -155,15 +172,17 @@ export const VerificationInspectionPage = () => {
     const regNo = reg.registration_no || 'NOMOR_REGISTRASI';
     const publisher = reg.publisher?.legal_name || 'PENERBIT';
     const title = reg.title || 'NASKAH MUSHAF';
-    const notaNo = detail.nota_dinas?.document_no || 'NOTA_DINAS';
+    const findings = checklist.filter(item => item.result === 'TIDAK_SESUAI')
+      .map((item, index) => `${index + 1}. ${CHECKLIST_DEFINITIONS.find(def => def.code === item.code)?.title || item.code}: ${item.notes || 'perlu diperbaiki'}`)
+      .join('\n');
 
     if (dec === 'PASSED') {
       setLetterText(
-        `Berdasarkan hasil pemeriksaan administrasi berkas dan master fisik mushaf atas pengajuan pendaftaran Nomor ${regNo} dari pemohon ${publisher} untuk naskah '${title}' (menindaklanjuti Nota Dinas Penugasan No. ${notaNo}), dengan ini dinyatakan:\n\n1. Seluruh dokumen pendaftaran dan berkas digital telah diperiksa dan dinyatakan LENGKAP dan SESUAI.\n2. Master fisik mushaf ukuran A4 yang dijilid per juz telah diterima dan diverifikasi sesuai ketentuan SOP.\n3. Format penulisan rasm, harakat, dan tanda baca awal memenuhi standar pentashihan LPMQ Kementerian Agama RI.\n\nKesimpulan: Pengajuan dinyatakan LOLOS VERIFIKASI ADMINISTRASI & NASKAH, dan direkomendasikan untuk melanjutkan ke tahapan penerbitan kode billing PNBP serta penyerahan master fisik kepada Distributor Pentashihan.`
+        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih menggunakan kode billing yang tercantum pada surat ini. Bukti pembayaran perlu diunggah pada portal layanan untuk diperiksa satu kali oleh petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima oleh LPMQ.`
       );
     } else {
       setLetterText(
-        `Berdasarkan hasil pemeriksaan administrasi berkas dan master fisik mushaf atas pengajuan pendaftaran Nomor ${regNo} dari pemohon ${publisher} untuk naskah '${title}' (menindaklanjuti Nota Dinas Penugasan No. ${notaNo}), dengan ini disampaikan bahwa pengajuan dinyatakan MEMERLUKAN PERBAIKAN (REVISI PENERBIT).\n\nAdapun butir perbaikan yang wajib dipenuhi penerbit tertera pada rincian catatan pemeriksaan. Mohon penerbit untuk memperbaiki dan memperbarui berkas yang bersangkutan melalui portal resmi LPMQ agar proses verifikasi dapat dilanjutkan kembali.`
+        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut belum lolos verifikasi.\n\nAspek yang perlu diperbaiki:\n${findings || '1. Lengkapi rincian ketidaksesuaian pada catatan pemeriksaan.'}\n\nMaster mushaf dikembalikan kepada penerbit untuk diperbaiki. Setelah seluruh catatan dipenuhi, penerbit dapat mengajukan kembali naskah melalui portal layanan LPMQ.`
       );
     }
   };
@@ -206,6 +225,8 @@ export const VerificationInspectionPage = () => {
 
     if (notes.trim().length > 2000) errors.notes = 'Catatan kesimpulan maksimal 2000 karakter.';
     if (letterText.trim().length > 10000) errors.letter_text = 'Teks draf surat maksimal 10000 karakter.';
+    if (isSubmit && decision === 'PASSED' && billingNo.trim().length < 3) errors.billing_no = 'Kode billing PNBP wajib diisi sebelum surat lolos diajukan.';
+    if (isSubmit && decision === 'PASSED' && !billingFileId) errors.billing_file_id = 'Unggah dokumen billing PNBP dalam format PDF sebelum surat diajukan.';
 
     if (decision === 'PASSED') {
       const hasTidakSesuai = checklist.some((i) => i.result === 'TIDAK_SESUAI');
@@ -247,6 +268,8 @@ export const VerificationInspectionPage = () => {
         decision,
         notes: notes.trim() || undefined,
         letter_text: letterText.trim() || undefined,
+        billing_no: decision === 'PASSED' ? billingNo.trim() || undefined : undefined,
+        billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
       };
       await verificationApi.saveDraft(assignmentId, payload);
       setIsDirty(false);
@@ -276,11 +299,13 @@ export const VerificationInspectionPage = () => {
         decision,
         notes: notes.trim() || undefined,
         letter_text: letterText.trim(),
+        billing_no: decision === 'PASSED' ? billingNo.trim() : undefined,
+        billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
       setSubmitConfirmOpen(false);
       setIsDirty(false);
-      setSuccessMessage('Draf surat hasil verifikasi berhasil diajukan kepada Kepala LPMQ.');
+      setSuccessMessage('Surat hasil telah ditandatangani internal oleh Verifikator dan diajukan bersama kode billing kepada Kepala LPMQ.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal mengajukan draf hasil verifikasi.');
@@ -290,17 +315,42 @@ export const VerificationInspectionPage = () => {
   };
 
   const handleConfirmApprove = async () => {
-    if (!latestResultDoc?.id) return;
-    setApproveConfirmOpen(false);
+    const targetDoc = latestResultDoc || detail?.latest_result_document;
+    const targetBaDoc = beritaAcaraDoc || detail?.berita_acara;
+    if (!targetDoc?.id) return;
+
+    const resNo = resultDocumentNo.trim();
+    const minNo = minutesDocumentNo.trim();
+
+    if (!resNo || resNo.length < 3) {
+      setApproveModalError('Nomor surat hasil wajib diisi (minimal 3 karakter).');
+      return;
+    }
+    if (targetBaDoc && (!minNo || minNo.length < 3)) {
+      setApproveModalError('Nomor berita acara wajib diisi (minimal 3 karakter).');
+      return;
+    }
+    if (resNo.length > 191 || (targetBaDoc && minNo.length > 191)) {
+      setApproveModalError('Nomor dokumen tidak boleh melebihi 191 karakter.');
+      return;
+    }
+
     setActionLoading(true);
+    setApproveModalError(null);
     setError(null);
     setSuccessMessage(null);
     try {
-      await verificationApi.approveDocument(latestResultDoc.id);
-      setSuccessMessage('Draf surat hasil verifikasi berhasil disetujui. Proses penandatanganan dokumen telah dimulai.');
+      await verificationApi.approveDocument(targetDoc.id, {
+        document_numbers: {
+          [targetDoc.document_type]: resNo,
+          ...(targetBaDoc ? { BERITA_ACARA_VERIFIKASI: minNo } : {}),
+        },
+      });
+      setApproveConfirmOpen(false);
+      setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Kode billing tercantum pada PDF surat hasil; verifikator dapat langsung mengirimkannya.');
       await fetchDetail();
     } catch (err) {
-      setError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
+      setApproveModalError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
     } finally {
       setActionLoading(false);
     }
@@ -331,19 +381,57 @@ export const VerificationInspectionPage = () => {
 
   const handleSignDocument = async (docId) => {
     if (!docId) return;
-    if (!window.confirm('Bubuhkan tanda tangan digital pada dokumen resmi ini?')) return;
+    if (!window.confirm('Konfirmasi persetujuan internal dokumen ini?')) return;
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
     try {
       await verificationApi.signDocument(docId);
-      setSuccessMessage('Dokumen berhasil ditandatangani secara digital.');
+      setSuccessMessage('Persetujuan internal berhasil dicatat.');
       await fetchDetail();
     } catch (err) {
       setError(err.message || 'Gagal menandatangani dokumen.');
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const getDocumentPdfUrl = async docId => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    });
+    if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
+    return URL.createObjectURL(await response.blob());
+  };
+
+  const handleBillingFile = async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    event.target.value = '';
+    if (file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024 || file.size === 0) {
+      setValidationErrors(previous => ({ ...previous, billing_file_id: 'Pilih PDF billing PNBP berisi data, maksimal 10 MB.' }));
+      return;
+    }
+    setBillingUploading(true);
+    setValidationErrors(previous => ({ ...previous, billing_file_id: undefined }));
+    try {
+      const uploaded = await fileApi.upload(file);
+      setBillingFileId(uploaded.id);
+      setBillingFileName(file.name);
+      setIsDirty(true);
+    } catch (reason) {
+      setValidationErrors(previous => ({ ...previous, billing_file_id: reason.message || 'Dokumen billing belum berhasil diunggah.' }));
+    } finally {
+      setBillingUploading(false);
+    }
+  };
+
+  const showDocumentPdf = async (docId, title) => {
+    try {
+      const url = await getDocumentPdfUrl(docId);
+      setPdfPreview({ url, title });
+    } catch (reason) { setError(reason.message); }
   };
 
   const handleRetryEmail = async (docId) => {
@@ -382,8 +470,8 @@ export const VerificationInspectionPage = () => {
   const handleCreateHandover = async (e) => {
     e?.preventDefault();
     if (!detail?.registration?.id) return;
-    if (!selectedDistributorId) {
-      setHandoverModalError('Silakan pilih petugas Distributor penerima naskah.');
+    if (!detail.registration.core_distributor_id) {
+      setHandoverModalError('Distributor tim inti belum ditetapkan. Hubungi administrator.');
       return;
     }
 
@@ -391,7 +479,6 @@ export const VerificationInspectionPage = () => {
     setHandoverModalError(null);
     try {
       const payload = {
-        to_user_id: selectedDistributorId,
         condition: handoverCondition.trim() || 'BAIK',
         volume_count: Number(handoverVolumeCount) || 30,
         notes: handoverNotes.trim() || undefined,
@@ -465,7 +552,7 @@ export const VerificationInspectionPage = () => {
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
-    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, isSent,
+    isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
     canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,
@@ -495,6 +582,55 @@ export const VerificationInspectionPage = () => {
           </div>
         }
       />
+
+      <section className="rounded-xl border border-line bg-white p-4 sm:p-5 space-y-4 text-sm" aria-label="Alur penugasan dan dokumen verifikasi">
+        <div>
+          <h2 className="font-bold text-ink">Alur penugasan dan verifikasi</h2>
+          <p className="text-xs text-ink-muted mt-1">Ikuti urutan ini dari nota dinas sampai surat hasil dikirim ke penerbit.</p>
+        </div>
+        <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
+          {[
+            ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Nota Dinas ${notaDinas.document_no || 'belum terbit'}.`],
+            ['2', 'Periksa PDF Nota Dinas', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
+            ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
+            ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
+          ].map(([number, title, description]) => (
+            <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
+              <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
+            </li>
+          ))}
+        </ol>
+        <div className="border-t border-line pt-3 space-y-2">
+          <h3 className="font-semibold text-ink text-xs">PDF dokumen verifikasi</h3>
+          <p className="text-xs text-ink-muted">Periksa Nota Dinas sebelum memulai pemeriksaan. Penampil PDF menyediakan kontrol cetak dan unduh untuk tiap dokumen.</p>
+          <div className="flex flex-wrap gap-2">
+            {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
+              <Button key={doc.id} variant="outline" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
+                Lihat / Cetak PDF {title}
+              </Button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {pdfPreview && (
+        <div role="dialog" aria-modal="true" aria-label={`PDF ${pdfPreview.title}`} className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center">
+          <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+              <div>
+                <h2 className="text-sm font-bold text-ink">PDF {pdfPreview.title}</h2>
+                <p className="text-xs text-ink-muted">Gunakan ikon cetak pada toolbar PDF untuk mencetak dokumen ini.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={pdfPreview.url} download={`${pdfPreview.title.replace(/\s+/g, '-')}.pdf`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas">Unduh PDF</a>
+                <Button variant="outline" className="text-xs" onClick={() => setPdfPreview(null)}>Tutup</Button>
+              </div>
+            </div>
+            <iframe title={`Penampil PDF ${pdfPreview.title}`} src={pdfPreview.url} className="flex-1 w-full border-0" />
+          </div>
+        </div>
+      )}
 
       {/* Global Alerts */}
       {successMessage && (
@@ -621,7 +757,7 @@ export const VerificationInspectionPage = () => {
               Dokumen Telah Lengkap Ditandatangani
             </h4>
             <p className="text-brand-800 leading-relaxed">
-              Surat Pemberitahuan dan Berita Acara telah ditandatangani secara digital. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
+              Surat Pemberitahuan dan Berita Acara telah dikonfirmasi secara internal. Verifikator dapat mengirimkan surat hasil verifikasi ke penerbit.
             </p>
           </div>
         </div>
@@ -667,7 +803,7 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
-      {/* 3-Area Desktop Workspace Grid */}
+      {/* Workspace references and checklist */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* AREA 1: Navigation, Ringkasan Naskah & SLA (~3 cols on desktop) */}
         <InspectionReferencePanels
@@ -695,31 +831,52 @@ export const VerificationInspectionPage = () => {
           validationErrors={validationErrors}
           isReadOnly={isReadOnly}
           handleChecklistChange={handleChecklistChange}
-          decision={decision}
-          setDecision={setDecision}
-          loadOfficialTemplate={loadOfficialTemplate}
-          setIsDirty={setIsDirty}
-          notes={notes}
-          setNotes={setNotes}
-          letterTab={letterTab}
-          setLetterTab={setLetterTab}
-          letterText={letterText}
-          setLetterText={setLetterText}
           definitions={CHECKLIST_DEFINITIONS}
         />
       </div>
 
+      <ResultLetterPanel
+        activeMobileTab={activeMobileTab}
+        decision={decision}
+        setDecision={setDecision}
+        loadOfficialTemplate={loadOfficialTemplate}
+        setIsDirty={setIsDirty}
+        isReadOnly={isReadOnly}
+        validationErrors={validationErrors}
+        notes={notes}
+        setNotes={setNotes}
+        letterTab={letterTab}
+        setLetterTab={setLetterTab}
+        letterText={letterText}
+        setLetterText={setLetterText}
+        billingNo={billingNo}
+        setBillingNo={setBillingNo}
+        billingFileId={billingFileId}
+        billingFileName={billingFileName}
+        billingUploading={billingUploading}
+        handleBillingFile={handleBillingFile}
+        resultDocumentId={latestResultDoc?.id}
+        registration={registration}
+        publisher={publisher}
+      />
+      <DocumentArchive registrationId={registration.id} />
+
       {/* Multi-Signatory Progress & Email Status Banners */}
-      {(['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+      {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+        <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
+          Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
+        </div>
+      )}
+      {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
         <div className="space-y-4">
           <SignatoryProgress
             signatories={[
-              {
-                role_label: 'Kepala LPMQ (Surat Pemberitahuan)',
-                name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
-                status: latestSignatory?.status || 'PENDING',
-                signed_at: latestSignatory?.signed_at,
-              },
+              ...(latestResultDoc?.signatories || []).map(sig => ({
+                role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
+                name: sig.name_position_snapshot,
+                status: sig.status,
+                signed_at: sig.signed_at,
+              })),
               ...baSignatories.map((sig) => ({
                 role_label: `Berita Acara - Urutan ${sig.sign_order}`,
                 name: sig.name_position_snapshot,
@@ -738,7 +895,7 @@ export const VerificationInspectionPage = () => {
                 className="text-xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Tanda Tangani Surat Pemberitahuan
+                Konfirmasi Internal Surat Pemberitahuan
               </Button>
             )}
             {canUserSignBa && (
@@ -749,7 +906,7 @@ export const VerificationInspectionPage = () => {
                 className="text-xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Tanda Tangani Berita Acara Verifikasi
+                Konfirmasi Internal Berita Acara
               </Button>
             )}
           </div>
@@ -779,7 +936,9 @@ export const VerificationInspectionPage = () => {
                 Langkah 7 SOP: Serah-Terima Master Fisik ke Distributor
               </h4>
               <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
-                Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.
+                {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'
+                  ? 'Master fisik telah diperbaiki. Periksa kembali lalu serahkan ke Distributor dengan BAST baru; pembayaran tetap sah.'
+                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.'}
               </p>
             </div>
           </div>
@@ -790,9 +949,26 @@ export const VerificationInspectionPage = () => {
             className="w-full md:w-auto text-xs shrink-0"
           >
             <PackageCheck className="w-4 h-4 mr-1.5" />
-            Serahkan Master Fisik & Terbitkan BAST
+            {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED' ? 'Serahkan Kembali & Terbitkan BAST Baru' : 'Serahkan Master Fisik & Terbitkan BAST'}
           </Button>
         </div>
+      )}
+
+      {latestHandover && (
+        <section className="rounded-xl border border-line bg-white p-5 text-xs shadow-2xs" aria-label="Status serah terima master fisik">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-ink">Serah terima master fisik ke distributor</h4>
+              <p className="text-ink-muted">BAST {latestHandover.receipt_no} · {latestHandover.volume_count} jilid · {latestHandover.to_user?.name || 'Distributor'}</p>
+              <p className="font-semibold text-brand-800">
+                {latestHandover.status === 'RECEIVED' ? 'Sudah diterima distributor' : latestHandover.status === 'RETURNED' ? 'Dikembalikan distributor untuk perbaikan' : 'Menunggu konfirmasi penerimaan distributor'}
+              </p>
+            </div>
+            <Button variant="outline" onClick={() => handoverApi.downloadHandoverPdf(latestHandover.id, latestHandover.receipt_no).catch(err => setError(err.message))}>
+              Unduh PDF BAST
+            </Button>
+          </div>
+        </section>
       )}
 
       <InspectionActionPanel
@@ -820,6 +996,14 @@ export const VerificationInspectionPage = () => {
         decision={decision}
         approveConfirmOpen={approveConfirmOpen}
         handleConfirmApprove={handleConfirmApprove}
+        resultDocumentNo={resultDocumentNo}
+        setResultDocumentNo={setResultDocumentNo}
+        minutesDocumentNo={minutesDocumentNo}
+        setMinutesDocumentNo={setMinutesDocumentNo}
+        latestResultDoc={latestResultDoc}
+        beritaAcaraDoc={beritaAcaraDoc}
+        approveModalError={approveModalError}
+        setApproveModalError={setApproveModalError}
       />
       <InspectionDialogs
         returnModalOpen={returnModalOpen}
@@ -834,9 +1018,6 @@ export const VerificationInspectionPage = () => {
         publisher={publisher}
         handoverModalError={handoverModalError}
         handleCreateHandover={handleCreateHandover}
-        distributors={distributors}
-        selectedDistributorId={selectedDistributorId}
-        setSelectedDistributorId={setSelectedDistributorId}
         handoverCondition={handoverCondition}
         setHandoverCondition={setHandoverCondition}
         handoverVolumeCount={handoverVolumeCount}

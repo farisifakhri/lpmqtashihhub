@@ -40,6 +40,7 @@ export const ENV = {
   ALLOWED_ORIGINS: rawAllowedOrigins
     ? rawAllowedOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
     : defaultOrigins,
+  PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || (isProduction ? null : 'http://localhost:5173'),
 };
 
 export default ENV;

@@ -13,8 +13,8 @@ export function useDistributionQueues(hubStage) {
         registrationApi.listRegistrations({ status: 'WAITING_DISTRIBUTION' }),
         registrationApi.listRegistrations({ status: 'TASHIH_IN_PROGRESS' }),
       ]);
-      if (waitingRes?.data) setWaitingDistRegistrations(waitingRes.data);
-      if (progressRes?.data) setInProgressRegistrations(progressRes.data);
+      if (waitingRes?.data) setWaitingDistRegistrations(Array.isArray(waitingRes.data) ? waitingRes.data : waitingRes.data.items || []);
+      if (progressRes?.data) setInProgressRegistrations(Array.isArray(progressRes.data) ? progressRes.data : progressRes.data.items || []);
     } catch {
       // Keep the last successful queue while the operator retries.
     } finally {

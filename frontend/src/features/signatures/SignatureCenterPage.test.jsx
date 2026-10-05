@@ -94,11 +94,11 @@ describe('SignatureCenterPage Component', () => {
   it('merender header dan 3 tab kanonikal pusat tanda tangan', async () => {
     renderComponent();
 
-    expect(await screen.findByText('Pusat Tanda Tangan & Pengesahan Digital')).toBeInTheDocument();
-    expect(screen.getByText('Sertifikasi BSrE / E-Sign')).toBeInTheDocument();
+    expect((await screen.findAllByText('Pusat Persetujuan Internal')).length).toBeGreaterThan(0);
+    expect(screen.getByText('Verifikasi internal LPMQ')).toBeInTheDocument();
 
     // Verify 3 canonical tabs exist
-    expect(screen.getByRole('button', { name: /Perlu Tanda Tangan Anda/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Perlu Konfirmasi Anda/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Menunggu Penandatangan Lain/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Selesai Ditandatangani/i })).toBeInTheDocument();
   });
@@ -109,34 +109,34 @@ describe('SignatureCenterPage Component', () => {
     expect(await screen.findByText('SP-VERIF/2026/09/001')).toBeInTheDocument();
     expect(screen.getByText(/Mushaf Al-Qur'an Standar Indonesia Braille/i)).toBeInTheDocument();
     expect(screen.getByText('PT Sinar Grafika Islamika')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Tanda Tangani/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Konfirmasi$/i })).toBeInTheDocument();
   });
 
   it('membuka ConfirmationSummaryDialog saat tombol Tanda Tangani ditekan', async () => {
     renderComponent();
 
-    const signButton = await screen.findByRole('button', { name: /Tanda Tangani/i });
+    const signButton = await screen.findByRole('button', { name: /^Konfirmasi$/i });
     fireEvent.click(signButton);
 
-    expect(await screen.findByText('Tanda Tangani Dokumen Resmi')).toBeInTheDocument();
-    expect(screen.getByText(/Tanda tangan elektronik ini memiliki kekuatan hukum sah/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Tanda Tangani Secara Digital/i })).toBeInTheDocument();
+    expect(await screen.findByText('Konfirmasi Dokumen Internal')).toBeInTheDocument();
+    expect(screen.getByText(/Konfirmasi ini tercatat dalam jejak audit/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Catat Konfirmasi Internal/i })).toBeInTheDocument();
   });
 
   it('memanggil verificationApi.signDocument saat konfirmasi tanda tangan', async () => {
     renderComponent();
 
-    const signButton = await screen.findByRole('button', { name: /Tanda Tangani/i });
+    const signButton = await screen.findByRole('button', { name: /^Konfirmasi$/i });
     fireEvent.click(signButton);
 
-    const confirmButton = await screen.findByRole('button', { name: /Tanda Tangani Secara Digital/i });
+    const confirmButton = await screen.findByRole('button', { name: /Catat Konfirmasi Internal/i });
     fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(verificationApi.signDocument).toHaveBeenCalledWith('doc-1');
     });
 
-    expect(await screen.findByText(/berhasil ditandatangani secara digital/i)).toBeInTheDocument();
+    expect(await screen.findByText(/berhasil dicatat/i)).toBeInTheDocument();
   });
 
   it('berpindah ke tab Selesai Ditandatangani dan menampilkan arsip', async () => {

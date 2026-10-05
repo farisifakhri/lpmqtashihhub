@@ -78,7 +78,7 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 |---|---|---|---|
 | 1 | Konfirmasi penerimaan fisik master dari Verifikator (`POST /registrations/:id/handover/confirm`) dengan menetapkan `tashih_due_at` masa depan | Verifikator menyerahkan master fisik | Naskah masuk status `WAITING_DISTRIBUTION` |
 | 1b | *(Jika fisik master cacat/rusak)* Kembalikan master fisik (`POST /registrations/:id/handover/return`) | Master fisik tidak layak sidang | Status beralih ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`; pembayaran tetap sah |
-| 2 | Distribusikan naskah ke seluruh Pentashih berdasarkan penugasan | Penugasan tim terbit | Pentashih menerima bahan sidang |
+| 2 | Tetapkan pentashih dan nomor juz naskah untuk masing-masing anggota | Penugasan tim terbit | Pentashih menerima daftar juz yang harus ditashih |
 | 3 | Cross-check / ceklis laporan hasil pentashihan berdasarkan rekomendasi Pentashih | Pentashih submit rekomendasi | Rekomendasi kompilasi sidang |
 | 4a | Jika belum tuntas & perlu dibaca ulang → distribusikan kembali ke Pentashih | Kualitas belum final | Loop sidang lanjutan |
 | 4b | Jika mendekati deadline → kembalikan untuk revisi naskah ke Penerbit | Butuh perbaikan lafazh/tanda baca | Status beralih ke `REVISION_REQUIRED` |
@@ -114,8 +114,8 @@ dashboard Distributor (lihat `DESIGN.md`).
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
 | 1 | Terima surat penugasan | Distributor menugaskan | — |
-| 2 | Lakukan pentashihan naskah | Naskah diterima (SLA ±20 hari, tergantung jenis mushaf) | Catatan hasil tashih |
-| 3 | Buat laporan hasil pentashihan | Pentashihan selesai | Laporan dikirim ke Distributor |
+| 2 | Isi checklist status dan catatan per juz yang ditugaskan | Naskah diterima (SLA tergantung jenis mushaf) | Target panduan 2 juz per orang per hari; koreksi dicatat per juz |
+| 3 | Selesaikan seluruh juz penugasan | Semua juz ditashih | Ringkasan hasil tersedia untuk Distributor |
 | 4 | *(Loop, bila diminta Distributor)* Tashih ulang naskah yang sama | Distributor kirim ulang | Laporan baru |
 
 ---

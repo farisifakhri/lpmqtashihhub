@@ -48,6 +48,14 @@ describe('PentashihWorkspacePage Component', () => {
       reviews: [],
     },
     {
+      id: 'assign-juz',
+      status: 'ASSIGNED', stage: 'INITIAL', iteration: 1,
+      created_at: new Date().toISOString(),
+      registration: { registration_no: 'REG-JUZ-01', title: 'Naskah per juz', publisher: { legal_name: 'Penerbit Juz' }, service_type: { name: 'Mushaf' }, manuscript_files: [] },
+      team: { name: 'Tim Pentashih' }, reviews: [],
+      juz_items: [{ id: 'juz-1', juz_number: 1, result: null, notes: null }],
+    },
+    {
       id: 'assign-2',
       status: 'COMPLETED',
       stage: 'INITIAL',
@@ -108,6 +116,16 @@ describe('PentashihWorkspacePage Component', () => {
         notes: 'Hasil tashih memenuhi kaidah.',
       },
     });
+    vi.spyOn(TashihApiModule.tashihApi, 'recordJuzChecklist').mockResolvedValue({ data: { id: 'juz-1', juz_number: 1, result: 'PASSED', notes: null, completed_at: new Date().toISOString() } });
+  });
+
+  it('menyimpan checklist untuk juz yang ditugaskan', async () => {
+    render(<MemoryRouter><PentashihWorkspacePage /></MemoryRouter>);
+    await screen.findByText('REG-JUZ-01');
+    fireEvent.click(screen.getByRole('button', { name: 'Buka Checklist Juz' }));
+    expect(screen.getByText('Target panduan: 2 juz per orang per hari. Tidak ada pembatasan otomatis.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan juz 1' }));
+    await waitFor(() => expect(TashihApiModule.tashihApi.recordJuzChecklist).toHaveBeenCalledWith('assign-juz', 1, { result: 'PASSED', notes: '' }));
   });
 
   it('merender ruang sidang pentashih dan menampilkan tugas aktif', async () => {

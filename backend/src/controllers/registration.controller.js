@@ -121,6 +121,33 @@ export const dispatchPhysical = async (req, res, next) => {
   }
 };
 
+export const deleteRegistration = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await registrationService.deleteRegistration(id, req.user, req);
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const downloadReceiptPdf = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { buffer, filename } = await registrationService.generateReceiptPdf(id, req.user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
@@ -130,5 +157,7 @@ export default {
   getDetail,
   addManuscriptFile,
   listManuscriptFiles,
+  deleteRegistration,
+  downloadReceiptPdf,
 };
 

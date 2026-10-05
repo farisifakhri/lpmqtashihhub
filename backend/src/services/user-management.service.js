@@ -399,37 +399,73 @@ export const deleteUser = async (id, currentUser, req) => {
     fail(409, 'Petugas masih berada dalam tim inti aktif. Ganti petugas pada pengaturan Tim Inti sebelum menonaktifkan akunnya.');
   }
 
-  const hasHistory = Object.values(user).some(value => Array.isArray(value) && value.length > 0) ||
-    Boolean(user.publisher?.registrations.length || user.publisher?.documents.length);
+  const force = req?.query?.force === 'true' || req?.body?.force === true;
 
-  if (hasHistory) {
-    // Soft deactivation to preserve audit and legal data integrity
-    const updated = await prisma.user.update({
-      where: { id },
-      data: { status: 'INACTIVE' },
+  // Cek apakah akun memiliki transaksi resmi kenegaraan / pentashihan
+  const hasOfficialTransactions = Boolean(
+    user.verification_assignments.length ||
+    user.verification_assignments_made.length ||
+    user.verification_assignments_revoked.length ||
+    user.verification_documents_created.length ||
+    user.verification_documents_approved.length ||
+    user.physical_master_receipts.length ||
+    user.physical_handovers_sent.length ||
+    user.physical_handovers_received.length ||
+    user.assignments.length ||
+    user.document_signatories.length ||
+    user.verification_signatures.length ||
+    user.publisher?.registrations.length
+  );
+
+  // Jika force delete diminta atau akun sama sekali belum pernah terlibat transaksi resmi (misal salah input saat buat akun)
+  if (force || !hasOfficialTransactions) {
+    if (user.publisher?.registrations.length && !force) {
+      fail(400, 'Penerbit ini masih memiliki berkas pengajuan. Hapus pengajuan terkait terlebih dahulu atau gunakan opsi Hapus Permanen.');
+    }
+
+    await prisma.$transaction(async (tx) => {
+      // Unlink audit log & status histories to prevent foreign key errors
+      await tx.auditLog.updateMany({
+        where: { actor_id: id },
+        data: { actor_id: null },
+      });
+      await tx.statusHistory.updateMany({
+        where: { actor_id: id },
+        data: { actor_id: null },
+      });
+
+      await tx.userRole.deleteMany({ where: { user_id: id } });
+      await tx.teamMember.deleteMany({ where: { user_id: id } });
+      await tx.notification.deleteMany({ where: { user_id: id } });
+
+      if (user.publisher) {
+        await tx.publisherDocument.deleteMany({ where: { publisher_id: user.publisher.id } });
+        await tx.publisher.deleteMany({ where: { id: user.publisher.id } });
+      }
+
+      await tx.user.delete({ where: { id } });
+      await audit(tx, currentUser, 'HARD_DELETE_USER', 'User', id, { name: user.name, email: user.email, force }, req);
     });
-    await audit(prisma, currentUser, 'DEACTIVATE_USER', 'User', id, { reason: 'Has transactional history' }, req);
+
     return {
       success: true,
-      action: 'DEACTIVATED',
-      message: 'Pengguna memiliki riwayat transaksi/pemeriksaan; status diubah menjadi TIDAK AKTIF untuk menjaga integritas data.',
-      user: updated,
+      action: 'DELETED',
+      message: 'Pengguna berhasil dihapus secara permanen dari sistem.',
     };
   }
 
-  // Hard delete if clean account
-  await prisma.$transaction(async (tx) => {
-    await tx.userRole.deleteMany({ where: { user_id: id } });
-    await tx.publisher.deleteMany({ where: { user_id: id } });
-    await tx.notification.deleteMany({ where: { user_id: id } });
-    await tx.user.delete({ where: { id } });
-    await audit(tx, currentUser, 'DELETE_USER', 'User', id, { name: user.name, email: user.email }, req);
+  // Jika memiliki transaksi resmi dan tidak meminta force delete -> Soft deactivation
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { status: 'INACTIVE' },
   });
+  await audit(prisma, currentUser, 'DEACTIVATE_USER', 'User', id, { reason: 'Memiliki riwayat transaksi resmi' }, req);
 
   return {
     success: true,
-    action: 'DELETED',
-    message: 'Pengguna berhasil dihapus secara permanen dari sistem.',
+    action: 'DEACTIVATED',
+    message: 'Pengguna memiliki riwayat transaksi/pemeriksaan dinas; status diubah menjadi TIDAK AKTIF untuk menjaga integritas data.',
+    user: updated,
   };
 };
 

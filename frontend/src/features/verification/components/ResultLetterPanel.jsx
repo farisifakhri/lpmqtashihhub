@@ -1,22 +1,30 @@
 import React from 'react';
 import { CheckCircle2, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
+import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 
 export const ResultLetterPanel = ({
   activeMobileTab, decision, setDecision, loadOfficialTemplate, setIsDirty,
   isReadOnly, validationErrors, notes, setNotes, letterTab, setLetterTab,
   letterText, setLetterText,
+  billingNo, setBillingNo,
+  billingFileId, billingFileName, billingUploading, handleBillingFile, resultDocumentId,
+  registration, publisher,
 }) => (
           <div
-            className={`p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4 ${
-              activeMobileTab === 'checklist' ? 'hidden lg:block' : 'block'
+            className={`p-5 sm:p-6 bg-white rounded-xl border border-line shadow-2xs space-y-5 ${
+              activeMobileTab === 'hasil' ? 'block' : 'hidden lg:block'
             }`}
           >
             <div className="border-b border-line pb-3">
-              <h3 className="text-sm font-bold text-ink">Keputusan Hasil Pemeriksaan</h3>
+              <h3 className="text-base font-bold text-ink">Hasil Pemeriksaan & Draf Surat</h3>
               <p className="text-[11px] text-ink-muted mt-0.5">
-                Kesimpulan akhir verifikasi berkas administrasi dan naskah
+                Tentukan hasil pemeriksaan, tulis alasan, lalu periksa surat sebelum diajukan ke Kepala LPMQ.
               </p>
             </div>
+
+            <div className="space-y-8">
+            <div className="space-y-4 border-b border-line pb-7">
+              <h4 className="text-sm font-semibold text-ink">Keputusan pemeriksaan</h4>
 
             {/* Decision Radio Boxes */}
             <div className="space-y-2.5">
@@ -90,6 +98,35 @@ export const ResultLetterPanel = ({
               </div>
             )}
 
+            {decision === 'PASSED' && (
+              <div className="space-y-3 text-xs border-l-2 border-brand-700 pl-4 py-1">
+                <label htmlFor="verification-billing-no" className="block font-bold text-ink">Kode billing PNBP <span className="text-civic-danger">*</span></label>
+                <input
+                  id="verification-billing-no"
+                  type="text"
+                  value={billingNo || ''}
+                  onChange={event => { setBillingNo(event.target.value); setIsDirty(true); }}
+                  disabled={isReadOnly}
+                  maxLength={191}
+                  placeholder="Masukkan kode billing yang sudah diterbitkan"
+                  className="w-full rounded-lg border border-line-strong bg-white p-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                />
+                <p className="text-[11px] text-ink-muted">Kode ini akan tercantum pada PDF surat hasil dan tagihan penerbit.</p>
+                {validationErrors.billing_no && <p className="text-civic-danger font-semibold">{validationErrors.billing_no}</p>}
+                <div className="border-t border-line pt-3 space-y-2">
+                  <label htmlFor="verification-billing-file" className="block font-bold text-ink">Dokumen billing PNBP (PDF) <span className="text-civic-danger">*</span></label>
+                  {!isReadOnly && <input id="verification-billing-file" type="file" accept="application/pdf,.pdf" onChange={handleBillingFile} disabled={billingUploading} className="block w-full rounded-lg border border-line bg-white p-2 text-xs" />}
+                  {billingUploading && <p role="status">Mengunggah dokumen billing…</p>}
+                  {billingFileId && <p className="font-medium text-brand-900">Lampiran tersimpan: {billingFileName || 'Dokumen billing PNBP.pdf'}</p>}
+                  {validationErrors.billing_file_id && <p role="alert" className="text-civic-danger font-semibold">{validationErrors.billing_file_id}</p>}
+                  {billingFileId && <details className="rounded-lg border border-line bg-white p-3">
+                    <summary className="cursor-pointer font-semibold text-brand-900">Tinjau lampiran billing</summary>
+                    <div className="pt-3"><PrivateFileViewer fileId={billingFileId} fileName={billingFileName || 'billing-pnbp.pdf'} mimeType="application/pdf" height="360px" endpoint={isReadOnly && resultDocumentId ? `/verification-documents/${resultDocumentId}/attachments/${billingFileId}` : undefined} /></div>
+                  </details>}
+                </div>
+              </div>
+            )}
+
             {/* Notes textarea */}
             <div className="space-y-1 text-xs">
               <label className="font-semibold text-ink flex items-center justify-between">
@@ -117,9 +154,11 @@ export const ResultLetterPanel = ({
                 className="w-full p-2.5 text-xs rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20"
               />
             </div>
+            </div>
 
             {/* Draf Surat Teks */}
-            <div className="space-y-2 text-xs pt-2 border-t border-line">
+            <div className="space-y-3 text-xs min-w-0">
+              <h4 className="text-sm font-semibold text-ink">Naskah surat untuk penerbit</h4>
               <div className="flex items-center justify-between">
                 <label className="font-bold text-ink flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-brand-800" />
@@ -147,9 +186,14 @@ export const ResultLetterPanel = ({
                 </div>
               </div>
 
+              <p className="text-[11px] text-ink-muted leading-relaxed">
+                Kop, nomor surat, alamat penerbit, dan penutup ditambahkan otomatis pada PDF. Tulis isi surat di bawah ini.
+              </p>
+
               {letterTab === 'editor' ? (
+                <div className="space-y-2">
                 <textarea
-                  rows={6}
+                  rows={15}
                   value={letterText}
                   maxLength={10000}
                   onChange={(e) => {
@@ -158,13 +202,44 @@ export const ResultLetterPanel = ({
                   }}
                   disabled={isReadOnly}
                   placeholder="Tuliskan teks draf surat hasil verifikasi resmi..."
-                  className="w-full p-2.5 text-xs rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                  className="w-full min-h-[320px] p-4 text-sm leading-relaxed rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20 resize-y"
                 />
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
+                  <span>{letterText.length}/10000 karakter</span>
+                  {!isReadOnly && <button type="button" onClick={() => loadOfficialTemplate(decision)} className="font-semibold text-brand-800 hover:underline">Isi ulang dari contoh surat</button>}
+                </div>
+                </div>
               ) : (
-                <div className="p-3 bg-canvas border border-line rounded-lg text-xs whitespace-pre-line text-ink max-h-60 overflow-y-auto leading-relaxed">
-                  {letterText}
+                <div className="mx-auto max-w-[680px] min-h-[520px] bg-white border border-line-strong shadow-sm p-6 sm:p-10 text-[12px] leading-relaxed text-ink">
+                  <div className="flex items-center gap-3 border-b-2 border-ink pb-3 mb-6">
+                    <img src="/assets/logo-kemenag.png" alt="Lambang Kementerian Agama" className="h-14 w-14 object-contain shrink-0" />
+                    <div className="text-center flex-1">
+                      <p className="font-bold">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+                      <p className="font-bold">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
+                      <p className="text-[10px]">Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I, Jakarta Timur 13560</p>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mb-6">
+                    <p>Nomor: <span className="text-ink-muted">Diisi saat persetujuan</span></p>
+                    <p>Sifat: Biasa</p>
+                    <p>Lampiran: {decision === 'PASSED' && billingFileId ? '1 berkas billing PNBP' : '-'}</p>
+                    <p>Hal: {decision === 'PASSED' ? 'Hasil verifikasi dan pemberitahuan PNBP' : 'Hasil verifikasi - tidak lolos'}</p>
+                  </div>
+                  <p>Yth. Pimpinan {publisher?.legal_name || 'Penerbit'}</p>
+                  <p>di {publisher?.address || 'alamat terdaftar'}</p>
+                  <p className="mt-6">Assalamu'alaikum wr. wb.</p>
+                  <p className="mt-4 whitespace-pre-wrap">{letterText || 'Isi surat belum diisi.'}</p>
+                  {decision === 'PASSED' && billingNo && <p className="mt-4 font-bold">Kode billing PNBP: {billingNo}</p>}
+                  <p className="mt-4">Demikian surat ini kami sampaikan. Atas perhatian dan kerja sama Saudara, kami ucapkan terima kasih.</p>
+                  <p className="mt-4">Wassalamu'alaikum wr. wb.</p>
+                  <div className="mt-8 text-right">
+                    <p>Kepala Lajnah Pentashihan Mushaf Al-Qur'an,</p>
+                    <p className="mt-8 text-ink-muted">Menunggu persetujuan</p>
+                  </div>
+                  <p className="mt-8 text-[10px] text-ink-muted">Pratinjau isi · {registration?.registration_no || '-'}</p>
                 </div>
               )}
+            </div>
             </div>
           </div>
 );

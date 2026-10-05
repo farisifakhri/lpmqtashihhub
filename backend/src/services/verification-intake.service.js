@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
 import { calculateDueAt } from './sla.service.js';
@@ -159,6 +160,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
 };
 
 export const createVerificationAssignment = async (id, data, user, req) => {
+  const createdFiles = [];
   try {
     return await prisma.$transaction(async tx => {
       requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
@@ -215,6 +217,8 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         version: (previousNota?.version || 0) + 1,
         status: 'ISSUED',
         created_by_id: user.id,
+        approved_by_id: user.id,
+        approved_at: assignedAt,
         content_snapshot: {
           registration_no: reg.registration_no,
           title: reg.title,
@@ -229,9 +233,11 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           notes: data.notes || null,
         },
       } });
+      const fileId = await archiveVerificationPdf(tx, document, user, assignedAt, createdFiles);
+      const issuedDocument = await tx.verificationDocument.update({ where: { id: document.id }, data: { file_id: fileId } });
       await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Nota Dinas ${data.nota_no} diterbitkan untuk ${verifier.name}`, req);
       await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', assignment.id, assignment, req);
-      await audit(tx, user, 'ISSUE_VERIFICATION_MEMO', 'VerificationDocument', document.id, document, req);
+      await audit(tx, user, 'APPROVE_INTERNAL_VERIFICATION_MEMO', 'VerificationDocument', document.id, { file_id: fileId, approved_at: assignedAt }, req);
       await tx.notification.create({ data: {
         user_id: verifier.id,
         registration_id: id,
@@ -245,9 +251,10 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           due_at: dueAt.toISOString(),
         },
       } });
-      return { assignment, nota_dinas: document };
+      return { assignment, nota_dinas: issuedDocument };
     }, transactionOptions);
   } catch (error) {
+    await cleanupGeneratedFiles(createdFiles);
     if (error.code === 'P2002') fail(409, 'Nomor Nota Dinas atau versi dokumen sudah digunakan. Muat ulang data dan coba lagi.');
     throw error;
   }
@@ -281,6 +288,33 @@ export const getRegistrationReceipt = async (id, user) => {
   };
 };
 
+export const getPhysicalMasterReceipt = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    select: {
+      id: true, registration_no: true, publisher_id: true, title: true,
+      publisher: { select: { legal_name: true } },
+      service_type: { select: { name: true } },
+      physical_master_intake: {
+        select: {
+          status: true, receipt_no: true, received_at: true, condition: true,
+          volume_count: true, format: true, binding_method: true, notes: true,
+          received_by: { select: { name: true } },
+        },
+      },
+    },
+  });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+  const internalRoles = ['SUPERADMIN', 'KEPALA_LPMQ', 'HELPER_ADMIN', 'VERIFIKATOR'];
+  if (!user.roles.some(role => internalRoles.includes(role)) && reg.publisher_id !== user.publisherId) {
+    fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
+  }
+  if (reg.physical_master_intake?.status !== 'RECEIVED' || !reg.physical_master_intake.receipt_no) {
+    fail(409, 'Tanda terima master fisik tersedia setelah master diterima di loket.');
+  }
+  return reg;
+};
+
 export const listVerificationAssignments = async (query, user) => {
   requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN']);
   const where = {};
@@ -292,18 +326,30 @@ export const listVerificationAssignments = async (query, user) => {
   if (query.registration_status) {
     where.registration = { ...(where.registration || {}), status: query.registration_status };
   }
-  if (query.search) {
+  if (query.handover_ready === 'true') {
+    where.status = 'COMPLETED';
     where.registration = {
       ...(where.registration || {}),
+      core_distributor_id: { not: null },
+      payment_records: { some: { status: 'VERIFIED' } },
       OR: [
-        { registration_no: { contains: query.search } },
-        { title: { contains: query.search } },
-        { publisher: { legal_name: { contains: query.search } } },
+        { status: 'PAYMENT_VERIFICATION', physical_handovers: { none: { status: 'PENDING' } } },
+        { status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', physical_handovers: { some: { status: 'RETURNED' } } },
       ],
     };
   }
+  if (query.search) {
+    where.registration = {
+      ...(where.registration || {}),
+      AND: [{ OR: [
+        { registration_no: { contains: query.search } },
+        { title: { contains: query.search } },
+        { publisher: { legal_name: { contains: query.search } } },
+      ] }],
+    };
+  }
   const skip = (query.page - 1) * query.limit;
-  const byStage = Boolean(query.registration_status) || query.status === 'IN_PROGRESS';
+  const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
     prisma.verificationAssignment.count({ where }),
     prisma.verificationAssignment.findMany({

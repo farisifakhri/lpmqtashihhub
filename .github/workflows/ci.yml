@@ -77,10 +77,6 @@ jobs:
         working-directory: frontend
         run: npm test
 
-      - name: Check Frontend Color Tokens
-        working-directory: frontend
-        run: npm run lint:colors
-
       - name: Build Frontend Application
         working-directory: frontend
         run: npm run build

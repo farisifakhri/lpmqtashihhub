@@ -157,5 +157,21 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect('/master/working-days', publisherToken, 'PUT', { days: [] }, 403);
     await expect('/master/working-days', adminToken, 'PUT', { days: [{ date: '2026-02-30', source: 'TEST', is_working_day: true }] }, 400);
   });
+
+  await test('Workflow: Penerbit dapat menghapus DRAFT pengajuan dan dicegah menghapus setelah disubmit', async () => {
+    const draft = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Mushaf Draf Untuk Dihapus', mushaf_details: { penanggung_jawab_produk: 'PJ Draf' } }, 201);
+    const delRes = await call(`/registrations/${draft.id}`, publisherToken, 'DELETE');
+    assert.equal(delRes.status, 200);
+    assert.equal(delRes.json.data.success, true);
+    const getRes = await call(`/registrations/${draft.id}`, publisherToken, 'GET');
+    assert.equal(getRes.status, 404);
+
+    const delSubmitted = await call(`/registrations/${reg.id}`, publisherToken, 'DELETE');
+    assert.equal(delSubmitted.status, 400);
+
+    const draftAdmin = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Mushaf Hapus Superadmin', mushaf_details: { penanggung_jawab_produk: 'PJ Admin' } }, 201);
+    const delAdmin = await call(`/registrations/${draftAdmin.id}`, adminToken, 'DELETE');
+    assert.equal(delAdmin.status, 200);
+  });
   if (reg) await prisma.workingDay.deleteMany({ where: { source: `TEST-${reg.id}` } });
 }

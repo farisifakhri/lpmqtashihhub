@@ -37,6 +37,16 @@ export const createRegistrationSchema = {
           path: ['mushaf_details', 'penanggung_jawab_produk'],
         });
       }
+      if (data.mushaf_details?.penanggung_jawab_email && typeof data.mushaf_details.penanggung_jawab_email === 'string') {
+        const emailTrimmed = data.mushaf_details.penanggung_jawab_email.trim();
+        if (emailTrimmed && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Format email penanggung jawab tidak valid.',
+            path: ['mushaf_details', 'penanggung_jawab_email'],
+          });
+        }
+      }
       if (data.registration_type === 'EXTENSION') {
         const hasLegacyNo = data.foreign_metadata?.nomor_pendaftaran_lama || data.mushaf_details?.nomor_pendaftaran_lama;
         if (!data.previous_registration_id && !hasLegacyNo) {
@@ -98,4 +108,10 @@ export const createManuscriptFileSchema = {
     type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'DUMMY', 'MASTER_COMPLETED']),
     file_id: z.string().uuid('Gunakan ID hasil endpoint unggah berkas.'),
   }).strict(),
+};
+
+export const registrationIdParamSchema = {
+  params: z.object({
+    id: z.string().uuid('ID permohonan tidak valid.'),
+  }),
 };

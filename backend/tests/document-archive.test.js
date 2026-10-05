@@ -5,6 +5,7 @@ import { listDocumentArchive } from '../src/services/document-archive.service.js
 const document = { id: 'v1', document_type: 'NOTA_DINAS_VERIFIKASI', version: 1, status: 'DRAFT' };
 const db = {
   registration: { findUnique: async () => ({ id: 'r1', publisher_id: 'p1' }) },
+  verificationAssignment: { findFirst: async () => null },
   verificationDocument: { findMany: async () => [document] },
   officialDocument: { findMany: async () => [{ ...document, id: 'o1', document_type: 'BERITA_ACARA_TASHIH' }] },
 };

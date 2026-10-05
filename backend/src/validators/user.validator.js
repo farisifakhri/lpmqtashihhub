@@ -67,3 +67,9 @@ export const updateUserSchema = {
   }).strict(),
 };
 
+export const deleteUserSchema = {
+  params: idParam,
+  query: z.object({
+    force: z.enum(['true', 'false']).optional(),
+  }).optional(),
+};

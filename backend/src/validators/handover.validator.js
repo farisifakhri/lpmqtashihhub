@@ -7,7 +7,7 @@ const idParam = z.object({
 export const createHandoverSchema = {
   params: idParam,
   body: z.object({
-    to_user_id: z.string().uuid({ message: 'ID petugas Distributor penerima wajib berupa UUID yang sah.' }),
+    to_user_id: z.string().uuid({ message: 'ID petugas Distributor penerima wajib berupa UUID yang sah.' }).optional(),
     condition: z.string().trim().min(2, { message: 'Kondisi fisik master mushaf minimal 2 karakter.' }).max(191).default('BAIK'),
     volume_count: z.coerce.number().int().min(1, { message: 'Jumlah jilid master fisik minimal 1 volume.' }).max(100).default(30),
     notes: z.string().trim().max(1000, { message: 'Catatan penyerahan maksimal 1000 karakter.' }).optional().or(z.literal('')),
@@ -19,7 +19,6 @@ export const receiveHandoverSchema = {
   body: z.object({
     condition: z.string().trim().min(2, { message: 'Kondisi fisik master mushaf saat diterima minimal 2 karakter.' }).max(191).optional(),
     volume_count: z.coerce.number().int().min(1, { message: 'Jumlah jilid fisik minimal 1 volume.' }).max(100).optional(),
-    tashih_due_at: z.string().datetime({ message: 'Tenggat waktu pentashihan harus berformat tanggal dan waktu ISO 8601 yang sah.' }).optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'Tenggat waktu pentashihan harus berformat YYYY-MM-DD.' })).optional(),
     notes: z.string().trim().max(1000, { message: 'Catatan penerimaan fisik maksimal 1000 karakter.' }).optional().or(z.literal('')),
   }),
 };

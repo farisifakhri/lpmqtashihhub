@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { fail, requireRole, registration, requireStatus, move, audit } from './workflow-utils.js';
 import { queueItems, queuePagination } from './queue-utils.js';
+import { calculateDueAt } from './sla.service.js';
 
 /**
  * Verifikator mencatat penyerahan master fisik kepada Distributor (Langkah 7 SOP)
@@ -11,9 +12,23 @@ export const createHandover = (registrationId, data, user, req) =>
   prisma.$transaction(async (tx) => {
     requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
     const reg = await registration(tx, registrationId);
-    requireStatus(reg, ['PAYMENT_VERIFICATION']);
+    requireStatus(reg, ['PAYMENT_VERIFICATION', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED']);
+    if (reg.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED') {
+      const previousHandover = await tx.physicalManuscriptHandover.findFirst({
+        where: { registration_id: reg.id }, orderBy: { created_at: 'desc' }, select: { status: true },
+      });
+      if (previousHandover?.status !== 'RETURNED') fail(409, 'BAST pengganti hanya dapat dibuat setelah master fisik dikembalikan distributor.');
+    }
     if (reg.core_team_number && user.id !== reg.core_verifier_id) fail(403, 'Hanya verifikator tim inti pengajuan ini yang dapat membuat BAST.');
-    if (reg.core_team_number && data.to_user_id !== reg.core_distributor_id) fail(400, 'BAST harus ditujukan kepada distributor tim inti pengajuan ini.');
+    if (reg.core_team_number && data.to_user_id && data.to_user_id !== reg.core_distributor_id) fail(400, 'BAST harus ditujukan kepada distributor tim inti pengajuan ini.');
+    const distributorId = reg.core_distributor_id || data.to_user_id;
+    if (!distributorId) fail(409, 'Distributor tim inti belum ditetapkan untuk pengajuan ini. Hubungi administrator.');
+    if (!reg.core_team_number && !user.roles.includes('SUPERADMIN')) {
+      const latestAssignment = await tx.verificationAssignment.findFirst({
+        where: { registration_id: reg.id }, orderBy: { created_at: 'desc' }, select: { verifier_id: true },
+      });
+      if (latestAssignment?.verifier_id !== user.id) fail(403, 'Hanya verifikator yang ditugaskan pada pengajuan ini yang dapat menyerahkan master fisik.');
+    }
 
     // Validasi kelunasan PNBP
     const payment = await tx.paymentRecord.findFirst({
@@ -42,7 +57,7 @@ export const createHandover = (registrationId, data, user, req) =>
 
     // Validasi petugas penerima (wajib aktif dan berstatus DISTRIBUTOR)
     const receiver = await tx.user.findUnique({
-      where: { id: data.to_user_id },
+      where: { id: distributorId },
       include: { roles: { include: { role: true } } },
     });
 
@@ -63,7 +78,7 @@ export const createHandover = (registrationId, data, user, req) =>
       data: {
         registration_id: reg.id,
         from_user_id: user.id,
-        to_user_id: data.to_user_id,
+        to_user_id: distributorId,
         stage: 'VERIFICATION_TO_DISTRIBUTION',
         receipt_no: receiptNo,
         condition: data.condition || 'BAIK',
@@ -83,11 +98,14 @@ export const createHandover = (registrationId, data, user, req) =>
       `Master fisik print-out naskah diserahkan kepada Distributor (${receiver.name})`,
       req
     );
+    if (reg.revision_source === 'PHYSICAL_HANDOVER') {
+      await tx.registration.update({ where: { id: reg.id }, data: { revision_source: null } });
+    }
 
     // Notifikasi in-app kepada Distributor penerima
     await tx.notification.create({
       data: {
-        user_id: data.to_user_id,
+        user_id: distributorId,
         registration_id: reg.id,
         type: 'HANDOVER_PENDING',
         title: 'Master Fisik Menunggu Konfirmasi Diterima',
@@ -136,14 +154,18 @@ export const receiveHandover = (handoverId, data, user, req) =>
     const reg = await registration(tx, handover.registration_id);
     requireStatus(reg, ['WAITING_DISTRIBUTOR_RECEIPT']);
 
-    // Tentukan tenggat pentashihan (tashih_due_at) jika diisi eksplisit
-    const tashihDueAt = data.tashih_due_at ? new Date(data.tashih_due_at) : null;
+    const previousAssignment = await tx.assignment.findFirst({
+      where: { registration_id: reg.id }, orderBy: { iteration: 'desc' }, select: { id: true },
+    });
+    const stage = previousAssignment ? 'REVISION' : reg.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
+    const receivedAt = new Date();
+    const tashihDueAt = await calculateDueAt(tx, receivedAt, Number(reg.fee_sla_snapshot?.[`sla_${stage.toLowerCase()}_days`]), { applyCutoff: true });
 
     const updatedHandover = await tx.physicalManuscriptHandover.update({
       where: { id: handoverId },
       data: {
         status: 'RECEIVED',
-        received_at: new Date(),
+        received_at: receivedAt,
         condition: data.condition || handover.condition,
         volume_count: Number(data.volume_count) || handover.volume_count,
         tashih_due_at: tashihDueAt,
@@ -306,8 +328,8 @@ export const getHandoverDetail = async (handoverId, user) => {
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');
   }
-  if (handover.registration.core_team_number && !isOwner && !user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
-    && ![handover.registration.core_verifier_id, handover.registration.core_distributor_id].includes(user.id)) {
+  if (!isOwner && !user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
+    && ![handover.from_user_id, handover.to_user_id].includes(user.id)) {
     fail(403, 'Serah-terima ini bukan tugas Anda.');
   }
 
@@ -334,13 +356,12 @@ export const getRegistrationHandovers = async (registrationId, user) => {
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');
   }
-  if (reg.core_team_number && !isOwner && !user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))
-    && ![reg.core_verifier_id, reg.core_distributor_id].includes(user.id)) {
-    fail(403, 'Serah-terima ini bukan tugas Anda.');
-  }
-
+  const canSeeAll = isOwner || user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role));
   const handovers = await prisma.physicalManuscriptHandover.findMany({
-    where: { registration_id: registrationId },
+    where: {
+      registration_id: registrationId,
+      ...(!canSeeAll ? { OR: [{ from_user_id: user.id }, { to_user_id: user.id }] } : {}),
+    },
     orderBy: { created_at: 'desc' },
     include: {
       from_user: { select: { id: true, name: true, nip: true } },

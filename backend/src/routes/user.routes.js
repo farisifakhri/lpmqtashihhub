@@ -7,6 +7,7 @@ import {
   createUserSchema,
   updateUserSchema,
   userIdParamSchema,
+  deleteUserSchema,
   listUsersQuerySchema,
 } from '../validators/user.validator.js';
 
@@ -28,7 +29,7 @@ router.get('/', validate(listUsersQuerySchema), action((req) => userService.list
 router.get('/:id', validate(userIdParamSchema), action((req) => userService.getUserDetail(req.params.id, req.user)));
 router.post('/', validate(createUserSchema), action((req) => userService.createUser(req.body, req.user, req), 201));
 router.put('/:id', validate(updateUserSchema), action((req) => userService.updateUser(req.params.id, req.body, req.user, req)));
-router.delete('/:id', validate(userIdParamSchema), action((req) => userService.deleteUser(req.params.id, req.user, req)));
+router.delete('/:id', validate(deleteUserSchema), action((req) => userService.deleteUser(req.params.id, req.user, req)));
 router.post('/:id/grant-all-roles', validate(userIdParamSchema), action((req) => userService.grantAllRolesToSuperadmin(req.params.id, req.user, req)));
 
 export default router;

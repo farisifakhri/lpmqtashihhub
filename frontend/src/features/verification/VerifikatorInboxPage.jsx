@@ -127,7 +127,9 @@ export const VerifikatorInboxPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
-      if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
+      if (activeTab === 'BAST_READY') {
+        params.handover_ready = true;
+      } else if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
         params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
@@ -218,6 +220,16 @@ export const VerifikatorInboxPage = () => {
       };
     }
 
+    if (activeTab === 'BAST_READY') {
+      return {
+        title: 'Pembayaran Sah — Siap Serah Terima',
+        description: 'Bukti bayar sudah diperiksa. Terbitkan BAST dan serahkan master fisik kepada distributor tim inti pengajuan ini.',
+        actionLabel: 'Buat BAST & Serahkan',
+        actionIcon: <PackageCheck className="w-4 h-4" />,
+        isHandover: true,
+      };
+    }
+
     if (status === 'ASSIGNED') {
       const isAssignedToUser = !selectedAssignment.verifier_id || selectedAssignment.verifier_id === currentUser?.id || selectedAssignment.verifier?.id === currentUser?.id;
       if (!isVerifier || !isAssignedToUser) {
@@ -270,7 +282,7 @@ export const VerifikatorInboxPage = () => {
     if (status === 'WAITING_SIGNATURE') {
       return {
         title: 'Menunggu Penandatanganan Dokumen',
-        description: 'Draf telah disetujui Kepala LPMQ. Proses penandatanganan digital Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
+        description: 'Draf telah disetujui Kepala LPMQ. Konfirmasi internal Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
         actionLabel: 'Buka Lembar Penandatanganan',
         actionIcon: <ShieldCheck className="w-4 h-4" />,
         isStart: false,
@@ -280,7 +292,7 @@ export const VerifikatorInboxPage = () => {
     if (status === 'READY_TO_SEND') {
       return {
         title: 'Dokumen Siap Dikirim kepada Penerbit',
-        description: 'Seluruh tanda tangan digital telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
+        description: 'Seluruh konfirmasi internal telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
         actionLabel: 'Kirim Dokumen ke Penerbit',
         actionIcon: <ArrowRight className="w-4 h-4" />,
         isStart: false,
@@ -294,7 +306,7 @@ export const VerifikatorInboxPage = () => {
       actionIcon: <FileText className="w-4 h-4" />,
       isStart: false,
     };
-  }, [selectedAssignment, isAssignmentAdmin]);
+  }, [selectedAssignment, isAssignmentAdmin, activeTab]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
@@ -420,7 +432,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-ink-muted hover:text-ink'
                           )}
                         >
-                          Tanda Tangan
+                          Konfirmasi Internal
                         </button>
                         <button
                           type="button"
@@ -459,7 +471,7 @@ export const VerifikatorInboxPage = () => {
                               : 'text-ink-muted hover:text-ink'
                           )}
                         >
-                          Tanda Tangan
+                          Konfirmasi Internal
                         </button>
                         <button
                           type="button"
@@ -523,6 +535,16 @@ export const VerifikatorInboxPage = () => {
                           )}
                         >
                           Siap Dikirim
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('BAST_READY')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            activeTab === 'BAST_READY' ? 'bg-white text-brand-900 shadow-2xs' : 'text-ink-muted hover:text-ink'
+                          )}
+                        >
+                          Siap BAST
                         </button>
                       </>
                     )}
@@ -646,6 +668,8 @@ export const VerifikatorInboxPage = () => {
                     onAction={() => {
                       if (taskCardInfo?.isAssign) {
                         setAssignDialogOpen(true);
+                      } else if (taskCardInfo?.isHandover) {
+                        navigate(`/internal/verifications/${selectedAssignment.id}?handover=1`);
                       } else if (taskCardInfo?.isStart) {
                         handleStartVerification(selectedAssignment.id);
                       } else {

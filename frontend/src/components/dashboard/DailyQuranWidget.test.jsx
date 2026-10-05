@@ -8,12 +8,10 @@ describe('DailyQuranWidget Component', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        code: 200,
         data: {
-          number: { inSurah: 1 },
-          text: { arab: 'بِسْمِ اللَّهِ' },
-          translation: { id: 'Dengan nama Allah.' },
-          surah: { name: { transliteration: { id: 'Al-Fatihah' } } },
+          arabic: 'بِسْمِ اللَّهِ',
+          translation: 'Dengan nama Allah.',
+          source: 'QS. Al-Fatihah: 1',
         },
       }),
     }));
@@ -22,10 +20,10 @@ describe('DailyQuranWidget Component', () => {
   it('merender ayat dinamis dari API Al-Qur\'an', async () => {
     render(<DailyQuranWidget />);
 
-    expect(screen.getByText("Ayat Al-Qur'an dalam 1 Menit")).toBeInTheDocument();
+    expect(screen.getByText("Ayat Al-Qur'an")).toBeInTheDocument();
     expect(screen.getByTitle('Muat ayat lain')).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText(/Dengan nama Allah\./)).toBeInTheDocument());
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('quran-api-id.vercel.app/surah/'), expect.any(Object));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/quran/verses/'), expect.any(Object));
   });
 
   it('merender teks terjemahan dan tombol ganti', async () => {

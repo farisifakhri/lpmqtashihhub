@@ -8,9 +8,33 @@ import * as AuthContextModule from './AuthContext';
 describe('LoginPage Protected Area Verification', () => {
   const mockLogin = vi.fn();
 
-  beforeEach(() => {
+  // beforeEach(() => {
+  //   vi.clearAllMocks();
+  //   localStorage.removeItem('lpmq-login-theme');
+  //   vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+  //     login: mockLogin,
+  //     isLoading: false,
+  //     authError: '',
+  //   });
+  // });
+
+  // it('toggles the login theme without changing the global document theme', () => {
+  //   const { container } = render(<MemoryRouter><LoginPage /></MemoryRouter>);
+  //   const page = container.firstElementChild;
+  //   expect(page).not.toHaveClass('login-dark');
+  //   fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode gelap' }));
+  //   expect(page).toHaveClass('login-dark');
+  //   expect(localStorage.getItem('lpmq-login-theme')).toBe('dark');
+  //   expect(document.documentElement).not.toHaveClass('dark');
+  //   fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode terang' }));
+  //   expect(page).not.toHaveClass('login-dark');
+  // });
+    beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.removeItem('lpmq-login-theme');
+
+    localStorage.removeItem('lpmq-theme');
+    document.documentElement.classList.remove('dark');
+
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       login: mockLogin,
       isLoading: false,
@@ -18,16 +42,40 @@ describe('LoginPage Protected Area Verification', () => {
     });
   });
 
-  it('toggles the login theme without changing the global document theme', () => {
-    const { container } = render(<MemoryRouter><LoginPage /></MemoryRouter>);
+  it('toggles the global theme using the Switcher without changing the global document theme', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
     const page = container.firstElementChild;
-    expect(page).not.toHaveClass('login-dark');
-    fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode gelap' }));
-    expect(page).toHaveClass('login-dark');
-    expect(localStorage.getItem('lpmq-login-theme')).toBe('dark');
+
+    expect(page).toBeInTheDocument();
+
+    // Initial state: light
     expect(document.documentElement).not.toHaveClass('dark');
-    fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode terang' }));
-    expect(page).not.toHaveClass('login-dark');
+    expect(localStorage.getItem('lpmq-theme')).toBe('light');
+
+    // Click Switcher -> Dark
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Aktifkan mode gelap',
+      })
+    );
+
+    expect(document.documentElement).toHaveClass('dark');
+    expect(localStorage.getItem('lpmq-theme')).toBe('dark');
+
+    // Click Switcher -> Light
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Aktifkan mode terang',
+      })
+    );
+
+    expect(document.documentElement).not.toHaveClass('dark');
+    expect(localStorage.getItem('lpmq-theme')).toBe('light');
   });
 
   it('renders all key elements of the protected login screen intact', () => {

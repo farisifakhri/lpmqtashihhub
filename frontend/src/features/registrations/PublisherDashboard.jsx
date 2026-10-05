@@ -105,15 +105,15 @@ export const PublisherDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-7 pb-16 animate-fadeIn">
-      {/* 1. Header with Live Digital Clock & Quran Verse Widget */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+      {/* Sapaan dan ayat rujukan */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6 items-stretch">
+        <div className="min-w-0">
           <GreetingHeroCard
             role="publisher"
             userName={currentUser?.publisherName || currentUser?.name}
           />
         </div>
-        <div className="lg:col-span-1">
+        <div className="min-w-0">
           <DailyQuranWidget />
         </div>
       </div>

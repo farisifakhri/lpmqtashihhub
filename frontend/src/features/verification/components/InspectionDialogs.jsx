@@ -6,7 +6,6 @@ export const InspectionDialogs = ({
   returnModalOpen, setReturnModalOpen, returnReason, setReturnReason,
   handleReturnDocument, actionLoading, handoverModalOpen, setHandoverModalOpen,
   registration, publisher, handoverModalError, handleCreateHandover,
-  distributors, selectedDistributorId, setSelectedDistributorId,
   handoverCondition, setHandoverCondition, handoverVolumeCount, setHandoverVolumeCount,
   handoverNotes, setHandoverNotes,
 }) => (
@@ -104,27 +103,10 @@ export const InspectionDialogs = ({
 
             <form onSubmit={handleCreateHandover} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-ink mb-1">
-                  Pilih Petugas Distributor Penerima <span className="text-civic-danger">*</span>
-                </label>
-                {distributors.length > 0 ? (
-                  <select
-                    value={selectedDistributorId}
-                    onChange={(e) => setSelectedDistributorId(e.target.value)}
-                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
-                    required
-                  >
-                    {distributors.map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.name} {d.nip ? `(NIP: ${d.nip})` : ''} - Petugas Distributor
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="p-2.5 bg-civic-warningSoft border border-civic-warningLine rounded-lg text-civic-warning">
-                    Tidak ditemukan petugas Distributor aktif. Hubungi Administrator.
-                  </div>
-                )}
+                <label className="block font-bold text-ink mb-1">Distributor Penerima (Tim Inti)</label>
+                <div className="p-2.5 rounded-lg border border-line bg-canvas font-medium">
+                  {registration.core_distributor?.name || 'Distributor tim inti belum ditetapkan'}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -186,7 +168,7 @@ export const InspectionDialogs = ({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={actionLoading || !selectedDistributorId}
+                  disabled={actionLoading || !registration.core_distributor_id}
                   className="text-xs bg-brand-800 hover:bg-brand-900 text-white font-bold px-5 py-2.5"
                 >
                   {actionLoading ? 'Menerbitkan BAST...' : 'Serahkan & Terbitkan BAST'}

@@ -66,7 +66,7 @@
 }
 
 /* Login-only theme. Other workspaces keep their current palette. */
-.login-dark {
+.login-dark .register-dark {
   --canvas-rgb: 15 23 42;
   --surface-rgb: 30 41 59;
   --surface-subtle-rgb: 51 65 85;
@@ -81,5 +81,49 @@
   --brand-50-rgb: 6 58 47;
 }
 
-.login-dark .login-register-link { color: #a7f3d0; }
-.login-dark .login-register-link:hover { color: #d1fae5; }
+/* .login-dark .login-register-link { color: #a7f3d0; }
+.login-dark .login-register-link:hover { color: #d1fae5; } */
+
+.dark {
+  /* Canvas */
+ --canvas-rgb: 15 23 42;
+  --surface-rgb: 30 41 59;
+  --surface-subtle-rgb: 51 65 85;
+  --surface-strong-rgb: 71 85 105;
+  --ink-rgb: 248 250 252;
+  --ink-muted-rgb: 203 213 225;
+  --line-rgb: 71 85 105;
+  --line-strong-rgb: 100 116 139;
+
+  /* Brand */
+  --brand-700-rgb: 21 128 98;
+  --brand-800-rgb: 17 94 74;
+  --brand-100-rgb: 6 78 59;
+  --brand-50-rgb: 6 58 47;
+
+  --brand-950: #022c22;
+  --brand-900: #064e3b;
+  --brand-800: #065f46;
+  --brand-700: #158062;
+  --brand-100: #064e3b;
+  --brand-50: #063a2f;
+
+  /* Gold */
+  --gold-700: #d6a84b;
+  --gold-500: #e5b94f;
+  --gold-100: #4a3818;
+
+  /* Text */
+  --ink: #f8fafc;
+  --ink-muted: #cbd5e1;
+
+  /* Border */
+  --line: #334155;
+  --line-strong: #475569;
+
+  /* Semantic */
+  --info: #60a5fa;
+  --warning: #f59e0b;
+  --danger: #fb7185;
+  --success: #34d399;
+}

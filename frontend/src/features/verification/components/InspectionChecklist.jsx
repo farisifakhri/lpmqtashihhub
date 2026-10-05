@@ -1,25 +1,21 @@
 import React from 'react';
 import { CheckSquare } from 'lucide-react';
-import { ResultLetterPanel } from './ResultLetterPanel';
 
 export const InspectionChecklist = ({
   activeMobileTab, sesuaiCount, tidakBerlakuCount, checklist, validationErrors,
-  isReadOnly, handleChecklistChange, decision, setDecision, loadOfficialTemplate,
-  setIsDirty, notes, setNotes, letterTab, setLetterTab, letterText, setLetterText,
+  isReadOnly, handleChecklistChange,
   definitions,
 }) => {
   const CHECKLIST_DEFINITIONS = definitions;
   return (
         <div
           className={`lg:col-span-4 space-y-4 ${
-            activeMobileTab === 'checklist' || activeMobileTab === 'hasil' ? 'block' : 'hidden lg:block'
+            activeMobileTab === 'checklist' ? 'block' : 'hidden lg:block'
           }`}
         >
           {/* Section Checklist (Always accessible or active on mobile checklist tab) */}
           <div
-            className={`p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4 ${
-              activeMobileTab === 'hasil' ? 'hidden lg:block' : 'block'
-            }`}
+            className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4"
           >
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div>
@@ -155,22 +151,6 @@ export const InspectionChecklist = ({
             </div>
           </div>
 
-          {/* Section Keputusan & Surat (Always accessible or active on mobile hasil tab) */}
-          <ResultLetterPanel
-            activeMobileTab={activeMobileTab}
-            decision={decision}
-            setDecision={setDecision}
-            loadOfficialTemplate={loadOfficialTemplate}
-            setIsDirty={setIsDirty}
-            isReadOnly={isReadOnly}
-            validationErrors={validationErrors}
-            notes={notes}
-            setNotes={setNotes}
-            letterTab={letterTab}
-            setLetterTab={setLetterTab}
-            letterText={letterText}
-            setLetterText={setLetterText}
-          />
         </div>
   );
 };

@@ -60,8 +60,9 @@ export const userApi = {
    * Menghapus atau menonaktifkan pengguna
    * @param {string} id
    */
-  deleteUser: async (id) => {
-    return apiClient(`/users/${id}`, {
+  deleteUser: async (id, force = false) => {
+    const url = force ? `/users/${id}?force=true` : `/users/${id}`;
+    return apiClient(url, {
       method: 'DELETE',
     });
   },
