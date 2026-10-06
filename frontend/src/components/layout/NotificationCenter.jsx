@@ -72,7 +72,7 @@ function resolveDesc(item) {
   if (item.desc) return item.desc;
   if (item.payload?.notes) return item.payload.notes;
   if (item.payload?.reason) return item.payload.reason;
-  if (item.payload?.nota_no) return `Nomor Nota Dinas: ${item.payload.nota_no}`;
+  if (item.payload?.nota_no) return `Nomor Disposisi: ${item.payload.nota_no}`;
   if (item.payload?.receipt_no) return `Nomor Tanda Terima: ${item.payload.receipt_no}`;
   return item.title;
 }

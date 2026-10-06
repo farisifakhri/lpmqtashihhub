@@ -12,8 +12,8 @@ export { WORKFLOW_PHASES };
 export const STATUS_DEFINITIONS = {
   DRAFT: {
     phase: 'REGISTRATION',
-    statusLabel: 'Draf Pengajuan',
-    statusDescription: 'Pengajuan baru, berkas atau data naskah belum lengkap.',
+    statusLabel: 'Draf Permohonan',
+    statusDescription: 'Permohonan baru, berkas atau data naskah belum lengkap.',
     ownerRole: 'ADMIN_PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Lengkapi berkas & ajukan',
@@ -166,10 +166,10 @@ export const STATUS_DEFINITIONS = {
   CANCELLED: {
     phase: 'REGISTRATION',
     statusLabel: 'Dibatalkan',
-    statusDescription: 'Pengajuan dibatalkan sebelum tahapan pembayaran atau penetapan selesai.',
+    statusDescription: 'Permohonan dibatalkan sebelum tahapan pembayaran atau penetapan selesai.',
     ownerRole: 'ADMIN_PENERBIT',
     ownerRoleLabel: 'Penerbit',
-    nextActionLabel: 'Pengajuan ditutup',
+    nextActionLabel: 'Permohonan ditutup',
     actionPath: null,
   },
 };

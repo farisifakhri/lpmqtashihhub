@@ -12,7 +12,7 @@ describe('Centralized Workflow View Model', () => {
 
     const vm = getWorkflowViewModel(reg, user);
     expect(vm.phase).toBe('REGISTRATION');
-    expect(vm.statusLabel).toBe('Draf Pengajuan');
+    expect(vm.statusLabel).toBe('Draf Permohonan');
     expect(vm.ownerRole).toBe('ADMIN_PENERBIT');
     expect(vm.ownerName).toBe('PT Mushaf Jaya');
     expect(vm.nextActionLabel).toBe('Lengkapi berkas & ajukan');

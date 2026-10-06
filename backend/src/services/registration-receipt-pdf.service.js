@@ -59,7 +59,7 @@ export async function renderRegistrationReceiptPdf(reg) {
   y -= 22;
 
   // 2. Title & Nomor Registrasi
-  const titleText = "TANDA TERIMA PENGAJUAN PENTASHIHAN MUSHAF AL-QUR'AN";
+  const titleText = 'TANDA TERIMA PERMOHONAN SURAT TANDA TASHIH';
   page.drawText(titleText, {
     x: width / 2 - bold.widthOfTextAtSize(titleText, 11) / 2,
     y,
@@ -107,7 +107,7 @@ export async function renderRegistrationReceiptPdf(reg) {
 
   const rows = [
     ['Kategori Permohonan', categoryLabel],
-    ['Tanggal & Waktu Pengajuan', `${dateFormatted} WIB`],
+    ['Tanggal & Waktu Permohonan', `${dateFormatted} WIB`],
     ['Nama Pemohon / Penerbit', reg.publisher?.legal_name || 'Penerbit Terdaftar'],
     ['Nama Produk / Judul Naskah', reg.title || '-'],
     ['Nama Mushaf', namaMushaf],

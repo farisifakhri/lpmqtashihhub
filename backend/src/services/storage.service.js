@@ -45,5 +45,11 @@ export async function ownedFile(db, id, user) {
 
 export async function readStoredFile(id) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) fail(404, 'Berkas tidak ditemukan.');
-  return readFile(path.join(root, id));
+  try {
+    return await readFile(path.join(root, id));
+  } catch (err) {
+    if (err.code === 'ENOENT') fail(404, 'Fisik berkas tidak ditemukan di penyimpanan server.');
+    throw err;
+  }
 }
+

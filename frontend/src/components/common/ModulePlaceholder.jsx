@@ -638,7 +638,7 @@ export const ModulePlaceholder = ({
           </div>
 
           {/* Kotak Pengujian Alur Layanan / Interactive Tester */}
-          <Card className="p-5 space-y-4 bg-gradient-to-br from-white to-canvas border-line">
+          <Card className="p-5 space-y-4 bg-surface border-line">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">

@@ -95,7 +95,7 @@ describe('ReassignVerificationDialog Component', () => {
     fireEvent.click(screen.getByText('Hj. Siti Verifikator, S.Th.I'));
 
     // Input new Nota Dinas
-    const notaInput = screen.getByLabelText(/Nomor Nota Dinas Baru/i);
+    const notaInput = screen.getByLabelText(/Nomor Disposisi Baru/i);
     fireEvent.change(notaInput, { target: { value: 'ND.02/LPMQ/REV/2026' } });
 
     // Input reason

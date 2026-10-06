@@ -8,9 +8,16 @@ afterEach(() => vi.restoreAllMocks());
 describe('ErrorBoundary', () => {
   it('reports a render failure and offers a recovery action', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const errorHandler = (e) => e.preventDefault();
+    window.addEventListener('error', errorHandler);
+
     const Broken = () => { throw new Error('render failed'); };
 
-    render(<ErrorBoundary><Broken /></ErrorBoundary>);
+    try {
+      render(<ErrorBoundary><Broken /></ErrorBoundary>);
+    } finally {
+      window.removeEventListener('error', errorHandler);
+    }
 
     expect(errorLog).toHaveBeenCalledWith('Unhandled UI error:', expect.any(Error), expect.any(Object));
     expect(screen.getByRole('alert')).toHaveTextContent('Halaman mengalami kendala');

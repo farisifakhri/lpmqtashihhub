@@ -113,7 +113,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
             ) : data.status === 'READY_FOR_VERIFICATION' ? (
               <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di loket LPMQ.</span>
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (
-              <span className="text-civic-info font-semibold">Verifikator telah ditugaskan (Nota Dinas terbit).</span>
+              <span className="text-civic-info font-semibold">Verifikator telah ditugaskan (Disposisi terbit).</span>
             ) : (
               <span>Tahap saat ini: <strong className="text-ink">{data.status}</strong></span>
             )}

@@ -66,7 +66,7 @@ export function CoreTeamPage() {
   return <main className="max-w-6xl mx-auto p-6 space-y-6">
     <div>
       <h1 className="text-2xl font-bold">Rotasi tim inti</h1>
-      <p className="text-sm text-ink-muted">Tim baru berlaku untuk pengajuan berikutnya. Tim yang sudah melekat pada pengajuan tetap sama.</p>
+      <p className="text-sm text-ink-muted">Tim baru berlaku untuk permohonan berikutnya. Tim yang sudah melekat pada permohonan tetap sama.</p>
     </div>
     {error && <p role="alert" className="text-civic-danger">{error}</p>}
     {message && <p role="status" className="text-brand-700">{message}</p>}

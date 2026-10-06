@@ -6,6 +6,8 @@ import { NewRegistrationPage } from './NewRegistrationPage';
 import * as Auth from '@/features/auth/AuthContext';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
+import { fileApi } from '@/api/file.api';
+
 describe('Publisher new registration handoff', () => {
   it('menahan judul kurang dari 3 karakter dan menampilkan validasi di field', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
@@ -15,11 +17,11 @@ describe('Publisher new registration handoff', () => {
     const createDraft = vi.spyOn(registrationApi, 'createDraft');
     render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
 
-    const title = await screen.findByRole('textbox', { name: /Nama Produk\/Mushaf/i });
+    const title = await screen.findByRole('textbox', { name: /Nama Mushaf/i });
     fireEvent.change(title, { target: { value: ' A ' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Simpan Draf' })[0]);
 
-    expect(await screen.findByText('Nama produk/mushaf minimal 3 karakter.')).toBeInTheDocument();
+    expect(await screen.findByText('Nama mushaf minimal 3 karakter.')).toBeInTheDocument();
     expect(title).toHaveAttribute('aria-invalid', 'true');
     expect(createDraft).not.toHaveBeenCalled();
   });
@@ -47,7 +49,7 @@ describe('Publisher new registration handoff', () => {
     const createDraft = vi.spyOn(registrationApi, 'createDraft');
     render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
 
-    const title = await screen.findByRole('textbox', { name: /Nama Produk\/Mushaf/i });
+    const title = await screen.findByRole('textbox', { name: /Nama Mushaf/i });
     fireEvent.change(title, { target: { value: 'Mushaf Baru' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Simpan Draf' })[0]);
 
@@ -57,21 +59,28 @@ describe('Publisher new registration handoff', () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
-  it('creates one draft and opens file completion instead of submitting an empty registration', async () => {
+  it('creates one draft when clicking Simpan Draf', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
     vi.spyOn(registrationApi, 'createDraft').mockResolvedValue({ data: { id: 'new-draft', registration_no: 'REG-NEW' } });
     vi.spyOn(registrationApi, 'submitRegistration').mockResolvedValue({});
-    render(<MemoryRouter initialEntries={['/publisher/new-registration']}><Routes><Route path="/publisher/new-registration" element={<NewRegistrationPage />} /><Route path="/publisher/registrations/new-draft" element={<div>Lengkapi berkas draf baru</div>} /></Routes></MemoryRouter>);
-    const continueButtons = screen.getAllByRole('button', { name: 'Lanjutkan ke Berkas' });
-    await waitFor(() => expect(continueButtons[0]).toBeEnabled());
+    render(
+      <MemoryRouter initialEntries={['/publisher/new-registration']}>
+        <Routes>
+          <Route path="/publisher/new-registration" element={<NewRegistrationPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const draftButtons = screen.getAllByRole('button', { name: 'Simpan Draf' });
+    await waitFor(() => expect(draftButtons[0]).toBeEnabled());
     fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Naskah baru penerbit' } });
     fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Penanggung Jawab Penerbit' } });
-    fireEvent.click(continueButtons[0]);
-    expect(await screen.findByText('Lengkapi berkas draf baru')).toBeInTheDocument();
-    expect(registrationApi.createDraft).toHaveBeenCalledTimes(1);
+    fireEvent.click(draftButtons[0]);
+    await waitFor(() => {
+      expect(registrationApi.createDraft).toHaveBeenCalledTimes(1);
+    });
     expect(registrationApi.submitRegistration).not.toHaveBeenCalled();
   });
 
@@ -93,13 +102,12 @@ describe('Publisher new registration handoff', () => {
       <MemoryRouter initialEntries={['/publisher/new-registration']}>
         <Routes>
           <Route path="/publisher/new-registration" element={<NewRegistrationPage />} />
-          <Route path="/publisher/registrations/ln-draft" element={<div>Lengkapi berkas mushaf luar negeri</div>} />
         </Routes>
       </MemoryRouter>
     );
 
-    const continueButtons = screen.getAllByRole('button', { name: 'Lanjutkan ke Berkas' });
-    await waitFor(() => expect(continueButtons[0]).toBeEnabled());
+    const draftButtons = screen.getAllByRole('button', { name: 'Simpan Draf' });
+    await waitFor(() => expect(draftButtons[0]).toBeEnabled());
 
     // Initially Nama Percetakan is present
     expect(screen.getByPlaceholderText('Tulis nama percetakan')).toBeInTheDocument();
@@ -123,8 +131,8 @@ describe('Publisher new registration handoff', () => {
     fireEvent.change(screen.getByPlaceholderText('Tulis Nama penerbit asal Mushaf'), { target: { value: 'Mujamma Al Malik Fahd' } });
     fireEvent.change(screen.getByPlaceholderText('Tulis Nama lembaga pentashih asal Mushaf'), { target: { value: 'Lajnah Ilmiyyah Madinah' } });
 
-    // Submit
-    fireEvent.click(continueButtons[0]);
+    // Submit via Simpan Draf
+    fireEvent.click(draftButtons[0]);
 
     await waitFor(() => {
       expect(registrationApi.createDraft).toHaveBeenCalledWith(
@@ -141,7 +149,61 @@ describe('Publisher new registration handoff', () => {
         })
       );
     });
+  });
 
-    expect(await screen.findByText('Lengkapi berkas mushaf luar negeri')).toBeInTheDocument();
+  it('menampilkan modal konfirmasi dengan peringatan REV-07 dan mengirim permohonan langsung tanpa perlu submit dua kali', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', status: 'ACTIVE' }] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: 'file-mock-uuid' });
+    vi.spyOn(registrationApi, 'createDraft').mockResolvedValue({ data: { id: 'new-reg-1', registration_no: 'REG-202610-0001' } });
+    vi.spyOn(registrationApi, 'addManuscript').mockResolvedValue({});
+    vi.spyOn(registrationApi, 'submitRegistration').mockResolvedValue({});
+
+    render(
+      <MemoryRouter initialEntries={['/publisher/new-registration']}>
+        <Routes>
+          <Route path="/publisher/new-registration" element={<NewRegistrationPage />} />
+          <Route path="/publisher/registrations/new-reg-1" element={<div>Halaman Detail Permohonan</div>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const submitButtons = screen.getAllByRole('button', { name: 'Kirim Permohonan' });
+    await waitFor(() => expect(submitButtons[0]).toBeEnabled());
+
+    // Isi formulir
+    fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Mushaf Al-Bayan Test' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Ahmad Fauzi' } });
+
+    // Mock upload file untuk 3 file wajib
+    const file1 = new File(['dummy surat'], 'surat_permohonan.pdf', { type: 'application/pdf' });
+    const file2 = new File(['dummy cover'], 'cover.jpg', { type: 'image/jpeg' });
+    const file3 = new File(['dummy contoh'], 'contoh_halaman.pdf', { type: 'application/pdf' });
+
+    const allInputs = document.querySelectorAll('input[type="file"]');
+    if (allInputs[0]) fireEvent.change(allInputs[0], { target: { files: [file1] } });
+    if (allInputs[1]) fireEvent.change(allInputs[1], { target: { files: [file2] } });
+    if (allInputs[2]) fireEvent.change(allInputs[2], { target: { files: [file3] } });
+
+    // Klik Kirim Permohonan
+    fireEvent.click(submitButtons[0]);
+
+    // Modal konfirmasi muncul dengan teks peringatan REV-07
+    expect(await screen.findByText('Konfirmasi Pengiriman Permohonan STT')).toBeInTheDocument();
+    expect(screen.getByText(/Pastikan semua data bertanda bintang \(\*\) telah diisi dan dipastikan benar sebelum mengirim/i)).toBeInTheDocument();
+
+    // Klik tombol konfirmasi pengiriman di modal
+    const confirmButton = screen.getByRole('button', { name: 'Ya, Kirim Permohonan' });
+    fireEvent.click(confirmButton);
+
+    // Verifikasi one-step submission
+    await waitFor(() => {
+      expect(registrationApi.createDraft).toHaveBeenCalledTimes(1);
+      expect(registrationApi.submitRegistration).toHaveBeenCalledWith('new-reg-1');
+    });
+
+    expect(await screen.findByText('Halaman Detail Permohonan')).toBeInTheDocument();
   });
 });

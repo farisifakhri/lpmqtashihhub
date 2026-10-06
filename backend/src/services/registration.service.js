@@ -354,6 +354,7 @@ export const createDraft = async (data, user, req) => {
             ...(data.mushaf_details || {}),
             ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
             ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
+            ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
             ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
             ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
             ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
@@ -389,13 +390,14 @@ export const createDraft = async (data, user, req) => {
             } catch {}
           }
 
-          if (data.surat_permohonan_file_id) {
+          const samplePageFileId = data.contoh_halaman_file_id || data.surat_permohonan_file_id;
+          if (samplePageFileId) {
             try {
               await tx.manuscriptFile.create({
                 data: {
                   registration_id: created.id,
                   type: 'SAMPLE_PAGE_1_5',
-                  file_id: data.surat_permohonan_file_id,
+                  file_id: samplePageFileId,
                   version: 1,
                 },
               });
@@ -681,7 +683,7 @@ export async function sendSubmissionNotifications(reg, user, req) {
           idempotencyKey,
           recipientEmail,
           recipientName,
-          subject: `[LPMQ] Tanda Terima Pengajuan Pentashihan Mushaf - ${reg.registration_no}`,
+          subject: `[LPMQ] Tanda Terima Permohonan Surat Tanda Tashih - ${reg.registration_no}`,
           template: 'REGISTRATION_SUBMITTED',
           payload: {
             registration_no: reg.registration_no,
@@ -703,10 +705,10 @@ export async function sendSubmissionNotifications(reg, user, req) {
     if (recipientPhone) {
       const waMessage = `Assalamu'alaikum Wr. Wb.\n\n` +
         `Yth. Bpk/Ibu ${recipientName},\n\n` +
-        `Pengajuan permohonan tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
+        `Permohonan surat tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
         `Jenis Standar: ${jenisMushaf}\n` +
         `Status: ${statusLabel(reg.status || 'READY_FOR_VERIFICATION')}\n\n` +
-        `Tanda terima pengajuan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
+        `Tanda terima permohonan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
         `Wassalamu'alaikum Wr. Wb.\n` +
         `LPMQ Kemenag RI`;
 

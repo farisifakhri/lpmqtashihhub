@@ -229,7 +229,7 @@ describe('VerifikatorInboxPage Component', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Terbitkan Nota Dinas & Tugaskan Verifikator')).toBeInTheDocument();
+      expect(screen.getByText('Terbitkan Disposisi & Tugaskan Verifikator')).toBeInTheDocument();
     });
   });
 

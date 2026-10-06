@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
-  Sparkles,
   Users,
   UserCheck,
 } from 'lucide-react';
@@ -125,26 +124,21 @@ export const RegisterPublisherPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas  relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      {/* Background Soft Glow Orbs */}
-      <div className="absolute top-[-10%] right-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
-      <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-civic-warningSoft/40 blur-2xl pointer-events-none" />
-
-      {/* Main Glass Card Container */}
-      <div className="relative z-10 w-full max-w-5xl bg-surface rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/* Main Container */}
+      <div className="w-full max-w-5xl bg-surface rounded-xl shadow-xs border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
-          {/* SISI KIRI: Ilustrasi Animasi 3D Quran & Info */}
-          <div className="lg:col-span-5 relative rounded-[26px] sm:rounded-[30px] overflow-hidden bg-brand-950 flex flex-col justify-between shadow-inner min-h-[340px] lg:min-h-[640px]">
+          {/* SISI KIRI: Ilustrasi Quran & Info */}
+          <div className="lg:col-span-5 relative rounded-lg overflow-hidden bg-brand-950 flex flex-col justify-between min-h-[340px] lg:min-h-[640px]">
             <img
               src={quran3dImg}
               alt="Ilustrasi Pentashihan Al-Qur'an 3D"
-              className="absolute inset-0 w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700 ease-out"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
 
             {/* Badge Atas */}
             <div className="relative z-10 p-5 sm:p-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/60 shadow-xs">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface/90 border border-line shadow-2xs">
                 <ShieldCheck className="w-4 h-4 text-brand-700" />
                 <span className="text-xs font-bold tracking-wide text-ink">
                   Registrasi Resmi LPMQ
@@ -153,10 +147,9 @@ export const RegisterPublisherPage = () => {
             </div>
 
             {/* Info Box Bawah */}
-             <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-ink/60 via-ink/20 to-transparent pt-12">
-              <div className="bg-brand-700/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm space-y-1">
-                <p className="text-xs font-semibold text-white flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
+            <div className="relative z-10 p-5 sm:p-6 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent pt-12">
+              <div className="bg-brand-950/90 p-4 rounded-lg border border-brand-800 text-white shadow-2xs space-y-1">
+                <p className="text-xs font-bold text-civicGold-700">
                   Keterbukaan Layanan
                 </p>
                 <h3 className="text-sm font-bold text-white leading-snug">
@@ -484,7 +477,7 @@ export const RegisterPublisherPage = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="w-full py-3.5 px-6 rounded-2xl text-white font-bold text-sm bg-gradient-to-r from-brand-700 to-brand-700 hover:from-brand-800 hover:to-brand-700 active:scale-[0.99] transition-all shadow-lg shadow-brand-700/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                      className="w-full py-3 px-6 rounded-lg text-white font-bold text-sm bg-brand-800 hover:bg-brand-900 active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                     >
                       {isLoading ? (
                         <span className="inline-flex items-center gap-2">

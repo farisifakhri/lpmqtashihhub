@@ -104,10 +104,10 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       return { parent: null, name: 'Ikhtisar Layanan' };
     }
     if (pathname.startsWith('/publisher/new-registration')) {
-      return { parent: 'Pengajuan', name: 'Pengajuan Naskah Baru' };
+      return { parent: 'Permohonan', name: 'Permohonan Naskah Baru' };
     }
     if (pathname.startsWith('/publisher/registrations')) {
-      return { parent: 'Pengajuan', name: 'Daftar Pengajuan Saya' };
+      return { parent: 'Permohonan', name: 'Daftar Permohonan Saya' };
     }
     if (pathname.startsWith('/publisher/billing')) {
       return { parent: 'Keuangan', name: 'Billing & PNBP' };

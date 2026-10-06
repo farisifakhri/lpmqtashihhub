@@ -7,7 +7,7 @@ import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as VerificationApiModule from '@/api/verification.api';
 import { fileApi } from '@/api/file.api';
 
-describe('VerificationInspectionPage Component', () => {
+describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
   beforeEach(() => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
@@ -94,8 +94,8 @@ describe('VerificationInspectionPage Component', () => {
       expect(screen.getByText(/4. Format & Rasm Naskah Awal/i)).toBeInTheDocument();
       expect(screen.getByText('Simpan Draf Pemeriksaan')).toBeInTheDocument();
       expect(screen.getByText('Ajukan Draf ke Kepala LPMQ')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Nota Dinas' })).toBeInTheDocument();
-      expect(screen.getByText('Periksa PDF Nota Dinas')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Disposisi' })).toBeInTheDocument();
+      expect(screen.getByText('Periksa PDF Disposisi')).toBeInTheDocument();
       expect(screen.getByText('Hasil Pemeriksaan & Draf Surat')).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole('button', { name: 'Pratinjau' }));

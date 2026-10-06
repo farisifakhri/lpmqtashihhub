@@ -61,7 +61,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     }
 
     if (!notaNo.trim() || notaNo.trim().length < 3) {
-      setError('Nomor Nota Dinas wajib diisi (minimal 3 karakter).');
+      setError('Nomor Disposisi wajib diisi (minimal 3 karakter).');
       return;
     }
 
@@ -81,8 +81,8 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         onSuccess(res?.data);
       }
     } catch (err) {
-      const message = err.message || 'Gagal menerbitkan Nota Dinas dan membuat penugasan verifikasi.';
-      const isDuplicateNota = (err.status === 409 || err.statusCode === 409) && /nomor nota dinas/i.test(message);
+      const message = err.message || 'Gagal menerbitkan Disposisi dan membuat penugasan verifikasi.';
+      const isDuplicateNota = (err.status === 409 || err.statusCode === 409) && /nomor (?:nota dinas|disposisi)/i.test(message);
       const isAssignmentConflict = (err.status === 409 || err.statusCode === 409) && /pengajuan sudah ditugaskan|sudah memiliki verifikator aktif|status pengajuan telah berubah/i.test(message);
       if (isDuplicateNota) {
         setNotaError(true);
@@ -124,7 +124,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
             </div>
             <div>
               <h3 id="assign-verifier-title" className="text-base font-bold text-ink">
-                Terbitkan Nota Dinas & Tugaskan Verifikator
+                Terbitkan Disposisi & Tugaskan Verifikator
               </h3>
               <p className="text-xs text-ink-muted">
                 Helper Admin · Penugasan Verifikator
@@ -234,7 +234,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">
             <label htmlFor="nota-no-input" className="block font-bold text-ink">
-              Nomor Nota Dinas Penugasan <span className="text-civic-danger">*</span>
+              Nomor Disposisi Penugasan <span className="text-civic-danger">*</span>
             </label>
             <input
               id="nota-no-input"
@@ -247,9 +247,9 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               placeholder="Contoh: ND.01/LPMQ.01/TL.00/09/2026"
               className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 font-mono ${notaError ? 'border-civic-danger focus:ring-civic-danger/20 focus:border-civic-danger' : 'border-line-strong focus:ring-brand-700/20 focus:border-brand-700'}`}
             />
-            {notaError && <p id="nota-no-error" className="text-[11px] font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Nota Dinas yang berbeda.</p>}
+            {notaError && <p id="nota-no-error" className="text-[11px] font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Disposisi yang berbeda.</p>}
             <p className="text-[11px] text-ink-muted">
-              Masukkan nomor Nota Dinas resmi sebagai dasar penugasan verifikator oleh Helper Admin.
+              Masukkan nomor Disposisi resmi sebagai dasar penugasan verifikator oleh Helper Admin.
             </p>
           </div>
 
@@ -289,7 +289,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 <span className="font-semibold text-ink">{selectedVerifier?.name || '(Belum dipilih)'}</span>
               </div>
               <div>
-                <span className="text-ink-muted text-[11px] block">Nomor Nota Dinas:</span>
+                <span className="text-ink-muted text-[11px] block">Nomor Disposisi:</span>
                 <span className="font-mono font-semibold text-ink">{notaNo.trim() || '(Belum diisi)'}</span>
               </div>
             </div>
@@ -323,7 +323,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               className="text-xs font-bold"
             >
               <FileText className="w-3.5 h-3.5 mr-1.5" />
-              {submitting ? 'Menerbitkan...' : 'Terbitkan Nota Dinas & Tugaskan'}
+              {submitting ? 'Menerbitkan...' : 'Terbitkan Disposisi & Tugaskan'}
             </Button>
           </div>
         </form>

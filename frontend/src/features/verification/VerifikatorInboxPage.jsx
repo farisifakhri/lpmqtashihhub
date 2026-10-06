@@ -213,7 +213,7 @@ export const VerifikatorInboxPage = () => {
       if (!isAssignmentAdmin) return null;
       return {
         title: 'Naskah Siap Ditugaskan ke Verifikator',
-        description: 'Master fisik telah diterima oleh loket. Terbitkan Nota Dinas dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
+        description: 'Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
         actionLabel: 'Tugaskan Verifikator',
         actionIcon: <UserCheck className="w-4 h-4" />,
         isAssign: true,
@@ -235,7 +235,7 @@ export const VerifikatorInboxPage = () => {
       if (!isVerifier || !isAssignedToUser) {
         return {
           title: 'Menunggu Verifikator Memulai Pemeriksaan',
-          description: 'Nota Dinas telah diterbitkan. Menunggu verifikator yang ditugaskan untuk memulai pemeriksaan lembar kerja.',
+          description: 'Disposisi telah diterbitkan. Menunggu verifikator yang ditugaskan untuk memulai pemeriksaan lembar kerja.',
           actionLabel: 'Lihat Detail Penugasan',
           actionIcon: <FileText className="w-4 h-4" />,
           isStart: false,
@@ -243,7 +243,7 @@ export const VerifikatorInboxPage = () => {
       }
       return {
         title: 'Pemeriksaan Berkas & Master Fisik Siap Dimulai',
-        description: 'Nota Dinas telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.',
+        description: 'Disposisi telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.',
         actionLabel: 'Mulai Pemeriksaan',
         actionIcon: <Play className="w-4 h-4 fill-white" />,
         isStart: true,
@@ -319,7 +319,7 @@ export const VerifikatorInboxPage = () => {
         title={isAssignmentAdmin ? 'Penugasan Verifikator oleh Helper Admin' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas')}
         subtitle={
           isAssignmentAdmin
-            ? 'Helper Admin menugaskan verifikator tim inti dan mencatat Nota Dinas setelah master fisik diterima.'
+            ? 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima.'
             : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.'
         }
         actions={
@@ -728,7 +728,7 @@ export const VerifikatorInboxPage = () => {
                           <p>
                             <strong>Status Penugasan:</strong>{' '}
                             <span className="text-ink-muted italic">
-                              Belum Ada (Menunggu Nota Dinas)
+                              Belum Ada (Menunggu Disposisi)
                             </span>
                           </p>
                         )}
@@ -762,7 +762,7 @@ export const VerifikatorInboxPage = () => {
                             <span className="font-semibold text-ink">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-ink-muted block text-[11px]">Nomor Nota Dinas:</span>
+                            <span className="text-ink-muted block text-[11px]">Nomor Disposisi:</span>
                             <span className="font-mono font-semibold text-ink">{notaDoc?.document_no || '-'}</span>
                           </div>
                           <div>
@@ -842,7 +842,7 @@ export const VerifikatorInboxPage = () => {
             const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
             const createdAssignmentId = newAssignment?.assignment?.id || newAssignment?.id;
             setSuccessMessage({
-              text: `Berhasil menugaskan Verifikator${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`,
+              text: `Berhasil menugaskan Verifikator${docNo ? ` dengan Disposisi ${docNo}` : ''}.`,
               assignmentId: createdAssignmentId,
             });
             setAssignments((prev) => prev.filter((a) => a.id !== selectedAssignment.id));
@@ -875,7 +875,7 @@ export const VerifikatorInboxPage = () => {
             setReassignDialogOpen(false);
             const docNo = res?.nota_dinas?.document_no || '';
             setSuccessMessage({
-              text: `Penugasan berhasil dialihkan${docNo ? ` dengan Nota Dinas ${docNo}` : ''}.`,
+              text: `Penugasan berhasil dialihkan${docNo ? ` dengan Disposisi ${docNo}` : ''}.`,
             });
             fetchAssignments();
           }}

@@ -26,7 +26,6 @@ import {
   DollarSign,
   HelpCircle,
   X,
-  Sparkles,
 } from 'lucide-react';
 
 export const PublisherBillingPage = () => {
@@ -310,23 +309,20 @@ export const PublisherBillingPage = () => {
         </div>
       )}
 
-      {/* Hero Header Banner */}
-      <div className="bg-gradient-to-r from-[#083224] via-[#0B3F2D] to-[#0E5139] text-white rounded-2xl border border-brand-800/80 shadow-md overflow-hidden relative">
-        <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#DFB045_1px,transparent_1px)] [background-size:18px_18px]" />
-
-        <div className="relative z-10 p-6 sm:p-8 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-mono uppercase tracking-widest text-civicGold-700 font-bold bg-brand-950/70 px-2.5 py-0.5 rounded border border-civicGold-700/30">
-                Penerimaan Negara Bukan Pajak (PNBP)
-              </span>
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                Billing & Konfirmasi Pembayaran
-              </h1>
-              <p className="text-xs sm:text-sm text-brand-100/80 max-w-2xl leading-relaxed">
-                Kelola kode billing resmi Kementerian Agama, pantau masa berlaku tagihan 7 hari kalender, dan lakukan konfirmasi setoran NTPN secara aman.
-              </p>
-            </div>
+      {/* Header Banner */}
+      <div className="bg-brand-900 text-white rounded-xl border border-brand-800 shadow-2xs p-6 sm:p-7 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-mono uppercase tracking-widest text-civicGold-700 font-bold bg-white/10 px-2.5 py-0.5 rounded border border-white/20">
+              Penerimaan Negara Bukan Pajak (PNBP)
+            </span>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              Billing & Konfirmasi Pembayaran
+            </h1>
+            <p className="text-xs sm:text-sm text-brand-100/90 max-w-2xl leading-relaxed">
+              Kelola kode billing resmi Kementerian Agama, pantau masa berlaku tagihan 7 hari kalender, dan lakukan konfirmasi setoran NTPN secara aman.
+            </p>
+          </div>
 
             <Button
               onClick={fetchPayments}
@@ -341,7 +337,7 @@ export const PublisherBillingPage = () => {
 
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
+            <div className="bg-brand-950/40 rounded-xl p-3.5 border border-brand-800 flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-civic-warningLine/20 text-civic-warning">
                 <Clock className="w-5 h-5" />
               </div>
@@ -351,7 +347,7 @@ export const PublisherBillingPage = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
+            <div className="bg-brand-950/40 rounded-xl p-3.5 border border-brand-800 flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-civic-infoLine/20 text-civic-info">
                 <Receipt className="w-5 h-5" />
               </div>
@@ -361,7 +357,7 @@ export const PublisherBillingPage = () => {
               </div>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-3.5 border border-white/10 flex items-center gap-3">
+            <div className="bg-brand-950/40 rounded-xl p-3.5 border border-brand-800 flex items-center gap-3">
               <div className="p-2.5 rounded-lg bg-brand-700/20 text-brand-100">
                 <ShieldCheck className="w-5 h-5" />
               </div>
@@ -372,7 +368,6 @@ export const PublisherBillingPage = () => {
             </div>
           </div>
         </div>
-      </div>
 
       {/* Filter Tabs & Search Controls */}
       <div className="bg-white rounded-2xl p-4 border border-line shadow-xs space-y-3">

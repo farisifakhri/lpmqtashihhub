@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SlaIndicator } from '@/components/ui/SlaIndicator';
 import { AssignedOfficer } from '@/components/ui/AssignedOfficer';
 import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
@@ -9,8 +9,62 @@ export const InspectionReferencePanels = ({
   activeMobileTab, registration, publisher, notaDinas, assignment, formatDate,
   physicalMaster, detail, selectedFileId, setSelectedFileId, selectedFileObj,
   handleCopyReceipt, copiedReceipt,
-}) => (
-  <>
+}) => {
+  const allFiles = useMemo(() => {
+    const list = [...(registration.manuscript_files || [])];
+    const meta = registration.foreign_metadata || {};
+    const knownFileIds = new Set(list.map((f) => f.file_id || f.id));
+
+    if (meta.surat_permohonan_file_id && !knownFileIds.has(meta.surat_permohonan_file_id)) {
+      list.unshift({
+        id: meta.surat_permohonan_file_id,
+        file_id: meta.surat_permohonan_file_id,
+        type: 'SURAT_PERMOHONAN',
+        file_name: 'Surat-Permohonan-Tashih.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.surat_permohonan_file_id);
+    }
+    if (meta.bukti_tashih_file_id && !knownFileIds.has(meta.bukti_tashih_file_id)) {
+      list.push({
+        id: meta.bukti_tashih_file_id,
+        file_id: meta.bukti_tashih_file_id,
+        type: 'FOREIGN_TASHIH_CERTIFICATE',
+        file_name: 'Bukti-Tashih-Asal.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.bukti_tashih_file_id);
+    }
+    if (meta.surat_pernyataan_perubahan_file_id && !knownFileIds.has(meta.surat_pernyataan_perubahan_file_id)) {
+      list.push({
+        id: meta.surat_pernyataan_perubahan_file_id,
+        file_id: meta.surat_pernyataan_perubahan_file_id,
+        type: 'SURAT_PERNYATAAN',
+        file_name: 'Surat-Pernyataan.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.surat_pernyataan_perubahan_file_id);
+    }
+    return list;
+  }, [registration]);
+
+  const activeFile = allFiles.find((f) => f.id === selectedFileId || f.file_id === selectedFileId) || selectedFileObj || allFiles[0];
+
+  const getFileLabel = (f) => {
+    if (!f) return 'Berkas';
+    const type = f.type || f.file_type;
+    if (type === 'COVER') return 'Sampul / Cover';
+    if (type === 'SURAT_PERMOHONAN' || f.file_id === registration.foreign_metadata?.surat_permohonan_file_id) return 'Surat Permohonan';
+    if (type === 'SAMPLE_PAGE_1_5') return 'Sampel Hal 1-5';
+    if (type === 'FOREIGN_TASHIH_CERTIFICATE') return 'Bukti Tashih';
+    if (type === 'SURAT_PERNYATAAN') return 'Surat Pernyataan';
+    if (type === 'DUMMY') return 'Dummy Cetak';
+    if (type === 'MASTER_COMPLETED') return 'Master Lengkap';
+    return f.file_name || 'PDF Berkas';
+  };
+
+  return (
+    <>
         <div
           className={`lg:col-span-3 space-y-4 ${
             activeMobileTab === 'ringkasan' ? 'block' : 'hidden lg:block'
@@ -50,7 +104,7 @@ export const InspectionReferencePanels = ({
 
             {notaDinas.document_no && (
               <div className="border-t border-line pt-2.5 space-y-1">
-                <span className="text-ink-muted block text-[11px]">Dasar Penugasan Resmi</span>
+                <span className="text-ink-muted block text-[11px]">Nomor Disposisi Penugasan</span>
                 <span className="font-mono font-semibold text-brand-900 block">
                   {notaDinas.document_no}
                 </span>
@@ -95,7 +149,7 @@ export const InspectionReferencePanels = ({
             )}
           </div>
 
-          {/* Riwayat Penugasan & Nota Dinas (if multiple assignments exist) */}
+          {/* Riwayat Penugasan & Disposisi (if multiple assignments exist) */}
           {detail?.assignment_history?.length > 1 && (
             <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-2 text-xs">
               <div className="flex items-center gap-1.5 font-bold text-ink border-b border-line pb-2">
@@ -116,7 +170,7 @@ export const InspectionReferencePanels = ({
                       </div>
                       {hNota?.document_no && (
                         <div className="font-mono text-[10px] text-ink-muted">
-                          ND: {hNota.document_no}
+                          Disp: {hNota.document_no}
                         </div>
                       )}
                       {h.revocation_reason && (
@@ -152,56 +206,64 @@ export const InspectionReferencePanels = ({
         >
           <div className="bg-white rounded-xl border border-line shadow-2xs overflow-hidden">
             {/* Document Switcher Header */}
-            <div className="p-3 bg-canvas border-b border-line flex items-center justify-between gap-2">
+            <div className="p-3 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-brand-800" />
                 <h3 className="text-xs font-bold text-ink">
-                  Pratinjau Dokumen Naskah
+                  Pratinjau Berkas & Naskah
                 </h3>
+                <span className="text-[10px] text-ink-muted bg-white border border-line px-1.5 py-0.5 rounded font-mono">
+                  {allFiles.length} berkas
+                </span>
               </div>
-              <div className="flex items-center gap-1">
-                {registration.manuscript_files?.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setSelectedFileId(f.id)}
-                    className={`px-2.5 py-1 text-[11px] rounded-md font-semibold transition-all ${
-                      selectedFileId === f.id
-                        ? 'bg-brand-800 text-white shadow-2xs'
-                        : 'bg-white text-ink border border-line hover:bg-canvas'
-                    }`}
-                  >
-                    {f.file_type === 'COVER' ? 'Cover' : 'PDF Naskah'}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center gap-1">
+                {allFiles.map((f) => {
+                  const isSelected = activeFile && (activeFile.id === f.id || (activeFile.file_id && activeFile.file_id === f.file_id));
+                  return (
+                    <button
+                      key={f.id || f.file_id}
+                      type="button"
+                      onClick={() => setSelectedFileId(f.id || f.file_id)}
+                      className={`px-2.5 py-1 text-[11px] rounded-md font-semibold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-brand-800 text-white shadow-2xs'
+                          : 'bg-white text-ink border border-line hover:bg-canvas'
+                      }`}
+                    >
+                      {getFileLabel(f)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Viewer Pane */}
             <div className="p-3">
-              {selectedFileObj ? (
+              {activeFile ? (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-ink-muted px-1">
-                    <span className="font-semibold truncate max-w-xs">
-                      {selectedFileObj.file_name || selectedFileObj.original_name}
+                    <span className="font-semibold text-ink truncate max-w-xs flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                      {getFileLabel(activeFile)} · {activeFile.file_name || activeFile.original_name || 'Dokumen'}
                     </span>
                     <span className="font-mono text-[11px] text-ink-muted">
-                      Versi {selectedFileObj.version || 1}
+                      Versi {activeFile.version || 1}
                     </span>
                   </div>
 
-                  {selectedFileObj.file_url ? (
+                  {activeFile.file_url ? (
                     <div className="h-[520px] rounded-lg border border-line overflow-hidden bg-surface-subtle flex items-center justify-center relative">
                       <iframe
-                        src={`${selectedFileObj.file_url}#toolbar=0`}
-                        title={selectedFileObj.file_name}
+                        src={`${activeFile.file_url}#toolbar=0`}
+                        title={activeFile.file_name || 'Naskah'}
                         className="w-full h-full border-0"
                       />
                     </div>
                   ) : (
                     <PrivateFileViewer
-                      fileId={selectedFileObj.id}
-                      fileName={selectedFileObj.file_name}
+                      fileId={activeFile.file_id || activeFile.id}
+                      fileName={activeFile.file_name || (activeFile.type === 'COVER' ? 'cover.jpg' : 'naskah.pdf')}
+                      mimeType={activeFile.mime_type}
                       height="520px"
                     />
                   )}
@@ -233,5 +295,6 @@ export const InspectionReferencePanels = ({
             </div>
           )}
         </div>
-  </>
-);
+    </>
+  );
+};

@@ -156,7 +156,7 @@ export const UnifiedDashboard = () => {
           desc: 'Inisiasi registrasi dan pengiriman dokumen naskah',
           icon: PlusCircle,
           path: '/publisher/new-registration',
-          iconBg: 'bg-gradient-to-br from-brand-700 to-brand-700 text-white shadow-xs',
+          iconBg: 'bg-brand-700 text-white',
           cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         },
         {
@@ -164,7 +164,7 @@ export const UnifiedDashboard = () => {
           desc: 'Pantau tahapan proses dan rekam jejak status',
           icon: Layers,
           path: '/publisher/registrations',
-          iconBg: 'bg-gradient-to-br from-civic-info to-civic-info text-white shadow-xs',
+          iconBg: 'bg-civic-info text-white',
           cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
         },
         {
@@ -172,7 +172,7 @@ export const UnifiedDashboard = () => {
           desc: 'Kelola kode billing SIMPONI dan bukti pembayaran',
           icon: CreditCard,
           path: '/publisher/billing',
-          iconBg: 'bg-gradient-to-br from-civic-warning to-civic-warning text-white shadow-xs',
+          iconBg: 'bg-civic-warning text-white',
           cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
         },
         {
@@ -180,7 +180,7 @@ export const UnifiedDashboard = () => {
           desc: 'Akses dokumen STT resmi dengan validasi QR',
           icon: Award,
           path: '/publisher/documents',
-          iconBg: 'bg-gradient-to-br from-civic-info to-civic-info text-white shadow-xs',
+          iconBg: 'bg-civic-info text-white',
           cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
         },
       ];
@@ -192,7 +192,7 @@ export const UnifiedDashboard = () => {
         desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
         icon: PackageCheck,
         path: '/internal/master-intake',
-        iconBg: 'bg-gradient-to-br from-civic-warning to-civic-warning text-white shadow-xs',
+        iconBg: 'bg-civic-warning text-white',
         cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
         allowed: isAdmin || isSuperAdmin || isKepala,
       },
@@ -207,10 +207,10 @@ export const UnifiedDashboard = () => {
       },
       {
         title: isKepala ? 'Persetujuan Verifikasi' : 'Verifikasi Berkas',
-        desc: isKepala ? 'Nota dinas penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
+        desc: isKepala ? 'Disposisi penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
-        iconBg: 'bg-gradient-to-br from-civic-info to-civic-info text-white shadow-xs',
+        iconBg: 'bg-civic-info text-white',
         cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
         allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
@@ -219,7 +219,7 @@ export const UnifiedDashboard = () => {
         desc: 'Penugasan berkas ke SK Tim Pentashih & serah terima fisik',
         icon: Send,
         path: '/internal/distributions',
-        iconBg: 'bg-gradient-to-br from-brand-700 to-brand-700 text-white shadow-xs',
+        iconBg: 'bg-brand-700 text-white',
         cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin || userRoles.includes('DISTRIBUTOR') || userRoles.includes('VERIFIKATOR') || isKepala,
       },
@@ -228,7 +228,7 @@ export const UnifiedDashboard = () => {
         desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
-        iconBg: 'bg-gradient-to-br from-civic-warning to-civic-warning text-white shadow-xs',
+        iconBg: 'bg-civic-warning text-white',
         cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
         allowed: isSuperAdmin || userRoles.includes('PENTASHIH'),
       },
@@ -237,7 +237,7 @@ export const UnifiedDashboard = () => {
         desc: 'Berita acara sidang & pengesahan dokumen',
         icon: Award,
         path: '/internal/documents',
-        iconBg: 'bg-gradient-to-br from-civic-warning to-civic-warning text-white shadow-xs',
+        iconBg: 'bg-civic-warning text-white',
         cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
         allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
@@ -246,7 +246,7 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
         icon: Sliders,
         path: '/internal/settings',
-        iconBg: 'bg-gradient-to-br from-ink to-civic-info text-white shadow-xs',
+        iconBg: 'bg-brand-900 text-white',
         cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
         allowed: isSuperAdmin,
       },
@@ -255,7 +255,7 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola akun, peran, dan matriks kewenangan',
         icon: Users,
         path: '/internal/users',
-        iconBg: 'bg-gradient-to-br from-brand-700 to-brand-800 text-white shadow-xs',
+        iconBg: 'bg-brand-800 text-white',
         cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin,
       },
@@ -300,7 +300,7 @@ export const UnifiedDashboard = () => {
       <DailyQuranWidget />
 
       {/* 3. Role-based operational actions */}
-      <div className="bg-white rounded-2xl border border-line/90 shadow-xs p-5 sm:p-6">
+      <div className="bg-white rounded-xl border border-line shadow-2xs p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-line">
           <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-ink flex items-center gap-2">
             <Compass className="w-4 h-4 text-brand-700" />
@@ -318,7 +318,7 @@ export const UnifiedDashboard = () => {
               <Link
                 key={idx}
                 to={action.path}
-                className={`group p-3.5 rounded-xl border border-line/80 ${action.cardHover || 'hover:border-brand-700 hover:bg-brand-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-gradient-to-b from-white to-canvas/40`}
+                className={`group p-3.5 rounded-xl border border-line/80 ${action.cardHover || 'hover:border-brand-700 hover:bg-brand-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-surface`}
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
                   <div className={`w-9 h-9 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
@@ -393,7 +393,7 @@ export const UnifiedDashboard = () => {
           /* Kartu Perspektif Operasional Internal */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Verifikasi Berkas */}
-            <div className="rounded-xl border border-civic-infoLine/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-infoSoft/80 via-white to-civic-infoSoft/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-infoLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <CheckSquare className="w-5 h-5" />
@@ -412,7 +412,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 2: Sidang Pentashihan */}
-            <div className="rounded-xl border border-civic-warningLine/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-warningSoft/80 via-white to-civic-warningSoft/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-warningLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-warning text-white flex items-center justify-center shadow-sm shadow-civic-warning/25">
                   <BookOpen className="w-5 h-5" />
@@ -431,7 +431,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 3: Penetapan STT */}
-            <div className="rounded-xl border border-civic-infoLine/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-infoSoft/80 via-white to-civic-infoSoft/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-infoLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <Award className="w-5 h-5" />
@@ -450,7 +450,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 4: Total Naskah */}
-            <div className="rounded-xl border border-brand-100/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-brand-50/80 via-white to-brand-50/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-brand-100 transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center shadow-sm shadow-brand-700/25">
                   <Users className="w-5 h-5" />
@@ -472,7 +472,7 @@ export const UnifiedDashboard = () => {
           /* Kartu Perspektif Layanan Penerbit & PNBP */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Billing PNBP */}
-            <div className="rounded-xl border border-civicGold-700 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-warningSoft via-civic-warningSoft/50 to-white">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-warningLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-warning text-white flex items-center justify-center shadow-sm shadow-civic-warning/25">
                   <CreditCard className="w-5 h-5" />
@@ -491,7 +491,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 2: Sedang Diproses */}
-            <div className="rounded-xl border border-civic-infoLine/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-infoSoft/80 via-white to-civic-infoSoft/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-infoLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <Clock className="w-5 h-5" />
@@ -510,7 +510,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 3: STT Terbit */}
-            <div className="rounded-xl border border-brand-100/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-brand-50/80 via-white to-brand-50/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-brand-100 transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center shadow-sm shadow-brand-700/25">
                   <CheckCircle2 className="w-5 h-5" />
@@ -529,7 +529,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             {/* Card 4: Total Pengajuan */}
-            <div className="rounded-xl border border-civic-infoLine/90 p-4 shadow-xs hover:shadow-md transition-all bg-gradient-to-br from-civic-infoSoft/80 via-white to-civic-infoSoft/30">
+            <div className="rounded-xl border border-line p-4 shadow-2xs hover:border-civic-infoLine transition-all bg-surface">
               <div className="flex items-center justify-between">
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <FileText className="w-5 h-5" />
@@ -542,8 +542,8 @@ export const UnifiedDashboard = () => {
                 <div className="text-2xl sm:text-3xl font-black text-civic-info tabular-nums">
                   {registrations.length}
                 </div>
-                <div className="text-xs font-bold text-civic-info mt-1">Total Pengajuan</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Semua riwayat pengajuan</div>
+                <div className="text-xs font-bold text-civic-info mt-1">Total Permohonan</div>
+                <div className="text-[11px] text-ink-muted mt-0.5">Semua riwayat permohonan</div>
               </div>
             </div>
           </div>
@@ -552,7 +552,7 @@ export const UnifiedDashboard = () => {
 
       {/* 4b. Ringkasan Kinerja & Kepatuhan SLA (VER-I06) */}
       {showOperationalCards && performanceReport && (
-        <div className="bg-gradient-to-r from-ink via-ink to-brand-950 rounded-2xl p-5 text-white shadow-md border border-ink/60">
+        <div className="bg-brand-900 rounded-xl p-5 text-white shadow-2xs border border-brand-800">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-ink/60">
             <div className="flex items-center gap-2.5">
               <div className="w-7 h-7 rounded-lg bg-brand-700/20 text-brand-700 flex items-center justify-center border border-brand-700/30">
@@ -637,14 +637,14 @@ export const UnifiedDashboard = () => {
 
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
       {assignmentSuccess && <p role="status" className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-800">{assignmentSuccess}</p>}
-      <div id="antrean-tim" className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden scroll-mt-6">
+      <div id="antrean-tim" className="bg-white rounded-xl border border-line shadow-2xs overflow-hidden scroll-mt-6">
         {/* Header & Filter Controls */}
         <div className="p-5 sm:p-6 border-b border-line space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-ink">
                 {isPublisher
-                  ? 'Portofolio Pengajuan Terkini'
+                  ? 'Portofolio Permohonan Terkini'
                   : 'Antrean Kerja Pentashihan'}
               </h3>
               <p className="text-xs text-ink-muted mt-0.5">
@@ -657,7 +657,7 @@ export const UnifiedDashboard = () => {
               <Search className="w-4 h-4 text-ink-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                aria-label="Cari pengajuan naskah"
+                aria-label="Cari permohonan naskah"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari nomor, judul, penerbit..."
@@ -724,7 +724,7 @@ export const UnifiedDashboard = () => {
                 onClick={() => { setFilterMyTasksOnly(!filterMyTasksOnly); setPage(1); }}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
                   filterMyTasksOnly
-                    ? 'bg-gradient-to-r from-civic-warning to-civic-warning text-white border-civic-warning shadow-xs'
+                    ? 'bg-civic-warning text-white border-civic-warning shadow-xs'
                     : 'bg-white text-ink border-line-strong hover:bg-canvas'
                 }`}
               >
@@ -846,7 +846,7 @@ export const UnifiedDashboard = () => {
           onClose={() => setVerificationAssignReg(null)}
           onSuccess={() => {
             setVerificationAssignReg(null);
-            setAssignmentSuccess('Verifikator berhasil ditugaskan dan Nota Dinas telah diterbitkan.');
+            setAssignmentSuccess('Verifikator berhasil ditugaskan dan Disposisi telah diterbitkan.');
             fetchRegistrations();
           }}
           onConflict={() => {

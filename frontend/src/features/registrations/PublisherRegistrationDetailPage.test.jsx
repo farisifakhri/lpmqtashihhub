@@ -45,7 +45,7 @@ describe('Publisher detail and revision', () => {
     registrationApi.getDetail.mockResolvedValue({ data: { ...data, status: 'IN_VERIFICATION' } });
     show(); await screen.findByRole('heading', { name: 'Naskah perbaikan' });
     expect(screen.queryByLabelText('Pilih berkas naskah')).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Kirim pengajuan|Ajukan ulang/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kirim (permohonan|pengajuan)|Ajukan ulang/ })).not.toBeInTheDocument();
   });
   it('shows intake as the next step after the publisher dispatches physical files', async () => {
     registrationApi.getDetail.mockResolvedValue({ data: {

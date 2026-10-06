@@ -141,7 +141,7 @@ export const WorkflowStepper = ({
 
             {/* Progress line filled */}
             <div
-              className="absolute top-5 left-6 h-0.5 bg-gradient-to-r from-brand-700 via-brand-700 to-civicGold-500 -z-0 transition-all duration-500"
+              className="absolute top-5 left-6 h-0.5 bg-brand-700 -z-0 transition-all duration-500"
               style={{
                 width: `${Math.max(0, Math.min(100, ((activeStage - 1) / (WORKFLOW_STAGES.length - 1)) * 100))}%`,
               }}
@@ -165,7 +165,7 @@ export const WorkflowStepper = ({
                       isPast &&
                         'bg-brand-700 text-white shadow-brand-950/20 border-2 border-brand-700 hover:scale-105',
                       isCurrent &&
-                        'bg-gradient-to-br from-brand-800 via-brand-700 to-brand-700 text-white ring-4 ring-civicGold-700/40 border-2 border-civicGold-700 shadow-md shadow-brand-900/30 scale-110',
+                        'bg-brand-800 text-white ring-4 ring-civicGold-700/30 border-2 border-civicGold-700 shadow-xs scale-105',
                       isFuture &&
                         'bg-white text-ink-muted border-2 border-line-strong group-hover:border-line-strong group-hover:text-ink-muted'
                     )}

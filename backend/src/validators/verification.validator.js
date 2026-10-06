@@ -76,6 +76,8 @@ export const verificationDraftSchema = {
     billing_no: z.string().trim().min(3).max(191).optional(),
     billing_file_id: z.string().uuid().optional(),
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
+    mushaf_content_review: z.record(z.any()).optional().nullable(),
+    mushaf_content_review: z.record(z.any()).optional().nullable(),
   }).strict().superRefine((data, ctx) => {
     const codes = data.checklist.map(item => item.code);
     if (new Set(codes).size !== 4) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Keempat butir checklist harus diisi masing-masing satu kali.' });

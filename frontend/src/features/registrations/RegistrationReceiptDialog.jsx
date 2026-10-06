@@ -125,7 +125,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
             <span className="font-bold text-ink text-xs sm:text-sm">
-              Tanda Terima Pengajuan Resmi
+              Tanda Terima Permohonan Surat Tanda Tashih
             </span>
             <span className="hidden md:inline-block font-mono text-[11px] font-semibold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
               {regNo}
@@ -244,7 +244,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
             {/* Title and Reg No */}
             <div className="text-center space-y-1">
               <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-ink underline decoration-1 underline-offset-4">
-                Tanda Terima Pengajuan Pentashihan Mushaf Al-Qur'an
+                Tanda Terima Permohonan Surat Tanda Tashih
               </h3>
               <p className="font-mono text-xs font-black text-brand-800 tracking-wider">
                 NOMOR REGISTRASI: {regNo}
@@ -260,7 +260,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
                     <td className="py-1.5 px-3 text-ink font-semibold">{categoryLabel}</td>
                   </tr>
                   <tr>
-                    <td className="py-1.5 px-3 font-bold text-ink">Tanggal & Waktu Pengajuan</td>
+                    <td className="py-1.5 px-3 font-bold text-ink">Tanggal & Waktu Permohonan</td>
                     <td className="py-1.5 px-3 text-ink">{dateFormatted} WIB</td>
                   </tr>
                   <tr className="bg-canvas/60">
@@ -362,7 +362,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
                   Saluran Notifikasi Otomatis Aktif
                 </p>
                 <p className="text-brand-800 leading-snug">
-                  Pemberitahuan verifikasi berkas, tagihan PNBP (SIMPONI), sidang tashih, hingga STT akan dikirim ke:
+                  Pemberitahuan verifikasi berkas, tagihan PNBP (SIMPONI), hingga STT akan dikirim ke:
                   {pjEmail && <span className="font-semibold"> Email ({pjEmail})</span>}
                   {pjEmail && pjWa && <span> dan </span>}
                   {pjWa && <span className="font-semibold"> WhatsApp ({pjWa})</span>}.
@@ -382,7 +382,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
                   Siapkan naskah master cetak fisik (kertas HVS/A4 dijilid rapi per juz) beserta bukti ini untuk diserahkan ke <strong>Loket Pelayanan LPMQ TMII Jakarta</strong> jika permohonan memerlukan verifikasi fisik.
                 </li>
                 <li>
-                  Pantau progres status secara berkala melalui menu <strong>Detail Pengajuan</strong> pada aplikasi portal Tashih Hub.
+                  Pantau progres status secara berkala melalui menu <strong>Detail Permohonan</strong> pada aplikasi portal Tashih Hub.
                 </li>
               </ol>
             </div>

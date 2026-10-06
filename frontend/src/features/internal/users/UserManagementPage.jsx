@@ -19,22 +19,21 @@ import {
   AlertTriangle,
   AlertCircle,
   X,
-  Sparkles,
   Lock,
   Mail,
   UserCheck,
   Filter,
 } from 'lucide-react';
 
-export const ROLE_OPTIONS = [
+const ROLE_OPTIONS = [
   { code: 'SUPERADMIN', label: 'Super Admin', desc: 'Akses penuh ke konfigurasi dan seluruh alur' },
-  { code: 'HELPER_ADMIN', label: 'Helper Admin', desc: 'Baca pengajuan, pantau progres, dan tetapkan tim pentashih' },
-  { code: 'ADMIN_PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Pengajuan naskah dan pemantauan billing' },
+  { code: 'HELPER_ADMIN', label: 'Helper Admin', desc: 'Baca permohonan, pantau progres, dan tetapkan tim pentashih' },
+  { code: 'ADMIN_PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Permohonan naskah dan pemantauan billing' },
   { code: 'VERIFIKATOR', label: 'Verifikator Naskah', desc: 'Pemeriksaan berkas digital dan master fisik' },
   { code: 'DISTRIBUTOR', label: 'Distributor Sidang', desc: 'Penugasan tim pentashih dan tanda terima' },
   { code: 'PENTASHIH', label: 'Pentashih', desc: 'Penelaahan lafazh, ayat, rasm, dan harakat' },
   { code: 'DOKUMENTATOR', label: 'Dokumentator', desc: 'Pemberkasan eksemplar pasca-STT' },
-  { code: 'KEPALA_LPMQ', label: 'Kepala LPMQ', desc: 'Nota dinas penugasan dan pengesahan STT' },
+  { code: 'KEPALA_LPMQ', label: 'Kepala LPMQ', desc: 'Disposisi penugasan dan pengesahan STT' },
 ];
 
 export const UserManagementPage = () => {
@@ -261,20 +260,19 @@ export const UserManagementPage = () => {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#083224] via-[#0E5139] to-[#0B3F2D] text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-brand-800/40">
-        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-72 h-72 bg-brand-700/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div className="bg-brand-900 text-white rounded-xl p-6 sm:p-7 shadow-2xs border border-brand-800">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-700/50 border border-brand-700/30 text-xs font-semibold tracking-wide text-brand-100 uppercase">
-              <ShieldCheck className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-white/10 border border-white/20 text-xs font-semibold tracking-wide text-brand-100 uppercase">
+              <ShieldCheck className="w-3.5 h-3.5 text-civicGold-700" />
               Kontrol Administrator & Hak Akses
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-sans">
               Manajemen Pengguna & Penugasan Peran
             </h1>
-            <p className="text-sm sm:text-base text-brand-100/90 max-w-2xl leading-relaxed">
+            <p className="text-sm text-brand-100/90 max-w-2xl leading-relaxed">
               Kelola seluruh akun pengguna sistem LPMQ. Super Admin dapat menambahkan akun baru,
-              mengedit identitas, menonaktifkan pengguna, serta memberikan multi-role tanpa batas.
+              mengedit identitas, menonaktifkan pengguna, serta memberikan multi-role.
             </p>
           </div>
 
@@ -649,7 +647,6 @@ export const UserManagementPage = () => {
                     onClick={handleSelectAllRoles}
                     className="text-[11px] font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
                   >
-                    <Sparkles className="w-3 h-3" />
                     {formData.roles.length === ROLE_OPTIONS.length
                       ? 'Reset Pilihan'
                       : 'Pilih Semua Role (Akses Penuh)'}
@@ -829,7 +826,6 @@ export const UserManagementPage = () => {
                     onClick={handleSelectAllRoles}
                     className="text-[11px] font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
                   >
-                    <Sparkles className="w-3 h-3" />
                     {formData.roles.length === ROLE_OPTIONS.length
                       ? 'Reset Pilihan'
                       : 'Pilih Semua Role (Akses Penuh)'}

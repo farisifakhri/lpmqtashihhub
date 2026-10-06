@@ -5,7 +5,7 @@ import { DocumentArchive } from './DocumentArchive';
 import { registrationApi } from '@/api/registration.api';
 
 describe('DocumentArchive', () => {
-  it('menampilkan metadata surat dan ringkasan nota dinas tanpa JSON mentah', async () => {
+  it('menampilkan metadata surat dan ringkasan disposisi tanpa JSON mentah', async () => {
     vi.spyOn(registrationApi, 'getDocumentArchive').mockResolvedValue({ data: [{
       id: 'nota-1', source: 'VERIFICATION', document_type: 'NOTA_DINAS_VERIFIKASI',
       document_no: 'ND-001', version: 1, status: 'ISSUED', created_at: '2026-09-29T03:00:00.000Z',
