@@ -257,3 +257,10 @@ const router = createBrowserRouter([
     v7_relativeSplatPath: true,
   },
 });
+
+export function AppRouter() {
+  return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
+}
+
+export default AppRouter;
+
