@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, Sparkles, LockKeyhole, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight, Sun, Moon } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -39,44 +39,38 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas relative overflow-hidden flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      {/* Background Soft Glow Orbs */}
-      <div className="absolute top-[-10%] left-[-5%] w-[450px] h-[450px] rounded-full bg-brand-100/40 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full bg-brand-100/30 blur-3xl pointer-events-none" />
-      <div className="absolute top-[20%] right-[10%] w-[250px] h-[250px] rounded-full bg-civic-warningSoft/40 blur-2xl pointer-events-none" />
-
-      {/* Main Glass Card Container (Sesuai Desain yang Sudah Diapprove Stakeholder) */}
-      <div className="relative z-10 w-full max-w-6xl bg-surface rounded-2xl shadow-[0_24px_80px_-24px_rgba(8,50,36,0.24)] border border-line p-2 sm:p-3">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/* Main Container */}
+      <div className="w-full max-w-6xl bg-surface rounded-xl shadow-xs border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">
           
-          {/* SISI KIRI: Ilustrasi Animasi 3D Quran (Frame Melengkung Halus) */}
-          <div className="hidden lg:col-span-6 relative rounded-xl overflow-hidden bg-brand-950 lg:flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
+          {/* SISI KIRI: Ilustrasi Quran */}
+          <div className="hidden lg:col-span-6 relative rounded-lg overflow-hidden bg-brand-950 lg:flex flex-col justify-between min-h-[320px] sm:min-h-[440px] lg:min-h-[610px]">
             {/* Gambar 3D Quran */}
             <img
               src={quran3dImg}
               alt="Ilustrasi Pentashihan Al-Qur'an 3D"
-              className="absolute inset-0 w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700 ease-out"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
 
             {/* Badge Kemenag Overlay Atas */}
             <div className="relative z-10 p-5 sm:p-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-white/60 shadow-xs">
-                <ShieldCheck className="w-4 h-4 text-brand-700" />
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-surface/90 border border-line shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-brand-800" />
                 <span className="text-xs font-bold tracking-wide text-brand-950">
                   Lajnah Pentashihan Mushaf Quran RI
                 </span>
               </div>
             </div>
 
-            {/* Caption Glassmorphism Bawah */}
-            <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-ink/60 via-ink/20 to-transparent pt-12">
-              <div className="bg-brand-700/50 backdrop-blur-sm p-4 rounded-2xl border border-white/30 text-white shadow-sm">
-                <p className="text-xs font-semibold text-white flex items-center gap-1.5 mb-0.5">
-                  <Sparkles className="w-3.5 h-3.5 text-civicGold-700" />
+            {/* Caption Bawah */}
+            <div className="relative z-10 p-5 sm:p-5 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent pt-12">
+              <div className="bg-brand-950/90 p-4 rounded-lg border border-brand-800 text-white shadow-2xs">
+                <p className="text-xs font-bold text-civicGold-700 mb-0.5">
                   SIPNA (Sistem Informasi Pentashih Mushaf Quran)
                 </p>
                 <h3 className="text-sm sm:text-base font-bold text-white leading-snug">
-                  Sistem Informasi Pentashihan Naskah Al-Qur'an (SIPNA) - LPMQ Kementerian Agama RI
+                  Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI
                 </h3>
               </div>
             </div>

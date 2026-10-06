@@ -16,6 +16,8 @@ import { ResultLetterPanel } from './components/ResultLetterPanel';
 import { InspectionReferencePanels } from './components/InspectionReferencePanels';
 import { InspectionDialogs } from './components/InspectionDialogs';
 import { InspectionActionPanel } from './components/InspectionActionPanel';
+import { MushafContentReviewTable } from './components/MushafContentReviewTable';
+import { InspectionDocumentStudio } from './components/InspectionDocumentStudio';
 import { useInspection } from './hooks/useInspection';
 import { getInspectionDraft, getInspectionViewModel } from './inspection-view-model';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -32,6 +34,13 @@ import {
   Send,
   Play,
   Info,
+  Printer,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  CheckSquare,
+  BookOpen,
+  History,
 } from 'lucide-react';
 
 const CHECKLIST_DEFINITIONS = [
@@ -71,7 +80,9 @@ export const VerificationInspectionPage = () => {
   const [successMessage, setSuccessMessage] = useState(null);
 
   // Tab state for mobile/tablet responsive layout (<1024px)
-  const [activeMobileTab, setActiveMobileTab] = useState('checklist'); // 'ringkasan' | 'dokumen' | 'checklist' | 'hasil'
+  const [activeMobileTab, setActiveMobileTab] = useState('checklist'); // 'naskah' | 'checklist' | 'konten' | 'hasil' | 'arsip'
+  const [activeWorkbenchTab, setActiveWorkbenchTab] = useState('checklist'); // 'checklist' | 'konten' | 'hasil' | 'arsip'
+  const [contentReview, setContentReview] = useState(null);
 
   // Document preview selection
   const [activeDocTab, setActiveDocTab] = useState('digital'); // 'digital' | 'receipt' | 'letter'
@@ -80,6 +91,7 @@ export const VerificationInspectionPage = () => {
   // Official letter editor/preview toggle
   const [letterTab, setLetterTab] = useState('editor'); // 'editor' | 'preview'
   const [copiedReceipt, setCopiedReceipt] = useState(false);
+  const [showWorkflowGuide, setShowWorkflowGuide] = useState(false);
 
   // Modals state
   const [returnModalOpen, setReturnModalOpen] = useState(false);
@@ -139,6 +151,9 @@ export const VerificationInspectionPage = () => {
     if (draft.letterText) setLetterText(draft.letterText);
     if (data.latest_result_document?.content_snapshot?.billing_no) setBillingNo(data.latest_result_document.content_snapshot.billing_no);
     setBillingFileId(data.latest_result_document?.content_snapshot?.billing_file_id || '');
+    if (data.latest_result_document?.content_snapshot?.mushaf_content_review) {
+      setContentReview(data.latest_result_document.content_snapshot.mushaf_content_review);
+    }
     if (data.latest_result_document?.document_no) setResultDocumentNo(data.latest_result_document.document_no);
     if (data.berita_acara?.document_no) setMinutesDocumentNo(data.berita_acara.document_no);
   });
@@ -151,6 +166,44 @@ export const VerificationInspectionPage = () => {
   const workflowVm = useMemo(() => {
     return detail?.registration ? getWorkflowViewModel(detail.registration, currentUser) : null;
   }, [detail, currentUser]);
+
+  const allFiles = useMemo(() => {
+    const list = [...(detail?.registration?.manuscript_files || [])];
+    const meta = detail?.registration?.foreign_metadata || {};
+    const knownFileIds = new Set(list.map((f) => f.file_id || f.id));
+
+    if (meta.surat_permohonan_file_id && !knownFileIds.has(meta.surat_permohonan_file_id)) {
+      list.unshift({
+        id: meta.surat_permohonan_file_id,
+        file_id: meta.surat_permohonan_file_id,
+        type: 'SURAT_PERMOHONAN',
+        file_name: 'Surat-Permohonan-Tashih.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.surat_permohonan_file_id);
+    }
+    if (meta.bukti_tashih_file_id && !knownFileIds.has(meta.bukti_tashih_file_id)) {
+      list.push({
+        id: meta.bukti_tashih_file_id,
+        file_id: meta.bukti_tashih_file_id,
+        type: 'FOREIGN_TASHIH_CERTIFICATE',
+        file_name: 'Bukti-Tashih-Asal.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.bukti_tashih_file_id);
+    }
+    if (meta.surat_pernyataan_perubahan_file_id && !knownFileIds.has(meta.surat_pernyataan_perubahan_file_id)) {
+      list.push({
+        id: meta.surat_pernyataan_perubahan_file_id,
+        file_id: meta.surat_pernyataan_perubahan_file_id,
+        type: 'SURAT_PERNYATAAN',
+        file_name: 'Surat-Pernyataan.pdf',
+        version: 1,
+      });
+      knownFileIds.add(meta.surat_pernyataan_perubahan_file_id);
+    }
+    return list;
+  }, [detail?.registration]);
 
   // Sinkronisasi canonical assignment URL jika masuk menggunakan registration_id
   useEffect(() => {
@@ -270,6 +323,7 @@ export const VerificationInspectionPage = () => {
         letter_text: letterText.trim() || undefined,
         billing_no: decision === 'PASSED' ? billingNo.trim() || undefined : undefined,
         billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
+        mushaf_content_review: contentReview || undefined,
       };
       await verificationApi.saveDraft(assignmentId, payload);
       setIsDirty(false);
@@ -301,6 +355,7 @@ export const VerificationInspectionPage = () => {
         letter_text: letterText.trim(),
         billing_no: decision === 'PASSED' ? billingNo.trim() : undefined,
         billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
+        mushaf_content_review: contentReview || undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
       setSubmitConfirmOpen(false);
@@ -558,6 +613,21 @@ export const VerificationInspectionPage = () => {
     tidakBerlakuCount,
   } = getInspectionViewModel(detail, currentUser, selectedFileId, checklist);
 
+  const activeFile = allFiles.find((f) => f.id === selectedFileId || f.file_id === selectedFileId) || selectedFileObj || allFiles[0];
+
+  const getFileLabel = (f) => {
+    if (!f) return 'Berkas';
+    const type = f.type || f.file_type;
+    if (type === 'COVER') return 'Sampul / Cover';
+    if (type === 'SURAT_PERMOHONAN' || f.file_id === registration.foreign_metadata?.surat_permohonan_file_id) return 'Surat Permohonan';
+    if (type === 'SAMPLE_PAGE_1_5' || type === 'SAMPLE_PAGE') return 'Sampel Hal 1-3';
+    if (type === 'FOREIGN_TASHIH_CERTIFICATE') return 'Bukti Tashih';
+    if (type === 'SURAT_PERNYATAAN') return 'Surat Pernyataan';
+    if (type === 'DUMMY') return 'Dummy Cetak';
+    if (type === 'MASTER_COMPLETED') return 'Master Lengkap';
+    return f.file_name || 'PDF Berkas';
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
       {/* Top Header & Breadcrumb */}
@@ -583,34 +653,50 @@ export const VerificationInspectionPage = () => {
         }
       />
 
-      <section className="rounded-xl border border-line bg-white p-4 sm:p-5 space-y-4 text-sm" aria-label="Alur penugasan dan dokumen verifikasi">
-        <div>
-          <h2 className="font-bold text-ink">Alur penugasan dan verifikasi</h2>
-          <p className="text-xs text-ink-muted mt-1">Ikuti urutan ini dari nota dinas sampai surat hasil dikirim ke penerbit.</p>
-        </div>
-        <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
-          {[
-            ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Nota Dinas ${notaDinas.document_no || 'belum terbit'}.`],
-            ['2', 'Periksa PDF Nota Dinas', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
-            ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
-            ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
-          ].map(([number, title, description]) => (
-            <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
-              <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
-            </li>
-          ))}
-        </ol>
-        <div className="border-t border-line pt-3 space-y-2">
-          <h3 className="font-semibold text-ink text-xs">PDF dokumen verifikasi</h3>
-          <p className="text-xs text-ink-muted">Periksa Nota Dinas sebelum memulai pemeriksaan. Penampil PDF menyediakan kontrol cetak dan unduh untuk tiap dokumen.</p>
-          <div className="flex flex-wrap gap-2">
-            {[[notaDinas, 'Nota Dinas'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
-              <Button key={doc.id} variant="outline" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
-                Lihat / Cetak PDF {title}
-              </Button>
-            ))}
+      <section className="rounded-xl border border-line bg-white p-4 space-y-3 text-sm shadow-2xs" aria-label="Alur penugasan dan dokumen verifikasi">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-bold text-ink text-sm flex items-center gap-1.5 mr-1">
+              <FileText className="w-4 h-4 text-brand-800" />
+              Dokumen Verifikasi Resmi
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {[[notaDinas, 'Disposisi'], [latestResultDoc, 'Surat hasil'], [beritaAcaraDoc, 'Berita acara']].filter(([doc]) => doc?.id).map(([doc, title]) => (
+                <Button key={doc.id} variant="outline" size="sm" className="text-xs" onClick={() => showDocumentPdf(doc.id, title)}>
+                  <Printer className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                  Lihat / Cetak PDF {title}
+                </Button>
+              ))}
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
+            className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer"
+          >
+            {showWorkflowGuide ? (
+              <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
+            ) : (
+              <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
+            )}
+          </button>
+        </div>
+
+        <div className={showWorkflowGuide ? 'pt-3 border-t border-line space-y-3 animate-fadeIn' : 'hidden'}>
+          <p className="text-xs text-ink-muted">Ikuti urutan ini dari disposisi sampai surat hasil dikirim ke penerbit:</p>
+          <ol className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4 text-xs">
+            {[
+              ['1', 'Penerimaan & penugasan', `Master fisik ${physicalMaster.receipt_no ? `diterima (${physicalMaster.receipt_no})` : 'menunggu tanda terima'}; Disposisi ${notaDinas.document_no || 'belum terbit'}.`],
+              ['2', 'Periksa PDF Disposisi', 'Cocokkan nomor, naskah, nama verifikator, dan batas tugas pada PDF.'],
+              ['3', 'Periksa naskah', 'Mulai pemeriksaan, isi empat butir checklist, dan catat setiap ketidaksesuaian.'],
+              ['4', 'Susun & ajukan surat', 'Pilih hasil, tinjau pratinjau surat, lalu ajukan draf untuk persetujuan Kepala LPMQ.'],
+            ].map(([number, title, description]) => (
+              <li key={number} className="rounded-lg border border-line bg-canvas p-3 flex gap-2.5">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-800 text-white font-bold">{number}</span>
+                <div><strong className="block text-ink">{title}</strong><p className="mt-1 text-ink-muted leading-relaxed">{description}</p></div>
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
@@ -685,7 +771,7 @@ export const VerificationInspectionPage = () => {
 
       {/* SLA & Start Banner if ASSIGNED */}
       {isAssigned && (
-        <div className="p-5 rounded-xl border border-civicGold-700/50 bg-gradient-to-r from-[#083224] to-[#0E5139] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-5 rounded-xl border border-brand-800 bg-brand-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
           <div className="space-y-1">
             <h4 className="text-sm font-bold text-civicGold-100 flex items-center gap-2">
               <Info className="w-4 h-4 text-civicGold-700" />
@@ -763,167 +849,6 @@ export const VerificationInspectionPage = () => {
         </div>
       )}
 
-      {/* Responsive View Switcher for Screen < 1024px */}
-      <div className="lg:hidden flex items-center p-1 bg-surface-subtle rounded-xl border border-line text-xs font-semibold">
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('ringkasan')}
-          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'ringkasan' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Ringkasan
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('dokumen')}
-          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'dokumen' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Dokumen
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('checklist')}
-          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'checklist' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Checklist
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('hasil')}
-          className={`flex-1 py-2 rounded-lg text-center transition-all ${
-            activeMobileTab === 'hasil' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Hasil & Surat
-        </button>
-      </div>
-
-      {/* Workspace references and checklist */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* AREA 1: Navigation, Ringkasan Naskah & SLA (~3 cols on desktop) */}
-        <InspectionReferencePanels
-          activeMobileTab={activeMobileTab}
-          registration={registration}
-          publisher={publisher}
-          notaDinas={notaDinas}
-          assignment={assignment}
-          formatDate={formatDate}
-          physicalMaster={physicalMaster}
-          detail={detail}
-          selectedFileId={selectedFileId}
-          setSelectedFileId={setSelectedFileId}
-          selectedFileObj={selectedFileObj}
-          handleCopyReceipt={handleCopyReceipt}
-          copiedReceipt={copiedReceipt}
-        />
-
-        {/* AREA 3: Checklist Pemeriksaan & Keputusan (~4 cols on desktop) */}
-        <InspectionChecklist
-          activeMobileTab={activeMobileTab}
-          sesuaiCount={sesuaiCount}
-          tidakBerlakuCount={tidakBerlakuCount}
-          checklist={checklist}
-          validationErrors={validationErrors}
-          isReadOnly={isReadOnly}
-          handleChecklistChange={handleChecklistChange}
-          definitions={CHECKLIST_DEFINITIONS}
-        />
-      </div>
-
-      <ResultLetterPanel
-        activeMobileTab={activeMobileTab}
-        decision={decision}
-        setDecision={setDecision}
-        loadOfficialTemplate={loadOfficialTemplate}
-        setIsDirty={setIsDirty}
-        isReadOnly={isReadOnly}
-        validationErrors={validationErrors}
-        notes={notes}
-        setNotes={setNotes}
-        letterTab={letterTab}
-        setLetterTab={setLetterTab}
-        letterText={letterText}
-        setLetterText={setLetterText}
-        billingNo={billingNo}
-        setBillingNo={setBillingNo}
-        billingFileId={billingFileId}
-        billingFileName={billingFileName}
-        billingUploading={billingUploading}
-        handleBillingFile={handleBillingFile}
-        resultDocumentId={latestResultDoc?.id}
-        registration={registration}
-        publisher={publisher}
-      />
-      <DocumentArchive registrationId={registration.id} />
-
-      {/* Multi-Signatory Progress & Email Status Banners */}
-      {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
-        <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
-          Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
-        </div>
-      )}
-      {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
-        <div className="space-y-4">
-          <SignatoryProgress
-            signatories={[
-              ...(latestResultDoc?.signatories || []).map(sig => ({
-                role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
-                name: sig.name_position_snapshot,
-                status: sig.status,
-                signed_at: sig.signed_at,
-              })),
-              ...baSignatories.map((sig) => ({
-                role_label: `Berita Acara - Urutan ${sig.sign_order}`,
-                name: sig.name_position_snapshot,
-                status: sig.status,
-                signed_at: sig.signed_at,
-              })),
-            ]}
-          />
-
-          <div className="flex flex-wrap items-center gap-3">
-            {canUserSignLatest && (
-              <Button
-                variant="primary"
-                onClick={() => handleSignDocument(latestResultDoc.id)}
-                disabled={actionLoading}
-                className="text-xs"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Konfirmasi Internal Surat Pemberitahuan
-              </Button>
-            )}
-            {canUserSignBa && (
-              <Button
-                variant="primary"
-                onClick={() => handleSignDocument(beritaAcaraDoc.id)}
-                disabled={actionLoading}
-                className="text-xs"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                Konfirmasi Internal Berita Acara
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Email Delivery Failure Banner */}
-      {isEmailFailed && (
-        <EmailDeliveryStatus
-          status="FAILED"
-          recipient={publisher.email || 'penerbit@mushaf.id'}
-          errorMessage={latestResultDoc?.email_delivery_error}
-          onRetry={() => handleRetryEmail(latestResultDoc?.id)}
-          retrying={actionLoading}
-        />
-      )}
-
       {/* SOP Step 7: Serah Terima Master Fisik Panel */}
       {canVerifierHandover && (
         <div className="p-5 bg-brand-50 border border-brand-100 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xs">
@@ -970,6 +895,273 @@ export const VerificationInspectionPage = () => {
           </div>
         </section>
       )}
+
+      {/* Responsive View Switcher for Screen < 1024px */}
+      <div className="lg:hidden flex items-center p-1 bg-surface-subtle rounded-xl border border-line text-xs font-semibold overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('naskah')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'naskah' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Naskah & Berkas
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('checklist')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'checklist' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Checklist
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('konten')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'konten' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Audit Konten
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('hasil')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'hasil' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Hasil & Surat
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveMobileTab('arsip')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'arsip' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Arsip Dokumen
+        </button>
+      </div>
+
+      {/* THE SPLIT-STUDIO WORKSTATION */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN (6 cols): Inspection Document Studio */}
+        <div className={`lg:col-span-6 space-y-4 ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'}`}>
+          <InspectionDocumentStudio
+            allFiles={allFiles}
+            activeFile={activeFile}
+            selectedFileId={selectedFileId}
+            setSelectedFileId={setSelectedFileId}
+            getFileLabel={getFileLabel}
+            registration={registration}
+            publisher={publisher}
+            physicalMaster={physicalMaster}
+            assignment={assignment}
+            formatDate={formatDate}
+            handleCopyReceipt={handleCopyReceipt}
+            copiedReceipt={copiedReceipt}
+          />
+        </div>
+
+        {/* RIGHT COLUMN (6 cols): Interactive Workbench */}
+        <div className="lg:col-span-6 space-y-4">
+          {/* Desktop Tab Selector Header */}
+          <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
+            <div className="flex items-center gap-1 w-full">
+              <button
+                type="button"
+                onClick={() => setActiveWorkbenchTab('checklist')}
+                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkbenchTab === 'checklist'
+                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
+                }`}
+              >
+                <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
+                <span>Checklist (4 Butir)</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                  {sesuaiCount + tidakBerlakuCount}/4
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveWorkbenchTab('konten')}
+                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkbenchTab === 'konten'
+                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-brand-700" />
+                <span>Konten Mushaf</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                  REV-16
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveWorkbenchTab('hasil')}
+                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkbenchTab === 'hasil'
+                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
+                }`}
+              >
+                <FileText className="w-3.5 h-3.5 text-brand-700" />
+                <span>Hasil & Draf Surat</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  decision === 'PASSED'
+                    ? 'bg-brand-50 text-brand-800 border border-brand-200'
+                    : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
+                }`}>
+                  {decision === 'PASSED' ? 'Lolos' : 'Perbaikan'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveWorkbenchTab('arsip')}
+                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkbenchTab === 'arsip'
+                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
+                }`}
+              >
+                <History className="w-3.5 h-3.5 text-brand-700" />
+                <span>Arsip & Dokumen</span>
+              </button>
+            </div>
+          </div>
+
+          {/* TAB 1: CHECKLIST */}
+          <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'}`}>
+            <InspectionChecklist
+              activeMobileTab="checklist"
+              sesuaiCount={sesuaiCount}
+              tidakBerlakuCount={tidakBerlakuCount}
+              checklist={checklist}
+              validationErrors={validationErrors}
+              isReadOnly={isReadOnly}
+              handleChecklistChange={handleChecklistChange}
+              definitions={CHECKLIST_DEFINITIONS}
+              className="space-y-4"
+            />
+          </div>
+
+          {/* TAB 2: AUDIT KONTEN MUSHAF (REV-16) */}
+          <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'}`}>
+            <MushafContentReviewTable
+              registration={registration}
+              contentReview={contentReview}
+              onChange={(data) => {
+                setIsDirty(true);
+                setContentReview(data);
+              }}
+              isReadOnly={isReadOnly}
+            />
+          </div>
+
+          {/* TAB 3: HASIL & DRAF SURAT */}
+          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'}`}>
+            <ResultLetterPanel
+              activeMobileTab="hasil"
+              decision={decision}
+              setDecision={setDecision}
+              loadOfficialTemplate={loadOfficialTemplate}
+              setIsDirty={setIsDirty}
+              isReadOnly={isReadOnly}
+              validationErrors={validationErrors}
+              notes={notes}
+              setNotes={setNotes}
+              letterTab={letterTab}
+              setLetterTab={setLetterTab}
+              letterText={letterText}
+              setLetterText={setLetterText}
+              billingNo={billingNo}
+              setBillingNo={setBillingNo}
+              billingFileId={billingFileId}
+              billingFileName={billingFileName}
+              billingUploading={billingUploading}
+              handleBillingFile={handleBillingFile}
+              resultDocumentId={latestResultDoc?.id}
+              registration={registration}
+              publisher={publisher}
+              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+            />
+          </div>
+
+          {/* TAB 4: ARSIP & DOKUMEN RESMI */}
+          <div className={`${activeMobileTab === 'arsip' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'arsip' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
+            {/* Multi-Signatory Progress & Email Status Banners */}
+            {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+              <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
+                Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
+              </div>
+            )}
+            {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+              <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
+                <SignatoryProgress
+                  signatories={[
+                    ...(latestResultDoc?.signatories || []).map(sig => ({
+                      role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
+                      name: sig.name_position_snapshot,
+                      status: sig.status,
+                      signed_at: sig.signed_at,
+                    })),
+                    ...baSignatories.map((sig) => ({
+                      role_label: `Berita Acara - Urutan ${sig.sign_order}`,
+                      name: sig.name_position_snapshot,
+                      status: sig.status,
+                      signed_at: sig.signed_at,
+                    })),
+                  ]}
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {canUserSignLatest && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleSignDocument(latestResultDoc.id)}
+                      disabled={actionLoading}
+                      className="text-xs"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Konfirmasi Internal Surat Pemberitahuan
+                    </Button>
+                  )}
+                  {canUserSignBa && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleSignDocument(beritaAcaraDoc.id)}
+                      disabled={actionLoading}
+                      className="text-xs"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                      Konfirmasi Internal Berita Acara
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {isEmailFailed && (
+              <EmailDeliveryStatus
+                status="FAILED"
+                recipient={publisher.email || 'penerbit@mushaf.id'}
+                errorMessage={latestResultDoc?.email_delivery_error}
+                onRetry={() => handleRetryEmail(latestResultDoc?.id)}
+                retrying={actionLoading}
+              />
+            )}
+
+            <DocumentArchive registrationId={registration.id} />
+          </div>
+        </div>
+      </div>
 
       <InspectionActionPanel
         isInProgress={isInProgress}

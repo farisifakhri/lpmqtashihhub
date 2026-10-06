@@ -954,7 +954,7 @@ export const AdminMasterIntakePage = () => {
           onSuccess={async () => {
             setAssignDialogOpen(false);
             setSuccessMessage(
-              `Verifikator berhasil ditugaskan untuk naskah ${selectedReg.registration_no}. Nota Dinas telah diterbitkan.`
+              `Verifikator berhasil ditugaskan untuk naskah ${selectedReg.registration_no}. Disposisi telah diterbitkan.`
             );
             try {
               const detailRes = await registrationApi.getDetail(selectedReg.id);

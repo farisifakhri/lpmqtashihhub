@@ -68,7 +68,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
     }
 
     if (!notaNo.trim() || notaNo.trim().length < 3) {
-      setError('Nomor Nota Dinas baru wajib diisi (minimal 3 karakter).');
+      setError('Nomor Disposisi baru wajib diisi (minimal 3 karakter).');
       return;
     }
 
@@ -118,7 +118,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
                 Tugaskan Ulang (Reassign) Verifikator
               </h3>
               <p className="text-xs text-ink-muted">
-                Otoritas Kepala LPMQ · Pengalihan Tugas & Nota Dinas Baru
+                Otoritas Kepala LPMQ · Pengalihan Tugas & Disposisi Baru
               </p>
             </div>
           </div>
@@ -148,7 +148,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               {reg.registration_no || '-'}
             </span>
             <span className="text-ink-muted">
-              Nota Dinas Lama: <strong className="text-ink">{oldNotaNo}</strong>
+              Disposisi Lama: <strong className="text-ink">{oldNotaNo}</strong>
             </span>
           </div>
           <div className="space-y-1">
@@ -165,7 +165,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
           <div>
             <strong>Ketentuan Alur Reassignment:</strong>
             <p className="mt-0.5 text-civic-info">
-              Penugasan lama akan dicabut secara audit (<code>REVOKED</code>). Verifikator pengganti akan menerima penugasan baru dengan Nota Dinas baru dan target SLA 2 hari kerja dihitung dari hari ini.
+              Penugasan lama akan dicabut secara audit (<code>REVOKED</code>). Verifikator pengganti akan menerima penugasan baru dengan Disposisi baru dan target SLA 2 hari kerja dihitung dari hari ini.
             </p>
           </div>
         </div>
@@ -232,7 +232,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
           {/* New Nota Dinas Number */}
           <div>
             <label htmlFor="new-nota-no" className="block text-xs font-bold text-ink mb-1.5">
-              Nomor Nota Dinas Baru <span className="text-civic-danger">*</span>
+              Nomor Disposisi Baru <span className="text-civic-danger">*</span>
             </label>
             <input
               id="new-nota-no"

@@ -12,9 +12,9 @@ export const AssignmentListPanel = ({
   <>
       {/* 2. Kartu Statistik Ringkas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-civic-warningLine/90 p-4 bg-gradient-to-br from-civic-warningSoft/80 via-white to-civic-warningSoft/30 shadow-xs">
+        <div className="rounded-xl border border-line p-4 bg-surface shadow-2xs hover:border-civic-warningLine transition-all">
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-civic-warning to-civic-warning text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-lg bg-civic-warning text-white flex items-center justify-center">
               <Clock className="w-4.5 h-4.5" />
             </div>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
@@ -28,9 +28,9 @@ export const AssignmentListPanel = ({
           </div>
         </div>
 
-        <div className="rounded-xl border border-brand-100/90 p-4 bg-gradient-to-br from-brand-50/80 via-white to-brand-50/30 shadow-xs">
+        <div className="rounded-xl border border-line p-4 bg-surface shadow-2xs hover:border-brand-100 transition-all">
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-700 to-brand-700 text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-lg bg-brand-700 text-white flex items-center justify-center">
               <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
@@ -44,9 +44,9 @@ export const AssignmentListPanel = ({
           </div>
         </div>
 
-        <div className="rounded-xl border border-civic-infoLine/90 p-4 bg-gradient-to-br from-civic-infoSoft/80 via-white to-civic-infoSoft/30 shadow-xs">
+        <div className="rounded-xl border border-line p-4 bg-surface shadow-2xs hover:border-civic-infoLine transition-all">
           <div className="flex items-center justify-between">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-civic-info to-civic-info text-white flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-lg bg-civic-info text-white flex items-center justify-center">
               <ShieldCheck className="w-4.5 h-4.5" />
             </div>
             <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">

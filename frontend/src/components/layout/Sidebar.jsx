@@ -8,6 +8,7 @@ import {
   CreditCard,
   Award,
   Users,
+  Building2,
   CheckSquare,
   UserCheck,
   BookOpen,
@@ -116,13 +117,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               end: true,
             },
             {
-              label: 'Pengajuan Saya',
+              label: 'Permohonan Saya',
               path: '/publisher/registrations',
               icon: <FileText className="w-4 h-4 shrink-0" />,
               description: 'Portofolio naskah & riwayat',
             },
             {
-              label: 'Buat Pengajuan',
+              label: 'Permohonan Tanda Tashih Baru',
               path: '/publisher/new-registration',
               icon: <FilePlus className="w-4 h-4 shrink-0" />,
               description: 'Pendaftaran naskah baru',
@@ -237,6 +238,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               path: '/internal/verifications',
               icon: <CheckSquare className="w-4 h-4 shrink-0" />,
               description: 'Pemeriksaan naskah & draf',
+            },
+            {
+              label: 'Verifikasi Penerbit',
+              path: '/internal/publishers',
+              icon: <Building2 className="w-4 h-4 shrink-0" />,
+              description: 'Periksa dan setujui profil penerbit',
             },
             {
               label: 'Tanda Tangan Saya',
@@ -401,6 +408,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             path: '/internal/users',
             icon: <Users className="w-4 h-4 shrink-0" />,
             description: 'Akun, peran, dan wewenang',
+          },
+          {
+            label: 'Verifikasi Penerbit',
+            path: '/internal/publishers',
+            icon: <Building2 className="w-4 h-4 shrink-0" />,
+            description: 'Periksa dan setujui profil penerbit',
           },
           {
             label: 'Arsip Dokumen',

@@ -530,7 +530,7 @@ export const SignatureCenterPage = () => {
               <option value="ALL">Semua Jenis Dokumen</option>
               <option value="SURAT_HASIL_VERIFIKASI">Surat Hasil Verifikasi</option>
               <option value="BERITA_ACARA_VERIFIKASI">Berita Acara Verifikasi</option>
-              <option value="NOTA_DINAS_VERIFIKASI">Nota Dinas Penugasan</option>
+              <option value="NOTA_DINAS_VERIFIKASI">Disposisi Penugasan</option>
             </select>
           </div>
         </div>

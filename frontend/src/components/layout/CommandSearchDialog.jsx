@@ -12,7 +12,7 @@ import {
   Settings,
   X,
   ArrowRight,
-  Sparkles,
+  PlusCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -37,8 +37,8 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
   const allCommands = isPublisher
     ? [
         { label: 'Beranda Penerbit', desc: 'Kembali ke ringkasan tugas & proses aktif', path: '/publisher', icon: FileText, category: 'Navigasi' },
-        { label: 'Buat Pengajuan Naskah Baru', desc: 'Daftarkan naskah mushaf baru ke LPMQ', path: '/publisher/new-registration', icon: Sparkles, category: 'Aksi Cepat' },
-        { label: 'Portofolio Pengajuan Saya', desc: 'Pantau status dan tindak lanjuti perbaikan naskah', path: '/publisher/registrations', icon: FileText, category: 'Navigasi' },
+        { label: 'Permohonan Tanda Tashih Baru', desc: 'Daftarkan naskah mushaf baru ke LPMQ', path: '/publisher/new-registration', icon: PlusCircle, category: 'Aksi Cepat' },
+        { label: 'Portofolio Permohonan Saya', desc: 'Pantau status dan tindak lanjuti perbaikan naskah', path: '/publisher/registrations', icon: FileText, category: 'Navigasi' },
         { label: 'Tagihan PNBP & Kode Billing', desc: 'Periksa billing SIMPONI dan unggah bukti bayar', path: '/publisher/billing', icon: CreditCard, category: 'Keuangan' },
         { label: 'Dokumen Resmi & Surat Tanda Tashih', desc: 'Unduh dokumen STT yang telah disahkan', path: '/publisher/documents', icon: Award, category: 'Dokumen' },
       ]
@@ -46,7 +46,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         { label: 'Pusat Kendali Operasional', desc: 'Dashboard ringkasan tugas hari ini', path: '/internal', icon: FileText, category: 'Navigasi' },
         ...(isHead || isSuperAdmin
           ? [
-              { label: 'Penugasan Verifikator', desc: 'Helper Admin mencatat Nota Dinas dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Helper Admin' },
+              { label: 'Penugasan Verifikator', desc: 'Helper Admin mencatat Disposisi dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Helper Admin' },
               { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
               { label: 'Pusat Tanda Tangan Resmi', desc: 'Tandatangani Surat Pemberitahuan & Berita Acara', path: '/internal/signatures', icon: Award, category: 'Kepala LPMQ' },
             ]

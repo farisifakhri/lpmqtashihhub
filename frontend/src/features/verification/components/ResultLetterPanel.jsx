@@ -9,9 +9,10 @@ export const ResultLetterPanel = ({
   billingNo, setBillingNo,
   billingFileId, billingFileName, billingUploading, handleBillingFile, resultDocumentId,
   registration, publisher,
+  className,
 }) => (
           <div
-            className={`p-5 sm:p-6 bg-white rounded-xl border border-line shadow-2xs space-y-5 ${
+            className={className || `p-5 sm:p-6 bg-white rounded-xl border border-line shadow-2xs space-y-5 ${
               activeMobileTab === 'hasil' ? 'block' : 'hidden lg:block'
             }`}
           >

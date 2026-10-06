@@ -13,6 +13,7 @@ export const createRegistrationSchema = {
       mushaf_details: z.record(z.any()).optional().nullable(),
       cover_file_id: z.string().uuid().optional().nullable(),
       surat_permohonan_file_id: z.string().uuid().optional().nullable(),
+      contoh_halaman_file_id: z.string().uuid().optional().nullable(),
       surat_pernyataan_perubahan_file_id: z.string().uuid().optional().nullable(),
       apk_file_id: z.string().uuid().optional().nullable(),
       bukti_tashih_file_id: z.string().uuid().optional().nullable(),

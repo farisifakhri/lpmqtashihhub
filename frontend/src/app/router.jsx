@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -38,13 +38,14 @@ const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signature
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const DocumentArchivePage = withSuspense(lazy(() => import('@/features/internal/DocumentArchivePage').then(m => ({ default: m.DocumentArchivePage }))));
 const UserManagementPage = withSuspense(lazy(() => import('@/features/internal/users/UserManagementPage').then(m => ({ default: m.UserManagementPage }))));
+const PublisherVerificationPage = withSuspense(lazy(() => import('@/features/internal/publishers/PublisherVerificationPage').then(m => ({ default: m.PublisherVerificationPage }))));
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
 const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
   // Rute Autentikasi Mandiri
   {
     path: '/login',
@@ -213,6 +214,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'internal/publishers',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'VERIFIKATOR']}>
+            <PublisherVerificationPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'internal/settings',
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
@@ -248,3 +257,10 @@ export const router = createBrowserRouter([
     v7_relativeSplatPath: true,
   },
 });
+
+export function AppRouter() {
+  return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
+}
+
+export default AppRouter;
+

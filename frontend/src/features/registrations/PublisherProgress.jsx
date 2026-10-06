@@ -11,7 +11,7 @@ const STAGE_STEPS = [
   { key: 'COMPLETED', label: 'Selesai', percent: 100, color: 'bg-brand-700', text: 'text-brand-900' },
 ];
 
-export function getDetailedStage(registration) {
+function getDetailedStage(registration) {
   const status = registration.status;
   const dispatchStatus = registration.physical_dispatch_status;
 
@@ -210,7 +210,7 @@ export function PublisherProgress({ registration }) {
       {/* Rincian Keterangan Tahapan */}
       <div className="flex items-center justify-between text-[11px] text-ink-muted">
         <span className="truncate pr-2">{stage.description}</span>
-        <span className="shrink-0 font-medium">Langkah {stage.index + 1} dari 7</span>
+        <span className="shrink-0 font-semibold text-brand-800">{stage.label}</span>
       </div>
     </div>
   );

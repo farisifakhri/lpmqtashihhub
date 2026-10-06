@@ -35,7 +35,7 @@ router.delete(
   validate(registrationIdParamSchema),
   registrationController.deleteRegistration
 );
-router.get('/:id/document-archive', authorize('ADMIN_PENERBIT', 'HELPER_ADMIN', 'DOKUMENTATOR'), async (req, res, next) => {
+router.get('/:id/document-archive', authorize('ADMIN_PENERBIT', 'HELPER_ADMIN', 'DOKUMENTATOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'DISTRIBUTOR', 'PENTASHIH'), async (req, res, next) => {
   try { res.json({ success: true, data: await listDocumentArchive(req.params.id, req.user) }); }
   catch (error) { next(error); }
 });

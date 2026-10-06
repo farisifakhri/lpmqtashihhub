@@ -1,12 +1,11 @@
 import React from 'react';
-import { RouterProvider } from 'react-router-dom';
-import { router } from './router';
 import { AuthProvider } from '@/features/auth/AuthContext';
+import { AppRouter } from './router';
 
 export const App = () => {
   return (
     <AuthProvider>
-      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      <AppRouter />
     </AuthProvider>
   );
 };
