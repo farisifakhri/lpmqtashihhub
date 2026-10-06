@@ -18,7 +18,7 @@ import { publisherAction } from './publisher-status';
 
 import { PublisherDetailHeader } from './detail/PublisherDetailHeader';
 import { PublisherStatusAlerts } from './detail/PublisherStatusAlerts';
-import { PublisherDigitalFilesTab, FILE_TYPES } from './detail/PublisherDigitalFilesTab';
+import { PublisherDigitalFilesTab } from './detail/PublisherDigitalFilesTab';
 import { PublisherPhysicalMasterTab } from './detail/PublisherPhysicalMasterTab';
 import { PublisherTimelineTab } from './detail/PublisherTimelineTab';
 import { PublisherOfficialDocsTab } from './detail/PublisherOfficialDocsTab';
@@ -289,6 +289,7 @@ export function PublisherRegistrationDetailPage() {
               setShowReceipt={setShowReceipt}
               setShowDeleteModal={setShowDeleteModal}
               setShowCancelModal={setShowCancelModal}
+              setShowShippingLabel={setShowShippingLabel}
             />
 
             {/* 2. Hero Next Action Card & Status Banners */}

@@ -41,7 +41,6 @@ import {
   CheckSquare,
   BookOpen,
   History,
-  Sparkles,
 } from 'lucide-react';
 
 const CHECKLIST_DEFINITIONS = [
@@ -772,7 +771,7 @@ export const VerificationInspectionPage = () => {
 
       {/* SLA & Start Banner if ASSIGNED */}
       {isAssigned && (
-        <div className="p-5 rounded-xl border border-civicGold-700/50 bg-gradient-to-r from-[#083224] to-[#0E5139] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div className="p-5 rounded-xl border border-brand-800 bg-brand-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
           <div className="space-y-1">
             <h4 className="text-sm font-bold text-civicGold-100 flex items-center gap-2">
               <Info className="w-4 h-4 text-civicGold-700" />

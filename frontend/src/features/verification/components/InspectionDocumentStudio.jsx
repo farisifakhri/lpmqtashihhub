@@ -10,7 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   Clock,
-  Sparkles,
 } from 'lucide-react';
 import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 import { SlaIndicator } from '@/components/ui/SlaIndicator';

@@ -12,7 +12,7 @@ import {
   Settings,
   X,
   ArrowRight,
-  Sparkles,
+  PlusCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -37,7 +37,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
   const allCommands = isPublisher
     ? [
         { label: 'Beranda Penerbit', desc: 'Kembali ke ringkasan tugas & proses aktif', path: '/publisher', icon: FileText, category: 'Navigasi' },
-        { label: 'Permohonan Tanda Tashih Baru', desc: 'Daftarkan naskah mushaf baru ke LPMQ', path: '/publisher/new-registration', icon: Sparkles, category: 'Aksi Cepat' },
+        { label: 'Permohonan Tanda Tashih Baru', desc: 'Daftarkan naskah mushaf baru ke LPMQ', path: '/publisher/new-registration', icon: PlusCircle, category: 'Aksi Cepat' },
         { label: 'Portofolio Permohonan Saya', desc: 'Pantau status dan tindak lanjuti perbaikan naskah', path: '/publisher/registrations', icon: FileText, category: 'Navigasi' },
         { label: 'Tagihan PNBP & Kode Billing', desc: 'Periksa billing SIMPONI dan unggah bukti bayar', path: '/publisher/billing', icon: CreditCard, category: 'Keuangan' },
         { label: 'Dokumen Resmi & Surat Tanda Tashih', desc: 'Unduh dokumen STT yang telah disahkan', path: '/publisher/documents', icon: Award, category: 'Dokumen' },

@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { LoginPage } from '@/features/auth/LoginPage';
@@ -45,7 +45,7 @@ const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
-export const router = createBrowserRouter([
+const router = createBrowserRouter([
   // Rute Autentikasi Mandiri
   {
     path: '/login',

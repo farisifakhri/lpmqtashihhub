@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
-export const INITIAL_CONTENT_CATEGORIES = [
+const INITIAL_CONTENT_CATEGORIES = [
   { id: 'STANDAR_RASM', name: 'Standar Rasm & Tanda Baca' },
   { id: 'FORMAT_NASKAH', name: 'Cakupan & Kelompok Naskah' },
   { id: 'MATERI_TAMBAHAN', name: 'Materi Tambahan / Suplemen' },
