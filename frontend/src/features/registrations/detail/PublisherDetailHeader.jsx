@@ -88,17 +88,17 @@ export function PublisherDetailHeader({
       p2Desc = 'Administrasi & fisik dinyatakan sah';
     } else if (isVerificationRevision) {
       p2StatusText = 'Perlu Perbaikan';
-      p2Desc = 'Periksa catatan verifikator loket';
+      p2Desc = 'Periksa catatan verifikator';
     } else if (p2Active) {
       if (isPhysicalReceived) {
         p2StatusText = 'Sedang Ditelaah';
-        p2Desc = 'Master fisik diterima di loket LPMQ';
+        p2Desc = 'Master fisik diterima di LPMQ';
       } else if (isDispatched) {
         p2StatusText = 'Fisik Dikirim';
-        p2Desc = 'Dalam pengiriman menuju loket LPMQ';
+        p2Desc = 'Dalam pengiriman menuju LPMQ';
       } else {
         p2StatusText = 'Kirim Master Fisik';
-        p2Desc = 'Kirim berkas fisik A4 per juz ke loket';
+        p2Desc = 'Kirim berkas fisik A4 per juz ke LPMQ';
       }
     }
 

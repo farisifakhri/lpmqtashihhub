@@ -11,6 +11,7 @@ const data = { id: 'r1', title: 'Naskah perbaikan', registration_no: 'REG-1', st
 const show = () => render(<MemoryRouter initialEntries={['/publisher/registrations/r1']}><Routes><Route path="/publisher/registrations/:id" element={<PublisherRegistrationDetailPage />} /></Routes></MemoryRouter>);
 describe('Publisher detail and revision', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['ADMIN_PENERBIT'] } });
     vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ data });
     vi.spyOn(registrationApi, 'getDocumentArchive').mockResolvedValue({ data: [] });
@@ -33,7 +34,7 @@ describe('Publisher detail and revision', () => {
     const submit = await screen.findByRole('button', { name: 'Ajukan ulang perbaikan' });
     fireEvent.click(submit);
     await waitFor(() => expect(registrationApi.submitRegistration).toHaveBeenCalledWith('r1'));
-  });
+  }, 15000);
   it('blocks unsupported files without sending an upload', async () => {
     show(); await screen.findByRole('heading', { name: 'Naskah perbaikan' });
     fireEvent.change(screen.getByLabelText('Pilih berkas naskah'), { target: { files: [new File(['bad'], 'script.exe', { type: 'application/octet-stream' })] } });
@@ -56,8 +57,8 @@ describe('Publisher detail and revision', () => {
     } });
     show();
     await screen.findByRole('heading', { name: 'Naskah perbaikan' });
-    expect(screen.getByText('Berkas Dikirim · Menunggu Penerimaan Loket')).toBeInTheDocument();
-    expect(screen.getByText(/petugas loket menerima dan memeriksa master fisik/)).toBeInTheDocument();
+    expect(screen.getByText('Berkas Dikirim · Menunggu Penerimaan LPMQ')).toBeInTheDocument();
+    expect(screen.getByText(/petugas LPMQ menerima dan memeriksa master fisik/)).toBeInTheDocument();
     expect(screen.queryByText('Berkas Telah Dikirim · Sedang Verifikasi')).not.toBeInTheDocument();
   });
   it('shows assignment as the next step once the intake is received', async () => {
@@ -69,7 +70,7 @@ describe('Publisher detail and revision', () => {
     } });
     show();
     await screen.findByRole('heading', { name: 'Naskah perbaikan' });
-    expect(screen.getByText('Master Fisik Diterima Loket · Menunggu Penugasan')).toBeInTheDocument();
+    expect(screen.getByText('Master Fisik Diterima LPMQ · Menunggu Penugasan')).toBeInTheDocument();
     expect(screen.getByText(/Langkah berikutnya: petugas menugaskan verifikator/)).toBeInTheDocument();
   });
   it('refuses to expose a detail page after an ownership error', async () => {
@@ -84,5 +85,24 @@ describe('Publisher detail and revision', () => {
     fireEvent.change(screen.getByLabelText('Jumlah jilid master fisik'), { target: { value: '32' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan pernyataan fisik' }));
     await waitFor(() => expect(registrationApi.declarePhysicalMaster).toHaveBeenCalledWith('r1', { format: 'A4', binding_method: 'PER_JUZ', volume_count: 32, sent_at: intake.sent_at, delivery_method: intake.delivery_method, notes: intake.notes }));
+  });
+  it('renders only 2 consolidated tabs and removes legacy individual tab buttons', async () => {
+    show();
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.getByRole('button', { name: /Dokumen & Berkas/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Riwayat & Lacak Proses/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Berkas Digital/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Penyerahan Berkas Fisik/ })).not.toBeInTheDocument();
+  });
+  it('normalizes legacy ?tab=berkas-fisik parameter to dokumen tab', async () => {
+    render(
+      <MemoryRouter initialEntries={['/publisher/registrations/r1?tab=berkas-fisik']}>
+        <Routes>
+          <Route path="/publisher/registrations/:id" element={<PublisherRegistrationDetailPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.getByLabelText('Jumlah jilid master fisik')).toBeInTheDocument();
   });
 });

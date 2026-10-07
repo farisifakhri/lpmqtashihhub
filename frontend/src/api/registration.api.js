@@ -66,6 +66,27 @@ export const registrationApi = {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
+  getShippingLabelPdf: async (id) => {
+    const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+    const response = await fetch(`${base}/registrations/${encodeURIComponent(id)}/shipping-label-pdf`, {
+      headers: { Authorization: `Bearer ${getAuthToken()}` },
+    });
+    if (!response.ok) {
+      throw new Error('Gagal mengunduh label pengiriman PDF.');
+    }
+    return response.blob();
+  },
+  downloadShippingLabelPdf: async (id, filename = 'Label-Pengiriman.pdf') => {
+    const blob = await registrationApi.getShippingLabelPdf(id);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename.replace(/[\\/:*?"<>|]/g, '-');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
 };
 
 export default registrationApi;

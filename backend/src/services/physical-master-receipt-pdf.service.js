@@ -4,76 +4,343 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const logoPath = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
-const printable = value => String(value ?? '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/[^\x20-\x7E]/g, ' ');
+const printable = value =>
+  String(value ?? '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/[^\x20-\x7E]/g, ' ');
 
 export async function renderPhysicalMasterReceiptPdf(reg) {
   const intake = reg.physical_master_intake;
-  if (intake?.status !== 'RECEIVED' || !intake.receipt_no) throw new Error('Tanda terima master fisik belum diterbitkan.');
+  if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
+    throw new Error('Tanda terima master fisik belum diterbitkan.');
+  }
+
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
   const logo = await pdf.embedPng(await readFile(logoPath));
-  const page = pdf.addPage([595, 842]);
-  const ink = rgb(0.12, 0.15, 0.18);
-  const green = rgb(0.08, 0.38, 0.28);
-  page.drawImage(logo, { x: 42, y: 747, width: 58, height: 55 });
-  page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', { x: 111, y: 791, font: bold, size: 11 });
-  page.drawText('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', { x: 111, y: 774, font: bold, size: 11 });
-  page.drawText('Gedung Bayt Al-Quran & Museum Istiqlal, Jl. Raya TMII Pintu I', { x: 111, y: 758, font, size: 8 });
-  page.drawText('Jakarta Timur 13560  |  lajnah@kemenag.go.id', { x: 111, y: 746, font, size: 8 });
-  page.drawLine({ start: { x: 42, y: 738 }, end: { x: 553, y: 738 }, thickness: 1.4 });
+  const page = pdf.addPage([595, 842]); // A4 portrait
 
-  const title = 'TANDA TERIMA MASTER FISIK MUSHAF';
-  page.drawText(title, { x: (595 - bold.widthOfTextAtSize(title, 12)) / 2, y: 701, font: bold, size: 12, color: ink });
-  const number = printable(intake.receipt_no);
-  page.drawText(number, { x: (595 - bold.widthOfTextAtSize(number, 10)) / 2, y: 681, font: bold, size: 10, color: green });
+  const margin = 45;
+  const contentWidth = 595 - margin * 2; // 505
+  let y = 842 - 42;
 
-  let y = 638;
-  const date = intake.received_at
-    ? new Date(intake.received_at).toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }) + ' WIB'
-    : '-';
-  const rows = [
-    ['Tanggal penerimaan', date],
-    ['Nomor registrasi', reg.registration_no],
-    ['Judul naskah', reg.title],
-    ['Penerbit', reg.publisher?.legal_name],
-    ['Jenis layanan', reg.service_type?.name],
-    ['Jumlah master fisik', `${intake.volume_count ?? '-'} jilid`],
-    ['Format / penjilidan', `${intake.format || '-'} / ${intake.binding_method || '-'}`],
-    ['Kondisi saat diterima', intake.condition],
-    ['Petugas penerima', intake.received_by?.name],
+  // Warna Formal Pemerintahan
+  const black = rgb(0.08, 0.08, 0.08);
+  const darkGreen = rgb(0.05, 0.32, 0.22);
+  const darkGray = rgb(0.25, 0.25, 0.25);
+  const tableBorder = rgb(0.4, 0.4, 0.4);
+
+  // 1. Kop Surat Resmi Kemenag LPMQ (Centered)
+  page.drawImage(logo, { x: margin, y: 744, width: 54, height: 50 });
+
+  const kopLines = [
+    { text: 'KEMENTERIAN AGAMA REPUBLIK INDONESIA', font: bold, size: 12 },
+    { text: "LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN", font: bold, size: 12 },
+    { text: "Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560", font, size: 8 },
+    { text: 'Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807', font, size: 8 },
+    { text: 'Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id', font, size: 8 },
   ];
-  const drawWrapped = (value, x, startY, maxWidth, face = font) => {
-    const words = printable(value).split(/\s+/);
-    let line = '';
-    let currentY = startY;
-    const flush = () => {
-      if (line) page.drawText(line, { x, y: currentY, font: face, size: 9, color: ink });
-      currentY -= 14;
-      line = '';
-    };
-    for (const word of words) {
-      const candidate = line ? `${line} ${word}` : word;
-      if (face.widthOfTextAtSize(candidate, 9) > maxWidth && line) flush();
-      line = line ? `${line} ${word}` : word;
+
+  let curY = 786;
+  for (const item of kopLines) {
+    const textW = item.font.widthOfTextAtSize(item.text, item.size);
+    page.drawText(item.text, {
+      x: (595 - textW) / 2,
+      y: curY,
+      font: item.font,
+      size: item.size,
+      color: black,
+    });
+    curY -= item.size === 12 ? 14 : 11;
+  }
+
+  // Garis Pemisah Kop Surat Resmi
+  y = 728;
+  page.drawLine({
+    start: { x: margin, y },
+    end: { x: 595 - margin, y },
+    thickness: 1.8,
+    color: black,
+  });
+  y -= 18;
+
+  // 2. Judul & Nomor Tanda Terima
+  const title = 'TANDA TERIMA PENYERAHAN MASTER FISIK MUSHAF AL-QUR\'AN';
+  page.drawText(title, {
+    x: (595 - bold.widthOfTextAtSize(title, 11)) / 2,
+    y,
+    font: bold,
+    size: 11,
+    color: black,
+  });
+  y -= 14;
+
+  const receiptNoStr = `Nomor: ${printable(intake.receipt_no)}`;
+  page.drawText(receiptNoStr, {
+    x: (595 - bold.widthOfTextAtSize(receiptNoStr, 9.5)) / 2,
+    y,
+    font: bold,
+    size: 9.5,
+    color: darkGreen,
+  });
+  y -= 18;
+
+  // 3. Kalimat Pengantar Formal
+  const dateFormatted = intake.received_at
+    ? new Date(intake.received_at).toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+      }) + ' WIB'
+    : '-';
+
+  const introText =
+    `Pada hari ini, bertempat di Loket Pelayanan Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Jakarta, telah diterima master fisik mushaf Al-Qur'an untuk permohonan Surat Tanda Tashih dengan rincian sebagai berikut:`;
+
+  const words = introText.split(' ');
+  let lineBuf = '';
+  for (const w of words) {
+    const candidate = lineBuf ? `${lineBuf} ${w}` : w;
+    if (font.widthOfTextAtSize(candidate, 8.5) > contentWidth) {
+      page.drawText(lineBuf, { x: margin, y, font, size: 8.5, color: black });
+      y -= 12;
+      lineBuf = w;
+    } else {
+      lineBuf = candidate;
     }
-    flush();
-    return currentY;
-  };
-  for (const [label, value] of rows) {
-    const valueEnd = drawWrapped(value, 205, y, 343);
-    page.drawText(label, { x: 47, y, font: bold, size: 9, color: ink });
-    y = Math.min(y - 26, valueEnd - 11);
-    page.drawLine({ start: { x: 42, y: y + 11 }, end: { x: 553, y: y + 11 }, thickness: 0.4, color: rgb(0.8, 0.83, 0.84) });
   }
+  if (lineBuf) {
+    page.drawText(lineBuf, { x: margin, y, font, size: 8.5, color: black });
+    y -= 14;
+  }
+
+  // 4. Data Rincian Penerimaan Fisik
+  const rows = [
+    ['1', 'Nomor Registrasi Permohonan', reg.registration_no || '-'],
+    ['2', 'Tanggal & Waktu Penerimaan', dateFormatted],
+    ['3', 'Nama Pemohon / Penerbit', reg.publisher?.legal_name || 'Penerbit Terdaftar'],
+    ['4', 'Nama Produk / Judul Naskah', reg.title || '-'],
+    ['5', 'Jenis Layanan Pentashihan', reg.service_type?.name || 'Pentashihan Mushaf'],
+    ['6', 'Jumlah Master Fisik', `${intake.volume_count ?? '-'} jilid`],
+    ['7', 'Format & Penjilidan', `${intake.format || 'A4'} / ${intake.binding_method || 'Per Juz'}`],
+    ['8', 'Kondisi Naskah saat Diterima', intake.condition || 'Baik dan Lengkap'],
+    ['9', 'Petugas Penerima Loket', intake.received_by?.name || '-'],
+  ];
+
   if (intake.notes) {
-    y -= 12;
-    page.drawText('Catatan penerimaan:', { x: 47, y, font: bold, size: 9, color: ink });
-    y = drawWrapped(intake.notes, 47, y - 18, 500);
+    rows.push(['10', 'Catatan Pemeriksaan Loket', intake.notes]);
   }
-  y -= 23;
-  page.drawText('Master fisik telah diterima di loket LPMQ. Simpan dokumen ini sebagai bukti penerimaan.', { x: 47, y, font, size: 9, color: ink });
-  page.drawText('Proses berikutnya: penugasan verifikator dan pemeriksaan naskah.', { x: 47, y: y - 17, font, size: 9, color: green });
-  page.drawText('Dokumen diterbitkan dari data penerimaan pada sistem LPMQ.', { x: 47, y: 57, font, size: 8, color: ink });
+
+  const colNoW = 24;
+  const colLabelW = 165;
+  const rowHeight = 19;
+  const tableStartY = y;
+
+  for (let i = 0; i < rows.length; i++) {
+    const [no, label, val] = rows[i];
+    const curRowY = tableStartY - (i + 1) * rowHeight;
+
+    // Garis horizontal pembatas baris
+    page.drawLine({
+      start: { x: margin, y: curRowY },
+      end: { x: margin + contentWidth, y: curRowY },
+      thickness: 0.5,
+      color: tableBorder,
+    });
+
+    // No
+    page.drawText(printable(no), {
+      x: margin + 6,
+      y: curRowY + 6,
+      size: 8,
+      font,
+      color: black,
+    });
+
+    // Label
+    page.drawText(printable(label), {
+      x: margin + colNoW + 6,
+      y: curRowY + 6,
+      size: 8,
+      font: bold,
+      color: black,
+    });
+
+    // Nilai (wrap jika terlalu panjang)
+    const maxValW = contentWidth - colNoW - colLabelW - 12;
+    let displayVal = printable(val);
+    if (font.widthOfTextAtSize(displayVal, 8) > maxValW) {
+      while (displayVal.length > 5 && font.widthOfTextAtSize(displayVal + '...', 8) > maxValW) {
+        displayVal = displayVal.slice(0, -1);
+      }
+      displayVal += '...';
+    }
+
+    page.drawText(displayVal, {
+      x: margin + colNoW + colLabelW + 6,
+      y: curRowY + 6,
+      size: 8,
+      font,
+      color: black,
+    });
+  }
+
+  // Bingkai luar tabel
+  const tableTotalH = rowHeight * rows.length;
+  page.drawRectangle({
+    x: margin,
+    y: tableStartY - tableTotalH,
+    width: contentWidth,
+    height: tableTotalH,
+    borderColor: tableBorder,
+    borderWidth: 0.8,
+  });
+
+  // Garis vertikal pembatas kolom
+  page.drawLine({
+    start: { x: margin + colNoW, y: tableStartY },
+    end: { x: margin + colNoW, y: tableStartY - tableTotalH },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+  page.drawLine({
+    start: { x: margin + colNoW + colLabelW, y: tableStartY },
+    end: { x: margin + colNoW + colLabelW, y: tableStartY - tableTotalH },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+
+  y = tableStartY - tableTotalH - 16;
+
+  // 5. Klausul Pernyataan Resmi
+  const statement = [
+    'Master cetak fisik di atas telah diperiksa kelengkapan fisiknya dan dinyatakan diterima di Loket Pelayanan',
+    'Lajnah Pentashihan Mushaf Al-Qur\'an untuk diproses ke tahapan penugasan verifikator dan pemeriksaan naskah.',
+    'Harap simpan lembar tanda terima ini sebagai bukti sah penyerahan dokumen fisik.',
+  ];
+  for (const st of statement) {
+    page.drawText(st, {
+      x: margin,
+      y,
+      size: 8,
+      font,
+      color: black,
+    });
+    y -= 11;
+  }
+
+  y -= 12;
+
+  // 6. Pengesahan Dua Kolom (Serah Terima Resmi)
+  const currentDateIndo = new Date().toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  });
+
+  const colLeftX = margin + 20;
+  const colRightX = 595 - margin - 190;
+
+  page.drawText('Yang menyerahkan,', {
+    x: colLeftX,
+    y,
+    size: 8.5,
+    font: bold,
+    color: black,
+  });
+  page.drawText(`Jakarta, ${currentDateIndo}`, {
+    x: colRightX,
+    y,
+    size: 8.5,
+    font,
+    color: black,
+  });
+  y -= 11;
+
+  page.drawText('Pemohon / Penerbit,', {
+    x: colLeftX,
+    y,
+    size: 8,
+    font,
+    color: black,
+  });
+  page.drawText('Petugas Loket Pelayanan LPMQ,', {
+    x: colRightX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+
+  y -= 52;
+
+  // Nama Penandatangan
+  const publisherSigner = printable(reg.publisher?.legal_name || 'Pemohon');
+  page.drawText(`( ${publisherSigner.slice(0, 32)} )`, {
+    x: colLeftX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+
+  const officerSigner = printable(intake.received_by?.name || 'Petugas Loket');
+  page.drawText(`( ${officerSigner} )`, {
+    x: colRightX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+  y -= 10;
+
+  page.drawText('Materai / Tanda Tangan', {
+    x: colLeftX + 15,
+    y,
+    size: 7,
+    font: italic,
+    color: darkGray,
+  });
+  page.drawText('NIP. .................................................', {
+    x: colRightX,
+    y,
+    size: 7.5,
+    font,
+    color: darkGray,
+  });
+
+  // 7. Catatan Kaki Resmi
+  const footerY = 32;
+  page.drawLine({
+    start: { x: margin, y: footerY + 12 },
+    end: { x: 595 - margin, y: footerY + 12 },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+  page.drawText('Dokumen ini merupakan tanda terima resmi LPMQ yang dicatat otomatis dalam basis data sistem pentashihan.', {
+    x: margin,
+    y: footerY + 3,
+    size: 6.5,
+    font: italic,
+    color: darkGray,
+  });
+  page.drawText('Kementerian Agama Republik Indonesia - Balai Litbang dan Diklat - Lajnah Pentashihan Mushaf Al-Qur\'an.', {
+    x: margin,
+    y: footerY - 5,
+    size: 6.5,
+    font: italic,
+    color: darkGray,
+  });
+
   return Buffer.from(await pdf.save());
 }

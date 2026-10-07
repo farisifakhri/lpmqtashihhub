@@ -86,7 +86,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
 
       if (data.decision === 'RETURNED') {
         if (reg.status !== 'REVISION_REQUIRED') {
-          await move(tx, reg, 'REVISION_REQUIRED', user, data.notes || 'Master fisik dikembalikan di loket LPMQ', req);
+          await move(tx, reg, 'REVISION_REQUIRED', user, data.notes || 'Master fisik dikembalikan di LPMQ', req);
         }
         await tx.registration.update({
           where: { id: reg.id },
@@ -94,7 +94,7 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         });
       } else if (data.decision === 'RECEIVED' && reg.status === 'REVISION_REQUIRED') {
         if (reg.revision_source === 'PHYSICAL_MASTER') {
-          await move(tx, reg, 'READY_FOR_VERIFICATION', user, 'Perbaikan master fisik diterima di loket LPMQ', req);
+          await move(tx, reg, 'READY_FOR_VERIFICATION', user, 'Perbaikan master fisik diterima di LPMQ', req);
           await tx.registration.update({
             where: { id: reg.id },
             data: { revision_source: null },

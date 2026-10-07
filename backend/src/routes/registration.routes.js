@@ -29,6 +29,12 @@ router.get(
   validate(registrationIdParamSchema),
   registrationController.downloadReceiptPdf
 );
+router.get(
+  '/:id/shipping-label-pdf',
+  authorize('ADMIN_PENERBIT', 'SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR'),
+  validate(registrationIdParamSchema),
+  registrationController.downloadShippingLabelPdf
+);
 router.delete(
   '/:id',
   authorize('ADMIN_PENERBIT', 'SUPERADMIN'),
