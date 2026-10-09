@@ -66,17 +66,17 @@ const CHECKLIST_DEFINITIONS = [
   },
   {
     code: 'TAJWID_COLOR',
-    title: '5. Kesesuaian dengan kaidah tajwid warna',
+    title: '5. Kesesuaian Dengan Kaidah Tajwid Warna',
     description: 'Pemeriksaan penerapan kode dan panduan tajwid warna sesuai pedoman LPMQ (bila menggunakan tajwid warna).',
   },
   {
     code: 'TRANSLATION_KEMENAG',
-    title: '6. Kesesuaian dengan terjemah kemenag',
+    title: '6. Kesesuaian Dengan Terjemah Kemenag',
     description: "Pemeriksaan teks terjemahan Al-Qur'an Kementerian Agama RI edisi mutakhir (bila mushaf berterjemah).",
   },
   {
     code: 'BRAILLE_PEDOMAN',
-    title: "7. Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag",
+    title: "7. Kesesuaian Dengan Pedoman Penulisan Al-Qur'an Braille Kemenag",
     description: "Pemeriksaan sistem simbol dan standarisasi Al-Qur'an Braille Kemenag RI (khusus mushaf braille).",
   },
   {
@@ -950,15 +950,6 @@ export const VerificationInspectionPage = () => {
         >
           Hasil & Surat
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('arsip')}
-          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
-            activeMobileTab === 'arsip' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Arsip Dokumen
-        </button>
       </div>
 
       {/* THE SPLIT-STUDIO WORKSTATION */}
@@ -1037,19 +1028,6 @@ export const VerificationInspectionPage = () => {
                   {decision === 'PASSED' ? 'Lolos' : 'Perbaikan'}
                 </span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('arsip')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'arsip'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <History className="w-3.5 h-3.5 text-brand-700" />
-                <span>Arsip & Dokumen</span>
-              </button>
             </div>
           </div>
 
@@ -1082,36 +1060,7 @@ export const VerificationInspectionPage = () => {
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'}`}>
-            <ResultLetterPanel
-              activeMobileTab="hasil"
-              decision={decision}
-              setDecision={setDecision}
-              loadOfficialTemplate={loadOfficialTemplate}
-              setIsDirty={setIsDirty}
-              isReadOnly={isReadOnly}
-              validationErrors={validationErrors}
-              notes={notes}
-              setNotes={setNotes}
-              letterTab={letterTab}
-              setLetterTab={setLetterTab}
-              letterText={letterText}
-              setLetterText={setLetterText}
-              billingNo={billingNo}
-              setBillingNo={setBillingNo}
-              billingFileId={billingFileId}
-              billingFileName={billingFileName}
-              billingUploading={billingUploading}
-              handleBillingFile={handleBillingFile}
-              resultDocumentId={latestResultDoc?.id}
-              registration={registration}
-              publisher={publisher}
-              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
-            />
-          </div>
-
-          {/* TAB 4: ARSIP & DOKUMEN RESMI */}
-          <div className={`${activeMobileTab === 'arsip' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'arsip' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
+          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
             {/* Multi-Signatory Progress & Email Status Banners */}
             {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
               <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
@@ -1174,7 +1123,31 @@ export const VerificationInspectionPage = () => {
               />
             )}
 
-            <DocumentArchive registrationId={registration.id} />
+            <ResultLetterPanel
+              activeMobileTab="hasil"
+              decision={decision}
+              setDecision={setDecision}
+              loadOfficialTemplate={loadOfficialTemplate}
+              setIsDirty={setIsDirty}
+              isReadOnly={isReadOnly}
+              validationErrors={validationErrors}
+              notes={notes}
+              setNotes={setNotes}
+              letterTab={letterTab}
+              setLetterTab={setLetterTab}
+              letterText={letterText}
+              setLetterText={setLetterText}
+              billingNo={billingNo}
+              setBillingNo={setBillingNo}
+              billingFileId={billingFileId}
+              billingFileName={billingFileName}
+              billingUploading={billingUploading}
+              handleBillingFile={handleBillingFile}
+              resultDocumentId={latestResultDoc?.id}
+              registration={registration}
+              publisher={publisher}
+              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+            />
           </div>
         </div>
       </div>

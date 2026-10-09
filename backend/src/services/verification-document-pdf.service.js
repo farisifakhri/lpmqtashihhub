@@ -555,9 +555,9 @@ export async function renderVerificationPdf(document, { draft = false, approver 
       ['2.', 'Kelengkapan Surah', ['COMPLETENESS_SURAH', 'DIGITAL_FILES']],
       ['3.', 'Urutan Halaman', ['PAGE_ORDER', 'PHYSICAL_MASTER']],
       ['4.', 'Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia', ['MSI_CONFORMITY', 'MANUSCRIPT_CONTENT']],
-      ['5.', 'Kesuaian dengan kaidah tajwid warna', ['TAJWID_COLOR', 'MANUSCRIPT_CONTENT']],
-      ['6.', 'Kesesuaian dengan terjemah kemenag', ['TRANSLATION_KEMENAG', 'MANUSCRIPT_CONTENT']],
-      ['7.', "Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag.", ['BRAILLE_PEDOMAN', 'MANUSCRIPT_CONTENT']],
+      ['5.', 'Kesesuaian Dengan Kaidah Tajwid Warna', ['TAJWID_COLOR', 'MANUSCRIPT_CONTENT']],
+      ['6.', 'Kesesuaian Dengan Terjemah Kemenag', ['TRANSLATION_KEMENAG', 'MANUSCRIPT_CONTENT']],
+      ['7.', "Kesesuaian Dengan Pedoman Penulisan Al-Qur'an Braille Kemenag", ['BRAILLE_PEDOMAN', 'MANUSCRIPT_CONTENT']],
       ['8.', 'Kesesuaian Dengan Pedoman Transliterasi', ['TRANSLITERATION_PEDOMAN', 'MANUSCRIPT_CONTENT']],
     ];
 

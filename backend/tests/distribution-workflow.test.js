@@ -45,6 +45,7 @@ function createMockTx(overrides = {}) {
       findUnique: async () => ({ id: 'pub-1', user_id: 'pub-user-1' }),
       ...overrides.publisher,
     },
+    ...overrides,
   };
   return mockTx;
 }
@@ -337,3 +338,94 @@ test('approveDistribution transitions to REVISION_REQUIRED and notifies publishe
     prisma.$transaction = originalTx;
   }
 });
+
+test('recordReview completes all juz_items in assignment and records recap_file_id', async () => {
+  const originalTx = prisma.$transaction;
+  let updatedJuz = null;
+  let createdReview = null;
+
+  try {
+    prisma.$transaction = async (cb) => {
+      return cb(createMockTx({
+        assignment: {
+          findUnique: async () => ({
+            id: 'assign-range',
+            registration_id: 'reg-1',
+            assignee_id: 'pentashih-1',
+            status: 'IN_PROGRESS',
+            reviews: [],
+            juz_items: [{ id: 'j1', juz_number: 1 }, { id: 'j2', juz_number: 2 }],
+          }),
+          update: async ({ data }) => ({ id: 'assign-range', ...data }),
+        },
+        assignmentJuz: {
+          updateMany: async ({ where, data }) => {
+            updatedJuz = { where, data };
+            return { count: 2 };
+          },
+        },
+        tashihReview: {
+          create: async ({ data }) => {
+            createdReview = { id: 'rev-200', ...data };
+            return createdReview;
+          },
+        },
+      }));
+    };
+
+    const res = await recordReview(
+      'assign-range',
+      { result: 'REVISION_REQUIRED', notes: 'Ada koreksi rasm', recap_file_id: 'file-recap-123' },
+      { id: 'pentashih-1', roles: ['PENTASHIH'] }
+    );
+
+    assert.equal(res.id, 'rev-200');
+    assert.equal(res.result, 'REVISION_REQUIRED');
+    assert.equal(res.recap_file_id, 'file-recap-123');
+    assert.ok(createdReview.notes.includes('[RECAP_FILE:file-recap-123]'));
+    assert.equal(updatedJuz.data.result, 'REVISION_REQUIRED');
+  } finally {
+    prisma.$transaction = originalTx;
+  }
+});
+
+test('approveDistribution creates official REVISION_RETURN_LETTER with round and revision_kind', async () => {
+  const originalTx = prisma.$transaction;
+  let createdDoc = null;
+
+  try {
+    prisma.$transaction = async (cb) => {
+      return cb(createMockTx({
+        assignment: {
+          findFirst: async () => ({ iteration: 1 }),
+          findMany: async () => [
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'REVISION_REQUIRED' }] },
+          ],
+        },
+        officialDocument: {
+          count: async () => 0,
+          create: async ({ data }) => {
+            createdDoc = data;
+            return { id: 'doc-rev-1', ...data };
+          },
+        },
+      }));
+    };
+
+    await approveDistribution(
+      'reg-1',
+      { result: 'REVISION_REQUIRED', notes: 'Perbaiki kaidah rasm pada juz 1-5', revision_kind: 'NASKAH_DUMI' },
+      { id: 'dist-1', roles: ['DISTRIBUTOR'] }
+    );
+
+    assert.ok(createdDoc);
+    assert.equal(createdDoc.document_type, 'REVISION_RETURN_LETTER');
+    assert.equal(createdDoc.version, 1);
+    assert.equal(createdDoc.content_snapshot.revision_round, 1);
+    assert.equal(createdDoc.content_snapshot.revision_kind, 'NASKAH_DUMI');
+    assert.ok(createdDoc.document_no.startsWith('SRV-'));
+  } finally {
+    prisma.$transaction = originalTx;
+  }
+});
+

@@ -20,14 +20,24 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   const team = await tx.distributionTeam.findUnique({ where: { id: data.team_id }, include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } } });
   if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) fail(409, 'Tim yang dipilih tidak tersedia atau masa berlaku SK-nya belum dimulai/sudah berakhir. Pilih tim dengan SK aktif atau minta administrator memperbarui data tim.');
   const entries = data.juz_assignments || data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] }));
+  const allJuz = entries.flatMap(e => e.juz_numbers || []);
+  if (allJuz.length > 0 && new Set(allJuz).size !== allJuz.length) {
+    fail(400, 'Rentang atau nomor juz tidak boleh tumpang tindih antar pentashih.');
+  }
   for (const { assignee_id: id } of entries) {
     const member = team.members.find(member => member.user_id === id);
     if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
   }
+  const verifiedPayment = await tx.paymentRecord.findFirst({
+    where: { registration_id: id, status: 'VERIFIED' },
+    orderBy: { verified_at: 'desc' },
+  });
   const receivedHandover = data.stage === 'REVISION' ? null : await tx.physicalManuscriptHandover.findFirst({
     where: { registration_id: id, status: 'RECEIVED' }, orderBy: { received_at: 'desc' }, select: { tashih_due_at: true },
   });
-  const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, now, Number(reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]));
+  const slaDays = Number(reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]) || 15;
+  const slaBaseDate = verifiedPayment?.verified_at || now;
+  const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, slaBaseDate, slaDays, { applyCutoff: true });
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
     const assignment = await tx.assignment.create({ data: {
@@ -58,12 +68,27 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
   const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true, juz_items: true } });
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
-  if (assignment.juz_items?.length) fail(409, 'Penugasan ini memakai checklist per juz. Isi hasil setiap juz di ruang kerja Anda.');
   if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
-  const review = await tx.tashihReview.create({ data: { assignment_id: id, ...data } });
+
+  if (assignment.juz_items?.length && tx.assignmentJuz?.updateMany) {
+    await tx.assignmentJuz.updateMany({
+      where: { assignment_id: id },
+      data: {
+        result: data.result,
+        notes: data.notes || (data.result === 'PASSED' ? 'Lolos telaah rentang juz' : 'Perlu perbaikan naskah'),
+        completed_at: new Date(),
+      },
+    });
+  }
+
+  const finalNotes = data.recap_file_id
+    ? `${data.notes || ''}\n[RECAP_FILE:${data.recap_file_id}]`.trim()
+    : data.notes;
+
+  const review = await tx.tashihReview.create({ data: { assignment_id: id, result: data.result, notes: finalNotes } });
   await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
-  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
-  return review;
+  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, { ...review, recap_file_id: data.recap_file_id });
+  return { ...review, recap_file_id: data.recap_file_id || null };
 }, { isolationLevel: 'ReadCommitted' });
 
 export const recordJuzChecklist = (id, juzNumber, data, user) => prisma.$transaction(async tx => {
@@ -142,7 +167,42 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
   const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
   await move(tx, reg, status, user, data.notes);
-  await audit(tx, user, 'DISTRIBUTOR_REVIEW', 'Registration', id, data);
+
+  let revisionRound = null;
+  let revisionKind = null;
+
+  if (status === 'REVISION_REQUIRED') {
+    revisionKind = data.revision_kind || 'NASKAH_PERBAIKAN';
+    const previousLetters = tx.officialDocument?.count
+      ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
+      : 0;
+    revisionRound = previousLetters + 1;
+
+    if (tx.officialDocument?.create) {
+      await tx.officialDocument.create({
+        data: {
+          registration_id: id,
+          document_type: 'REVISION_RETURN_LETTER',
+          document_no: `SRV-${reg.registration_no || id}-${revisionRound}`,
+          version: revisionRound,
+          status: 'ISSUED',
+          issued_at: new Date(),
+          content_snapshot: {
+            title: reg.title,
+            registration_no: reg.registration_no,
+            publisher: reg.publisher?.legal_name,
+            revision_round: revisionRound,
+            revision_kind: revisionKind,
+            notes: data.notes,
+            distributor_name: user.name,
+            created_at: new Date().toISOString(),
+          },
+        },
+      });
+    }
+  }
+
+  await audit(tx, user, 'DISTRIBUTOR_REVIEW', 'Registration', id, { ...data, revision_round: revisionRound, revision_kind: revisionKind });
 
   if (status === 'REVISION_REQUIRED' && reg.publisher_id) {
     const publisher = await tx.publisher.findUnique({
@@ -150,13 +210,14 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
       select: { user_id: true },
     });
     if (publisher?.user_id) {
+      const typeLabel = revisionKind === 'NASKAH_DUMI' ? 'Pemeriksaan Naskah Dumi' : 'Perbaikan Naskah';
       await tx.notification.create({
         data: {
           user_id: publisher.user_id,
           registration_id: id,
           type: 'REVISION_REQUIRED',
-          title: 'Hasil Sidang Pentashihan Memerlukan Perbaikan Naskah',
-          payload: { link: `/publisher/registrations/${id}`, notes: data.notes },
+          title: `Hasil Sidang Pentashihan: Memerlukan ${typeLabel} (Ronde #${revisionRound})`,
+          payload: { link: `/publisher/registrations/${id}`, notes: data.notes, revision_round: revisionRound, revision_kind: revisionKind },
         },
       });
     }

@@ -127,9 +127,14 @@ export async function renderDraft(document) {
     y -= size + 5;
   };
 
+  const isRevisionLetter = document.document_type === 'REVISION_RETURN_LETTER';
   const docTitle = document.document_type === 'SURAT_TANDA_TASHIH'
     ? 'SURAT TANDA TASHIH (DRAF)'
-    : (document.document_type === 'BERITA_ACARA_TASHIH' ? 'BERITA ACARA SIDANG PENTASHIHAN (DRAF)' : `${document.document_type} (DRAF)`);
+    : (document.document_type === 'BERITA_ACARA_TASHIH'
+      ? 'BERITA ACARA SIDANG PENTASHIHAN (DRAF)'
+      : (isRevisionLetter
+        ? 'SURAT PENGEMBALIAN DAN CATATAN HASIL TASHIH'
+        : `${document.document_type} (DRAF)`));
 
   printLine(docTitle, true, 13);
   printLine(`Nomor Dokumen: ${document.document_no}  |  Versi: ${document.version}`, false, 9);
@@ -140,6 +145,28 @@ export async function renderDraft(document) {
   printLine(`Nomor Registrasi   : ${snap.registration_no || '-'}`, false, 9, 52);
   printLine(`Penerbit Pemohon   : ${snap.publisher || '-'}`, false, 9, 52);
   y -= 8;
+
+  if (isRevisionLetter) {
+    printLine('STATUS SIDANG DAN TAHAP PERBAIKAN', true, 10);
+    printLine(`Ronde Perbaikan    : Ke-${snap.revision_round || document.version || 1}`, false, 9, 52);
+    printLine(`Jenis Naskah       : ${snap.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi (Pemeriksaan Cetak Akhir)' : 'Naskah Perbaikan (Koreksi Teks/Rasm)'}`, false, 9, 52);
+    printLine(`Petugas Distributor: ${snap.distributor_name || 'Koordinator Distribusi LPMQ'}`, false, 9, 52);
+    y -= 8;
+
+    printLine('CATATAN DAN ARAHAN KOREKSI RESMI', true, 10);
+    const noteText = String(snap.notes || '-');
+    const noteLines = noteText.split('\n');
+    for (const nl of noteLines) {
+      if (nl.trim()) printLine(nl.trim(), false, 8.5, 52);
+    }
+    y -= 8;
+
+    printLine('CATATAN PERSURATAN RESMI', true, 10);
+    printLine('1. Naskah wajib diperbaiki dan dikembalikan ke Lajnah Pentashihan Mushaf Al-Qur\'an sesuai tenggat waktu.', false, 8.5, 52);
+    printLine('2. Dokumen ini mengikat sebagai risalah koreksi resmi Kementerian Agama Republik Indonesia.', false, 8.5, 52);
+
+    return Buffer.from(await pdf.save());
+  }
 
   if (snap.verification && snap.verification.length > 0) {
     printLine('RINGKASAN VERIFIKASI AWAL', true, 10);
@@ -168,9 +195,9 @@ export async function renderDraft(document) {
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
 export async function documentPdf(document) {
-  if (document.status === 'DRAFT') return renderDraft(document);
+  if (document.status === 'DRAFT' || document.document_type === 'REVISION_RETURN_LETTER') return renderDraft(document);
   if (document.status !== 'ISSUED' || (document.valid_until && document.valid_until < new Date())) fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
-  if (!document.file_id) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+  if (!document.file_id) return renderDraft(document);
   const file = await prisma.storedFile.findUnique({ where: { id: document.file_id } });
   if (!file || file.mime_type !== 'application/pdf') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
   let bytes;

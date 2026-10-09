@@ -34,6 +34,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   // Form decision state
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [distributorNotes, setDistributorNotes] = useState('');
+  const [revisionKind, setRevisionKind] = useState('NASKAH_PERBAIKAN'); // 'NASKAH_PERBAIKAN' | 'NASKAH_DUMI'
 
   useEffect(() => {
     let active = true;
@@ -44,6 +45,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
         if (!active) return;
         const reg = res.data;
         setRegistration(reg);
+        if (reg.revision_kind) setRevisionKind(reg.revision_kind);
 
         // Cari iterasi terakhir
         const assignments = reg.assignments || [];
@@ -57,14 +59,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
         if (hasRevision) {
           setDecision('REVISION_REQUIRED');
-          // Kompilasi catatan otomatis dari pentashih
+          // Kompilasi catatan otomatis dari pentashih (bersihkan tag internal recap)
           const compiled = currentAssignments
             .filter((a) => a.reviews?.some((r) => r.result === 'REVISION_REQUIRED'))
             .map((a) => {
               const corrections = a.juz_items?.filter(item => item.result === 'REVISION_REQUIRED') || [];
+              const rawNote = a.reviews?.[0]?.notes || '';
+              const cleanNote = rawNote.replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim();
               return corrections.length
                 ? corrections.map(item => `[${a.assignee?.name || 'Pentashih'} · Juz ${item.juz_number}]: ${item.notes}`).join('\n')
-                : `[${a.assignee?.name || 'Pentashih'}]: ${a.reviews?.[0]?.notes || ''}`;
+                : `[${a.assignee?.name || 'Pentashih'}]: ${cleanNote}`;
             })
             .join('\n\n');
           setDistributorNotes(
@@ -124,6 +128,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       await tashihApi.approveDistribution(registrationId, {
         result: decision,
         notes: distributorNotes.trim(),
+        revision_kind: decision === 'REVISION_REQUIRED' ? revisionKind : undefined,
       });
 
       onSuccess?.();
@@ -254,11 +259,25 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
                         {rev?.notes ? (
                           <div className="p-2 rounded-lg bg-white border border-line/80 text-[11px] text-ink italic font-mono whitespace-pre-line">
-                            "{rev.notes}"
+                            "{((rev?.notes || '').replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim()) || 'Lolos tanpa catatan.'}"
                           </div>
                         ) : (
                           <div className="text-[11px] text-ink-muted">
                             Menunggu input hasil sidang dari pentashih bersangkutan.
+                          </div>
+                        )}
+                        {Boolean(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)) && (
+                          <div className="pt-1.5 flex items-center gap-2">
+                            <a
+                              href={`/api/v1/uploads/${a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1]}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-[11px] font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-brand-700" />
+                              <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
+                            </a>
+                            <span className="text-[10px] text-ink-muted">Kerahasiaan Internal</span>
                           </div>
                         )}
                         {a.juz_items?.length > 0 && <div className="space-y-1.5 pt-2 border-t border-line">{a.juz_items.map(item => <div key={item.id} className="text-[11px] text-ink"><strong>Juz {item.juz_number}:</strong> {item.result === 'PASSED' ? 'Selesai' : item.result === 'REVISION_REQUIRED' ? 'Perlu perbaikan' : 'Menunggu checklist'}{item.notes ? ` — ${item.notes}` : ''}</div>)}</div>}
@@ -345,6 +364,83 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         </label>
                       </div>
 
+                      {decision === 'REVISION_REQUIRED' && (
+                        <div className="mt-3.5 p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft/30 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-ink">
+                              Ronde Pengembalian: <strong className="font-mono text-civic-warning">Perbaikan Ke-{(registration?.revision_round || 0) + 1}</strong>
+                            </span>
+                            <span className="text-[10px] text-brand-800 font-semibold px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
+                              Surat Hasil Tashih Otomatis Terbit
+                            </span>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-ink mb-1.5">
+                              Pilih Jenis Naskah Pengembalian (SRS v3.1 / T-04)
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <label
+                                className={clsx(
+                                  'p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2',
+                                  revisionKind === 'NASKAH_PERBAIKAN'
+                                    ? 'border-brand-700 bg-brand-50/50 font-bold text-brand-900 shadow-2xs'
+                                    : 'border-line bg-white text-ink'
+                                )}
+                              >
+                                <input
+                                  type="radio"
+                                  name="revisionKind"
+                                  value="NASKAH_PERBAIKAN"
+                                  checked={revisionKind === 'NASKAH_PERBAIKAN'}
+                                  onChange={(e) => setRevisionKind(e.target.value)}
+                                  className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                                />
+                                <div>
+                                  <div>Naskah Perbaikan</div>
+                                  <div className="text-[10px] text-ink-muted font-normal mt-0.5">
+                                    Siklus koreksi naskah berkala (tahap awal / revisi lanjutan).
+                                  </div>
+                                </div>
+                              </label>
+
+                              <label
+                                className={clsx(
+                                  'p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2',
+                                  revisionKind === 'NASKAH_DUMI'
+                                    ? 'border-brand-700 bg-brand-50/50 font-bold text-brand-900 shadow-2xs'
+                                    : 'border-line bg-white text-ink'
+                                )}
+                              >
+                                <input
+                                  type="radio"
+                                  name="revisionKind"
+                                  value="NASKAH_DUMI"
+                                  checked={revisionKind === 'NASKAH_DUMI'}
+                                  onChange={(e) => setRevisionKind(e.target.value)}
+                                  className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                                />
+                                <div>
+                                  <div>Naskah Dumi</div>
+                                  <div className="text-[10px] text-ink-muted font-normal mt-0.5">
+                                    Format mock-up / dumi cetak akhir sebelum cetak massal.
+                                  </div>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-white border border-civic-warningLine/70 text-[11px] text-ink space-y-1">
+                            <strong className="text-civic-warning block font-bold">
+                              Panduan Ketentuan Naskah Dumi (T-04):
+                            </strong>
+                            <p className="text-ink-muted leading-relaxed">
+                              Naskah Dumi dipilih setelah naskah bersih dari kesalahan pada tashih tahap awal atau tahap revisi. Di tahap dumi tetap dilakukan pemeriksaan terakhir. Apabila masih ditemukan kesalahan minor di akhir, naskah tidak perlu dikembalikan dalam siklus baru ke penerbit, melainkan diterbitkan notice catatan kesalahan.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       {!canPassSTT && (
                         <p className="text-[11px] text-civic-warning mt-1.5 flex items-center gap-1">
                           <Info className="w-3.5 h-3.5 shrink-0" />
@@ -368,9 +464,12 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         value={distributorNotes}
                         maxLength={10000}
                         onChange={(e) => setDistributorNotes(e.target.value)}
-                        placeholder="Tuliskan alasan keputusan atau rekap arahan perbaikan untuk penerbit..."
+                        placeholder="Tuliskan arahan perbaikan resmi yang akan dicantumkan pada Surat Pengembalian dan Catatan Hasil Tashih..."
                         className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                       />
+                      <p className="text-[11px] text-ink-muted mt-1">
+                        Catatan ini dicantumkan langsung pada Surat Pengembalian dan Catatan Hasil Tashih resmi LPMQ untuk penerbit.
+                      </p>
                     </div>
                   </div>
                 ) : (

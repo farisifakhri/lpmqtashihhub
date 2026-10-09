@@ -46,11 +46,11 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('ADMIN_PENERBI
   } catch (error) { next(error); }
 });
 
-router.post('/uploads', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR'),
+router.post('/uploads', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
   express.raw({ type: ['application/pdf', 'image/png', 'image/jpeg'], limit: MAX_UPLOAD_BYTES }),
   action(req => upload(req.body, req.get('content-type')?.split(';')[0], req.user), 201));
 
-router.get('/uploads/:id', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DOKUMENTATOR', 'HELPER_ADMIN', 'KEPALA_LPMQ'), async (req, res, next) => {
+router.get('/uploads/:id', authenticate, authorize('ADMIN_PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DISTRIBUTOR', 'DOKUMENTATOR', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'SUPERADMIN'), async (req, res, next) => {
   try {
     const { file, bytes } = await readPrivateFile(req.params.id, req.user);
     res.set({ 'Content-Type': file.mime_type, 'Content-Disposition': `attachment; filename="${file.id}"`, 'Cache-Control': 'private, no-store' });

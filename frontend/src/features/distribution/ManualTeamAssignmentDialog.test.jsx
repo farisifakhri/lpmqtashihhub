@@ -48,4 +48,21 @@ describe('Manual team assignment', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Status pengajuan telah berubah');
   });
+  it('supports assigning juz range using quick preset buttons', async () => {
+    const assigned = vi.fn();
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
+    await screen.findByText('Naskah siap distribusi');
+    fireEvent.change(screen.getByRole('combobox', { name: 'Tim dengan SK aktif' }), { target: { value: 't1' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih aktif' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Juz 1–5' }));
+    expect(screen.getByText('Juz 1 s.d. 5 (5 Juz)')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', {
+      team_id: 't1',
+      juz_assignments: [{ assignee_id: 'u1', juz_numbers: [1, 2, 3, 4, 5] }],
+      stage: 'INITIAL',
+    }));
+    expect(assigned).toHaveBeenCalledOnce();
+  });
 });
+

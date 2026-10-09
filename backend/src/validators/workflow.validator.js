@@ -31,9 +31,14 @@ export const juzChecklistSchema = {
   }).strict().refine(data => data.result === 'PASSED' || data.notes.length > 0, 'Catatan koreksi wajib diisi bila juz perlu perbaikan.'),
 };
 export const reviewSchema = { params, body: z.object({
-  result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']), notes: z.string().trim().min(1).max(10000),
+  result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
+  notes: z.string().trim().min(1).max(10000),
+  recap_file_id: z.string().trim().max(191).optional(),
+  revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
 }).strict() };
-export const documentSchema = { params, body: z.object({ document_type: z.enum(['BERITA_ACARA_TASHIH', 'SURAT_TANDA_TASHIH']) }).strict() };
+export const documentSchema = { params, body: z.object({
+  document_type: z.enum(['BERITA_ACARA_TASHIH', 'SURAT_TANDA_TASHIH', 'REVISION_RETURN_LETTER']),
+}).strict() };
 const calendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
   const date = new Date(`${value}T00:00:00Z`);
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;

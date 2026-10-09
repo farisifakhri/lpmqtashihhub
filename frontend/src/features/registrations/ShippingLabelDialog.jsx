@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { Printer, Download, X, Package, MapPin, Building2, Phone, Mail, FileText, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { registrationApi } from '@/api/registration.api';
+import kemenagLogo from '@/assets/kemenag.png';
+import lpmqLogo from '@/assets/lpmq.png';
 
 export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) => {
   const printRef = useRef(null);
@@ -119,26 +121,34 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
             ref={printRef}
             className="border-2 border-black p-6 sm:p-8 bg-white space-y-6 print:border-2 print:border-black print:p-6"
           >
-            {/* Header: Logo & Centered Title */}
-            <div className="relative text-center pb-2">
+            {/* Header: Logo & Centered Title (RF-REG-10) */}
+            <div className="flex items-center justify-between gap-4 pb-3 border-b-2 border-black">
               <img
-                src="/favicon.png"
-                alt="Logo Kemenag"
-                className="w-14 h-14 object-contain absolute left-0 top-0 hidden sm:block"
+                src={kemenagLogo}
+                alt="Logo Kemenag RI"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0"
               />
-              <div className="space-y-0.5">
+              <div className="text-center flex-1 space-y-1">
                 <h3 className="text-sm sm:text-base font-bold text-ink uppercase tracking-wide">
-                  Sistem Informasi Layanan Tashih
+                  Sistem Informasi Layanan Pentashihan Mushaf Al-Qur'an
                 </h3>
-                <h4 className="text-sm sm:text-base font-bold text-ink uppercase tracking-wide">
-                  Kementerian Agama Republik Indonesia
+                <h4 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wide">
+                  Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)
                 </h4>
-                <div className="pt-3">
-                  <h2 className="text-xs sm:text-sm font-semibold text-ink">
-                    Pengiriman Berkas Pendaftaran Mushaf Al-Qur’an
-                  </h2>
+                <p className="text-[11px] sm:text-xs text-ink font-medium">
+                  Badan Moderasi Beragama dan Pengembangan SDM — Kementerian Agama RI
+                </p>
+                <div className="pt-1">
+                  <span className="inline-block px-3 py-1 bg-black text-white text-xs sm:text-sm font-bold tracking-wider uppercase rounded">
+                    Label Pengiriman Master Fisik Naskah A4
+                  </span>
                 </div>
               </div>
+              <img
+                src={lpmqLogo}
+                alt="Logo Tashih LPMQ"
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain shrink-0 rounded"
+              />
             </div>
 
             {/* Official Table: Penerima, Pengirim, Detail Barang */}

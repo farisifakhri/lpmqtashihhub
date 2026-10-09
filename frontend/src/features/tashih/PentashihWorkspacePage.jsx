@@ -28,6 +28,7 @@ export const PentashihWorkspacePage = () => {
   const [reviewNotes, setReviewNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
+  const [recapFileId, setRecapFileId] = useState(null);
 
   const filteredAssignments = useMemo(() => {
     return assignments.filter((item) => {
@@ -76,6 +77,7 @@ export const PentashihWorkspacePage = () => {
       setReviewResult('PASSED');
       setReviewNotes('');
     }
+    setRecapFileId(assignment.recap_file_id || null);
     setModalError(null);
     setReviewModalOpen(true);
   };
@@ -84,6 +86,7 @@ export const PentashihWorkspacePage = () => {
     if (submitting) return;
     setReviewModalOpen(false);
     setSelectedAssignment(null);
+    setRecapFileId(null);
     setModalError(null);
   };
 
@@ -103,6 +106,7 @@ export const PentashihWorkspacePage = () => {
       await tashihApi.recordReview(selectedAssignment.id, {
         result: reviewResult,
         notes: reviewNotes.trim(),
+        recap_file_id: recapFileId || undefined,
       });
 
       setSuccessMessage(
@@ -110,6 +114,7 @@ export const PentashihWorkspacePage = () => {
       );
       setReviewModalOpen(false);
       setSelectedAssignment(null);
+      setRecapFileId(null);
       fetchAssignments();
     } catch (err) {
       setModalError(err.message || 'Gagal menyimpan hasil telaah sidang.');
@@ -195,6 +200,8 @@ export const PentashihWorkspacePage = () => {
         setReviewResult={setReviewResult}
         reviewNotes={reviewNotes}
         setReviewNotes={setReviewNotes}
+        recapFileId={recapFileId}
+        setRecapFileId={setRecapFileId}
         submitting={submitting}
         modalError={modalError}
         closeReviewModal={closeReviewModal}
