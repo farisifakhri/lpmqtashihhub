@@ -107,23 +107,28 @@ export const DocumentPreview = ({
         ) : (
           /* Official Indonesian State Letter Layout (LPMQ Letterhead) */
           <div className="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl border border-line shadow-xs space-y-6 text-ink print:border-0 print:p-0 print:shadow-none font-serif">
-            {/* Kop Surat Resmi LPMQ Kemenag RI */}
-            <header className="border-b-2 border-brand-900 pb-3 text-center space-y-1">
-              <h2 className="text-xs sm:text-sm font-bold tracking-wider text-ink font-sans uppercase">
-                KEMENTERIAN AGAMA REPUBLIK INDONESIA
-              </h2>
-              <h3 className="text-xs sm:text-xs font-bold tracking-wide text-brand-900 font-sans uppercase">
-                BADAN LITBANG DAN DIKLAT KEMENTERIAN AGAMA
-              </h3>
-              <h4 className="text-sm sm:text-base font-black tracking-wide text-brand-950 font-sans uppercase">
-                LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN
-              </h4>
-              <p className="text-[11px] text-ink-muted font-sans leading-tight">
-                Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I, Jakarta Timur 13560<br />
-                Telepon (021) 87798801 · Pos-el: lajnah@kemenag.go.id · Laman: lpmq.kemenag.go.id
-              </p>
-              <div className="w-full h-0.5 bg-brand-900 mt-2" />
-              <div className="w-full h-[1px] bg-brand-900 mt-[2px]" />
+            {/* Kop Surat Resmi LPMQ Kemenag RI (Centered) */}
+            <header className="border-b-2 border-black pb-3 text-center space-y-1 relative">
+              <div className="flex items-center justify-center relative">
+                <img
+                  src="/favicon.png"
+                  alt="Logo Kemenag"
+                  className="w-12 h-12 object-contain absolute left-0 top-1/2 -translate-y-1/2 hidden sm:block"
+                />
+                <div className="space-y-0.5">
+                  <h2 className="text-xs sm:text-sm font-bold tracking-wider text-ink font-sans uppercase">
+                    KEMENTERIAN AGAMA REPUBLIK INDONESIA
+                  </h2>
+                  <h4 className="text-sm sm:text-base font-black tracking-wide text-ink font-sans uppercase">
+                    LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN
+                  </h4>
+                  <p className="text-[11px] text-ink font-sans leading-tight">
+                    Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560<br />
+                    Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807<br />
+                    Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id
+                  </p>
+                </div>
+              </div>
             </header>
 
             {/* Judul & Nomor Dokumen */}

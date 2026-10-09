@@ -47,7 +47,7 @@ export function PublisherPhysicalMasterTab({
                 : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
           }`}>
             {data.physical_master_intake?.status === 'RECEIVED'
-              ? 'Master Fisik Diterima Loket LPMQ'
+              ? 'Master Fisik Diterima LPMQ'
               : data.physical_dispatch_status === 'DISPATCHED'
                 ? 'Berkas Dikirim · Menunggu Penerimaan'
                 : 'Menunggu Pengiriman Berkas Fisik'}
@@ -74,10 +74,10 @@ export function PublisherPhysicalMasterTab({
               Alamat Penyerahan / Pengiriman:
             </p>
             <div className="text-ink-muted space-y-1 text-[11px] leading-relaxed">
-              <p className="font-bold text-ink">Loket Pelayanan Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)</p>
+              <p className="font-bold text-ink">Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)</p>
               <p>Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I</p>
               <p>Kel. Pinang Ranti, Kec. Makasar, Jakarta Timur 13560</p>
-              <p className="pt-1 text-ink">Jam Layanan Loket: Senin – Jumat, 08.00 – 15.00 WIB</p>
+              <p className="pt-1 text-ink">Jam Layanan: Senin – Jumat, 08.00 – 15.00 WIB</p>
             </div>
           </div>
         </div>
@@ -101,14 +101,14 @@ export function PublisherPhysicalMasterTab({
               Status Saat Ini: <strong>{data.physical_master_intake
                 ? `${data.physical_master_intake.volume_count} Jilid · ${
                     data.physical_master_intake.status === 'RECEIVED'
-                      ? 'Telah Diterima Loket LPMQ'
-                      : 'Menunggu Verifikasi Loket'
+                      ? 'Telah Diterima LPMQ'
+                      : 'Menunggu Verifikasi LPMQ'
                   }`
                 : 'Belum dideklarasikan (standar 30 jilid)'}</strong>
             </p>
             {data.physical_master_intake?.received_at && (
               <p className="text-[11px] text-ink-muted">
-                Diterima loket pada: {new Date(data.physical_master_intake.received_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB
+                Diterima LPMQ pada: {new Date(data.physical_master_intake.received_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB
               </p>
             )}
           </div>
@@ -155,7 +155,7 @@ export function PublisherPhysicalMasterTab({
               Konfirmasi Pengiriman Berkas Fisik
             </h3>
             <p className="text-[11px] text-ink-muted mt-0.5">
-              Catat kurir dan nomor resi pengiriman untuk memudahkan pelacakan loket.
+              Catat kurir dan nomor resi pengiriman untuk memudahkan pelacakan berkas.
             </p>
           </div>
 
@@ -166,7 +166,7 @@ export function PublisherPhysicalMasterTab({
                 Konfirmasi Pengiriman Tercatat di Sistem
               </p>
               <div className="text-xs text-ink space-y-1">
-                <p>Metode Pengantaran: <strong>{data.dispatch_courier || 'Loket LPMQ'}</strong></p>
+                <p>Metode Pengantaran: <strong>{data.dispatch_courier || 'Antar Langsung ke LPMQ'}</strong></p>
                 {data.dispatch_tracking_no && (
                   <p>Nomor Resi / Keterangan: <strong className="font-mono text-brand-800">{data.dispatch_tracking_no}</strong></p>
                 )}
@@ -176,8 +176,8 @@ export function PublisherPhysicalMasterTab({
               </div>
               <p className="text-[11px] text-civic-info font-medium bg-white p-2.5 rounded-lg border border-line">
                 {data.physical_master_intake?.status === 'RECEIVED'
-                  ? '✅ Berkas master fisik telah diterima loket LPMQ dan diverifikasi kelengkapannya.'
-                  : '⏳ Berkas dalam proses pengantaran. Petugas loket LPMQ akan mengonfirmasi saat paket tiba di TMII.'}
+                  ? '✅ Berkas master fisik telah diterima LPMQ dan diverifikasi kelengkapannya.'
+                  : '⏳ Berkas dalam proses pengantaran. Petugas LPMQ akan mengonfirmasi saat paket tiba di TMII.'}
               </p>
               <div className="pt-2">
                 <Button
@@ -204,7 +204,7 @@ export function PublisherPhysicalMasterTab({
                   onChange={(e) => setDispatchData({ ...dispatchData, courier: e.target.value })}
                   className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
                 >
-                  <option value="LOKET_LPMQ">Antar Langsung ke Loket LPMQ TMII</option>
+                  <option value="LOKET_LPMQ">Antar Langsung ke LPMQ TMII</option>
                   <option value="JNE">JNE Express</option>
                   <option value="POS_INDONESIA">Pos Indonesia</option>
                   <option value="TIKI">TIKI</option>

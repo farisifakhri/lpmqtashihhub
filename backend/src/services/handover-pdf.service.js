@@ -3,89 +3,381 @@ import { fileURLToPath } from 'node:url';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 const logoPath = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
-const printable = value => String(value ?? '-').replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, '-').replace(/[^\x20-\x7E]/g, ' ');
-const dateTime = value => value ? `${new Date(value).toLocaleString('id-ID', {
-  day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta',
-})} WIB` : '-';
+
+const printable = value =>
+  String(value ?? '-')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2013\u2014]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/[^\x20-\x7E]/g, ' ');
+
+const dateTime = value =>
+  value
+    ? `${new Date(value).toLocaleString('id-ID', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Asia/Jakarta',
+      })} WIB`
+    : '-';
 
 export async function renderHandoverPdf(handover) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
   const logo = await pdf.embedPng(await readFile(logoPath));
-  const ink = rgb(0.12, 0.15, 0.18);
-  const green = rgb(0.08, 0.38, 0.28);
+
+  const margin = 45;
+  const contentWidth = 595 - margin * 2; // 505
+
+  // Warna Formal Pemerintahan
+  const black = rgb(0.08, 0.08, 0.08);
+  const darkGreen = rgb(0.05, 0.32, 0.22);
+  const darkGray = rgb(0.25, 0.25, 0.25);
+  const tableBorder = rgb(0.4, 0.4, 0.4);
+
   let page;
   let y;
 
   const addPage = () => {
     page = pdf.addPage([595, 842]);
-    page.drawImage(logo, { x: 42, y: 747, width: 58, height: 55 });
-    page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', { x: 111, y: 791, font: bold, size: 11 });
-    page.drawText('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', { x: 111, y: 774, font: bold, size: 11 });
-    page.drawText('Gedung Bayt Al-Quran & Museum Istiqlal, Jl. Raya TMII Pintu I', { x: 111, y: 758, font, size: 8 });
-    page.drawText('Jakarta Timur 13560  |  lajnah@kemenag.go.id', { x: 111, y: 746, font, size: 8 });
-    page.drawLine({ start: { x: 42, y: 738 }, end: { x: 553, y: 738 }, thickness: 1.4 });
-    y = 705;
-  };
-  const drawWrapped = (value, x, maxWidth, face = font, size = 9) => {
-    const words = printable(value).split(/\s+/);
-    let row = '';
-    const flush = () => {
-      if (y < 92) addPage();
-      if (row) page.drawText(row, { x, y, font: face, size, color: ink });
-      y -= 15;
-      row = '';
-    };
-    for (const word of words) {
-      const candidate = row ? `${row} ${word}` : word;
-      if (face.widthOfTextAtSize(candidate, size) > maxWidth && row) flush();
-      row = row ? `${row} ${word}` : word;
+    y = 842 - 42;
+
+    // Kop Surat Resmi Kemenag LPMQ (Centered)
+    page.drawImage(logo, { x: margin, y: 744, width: 54, height: 50 });
+
+    const kopLines = [
+      { text: 'KEMENTERIAN AGAMA REPUBLIK INDONESIA', font: bold, size: 12 },
+      { text: "LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN", font: bold, size: 12 },
+      { text: "Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560", font, size: 8 },
+      { text: 'Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807', font, size: 8 },
+      { text: 'Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id', font, size: 8 },
+    ];
+
+    let curY = 786;
+    for (const item of kopLines) {
+      const textW = item.font.widthOfTextAtSize(item.text, item.size);
+      page.drawText(item.text, {
+        x: (595 - textW) / 2,
+        y: curY,
+        font: item.font,
+        size: item.size,
+        color: black,
+      });
+      curY -= item.size === 12 ? 14 : 11;
     }
-    flush();
-  };
-  const field = (label, value) => {
-    if (y < 115) addPage();
-    const start = y;
-    page.drawText(label, { x: 47, y, font: bold, size: 9, color: ink });
-    drawWrapped(value, 205, 340);
-    y = Math.min(y - 10, start - 26);
-    page.drawLine({ start: { x: 42, y: y + 10 }, end: { x: 553, y: y + 10 }, thickness: 0.4, color: rgb(0.8, 0.83, 0.84) });
+
+    // Garis Pemisah Kop Surat Resmi
+    y = 728;
+    page.drawLine({
+      start: { x: margin, y },
+      end: { x: 595 - margin, y },
+      thickness: 1.8,
+      color: black,
+    });
+    y -= 18;
   };
 
   addPage();
-  const title = 'BERITA ACARA SERAH TERIMA MASTER FISIK';
-  page.drawText(title, { x: (595 - bold.widthOfTextAtSize(title, 12)) / 2, y, font: bold, size: 12, color: ink });
-  y -= 22;
-  drawWrapped(`Nomor: ${handover.receipt_no || '-'}`, 42, 510, bold, 10);
-  y -= 13;
-  field('Nomor registrasi', handover.registration?.registration_no);
-  field('Judul naskah', handover.registration?.title);
-  field('Penerbit', handover.registration?.publisher?.legal_name);
-  field('Jenis layanan', handover.registration?.service_type?.name);
-  field('Diserahkan oleh', `${handover.from_user?.name || '-'} / NIP ${handover.from_user?.nip || '-'}`);
-  field('Ditujukan kepada', `${handover.to_user?.name || '-'} / NIP ${handover.to_user?.nip || '-'}`);
-  field('Tanggal penyerahan', dateTime(handover.handed_over_at));
-  field('Jumlah fisik', `${handover.volume_count ?? '-'} jilid`);
-  field('Kondisi fisik', handover.condition);
-  field('Status', handover.status === 'RECEIVED' ? 'Telah diterima distributor' : handover.status === 'RETURNED' ? 'Dikembalikan distributor' : 'Menunggu pemeriksaan dan penerimaan distributor');
-  if (handover.received_at) field('Tanggal penerimaan', dateTime(handover.received_at));
-  if (handover.tashih_due_at) field('Tenggat pentashihan', dateTime(handover.tashih_due_at));
-  if (handover.notes) {
-    y -= 8;
-    drawWrapped(`Catatan: ${handover.notes}`, 47, 500);
+
+  // 1. Judul & Nomor BAST
+  const title = 'BERITA ACARA SERAH TERIMA MASTER FISIK MUSHAF AL-QUR\'AN';
+  page.drawText(title, {
+    x: (595 - bold.widthOfTextAtSize(title, 11)) / 2,
+    y,
+    font: bold,
+    size: 11,
+    color: black,
+  });
+  y -= 14;
+
+  const bastNo = `Nomor: ${printable(handover.receipt_no || '-')}`;
+  page.drawText(bastNo, {
+    x: (595 - bold.widthOfTextAtSize(bastNo, 9.5)) / 2,
+    y,
+    font: bold,
+    size: 9.5,
+    color: darkGreen,
+  });
+  y -= 18;
+
+  // 2. Paragraf Pengantar
+  const handoverDate = handover.handed_over_at
+    ? new Date(handover.handed_over_at).toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta',
+      })
+    : 'hari ini';
+
+  const introText = `Pada hari ini, ${handoverDate}, bertempat di Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI, kami yang bertanda tangan di bawah ini:`;
+
+  const words = introText.split(' ');
+  let lineBuf = '';
+  for (const w of words) {
+    const candidate = lineBuf ? `${lineBuf} ${w}` : w;
+    if (font.widthOfTextAtSize(candidate, 8.5) > contentWidth) {
+      page.drawText(lineBuf, { x: margin, y, font, size: 8.5, color: black });
+      y -= 12;
+      lineBuf = w;
+    } else {
+      lineBuf = candidate;
+    }
+  }
+  if (lineBuf) {
+    page.drawText(lineBuf, { x: margin, y, font, size: 8.5, color: black });
+    y -= 14;
   }
 
-  if (y < 180) addPage();
-  y -= 20;
-  page.drawText('Pihak yang menyerahkan', { x: 47, y, font: bold, size: 9, color: ink });
-  page.drawText('Pihak yang menerima', { x: 313, y, font: bold, size: 9, color: ink });
-  y -= 40;
-  page.drawText(printable(handover.from_user?.name), { x: 47, y, font: bold, size: 9, color: ink });
-  page.drawText(printable(handover.status === 'RECEIVED' ? handover.to_user?.name : 'Menunggu konfirmasi'), { x: 313, y, font: bold, size: 9, color: ink });
-  y -= 15;
-  page.drawText(`Dicatat: ${printable(dateTime(handover.handed_over_at))}`, { x: 47, y, font, size: 8, color: green });
-  page.drawText(printable(handover.status === 'RECEIVED' ? `Diterima: ${dateTime(handover.received_at)}` : 'Belum ada konfirmasi penerimaan'), { x: 313, y, font, size: 8, color: green });
-  page.drawText('Dokumen diterbitkan dari catatan serah terima pada sistem LPMQ.', { x: 47, y: 57, font, size: 8, color: ink });
+  // 3. Identitas Pihak Pertama & Kedua
+  const drawParty = (no, roleTitle, name, nip, partyType) => {
+    page.drawText(`${no}. Nama`, { x: margin + 8, y, font: bold, size: 8, color: black });
+    page.drawText(`: ${printable(name)}`, { x: margin + 70, y, font, size: 8, color: black });
+    y -= 11;
+
+    page.drawText('   NIP', { x: margin + 8, y, font: bold, size: 8, color: black });
+    page.drawText(`: ${printable(nip || '-')}`, { x: margin + 70, y, font, size: 8, color: black });
+    y -= 11;
+
+    page.drawText('   Jabatan', { x: margin + 8, y, font: bold, size: 8, color: black });
+    page.drawText(`: ${roleTitle}`, { x: margin + 70, y, font, size: 8, color: black });
+    y -= 11;
+
+    page.drawText(`   selaku ${partyType}`, { x: margin + 8, y, font: italic, size: 7.5, color: darkGray });
+    y -= 13;
+  };
+
+  drawParty('1', 'Verifikator Pentashihan Mushaf Al-Qur\'an', handover.from_user?.name || 'Verifikator', handover.from_user?.nip, 'PIHAK PERTAMA (yang menyerahkan)');
+  drawParty('2', 'Distributor Naskah Pentashihan', handover.to_user?.name || 'Distributor', handover.to_user?.nip, 'PIHAK KEDUA (yang menerima)');
+
+  page.drawText('PIHAK PERTAMA menyerahkan kepada PIHAK KEDUA, dan PIHAK KEDUA menyatakan telah menerima dari PIHAK PERTAMA naskah master fisik mushaf Al-Qur\'an dengan rincian sebagai berikut:', {
+    x: margin,
+    y,
+    font,
+    size: 8,
+    color: black,
+  });
+  y -= 14;
+
+  // 4. Tabel Rincian Naskah BAST
+  const statusLabel =
+    handover.status === 'RECEIVED'
+      ? 'Telah Diterima Resmi oleh Distributor'
+      : handover.status === 'RETURNED'
+      ? 'Dikembalikan ke Loket / Perbaikan Fisik'
+      : 'Menunggu Pemeriksaan dan Penerimaan Distributor';
+
+  const tableRows = [
+    ['1', 'Nomor Registrasi', handover.registration?.registration_no || '-'],
+    ['2', 'Judul Naskah Mushaf', handover.registration?.title || '-'],
+    ['3', 'Nama Pemohon / Penerbit', handover.registration?.publisher?.legal_name || '-'],
+    ['4', 'Jenis Layanan', handover.registration?.service_type?.name || 'Pentashihan'],
+    ['5', 'Jumlah Master Fisik', `${handover.volume_count ?? '-'} jilid`],
+    ['6', 'Kondisi Naskah Fisik', handover.condition || 'Baik dan Lengkap'],
+    ['7', 'Status Serah Terima', statusLabel],
+    ['8', 'Waktu Penyerahan', dateTime(handover.handed_over_at)],
+  ];
+
+  if (handover.received_at) {
+    tableRows.push(['9', 'Waktu Diterima', dateTime(handover.received_at)]);
+  }
+  if (handover.tashih_due_at) {
+    tableRows.push(['10', 'Tenggat Waktu Pentashihan', dateTime(handover.tashih_due_at)]);
+  }
+  if (handover.notes) {
+    tableRows.push(['11', 'Catatan Tambahan', handover.notes]);
+  }
+
+  const colNoW = 24;
+  const colLabelW = 160;
+  const rowHeight = 17.5;
+  const tableStartY = y;
+
+  for (let i = 0; i < tableRows.length; i++) {
+    const [no, label, val] = tableRows[i];
+    const curRowY = tableStartY - (i + 1) * rowHeight;
+    const isHighlight = label === 'Status Serah Terima';
+
+    page.drawLine({
+      start: { x: margin, y: curRowY },
+      end: { x: margin + contentWidth, y: curRowY },
+      thickness: 0.5,
+      color: tableBorder,
+    });
+
+    page.drawText(printable(no), {
+      x: margin + 6,
+      y: curRowY + 5.5,
+      size: 8,
+      font,
+      color: black,
+    });
+
+    page.drawText(printable(label), {
+      x: margin + colNoW + 6,
+      y: curRowY + 5.5,
+      size: 8,
+      font: bold,
+      color: black,
+    });
+
+    const maxValW = contentWidth - colNoW - colLabelW - 12;
+    let displayVal = printable(val);
+    if (font.widthOfTextAtSize(displayVal, 8) > maxValW) {
+      while (displayVal.length > 5 && font.widthOfTextAtSize(displayVal + '...', 8) > maxValW) {
+        displayVal = displayVal.slice(0, -1);
+      }
+      displayVal += '...';
+    }
+
+    page.drawText(displayVal, {
+      x: margin + colNoW + colLabelW + 6,
+      y: curRowY + 5.5,
+      size: 8,
+      font: isHighlight ? bold : font,
+      color: isHighlight ? darkGreen : black,
+    });
+  }
+
+  const tableTotalH = rowHeight * tableRows.length;
+  page.drawRectangle({
+    x: margin,
+    y: tableStartY - tableTotalH,
+    width: contentWidth,
+    height: tableTotalH,
+    borderColor: tableBorder,
+    borderWidth: 0.8,
+  });
+
+  page.drawLine({
+    start: { x: margin + colNoW, y: tableStartY },
+    end: { x: margin + colNoW, y: tableStartY - tableTotalH },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+  page.drawLine({
+    start: { x: margin + colNoW + colLabelW, y: tableStartY },
+    end: { x: margin + colNoW + colLabelW, y: tableStartY - tableTotalH },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+
+  y = tableStartY - tableTotalH - 14;
+
+  // 5. Penutup BAST
+  page.drawText('Demikian Berita Acara Serah Terima ini dibuat dengan sebenarnya dalam rangkap yang sah untuk dipergunakan sebagaimana mestinya.', {
+    x: margin,
+    y,
+    font,
+    size: 7.5,
+    color: black,
+  });
+  y -= 18;
+
+  // 6. Pengesahan Dua Belah Pihak
+  const colLeftX = margin + 20;
+  const colRightX = 595 - margin - 200;
+
+  page.drawText('PIHAK PERTAMA (Yang Menyerahkan)', {
+    x: colLeftX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+  page.drawText('PIHAK KEDUA (Yang Menerima)', {
+    x: colRightX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+  y -= 10;
+
+  page.drawText('Verifikator Pentashihan,', {
+    x: colLeftX,
+    y,
+    size: 7.5,
+    font,
+    color: darkGray,
+  });
+  page.drawText('Distributor Naskah Pentashihan,', {
+    x: colRightX,
+    y,
+    size: 7.5,
+    font,
+    color: darkGray,
+  });
+
+  y -= 45;
+
+  const giverName = printable(handover.from_user?.name || 'Verifikator');
+  page.drawText(`( ${giverName} )`, {
+    x: colLeftX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+
+  const receiverName = printable(
+    handover.status === 'RECEIVED' ? handover.to_user?.name || 'Distributor' : 'Menunggu Konfirmasi Penerimaan'
+  );
+  page.drawText(`( ${receiverName} )`, {
+    x: colRightX,
+    y,
+    size: 8,
+    font: bold,
+    color: black,
+  });
+  y -= 10;
+
+  page.drawText(`NIP. ${printable(handover.from_user?.nip || '-')}`, {
+    x: colLeftX,
+    y,
+    size: 7.5,
+    font,
+    color: darkGray,
+  });
+  page.drawText(
+    handover.status === 'RECEIVED' ? `NIP. ${printable(handover.to_user?.nip || '-')}` : 'Belum konfirmasi',
+    {
+      x: colRightX,
+      y,
+      size: 7.5,
+      font,
+      color: darkGray,
+    }
+  );
+
+  // 7. Catatan Kaki Resmi
+  const footerY = 32;
+  page.drawLine({
+    start: { x: margin, y: footerY + 12 },
+    end: { x: 595 - margin, y: footerY + 12 },
+    thickness: 0.5,
+    color: tableBorder,
+  });
+  page.drawText('Berita Acara Serah Terima (BAST) ini diterbitkan secara otomatis dari data alur kerja pentashihan mushaf Al-Qur\'an LPMQ.', {
+    x: margin,
+    y: footerY + 3,
+    size: 6.5,
+    font: italic,
+    color: darkGray,
+  });
+  page.drawText('Kementerian Agama Republik Indonesia - Balai Litbang dan Diklat - Lajnah Pentashihan Mushaf Al-Qur\'an.', {
+    x: margin,
+    y: footerY - 5,
+    size: 6.5,
+    font: italic,
+    color: darkGray,
+  });
+
   return Buffer.from(await pdf.save());
 }

@@ -9,7 +9,7 @@ import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
-import { renderRegistrationReceiptPdf } from './registration-receipt-pdf.service.js';
+import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
@@ -1315,6 +1315,38 @@ export const generateReceiptPdf = async (id, user) => {
   return { buffer, filename };
 };
 
+export const generateShippingLabelPdf = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: {
+      publisher: true,
+      service_type: { include: { category: true } },
+      physical_master_intake: true,
+    },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isInternal = user.roles.some((r) =>
+    ['SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+  );
+  if (!isInternal && reg.publisher_id !== user.publisherId) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh label pengiriman ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const buffer = await renderShippingLabelPdf(reg);
+  const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const filename = `Label-Pengiriman-${safeRegNo}.pdf`;
+
+  return { buffer, filename };
+};
+
 export default {
   createDraft,
   submitRegistration,
@@ -1326,5 +1358,6 @@ export default {
   listManuscriptFiles,
   deleteRegistration,
   generateReceiptPdf,
+  generateShippingLabelPdf,
   TRANSITION_POLICY,
 };

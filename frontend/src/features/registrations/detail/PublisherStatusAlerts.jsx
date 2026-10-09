@@ -87,7 +87,7 @@ export function PublisherStatusAlerts({
                   Tahapan Pengiriman Berkas Fisik ke LPMQ
                 </h2>
                 <p className="text-[11px] text-ink-muted">
-                  Proses verifikasi resmi oleh verifikator LPMQ dimulai setelah naskah master fisik diterima di loket LPMQ.
+                  Proses verifikasi resmi oleh verifikator LPMQ dimulai setelah naskah master fisik diterima di LPMQ.
                 </p>
               </div>
             </div>
@@ -98,18 +98,22 @@ export function PublisherStatusAlerts({
                   : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
               }`}>
                 {data.physical_master_intake?.status === 'RECEIVED'
-                  ? 'Master Fisik Diterima Loket · Menunggu Penugasan'
+                  ? 'Master Fisik Diterima LPMQ · Menunggu Penugasan'
                   : data.physical_dispatch_status === 'DISPATCHED'
-                    ? 'Berkas Dikirim · Menunggu Penerimaan Loket'
+                    ? 'Berkas Dikirim · Menunggu Penerimaan LPMQ'
                     : 'Menunggu Pengiriman Berkas Fisik'}
               </span>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleTabChange('berkas-fisik')}
+                onClick={() => {
+                  handleTabChange('dokumen');
+                  const el = document.getElementById('section-physical-master');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-xs font-bold"
               >
-                Buka Penyerahan Berkas Fisik
+                Lihat Penyerahan Berkas Fisik
               </Button>
             </div>
           </div>
@@ -118,15 +122,15 @@ export function PublisherStatusAlerts({
             <p className="font-bold text-brand-800 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-brand-700" />
               {data.physical_master_intake?.status === 'RECEIVED'
-                ? 'Master Fisik Diterima Loket LPMQ'
+                ? 'Master Fisik Diterima LPMQ'
                 : data.physical_dispatch_status === 'DISPATCHED'
                   ? 'Konfirmasi Pengiriman Berkas Tercatat di Sistem'
                   : 'Petunjuk Pengiriman Master Fisik'}
             </p>
             <p className="text-ink-muted leading-relaxed">
               {data.physical_master_intake?.status === 'RECEIVED'
-                ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
-                : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik yang dikirimkan. Silakan buka tab Penyerahan Berkas Fisik untuk memeriksa status atau mengisi nomor resi pengiriman.'}
+                ? 'Master fisik telah diterima LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
+                : 'Langkah berikutnya: petugas LPMQ menerima dan memeriksa master fisik yang dikirimkan. Silakan cek bagian Penyerahan Berkas Fisik di bawah untuk memeriksa status atau mengisi nomor resi pengiriman.'}
             </p>
             {data.physical_master_intake?.status === 'RECEIVED' && (
               <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">

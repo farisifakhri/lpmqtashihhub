@@ -59,17 +59,35 @@ export async function renderDraft(document) {
   const newPage = () => {
     page = pdf.addPage([595, 842]);
     if (logo) {
-      page.drawImage(logo, { x: 42, y: 747, width: 58, height: 55 });
-      page.drawText('KEMENTERIAN AGAMA REPUBLIK INDONESIA', { x: 111, y: 791, font: bold, size: 11 });
-      page.drawText('LAJNAH PENTASHIHAN MUSHAF AL-QURAN', { x: 111, y: 774, font: bold, size: 11, color: rgb(0.08, 0.38, 0.28) });
-      page.drawText('Gedung Bayt Al-Quran & Museum Istiqlal, Jl. Raya TMII Pintu I', { x: 111, y: 758, font, size: 8 });
-      page.drawText('Jakarta Timur 13560  |  lajnah@kemenag.go.id', { x: 111, y: 746, font, size: 8 });
-      page.drawLine({ start: { x: 42, y: 738 }, end: { x: 553, y: 738 }, thickness: 1.4 });
-      y = 710;
+      page.drawImage(logo, { x: 45, y: 744, width: 54, height: 50 });
+      const kopLines = [
+        { text: 'KEMENTERIAN AGAMA REPUBLIK INDONESIA', font: bold, size: 12 },
+        { text: "LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN", font: bold, size: 12 },
+        { text: "Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560", font, size: 8 },
+        { text: 'Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807', font, size: 8 },
+        { text: 'Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id', font, size: 8 },
+      ];
+
+      let curY = 786;
+      for (const item of kopLines) {
+        const textW = item.font.widthOfTextAtSize(item.text, item.size);
+        page.drawText(item.text, {
+          x: (595 - textW) / 2,
+          y: curY,
+          font: item.font,
+          size: item.size,
+          color: rgb(0.08, 0.08, 0.08),
+        });
+        curY -= item.size === 12 ? 14 : 11;
+      }
+
+      page.drawLine({ start: { x: 45, y: 728 }, end: { x: 550, y: 728 }, thickness: 1.8, color: rgb(0.08, 0.08, 0.08) });
+      y = 708;
     } else {
       y = 780;
     }
-    page.drawText('DRAF - BELUM DITETAPKAN / BELUM DITANDATANGANI', { x: 42, y: y + 15, font: bold, size: 9, color: rgb(0.7, 0.1, 0.1) });
+    page.drawText('DRAF - BELUM DITETAPKAN / BELUM DITANDATANGANI', { x: 45, y: y + 8, font: bold, size: 8.5, color: rgb(0.75, 0.1, 0.1) });
+    y -= 10;
   };
 
   newPage();
