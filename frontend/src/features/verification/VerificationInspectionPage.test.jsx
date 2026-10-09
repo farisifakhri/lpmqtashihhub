@@ -75,7 +75,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     });
   });
 
-  it('merender lembar pemeriksaan naskah, checklist 4 butir, dan tombol simpan draf', async () => {
+  it('merender lembar pemeriksaan naskah, checklist butir pemeriksaan, dan tombol simpan draf', async () => {
     render(
       <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
         <Routes>
@@ -88,10 +88,10 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
       expect(screen.getByText('REG-2026-001')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Standar Kemenag')).toBeInTheDocument();
       expect(screen.getByText(/Lembar Kerja Checklist Pemeriksaan/i)).toBeInTheDocument();
-      expect(screen.getByText(/1. Kelengkapan & Kesesuaian Data Registrasi/i)).toBeInTheDocument();
-      expect(screen.getByText(/2. Kelengkapan Berkas Digital/i)).toBeInTheDocument();
-      expect(screen.getByText(/3. Kesesuaian Master Fisik Mushaf/i)).toBeInTheDocument();
-      expect(screen.getByText(/4. Format & Rasm Naskah Awal/i)).toBeInTheDocument();
+      expect(screen.getByText(/1. Kelengkapan Juz/i)).toBeInTheDocument();
+      expect(screen.getByText(/2. Kelengkapan Surah/i)).toBeInTheDocument();
+      expect(screen.getByText(/3. Urutan Halaman/i)).toBeInTheDocument();
+      expect(screen.getByText(/4. Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia/i)).toBeInTheDocument();
       expect(screen.getByText('Simpan Draf Pemeriksaan')).toBeInTheDocument();
       expect(screen.getByText('Ajukan Draf ke Kepala LPMQ')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Disposisi' })).toBeInTheDocument();

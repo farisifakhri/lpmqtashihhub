@@ -45,28 +45,44 @@ import {
 
 const CHECKLIST_DEFINITIONS = [
   {
-    code: 'REGISTRATION_DATA',
-    title: '1. Kelengkapan & Kesesuaian Data Registrasi',
-    description:
-      'Pemeriksaan identitas pemohon, legalitas penerbit (badan hukum/kemenag), alamat kantor resmi, kesesuaian kategori mushaf, dan keabsahan surat permohonan.',
+    code: 'COMPLETENESS_JUZ',
+    title: '1. Kelengkapan Juz',
+    description: 'Pemeriksaan kelengkapan mushaf 30 juz secara utuh.',
   },
   {
-    code: 'DIGITAL_FILES',
-    title: '2. Kelengkapan Berkas Digital',
-    description:
-      'Pemeriksaan file cover mushaf resolusi tinggi serta kelengkapan 5 halaman penanda naskah (Surah Al-Fatihah dan awal Al-Baqarah) berformat PDF sesuai standar.',
+    code: 'COMPLETENESS_SURAH',
+    title: '2. Kelengkapan Surah',
+    description: 'Pemeriksaan kelengkapan 114 surah mulai Al-Fatihah sampai An-Nas.',
   },
   {
-    code: 'PHYSICAL_MASTER',
-    title: '3. Kesesuaian Master Fisik Mushaf (A4 Per Juz)',
-    description:
-      'Pemeriksaan print-out master mushaf ukuran A4 yang dijilid rapi per juz, jumlah jilid (30 juz), kondisi fisik tidak cacat, dan tanda terima resmi penerimaan LPMQ.',
+    code: 'PAGE_ORDER',
+    title: '3. Urutan Halaman',
+    description: 'Pemeriksaan kerapian dan keteraturan urutan halaman mushaf tanpa ada yang tertukar atau terlewat.',
   },
   {
-    code: 'MANUSCRIPT_CONTENT',
-    title: '4. Format & Rasm Naskah Awal',
-    description:
-      'Pemeriksaan awal kesesuaian Rasm Usmani Standar Indonesia, penempatan tanda harakat, kejelasan ayat awal, kelengkapan tanda waqaf, dan iluminasi cover.',
+    code: 'MSI_CONFORMITY',
+    title: '4. Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia',
+    description: 'Pemeriksaan kaidah rasm Usmani, tanda harakat, tanda waqaf, dan tanda baca sesuai pedoman Mushaf Standar Indonesia (MSI).',
+  },
+  {
+    code: 'TAJWID_COLOR',
+    title: '5. Kesesuaian dengan kaidah tajwid warna',
+    description: 'Pemeriksaan penerapan kode dan panduan tajwid warna sesuai pedoman LPMQ (bila menggunakan tajwid warna).',
+  },
+  {
+    code: 'TRANSLATION_KEMENAG',
+    title: '6. Kesesuaian dengan terjemah kemenag',
+    description: "Pemeriksaan teks terjemahan Al-Qur'an Kementerian Agama RI edisi mutakhir (bila mushaf berterjemah).",
+  },
+  {
+    code: 'BRAILLE_PEDOMAN',
+    title: "7. Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag",
+    description: "Pemeriksaan sistem simbol dan standarisasi Al-Qur'an Braille Kemenag RI (khusus mushaf braille).",
+  },
+  {
+    code: 'TRANSLITERATION_PEDOMAN',
+    title: '8. Kesesuaian Dengan Pedoman Transliterasi',
+    description: 'Pemeriksaan pedoman transliterasi Arab-Latin SKB Menteri Agama dan Mendikbud (bila memuat transliterasi).',
   },
 ];
 

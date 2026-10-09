@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { readFile } from 'node:fs/promises';
 
 const prisma = new PrismaClient();
 
@@ -48,55 +49,67 @@ async function main() {
       name: 'Super Admin LPMQ',
       email: 'admin@lpmq.kemenag.go.id',
       nip: '198001012005011001',
-      role: 'SUPERADMIN',
+      roles: ['SUPERADMIN'],
     },
     {
-      name: 'Budi Santoso, S.Kom (Helper Admin)',
+      name: 'Muhammad Zamroni Ahbab, S.S.I., M.Ag.',
       email: 'admin.internal@lpmq.kemenag.go.id',
-      nip: '198701012015011005',
-      role: 'HELPER_ADMIN',
+      nip: '198810302023211018',
+      roles: ['HELPER_ADMIN', 'PENTASHIH'],
     },
     {
-      name: 'Ahmad Verifikator, S.Ag',
+      name: 'Muhammad Zamroni Ahbab, S.S.I., M.Ag. (Akun Pribadi)',
+      email: 'zamroni@lpmq.kemenag.go.id',
+      nip: '198810302023211018',
+      roles: ['HELPER_ADMIN', 'PENTASHIH'],
+    },
+    {
+      name: 'Mustakim, Lc., M.Ag.',
+      email: 'mustakim@lpmq.kemenag.go.id',
+      nip: '198807152023211024',
+      roles: ['HELPER_ADMIN', 'PENTASHIH'],
+    },
+    {
+      name: 'Ahmad Falahudin, S.S',
       email: 'verifikator@lpmq.kemenag.go.id',
-      nip: '198502022010011002',
-      role: 'VERIFIKATOR',
+      nip: '199409252022031001',
+      roles: ['VERIFIKATOR', 'PENTASHIH'],
     },
     {
-      name: 'Ust. H. Mahmud Distributor, M.A',
+      name: 'Umi Masruroh, S.Ag',
       email: 'distributor@lpmq.kemenag.go.id',
-      nip: '197903032008011003',
-      role: 'DISTRIBUTOR',
+      nip: '198912062022032001',
+      roles: ['DISTRIBUTOR', 'PENTASHIH'],
     },
     {
-      name: 'Fahmi Distributor Kedua, S.Th.I',
+      name: 'Dr. H. Deni Hudaeny A. Arifin, Lc. MA',
       email: 'distributor2@lpmq.kemenag.go.id',
-      nip: '198404042011011007',
-      role: 'DISTRIBUTOR',
+      nip: '197907272002121008',
+      roles: ['DISTRIBUTOR', 'PENTASHIH'],
     },
     {
-      name: 'H. Abdul Qadir Pentashih, Lc',
+      name: 'Dr. H. Ahmad Badruddin, Lc. M.A',
       email: 'pentashih@lpmq.kemenag.go.id',
-      nip: '198804042012011004',
-      role: 'PENTASHIH',
+      nip: '197411202009011006',
+      roles: ['PENTASHIH'],
     },
     {
-      name: 'Siti Dokumentator, S.Hum',
+      name: 'Hj. Tuti Nurkhayati, S.H.I, M.A',
       email: 'dokumentator@lpmq.kemenag.go.id',
-      nip: '199205052015012005',
-      role: 'DOKUMENTATOR',
+      nip: '197311032009012002',
+      roles: ['DOKUMENTATOR', 'PENTASHIH'],
     },
     {
       name: 'H. Abdul Aziz Sidqi, M.Ag. (Kepala LPMQ)',
       email: 'kepala@lpmq.kemenag.go.id',
       nip: '197106061998031006',
-      role: 'KEPALA_LPMQ',
+      roles: ['KEPALA_LPMQ'],
     },
     {
       name: 'Penerbit PT Mushaf Nusantara Mandiri',
       email: 'penerbit@mushafnusantara.com',
       nip: null,
-      role: 'ADMIN_PENERBIT',
+      roles: ['ADMIN_PENERBIT'],
       publisher: {
         legal_name: 'PT Mushaf Nusantara Mandiri',
         entity_type: 'PT',
@@ -121,20 +134,25 @@ async function main() {
       },
     });
 
-    // Assign role
-    await prisma.userRole.upsert({
-      where: {
-        user_id_role_id: {
-          user_id: user.id,
-          role_id: roles[u.role].id,
-        },
-      },
-      update: {},
-      create: {
-        user_id: user.id,
-        role_id: roles[u.role].id,
-      },
-    });
+    // Assign roles (mendukung peran ganda sesuai struktur personil LPMQ)
+    const assignedRoleCodes = u.roles || (u.role ? [u.role] : []);
+    for (const rCode of assignedRoleCodes) {
+      if (roles[rCode]) {
+        await prisma.userRole.upsert({
+          where: {
+            user_id_role_id: {
+              user_id: user.id,
+              role_id: roles[rCode].id,
+            },
+          },
+          update: {},
+          create: {
+            user_id: user.id,
+            role_id: roles[rCode].id,
+          },
+        });
+      }
+    }
 
     // Publisher profile if applicable
     if (u.publisher) {
@@ -241,15 +259,112 @@ async function main() {
   }
   console.log('✅ Service Addons seeded');
 
-  // 6. Distribution Team Sample
-  const distributorUser = await prisma.user.findUnique({
-    where: { email: 'distributor@lpmq.kemenag.go.id' },
-  });
-  const pentashihUser = await prisma.user.findUnique({
-    where: { email: 'pentashih@lpmq.kemenag.go.id' },
-  });
+  // 6. 90 Pentashih Roster & 6 Kelompok Utama (SK LPMQ 2025)
+  const rosterFile = new URL('./pentashih-roster-2025.json', import.meta.url);
+  const rosterData = JSON.parse(await readFile(rosterFile, 'utf-8'));
+  const allPentashihUsers = [];
 
-  const team = await prisma.distributionTeam.upsert({
+  for (const person of rosterData) {
+    const cleanNip = person.nip.replace(/\s+/g, '');
+    let pUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { nip: cleanNip },
+          { name: person.name },
+        ],
+      },
+    });
+
+    if (!pUser) {
+      const emailSlug = person.name.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.').replace(/^\.|\.$/g, '').slice(0, 30);
+      const email = `${emailSlug}@pentashih.lpmq.go.id`;
+      pUser = await prisma.user.upsert({
+        where: { email },
+        update: { name: person.name, nip: cleanNip, status: 'ACTIVE' },
+        create: {
+          name: person.name,
+          email,
+          nip: cleanNip,
+          password_hash: passwordHash,
+          status: 'ACTIVE',
+        },
+      });
+      await prisma.userRole.upsert({
+        where: { user_id_role_id: { user_id: pUser.id, role_id: roles['PENTASHIH'].id } },
+        update: {},
+        create: { user_id: pUser.id, role_id: roles['PENTASHIH'].id },
+      });
+    } else {
+      // Pastikan peran PENTASHIH juga aktif pada akun yang bersangkutan (peran ganda)
+      await prisma.userRole.upsert({
+        where: { user_id_role_id: { user_id: pUser.id, role_id: roles['PENTASHIH'].id } },
+        update: {},
+        create: { user_id: pUser.id, role_id: roles['PENTASHIH'].id },
+      });
+    }
+    allPentashihUsers.push(pUser);
+  }
+  console.log(`✅ 90 Personil Pentashih resmi LPMQ (SK 2025) berhasil diselaraskan`);
+
+  // Konfigurasi 6 Kelompok Utama (masing-masing 10-11 pentashih)
+  const sixGroups = [
+    { id: 'kelompok-1', name: 'Kelompok Pentashihan I', leaderIdx: 0, start: 0, end: 11 },
+    { id: 'kelompok-2', name: 'Kelompok Pentashihan II', leaderIdx: 15, start: 11, end: 22 },
+    { id: 'kelompok-3', name: 'Kelompok Pentashihan III', leaderIdx: 30, start: 22, end: 33 },
+    { id: 'kelompok-4', name: 'Kelompok Pentashihan IV', leaderIdx: 45, start: 33, end: 44 },
+    { id: 'kelompok-5', name: 'Kelompok Pentashihan V', leaderIdx: 60, start: 44, end: 55 },
+    { id: 'kelompok-6', name: 'Kelompok Pentashihan VI', leaderIdx: 75, start: 55, end: 66 },
+  ];
+
+  for (const grp of sixGroups) {
+    const leader = allPentashihUsers[grp.leaderIdx] || allPentashihUsers[0];
+    const distTeam = await prisma.distributionTeam.upsert({
+      where: { id: grp.id },
+      update: {
+        name: grp.name,
+        decree_no: 'SK-LPMQ/01/2025',
+        year: 2025,
+        leader_user_id: leader?.id,
+        active_from: new Date('2025-01-01'),
+        status: 'ACTIVE',
+      },
+      create: {
+        id: grp.id,
+        name: grp.name,
+        decree_no: 'SK-LPMQ/01/2025',
+        year: 2025,
+        leader_user_id: leader?.id,
+        active_from: new Date('2025-01-01'),
+        status: 'ACTIVE',
+      },
+    });
+
+    const membersChunk = allPentashihUsers.slice(grp.start, grp.end);
+    for (const m of membersChunk) {
+      if (m) {
+        await prisma.teamMember.upsert({
+          where: {
+            team_id_user_id: {
+              team_id: distTeam.id,
+              user_id: m.id,
+            },
+          },
+          update: { role_in_team: m.id === leader?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH' },
+          create: {
+            team_id: distTeam.id,
+            user_id: m.id,
+            role_in_team: m.id === leader?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH',
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
+  }
+
+  // Pertahankan alias default untuk kompatibilitas test lama
+  const distributorUser = await prisma.user.findUnique({ where: { email: 'distributor@lpmq.kemenag.go.id' } });
+  const pentashihUser = await prisma.user.findUnique({ where: { email: 'pentashih@lpmq.kemenag.go.id' } });
+  const defaultTeam = await prisma.distributionTeam.upsert({
     where: { id: 'team-pentashihan-2026-default' },
     update: {
       name: 'Tim Pentashihan Reguler 2026',
@@ -274,20 +389,20 @@ async function main() {
     await prisma.teamMember.upsert({
       where: {
         team_id_user_id: {
-          team_id: team.id,
+          team_id: defaultTeam.id,
           user_id: pentashihUser.id,
         },
       },
       update: {},
       create: {
-        team_id: team.id,
+        team_id: defaultTeam.id,
         user_id: pentashihUser.id,
         role_in_team: 'PENTASHIH',
         status: 'ACTIVE',
       },
     });
   }
-  console.log('✅ Sample Distribution Team seeded');
+  console.log('✅ 6 Kelompok Utama & Default Distribution Team seeded');
 
   // 7. Working Days (Official Calendar for SLA - SKB 3 Menteri 2026)
   const officialHolidays2026 = {

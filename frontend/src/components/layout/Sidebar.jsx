@@ -216,6 +216,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <Award className="w-4 h-4 shrink-0" />,
               description: 'Penetapan Surat Tanda Tashih',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -269,6 +275,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <PackageCheck className="w-4 h-4 shrink-0" />,
               description: 'Pembayaran sah, terbitkan BAST',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -298,6 +310,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <Users className="w-4 h-4 shrink-0" />,
               description: 'Bagi tugas anggota sidang',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -320,6 +338,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               path: '/internal/tashih',
               icon: <BookOpen className="w-4 h-4 shrink-0" />,
               description: 'Koreksi lafaz & tanda baca',
+            },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
             },
           ],
         },

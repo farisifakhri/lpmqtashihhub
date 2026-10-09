@@ -551,14 +551,14 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     y -= 12;
 
     const checkRows = [
-      ['1.', 'Kelengkapan Juz', 'REGISTRATION_DATA'],
-      ['2.', 'Kelengkapan Surah', 'DIGITAL_FILES'],
-      ['3.', 'Urutan Halaman', 'PHYSICAL_MASTER'],
-      ['4.', 'Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia', 'MANUSCRIPT_CONTENT'],
-      ['5.', 'Kesuaian dengan kaidah tajwid warna', 'MANUSCRIPT_CONTENT'],
-      ['6.', 'Kesesuaian dengan terjemah kemenag', 'MANUSCRIPT_CONTENT'],
-      ['7.', "Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag.", 'MANUSCRIPT_CONTENT'],
-      ['8.', 'Kesesuaian Dengan Pedoman Transliterasi', 'MANUSCRIPT_CONTENT'],
+      ['1.', 'Kelengkapan Juz', ['COMPLETENESS_JUZ', 'REGISTRATION_DATA']],
+      ['2.', 'Kelengkapan Surah', ['COMPLETENESS_SURAH', 'DIGITAL_FILES']],
+      ['3.', 'Urutan Halaman', ['PAGE_ORDER', 'PHYSICAL_MASTER']],
+      ['4.', 'Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia', ['MSI_CONFORMITY', 'MANUSCRIPT_CONTENT']],
+      ['5.', 'Kesuaian dengan kaidah tajwid warna', ['TAJWID_COLOR', 'MANUSCRIPT_CONTENT']],
+      ['6.', 'Kesesuaian dengan terjemah kemenag', ['TRANSLATION_KEMENAG', 'MANUSCRIPT_CONTENT']],
+      ['7.', "Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag.", ['BRAILLE_PEDOMAN', 'MANUSCRIPT_CONTENT']],
+      ['8.', 'Kesesuaian Dengan Pedoman Transliterasi', ['TRANSLITERATION_PEDOMAN', 'MANUSCRIPT_CONTENT']],
     ];
 
     const col1W = 26;
@@ -575,11 +575,12 @@ export async function renderVerificationPdf(document, { draft = false, approver 
 
     const checklistData = Array.isArray(content.checklist) ? content.checklist : [];
 
-    for (const [no, label, code] of checkRows) {
+    for (const [no, label, codes] of checkRows) {
       const rowH = 16.5;
-      const matched = checklistData.find(c => c.code === code);
+      const matched = checklistData.find(c => Array.isArray(codes) ? codes.includes(c.code) : c.code === codes);
       const isSesuai = content.decision === 'PASSED' || (matched && matched.result === 'SESUAI');
-      const note = matched?.notes || (isSesuai ? 'Sesuai' : '-');
+      const isNa = matched?.result === 'TIDAK_BERLAKU';
+      const note = matched?.notes || (isSesuai ? 'Sesuai' : (isNa ? 'Tidak Berlaku' : '-'));
 
       page.drawRectangle({ x: margin, y: y - rowH, width: contentWidth, height: rowH, borderColor: tableBorder, borderWidth: 0.5 });
       page.drawLine({ start: { x: margin + col1W, y }, end: { x: margin + col1W, y: y - rowH }, thickness: 0.5, color: tableBorder });

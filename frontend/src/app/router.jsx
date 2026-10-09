@@ -112,7 +112,7 @@ const router = createBrowserRouter([
       // Rute Aplikasi Internal LPMQ
       {
         path: 'internal/archive',
-        element: <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
+        element: <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
       },
       {
         path: 'internal',

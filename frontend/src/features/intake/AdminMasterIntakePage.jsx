@@ -579,7 +579,7 @@ export const AdminMasterIntakePage = () => {
                   />
                 </div>
 
-                {/* Actual Volume Count & Condition */}
+                {/* Actual Volume Count & Resi Verification */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-ink mb-1">
@@ -602,19 +602,31 @@ export const AdminMasterIntakePage = () => {
 
                   <div>
                     <label className="block font-bold text-ink mb-1">
-                      Kondisi Fisik Naskah <span className="text-civic-danger">*</span>
+                      Nomor Resi / Tanda Terima Pengiriman
                     </label>
-                    <select
-                      disabled={isReceived}
-                      value={condition}
-                      onChange={(e) => setCondition(e.target.value)}
-                      className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
-                    >
-                      <option value="BAIK">BAIK (Rapi & Bersih)</option>
-                      <option value="LENGKAP">LENGKAP (30 Juz)</option>
-                      <option value="CACAT_RINGAN">CACAT RINGAN</option>
-                      <option value="TIDAK_LENGKAP">TIDAK LENGKAP / RUSAK</option>
-                    </select>
+                    <input
+                      type="text"
+                      disabled
+                      value={selectedReg.physical_master_intake?.tracking_number || selectedReg.physical_master?.tracking_number || 'Tercatat di Loket'}
+                      className="w-full p-2.5 rounded-lg border border-line bg-canvas font-mono text-ink text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* Verifikasi Penerimaan Resi & Paket */}
+                <div className="p-3 bg-brand-50/50 rounded-lg border border-brand-100 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-ink-muted block text-[11px]">Tanggal Penerimaan Resi / Loket:</span>
+                    <strong className="text-brand-950 font-mono">
+                      {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </strong>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-ink-muted block text-[11px]">Bukti Terima Paket Master Fisik:</span>
+                    <span className="inline-flex items-center text-brand-900 font-semibold text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                      Terverifikasi Diterima Petugas Loket
+                    </span>
                   </div>
                 </div>
 
@@ -876,7 +888,7 @@ export const AdminMasterIntakePage = () => {
             { label: 'Penerbit', value: selectedReg.publisher?.legal_name || '-' },
             { label: 'Jumlah Jilid', value: `${actualVolumeCount} Jilid A4` },
             { label: 'Nomor Tanda Terima', value: receiptNo },
-            { label: 'Kondisi Naskah', value: condition },
+            { label: 'Status Penerimaan Loket', value: 'Paket Fisik Terverifikasi' },
           ]}
           impactMessage="Tanda terima resmi (TT-LPMQ) akan diterbitkan ke akun penerbit dan naskah siap ditugaskan kepada Verifikator oleh Helper Admin."
           confirmLabel="Terbitkan Tanda Terima"
