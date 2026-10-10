@@ -4,18 +4,18 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 
 ## Status implementasi
 
-Alur internal SOP Verifikasi Mushaf Al-Qur'an (SOP v2.2) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite saat ini lulus:
-- Pemeriksaan berkas fisik (intake) dan serah-terima fisik oleh `HELPER_ADMIN` (Staf TU / Layanan).
-- Penerbitan Nota Dinas Verifikasi dan penugasan verifikator oleh Kepala LPMQ secara atomik dengan SLA 2 hari kerja kalender kerja (`Asia/Jakarta`, cut-off 16:00 WIB).
-- Pemisahan dokumen resmi verifikasi: Nota Dinas Verifikasi, Surat Pemberitahuan Hasil Verifikasi, dan Berita Acara Verifikasi.
-- Penandatanganan digital bertingkat (multi-signatory) internal untuk Kepala LPMQ dan Verifikator.
-- Mekanisme pengiriman email hasil verifikasi berbasis database outbox idempoten dengan status antrean/retry (saat ini menggunakan `MockEmailProvider` in-memory untuk dev/test sebelum penyambungan SMTP gateway produksi).
-- Validasi ketat kontak penerbit tanpa fallback email generik dummy.
-- Pembatasan verifikasi pembayaran PNBP dan serah-terima master fisik ke distributor loket pentashihan.
-- Akses berkas privat terproteksi tanpa token query URL.
-- Penanganan sinkronisasi ke sistem eksternal dengan status terverifikasi (`PENDING`, `SYNCED`, `FAILED`) tanpa false-success.
+Alur internal Sistem Pentashihan Mushaf Al-Qur'an (SOP v2.2 & Addendum SRS v3.1) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite lulus 100%:
+- **Penerimaan Fisik & Intake Loket (`HELPER_ADMIN`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal (M. Zamroni Ahbab & Mustakim) diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
+- **Verifikasi Berkas & Naskah (`VERIFIKATOR`)**: Penugasan via Nota Dinas, checklist butir pemeriksaan selaras Berita Acara resmi Kemenag RI (T-06), tombol pengajuan "Ajukan Draft" (`RF-VER-04`), penandatanganan digital bertingkat, dan outbox pengiriman hasil verifikasi.
+- **Pembayaran PNBP & Serah-Terima Fisik**: Validasi pembayaran sah, penghitungan SLA H+1 pasca verifikasi bayar (`RF-CALC-05`), serah-terima fisik ke distributor, dan penanganan fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`).
+- **Distribusi & Pentashihan Rentang Juz (`RF-DIST-05`)**: 6 Kelompok Utama Pentashihan (SK LPMQ 2025), penugasan berbasis rentang juz tanpa tumpang tindih, dan workspace pentashih interaktif.
+- **Berkas Rekapan Koreksi Internal (`RF-DIST-18`, `RF-DIST-19`)**: Pentashih mengunggah 1 (satu) berkas rekapan internal per rentang juz yang bersifat rahasia internal tim (hanya dapat diakses pentashih, distributor, dan admin internal).
+- **Surat Pengembalian Revisi Resmi (`REVISION_RETURN_LETTER`)**: Reviu Distributor dengan penetapan `revision_kind` (`NASKAH_PERBAIKAN` / `NASKAH_DUMI`), penomoran ronde otomatis (Ronde 1, 2, 3, dst.), dan penerbitan draf surat resmi Kemenag RI (`RF-DIST-08`, `RF-DIST-09`, `RF-DIST-17`).
+- **Penanganan Naskah Dumi (T-04)**: Naskah Dumi dipilih setelah naskah bersih; temuan minor pada dumi diterbitkan notice koreksi tanpa siklus baru ke penerbit.
+- **Template Surat Permohonan & Label Pengiriman**: Unduhan langsung template resmi `.docx` di portal pendaftaran (`RF-PBL-01`) dan cetak label pengiriman dengan logo Kemenag & LPMQ tajam dan terbaca jelas (`RF-REG-10`).
+- **Pusat Arsip Global**: Menu Arsip & Dokumen dipusatkan di Sidebar `/internal/archive` yang dapat diakses oleh seluruh peran internal (`RF-DOC-14`).
 
-Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md).
+Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md) dan catatan keputusan pada [docs/references/keputusan-2026-10-08.md](docs/references/keputusan-2026-10-08.md).
 
 ## Prasyarat
 

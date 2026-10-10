@@ -21,13 +21,14 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 | # | Aksi | Trigger / Syarat | Output |
 |---|---|---|---|
-| 1 | Login ke sistem, isi formulir pendaftaran, unggah sampul & halaman 1–5 | Akun penerbit terverifikasi | Draf pendaftaran |
-| 2 | Kirim bukti pendaftaran + **naskah master fisik** (cetak A4, dijilid per juz) ke loket LPMQ | Formulir disubmit (`READY_FOR_VERIFICATION`) | Diterima & diperiksa oleh Staf TU / Admin |
+| 0 | Unduh template resmi Surat Permohonan Pentashihan Mushaf format `.docx` (`RF-PBL-01`) | Sebelum pengajuan / di landing page | Berkas template siap diisi kop & legalitas perusahaan |
+| 1 | Login ke sistem, isi formulir pendaftaran, unggah sampul, surat permohonan, & naskah digital | Akun penerbit terverifikasi | Draf pendaftaran tersimpan |
+| 2 | Cetak label pengiriman resmi berlogo Kemenag & LPMQ jelas (`RF-REG-10`), lalu kirim bukti pendaftaran + **naskah master fisik** (cetak A4 dijilid per juz) ke loket LPMQ | Formulir disubmit (`READY_FOR_VERIFICATION`) | Diterima oleh Staf TU / Admin Internal loket |
 | 3 | Terima Surat Pemberitahuan Hasil Verifikasi resmi via email | Verifikasi selesai & disetujui Kepala LPMQ | Tahu status lolos/perlu perbaikan; menerima kode billing jika lolos |
 | 4a | *(Jika perlu perbaikan verifikasi)* Perbaiki berkas/sampel & ajukan ulang | Email/surat meminta revisi | Naskah masuk kembali ke `READY_FOR_VERIFICATION` |
-| 4b | *(Jika lolos)* Bayar PNBP via kode billing & konfirmasi bukti bayar | Maks. 7 hari sejak surat diterima | Verifikator memvalidasi pembayaran |
+| 4b | *(Jika lolos)* Bayar PNBP via kode billing & konfirmasi bukti bayar | Maks. 7 hari sejak surat diterima | Verifikator memvalidasi pembayaran sah |
 | 4c | *(Jika naskah fisik cacat saat serah-terima distributor)* Serahkan perbaikan jilid fisik | Naskah `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` | Fisik diperbaiki; pembayaran tetap sah tanpa bayar ulang |
-| 5 | *(Loop revisi sidang pentashihan, bila diminta)* Terima laporan hasil pentashihan → perbaiki naskah → kirim kembali | Distributor memutuskan revisi diperlukan | Naskah revisi dikirim ulang |
+| 5 | *(Loop revisi sidang pentashihan, bila diminta)* Terima Surat Pengembalian Naskah Perbaikan resmi (`REVISION_RETURN_LETTER`) per ronde perbaikan (`RF-DIST-09`, `RF-DIST-17`) → perbaiki naskah → kirim kembali | Distributor memutuskan revisi diperlukan | Naskah revisi dikirim ulang |
 | 6 | *(Hanya untuk naskah cetak fisik)* Cetak massal setelah Surat Tanda Tashih terbit | Surat Tanda Tashih resmi terbit | Mushaf hasil cetak |
 | 7 | *(Hanya untuk naskah cetak fisik)* Kirim s.d. 5 eksemplar mushaf hasil cetak ke LPMQ | Diminta Dokumentator | Surat tanda terima dokumentasi |
 
@@ -37,13 +38,13 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 ---
 
-## 2. Staf TU / Layanan (`HELPER_ADMIN`)
+## 2. Staf TU / Layanan Loket (`HELPER_ADMIN`)
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Terima & periksa kelengkapan naskah master fisik A4 per juz di loket LPMQ (`POST /registrations/:id/physical-master/receive`) | Penerbit menyerahkan print-out master fisik | Tanda terima fisik tercatat; status `READY_FOR_VERIFICATION` siap ditugaskan |
-| 2 | Pantau antrean FIFO naskah yang siap disidangkan | Pembayaran lunas & master diterima distributor (`WAITING_DISTRIBUTION`) | Antrean kerja terurut waktu masuk |
-| 3 | Lakukan penugasan tim pentashihan (`POST /registrations/:id/assignments`) | Tim dan anggota aktif sesuai SK | Penugasan pentashih terbentuk; status beralih ke `TASHIH_IN_PROGRESS` |
+| 1 | Terima & catat master fisik di loket LPMQ (`POST /registrations/:id/physical-master/receive`) | Penerbit menyerahkan/mengirimkan paket master fisik | Nomor resi, tanda terima, dan tanggal terima (`received_at`) tercatat (`RF-REG-13`, `T-03`). Kondisi naskah tidak didiagnosis di loket awal |
+| 2 | Terbitkan Nota Dinas Verifikasi dan tugaskan Verifikator (`POST /registrations/:id/verification-assignments`) | Paket master fisik telah diterima loket | Verifikator ditugaskan secara atomik; status beralih ke `VERIFICATION_ASSIGNED` dengan SLA 2 hari kerja |
+| 3 | Pantau antrean intake dan log aktivitas layanan internal | Berkelanjutan | Layanan loket terpantau tertib FIFO |
 
 ---
 
@@ -51,10 +52,9 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Terbitkan **Nota Dinas Verifikasi** dan tugaskan Verifikator secara atomik (`POST /registrations/:id/verification-assignments`) | Naskah fisik sudah diterima Admin (`READY_FOR_VERIFICATION`) | Nota Dinas resmi terbit; tenggat SLA dihitung tepat 2 hari kerja kalender `Asia/Jakarta` |
-| 2 | Terima & tinjau draf Surat Pemberitahuan Hasil Verifikasi dan Berita Acara Verifikasi | Verifikator menyelesaikan pemeriksaan | Persetujuan draf (`APPROVED`) atau pengembalian dengan catatan revisi |
-| 3 | Lakukan tanda tangan digital resmi (`POST /verification-documents/:id/sign`) | Draf telah disetujui (`APPROVED`) | Surat Pemberitahuan & Berita Acara tertandatangani digital (snapshot hash sha256) |
-| 4 | `[BELUM DIKONFIRMASI]` Menetapkan Surat Tanda Tashih | Rekomendasi sidang tuntas & Berita Acara Tashih lengkap | Surat Tanda Tashih terbit resmi |
+| 1 | Terima & tinjau draf Surat Pemberitahuan Hasil Verifikasi dan Berita Acara Verifikasi | Verifikator menyelesaikan pemeriksaan berkas/master | Persetujuan draf (`APPROVED`) atau pengembalian dengan catatan revisi |
+| 2 | Lakukan tanda tangan digital resmi (`POST /verification-documents/:id/sign`) | Draf telah disetujui (`APPROVED`) | Surat Pemberitahuan & Berita Acara tertandatangani digital |
+| 3 | Menetapkan Surat Tanda Tashih (STT) definitif | Rekomendasi sidang tuntas & Berita Acara Tashih lengkap | Surat Tanda Tashih terbit resmi |
 
 ---
 
@@ -62,13 +62,15 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Buka antrean tugas verifikasi dan terima Nota Dinas Verifikasi | Kepala LPMQ menugaskan (`VERIFICATION_ASSIGNED`) | Pemeriksaan berkas dan sampel naskah dimulai |
-| 2 | Susun draf **Surat Pemberitahuan Hasil Verifikasi** dan **Berita Acara Verifikasi** | Pemeriksaan selesai dalam SLA 2 hari kerja | Draf dokumen tersimpan dengan lampiran terverifikasi |
-| 3 | Ajukan draf ke Kepala LPMQ (`POST /verification-documents/:id/submit`) | Draf lengkap | Status dokumen `WAITING_APPROVAL` |
-| 4 | Lakukan tanda tangan digital pada Berita Acara Verifikasi (urutan penandatangan 1) | Kepala LPMQ menyetujui draf | Berita Acara ditandatangani verifikator |
-| 5 | Kirimkan surat hasil verifikasi ke penerbit (`POST /verification-documents/:id/send`) | Seluruh penandatanganan selesai (`SIGNED`) | Surel resmi dikirim via `EmailOutbox` idempoten; status naskah berpindah ke `AWAITING_PAYMENT` / `REVISION_REQUIRED` |
+| 1 | Buka antrean tugas verifikasi dan mulai telaah naskah | Admin Internal menugaskan (`VERIFICATION_ASSIGNED`) | Pemeriksaan berkas administratif dan teks sampel naskah dimulai |
+| 2 | Isi checklist butir pemeriksaan sesuai Berita Acara resmi (T-06) dan susun draf Berita Acara Verifikasi | Pemeriksaan selesai dalam SLA 2 hari kerja | Butir checklist terverifikasi lengkap |
+| 3 | Ajukan draf hasil verifikasi ke Kepala LPMQ melalui tombol **"Ajukan Draft"** (`RF-VER-04`) | Draf lengkap | Status dokumen beralih ke `WAITING_APPROVAL` |
+| 4 | Lakukan tanda tangan digital pada Berita Acara Verifikasi | Kepala LPMQ menyetujui draf | Berita Acara ditandatangani verifikator |
+| 5 | Kirimkan surat hasil verifikasi ke penerbit (`POST /verification-documents/:id/send`) | Seluruh penandatanganan selesai (`SIGNED`) | Surel resmi dikirim via `EmailOutbox`; status naskah berpindah ke `AWAITING_PAYMENT` / `REVISION_REQUIRED` |
 | 6 | Verifikasi bukti setor pembayaran PNBP penerbit | Penerbit mengunggah bukti bayar (`PAYMENT_VERIFICATION`) | Status pembayaran menjadi `VERIFIED` |
-| 7 | Serahkan naskah master fisik ke loket Distributor (`POST /registrations/:id/handover/submit`) | Pembayaran terverifikasi | Berita acara serah-terima fisik ke distributor |
+| 7 | Serahkan naskah master fisik ke loket Distributor (`POST /registrations/:id/handover/submit`) | Pembayaran terverifikasi sah | Berita acara serah-terima fisik ke distributor |
+
+Akses arsip dokumen hasil verifikasi dapat diakses sewaktu-waktu melalui menu navigasi **Arsip & Dokumen** pada Sidebar (`/internal/archive`).
 
 ---
 
@@ -78,34 +80,16 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 |---|---|---|---|
 | 1 | Konfirmasi penerimaan fisik master dari Verifikator (`POST /registrations/:id/handover/confirm`) dengan menetapkan `tashih_due_at` masa depan | Verifikator menyerahkan master fisik | Naskah masuk status `WAITING_DISTRIBUTION` |
 | 1b | *(Jika fisik master cacat/rusak)* Kembalikan master fisik (`POST /registrations/:id/handover/return`) | Master fisik tidak layak sidang | Status beralih ke `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`; pembayaran tetap sah |
-| 2 | Tetapkan pentashih dan nomor juz naskah untuk masing-masing anggota | Penugasan tim terbit | Pentashih menerima daftar juz yang harus ditashih |
-| 3 | Cross-check / ceklis laporan hasil pentashihan berdasarkan rekomendasi Pentashih | Pentashih submit rekomendasi | Rekomendasi kompilasi sidang |
-| 4a | Jika belum tuntas & perlu dibaca ulang → distribusikan kembali ke Pentashih | Kualitas belum final | Loop sidang lanjutan |
-| 4b | Jika mendekati deadline → kembalikan untuk revisi naskah ke Penerbit | Butuh perbaikan lafazh/tanda baca | Status beralih ke `REVISION_REQUIRED` |
-| 4c | Jika seluruh telaah lulus → teruskan untuk penetapan Surat Tanda Tashih | Naskah bersih | Status beralih ke `READY_FOR_STT` |
+| 2 | Tetapkan pentashih dan rentang juz naskah (`RF-DIST-05`) pada 6 Kelompok Utama (SK 2025) | Penugasan tim terbit | Pentashih menerima rentang juz (mis. Juz 1–5, 6–10) tanpa tumpang tindih |
+| 3 | Periksa dan rekap berkas rekapan internal yang diunggah para Pentashih (`RF-DIST-18`, `RF-DIST-19`) | Seluruh pentashih submit rekomendasi & berkas rekapan | Berkas rekapan diverifikasi Distributor |
+| 4a | *(Jika belum tuntas/perlu dibaca ulang)* Distribusikan kembali ke Pentashih | Kualitas belum final | Loop sidang lanjutan |
+| 4b | *(Jika ada kesalahan teks/tanda baca)* Kembalikan untuk revisi ke Penerbit (`POST /registrations/:id/distribution-review`) | Memerlukan perbaikan | Pilih jenis: `NASKAH_PERBAIKAN` atau `NASKAH_DUMI` (`RF-DIST-08`). Ronde otomatis bertambah (`RF-DIST-17`) & menerbitkan Surat Pengembalian Naskah Resmi `REVISION_RETURN_LETTER` (`RF-DIST-09`) |
+| 4c | *(Jika seluruh telaah lulus)* Teruskan untuk penetapan Surat Tanda Tashih | Naskah bersih tuntas | Status beralih ke `READY_FOR_STT` |
 
-**Klarifikasi penting (mengoreksi asumsi sebelumnya)**:
-- Reviu di langkah 3-4 adalah **cross-check administratif / ceklis
-  hasil**, BUKAN penilaian ulang kualitas tashih oleh Distributor.
-  Distributor mengeksekusi rekomendasi yang sudah diberikan Pentashih.
-- **"Pembaca Naskah" BUKAN role RBAC terpisah** — ini istilah untuk
-  tugas Pentashih di luar tashih itu sendiri (mis. baca ulang tahap
-  dumi). Satu pool orang, satu role `Pentashih`; yang berbeda hanya
-  label tugas/tahap (`assignments.stage`), bukan role pengguna.
-- Tidak ada role ketua kelompok tashih dalam logika bisnis. Penanda tangan
-  Berita Acara Tashih masih menunggu keputusan SOP lanjutan.
-- **Tidak ada dokumen resmi/surat untuk hasil reviu ini** — cukup
-  **notifikasi** (modul `NOTIFICATIONS`) ke Penerbit untuk kasus
-  perbaikan/revisi. Jangan tambahkan `document_type` baru untuk ini.
-- Pembentukan tim distribusi/pentashih **berbasis SK yang sudah
-  terbit** (bukan penugasan ad-hoc) — ini sudah konsisten dengan field
-  `decree_no/year` di `DISTRIBUTION_TEAMS` pada ERD, tidak perlu
-  perubahan skema.
-
-**Catatan desain penting**: keputusan 4a vs 4b **bergantung pada sisa
-waktu terhadap deadline**, bukan cuma kualitas. Sistem sebaiknya
-menampilkan sisa hari kerja terhadap SLA sebagai bantuan keputusan di
-dashboard Distributor (lihat `DESIGN.md`).
+**Klarifikasi SRS v3.1 & Notulensi 8 Oktober 2026**:
+- Distributor bertugas memeriksa berkas rekapan koreksi internal dari pentashih dan menerbitkan Surat Pengembalian Revisi resmi (`REVISION_RETURN_LETTER`) per putaran pengerjaan sebagai notulen perjalanan naskah.
+- Naskah Dumi (`NASKAH_DUMI`) dipilih setelah naskah bersih pada tahap awal/perbaikan. Jika ditemukan temuan minor pada dumi, naskah tidak dikembalikan sebagai siklus baru ke penerbit, melainkan diterbitkan notice koreksi (T-04).
+- Pembentukan kelompok pentashihan terbagi dalam 6 Kelompok Utama (masing-masing 10–11 anggota) sesuai SK LPMQ 2025.
 
 ---
 
@@ -113,10 +97,10 @@ dashboard Distributor (lihat `DESIGN.md`).
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
-| 1 | Terima surat penugasan | Distributor menugaskan | — |
-| 2 | Isi checklist status dan catatan per juz yang ditugaskan | Naskah diterima (SLA tergantung jenis mushaf) | Target panduan 2 juz per orang per hari; koreksi dicatat per juz |
-| 3 | Selesaikan seluruh juz penugasan | Semua juz ditashih | Ringkasan hasil tersedia untuk Distributor |
-| 4 | *(Loop, bila diminta Distributor)* Tashih ulang naskah yang sama | Distributor kirim ulang | Laporan baru |
+| 1 | Terima penugasan rentang juz dari Distributor | Distributor menugaskan kelompok | Rentang juz penugasan aktif di workspace pentashih |
+| 2 | Lakukan pentashihan mushaf pada rentang juz yang ditugaskan | Naskah diterima (SLA dihitung H+1 pasca bayar) | Koreksi lafazh, tanda baca, rasm, dan harakat dicatat |
+| 3 | Unggah 1 (satu) berkas rekapan koreksi internal dan rekam keputusan evaluasi rentang (`POST /assignments/:id/review`) | Pentashihan rentang juz selesai | Keputusan `PASSED` / `REVISION_REQUIRED` tercatat bersama `recap_file_id` (`RF-DIST-18`) |
+| 4 | *(Kerahasiaan)* Berkas rekapan koreksi bersifat rahasia internal tim (`RF-DIST-19`) | Berkas diunggah | Hanya dapat diakses oleh pentashih penugasan, distributor, dan admin internal; tidak dipublikasikan ke penerbit |
 
 ---
 
