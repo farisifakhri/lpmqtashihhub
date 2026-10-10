@@ -185,8 +185,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
           document_type: 'REVISION_RETURN_LETTER',
           document_no: `SRV-${reg.registration_no || id}-${revisionRound}`,
           version: revisionRound,
-          status: 'ISSUED',
-          issued_at: new Date(),
+          status: 'DRAFT',
           content_snapshot: {
             title: reg.title,
             registration_no: reg.registration_no,

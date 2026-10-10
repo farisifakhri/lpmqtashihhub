@@ -55,19 +55,13 @@ async function main() {
       name: 'Muhammad Zamroni Ahbab, S.S.I., M.Ag.',
       email: 'admin.internal@lpmq.kemenag.go.id',
       nip: '198810302023211018',
-      roles: ['HELPER_ADMIN', 'PENTASHIH'],
-    },
-    {
-      name: 'Muhammad Zamroni Ahbab, S.S.I., M.Ag. (Akun Pribadi)',
-      email: 'zamroni@lpmq.kemenag.go.id',
-      nip: '198810302023211018',
-      roles: ['HELPER_ADMIN', 'PENTASHIH'],
+      roles: ['HELPER_ADMIN'],
     },
     {
       name: 'Mustakim, Lc., M.Ag.',
       email: 'mustakim@lpmq.kemenag.go.id',
       nip: '198807152023211024',
-      roles: ['HELPER_ADMIN', 'PENTASHIH'],
+      roles: ['HELPER_ADMIN'],
     },
     {
       name: 'Ahmad Falahudin, S.S',
@@ -294,8 +288,8 @@ async function main() {
         update: {},
         create: { user_id: pUser.id, role_id: roles['PENTASHIH'].id },
       });
-    } else {
-      // Pastikan peran PENTASHIH juga aktif pada akun yang bersangkutan (peran ganda)
+    } else if (!person.is_admin_internal) {
+      // Pastikan peran PENTASHIH juga aktif pada akun yang bersangkutan (peran ganda untuk verifikator, distributor, dokumentator)
       await prisma.userRole.upsert({
         where: { user_id_role_id: { user_id: pUser.id, role_id: roles['PENTASHIH'].id } },
         update: {},
