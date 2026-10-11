@@ -4,13 +4,13 @@ import { fail } from './workflow-utils.js';
 export async function assertManuscriptAccess(reg, user, write = false, db = prisma) {
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
   if (user.roles.includes('SUPERADMIN')) return;
-  if (user.roles.includes('ADMIN_PENERBIT')) {
+  if (user.roles.includes('PENERBIT')) {
     if (!user.publisherId || reg.publisher_id !== user.publisherId) fail(403, 'Akses berkas ditolak.');
     if (write && !['DRAFT', 'REVISION_REQUIRED'].includes(reg.status)) fail(409, 'Naskah tidak dapat ditambahkan pada tahap ini. Unggah naskah saat pengajuan masih draf atau setelah petugas meminta perbaikan kepada penerbit.');
     return;
   }
   if (write) fail(403, 'Berkas naskah hanya dapat ditambahkan oleh penerbit atau administrator.');
-  const isSupervisory = user.roles.includes('KEPALA_LPMQ') || user.roles.includes('HELPER_ADMIN');
+  const isSupervisory = user.roles.includes('KEPALA_LPMQ') || user.roles.includes('ADMIN_INTERNAL');
   const verification = (user.roles.includes('VERIFIKATOR') || user.roles.includes('VERIFICATOR') || isSupervisory) && (
     isSupervisory ||
     reg.core_verifier_id === user.id ||

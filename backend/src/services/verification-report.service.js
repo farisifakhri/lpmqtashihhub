@@ -15,10 +15,10 @@ export const SLA_CONFIG = {
 
 /**
  * Laporan Kinerja dan Analitik Modul Verifikasi (VER-I06)
- * Otoritas: SUPERADMIN, HELPER_ADMIN, KEPALA_LPMQ, VERIFIKATOR
+ * Otoritas: SUPERADMIN, ADMIN_INTERNAL, KEPALA_LPMQ, VERIFIKATOR
  */
 export const getVerificationPerformanceReport = async (filters = {}, user) => {
-  requireRole(user, ['SUPERADMIN', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'VERIFIKATOR']);
+  requireRole(user, ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'VERIFIKATOR']);
 
   const now = new Date();
 
@@ -209,7 +209,7 @@ export const getVerificationPerformanceReport = async (filters = {}, user) => {
  * Timeline Naskah Lintas Peran (VER-I05)
  * Menyajikan riwayat status yang disanitasi:
  * - Penerbit tidak melihat catatan internal rahasia atau identitas petugas telaah.
- * - Internal (SUPERADMIN, HELPER_ADMIN, VERIFIKATOR, dll) melihat detail komprehensif.
+ * - Internal (SUPERADMIN, ADMIN_INTERNAL, VERIFIKATOR, dll) melihat detail komprehensif.
  */
 export const getRegistrationTimeline = async (registrationId, user) => {
   const reg = await prisma.registration.findUnique({
@@ -230,7 +230,7 @@ export const getRegistrationTimeline = async (registrationId, user) => {
   }
 
   const isSuperadmin = user.roles.includes('SUPERADMIN');
-  const isPublisher = user.roles.includes('ADMIN_PENERBIT') && !isSuperadmin;
+  const isPublisher = user.roles.includes('PENERBIT') && !isSuperadmin;
 
   if (isPublisher && reg.publisher_id !== user.publisherId) {
     fail(403, 'Akses ditolak. Pengajuan bukan milik penerbit Anda.');

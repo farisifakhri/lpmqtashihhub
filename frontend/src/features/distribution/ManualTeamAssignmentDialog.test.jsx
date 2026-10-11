@@ -30,7 +30,7 @@ describe('Manual team assignment', () => {
     await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', { team_id: 't1', juz_assignments: [{ assignee_id: 'u1', juz_numbers: [1] }], stage: 'INITIAL' }));
     expect(assigned).toHaveBeenCalledOnce();
   });
-  it('does not let HELPER_ADMIN skip verification or payment prerequisites', async () => {
+  it('does not let ADMIN_INTERNAL skip verification or payment prerequisites', async () => {
     registrationApi.getDetail.mockResolvedValue({ data: { status: 'READY_FOR_VERIFICATION', title: 'Belum siap', payment_records: [] } });
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Belum siap');

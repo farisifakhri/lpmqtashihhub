@@ -30,8 +30,8 @@ describe('PublisherBillingPage Component', () => {
       currentUser: {
         id: 'pub-user-1',
         name: 'Ahmad Fauzi',
-        role: 'ADMIN_PENERBIT',
-        roles: ['ADMIN_PENERBIT'],
+        role: 'PENERBIT',
+        roles: ['PENERBIT'],
         publisherId: 'pub-corp-1',
       },
     });

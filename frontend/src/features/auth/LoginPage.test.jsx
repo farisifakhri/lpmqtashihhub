@@ -119,7 +119,7 @@ describe('LoginPage Protected Area Verification', () => {
   });
 
   it('submits credentials through auth context', async () => {
-    mockLogin.mockResolvedValue({ success: true, user: { role: 'ADMIN_PENERBIT' } });
+    mockLogin.mockResolvedValue({ success: true, user: { role: 'PENERBIT' } });
 
     render(
       <MemoryRouter>

@@ -45,6 +45,10 @@ function createMockTx(overrides = {}) {
       findUnique: async () => ({ id: 'pub-1', user_id: 'pub-user-1' }),
       ...overrides.publisher,
     },
+    physicalMasterIntake: {
+      updateMany: async () => ({ count: 1 }),
+      ...overrides.physicalMasterIntake,
+    },
     ...overrides,
   };
   return mockTx;
@@ -190,9 +194,9 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
       return cb(createMockTx({}));
     };
 
-    // 1. HELPER_ADMIN or PENTASHIH is rejected with 403
+    // 1. ADMIN_INTERNAL or PENTASHIH is rejected with 403
     await assert.rejects(
-      approveDistribution('reg-1', { result: 'PASSED', notes: 'OK' }, { id: 'u1', roles: ['HELPER_ADMIN'] }),
+      approveDistribution('reg-1', { result: 'PASSED', notes: 'OK' }, { id: 'u1', roles: ['ADMIN_INTERNAL'] }),
       (err) => err.statusCode === 403
     );
     await assert.rejects(

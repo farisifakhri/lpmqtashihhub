@@ -113,8 +113,8 @@ const BUSINESS_TABLE_MAP = {
 // Kamus Penamaan Peran Resmi
 const ROLE_LABELS = {
   SUPERADMIN: 'Administrator Sistem LPMQ',
-  HELPER_ADMIN: 'Administrator Sistem LPMQ',
-  ADMIN_PENERBIT: 'Penerbit / Pemohon Pentashihan',
+  ADMIN_INTERNAL: 'Administrator Sistem LPMQ',
+  PENERBIT: 'Penerbit / Pemohon Pentashihan',
   PUBLISHER: 'Penerbit / Pemohon Pentashihan',
   VERIFIKATOR: 'Petugas Verifikator Berkas & Naskah',
   VERIFICATOR: 'Petugas Verifikator Berkas & Naskah',
@@ -246,7 +246,7 @@ export const ModulePlaceholder = ({
   };
 
   // Cek wewenang peran
-  const isSuperadmin = currentRoles.includes('SUPERADMIN') || currentRoles.includes('HELPER_ADMIN');
+  const isSuperadmin = currentRoles.includes('SUPERADMIN') || currentRoles.includes('ADMIN_INTERNAL');
   const isAuthorized =
     isSuperadmin ||
     allowedRoles.some((role) => currentRoles.includes(role));

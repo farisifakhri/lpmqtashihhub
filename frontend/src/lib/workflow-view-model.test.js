@@ -8,12 +8,12 @@ describe('Centralized Workflow View Model', () => {
       status: 'DRAFT',
       publisher: { legal_name: 'PT Mushaf Jaya' },
     };
-    const user = { role: 'ADMIN_PENERBIT' };
+    const user = { role: 'PENERBIT' };
 
     const vm = getWorkflowViewModel(reg, user);
     expect(vm.phase).toBe('REGISTRATION');
     expect(vm.statusLabel).toBe('Draf Permohonan');
-    expect(vm.ownerRole).toBe('ADMIN_PENERBIT');
+    expect(vm.ownerRole).toBe('PENERBIT');
     expect(vm.ownerName).toBe('PT Mushaf Jaya');
     expect(vm.nextActionLabel).toBe('Lengkapi berkas & ajukan');
     expect(vm.nextActionPath).toBe('/publisher/registrations/reg-123');
@@ -60,7 +60,7 @@ describe('Centralized Workflow View Model', () => {
     const verifikatorUser = { role: 'VERIFIKATOR' };
 
     const vm = getWorkflowViewModel(reg, verifikatorUser);
-    expect(vm.ownerRole).toBe('ADMIN_PENERBIT');
+    expect(vm.ownerRole).toBe('PENERBIT');
     expect(vm.canUserAct).toBe(false);
   });
 
@@ -72,12 +72,12 @@ describe('Centralized Workflow View Model', () => {
       physical_dispatch_status: 'DISPATCHED',
       physical_master_intake: { status: 'PENDING' },
     };
-    const adminUser = { role: 'HELPER_ADMIN' };
+    const adminUser = { role: 'ADMIN_INTERNAL' };
     const pendingVm = getWorkflowViewModel(pendingReg, adminUser);
     expect(pendingVm.operationalState).toBe('WAITING_PHYSICAL_MASTER');
     expect(pendingVm.operationalStatusLabel).toBe('Menunggu penerimaan master fisik');
-    expect(pendingVm.operationalOwnerRole).toBe('HELPER_ADMIN');
-    expect(pendingVm.operationalNextAction).toBe('Terima dan periksa master fisik di loket');
+    expect(pendingVm.operationalOwnerRole).toBe('ADMIN_INTERNAL');
+    expect(pendingVm.operationalNextAction).toBe('Terima dan periksa master fisik naskah');
     expect(pendingVm.canUserAct).toBe(true);
     expect(pendingVm.nextActionPath).toBe('/internal/master-intake');
 
@@ -114,7 +114,7 @@ describe('Centralized Workflow View Model', () => {
       status: 'REVISION_REQUIRED',
       assignments: [],
     };
-    const verifVm = getWorkflowViewModel(verifRevisionReg, { role: 'ADMIN_PENERBIT' });
+    const verifVm = getWorkflowViewModel(verifRevisionReg, { role: 'PENERBIT' });
     expect(verifVm.phase).toBe('VERIFICATION');
     expect(verifVm.statusLabel).toBe('Perlu Perbaikan Berkas');
 
@@ -127,10 +127,10 @@ describe('Centralized Workflow View Model', () => {
         { from_status: 'TASHIH_IN_PROGRESS', to_status: 'REVISION_REQUIRED', notes: 'Perbaiki lafaz QS 2:255' },
       ],
     };
-    const tashihVm = getWorkflowViewModel(tashihRevisionReg, { role: 'ADMIN_PENERBIT' });
+    const tashihVm = getWorkflowViewModel(tashihRevisionReg, { role: 'PENERBIT' });
     expect(tashihVm.phase).toBe('TASHIH');
     expect(tashihVm.statusLabel).toBe('Perlu Perbaikan Naskah Sidang');
     expect(tashihVm.operationalState).toBe('TASHIH_REVISION_REQUIRED');
-    expect(tashihVm.operationalNextAction).toBe('Unggah perbaikan naskah / dumi');
+    expect(tashihVm.operationalNextAction).toBe('Unggah perbaikan naskah & kirim naskah fisik');
   });
 });

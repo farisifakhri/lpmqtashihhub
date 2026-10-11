@@ -205,7 +205,7 @@ export const getRegistrationPayment = async (registrationId, user) => {
 
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN');
-  const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === reg.publisher_id;
+  const isOwnerPublisher = user.roles.includes('PENERBIT') && user.publisherId === reg.publisher_id;
   let isAssignedVerifier = false;
   if (user.roles.includes('VERIFIKATOR')) {
     const assignment = await prisma.verificationAssignment.findFirst({
@@ -239,7 +239,7 @@ export const listPayments = async (query, user) => {
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN');
   const isVerifier = user.roles.includes('VERIFIKATOR');
-  const isOwnerPublisher = user.roles.includes('ADMIN_PENERBIT');
+  const isOwnerPublisher = user.roles.includes('PENERBIT');
 
   const { page, limit, skip } = queuePagination(query);
 

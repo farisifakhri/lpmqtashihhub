@@ -5,7 +5,7 @@ import { fail } from './workflow-utils.js';
  */
 
 export function isPublisherUser(user) {
-  return user?.roles?.includes('ADMIN_PENERBIT') && !user?.roles?.includes('SUPERADMIN');
+  return user?.roles?.includes('PENERBIT') && !user?.roles?.includes('SUPERADMIN');
 }
 
 export function isVerifierUser(user) {
@@ -21,7 +21,7 @@ export function isKepalaUser(user) {
 }
 
 export function isAdminUser(user) {
-  return user?.roles?.includes('HELPER_ADMIN') || user?.roles?.includes('SUPERADMIN');
+  return user?.roles?.includes('ADMIN_INTERNAL') || user?.roles?.includes('SUPERADMIN');
 }
 
 /**
@@ -46,7 +46,7 @@ export function assertVerifierAssignment(assignment, user) {
 export async function assertVerifierPaymentAccess(payment, user, db, write = false) {
   if (!payment) fail(404, 'Tagihan pembayaran tidak ditemukan.');
 
-  const isOwner = user?.roles?.includes('ADMIN_PENERBIT') && user.publisherId === payment.registration?.publisher_id;
+  const isOwner = user?.roles?.includes('PENERBIT') && user.publisherId === payment.registration?.publisher_id;
   const isHead = user?.roles?.includes('KEPALA_LPMQ');
   const isSuperadmin = user?.roles?.includes('SUPERADMIN');
   const isVerifier = user?.roles?.includes('VERIFIKATOR');

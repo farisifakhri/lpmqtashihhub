@@ -10,8 +10,8 @@ async function main() {
   // 1. Roles
   const rolesData = [
     { code: 'SUPERADMIN', name: 'Administrator Sistem LPMQ' },
-    { code: 'HELPER_ADMIN', name: 'Helper Admin LPMQ' },
-    { code: 'ADMIN_PENERBIT', name: 'Penerbit / Pemohon Pentashihan' },
+    { code: 'ADMIN_INTERNAL', name: 'Admin Internal LPMQ' },
+    { code: 'PENERBIT', name: 'Penerbit' },
     { code: 'VERIFIKATOR', name: 'Verifikator Berkas & Naskah' },
     { code: 'DISTRIBUTOR', name: 'Distributor Naskah Pentashihan' },
     { code: 'PENTASHIH', name: 'Pentashih / Pembaca Naskah' },
@@ -55,13 +55,13 @@ async function main() {
       name: 'Muhammad Zamroni Ahbab, S.S.I., M.Ag.',
       email: 'admin.internal@lpmq.kemenag.go.id',
       nip: '198810302023211018',
-      roles: ['HELPER_ADMIN'],
+      roles: ['ADMIN_INTERNAL'],
     },
     {
       name: 'Mustakim, Lc., M.Ag.',
       email: 'mustakim@lpmq.kemenag.go.id',
       nip: '198807152023211024',
-      roles: ['HELPER_ADMIN'],
+      roles: ['ADMIN_INTERNAL'],
     },
     {
       name: 'Ahmad Falahudin, S.S',
@@ -103,7 +103,7 @@ async function main() {
       name: 'Penerbit PT Mushaf Nusantara Mandiri',
       email: 'penerbit@mushafnusantara.com',
       nip: null,
-      roles: ['ADMIN_PENERBIT'],
+      roles: ['PENERBIT'],
       publisher: {
         legal_name: 'PT Mushaf Nusantara Mandiri',
         entity_type: 'PT',

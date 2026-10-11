@@ -55,7 +55,7 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
 export async function workload(id, user) {
   // Read-only workload remains available to Distributor for their own duties.
-  requireRole(user, ['HELPER_ADMIN', 'DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN_INTERNAL', 'DISTRIBUTOR', 'SUPERADMIN']);
   if (!await prisma.distributionTeam.findUnique({ where: { id } })) fail(404, 'Tim tidak ditemukan.');
   return prisma.assignment.groupBy({ by: ['assignee_id', 'status'], where: { team_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } }, _count: { _all: true } });
 }
@@ -177,6 +177,33 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
       ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
       : 0;
     revisionRound = previousLetters + 1;
+
+    // Reset physical dispatch status and mark revision source (RF-DIST-00)
+    await tx.registration.update({
+      where: { id },
+      data: {
+        physical_dispatch_status: 'NOT_DISPATCHED',
+        dispatch_courier: null,
+        dispatch_tracking_no: null,
+        dispatch_date: null,
+        revision_source: 'TASHIH_REVISION',
+      },
+    });
+
+    // Reset physical master intake to PENDING for the revision/dummy round
+    await tx.physicalMasterIntake.updateMany({
+      where: { registration_id: id },
+      data: {
+        status: 'PENDING',
+        sent_at: null,
+        delivery_method: null,
+        received_by_id: null,
+        received_at: null,
+        condition: null,
+        receipt_no: null,
+        notes: `Menunggu pengiriman naskah fisik ${revisionKind === 'NASKAH_DUMI' ? 'dumi' : 'perbaikan'} (Ronde #${revisionRound})`,
+      },
+    });
 
     if (tx.officialDocument?.create) {
       await tx.officialDocument.create({

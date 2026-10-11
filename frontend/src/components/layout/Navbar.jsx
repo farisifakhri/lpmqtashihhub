@@ -62,9 +62,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const role = currentUser?.role || '';
   const isPublisher =
-    role === 'ADMIN_PENERBIT' ||
+    role === 'PENERBIT' ||
     role === 'PUBLISHER' ||
-    currentUser?.roles?.includes('ADMIN_PENERBIT');
+    currentUser?.roles?.includes('PENERBIT');
 
   const homePath = isPublisher ? '/publisher' : '/internal';
 
@@ -72,7 +72,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     switch (userRole) {
       case 'SUPERADMIN':
         return { label: 'Administrator Sistem', color: 'bg-surface-subtle text-ink border-line-strong' };
-      case 'HELPER_ADMIN':
+      case 'ADMIN_INTERNAL':
         return { label: 'Helper Admin', color: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
@@ -88,7 +88,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', color: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
-      case 'ADMIN_PENERBIT':
+      case 'PENERBIT':
       case 'PUBLISHER':
         return { label: 'Penerbit Terverifikasi', color: 'bg-surface-subtle text-ink border-line-strong' };
       default:

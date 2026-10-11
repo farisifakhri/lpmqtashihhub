@@ -22,8 +22,8 @@ describe('Komponen tata letak portal operasional', () => {
     id: 'user-2',
     name: 'Ahmad Penerbit',
     email: 'penerbit@mushafnusantara.com',
-    role: 'ADMIN_PENERBIT',
-    roles: ['ADMIN_PENERBIT'],
+    role: 'PENERBIT',
+    roles: ['PENERBIT'],
     publisherName: 'PT Mushaf Nusantara',
   };
 

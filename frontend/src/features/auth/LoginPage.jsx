@@ -29,7 +29,7 @@ export const LoginPage = () => {
 
     const res = await login(email, password);
     if (res.success) {
-      const isPublisher = res.user.roles?.includes('ADMIN_PENERBIT') || res.user.role === 'ADMIN_PENERBIT';
+      const isPublisher = res.user.roles?.includes('PENERBIT') || res.user.role === 'PENERBIT';
       const defaultTarget = isPublisher ? '/publisher' : '/internal';
       const redirectTarget = location.state?.from?.pathname || defaultTarget;
       navigate(redirectTarget, { replace: true });

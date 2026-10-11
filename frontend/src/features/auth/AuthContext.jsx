@@ -4,7 +4,7 @@ import { setAuthToken, getAuthToken } from '@/api/client';
 
 export const SEED_ACCOUNTS = [
   {
-    role: 'ADMIN_PENERBIT',
+    role: 'PENERBIT',
     label: 'Penerbit Mushaf',
     email: 'penerbit@mushafnusantara.com',
     desc: 'PT Mushaf Nusantara Mandiri (Pemohon)',
@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
             email: u.email,
             nip: u.nip,
             roles: u.roles || [],
-            role: u.roles?.[0] || 'ADMIN_PENERBIT',
+            role: u.roles?.[0] || 'PENERBIT',
             publisherId: u.publisher?.id,
             publisherName: u.publisher?.legal_name,
           };
@@ -125,9 +125,9 @@ export const AuthProvider = ({ children }) => {
           email: u.email,
           nip: u.nip,
           roles: u.roles || [],
-          role: u.roles?.[0] || 'ADMIN_PENERBIT',
-          publisherId: u.publisher?.id || (u.roles?.includes('ADMIN_PENERBIT') ? u.id : null),
-          publisherName: u.publisher?.legal_name || (u.roles?.includes('ADMIN_PENERBIT') ? u.name : null),
+          role: u.roles?.[0] || 'PENERBIT',
+          publisherId: u.publisher?.id || (u.roles?.includes('PENERBIT') ? u.id : null),
+          publisherName: u.publisher?.legal_name || (u.roles?.includes('PENERBIT') ? u.name : null),
         };
 
         setCurrentUser(userObj);
@@ -183,7 +183,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const availableRoles = [
-    'ADMIN_PENERBIT',
+    'PENERBIT',
     'SUPERADMIN',
     'VERIFIKATOR',
     'DISTRIBUTOR',

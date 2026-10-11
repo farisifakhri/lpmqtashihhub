@@ -93,12 +93,25 @@ export const AdminMasterIntakePage = () => {
   const fetchWaitingList = async () => {
     setWaitingLoading(true);
     try {
-      const res = await registrationApi.listRegistrations({
-        status: 'READY_FOR_VERIFICATION',
-        limit: 20,
+      const [verifRes, revRes] = await Promise.all([
+        registrationApi.listRegistrations({
+          status: 'READY_FOR_VERIFICATION',
+          limit: 20,
+        }),
+        registrationApi.listRegistrations({
+          status: 'REVISION_REQUIRED',
+          limit: 20,
+        }),
+      ]);
+      const itemsVerif = Array.isArray(verifRes?.data) ? verifRes.data : (verifRes?.data?.items || []);
+      const itemsRev = Array.isArray(revRes?.data) ? revRes.data : (revRes?.data?.items || []);
+      const seenIds = new Set();
+      const allItems = [...itemsVerif, ...itemsRev].filter((item) => {
+        if (!item?.id || seenIds.has(item.id)) return false;
+        seenIds.add(item.id);
+        return true;
       });
-      const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
-      const pendingItems = items.filter((item) => {
+      const pendingItems = allItems.filter((item) => {
         const intakeStatus = item.physical_master_intake?.status || item.physical_master?.status;
         return intakeStatus !== 'RECEIVED';
       });
@@ -279,18 +292,18 @@ export const AdminMasterIntakePage = () => {
   const isReceived = intakeStatus === 'RECEIVED';
   const isReturned = intakeStatus === 'RETURNED';
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
-  const canAssign = userRoles.includes('HELPER_ADMIN') || userRoles.includes('SUPERADMIN') || ['HELPER_ADMIN', 'SUPERADMIN'].includes(currentUser?.role);
+  const canAssign = userRoles.includes('ADMIN_INTERNAL') || userRoles.includes('SUPERADMIN') || ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(currentUser?.role);
   const isAssigned = selectedReg?.status && selectedReg.status !== 'READY_FOR_VERIFICATION';
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24 animate-fadeIn">
       {/* Header */}
       <PageHeader
-        title="Loket Intake Master Fisik Mushaf"
-        subtitle="Pencocokan print-out master fisik A4 per juz dengan data deklarasi pendaftaran (LPMQ SOP v2.2)"
+        title="Penerimaan Master Fisik Mushaf"
+        subtitle="Penerimaan dan pencatatan tanda terima master fisik naskah oleh Admin Internal LPMQ"
         breadcrumbs={[
           { label: 'Portal Petugas', href: '/internal' },
-          { label: 'Intake Master Fisik' },
+          { label: 'Penerimaan Master Fisik' },
         ]}
       />
 
@@ -370,7 +383,7 @@ export const AdminMasterIntakePage = () => {
               className="inline-flex items-center gap-1.5 text-xs font-bold text-ink hover:text-brand-800 transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" />
-              Kembali ke Antrean Intake Loket
+              Kembali ke Antrean Penerimaan Fisik
             </button>
             <div className="flex items-center gap-2 text-xs text-ink-muted">
               <span>Sedang Memproses:</span>
@@ -389,7 +402,7 @@ export const AdminMasterIntakePage = () => {
                   Peringatan Perbedaan Jumlah Jilid Fisik (Visual Diff)
                 </strong>
                 <p className="mt-0.5 leading-relaxed text-civic-warning">
-                  Jumlah jilid aktual yang dihitung di loket (<strong>{actualVolumeCount} Jilid</strong>) berbeda dari deklarasi yang dimasukkan penerbit saat pendaftaran (<strong>{declaredVolumeCount} Jilid</strong>).
+                  Jumlah jilid aktual yang dihitung (<strong>{actualVolumeCount} Jilid</strong>) berbeda dari deklarasi yang dimasukkan penerbit saat pendaftaran (<strong>{declaredVolumeCount} Jilid</strong>).
                   Sesuai aturan SOP v2.2, sistem menolak penerimaan jika jumlah jilid berbeda. Silakan kembalikan master fisik dengan catatan agar penerbit memperbarui deklarasi.
                 </p>
               </div>
@@ -402,7 +415,7 @@ export const AdminMasterIntakePage = () => {
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-5 h-5 text-brand-700 shrink-0" />
                 <div>
-                  <strong className="text-sm font-bold">Master Fisik Telah Resmi Diterima di Loket LPMQ</strong>
+                  <strong className="text-sm font-bold">Master Fisik Telah Resmi Diterima oleh Admin Internal LPMQ</strong>
                   <p className="text-brand-800 mt-0.5">
                     Nomor Tanda Terima: <strong className="font-mono">{selectedReg.physical_master_intake?.receipt_no}</strong> · Kondisi: {selectedReg.physical_master_intake?.condition || 'Baik'} · Diterima pada {selectedReg.physical_master_intake?.received_at ? new Date(selectedReg.physical_master_intake.received_at).toLocaleDateString('id-ID') : '-'}
                   </p>
@@ -466,7 +479,7 @@ export const AdminMasterIntakePage = () => {
                     Alasan Pengembalian: <em>"{selectedReg.physical_master_intake?.notes || 'Master fisik tidak lengkap atau cacat.'}"</em>
                   </p>
                   <p className="text-[11px] text-civic-danger">
-                    Kondisi Catatan Loket: <strong>{selectedReg.physical_master_intake?.condition || 'Tidak Lengkap'}</strong> · Menunggu penerbit menyerahkan perbaikan jilid naskah fisik A4.
+                    Kondisi Catatan Fisik: <strong>{selectedReg.physical_master_intake?.condition || 'Tidak Lengkap'}</strong> · Menunggu penerbit menyerahkan perbaikan jilid naskah fisik A4.
                   </p>
                 </div>
               </div>
@@ -551,13 +564,13 @@ export const AdminMasterIntakePage = () => {
               </div>
             </div>
 
-            {/* KOLOM KANAN: Verifikasi Fisik oleh Petugas Loket */}
+            {/* KOLOM KANAN: Verifikasi Fisik oleh Admin Internal */}
             <div className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4">
               <div className="flex items-center justify-between border-b border-line pb-3">
                 <div className="flex items-center gap-2">
                   <PackageCheck className="w-4 h-4 text-brand-800" />
                   <h3 className="text-sm font-bold text-ink">
-                    2. Verifikasi Fisik Aktual di Loket
+                    2. Verifikasi Fisik Aktual Admin Internal
                   </h3>
                 </div>
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-900 border border-brand-100">
@@ -607,7 +620,7 @@ export const AdminMasterIntakePage = () => {
                     <input
                       type="text"
                       disabled
-                      value={selectedReg.physical_master_intake?.tracking_number || selectedReg.physical_master?.tracking_number || 'Tercatat di Loket'}
+                      value={selectedReg.physical_master_intake?.tracking_number || selectedReg.physical_master?.tracking_number || 'Tercatat di Kantor LPMQ'}
                       className="w-full p-2.5 rounded-lg border border-line bg-canvas font-mono text-ink text-xs font-semibold"
                     />
                   </div>
@@ -616,7 +629,7 @@ export const AdminMasterIntakePage = () => {
                 {/* Verifikasi Penerimaan Resi & Paket */}
                 <div className="p-3 bg-brand-50/50 rounded-lg border border-brand-100 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-ink-muted block text-[11px]">Tanggal Penerimaan Resi / Loket:</span>
+                    <span className="text-ink-muted block text-[11px]">Tanggal Penerimaan Paket Fisik:</span>
                     <strong className="text-brand-950 font-mono">
                       {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </strong>
@@ -625,7 +638,7 @@ export const AdminMasterIntakePage = () => {
                     <span className="text-ink-muted block text-[11px]">Bukti Terima Paket Master Fisik:</span>
                     <span className="inline-flex items-center text-brand-900 font-semibold text-[11px]">
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-brand-700" />
-                      Terverifikasi Diterima Petugas Loket
+                      Terverifikasi Diterima Admin Internal
                     </span>
                   </div>
                 </div>
@@ -739,7 +752,7 @@ export const AdminMasterIntakePage = () => {
             <div className="flex items-center gap-2">
               <Inbox className="w-5 h-5 text-brand-700" />
               <h3 className="text-sm font-bold text-ink">
-                Antrean Naskah Menunggu Master Fisik di Loket
+                Antrean Naskah Menunggu Master Fisik
               </h3>
               <span className="text-xs bg-brand-100 text-brand-800 font-bold px-2.5 py-0.5 rounded-full">
                 {waitingList.length} Naskah
@@ -769,7 +782,7 @@ export const AdminMasterIntakePage = () => {
                 Tidak Ada Antrean Naskah Menunggu Fisik
               </h3>
               <p className="text-xs text-ink-muted max-w-sm mx-auto leading-relaxed">
-                Seluruh naskah siap verifikasi telah diterima master fisiknya di loket, atau gunakan kotak pencarian di atas jika mencari nomor registrasi spesifik.
+                Seluruh naskah telah diterima master fisiknya, atau gunakan kotak pencarian di atas jika mencari nomor registrasi spesifik.
               </p>
             </div>
           ) : (
@@ -819,9 +832,13 @@ export const AdminMasterIntakePage = () => {
                         <td className="py-3.5 px-5">
                           {item.physical_master_intake?.status === 'RECEIVED' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-brand-50 text-brand-800 border border-brand-100">
-                              Diterima di Loket
+                              Diterima Admin Internal
                             </span>
-                          ) : item.physical_master_intake?.status === 'RETURNED' || item.status === 'REVISION_REQUIRED' ? (
+                          ) : item.status === 'REVISION_REQUIRED' ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                              Perbaikan Fisik (Ronde #{item.revision_round || 1})
+                            </span>
+                          ) : item.physical_master_intake?.status === 'RETURNED' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                               Dikembalikan (Revisi)
                             </span>
@@ -888,9 +905,9 @@ export const AdminMasterIntakePage = () => {
             { label: 'Penerbit', value: selectedReg.publisher?.legal_name || '-' },
             { label: 'Jumlah Jilid', value: `${actualVolumeCount} Jilid A4` },
             { label: 'Nomor Tanda Terima', value: receiptNo },
-            { label: 'Status Penerimaan Loket', value: 'Paket Fisik Terverifikasi' },
+            { label: 'Status Penerimaan Fisik', value: 'Paket Fisik Terverifikasi' },
           ]}
-          impactMessage="Tanda terima resmi (TT-LPMQ) akan diterbitkan ke akun penerbit dan naskah siap ditugaskan kepada Verifikator oleh Helper Admin."
+          impactMessage={selectedReg.status === 'REVISION_REQUIRED' ? "Tanda terima resmi (TT-LPMQ) diterbitkan dan naskah fisik diteruskan kepada Distributor untuk sidang pentashihan." : "Tanda terima resmi (TT-LPMQ) akan diterbitkan ke akun penerbit dan naskah siap ditugaskan kepada Verifikator oleh Admin Internal."}
           confirmLabel="Terbitkan Tanda Terima"
           confirmVariant="primary"
           loading={actionLoading}

@@ -14,7 +14,7 @@ export const STATUS_DEFINITIONS = {
     phase: 'REGISTRATION',
     statusLabel: 'Draf Permohonan',
     statusDescription: 'Permohonan baru, berkas atau data naskah belum lengkap.',
-    ownerRole: 'ADMIN_PENERBIT',
+    ownerRole: 'PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Lengkapi berkas & ajukan',
     actionPath: id => `/publisher/registrations/${id}`,
@@ -22,7 +22,7 @@ export const STATUS_DEFINITIONS = {
   READY_FOR_VERIFICATION: {
     phase: 'VERIFICATION',
     statusLabel: 'Menunggu Penugasan Verifikator',
-    statusDescription: 'Naskah telah diajukan dan master fisik diterima loket; menunggu Helper Admin menugaskan verifikator.',
+    statusDescription: 'Naskah telah diajukan dan master fisik diterima; menunggu Admin Internal menugaskan verifikator.',
     ownerRole: 'KEPALA_LPMQ',
     ownerRoleLabel: 'Kepala LPMQ',
     nextActionLabel: 'Terbitkan Nota Dinas & tugaskan verifikator',
@@ -50,7 +50,7 @@ export const STATUS_DEFINITIONS = {
     phase: 'VERIFICATION',
     statusLabel: 'Perlu Perbaikan Berkas',
     statusDescription: 'Catatan telaah verifikator memerlukan perbaikan atau penggantian berkas oleh pemohon.',
-    ownerRole: 'ADMIN_PENERBIT',
+    ownerRole: 'PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Unggah berkas perbaikan',
     actionPath: id => `/publisher/registrations/${id}`,
@@ -77,7 +77,7 @@ export const STATUS_DEFINITIONS = {
     phase: 'PAYMENT',
     statusLabel: 'Menunggu Pembayaran PNBP',
     statusDescription: 'Kode billing SIMPONI aktif. Pembayaran wajib disetor sebelum masa berlaku billing habis.',
-    ownerRole: 'ADMIN_PENERBIT',
+    ownerRole: 'PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Bayar dan konfirmasi setoran',
     actionPath: id => `/publisher/billing?registration_id=${id}`,
@@ -104,7 +104,7 @@ export const STATUS_DEFINITIONS = {
     phase: 'HANDOVER',
     statusLabel: 'Perlu Koreksi Master Fisik',
     statusDescription: 'Master fisik tidak lengkap atau cacat; pemohon wajib menyerahkan penggantian naskah fisik.',
-    ownerRole: 'ADMIN_PENERBIT',
+    ownerRole: 'PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Serahkan penggantian master ke LPMQ',
     actionPath: id => `/publisher/registrations/${id}`,
@@ -167,7 +167,7 @@ export const STATUS_DEFINITIONS = {
     phase: 'REGISTRATION',
     statusLabel: 'Dibatalkan',
     statusDescription: 'Permohonan dibatalkan sebelum tahapan pembayaran atau penetapan selesai.',
-    ownerRole: 'ADMIN_PENERBIT',
+    ownerRole: 'PENERBIT',
     ownerRoleLabel: 'Penerbit',
     nextActionLabel: 'Permohonan ditutup',
     actionPath: null,
@@ -197,12 +197,12 @@ export function getWorkflowViewModel(registration, currentUser) {
       operationalState = 'WAITING_PHYSICAL_MASTER';
       const dispatched = registration.physical_dispatch_status === 'DISPATCHED';
       operationalStatusLabel = dispatched ? 'Menunggu penerimaan master fisik' : 'Menunggu pengiriman master fisik';
-      operationalOwnerRole = 'HELPER_ADMIN';
-      operationalOwnerRoleLabel = 'Admin Loket';
-      operationalNextAction = dispatched ? 'Terima dan periksa master fisik di loket' : 'Tunggu pengiriman master fisik dari penerbit';
+      operationalOwnerRole = 'ADMIN_INTERNAL';
+      operationalOwnerRoleLabel = 'Admin Internal';
+      operationalNextAction = dispatched ? 'Terima dan periksa master fisik naskah' : 'Tunggu pengiriman master fisik dari penerbit';
       blockedReason = dispatched
-        ? 'Berkas dilaporkan terkirim; master fisik A4 belum diterima dan dicatat oleh loket LPMQ.'
-        : 'Menunggu penerbit mengirim dan menyerahkan master fisik A4 ke loket LPMQ.';
+        ? 'Berkas dilaporkan terkirim; master fisik A4 belum diterima dan dicatat oleh Admin Internal LPMQ.'
+        : 'Menunggu penerbit mengirim dan menyerahkan master fisik A4 ke Admin Internal LPMQ.';
     } else {
       operationalState = 'READY_FOR_ASSIGNMENT';
       operationalStatusLabel = 'Siap ditugaskan';
@@ -242,31 +242,31 @@ export function getWorkflowViewModel(registration, currentUser) {
     if (isTashihRevision) {
       operationalState = 'TASHIH_REVISION_REQUIRED';
       operationalStatusLabel = 'Perlu Perbaikan Naskah Sidang';
-      operationalOwnerRole = 'ADMIN_PENERBIT';
+      operationalOwnerRole = 'PENERBIT';
       operationalOwnerRoleLabel = 'Penerbit';
-      operationalNextAction = 'Unggah perbaikan naskah / dumi';
+      operationalNextAction = 'Unggah perbaikan naskah & kirim naskah fisik';
       blockedReason =
         registration.revision_notes ||
         registration.status_histories?.[registration.status_histories.length - 1]?.notes ||
-        'Hasil sidang pentashihan memerlukan koreksi lafazh/rasm/tanda baca atau naskah dumi.';
+        'Hasil sidang pentashihan memerlukan koreksi lafazh/rasm/tanda baca atau naskah dumi. Penerbit wajib mengirimkan kembali naskah fisik.';
     } else if (
       registration.revision_source === 'PHYSICAL_MASTER' ||
       registration.physical_master_intake?.status === 'RETURNED'
     ) {
       operationalState = 'PHYSICAL_MASTER_CORRECTION_REQUIRED';
       operationalStatusLabel = 'Perlu Perbaikan Master Fisik';
-      operationalOwnerRole = 'ADMIN_PENERBIT';
+      operationalOwnerRole = 'PENERBIT';
       operationalOwnerRoleLabel = 'Penerbit';
-      operationalNextAction = 'Perbaiki jilid master fisik & serahkan ulang ke loket LPMQ';
+      operationalNextAction = 'Perbaiki jilid master fisik & serahkan ulang ke Admin Internal LPMQ';
       blockedReason =
         registration.physical_master_intake?.notes ||
-        'Master fisik dikembalikan di loket karena jilid tidak lengkap atau cacat.';
+        'Master fisik dikembalikan karena jilid tidak lengkap atau cacat.';
     }
   }
 
   // Tentukan nama pejabat/petugas penanggung jawab saat ini
   let ownerName = null;
-  if (def.ownerRole === 'ADMIN_PENERBIT') {
+  if (def.ownerRole === 'PENERBIT') {
     ownerName = registration.publisher?.legal_name || 'Pemohon Penerbit';
   } else if (def.ownerRole === 'VERIFIKATOR') {
     ownerName = registration.assigned_verificator?.name || registration.verifier?.name || null;
@@ -289,8 +289,8 @@ export function getWorkflowViewModel(registration, currentUser) {
 
   if (userRoles.includes('SUPERADMIN')) {
     canUserAct = true;
-  } else if (def.ownerRole === 'ADMIN_PENERBIT') {
-    canUserAct = userRoles.includes('ADMIN_PENERBIT') || currentUser?.role === 'ADMIN_PENERBIT';
+  } else if (def.ownerRole === 'PENERBIT') {
+    canUserAct = userRoles.includes('PENERBIT') || currentUser?.role === 'PENERBIT';
   } else if (def.ownerRole === 'VERIFIKATOR') {
     canUserAct = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   } else if (def.ownerRole === 'KEPALA_LPMQ') {
@@ -303,7 +303,7 @@ export function getWorkflowViewModel(registration, currentUser) {
     canUserAct = userRoles.includes('DOKUMENTATOR') || currentUser?.role === 'DOKUMENTATOR';
   }
 
-  if (operationalState === 'WAITING_PHYSICAL_MASTER' && (userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN')) {
+  if (operationalState === 'WAITING_PHYSICAL_MASTER' && (userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL')) {
     canUserAct = true;
   }
 
