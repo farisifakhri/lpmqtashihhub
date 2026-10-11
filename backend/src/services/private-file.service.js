@@ -15,7 +15,7 @@ export async function readPrivateFile(id, user) {
 
   if (file.owner_id !== user.id && !user.roles.includes('SUPERADMIN')) {
     const isInternalStaff = user.roles.some(role =>
-      ['VERIFIKATOR', 'VERIFICATOR', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(role)
+      ['VERIFIKATOR', 'VERIFICATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(role)
     );
 
     const manuscript = await prisma.manuscriptFile.findFirst({ where: { file_id: file.id }, include: { registration: true } });
@@ -26,12 +26,12 @@ export async function readPrivateFile(id, user) {
         where: { receipt_file_id: file.id },
         include: { registration: true },
       });
-      const isOwnerPublisher = receipt && user.roles.includes('ADMIN_PENERBIT') && receipt.registration?.publisher_id === user.publisherId;
+      const isOwnerPublisher = receipt && user.roles.includes('PENERBIT') && receipt.registration?.publisher_id === user.publisherId;
       const vDoc = await prisma.verificationDocument.findFirst({
         where: { file_id: file.id },
         include: { registration: true },
       });
-      const isVDocPublisher = vDoc && user.roles.includes('ADMIN_PENERBIT') && vDoc.registration?.publisher_id === user.publisherId;
+      const isVDocPublisher = vDoc && user.roles.includes('PENERBIT') && vDoc.registration?.publisher_id === user.publisherId;
 
       if (!isOwnerPublisher && !isVDocPublisher && file.owner_id !== user.id) {
         fail(403, 'Akses berkas ditolak.');

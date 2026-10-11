@@ -27,8 +27,8 @@ import {
 
 const ROLE_OPTIONS = [
   { code: 'SUPERADMIN', label: 'Super Admin', desc: 'Akses penuh ke konfigurasi dan seluruh alur' },
-  { code: 'HELPER_ADMIN', label: 'Helper Admin', desc: 'Baca permohonan, pantau progres, dan tetapkan tim pentashih' },
-  { code: 'ADMIN_PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Permohonan naskah dan pemantauan billing' },
+  { code: 'ADMIN_INTERNAL', label: 'Helper Admin', desc: 'Baca permohonan, pantau progres, dan tetapkan tim pentashih' },
+  { code: 'PENERBIT', label: 'Penerbit (Pemohon)', desc: 'Permohonan naskah dan pemantauan billing' },
   { code: 'VERIFIKATOR', label: 'Verifikator Naskah', desc: 'Pemeriksaan berkas digital dan master fisik' },
   { code: 'DISTRIBUTOR', label: 'Distributor Sidang', desc: 'Penugasan tim pentashih dan tanda terima' },
   { code: 'PENTASHIH', label: 'Pentashih', desc: 'Penelaahan lafazh, ayat, rasm, dan harakat' },
@@ -168,7 +168,7 @@ export const UserManagementPage = () => {
         status: formData.status,
         roles: formData.roles,
       };
-      if (formData.roles.includes('ADMIN_PENERBIT') && formData.publisherName.trim()) {
+      if (formData.roles.includes('PENERBIT') && formData.publisherName.trim()) {
         payload.publisher = {
           legal_name: formData.publisherName.trim(),
         };
@@ -200,7 +200,7 @@ export const UserManagementPage = () => {
       if (formData.password?.trim()) {
         payload.password = formData.password.trim();
       }
-      if (formData.roles.includes('ADMIN_PENERBIT') && formData.publisherName?.trim()) {
+      if (formData.roles.includes('PENERBIT') && formData.publisherName?.trim()) {
         payload.publisher = {
           legal_name: formData.publisherName.trim(),
         };
@@ -238,9 +238,9 @@ export const UserManagementPage = () => {
     switch (roleCode) {
       case 'SUPERADMIN':
         return { label: 'Super Admin', className: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine' };
-      case 'HELPER_ADMIN':
+      case 'ADMIN_INTERNAL':
         return { label: 'Helper Admin', className: 'bg-civic-infoSoft text-civic-info border-civic-infoLine' };
-      case 'ADMIN_PENERBIT':
+      case 'PENERBIT':
         return { label: 'Penerbit', className: 'bg-brand-50 text-brand-800 border-brand-100' };
       case 'VERIFIKATOR':
         return { label: 'Verifikator', className: 'bg-civic-infoSoft text-civic-info border-civic-infoLine' };
@@ -681,8 +681,8 @@ export const UserManagementPage = () => {
                 </div>
               </div>
 
-              {/* Optional Publisher Name if role includes ADMIN_PENERBIT */}
-              {formData.roles.includes('ADMIN_PENERBIT') && (
+              {/* Optional Publisher Name if role includes PENERBIT */}
+              {formData.roles.includes('PENERBIT') && (
                 <div className="space-y-1 p-3 bg-canvas rounded-lg border border-line">
                   <label className="font-semibold text-ink">Nama Penerbit / Badan Hukum</label>
                   <input
@@ -860,7 +860,7 @@ export const UserManagementPage = () => {
                 </div>
               </div>
 
-              {formData.roles.includes('ADMIN_PENERBIT') && (
+              {formData.roles.includes('PENERBIT') && (
                 <div className="space-y-1 p-3 bg-canvas rounded-lg border border-line">
                   <label className="font-semibold text-ink">Nama Penerbit / Badan Hukum</label>
                   <input

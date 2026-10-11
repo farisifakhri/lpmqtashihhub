@@ -87,7 +87,7 @@ export const NotificationCenter = () => {
   const { currentUser } = useAuth();
 
   const role = currentUser?.role || '';
-  const isPublisher = role === 'ADMIN_PENERBIT' || currentUser?.roles?.includes('ADMIN_PENERBIT');
+  const isPublisher = role === 'PENERBIT' || currentUser?.roles?.includes('PENERBIT');
 
   const fetchNotifications = useCallback(async () => {
     if (!currentUser) return;

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
@@ -37,7 +38,7 @@ export const declarePhysicalMaster = (id, data, user, req) => prisma.$transactio
 export const receivePhysicalMaster = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
+      requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
       let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
@@ -99,6 +100,56 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
             where: { id: reg.id },
             data: { revision_source: null },
           });
+        } else {
+          // Naskah perbaikan / dumi dari pentashihan (RF-DIST-00)
+          const payment = await tx.paymentRecord.findFirst({
+            where: { registration_id: reg.id, status: 'VERIFIED' },
+          });
+          const distributorId = reg.core_distributor_id;
+          if (payment && distributorId) {
+            const cleanRegNo = reg.registration_no ? reg.registration_no.replace(/[^A-Za-z0-9]/g, '') : reg.id.slice(0, 8);
+            const receiptNo = `BAST-ADM-DIST-${cleanRegNo}-${randomUUID().slice(0, 6).toUpperCase()}`;
+            await tx.physicalManuscriptHandover.create({
+              data: {
+                registration_id: reg.id,
+                from_user_id: user.id,
+                to_user_id: distributorId,
+                stage: 'ADMIN_TO_DISTRIBUTOR',
+                receipt_no: receiptNo,
+                condition: data.condition || 'BAIK',
+                volume_count: Number(data.volume_count) || 30,
+                handed_over_at: new Date(),
+                notes: data.notes?.trim() || 'Naskah fisik perbaikan/dumi diserahkan Admin Internal ke Distributor',
+                status: 'PENDING',
+              },
+            });
+
+            await move(
+              tx,
+              reg,
+              'WAITING_DISTRIBUTOR_RECEIPT',
+              user,
+              `Naskah fisik perbaikan/dumi diterima Admin Internal (${user.name}) dan diserahkan kepada Distributor`,
+              req
+            );
+
+            await tx.registration.update({
+              where: { id: reg.id },
+              data: { revision_source: null },
+            });
+
+            await tx.notification.create({
+              data: {
+                user_id: distributorId,
+                registration_id: reg.id,
+                type: 'HANDOVER_PENDING',
+                title: 'Naskah Fisik Perbaikan/Dumi Menunggu Diterima di Meja Pentashihan',
+                payload: {
+                  message: `Naskah fisik perbaikan/dumi untuk pengajuan ${reg.registration_no} telah diterima Admin Internal dan diserahkan kepada Anda. Silakan konfirmasi penerimaan fisik.`,
+                },
+              },
+            });
+          }
         }
       }
 
@@ -112,12 +163,12 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
         payload: { status: data.decision, receipt_no: intake.receipt_no, notes: intake.notes },
       } });
 
-      // Notifikasi kepada Helper Admin untuk penugasan verifikator.
-      if (data.decision === 'RECEIVED') {
+      // Notifikasi kepada Admin Internal untuk penugasan verifikator (hanya pada tahap verifikasi awal)
+      if (data.decision === 'RECEIVED' && reg.status === 'READY_FOR_VERIFICATION') {
         const assignmentAdmins = await tx.user.findMany({
           where: {
             status: 'ACTIVE',
-            roles: { some: { role: { code: 'HELPER_ADMIN' } } },
+            roles: { some: { role: { code: 'ADMIN_INTERNAL' } } },
           },
           select: { id: true },
         });
@@ -163,7 +214,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
   const createdFiles = [];
   try {
     return await prisma.$transaction(async tx => {
-      requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
+      requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
       await tx.$queryRawUnsafe('SELECT id, status FROM registrations WHERE id = ? FOR UPDATE', id);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
@@ -272,7 +323,7 @@ export const getRegistrationReceipt = async (id, user) => {
     },
   });
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
-  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('HELPER_ADMIN') && reg.publisher_id !== user.publisherId) {
+  if (!user.roles.includes('SUPERADMIN') && !user.roles.includes('KEPALA_LPMQ') && !user.roles.includes('ADMIN_INTERNAL') && reg.publisher_id !== user.publisherId) {
     fail(403, 'Bukti pendaftaran hanya dapat dilihat oleh penerbit pemilik atau Kepala LPMQ.');
   }
   if (reg.status === 'DRAFT') fail(409, 'Bukti pendaftaran tersedia setelah pengajuan dikirim.');
@@ -305,7 +356,7 @@ export const getPhysicalMasterReceipt = async (id, user) => {
     },
   });
   if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
-  const internalRoles = ['SUPERADMIN', 'KEPALA_LPMQ', 'HELPER_ADMIN', 'VERIFIKATOR'];
+  const internalRoles = ['SUPERADMIN', 'KEPALA_LPMQ', 'ADMIN_INTERNAL', 'VERIFIKATOR'];
   if (!user.roles.some(role => internalRoles.includes(role)) && reg.publisher_id !== user.publisherId) {
     fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
   }
@@ -316,10 +367,10 @@ export const getPhysicalMasterReceipt = async (id, user) => {
 };
 
 export const listVerificationAssignments = async (query, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
   const where = {};
   const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('HELPER_ADMIN');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
   if (!isHead && !isAdmin) where.verifier_id = user.id;
   if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
@@ -390,7 +441,7 @@ export const listVerificationAssignments = async (query, user) => {
 export const listVerifiers = async (queryOrUser, maybeUser) => {
   const user = maybeUser || queryOrUser;
   const query = maybeUser ? (queryOrUser || {}) : {};
-  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
 
   const where = {
     status: query.status || 'ACTIVE',
@@ -450,7 +501,7 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
 };
 
 export const listUnassignedRegistrations = async (query = {}, user) => {
-  requireRole(user, ['HELPER_ADMIN', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
@@ -507,7 +558,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
       operational_state: 'READY_FOR_ASSIGNMENT',
       physical_master: physicalMaster,
       next_action: {
-        owner_role: 'HELPER_ADMIN',
+        owner_role: 'ADMIN_INTERNAL',
         label: 'Tugaskan Verifikator',
       },
     };

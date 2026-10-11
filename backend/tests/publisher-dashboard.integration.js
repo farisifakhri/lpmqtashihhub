@@ -59,7 +59,7 @@ try {
   await call(`/registrations/${foreignReg.id}`, token, 'GET', undefined, 403);
   await call(`/registrations/${foreignReg.id}/timeline`, token, 'GET', undefined, 403);
   await call(`/registrations/${foreignReg.id}/payment`, token, 'GET', undefined, 403);
-  await assert.rejects(listRegistrations({ user: { roles: ['ADMIN_PENERBIT'] } }), error => error.statusCode === 403);
+  await assert.rejects(listRegistrations({ user: { roles: ['PENERBIT'] } }), error => error.statusCode === 403);
   await prisma.statusHistory.create({ data: { registration_id: revision.id, from_status: 'IN_VERIFICATION', to_status: 'REVISION_REQUIRED', actor_id: owner.id, notes: 'Perbaiki halaman 3' } });
   const timeline = await call(`/registrations/${revision.id}/timeline`, token);
   assert.equal(timeline.data.is_sanitized, true);

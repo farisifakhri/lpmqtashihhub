@@ -323,7 +323,7 @@ export const getHandoverDetail = async (handoverId, user) => {
   const isInternal = user.roles.some((r) =>
     ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'].includes(r)
   );
-  const isOwner = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === handover.registration.publisher_id;
+  const isOwner = user.roles.includes('PENERBIT') && user.publisherId === handover.registration.publisher_id;
 
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');
@@ -351,7 +351,7 @@ export const getRegistrationHandovers = async (registrationId, user) => {
   const isInternal = user.roles.some((r) =>
     ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'].includes(r)
   );
-  const isOwner = user.roles.includes('ADMIN_PENERBIT') && user.publisherId === reg.publisher_id;
+  const isOwner = user.roles.includes('PENERBIT') && user.publisherId === reg.publisher_id;
 
   if (!isInternal && !isOwner) {
     fail(403, 'Akses ditolak.');

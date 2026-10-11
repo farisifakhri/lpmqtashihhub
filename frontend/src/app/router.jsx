@@ -112,7 +112,7 @@ const router = createBrowserRouter([
       // Rute Aplikasi Internal LPMQ
       {
         path: 'internal/archive',
-        element: <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
+        element: <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
       },
       {
         path: 'internal',
@@ -157,7 +157,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/distributions',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'HELPER_ADMIN', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
           </ProtectedRoute>
         ),
@@ -165,7 +165,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/master-intake',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'SUPERADMIN']}>
             <AdminMasterIntakePage />
           </ProtectedRoute>
         ),

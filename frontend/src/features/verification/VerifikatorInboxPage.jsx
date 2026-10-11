@@ -55,7 +55,7 @@ export const VerifikatorInboxPage = () => {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'HELPER_ADMIN';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN_INTERNAL';
   const isAssignmentAdmin = isAdmin;
 
   const normalizeTab = (tab) => {

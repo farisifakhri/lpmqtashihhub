@@ -24,11 +24,11 @@ export const InspectionChecklist = ({
                   Lembar Kerja Checklist Pemeriksaan
                 </h3>
                 <p className="text-[11px] text-ink-muted mt-0.5">
-                  Evaluasi 4 butir standar verifikasi administrasi & rasm
+                  Evaluasi {CHECKLIST_DEFINITIONS?.length || 8} butir standar verifikasi administrasi & rasm
                 </p>
               </div>
               <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-900 border border-brand-100">
-                {sesuaiCount + tidakBerlakuCount}/4 Lengkap
+                {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS?.length || 8} Lengkap
               </span>
             </div>
 

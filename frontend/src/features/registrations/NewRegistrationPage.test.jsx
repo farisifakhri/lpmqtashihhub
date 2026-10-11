@@ -10,7 +10,7 @@ import { fileApi } from '@/api/file.api';
 
 describe('Publisher new registration handoff', () => {
   it('menahan judul kurang dari 3 karakter dan menampilkan validasi di field', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -27,7 +27,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('removes an added ukuran dan oplah row while keeping the required first row', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -42,7 +42,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('mewajibkan nama penanggung jawab sejak simpan draf', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -60,7 +60,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('creates one draft when clicking Simpan Draf', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -85,7 +85,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('renders foreign mushaf fields when Mushaf Luar Negeri is selected and creates foreign registration draft', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({
       data: [
@@ -152,7 +152,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('menampilkan modal konfirmasi dengan peringatan REV-07 dan mengirim permohonan langsung tanpa perlu submit dua kali', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', status: 'ACTIVE' }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });

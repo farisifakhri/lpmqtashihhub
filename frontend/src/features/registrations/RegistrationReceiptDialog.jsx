@@ -22,6 +22,8 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
   const regId = registration?.id;
   const regNo = registration?.registration_no || regId || 'REG';
 
+  const pdfUrlRef = useRef(null);
+
   const fetchPdf = useCallback(async () => {
     if (!regId) return;
     setLoading(true);
@@ -30,10 +32,11 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
       const blob = await registrationApi.getReceiptPdf(regId);
       setPdfBlob(blob);
       const url = URL.createObjectURL(blob);
-      setPdfUrl((prevUrl) => {
-        if (prevUrl) URL.revokeObjectURL(prevUrl);
-        return url;
-      });
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+      }
+      pdfUrlRef.current = url;
+      setPdfUrl(url);
     } catch (err) {
       setError(err.message || 'Gagal memuat tanda terima PDF resmi.');
     } finally {
@@ -46,10 +49,11 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
       fetchPdf();
     } else {
       setPdfBlob(null);
-      setPdfUrl((prevUrl) => {
-        if (prevUrl) URL.revokeObjectURL(prevUrl);
-        return null;
-      });
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+        pdfUrlRef.current = null;
+      }
+      setPdfUrl(null);
       setError('');
       setLoading(true);
     }
@@ -57,10 +61,10 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
 
   useEffect(() => {
     return () => {
-      setPdfUrl((prevUrl) => {
-        if (prevUrl) URL.revokeObjectURL(prevUrl);
-        return null;
-      });
+      if (pdfUrlRef.current) {
+        URL.revokeObjectURL(pdfUrlRef.current);
+        pdfUrlRef.current = null;
+      }
     };
   }, []);
 

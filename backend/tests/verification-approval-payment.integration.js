@@ -369,7 +369,7 @@ export async function runVerificationApprovalPaymentTests({
       tracking_no: 'RESI-LOKET-01',
     });
 
-    // 3. Loket HELPER_ADMIN menerima fisik (auto-inisialisasi physicalMasterIntake)
+    // 3. Loket ADMIN_INTERNAL menerima fisik (auto-inisialisasi physicalMasterIntake)
     const directIntake = await expect(
       `/registrations/${directReg.id}/physical-master/receive`,
       adminToken,

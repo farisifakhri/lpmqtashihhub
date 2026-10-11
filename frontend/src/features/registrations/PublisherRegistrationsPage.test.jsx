@@ -7,7 +7,7 @@ import * as Auth from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
 describe('Publisher registration history', () => {
   beforeEach(() => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['PENERBIT'] } });
     vi.spyOn(registrationApi, 'listRegistrations').mockResolvedValue({ data: [{ id: 'r1', title: 'Naskah pertama', status: 'DRAFT' }], pagination: { total: 25, page: 1, limit: 12, totalPages: 3 } });
   });
   it('loads actions from a dashboard deep link and paginates server-side', async () => {

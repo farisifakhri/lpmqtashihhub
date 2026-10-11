@@ -12,7 +12,7 @@ const show = () => render(<MemoryRouter initialEntries={['/publisher/registratio
 describe('Publisher detail and revision', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['PENERBIT'] } });
     vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ data });
     vi.spyOn(registrationApi, 'getDocumentArchive').mockResolvedValue({ data: [] });
     vi.spyOn(reportApi, 'getRegistrationTimeline').mockResolvedValue({ data: { timeline: [{ id: 'h1', to_status: 'REVISION_REQUIRED', notes: 'Perbaiki halaman 3', changed_at: '2026-09-16T00:00:00Z' }] } });

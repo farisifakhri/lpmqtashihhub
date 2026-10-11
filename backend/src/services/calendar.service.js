@@ -40,7 +40,7 @@ export const updateCalendar = (days, user) => prisma.$transaction(async tx => {
 });
 
 export const syncNationalHolidays = async (user, year = 2026) => {
-  requireRole(user, ['SUPERADMIN', 'HELPER_ADMIN']);
+  requireRole(user, ['SUPERADMIN', 'ADMIN_INTERNAL']);
   let holidays = [];
   let sourceOrigin = 'SKB_3_MENTERI_FALLBACK';
 

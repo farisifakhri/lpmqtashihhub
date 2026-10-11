@@ -204,7 +204,7 @@ export function PublisherStatusAlerts({
 
       {/* 6. Tashih in progress Callout */}
       {['TASHIH_IN_PROGRESS', 'WAITING_DISTRIBUTION', 'WAITING_DISTRIBUTOR_RECEIPT'].includes(data.status) && (
-        <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 space-y-2 shadow-2xs">
+        <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 space-y-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-brand-800 shrink-0" />
             <div>
@@ -213,6 +213,57 @@ export function PublisherStatusAlerts({
                 Tim Pentashih LPMQ sedang melakukan penelaahan detail setiap juz, teks ayat, harakat, dan tanda baca naskah Al-Qur'an. Anda dapat memantau riwayat telaah pada tab Riwayat Proses.
               </p>
             </div>
+          </div>
+
+          {/* Durasi & Deadline Naskah Awal (RF-PUB-08 / T-05) */}
+          <div className="p-3 bg-white rounded-lg border border-brand-100 text-xs space-y-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-ink-muted font-medium">Estimasi Target Penyelesaian Naskah Awal:</span>
+              <strong className="text-brand-900 font-mono">
+                {data.initial_deadline
+                  ? new Date(data.initial_deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : data.sla_deadline
+                  ? new Date(data.sla_deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : `${data.service_type?.sla_days || 30} Hari Kerja (Dihitung H+1 Pembayaran)`}
+              </strong>
+            </div>
+            <p className="text-[11px] text-ink-muted leading-relaxed italic border-t border-line/60 pt-1.5">
+              <strong>Catatan:</strong> Informasi durasi di atas merupakan estimasi penyelesaian naskah awal. Apabila pada proses pentashihan ditemukan koreksi yang memerlukan perbaikan oleh penerbit, batas waktu perbaikan akan dicantumkan secara khusus pada Surat Hasil Tashih resmi.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* 6b. Revision Required from Tashih (R-08, BR-24) */}
+      {['REVISION_REQUIRED', 'WAITING_PUBLISHER_REVISION'].includes(data.status) && (
+        <section className="rounded-xl border border-civic-warningLine bg-civic-warningSoft/70 p-5 space-y-3 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-civic-warningLine pb-3">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-civic-warning shrink-0" />
+              <div>
+                <h2 className="font-bold text-ink text-sm">
+                  Pengembalian Naskah: Perbaikan Ke-{data.revision_round || 1} ({data.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})
+                </h2>
+                <p className="text-[11px] text-ink-muted">
+                  Distributor telah menerbitkan Surat Pengembalian dan Catatan Hasil Tashih. Silakan lakukan perbaikan naskah sesuai catatan resmi.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleTabChange('dokumen')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-civic-warning hover:bg-civic-warning/90 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+            >
+              Unduh Surat Hasil Tashih
+            </button>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-civic-warningLine/70 text-xs space-y-1">
+            <p className="font-semibold text-civic-warning">
+              Tenggat Waktu Perbaikan: Mengikuti tanggal yang tercantum pada Surat Pengembalian dan Catatan Hasil Tashih.
+            </p>
+            <p className="text-[11px] text-ink-muted">
+              Setelah naskah diperbaiki, serahkan kembali master naskah perbaikan untuk pemeriksaan siklus berikutnya.
+            </p>
           </div>
         </section>
       )}

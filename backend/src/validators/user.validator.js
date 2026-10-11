@@ -11,8 +11,8 @@ export const userIdParamSchema = {
 
 export const VALID_ROLES = [
   'SUPERADMIN',
-  'HELPER_ADMIN',
-  'ADMIN_PENERBIT',
+  'ADMIN_INTERNAL',
+  'PENERBIT',
   'VERIFIKATOR',
   'DISTRIBUTOR',
   'PENTASHIH',

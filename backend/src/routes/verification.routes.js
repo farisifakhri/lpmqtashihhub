@@ -31,8 +31,8 @@ const action = (fn, status = 200) => async (req, res, next) => {
   catch (error) { next(error); }
 };
 
-router.put('/registrations/:id/physical-master', authenticate, authorize('ADMIN_PENERBIT'), validate(declarePhysicalMasterSchema), action(req => intake.declarePhysicalMaster(req.params.id, req.body, req.user, req)));
-router.post('/registrations/:id/physical-master/receive', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
+router.put('/registrations/:id/physical-master', authenticate, authorize('PENERBIT'), validate(declarePhysicalMasterSchema), action(req => intake.declarePhysicalMaster(req.params.id, req.body, req.user, req)));
+router.post('/registrations/:id/physical-master/receive', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(receivePhysicalMasterSchema), action(req => intake.receivePhysicalMaster(req.params.id, req.body, req.user, req)));
 router.get('/registrations/:id/receipt', authenticate, validate(registrationIdSchema), action(req => intake.getRegistrationReceipt(req.params.id, req.user)));
 router.get('/registrations/:id/physical-master/receipt-pdf', authenticate, validate(registrationIdSchema), async (req, res, next) => {
   try {
@@ -44,19 +44,19 @@ router.get('/registrations/:id/physical-master/receipt-pdf', authenticate, valid
     res.send(bytes);
   } catch (error) { next(error); }
 });
-router.get('/registrations/:id/latest-verification-assignment', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN'), validate(latestAssignmentSchema), action(req => review.getLatestVerificationAssignment(req.params.id, req.user)));
-router.post('/registrations/:id/verification-assignments', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
-router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
-router.get('/verification/verifiers', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
-router.get('/verification-verifiers', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
-router.get('/verification/unassigned-registrations', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
-router.get('/verification-assignment-candidates', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
+router.get('/registrations/:id/latest-verification-assignment', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(latestAssignmentSchema), action(req => review.getLatestVerificationAssignment(req.params.id, req.user)));
+router.post('/registrations/:id/verification-assignments', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(createVerificationAssignmentSchema), action(req => intake.createVerificationAssignment(req.params.id, req.body, req.user, req), 201));
+router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
+router.get('/verification/verifiers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
+router.get('/verification-verifiers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
+router.get('/verification/unassigned-registrations', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
+router.get('/verification-assignment-candidates', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
 
 // PR-VER-03: Pemeriksaan berkas & penyusunan draf surat hasil verifikasi (Epic D)
 router.patch('/verification-assignments/:id/start', authenticate, authorize('VERIFIKATOR'), validate(assignmentIdSchema), action(req => review.startVerification(req.params.id, req.user, req)));
-router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'HELPER_ADMIN', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.getVerificationAssignmentDetail(req.params.id, req.user)));
-router.post('/verification-assignments/:id/revoke', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(revokeAssignmentSchema), action(req => review.revokeVerificationAssignment(req.params.id, req.body, req.user, req)));
-router.post('/verification-assignments/:id/reassign', authenticate, authorize('HELPER_ADMIN', 'SUPERADMIN'), validate(reassignAssignmentSchema), action(req => review.reassignVerificationAssignment(req.params.id, req.body, req.user, req)));
+router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.getVerificationAssignmentDetail(req.params.id, req.user)));
+router.post('/verification-assignments/:id/revoke', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(revokeAssignmentSchema), action(req => review.revokeVerificationAssignment(req.params.id, req.body, req.user, req)));
+router.post('/verification-assignments/:id/reassign', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(reassignAssignmentSchema), action(req => review.reassignVerificationAssignment(req.params.id, req.body, req.user, req)));
 router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), async (req, res, next) => {

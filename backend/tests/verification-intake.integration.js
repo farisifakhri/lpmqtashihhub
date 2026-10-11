@@ -112,7 +112,7 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(headInbox.items.some(item => item.registration_id === reg.id), false);
     const adminInbox = await expect('/verification-assignments?status=ASSIGNED', adminToken);
     assert.ok(adminInbox.items.some(item => item.registration_id === reg.id));
-    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-HELPER_ADMIN-ALREADY-ASSIGNED' }, 409);
+    await expect(`/registrations/${reg.id}/verification-assignments`, adminToken, 'POST', { verifier_id: verifier.id, nota_no: 'ND-ADMIN_INTERNAL-ALREADY-ASSIGNED' }, 409);
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {

@@ -9,7 +9,7 @@ import { registrationApi } from '@/api/registration.api';
 const fixture = { id: 'rev-1', title: 'Naskah revisi', registration_no: 'REG-01', status: 'REVISION_REQUIRED' };
 describe('Publisher dashboard', () => {
   beforeEach(() => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['ADMIN_PENERBIT'], publisherName: 'Penerbit Nusantara' } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['PENERBIT'], publisherName: 'Penerbit Nusantara' } });
     vi.spyOn(registrationApi, 'listRegistrations').mockImplementation(async params => params.segment ? { data: [fixture], pagination: { total: 9 } } : { data: [fixture], pagination: { total: 28 }, summary: { by_status: { DRAFT: 3, REVISION_REQUIRED: 4, AWAITING_PAYMENT: 2, IN_VERIFICATION: 10, COMPLETED: 9 }, issued_stt: 7 } });
   });
   const show = () => render(<MemoryRouter><PublisherDashboard /></MemoryRouter>);

@@ -23,7 +23,7 @@ try {
   assert.equal(page.pagination.total, 2);
   assert.equal(page.items[0].queue_position, 1);
   assert.equal((await listRegistrations({ user: admin, search: 'FIFO probe', page: 2, limit: 1 })).items[0].id, a.id);
-  assert.equal((await listRegistrations({ user: { roles: ['ADMIN_PENERBIT'], publisherId: 'other' }, search: 'FIFO probe' })).pagination.total, 0);
+  assert.equal((await listRegistrations({ user: { roles: ['PENERBIT'], publisherId: 'other' }, search: 'FIFO probe' })).pagination.total, 0);
   const va = await prisma.verificationAssignment.create({ data: { registration_id: a.id, verifier_id: verifier.id, assigned_at: old } });
   const vb = await prisma.verificationAssignment.create({ data: { registration_id: b.id, verifier_id: verifier.id, assigned_at: newer } });
   assert.equal((await listVerificationAssignments({ registration_status: 'WAITING_VERIFICATION_APPROVAL', page: 1, limit: 20 }, admin)).items[0].id, vb.id);

@@ -41,9 +41,9 @@ import { AssignVerificationDialog } from '@/features/verification/AssignVerifica
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
-  const isPublisher = userRoles.includes('ADMIN_PENERBIT') || currentUser?.role === 'ADMIN_PENERBIT';
+  const isPublisher = userRoles.includes('PENERBIT') || currentUser?.role === 'PENERBIT';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
-  const isAdmin = userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN' || isSuperAdmin;
+  const isAdmin = userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL' || isSuperAdmin;
   const isKepala = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
 
   // Super Admin dapat melihat perspektif Operasional Internal atau Perspektif Layanan Penerbit
@@ -273,7 +273,7 @@ export const UnifiedDashboard = () => {
     ? 'Penerbit Mushaf Terdaftar'
     : isSuperAdmin
     ? 'Super Administrator Sistem LPMQ'
-    : (userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN')
+    : (userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL')
     ? 'Helper Admin LPMQ'
     : `Petugas LPMQ — ${currentUser?.role || 'Staff'}`;
   const greetingExtra = isPublisher

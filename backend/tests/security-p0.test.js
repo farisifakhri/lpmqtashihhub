@@ -22,7 +22,7 @@ test('P0: createDraft rejects attachment files belonging to other users', async 
           title: 'Mushaf Test',
           cover_file_id: 'file-other',
         },
-        { id: 'my-user-uuid', roles: ['ADMIN_PENERBIT'], publisherId: 'pub-1' }
+        { id: 'my-user-uuid', roles: ['PENERBIT'], publisherId: 'pub-1' }
       ),
       (err) => err.statusCode === 403 && err.message.includes('bukan milik akun Anda')
     );

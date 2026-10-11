@@ -1,0 +1,724 @@
+[
+  {
+    "no": 1,
+    "name": "Dr. H. Deni Hudaeny A. Arifin, Lc. MA",
+    "nip": "197907272002121008",
+    "member_no": "2021 270779 1001",
+    "position": "Ketua",
+    "education": "S3"
+  },
+  {
+    "no": 2,
+    "name": "Dr. H. Hasbullah Diman, Lc., M.A",
+    "nip": "196806052006041001",
+    "member_no": "2021 050668 1002",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 3,
+    "name": "Dr. H. Fahrur Rozi, MA",
+    "nip": "197705132008011008",
+    "member_no": "2021 130577 1004",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 4,
+    "name": "Hj. Tuti Nurkhayati, S.H.I, M.A",
+    "nip": "197311032009012002",
+    "member_no": "2021 031173 1005",
+    "position": "Bendahara",
+    "education": "S2"
+  },
+  {
+    "no": 5,
+    "name": "Hj. Samiah, S.Th.I, M.Ag",
+    "nip": "197812022009012007",
+    "member_no": "2021 021278 1006",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 6,
+    "name": "Dr. H. Ahmad Badruddin, Lc. M.A",
+    "nip": "197411202009011006",
+    "member_no": "2021 201174 1007",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 7,
+    "name": "Ahmad Nur Qomari, S.HI",
+    "nip": "197908012009011011",
+    "member_no": "2021 010879 1008",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 8,
+    "name": "Hj. Ida Zulfiya, M.Ag",
+    "nip": "198109052008012015",
+    "member_no": "2021 050981 1009",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 9,
+    "name": "Anton Zaelani, S.S, M.A. Hum",
+    "nip": "198103252008011007",
+    "member_no": "2021 250381 1003",
+    "position": "Sekretaris Jenderal",
+    "education": "S2"
+  },
+  {
+    "no": 10,
+    "name": "H. Imam Mutaqien, S. Th.I, M.A",
+    "nip": "198005142008011011",
+    "member_no": "2021 140580 1010",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 11,
+    "name": "H. Achmad Khotib, S.Ag, M.A",
+    "nip": "197005182009011002",
+    "member_no": "2021 180570 1011",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 12,
+    "name": "Ahmad Jaeni, S.Th.I, M.A",
+    "nip": "198008202008011008",
+    "member_no": "2021 200880 1012",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 13,
+    "name": "Dr. Abdul Hakim, M.Si",
+    "nip": "198201012008011027",
+    "member_no": "2021 010182 1013",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 14,
+    "name": "H. Mustopa, M.Si",
+    "nip": "197709082008011014",
+    "member_no": "2021 080977 1014",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 15,
+    "name": "Dr. H. Zaenal Arifin, S.Sos.I, MA",
+    "nip": "198001112009011007",
+    "member_no": "2021 110180 1015",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 16,
+    "name": "Ahmad Falahudin, S.S",
+    "nip": "199409252022031001",
+    "member_no": "2023 250994 1016",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 17,
+    "name": "Alvita Eka Rahmah, S.Ag",
+    "nip": "199808022022032001",
+    "member_no": "2023 020898 1017",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 18,
+    "name": "Latifa Rahmi, S.S.I",
+    "nip": "199710212022032002",
+    "member_no": "2023 211097 1018",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 19,
+    "name": "Muhammad Rasyied Awabien, M.Ag",
+    "nip": "199307182022031003",
+    "member_no": "2023 180793 1019",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 20,
+    "name": "Umi Masruroh, S.Ag",
+    "nip": "198912062022032001",
+    "member_no": "2023 061289 1020",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 21,
+    "name": "Bagus Aji Handriyan, S.Ag",
+    "nip": "199803172022031002",
+    "member_no": "2023 170398 1021",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 22,
+    "name": "Muhammad Mundzir, S.Ag, M.A",
+    "nip": "199901292022031001",
+    "member_no": "2023 290199 1022",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 23,
+    "name": "Nadyatul Hikmah Shuhufi, S.S.I., M.H",
+    "nip": "200004012022032001",
+    "member_no": "2023 010400 1023",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 24,
+    "name": "Anisa Resti Damayanti, S.Pd",
+    "nip": "199501252025052006",
+    "member_no": "2025 250195 1024",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 25,
+    "name": "Nur Azka Inayatussahara, S.Ag., M.A.",
+    "nip": "199807302025052007",
+    "member_no": "2025 300798 1025",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 26,
+    "name": "Muhammad Ibnu Abbas, M.Sos.",
+    "nip": "199405252025051004",
+    "member_no": "2025 250594 1026",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 27,
+    "name": "Munafisah, S.Ag",
+    "nip": "199803142025052006",
+    "member_no": "2025 140398 1027",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 28,
+    "name": "Minnatul Maula, S.Ag., M.Ag.",
+    "nip": "200003102025052015",
+    "member_no": "2025 100300 1028",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 29,
+    "name": "Muhammad Addien Nastiar, S.Ag",
+    "nip": "200204032025051003",
+    "member_no": "2025 030402 1029",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 30,
+    "name": "Firda Sholihah, S.H",
+    "nip": "200107192025052010",
+    "member_no": "2025 190701 1030",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 31,
+    "name": "Ida Nur Laila Sari, S.Ag",
+    "nip": "199610032025052005",
+    "member_no": "2025 031096 1031",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 32,
+    "name": "Muhammad Syafqy Abda, S.Ag",
+    "nip": "199907072025051008",
+    "member_no": "2025 070799 1032",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 33,
+    "name": "Ivva Amalia, S.Ag",
+    "nip": "199708102025052009",
+    "member_no": "2025 100897 1033",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 34,
+    "name": "Muhammad Ilham Mursyid, S.Ag",
+    "nip": "200009162025051005",
+    "member_no": "2025 160900 1034",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 35,
+    "name": "Septia Aisyah Rusda, S.Ag",
+    "nip": "199909152025052000",
+    "member_no": "2025 150999 1035",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 36,
+    "name": "Fuadiyati Firdausiana, Lc, M.Ag",
+    "nip": "199809292025052005",
+    "member_no": "2025 290998 1036",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 37,
+    "name": "Saiful Akmal, S.Ag, M.Ag",
+    "nip": "199605122025051007",
+    "member_no": "2025 120596 1037",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 38,
+    "name": "Ami Muftil Anami, S.Ag",
+    "nip": "199501122025051005",
+    "member_no": "2025 120195 1038",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 39,
+    "name": "Aufa Aqiq Filosofi, S.Ag",
+    "nip": "200204032025052004",
+    "member_no": "2025 030402 1039",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 40,
+    "name": "Ayun Matsani Rizki Syauqi, S.Ag",
+    "nip": "199908052025052004",
+    "member_no": "2025 050899 1040",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 41,
+    "name": "Maria Ulfah, S.Ag",
+    "nip": "200004082025052006",
+    "member_no": "2025 080400 1041",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 42,
+    "name": "Sakinah NST, S.I.Q., S.Ag",
+    "nip": "200208142025052008",
+    "member_no": "2025 140802 1042",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 43,
+    "name": "Raziq Ahmadi, S.Ag",
+    "nip": "200111282025051004",
+    "member_no": "2025 281101 1043",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 44,
+    "name": "Lalu Nuzul Ilham Hadi, Lc., S.Ag., M.Ag",
+    "nip": "199701252025051008",
+    "member_no": "2025 250197 1044",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 45,
+    "name": "Afrokhul Banat, S.Ag",
+    "nip": "199707132025052004",
+    "member_no": "2025 130797 1045",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 46,
+    "name": "Mohammad Adi Junanto, S.Ag",
+    "nip": "198910182025051001",
+    "member_no": "2025 181089 1046",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 47,
+    "name": "Tamama Zuhriyah, S.Pd",
+    "nip": "199910062025052009",
+    "member_no": "2025 061099 1047",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 48,
+    "name": "Muhammad Azhar Fuadi, S.Ag",
+    "nip": "200010272025051008",
+    "member_no": "2025 271000 1048",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 49,
+    "name": "Ismail Reza Anggara, S.Pd",
+    "nip": "199505102025051005",
+    "member_no": "2025 100595 1049",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 50,
+    "name": "Syifa Nasibah Mujahidah, S.Pd",
+    "nip": "200003142025052011",
+    "member_no": "2025 140300 1050",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 51,
+    "name": "Muhamad A'thoillah Mubarok, S.Ag",
+    "nip": "199907232025051009",
+    "member_no": "2025 230799 1051",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 52,
+    "name": "Abdul Wahid, Lc",
+    "nip": "200010102025051005",
+    "member_no": "2025 101000 1052",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 53,
+    "name": "Muhamad Rizki Ridho, Lc",
+    "nip": "199610082025051008",
+    "member_no": "2025 081096 1053",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 54,
+    "name": "Ahmad Akmal Mujaddid, S.Ag",
+    "nip": "200010312025051013",
+    "member_no": "2025 311000 1054",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 55,
+    "name": "Ahmad Jauhari Abbas, S.Ag., M.Ag.",
+    "nip": "199707182025051002",
+    "member_no": "2025 180797 1055",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 56,
+    "name": "Rayal Aidin Al Fadhli, S.Ag",
+    "nip": "199604272025051002",
+    "member_no": "2025 270496 1056",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 57,
+    "name": "Shera Diva Zahiyah, S.Ag",
+    "nip": "200212192025052001",
+    "member_no": "2025 191202 1057",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 58,
+    "name": "Tammiya Nurfuadi, S.H.",
+    "nip": "200103052025052004",
+    "member_no": "2025 050301 1058",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 59,
+    "name": "Alya Izzat Mulyadi Razak, S.Pd",
+    "nip": "199412142025051004",
+    "member_no": "2025 141294 1059",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 60,
+    "name": "Meyke Alif Alviani, S.Ag",
+    "nip": "200105172025052014",
+    "member_no": "2025 170501 1060",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 61,
+    "name": "Himmah Aliyah, S.Ag",
+    "nip": "199801152025052004",
+    "member_no": "2025 150198 1061",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 62,
+    "name": "Siti Aisyah Fatihaturrizqiyah, S.Pd",
+    "nip": "199603202025052005",
+    "member_no": "2025 200396 1062",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 63,
+    "name": "Mohammad Iqbal Muadzin, S.Ag",
+    "nip": "200003302025051007",
+    "member_no": "2025 300300 1063",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 64,
+    "name": "Siti Iyam Muslimah, Lc, M.Ag",
+    "nip": "199705082025052008",
+    "member_no": "2025 080597 1064",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 65,
+    "name": "Salaful Amin, S.H",
+    "nip": "200002022025051006",
+    "member_no": "2025 020200 1065",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 66,
+    "name": "Inayah Nur Wafiq, S.Hum",
+    "nip": "200202122025052003",
+    "member_no": "2025 120202 1066",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 67,
+    "name": "Indah Rhowdlotul Jannah, S.Ag",
+    "nip": "199910182025052009",
+    "member_no": "2025 181099 1067",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 68,
+    "name": "Fikri Mustofa, S.Ag",
+    "nip": "199911022025051009",
+    "member_no": "2025 021199 1068",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 69,
+    "name": "Ali Mustawa Ritonga, S.Ag",
+    "nip": "199912302025051010",
+    "member_no": "2025 301299 1069",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 70,
+    "name": "Hairatu Saleha, S.Ag",
+    "nip": "200312052025052001",
+    "member_no": "2025 051203 1070",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 71,
+    "name": "Rafi Dinilhaq, S.Ag",
+    "nip": "199710282025051004",
+    "member_no": "2025 281097 1071",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 72,
+    "name": "Fathy Fatullah Muchtar, S.Ag",
+    "nip": "199207312025051000",
+    "member_no": "2025 310792 1072",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 73,
+    "name": "Bayu Muhammad, S.Ag",
+    "nip": "199411052025051005",
+    "member_no": "2025 051194 1073",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 74,
+    "name": "Alkurni Isnaeni, S.H",
+    "nip": "199705132025052004",
+    "member_no": "2025 130597 1074",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 75,
+    "name": "Muhammad Azzam, Lc",
+    "nip": "200010262025051004",
+    "member_no": "2025 261000 1075",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 76,
+    "name": "Muhamad Hasin Tuba, S.Ag",
+    "nip": "199911232025051000",
+    "member_no": "2025 231199 1076",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 77,
+    "name": "Vina Hidayati, S.Pd.I.",
+    "nip": "198909192025052003",
+    "member_no": "2025 190989 1077",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 78,
+    "name": "Aisyah, S.Pd",
+    "nip": "199811292025052006",
+    "member_no": "2025 291198 1078",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 79,
+    "name": "Dr. Ali Fitriana Rahmat, M.Ag",
+    "nip": "199204102025051003",
+    "member_no": "2025 100492 1079",
+    "position": "Anggota",
+    "education": "S3"
+  },
+  {
+    "no": 80,
+    "name": "Iqbal Hayyis Surur, S.Ag",
+    "nip": "200103312025051000",
+    "member_no": "2025 310301 1080",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 81,
+    "name": "Ahmad Hariyanto, S.Ag",
+    "nip": "199509142025051003",
+    "member_no": "2025 140995 1081",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 82,
+    "name": "Haiva Satriana Zahrah Siregar, S.Ag",
+    "nip": "199902072025052004",
+    "member_no": "2025 070299 1082",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 83,
+    "name": "Siti Nur Ismah, S.Ag",
+    "nip": "199803172025052006",
+    "member_no": "2025 170398 1083",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 84,
+    "name": "Solihin, S.Ag",
+    "nip": "199707202025051003",
+    "member_no": "2025 200797 1084",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 85,
+    "name": "Numan Sabit, S.Pd",
+    "nip": "199505052025051002",
+    "member_no": "2025 050595 1085",
+    "position": "Anggota",
+    "education": "S1"
+  },
+  {
+    "no": 86,
+    "name": "Ilhamani, S.H., M.Ag.",
+    "nip": "200006062025052012",
+    "member_no": "2025 060600 1086",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 87,
+    "name": "Muhammad Zamroni Ahbab, S.S.I., M.Ag.",
+    "nip": "198810302023211018",
+    "member_no": "2023 301088 1087",
+    "position": "Anggota",
+    "education": "S2",
+    "is_admin_internal": true
+  },
+  {
+    "no": 88,
+    "name": "Salim Rusydi Cahyono, Lc, M.A",
+    "nip": "196907102023211002",
+    "member_no": "2023 100769 1088",
+    "position": "Anggota",
+    "education": "S2"
+  },
+  {
+    "no": 89,
+    "name": "Mustakim, Lc., M.Ag.",
+    "nip": "198807152023211024",
+    "member_no": "2023 150788 1089",
+    "position": "Anggota",
+    "education": "S2",
+    "is_admin_internal": true
+  },
+  {
+    "no": 90,
+    "name": "Ilfi Zakiah Darmanita, S.Pd",
+    "nip": "199606012023212037",
+    "member_no": "2023 010696 1090",
+    "position": "Anggota",
+    "education": "S1"
+  }
+]

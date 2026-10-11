@@ -16,6 +16,7 @@ import {
   Plus,
   Trash2,
   Upload,
+  Download,
   FileText,
   Layers,
   HelpCircle,
@@ -1059,13 +1060,23 @@ export const NewRegistrationPage = () => {
           </p>
         </div>
 
-        {/* 1. Surat Permohonan */}
+        {/* 1. Surat Permohonan (RF-PBL-01) */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-bold text-ink">
-            Surat permohonan tanda tashih <span className="text-civic-danger">*</span>
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="block text-xs font-bold text-ink">
+              Surat permohonan tanda tashih <span className="text-civic-danger">*</span>
+            </label>
+            <a
+              href="/templates/template-surat-permohonan-tashih.docx"
+              download="Template-Surat-Permohonan-Tashih-LPMQ.docx"
+              className="text-[11px] font-semibold text-brand-700 hover:text-brand-900 inline-flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-brand-700" />
+              Unduh Template Surat Permohonan (.docx)
+            </a>
+          </div>
           <p className="text-[11px] text-ink-muted">
-            Unggah surat permohonan penerbitan / perpanjangan tanda tashih dengan format file PDF.
+            Unggah surat permohonan penerbitan / perpanjangan tanda tashih bertanda tangan dan berkop penerbit (format file PDF).
           </p>
           <input
             type="file"

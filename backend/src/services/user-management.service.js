@@ -4,8 +4,8 @@ import { audit, fail, requireRole } from './workflow-utils.js';
 
 export const ALL_ROLE_CODES = [
   'SUPERADMIN',
-  'HELPER_ADMIN',
-  'ADMIN_PENERBIT',
+  'ADMIN_INTERNAL',
+  'PENERBIT',
   'VERIFIKATOR',
   'DISTRIBUTOR',
   'PENTASHIH',
@@ -200,7 +200,7 @@ export const createUser = async (data, currentUser, req) => {
     });
 
     // If publisher role and publisher data provided
-    if (data.roles.includes('ADMIN_PENERBIT') && data.publisher) {
+    if (data.roles.includes('PENERBIT') && data.publisher) {
       await tx.publisher.create({
         data: {
           user_id: newUser.id,
@@ -319,7 +319,7 @@ export const updateUser = async (id, data, currentUser, req) => {
       });
     }
 
-    if (data.publisher && (data.roles?.includes('ADMIN_PENERBIT') || user.roles.some((r) => r.role.code === 'ADMIN_PENERBIT'))) {
+    if (data.publisher && (data.roles?.includes('PENERBIT') || user.roles.some((r) => r.role.code === 'PENERBIT'))) {
       await tx.publisher.upsert({
         where: { user_id: id },
         update: {
