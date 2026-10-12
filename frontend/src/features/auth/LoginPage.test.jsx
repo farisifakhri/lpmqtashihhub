@@ -135,4 +135,18 @@ describe('LoginPage Protected Area Verification', () => {
       expect(mockLogin).toHaveBeenCalledWith('user@example.com', 'secret123');
     });
   });
+
+  it('renders Lupa kata sandi button and opens ForgotPasswordModal', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    const forgotBtn = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
+    expect(forgotBtn).toBeInTheDocument();
+
+    fireEvent.click(forgotBtn);
+    expect(screen.getByText('Pemulihan Kata Sandi Akun')).toBeInTheDocument();
+  });
 });
