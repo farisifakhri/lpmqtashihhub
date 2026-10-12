@@ -14,15 +14,15 @@ import { WORKFLOW_PRESENTATION } from '@/features/workflow/workflow-presentation
 export const TOKENS = {
   colors: {
     // Primary - Deep Islamic Pine / Sovereign Forest
-    primary950: '#031C13',
-    primary900: '#083224',
-    primary800: '#0B3F2D',
-    primary700: '#0E5139', // Header, sidebar aktif, tombol utama
-    primary600: '#116447',
-    primary500: '#167A58', // Aksen tombol, ikon aktif, tab terpilih
+    primary950: '#05231C',
+    primary900: '#08382C',
+    primary800: '#0D5240',
+    primary700: '#126850', // Header, sidebar aktif, tombol utama
+    primary600: '#15755B',
+    primary500: '#188266', // Aksen tombol, ikon aktif, tab terpilih
     primary200: '#BCE1D0',
-    primary100: '#DDF0E7', // Latar kartu info, hover, badge positif
-    primary50:  '#F0F7F4',
+    primary100: '#DFF2E9', // Latar kartu info, hover, badge positif
+    primary50:  '#F0FAF6',
 
     // Netral - Crisp Slate Neutrals
     neutralWhite: '#FFFFFF', // Latar kartu permukaan utama
@@ -39,12 +39,12 @@ export const TOKENS = {
     neutral950: '#020617',   // Heading pekat
 
     // Aksen Emas Sandstone / Imperial Brass (Terbatas pada dokumen resmi, billing, pengesahan)
-    accentGold700: '#865714',
-    accentGold600: '#A97516',
-    accentGold500: '#C99320', // Highlight nominal tarif/PNBP
-    accentGold400: '#DFB045',
-    accentGold100: '#F9F0D3',
-    accentGold50:  '#FDF9EE', // Latar kartu ringkasan tarif/billing
+    accentGold700: '#7D5711', // Teks & label resmi (kontras >= 5.4:1)
+    accentGold600: '#986B1E',
+    accentGold500: '#B3832B', // Bentuk, garis hias, ikon nominal
+    accentGold400: '#CE9E3C',
+    accentGold100: '#F7EED8',
+    accentGold50:  '#FAF5E8', // Latar kartu ringkasan tarif/billing
 
     // 5 Keluarga Semantik
     semantic: {
@@ -52,7 +52,7 @@ export const TOKENS = {
       info:    { bg: 'bg-civic-infoSoft',    text: 'text-civic-info',    border: 'border-civic-infoLine' },
       warning: { bg: 'bg-civic-warningSoft',  text: 'text-civic-warning',  border: 'border-civic-warningLine' },
       danger:  { bg: 'bg-civic-dangerSoft',   text: 'text-civic-danger',   border: 'border-civic-dangerLine' },
-      success: { bg: 'bg-brand-50',text: 'text-brand-900',border: 'border-brand-100' },
+      success: { bg: 'bg-civic-successSoft', text: 'text-civic-success', border: 'border-civic-successLine' },
       gold:    { bg: 'bg-civicGold-100',   text: 'text-civicGold-700',   border: 'border-civicGold-700' },
     },
   },

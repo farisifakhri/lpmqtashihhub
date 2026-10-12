@@ -121,7 +121,7 @@ export const DailyQuranWidget = () => {
         {ayah.translation && <p className="rounded-r-lg border-l-4 border-civicGold-700 bg-canvas py-3 pl-4 pr-3 text-xs sm:text-sm italic leading-relaxed text-ink">
           “{ayah.translation}”
         </p>}
-        {ayah.footnote && <p className="mt-2 text-[11px] leading-relaxed text-ink-muted">{ayah.footnote}</p>}
+        {ayah.footnote && <p className="mt-2 text-xs leading-relaxed text-ink-muted">{ayah.footnote}</p>}
       </div>
     </section>
   );

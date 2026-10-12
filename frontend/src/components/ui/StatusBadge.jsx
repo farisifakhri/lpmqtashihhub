@@ -64,14 +64,14 @@ export const StatusBadge = ({
       textClass = 'text-civic-danger';
       borderClass = 'border-civic-dangerLine';
     } else if (vm.operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
-      bgClass = 'bg-brand-50';
-      textClass = 'text-brand-900';
-      borderClass = 'border-brand-100';
+      bgClass = 'bg-civic-successSoft';
+      textClass = 'text-civic-success';
+      borderClass = 'border-civic-successLine';
     }
   }
 
   const sizeClasses = {
-    sm: 'text-[11px] px-2 py-0.5 gap-1',
+    sm: 'text-xs px-2 py-0.5 gap-1',
     md: 'text-xs px-2.5 py-1 gap-1.5',
     lg: 'text-sm px-3 py-1.5 gap-2',
   };
@@ -102,10 +102,12 @@ export const StatusBadge = ({
       case 'WAITING_VERIFICATION_APPROVAL':
         return <Clock className={iconClass} aria-hidden="true" />;
       case 'VERIFICATION_APPROVED':
-        return <FileCheck className={iconClass} aria-hidden="true" />;
+        return <CheckCircle2 className={iconClass} aria-hidden="true" />;
       case 'AWAITING_PAYMENT':
       case 'PAYMENT_VERIFICATION':
         return <CreditCard className={iconClass} aria-hidden="true" />;
+      case 'VERIFIED':
+        return <CheckCircle2 className={iconClass} aria-hidden="true" />;
       case 'WAITING_DISTRIBUTION':
       case 'WAITING_DISTRIBUTOR_RECEIPT':
         return <Users className={iconClass} aria-hidden="true" />;
