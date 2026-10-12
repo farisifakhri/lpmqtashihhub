@@ -1,7 +1,9 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === 'production';
+const nodeEnv = process.env.NODE_ENV || 'development';
+const isDevOrTest = ['development', 'test'].includes(nodeEnv);
+const isProduction = nodeEnv === 'production';
 const rawJwtSecret = process.env.JWT_SECRET;
 
 const INSECURE_JWT_SECRETS = [
@@ -12,8 +14,8 @@ const INSECURE_JWT_SECRETS = [
   'changeme',
 ];
 
-if (isProduction && (!rawJwtSecret || INSECURE_JWT_SECRETS.includes(rawJwtSecret) || rawJwtSecret.length < 32)) {
-  throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is required, must not use default/example fallback values, and must be at least 32 characters in production!');
+if (!isDevOrTest && (!rawJwtSecret || INSECURE_JWT_SECRETS.includes(rawJwtSecret) || rawJwtSecret.length < 32)) {
+  throw new Error('FATAL SECURITY ERROR: JWT_SECRET environment variable is required, must not use default/example fallback values, and must be at least 32 characters in non-development environments!');
 }
 
 if (!rawJwtSecret) {

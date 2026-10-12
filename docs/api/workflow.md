@@ -55,7 +55,7 @@ Respons 201 mengandung `id`, `mime_type`, `file_size`, dan `checksum`. Pengakses
    - Aturan Naskah Dumi (T-04): `NASKAH_DUMI` dipilih setelah naskah bersih pada tahap awal/perbaikan. Jika ditemukan koreksi minor di tahap dumi, tidak dikembalikan sebagai siklus baru ke penerbit, melainkan diterbitkan notice koreksi.
 6. Submit ulang revisi oleh penerbit yang sudah lunas masuk ke `WAITING_DISTRIBUTION`, mempertahankan snapshot tarif/SLA, dan tidak membuat tagihan billing baru. Iterasi berikutnya tidak menimpa hasil lama.
 
-SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dimulai **H+1** setelah pembayaran PNBP terverifikasi sah (`payment_records.verified_at`) dengan tenggat akhir hari Asia/Jakarta (`RF-CALC-05`). Portal penerbit menampilkan tenggat awal naskah disertai catatan standar durasi perbaikan (`RF-PUB-08`).
+SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dimulai **H+1** setelah pembayaran PNBP terverifikasi sah (`payment_records.verified_at`) dengan tenggat akhir hari Asia/Jakarta (`RF-CALC-05`). Penentuan durasi standar SLA dan tarif PNBP mengacu pada checklist Jenis Naskah: naskah 30 Juz standar berdurasi 15 HK (Rp 1.000.000), sedangkan pilihan konten Group 3 (Transliterasi, Terjemah, Tajwid Warna, Waqaf) menambah durasi menjadi 22 HK dan memicu add-on PNBP `ADD-MATERI` (+Rp 500.000, total Rp 1.500.000), atau 45 HK untuk Tafsir/Perkata. Isian materi pelengkap (Bagian II: Asbabun Nuzul, Hadis, Do'a) berstatus non-tarif (Rp 0). Rincian kalkulasi ditampilkan secara khusus pada workbench Verifikator dan Distributor. Portal penerbit menampilkan tenggat awal naskah disertai catatan standar durasi perbaikan (`RF-PUB-08`).
 
 ## Dokumen Resmi & Pengembalian Revisi
 

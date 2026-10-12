@@ -14,7 +14,7 @@ export const logAudit = async ({
     let userAgent = null;
 
     if (req) {
-      ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      ipAddress = req.ip || req.socket?.remoteAddress || null;
       userAgent = req.headers['user-agent'] || null;
       if (!actorId && req.user) {
         actorId = req.user.id;

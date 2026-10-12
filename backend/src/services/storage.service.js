@@ -6,19 +6,39 @@ import { prisma } from '../config/database.js';
 import { fail, audit } from './workflow-utils.js';
 
 const root = fileURLToPath(new URL('../../storage/private/', import.meta.url));
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+export const MAX_DOC_BYTES = 10 * 1024 * 1024;
 
 export function detectMime(bytes) {
-  if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > MAX_UPLOAD_BYTES) fail(400, 'Berkas belum dipilih, kosong, atau melebihi batas 10 MB. Pilih berkas yang berisi data dengan ukuran maksimal 10 MB, lalu unggah kembali.');
-  if (bytes.subarray(0, 5).toString() === '%PDF-' && bytes.subarray(-1024).includes(Buffer.from('%%EOF'))) return 'application/pdf';
-  if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return 'image/png';
-  if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes.at(-2) === 255 && bytes.at(-1) === 217) return 'image/jpeg';
-  fail(400, 'Berkas tidak dikenali sebagai PDF, PNG, atau JPEG yang didukung. Ekspor ulang ke salah satu format tersebut; mengganti nama atau ekstensi berkas saja tidak cukup.');
+  if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > MAX_UPLOAD_BYTES) {
+    fail(400, 'Berkas belum dipilih, kosong, atau melebihi batas 100 MB. Pilih berkas yang berisi data dengan ukuran yang didukung, lalu unggah kembali.');
+  }
+  if (bytes.subarray(0, 5).toString() === '%PDF-' && bytes.subarray(-1024).includes(Buffer.from('%%EOF'))) {
+    if (bytes.length > MAX_DOC_BYTES) fail(400, 'Berkas PDF melebihi batas ukuran 10 MB. Harap perkecil ukuran dokumen PDF, lalu unggah kembali.');
+    return 'application/pdf';
+  }
+  if (bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    if (bytes.length > MAX_DOC_BYTES) fail(400, 'Berkas gambar PNG melebihi batas ukuran 10 MB. Harap perkecil ukuran gambar, lalu unggah kembali.');
+    return 'image/png';
+  }
+  if (bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes.at(-2) === 255 && bytes.at(-1) === 217) {
+    if (bytes.length > MAX_DOC_BYTES) fail(400, 'Berkas gambar JPEG melebihi batas ukuran 10 MB. Harap perkecil ukuran gambar, lalu unggah kembali.');
+    return 'image/jpeg';
+  }
+  if (bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4B, 0x03, 0x04]))) {
+    if (bytes.length > MAX_UPLOAD_BYTES) fail(400, 'Berkas APK Android melebihi batas ukuran 100 MB.');
+    return 'application/vnd.android.package-archive';
+  }
+  fail(400, 'Berkas tidak dikenali sebagai PDF, PNG, JPEG, atau APK Android yang didukung. Ekspor ulang ke salah satu format tersebut; mengganti nama atau ekstensi berkas saja tidak cukup.');
 }
 
 export async function upload(bytes, mime, user) {
   const detected = detectMime(bytes);
-  if (mime !== detected) fail(400, 'Jenis berkas yang dikirim tidak sesuai dengan isi berkasnya. Pilih ulang berkas asli dalam format PDF, PNG, atau JPEG, lalu unggah kembali.');
+  const isApkCompatible = detected === 'application/vnd.android.package-archive' &&
+    ['application/vnd.android.package-archive', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'].includes(mime);
+  if (mime !== detected && !isApkCompatible) {
+    fail(400, 'Jenis berkas yang dikirim tidak sesuai dengan isi berkasnya. Pilih ulang berkas asli dalam format PDF, PNG, JPEG, atau APK, lalu unggah kembali.');
+  }
   const id = randomUUID();
   await mkdir(root, { recursive: true });
   await writeFile(path.join(root, id), bytes, { flag: 'wx' });

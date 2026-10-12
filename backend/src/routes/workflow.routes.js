@@ -10,6 +10,7 @@ import * as payment from '../services/payment.service.js';
 import * as notifications from '../services/notification.service.js';
 import { upload, MAX_UPLOAD_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
+import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
 const action = (fn, status = 200) => async (req, res, next) => {
@@ -46,8 +47,19 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'A
   } catch (error) { next(error); }
 });
 
-router.post('/uploads', authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
-  express.raw({ type: ['application/pdf', 'image/png', 'image/jpeg'], limit: MAX_UPLOAD_BYTES }),
+router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
+  express.raw({
+    type: [
+      'application/pdf',
+      'image/png',
+      'image/jpeg',
+      'application/vnd.android.package-archive',
+      'application/octet-stream',
+      'application/zip',
+      'application/x-zip-compressed',
+    ],
+    limit: MAX_UPLOAD_BYTES,
+  }),
   action(req => upload(req.body, req.get('content-type')?.split(';')[0], req.user), 201));
 
 router.get('/uploads/:id', authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), async (req, res, next) => {
