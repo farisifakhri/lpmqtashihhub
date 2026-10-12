@@ -17,25 +17,31 @@ const router = Router();
 
 // Semua endpoint pengajuan memerlukan otentikasi
 router.use(authenticate);
-router.use(authorize('HELPER_ADMIN', 'ADMIN_PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ', 'DOKUMENTATOR'));
+router.use(authorize('ADMIN_INTERNAL', 'PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'KEPALA_LPMQ', 'DOKUMENTATOR'));
 
 // Daftar & Pembuatan Pengajuan
 router.get('/', registrationController.listRegistrations);
-router.post('/', authorize('ADMIN_PENERBIT'), registrationRateLimiter, validate(createRegistrationSchema), registrationController.createDraft);
+router.post('/', authorize('PENERBIT'), registrationRateLimiter, validate(createRegistrationSchema), registrationController.createDraft);
 router.get('/:id', registrationController.getDetail);
 router.get(
   '/:id/receipt-pdf',
-  authorize('ADMIN_PENERBIT', 'SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR'),
+  authorize('PENERBIT', 'SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR'),
   validate(registrationIdParamSchema),
   registrationController.downloadReceiptPdf
 );
+router.get(
+  '/:id/shipping-label-pdf',
+  authorize('PENERBIT', 'SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR'),
+  validate(registrationIdParamSchema),
+  registrationController.downloadShippingLabelPdf
+);
 router.delete(
   '/:id',
-  authorize('ADMIN_PENERBIT', 'SUPERADMIN'),
+  authorize('PENERBIT', 'SUPERADMIN'),
   validate(registrationIdParamSchema),
   registrationController.deleteRegistration
 );
-router.get('/:id/document-archive', authorize('ADMIN_PENERBIT', 'HELPER_ADMIN', 'DOKUMENTATOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'DISTRIBUTOR', 'PENTASHIH'), async (req, res, next) => {
+router.get('/:id/document-archive', authorize('PENERBIT', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'DISTRIBUTOR', 'PENTASHIH'), async (req, res, next) => {
   try { res.json({ success: true, data: await listDocumentArchive(req.params.id, req.user) }); }
   catch (error) { next(error); }
 });
@@ -44,24 +50,24 @@ router.get('/:id/document-archive', authorize('ADMIN_PENERBIT', 'HELPER_ADMIN', 
 router.get('/:id/manuscripts', registrationController.listManuscriptFiles);
 router.post(
   '/:id/manuscripts',
-  authorize('ADMIN_PENERBIT'),
+  authorize('PENERBIT'),
   validate(createManuscriptFileSchema),
   registrationController.addManuscriptFile
 );
 
 // Aksi workflow submit & transisi status (didukung PATCH dan POST)
-router.post('/:id/submit', authorize('ADMIN_PENERBIT'), registrationController.submitRegistration);
-router.post('/:id/dispatch-physical', authorize('ADMIN_PENERBIT'), validate(dispatchPhysicalSchema), registrationController.dispatchPhysical);
+router.post('/:id/submit', authorize('PENERBIT'), registrationController.submitRegistration);
+router.post('/:id/dispatch-physical', authorize('PENERBIT'), validate(dispatchPhysicalSchema), registrationController.dispatchPhysical);
 
 const transitionRoles = [
-  // HELPER_ADMIN is intentionally excluded: team assignment is a separate domain action.
+  // ADMIN_INTERNAL is intentionally excluded: team assignment is a separate domain action.
   'SUPERADMIN',
   'VERIFIKATOR',
   'DISTRIBUTOR',
   'PENTASHIH',
   'KEPALA_LPMQ',
   'DOKUMENTATOR',
-  'ADMIN_PENERBIT',
+  'PENERBIT',
 ];
 
 router.patch(

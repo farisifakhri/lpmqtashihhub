@@ -7,6 +7,9 @@ import {
   PackageCheck,
   Clock,
   Building2,
+  Layers,
+  FileUp,
+  FileCheck,
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { verificationApi } from '@/api/verification.api';
@@ -58,10 +61,22 @@ export function PublisherRegistrationDetailPage() {
   const [previewFile, setPreviewFile] = useState(null);
   const [physicalReceiptUrl, setPhysicalReceiptUrl] = useState(null);
 
-  // Tabs
-  const initialTab = searchParams.get('tab') || 'berkas';
-  const [activeTab, setActiveTab] = useState(
-    ['berkas', 'berkas-fisik', 'timeline', 'dokumen'].includes(initialTab) ? initialTab : 'berkas'
+  // Tabs: disederhanakan menjadi 2 tab utama (Dokumen & Berkas, Riwayat & Lacak Proses)
+  const normalizeTab = (t) => {
+    if (t === 'timeline') return 'timeline';
+    return 'dokumen'; // 'berkas', 'berkas-fisik', 'dokumen' dialihkan ke 'dokumen'
+  };
+  const [activeTab, setActiveTab] = useState(normalizeTab(searchParams.get('tab')));
+
+  // Sub-Navigation (Span Nav) untuk Dokumen & Berkas: 'all' | 'digital' | 'physical' | 'official'
+  const getInitialSubSection = (t, s) => {
+    if (s && ['all', 'digital', 'physical', 'official'].includes(s)) return s;
+    if (t === 'berkas-fisik') return 'physical';
+    if (t === 'berkas') return 'digital';
+    return 'all';
+  };
+  const [subSection, setSubSection] = useState(
+    getInitialSubSection(searchParams.get('tab'), searchParams.get('sub'))
   );
 
   useEffect(() => {
@@ -104,16 +119,37 @@ export function PublisherRegistrationDetailPage() {
   }, [id, currentUser?.id]);
 
   useEffect(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['berkas', 'berkas-fisik', 'timeline', 'dokumen'].includes(tabFromUrl)) {
-      setActiveTab(tabFromUrl);
+    const rawTab = searchParams.get('tab');
+    const rawSub = searchParams.get('sub');
+    if (rawTab) {
+      const normalized = normalizeTab(rawTab);
+      setActiveTab(normalized);
+      if (rawTab === 'berkas-fisik') setSubSection('physical');
+      else if (rawTab === 'berkas') setSubSection('digital');
+      else if (rawSub) setSubSection(rawSub);
+      if (rawTab !== normalized) {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('tab', normalized);
+        setSearchParams(nextParams, { replace: true });
+      }
+    } else if (rawSub) {
+      setSubSection(rawSub);
     }
-  }, [searchParams]);
+  }, [searchParams, setSearchParams]);
 
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
+  const handleTabChange = (newTab, newSub) => {
+    const normalized = normalizeTab(newTab);
+    setActiveTab(normalized);
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set('tab', newTab);
+    nextParams.set('tab', normalized);
+    if (newSub) {
+      setSubSection(newSub);
+      if (newSub !== 'all') {
+        nextParams.set('sub', newSub);
+      } else {
+        nextParams.delete('sub');
+      }
+    }
     setSearchParams(nextParams, { replace: true });
   };
 
@@ -305,48 +341,22 @@ export function PublisherRegistrationDetailPage() {
               handleTabChange={handleTabChange}
             />
 
-            {/* 3. Structured Tab Navigation */}
+            {/* 3. Structured Tab Navigation: 2 Tab Utama */}
             <div className="border-b border-line pt-2">
               <nav className="flex items-center gap-2 overflow-x-auto" aria-label="Navigasi Permohonan">
                 <button
                   type="button"
-                  onClick={() => handleTabChange('berkas')}
+                  onClick={() => handleTabChange('dokumen')}
                   className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === 'berkas'
+                    activeTab === 'dokumen'
                       ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
                       : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
                   }`}
                 >
                   <FileText className="w-4 h-4" />
-                  <span>Berkas Digital</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-subtle border border-line text-ink">
-                    {data.manuscript_files?.length || 0}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('berkas-fisik')}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === 'berkas-fisik'
-                      ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
-                      : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
-                  }`}
-                >
-                  <PackageCheck className="w-4 h-4" />
-                  <span>Penyerahan Berkas Fisik</span>
-                  <span className={`font-mono text-[10px] px-1.5 py-0.2 rounded-full border ${
-                    data.physical_master_intake?.status === 'RECEIVED'
-                      ? 'bg-brand-100 text-brand-800 border-brand-200'
-                      : data.physical_dispatch_status === 'DISPATCHED'
-                        ? 'bg-civic-infoSoft text-civic-info border-civic-infoLine'
-                        : 'bg-surface-subtle text-ink border-line'
-                  }`}>
-                    {data.physical_master_intake?.status === 'RECEIVED'
-                      ? 'Diterima'
-                      : data.physical_dispatch_status === 'DISPATCHED'
-                        ? 'Dikirim'
-                        : `${volumeCount} Jilid`}
+                  <span>Dokumen & Berkas</span>
+                  <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
+                    {(data.manuscript_files?.length || 0) + (data.official_documents?.length || 0) + (data.foreign_metadata?.surat_permohonan_file_id ? 1 : 0)}
                   </span>
                 </button>
 
@@ -365,81 +375,162 @@ export function PublisherRegistrationDetailPage() {
                     {data.timeline?.length || 0}
                   </span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleTabChange('dokumen')}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
-                    activeTab === 'dokumen'
-                      ? 'border-brand-800 text-brand-900 bg-brand-50/50 rounded-t-lg'
-                      : 'border-transparent text-ink-muted hover:text-ink hover:border-line'
-                  }`}
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>Dokumen Resmi</span>
-                  {(data.official_documents?.length > 0 || data.foreign_metadata?.surat_permohonan_file_id) && (
-                    <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
-                      {(data.official_documents?.length || 0) + (data.foreign_metadata?.surat_permohonan_file_id ? 1 : 0)}
-                    </span>
-                  )}
-                </button>
               </nav>
             </div>
 
-            {/* TAB 1: Berkas Digital */}
-            <div className={activeTab === 'berkas' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
-              <PublisherDigitalFilesTab
-                data={data}
-                editable={editable}
-                revision={revision}
-                requiredFiles={requiredFiles}
-                type={type}
-                setType={setType}
-                file={file}
-                setFile={setFile}
-                busy={busy}
-                upload={upload}
-                onSubmitRegistration={() =>
-                  run(
-                    () => registrationApi.submitRegistration(id),
-                    revision ? 'Perbaikan berhasil diajukan ulang.' : 'Permohonan berhasil dikirim.'
-                  )
-                }
-                setPreviewFile={setPreviewFile}
-                handleTabChange={handleTabChange}
-              />
+            {/* TAB 1: Dokumen & Berkas (Berkas Digital, Penyerahan Fisik, Dokumen Resmi) */}
+            <div className={activeTab === 'dokumen' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
+              {/* Span Nav / Sub-Navigasi Seksi Dokumen & Berkas */}
+              <div className="sticky top-0 z-20 py-2 px-3 bg-white/95 backdrop-blur-sm border-b border-line mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg shadow-2xs">
+                <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5">
+                  <span className="text-[11px] font-bold text-ink-muted mr-1 hidden sm:inline">Navigasi Cepat:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubSection('all');
+                      const next = new URLSearchParams(searchParams);
+                      next.delete('sub');
+                      setSearchParams(next, { replace: true });
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      subSection === 'all'
+                        ? 'bg-brand-800 text-white shadow-2xs'
+                        : 'bg-surface-subtle text-ink hover:text-brand-800 hover:bg-canvas border border-line'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Semua Dokumen</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubSection('digital');
+                      const next = new URLSearchParams(searchParams);
+                      next.set('sub', 'digital');
+                      setSearchParams(next, { replace: true });
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      subSection === 'digital'
+                        ? 'bg-brand-800 text-white shadow-2xs'
+                        : 'bg-surface-subtle text-ink hover:text-brand-800 hover:bg-canvas border border-line'
+                    }`}
+                  >
+                    <FileUp className="w-3.5 h-3.5" />
+                    <span>Naskah Digital</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      subSection === 'digital' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
+                    }`}>
+                      {data.manuscript_files?.length || 0}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubSection('physical');
+                      const next = new URLSearchParams(searchParams);
+                      next.set('sub', 'physical');
+                      setSearchParams(next, { replace: true });
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      subSection === 'physical'
+                        ? 'bg-brand-800 text-white shadow-2xs'
+                        : 'bg-surface-subtle text-ink hover:text-brand-800 hover:bg-canvas border border-line'
+                    }`}
+                  >
+                    <PackageCheck className="w-3.5 h-3.5" />
+                    <span>Master Fisik & Resi</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      subSection === 'physical' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
+                    }`}>
+                      {data.physical_master_intake?.status === 'RECEIVED' ? 'Diterima' : data.physical_dispatch_status === 'DISPATCHED' ? 'Terkirim' : 'Fisik'}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubSection('official');
+                      const next = new URLSearchParams(searchParams);
+                      next.set('sub', 'official');
+                      setSearchParams(next, { replace: true });
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                      subSection === 'official'
+                        ? 'bg-brand-800 text-white shadow-2xs'
+                        : 'bg-surface-subtle text-ink hover:text-brand-800 hover:bg-canvas border border-line'
+                    }`}
+                  >
+                    <FileCheck className="w-3.5 h-3.5" />
+                    <span>Dokumen Resmi & STT</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                      subSection === 'official' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
+                    }`}>
+                      {data.official_documents?.length || 0}
+                    </span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-ink-muted hidden lg:block">
+                  Pilih tab seksi untuk fokus ke satu bagian tanpa perlu scroll berlebih.
+                </p>
+              </div>
+
+              {/* Berkas Naskah Digital */}
+              {(subSection === 'all' || subSection === 'digital') && (
+                <PublisherDigitalFilesTab
+                  data={data}
+                  editable={editable}
+                  revision={revision}
+                  requiredFiles={requiredFiles}
+                  type={type}
+                  setType={setType}
+                  file={file}
+                  setFile={setFile}
+                  busy={busy}
+                  upload={upload}
+                  onSubmitRegistration={() =>
+                    run(
+                      () => registrationApi.submitRegistration(id),
+                      revision ? 'Perbaikan berhasil diajukan ulang.' : 'Permohonan berhasil dikirim.'
+                    )
+                  }
+                  setPreviewFile={setPreviewFile}
+                  handleTabChange={handleTabChange}
+                />
+              )}
+
+              {/* Penyerahan Berkas Fisik */}
+              {(subSection === 'all' || subSection === 'physical') && (
+                <div id="section-physical-master">
+                  <PublisherPhysicalMasterTab
+                    data={data}
+                    editable={editable}
+                    volumeCount={volumeCount}
+                    setVolumeCount={setVolumeCount}
+                    busy={busy}
+                    savePhysical={savePhysical}
+                    actionLoading={actionLoading}
+                    showPhysicalReceipt={showPhysicalReceipt}
+                    dispatchData={dispatchData}
+                    setDispatchData={setDispatchData}
+                    handleDispatch={handleDispatch}
+                    setShowShippingLabel={setShowShippingLabel}
+                  />
+                </div>
+              )}
+
+              {/* Dokumen Resmi & Arsip */}
+              {(subSection === 'all' || subSection === 'official') && (
+                <PublisherOfficialDocsTab
+                  data={data}
+                  setPreviewFile={setPreviewFile}
+                  setShowReceipt={setShowReceipt}
+                  setShowShippingLabel={setShowShippingLabel}
+                />
+              )}
             </div>
 
-            {/* TAB 2: Penyerahan Berkas Fisik */}
-            <div className={activeTab === 'berkas-fisik' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
-              <PublisherPhysicalMasterTab
-                data={data}
-                editable={editable}
-                volumeCount={volumeCount}
-                setVolumeCount={setVolumeCount}
-                busy={busy}
-                savePhysical={savePhysical}
-                actionLoading={actionLoading}
-                showPhysicalReceipt={showPhysicalReceipt}
-                dispatchData={dispatchData}
-                setDispatchData={setDispatchData}
-                handleDispatch={handleDispatch}
-                setShowShippingLabel={setShowShippingLabel}
-              />
-            </div>
-
-            {/* TAB 3: Riwayat & Lacak Proses */}
+            {/* TAB 2: Riwayat & Lacak Proses */}
             <div className={activeTab === 'timeline' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
               <PublisherTimelineTab data={data} />
-            </div>
-
-            {/* TAB 4: Dokumen Resmi */}
-            <div className={activeTab === 'dokumen' ? 'space-y-6 animate-fadeIn' : 'hidden'}>
-              <PublisherOfficialDocsTab
-                data={data}
-                setPreviewFile={setPreviewFile}
-                setShowReceipt={setShowReceipt}
-              />
             </div>
           </>
         )

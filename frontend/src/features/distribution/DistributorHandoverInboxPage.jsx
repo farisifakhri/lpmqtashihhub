@@ -82,7 +82,7 @@ export const DistributorHandoverInboxPage = () => {
     : [];
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
-  const isAdmin = isSuperAdmin || userRoles.includes('HELPER_ADMIN');
+  const isAdmin = isSuperAdmin || userRoles.includes('ADMIN_INTERNAL');
   const canConfirm = isDistributor;
 
   const fetchHandovers = async () => {

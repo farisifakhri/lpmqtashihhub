@@ -45,28 +45,44 @@ import {
 
 const CHECKLIST_DEFINITIONS = [
   {
-    code: 'REGISTRATION_DATA',
-    title: '1. Kelengkapan & Kesesuaian Data Registrasi',
-    description:
-      'Pemeriksaan identitas pemohon, legalitas penerbit (badan hukum/kemenag), alamat kantor resmi, kesesuaian kategori mushaf, dan keabsahan surat permohonan.',
+    code: 'COMPLETENESS_JUZ',
+    title: '1. Kelengkapan Juz',
+    description: 'Pemeriksaan kelengkapan mushaf 30 juz secara utuh.',
   },
   {
-    code: 'DIGITAL_FILES',
-    title: '2. Kelengkapan Berkas Digital',
-    description:
-      'Pemeriksaan file cover mushaf resolusi tinggi serta kelengkapan 5 halaman penanda naskah (Surah Al-Fatihah dan awal Al-Baqarah) berformat PDF sesuai standar.',
+    code: 'COMPLETENESS_SURAH',
+    title: '2. Kelengkapan Surah',
+    description: 'Pemeriksaan kelengkapan 114 surah mulai Al-Fatihah sampai An-Nas.',
   },
   {
-    code: 'PHYSICAL_MASTER',
-    title: '3. Kesesuaian Master Fisik Mushaf (A4 Per Juz)',
-    description:
-      'Pemeriksaan print-out master mushaf ukuran A4 yang dijilid rapi per juz, jumlah jilid (30 juz), kondisi fisik tidak cacat, dan tanda terima resmi penerimaan LPMQ.',
+    code: 'PAGE_ORDER',
+    title: '3. Urutan Halaman',
+    description: 'Pemeriksaan kerapian dan keteraturan urutan halaman mushaf tanpa ada yang tertukar atau terlewat.',
   },
   {
-    code: 'MANUSCRIPT_CONTENT',
-    title: '4. Format & Rasm Naskah Awal',
-    description:
-      'Pemeriksaan awal kesesuaian Rasm Usmani Standar Indonesia, penempatan tanda harakat, kejelasan ayat awal, kelengkapan tanda waqaf, dan iluminasi cover.',
+    code: 'MSI_CONFORMITY',
+    title: '4. Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia',
+    description: 'Pemeriksaan kaidah rasm Usmani, tanda harakat, tanda waqaf, dan tanda baca sesuai pedoman Mushaf Standar Indonesia (MSI).',
+  },
+  {
+    code: 'TAJWID_COLOR',
+    title: '5. Kesesuaian Dengan Kaidah Tajwid Warna',
+    description: 'Pemeriksaan penerapan kode dan panduan tajwid warna sesuai pedoman LPMQ (bila menggunakan tajwid warna).',
+  },
+  {
+    code: 'TRANSLATION_KEMENAG',
+    title: '6. Kesesuaian Dengan Terjemah Kemenag',
+    description: "Pemeriksaan teks terjemahan Al-Qur'an Kementerian Agama RI edisi mutakhir (bila mushaf berterjemah).",
+  },
+  {
+    code: 'BRAILLE_PEDOMAN',
+    title: "7. Kesesuaian Dengan Pedoman Penulisan Al-Qur'an Braille Kemenag",
+    description: "Pemeriksaan sistem simbol dan standarisasi Al-Qur'an Braille Kemenag RI (khusus mushaf braille).",
+  },
+  {
+    code: 'TRANSLITERATION_PEDOMAN',
+    title: '8. Kesesuaian Dengan Pedoman Transliterasi',
+    description: 'Pemeriksaan pedoman transliterasi Arab-Latin SKB Menteri Agama dan Mendikbud (bila memuat transliterasi).',
   },
 ];
 
@@ -934,15 +950,6 @@ export const VerificationInspectionPage = () => {
         >
           Hasil & Surat
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('arsip')}
-          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
-            activeMobileTab === 'arsip' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Arsip Dokumen
-        </button>
       </div>
 
       {/* THE SPLIT-STUDIO WORKSTATION */}
@@ -1021,19 +1028,6 @@ export const VerificationInspectionPage = () => {
                   {decision === 'PASSED' ? 'Lolos' : 'Perbaikan'}
                 </span>
               </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('arsip')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'arsip'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <History className="w-3.5 h-3.5 text-brand-700" />
-                <span>Arsip & Dokumen</span>
-              </button>
             </div>
           </div>
 
@@ -1066,36 +1060,7 @@ export const VerificationInspectionPage = () => {
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'}`}>
-            <ResultLetterPanel
-              activeMobileTab="hasil"
-              decision={decision}
-              setDecision={setDecision}
-              loadOfficialTemplate={loadOfficialTemplate}
-              setIsDirty={setIsDirty}
-              isReadOnly={isReadOnly}
-              validationErrors={validationErrors}
-              notes={notes}
-              setNotes={setNotes}
-              letterTab={letterTab}
-              setLetterTab={setLetterTab}
-              letterText={letterText}
-              setLetterText={setLetterText}
-              billingNo={billingNo}
-              setBillingNo={setBillingNo}
-              billingFileId={billingFileId}
-              billingFileName={billingFileName}
-              billingUploading={billingUploading}
-              handleBillingFile={handleBillingFile}
-              resultDocumentId={latestResultDoc?.id}
-              registration={registration}
-              publisher={publisher}
-              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
-            />
-          </div>
-
-          {/* TAB 4: ARSIP & DOKUMEN RESMI */}
-          <div className={`${activeMobileTab === 'arsip' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'arsip' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
+          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
             {/* Multi-Signatory Progress & Email Status Banners */}
             {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
               <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
@@ -1158,7 +1123,31 @@ export const VerificationInspectionPage = () => {
               />
             )}
 
-            <DocumentArchive registrationId={registration.id} />
+            <ResultLetterPanel
+              activeMobileTab="hasil"
+              decision={decision}
+              setDecision={setDecision}
+              loadOfficialTemplate={loadOfficialTemplate}
+              setIsDirty={setIsDirty}
+              isReadOnly={isReadOnly}
+              validationErrors={validationErrors}
+              notes={notes}
+              setNotes={setNotes}
+              letterTab={letterTab}
+              setLetterTab={setLetterTab}
+              letterText={letterText}
+              setLetterText={setLetterText}
+              billingNo={billingNo}
+              setBillingNo={setBillingNo}
+              billingFileId={billingFileId}
+              billingFileName={billingFileName}
+              billingUploading={billingUploading}
+              handleBillingFile={handleBillingFile}
+              resultDocumentId={latestResultDoc?.id}
+              registration={registration}
+              publisher={publisher}
+              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+            />
           </div>
         </div>
       </div>

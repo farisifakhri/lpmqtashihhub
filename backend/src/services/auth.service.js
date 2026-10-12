@@ -78,11 +78,11 @@ export const registerPublisher = async (data, req) => {
   }
 
   const role = await prisma.role.findUnique({
-    where: { code: 'ADMIN_PENERBIT' },
+    where: { code: 'PENERBIT' },
   });
 
   if (!role) {
-    const error = new Error('Role ADMIN_PENERBIT belum dikonfigurasi pada database.');
+    const error = new Error('Role PENERBIT belum dikonfigurasi pada database.');
     error.statusCode = 500;
     throw error;
   }
@@ -132,7 +132,7 @@ export const registerPublisher = async (data, req) => {
     {
       userId: result.user.id,
       email: result.user.email,
-      roles: ['ADMIN_PENERBIT'],
+      roles: ['PENERBIT'],
       publisherId: result.publisher.id,
     },
     ENV.JWT_SECRET,
@@ -145,7 +145,7 @@ export const registerPublisher = async (data, req) => {
       id: result.user.id,
       name: result.user.name,
       email: result.user.email,
-      roles: ['ADMIN_PENERBIT'],
+      roles: ['PENERBIT'],
       publisher: result.publisher,
     },
   };

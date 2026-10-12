@@ -9,30 +9,30 @@ import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
-import { renderRegistrationReceiptPdf } from './registration-receipt-pdf.service.js';
+import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
   DRAFT: {
     READY_FOR_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan disubmit untuk verifikasi administrasi & dokumen naskah',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Draf pengajuan dibatalkan oleh pemohon',
     },
   },
   READY_FOR_VERIFICATION: {
     VERIFICATION_ASSIGNED: {
-      allowedRoles: ['HELPER_ADMIN', 'SUPERADMIN'],
+      allowedRoles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
       domainAction: true,
       description: 'Helper Admin menugaskan verifikator tim inti dan mencatat Nota Dinas Verifikasi',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan ditarik kembali oleh pemohon',
     },
@@ -56,19 +56,24 @@ export const TRANSITION_POLICY = {
   },
   REVISION_REQUIRED: {
     READY_FOR_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
     },
     TASHIH_IN_PROGRESS: {
-      allowedRoles: ['ADMIN_PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan dibatalkan oleh pemohon',
+    },
+    WAITING_DISTRIBUTOR_RECEIPT: {
+      allowedRoles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Admin Internal menerima naskah fisik perbaikan/dumi dan menyerahkan kepada Distributor',
     },
   },
   WAITING_VERIFICATION_APPROVAL: {
@@ -96,7 +101,7 @@ export const TRANSITION_POLICY = {
   },
   AWAITING_PAYMENT: {
     PAYMENT_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit melakukan konfirmasi / unggah bukti bayar PNBP',
     },
@@ -485,14 +490,14 @@ export const dispatchPhysical = async (id, data, user, req) => {
   const updated = await prisma.$transaction(async (tx) => {
     const reg = await lockRegistration(tx, id);
     requireOwner(reg, user);
-    requireStatus(reg, ['READY_FOR_VERIFICATION']);
+    requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
 
     const previousIntake = await tx.physicalMasterIntake.findUnique({
       where: { registration_id: id },
     });
 
     if (previousIntake?.status === 'RECEIVED') {
-      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas loket bila data pengiriman perlu diperbaiki.');
+      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
     const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
@@ -598,7 +603,11 @@ export const submitRegistration = async (id, user, req) => {
   };
 
   const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
-  const submitStatus = hasVerifiedPayment ? 'WAITING_DISTRIBUTION' : 'READY_FOR_VERIFICATION';
+  let submitStatus = 'READY_FOR_VERIFICATION';
+  if (hasVerifiedPayment) {
+    const intake = await prisma.physicalMasterIntake.findUnique({ where: { registration_id: id } });
+    submitStatus = intake?.status === 'RECEIVED' ? 'WAITING_DISTRIBUTOR_RECEIPT' : 'REVISION_REQUIRED';
+  }
 
   // Lock registration, then rotation. A failed submit rolls both changes back.
   const updated = await prisma.$transaction(async (tx) => {
@@ -635,7 +644,11 @@ export const submitRegistration = async (id, user, req) => {
         from_status: reg.status,
         to_status: submitStatus,
         actor_id: user.id,
-        notes: 'Pengajuan disubmit untuk verifikasi',
+        notes: hasVerifiedPayment
+          ? (submitStatus === 'WAITING_DISTRIBUTOR_RECEIPT'
+            ? 'Pengajuan perbaikan disubmit penerbit; master fisik telah diterima Admin Internal'
+            : 'Pengajuan perbaikan disubmit penerbit; menunggu naskah fisik diterima Admin Internal')
+          : 'Pengajuan disubmit untuk verifikasi',
       },
     });
 
@@ -905,12 +918,12 @@ export const listRegistrations = async ({
   const where = {};
 
   // Scope filter berdasarkan Role
-  const publisherScope = user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN');
+  const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
   if (publisherScope) {
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
-  if (!publisherScope && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
+  if (!publisherScope && !user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
     if (user.roles.includes('VERIFIKATOR')) where.core_verifier_id = user.id;
     else if (user.roles.includes('DISTRIBUTOR')) where.core_distributor_id = user.id;
     else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
@@ -954,7 +967,7 @@ export const listRegistrations = async ({
 
   const paging = queuePagination({ page, limit });
   const { skip, limit: take } = paging;
-  const fifo = !user.roles.includes('ADMIN_PENERBIT') || user.roles.includes('SUPERADMIN');
+  const fifo = !user.roles.includes('PENERBIT') || user.roles.includes('SUPERADMIN');
 
   const [total, items, counts, issuedSTT] = await Promise.all([
     prisma.registration.count({ where }),
@@ -1058,7 +1071,7 @@ export const getDetail = async (id, user) => {
 
   // Cross-tenant permission check
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1067,7 +1080,7 @@ export const getDetail = async (id, user) => {
     throw error;
   }
 
-  if (reg.core_team_number && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
+  if (reg.core_team_number && !user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
       && reg.publisher_id !== user.publisherId
       && ![reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].includes(user.id)
       && !reg.assignments.some(item => item.assignee_id === user.id)) {
@@ -1094,7 +1107,7 @@ export const getDetail = async (id, user) => {
     if (error.statusCode !== 403) throw error;
     reg.manuscript_files = [];
   }
-  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
+  if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
     if (reg.verification_assignments) {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
@@ -1154,7 +1167,7 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
   }
 
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1198,7 +1211,7 @@ export const listManuscriptFiles = async (registrationId, user) => {
   }
 
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1227,7 +1240,7 @@ export const deleteRegistration = async (id, user, req) => {
   }
 
   const isSuperadmin = user.roles.includes('SUPERADMIN');
-  const isPublisher = user.roles.includes('ADMIN_PENERBIT');
+  const isPublisher = user.roles.includes('PENERBIT');
 
   if (isPublisher && !isSuperadmin) {
     if (reg.publisher_id !== user.publisherId) {
@@ -1300,7 +1313,7 @@ export const generateReceiptPdf = async (id, user) => {
   }
 
   const isInternal = user.roles.some((r) =>
-    ['SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+    ['SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
   );
   if (!isInternal && reg.publisher_id !== user.publisherId) {
     const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh bukti permohonan ini.');
@@ -1311,6 +1324,38 @@ export const generateReceiptPdf = async (id, user) => {
   const buffer = await renderRegistrationReceiptPdf(reg);
   const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
   const filename = `Tanda-Terima-${safeRegNo}.pdf`;
+
+  return { buffer, filename };
+};
+
+export const generateShippingLabelPdf = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: {
+      publisher: true,
+      service_type: { include: { category: true } },
+      physical_master_intake: true,
+    },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isInternal = user.roles.some((r) =>
+    ['SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+  );
+  if (!isInternal && reg.publisher_id !== user.publisherId) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh label pengiriman ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const buffer = await renderShippingLabelPdf(reg);
+  const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const filename = `Label-Pengiriman-${safeRegNo}.pdf`;
 
   return { buffer, filename };
 };
@@ -1326,5 +1371,6 @@ export default {
   listManuscriptFiles,
   deleteRegistration,
   generateReceiptPdf,
+  generateShippingLabelPdf,
   TRANSITION_POLICY,
 };

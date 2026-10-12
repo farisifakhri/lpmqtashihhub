@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
   }
 
   const userRoles = currentUser.roles || (currentUser.role ? [currentUser.role] : []);
-  const isPublisher = userRoles.includes('ADMIN_PENERBIT') || currentUser.role === 'ADMIN_PENERBIT';
+  const isPublisher = userRoles.includes('PENERBIT') || currentUser.role === 'PENERBIT';
   const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
 
   // Proteksi portal: Penerbit vs Petugas Internal

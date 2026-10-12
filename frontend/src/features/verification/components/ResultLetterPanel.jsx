@@ -212,12 +212,16 @@ export const ResultLetterPanel = ({
                 </div>
               ) : (
                 <div className="mx-auto max-w-[680px] min-h-[520px] bg-white border border-line-strong shadow-sm p-6 sm:p-10 text-[12px] leading-relaxed text-ink">
-                  <div className="flex items-center gap-3 border-b-2 border-ink pb-3 mb-6">
-                    <img src="/assets/logo-kemenag.png" alt="Lambang Kementerian Agama" className="h-14 w-14 object-contain shrink-0" />
-                    <div className="text-center flex-1">
-                      <p className="font-bold">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
-                      <p className="font-bold">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
-                      <p className="text-[10px]">Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I, Jakarta Timur 13560</p>
+                  <div className="relative text-center border-b-2 border-ink pb-3 mb-6">
+                    <img src="/favicon.png" alt="Lambang Kementerian Agama" className="h-12 w-12 object-contain absolute left-0 top-1/2 -translate-y-1/2 hidden sm:block" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-xs uppercase tracking-wider">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+                      <p className="font-bold text-xs uppercase tracking-wider">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
+                      <p className="text-[10px] text-ink leading-tight">
+                        Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560<br />
+                        Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807<br />
+                        Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-1 mb-6">

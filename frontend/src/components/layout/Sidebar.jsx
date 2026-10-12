@@ -37,17 +37,17 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
   const roles = currentUser?.roles || [];
 
   const isPublisher =
-    role === 'ADMIN_PENERBIT' ||
+    role === 'PENERBIT' ||
     role === 'PUBLISHER' ||
-    roles.includes('ADMIN_PENERBIT');
+    roles.includes('PENERBIT');
 
   const isSuperAdmin =
     role === 'SUPERADMIN' ||
     roles.includes('SUPERADMIN');
 
   const isAdmin =
-    role === 'HELPER_ADMIN' ||
-    roles.includes('HELPER_ADMIN');
+    role === 'ADMIN_INTERNAL' ||
+    roles.includes('ADMIN_INTERNAL');
 
   const isVerifikator =
     role === 'VERIFIKATOR' ||
@@ -77,7 +77,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     switch (userRole) {
       case 'SUPERADMIN':
         return { label: 'Superadmin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
-      case 'HELPER_ADMIN':
+      case 'ADMIN_INTERNAL':
         return { label: 'Helper Admin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
@@ -93,7 +93,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
-      case 'ADMIN_PENERBIT':
+      case 'PENERBIT':
       case 'PUBLISHER':
         return { label: 'Penerbit', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       default:
@@ -216,6 +216,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <Award className="w-4 h-4 shrink-0" />,
               description: 'Penetapan Surat Tanda Tashih',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -269,6 +275,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <PackageCheck className="w-4 h-4 shrink-0" />,
               description: 'Pembayaran sah, terbitkan BAST',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -298,6 +310,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               icon: <Users className="w-4 h-4 shrink-0" />,
               description: 'Bagi tugas anggota sidang',
             },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
+            },
           ],
         },
       ];
@@ -320,6 +338,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               path: '/internal/tashih',
               icon: <BookOpen className="w-4 h-4 shrink-0" />,
               description: 'Koreksi lafaz & tanda baca',
+            },
+            {
+              label: 'Arsip Dokumen',
+              path: '/internal/archive',
+              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+              description: 'Semua versi untuk Posdok-Q',
             },
           ],
         },

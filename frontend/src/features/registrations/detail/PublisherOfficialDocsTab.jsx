@@ -176,14 +176,14 @@ export function PublisherOfficialDocsTab({
         </div>
         <div className="p-3 bg-canvas rounded-lg border border-line text-xs space-y-1">
           <p className="text-ink">Nomor Registrasi: <strong className="font-mono text-brand-800">{data.registration_no}</strong></p>
-          <p className="text-ink-muted text-[11px]">Dapat dicetak sebagai bukti penyerahan saat datang langsung ke Loket LPMQ TMII.</p>
+          <p className="text-ink-muted text-[11px]">Dapat dicetak sebagai bukti penyerahan saat datang langsung ke LPMQ TMII.</p>
         </div>
       </section>
 
       {/* Bagian 3: Surat Tanda Tashih & Dokumen Resmi LPMQ */}
       <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
         <h2 className="font-bold text-ink text-sm">Surat Tanda Tashih & Arsip Penetapan LPMQ</h2>
-        <PublisherDocumentList documents={data.official_documents} registration={data} />
+        <PublisherDocumentList documents={data.official_documents} />
         <DocumentArchive registrationId={data.id} />
       </section>
     </div>

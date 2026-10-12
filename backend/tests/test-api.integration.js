@@ -118,7 +118,7 @@ async function runTests() {
         dokumentatorToken = token;
       });
 
-      await test('Login ADMIN_PENERBIT berhasil dan membawa publisherId', async () => {
+      await test('Login PENERBIT berhasil dan membawa publisherId', async () => {
         const { status, json, token } = await loginAs('penerbit@mushafnusantara.com');
         assert.strictEqual(status, 200);
         assert.ok(json.data.user.publisherId, 'publisherId harus tersedia');
@@ -262,7 +262,7 @@ async function runTests() {
         },
       });
 
-      const publisherRole = await prisma.role.findUnique({ where: { code: 'ADMIN_PENERBIT' } });
+      const publisherRole = await prisma.role.findUnique({ where: { code: 'PENERBIT' } });
       await prisma.userRole.upsert({
         where: { user_id_role_id: { user_id: mockUserB.id, role_id: publisherRole.id } },
         update: {},

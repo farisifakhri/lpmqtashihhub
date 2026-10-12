@@ -193,7 +193,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'POST', path: '/api/v1/registrations', desc: 'Buat Draf Pengajuan Baru' },
             { method: 'POST', path: '/api/v1/registrations/:id/submit', desc: 'Submit ke Verifikasi' },
           ],
-          rbac_roles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+          rbac_roles: ['PENERBIT', 'SUPERADMIN'],
           sample_records: sample,
         };
         break;
@@ -263,7 +263,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'GET', path: '/api/v1/registrations?status=AWAITING_PAYMENT', desc: 'Daftar Tagihan PNBP' },
             { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Konfirmasi Verifikasi Pembayaran' },
           ],
-          rbac_roles: ['ADMIN_PENERBIT', 'SUPERADMIN', 'VERIFIKATOR'],
+          rbac_roles: ['PENERBIT', 'SUPERADMIN', 'VERIFIKATOR'],
           sample_records: sample,
         };
         break;
@@ -372,7 +372,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_STT', desc: 'Naskah Siap Penetapan STT' },
             { method: 'GET', path: '/api/v1/public/verify-document/:token', desc: 'Verifikasi Publik Keabsahan QR' },
           ],
-          rbac_roles: ['DOKUMENTATOR', 'KEPALA_LPMQ', 'ADMIN_PENERBIT', 'SUPERADMIN'],
+          rbac_roles: ['DOKUMENTATOR', 'KEPALA_LPMQ', 'PENERBIT', 'SUPERADMIN'],
           sample_records: sample,
         };
         break;

@@ -43,26 +43,28 @@ State machine membedakan `READY_FOR_VERIFICATION → VERIFICATION_ASSIGNED → I
 
 Respons 201 mengandung `id`, `mime_type`, `file_size`, dan `checksum`. Pengaksesan berkas privat melalui `GET /uploads/:id` mewajibkan otentikasi header `Authorization: Bearer <token>` dan mengirimkan header keamanan `Cache-Control: private, no-store`. Parameter token pada query string URL (`?token=...`) telah dieliminasi demi mencegah kebocoran kredensial melalui log referer dan browser history. Naskah digital hanya dapat diakses oleh verifikator yang ditugaskan, tim pentashih aktif, atau penerbit pemilik naskah.
 
-## Distribusi, sidang, dan revisi
+## Distribusi, sidang, dan revisi (SRS v3.1)
 
 1. `PUT /master/working-days` oleh SUPERADMIN menerima `{ "days": [{ "date": "2026-09-11", "is_working_day": true, "source": "Nomor keputusan kalender", "description": "opsional" }] }` (maksimal 366 tanggal). Isi juga tanggal libur/nonkerja; tanggal yang hilang menyebabkan perhitungan SLA ditolak. Gunakan kalender resmi instansi.
-2. `POST /registrations/:id/assignments` oleh Distributor tim inti menerima `{ "team_id": "ID tim", "juz_assignments": [{ "assignee_id": "UUID pentashih", "juz_numbers": [1, 2] }], "stage": "INITIAL" }`. Tim/SK dan seluruh anggota harus aktif. Satu juz hanya boleh diberikan kepada satu pentashih pada iterasi yang sama. Kasus lama tanpa tim inti masih dapat memakai `assignee_ids` untuk penugasan per naskah. Tahap awal perpanjangan menggunakan DUMMY; penugasan setelah perbaikan memakai REVISION. Semua anggota dibuat dalam transaksi yang sama.
+2. `POST /registrations/:id/assignments` oleh Distributor menerima `{ "team_id": "ID tim", "juz_assignments": [{ "assignee_id": "UUID pentashih", "juz_numbers": [1, 2, 3, 4, 5] }], "stage": "INITIAL" }`. Sistem mendukung 6 Kelompok Utama Pentashihan (SK LPMQ 2025) dan penugasan berbentuk rentang juz (`RF-DIST-05`). Satu juz hanya boleh diberikan kepada satu pentashih pada iterasi yang sama; tumpang tindih juz ditolak (`400`).
 3. `GET /distribution-teams/:id/workload` mengembalikan jumlah penugasan aktif menurut `assignee_id` dan `status`, termasuk OVERDUE.
-4. `PATCH /assignments/:id/juz/:juzNumber` oleh Pentashih pemilik tugas menerima `{ "result": "PASSED" atau "REVISION_REQUIRED", "notes": "Catatan koreksi bila diperlukan" }`. Catatan wajib untuk `REVISION_REQUIRED`. Setiap juz hanya dapat dicatat sekali. Setelah semua juz tugas selesai, backend menyusun ringkasan hasil dan menandai tugas selesai. Target 2 juz per orang per hari hanya panduan, bukan batas API. `POST /assignments/:id/review` tetap tersedia untuk penugasan lama per naskah dan ditolak pada penugasan per juz.
-5. `POST /registrations/:id/distribution-review` oleh DISTRIBUTOR/superadmin menerima bentuk body yang sama. Semua penugasan iterasi terakhir harus selesai. PASSED hanya tersedia jika seluruh hasil lulus; memindahkan ke READY_FOR_STT. REVISION_REQUIRED mengembalikan ke penerbit. Penolakan akhir setelah pembayaran belum diaktifkan.
-6. Submit ulang revisi yang sudah lunas masuk WAITING_DISTRIBUTION, mempertahankan snapshot tarif/SLA, dan tidak membuat tagihan ulang. Iterasi berikutnya tidak menimpa hasil lama.
+4. `POST /assignments/:id/review` oleh Pentashih pemilik tugas menerima `{ "result": "PASSED" | "REVISION_REQUIRED", "notes": "...", "recap_file_id": "UUID berkas PDF rekapan" }` (`RF-DIST-18`). Pentashih mengunggah 1 (satu) berkas rekapan internal untuk rentang juz yang ditugaskan. Berkas ini rahasia internal tim (hanya dapat diakses pentashih penugasan, distributor, dan admin internal) dan tidak dikirimkan ke penerbit/publik (`RF-DIST-19`). Penugasan juz checklist per satuan juz juga tetap didukung melalui `PATCH /assignments/:id/juz/:juzNumber`.
+5. `POST /registrations/:id/distribution-review` oleh DISTRIBUTOR menerima `{ "result": "PASSED" | "REVISION_REQUIRED", "notes": "...", "revision_kind": "NASKAH_PERBAIKAN" | "NASKAH_DUMI" }` (`RF-DIST-08`).
+   - Jika `PASSED`, seluruh hasil telaah lulus dan naskah beralih ke `READY_FOR_STT`.
+   - Jika `REVISION_REQUIRED`, sistem otomatis menaikkan `revision_round` (ronde 1, 2, 3, dst.) dan menerbitkan draf surat pengembalian naskah resmi berjenis `REVISION_RETURN_LETTER` (`RF-DIST-09`, `RF-DIST-17`).
+   - Aturan Naskah Dumi (T-04): `NASKAH_DUMI` dipilih setelah naskah bersih pada tahap awal/perbaikan. Jika ditemukan koreksi minor di tahap dumi, tidak dikembalikan sebagai siklus baru ke penerbit, melainkan diterbitkan notice koreksi.
+6. Submit ulang revisi oleh penerbit yang sudah lunas masuk ke `WAITING_DISTRIBUTION`, mempertahankan snapshot tarif/SLA, dan tidak membuat tagihan billing baru. Iterasi berikutnya tidak menimpa hasil lama.
 
-SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dengan tenggat akhir hari Asia/Jakarta. Backend mengecek OVERDUE setiap menit; `npm run sla:check` juga dapat dijalankan melalui scheduler eksternal. Keterlambatan tidak menghalangi pencatatan sidang. Perubahan kalender tidak menghitung ulang tenggat penugasan yang sudah dibuat.
+SLA dihitung dari snapshot durasi dan kalender kerja lengkap, dimulai **H+1** setelah pembayaran PNBP terverifikasi sah (`payment_records.verified_at`) dengan tenggat akhir hari Asia/Jakarta (`RF-CALC-05`). Portal penerbit menampilkan tenggat awal naskah disertai catatan standar durasi perbaikan (`RF-PUB-08`).
 
-## Dokumen — masih draf
+## Dokumen Resmi & Pengembalian Revisi
 
-`POST /registrations/:id/official-documents` oleh distributor/dokumentator/superadmin menerima `{ "document_type": "BERITA_ACARA_TASHIH" }` atau SURAT_TANDA_TASHIH. Hanya tersedia pada READY_FOR_STT. Setiap pemanggilan menambah versi dengan snapshot data naskah, tarif/SLA, verifikasi, dan hasil pentashihan.
-
-`GET /official-documents/:id/pdf` menghasilkan PDF snapshot **berlabel DRAF** untuk dokumen yang belum diterbitkan. Ini belum template resmi. Font draf Latin belum mendukung teks Arab; karakter yang tidak didukung menghasilkan 422 tanpa mengubah snapshot. Endpoint publik QR tetap mengembalikan 404 untuk draf.
-
-`GET /registrations/:id/document-archive` menampilkan semua versi dokumen verifikasi dan hasil tashih, termasuk draf dan revisi. Penerbit hanya dapat membaca arsip pengajuannya sendiri. `HELPER_ADMIN` dan `DOKUMENTATOR` dapat membaca arsip semua pengajuan untuk kebutuhan laporan Posdok-Q. Pratinjau menampilkan snapshot isi dokumen; PDF draf hasil tashih diberi penanda DRAF.
-
-`POST /official-documents/:id/sign` belum menerbitkan dokumen: Kepala LPMQ menerima 409 sampai template dan alur penanda tangan disahkan. SUPERADMIN tanpa peran Kepala LPMQ menerima 403. Tidak ada tanda tangan digital/BSrE semu atau penerbitan STT tanpa dasar keputusan. Format, penanda tangan BA, delegasi, PDF final Unicode, dan notifikasi STT masih pekerjaan lanjutan.
+1. `POST /registrations/:id/official-documents` oleh distributor/dokumentator/superadmin menerima `{ "document_type": "BERITA_ACARA_TASHIH" | "SURAT_TANDA_TASHIH" | "REVISION_RETURN_LETTER" }`. Setiap pemanggilan menambah versi dokumen dengan snapshot data naskah, tarif/SLA, verifikasi, dan hasil pentashihan.
+2. `REVISION_RETURN_LETTER` diterbitkan otomatis saat Distributor menetapkan pengembalian revisi (`REVISION_REQUIRED`), mencantumkan nomor surat dinas, ronde perbaikan, jenis perbaikan, catatan koreksi, dan kop resmi Kementerian Agama RI.
+3. `GET /official-documents/:id/pdf` menghasilkan PDF snapshot resmi dengan format tata naskah dinas Kementerian Agama RI (non-generative AI). Untuk dokumen draf, ditampilkan label penanda draf resmi. Font draf Latin belum mendukung teks Arab; karakter yang tidak didukung menghasilkan 422 tanpa mengubah snapshot. Endpoint publik QR tetap mengembalikan 404 untuk draf.
+4. `GET /registrations/:id/document-archive` menampilkan semua versi dokumen verifikasi dan hasil tashih, termasuk draf dan revisi. Menu Arsip terintegrasi pada Sidebar global (`/internal/archive`) dan dapat diakses oleh seluruh peran internal (`RF-DOC-14`). Penerbit hanya dapat membaca arsip pengajuannya sendiri.
+5. Unduhan template surat permohonan mandiri format editable `.docx` disediakan di portal pendaftaran dan landing page (`RF-PBL-01`). Label pengiriman naskah fisik dilengkapi logo Kemenag dan LPMQ berukuran besar dan terbaca jelas (`RF-REG-10`).
+6. `POST /official-documents/:id/sign` menerapkan pengamanan otoritas penandatanganan: Kepala LPMQ menandatangani dokumen STT definitif setelah seluruh tahapan SOP selesai. Dokumen draf belum ditandatangani mengembalikan 409 bila belum memenuhi prasyarat.
 
 ## Status dan notifikasi
 

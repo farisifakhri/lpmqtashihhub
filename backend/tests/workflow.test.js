@@ -17,11 +17,11 @@ test('upload rejects executable content, empty files and excessive size', () => 
 test('unassigned internal users and other publishers cannot access manuscripts', async () => {
   const db = { assignment: { findFirst: async () => null }, verificationAssignment: { findFirst: async () => null } };
   const reg = { id: 'r', publisher_id: 'p', status: 'DRAFT' };
-  for (const user of [{ id: 'u', roles: ['PENTASHIH'] }, { id: 'u', roles: ['DOKUMENTATOR'] }, { id: 'u', publisherId: 'other', roles: ['ADMIN_PENERBIT'] }]) {
+  for (const user of [{ id: 'u', roles: ['PENTASHIH'] }, { id: 'u', roles: ['DOKUMENTATOR'] }, { id: 'u', publisherId: 'other', roles: ['PENERBIT'] }]) {
     await assert.rejects(assertManuscriptAccess(reg, user, false, db), error => error.statusCode === 403);
   }
-  await assertManuscriptAccess(reg, { id: 'u', publisherId: 'p', roles: ['ADMIN_PENERBIT'] }, true, db);
-  await assert.rejects(assertManuscriptAccess({ ...reg, status: 'TASHIH_IN_PROGRESS' }, { id: 'u', publisherId: 'p', roles: ['ADMIN_PENERBIT'] }, true, db), error => error.statusCode === 409);
+  await assertManuscriptAccess(reg, { id: 'u', publisherId: 'p', roles: ['PENERBIT'] }, true, db);
+  await assert.rejects(assertManuscriptAccess({ ...reg, status: 'TASHIH_IN_PROGRESS' }, { id: 'u', publisherId: 'p', roles: ['PENERBIT'] }, true, db), error => error.statusCode === 409);
 });
 
 test('active pentashih assignment grants read access but not manuscript writes', async () => {
@@ -53,7 +53,7 @@ test('manual status endpoint cannot bypass payment, assignment, approval, handov
 test('SOP verification separates assignment, approval, sending and physical receipt', () => {
   const policy = TRANSITION_POLICY;
   assert.equal(policy.READY_FOR_VERIFICATION.IN_VERIFICATION, undefined);
-  assert.deepEqual(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['HELPER_ADMIN', 'SUPERADMIN']);
+  assert.deepEqual(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.allowedRoles, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   assert.equal(policy.READY_FOR_VERIFICATION.VERIFICATION_ASSIGNED.domainAction, true);
   assert.deepEqual(policy.VERIFICATION_ASSIGNED.IN_VERIFICATION.allowedRoles, ['VERIFIKATOR']);
   assert.equal(policy.WAITING_VERIFICATION_APPROVAL.AWAITING_PAYMENT, undefined);

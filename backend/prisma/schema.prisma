@@ -727,8 +727,8 @@ model EmailOutbox {
 // Keep the Role / UserRole tables and multi-role memberships intact.
 enum RoleCode {
   SUPERADMIN
-  HELPER_ADMIN
-  ADMIN_PENERBIT
+  ADMIN_INTERNAL
+  PENERBIT
   VERIFIKATOR
   DISTRIBUTOR
   PENTASHIH

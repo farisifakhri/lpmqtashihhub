@@ -141,7 +141,7 @@ export const InspectionActionPanel = ({
             ? 'Kode billing wajib terbit dan dicantumkan. Saat diajukan, Verifikator menandatangani isi draf secara internal sebelum Kepala LPMQ menyetujui.'
             : 'Surat catatan kekurangan akan dikirim ke Kepala LPMQ untuk pengesahan sebelum diteruskan kepada penerbit untuk perbaikan berkas.'
         }
-        confirmLabel={decision === 'PASSED' ? 'Ajukan Kelolosan' : 'Ajukan Perbaikan'}
+        confirmLabel={decision === 'PASSED' ? 'Ajukan Draft' : 'Ajukan Perbaikan'}
         confirmVariant={decision === 'PASSED' ? 'primary' : 'gold'}
         loading={actionLoading}
       />

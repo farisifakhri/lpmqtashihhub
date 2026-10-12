@@ -204,10 +204,14 @@ export function PublisherDigitalFilesTab({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleTabChange('berkas-fisik')}
+                onClick={() => {
+                  handleTabChange('dokumen');
+                  const el = document.getElementById('section-physical-master');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-xs font-bold inline-flex items-center gap-1.5"
               >
-                <span>Buka Penyerahan Berkas Fisik</span>
+                <span>Lihat Penyerahan Berkas Fisik</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>

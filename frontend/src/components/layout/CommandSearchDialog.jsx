@@ -26,11 +26,11 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
 
   const role = currentUser?.role || '';
   const roles = currentUser?.roles || [];
-  const isPublisher = role === 'ADMIN_PENERBIT' || roles.includes('ADMIN_PENERBIT');
+  const isPublisher = role === 'PENERBIT' || roles.includes('PENERBIT');
   const isHead = role === 'KEPALA_LPMQ' || roles.includes('KEPALA_LPMQ');
   const isSuperAdmin = role === 'SUPERADMIN' || roles.includes('SUPERADMIN');
   const isVerifikator = role === 'VERIFIKATOR' || roles.includes('VERIFIKATOR');
-  const isAdmin = role === 'HELPER_ADMIN' || roles.includes('HELPER_ADMIN');
+  const isAdmin = role === 'ADMIN_INTERNAL' || roles.includes('ADMIN_INTERNAL');
   const isDistributor = role === 'DISTRIBUTOR' || roles.includes('DISTRIBUTOR');
 
   // Build searchable items based on user role

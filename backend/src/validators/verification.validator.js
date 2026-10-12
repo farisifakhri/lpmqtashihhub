@@ -58,8 +58,23 @@ export const verificationInboxSchema = {
   }),
 };
 
+export const VALID_CHECKLIST_CODES = [
+  'COMPLETENESS_JUZ',
+  'COMPLETENESS_SURAH',
+  'PAGE_ORDER',
+  'MSI_CONFORMITY',
+  'TAJWID_COLOR',
+  'TRANSLATION_KEMENAG',
+  'BRAILLE_PEDOMAN',
+  'TRANSLITERATION_PEDOMAN',
+  'REGISTRATION_DATA',
+  'DIGITAL_FILES',
+  'PHYSICAL_MASTER',
+  'MANUSCRIPT_CONTENT',
+];
+
 const checklistItem = z.object({
-  code: z.enum(['REGISTRATION_DATA', 'DIGITAL_FILES', 'PHYSICAL_MASTER', 'MANUSCRIPT_CONTENT']),
+  code: z.enum(VALID_CHECKLIST_CODES),
   result: z.enum(['SESUAI', 'TIDAK_SESUAI', 'TIDAK_BERLAKU']),
   notes: z.string().trim().max(1000).optional(),
 }).strict().superRefine((item, ctx) => {
@@ -70,17 +85,16 @@ export const verificationDraftSchema = {
   params: idParams,
   body: z.object({
     decision: z.enum(['PASSED', 'REVISION_REQUIRED']),
-    checklist: z.array(checklistItem).length(4),
+    checklist: z.array(checklistItem).min(4).max(8),
     notes: z.string().trim().max(2000).optional(),
     letter_text: z.string().trim().min(20).max(10000),
     billing_no: z.string().trim().min(3).max(191).optional(),
     billing_file_id: z.string().uuid().optional(),
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
     mushaf_content_review: z.record(z.any()).optional().nullable(),
-    mushaf_content_review: z.record(z.any()).optional().nullable(),
   }).strict().superRefine((data, ctx) => {
     const codes = data.checklist.map(item => item.code);
-    if (new Set(codes).size !== 4) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Keempat butir checklist harus diisi masing-masing satu kali.' });
+    if (new Set(codes).size !== data.checklist.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Seluruh butir checklist harus diisi masing-masing satu kali tanpa duplikasi.' });
     if (data.decision === 'PASSED' && data.checklist.some(item => item.result === 'TIDAK_SESUAI')) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['decision'], message: 'Hasil lolos memerlukan seluruh butir checklist sesuai atau tidak berlaku.' });
     if (data.decision === 'PASSED' && !data.billing_no) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['billing_no'], message: 'Kode billing PNBP wajib diisi sebelum surat lolos diajukan.' });
     if (data.decision === 'REVISION_REQUIRED' && data.billing_no) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['billing_no'], message: 'Kode billing hanya untuk surat yang lolos verifikasi.' });
@@ -96,7 +110,7 @@ export const assignmentIdSchema = { params: idParams };
 export const saveChecklistSchema = {
   params: idParams,
   body: z.object({
-    checklist: z.array(checklistItem).min(1).max(4).optional(),
+    checklist: z.array(checklistItem).min(1).max(8).optional(),
     decision: z.enum(['PASSED', 'REVISION_REQUIRED']).optional(),
     notes: z.string().trim().max(2000).optional(),
     letter_text: z.string().trim().max(10000).optional(),

@@ -46,9 +46,9 @@ export const AppLayout = () => {
   const role = currentUser?.role || '';
   const roles = currentUser?.roles || [];
   const isPublisher =
-    role === 'ADMIN_PENERBIT' ||
+    role === 'PENERBIT' ||
     role === 'PUBLISHER' ||
-    roles.includes('ADMIN_PENERBIT');
+    roles.includes('PENERBIT');
 
   // Dokumen atau review workspace diperbolehkan full width
   const isFullWidthWorkspace =

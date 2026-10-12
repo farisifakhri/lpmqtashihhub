@@ -34,7 +34,7 @@ function getDetailedStage(registration) {
         percent: 45,
         color: 'bg-civic-info',
         badgeClass: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
-        description: 'Master fisik diterima loket; menunggu penugasan verifikator',
+        description: 'Master fisik diterima LPMQ; menunggu penugasan verifikator',
       };
     }
     if (dispatchStatus === 'DISPATCHED') {
@@ -44,7 +44,7 @@ function getDetailedStage(registration) {
         percent: 35,
         color: 'bg-civic-warning',
         badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
-        description: 'Pengiriman dicatat; loket LPMQ belum menerima master fisik',
+        description: 'Pengiriman dicatat; LPMQ belum menerima master fisik',
       };
     }
     return {
@@ -53,7 +53,7 @@ function getDetailedStage(registration) {
       percent: 30,
       color: 'bg-civic-warning',
       badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
-      description: 'Menunggu pengiriman naskah master fisik A4 ke loket LPMQ',
+      description: 'Menunggu pengiriman naskah master fisik A4 ke LPMQ',
     };
   }
 
@@ -81,7 +81,7 @@ function getDetailedStage(registration) {
         percent: 35,
         color: 'bg-civic-danger',
         badgeClass: 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine',
-        description: 'Master fisik dikembalikan loket; serahkan perbaikan jilid naskah ke Loket LPMQ',
+        description: 'Master fisik dikembalikan; serahkan perbaikan jilid naskah ke LPMQ',
         isLoop: false,
       };
     }

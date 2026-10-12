@@ -87,7 +87,7 @@ export function PublisherStatusAlerts({
                   Tahapan Pengiriman Berkas Fisik ke LPMQ
                 </h2>
                 <p className="text-[11px] text-ink-muted">
-                  Proses verifikasi resmi oleh verifikator LPMQ dimulai setelah naskah master fisik diterima di loket LPMQ.
+                  Proses verifikasi resmi oleh verifikator LPMQ dimulai setelah naskah master fisik diterima di LPMQ.
                 </p>
               </div>
             </div>
@@ -98,18 +98,22 @@ export function PublisherStatusAlerts({
                   : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
               }`}>
                 {data.physical_master_intake?.status === 'RECEIVED'
-                  ? 'Master Fisik Diterima Loket · Menunggu Penugasan'
+                  ? 'Master Fisik Diterima LPMQ · Menunggu Penugasan'
                   : data.physical_dispatch_status === 'DISPATCHED'
-                    ? 'Berkas Dikirim · Menunggu Penerimaan Loket'
+                    ? 'Berkas Dikirim · Menunggu Penerimaan LPMQ'
                     : 'Menunggu Pengiriman Berkas Fisik'}
               </span>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleTabChange('berkas-fisik')}
+                onClick={() => {
+                  handleTabChange('dokumen');
+                  const el = document.getElementById('section-physical-master');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-xs font-bold"
               >
-                Buka Penyerahan Berkas Fisik
+                Lihat Penyerahan Berkas Fisik
               </Button>
             </div>
           </div>
@@ -118,15 +122,15 @@ export function PublisherStatusAlerts({
             <p className="font-bold text-brand-800 flex items-center gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-brand-700" />
               {data.physical_master_intake?.status === 'RECEIVED'
-                ? 'Master Fisik Diterima Loket LPMQ'
+                ? 'Master Fisik Diterima LPMQ'
                 : data.physical_dispatch_status === 'DISPATCHED'
                   ? 'Konfirmasi Pengiriman Berkas Tercatat di Sistem'
                   : 'Petunjuk Pengiriman Master Fisik'}
             </p>
             <p className="text-ink-muted leading-relaxed">
               {data.physical_master_intake?.status === 'RECEIVED'
-                ? 'Master fisik telah diterima loket LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
-                : 'Langkah berikutnya: petugas loket menerima dan memeriksa master fisik yang dikirimkan. Silakan buka tab Penyerahan Berkas Fisik untuk memeriksa status atau mengisi nomor resi pengiriman.'}
+                ? 'Master fisik telah diterima LPMQ. Langkah berikutnya: petugas menugaskan verifikator untuk memulai pemeriksaan naskah.'
+                : 'Langkah berikutnya: petugas LPMQ menerima dan memeriksa master fisik yang dikirimkan. Silakan cek bagian Penyerahan Berkas Fisik di bawah untuk memeriksa status atau mengisi nomor resi pengiriman.'}
             </p>
             {data.physical_master_intake?.status === 'RECEIVED' && (
               <Button type="button" variant="outline" size="sm" onClick={showPhysicalReceipt} disabled={actionLoading} className="text-xs">
@@ -200,7 +204,7 @@ export function PublisherStatusAlerts({
 
       {/* 6. Tashih in progress Callout */}
       {['TASHIH_IN_PROGRESS', 'WAITING_DISTRIBUTION', 'WAITING_DISTRIBUTOR_RECEIPT'].includes(data.status) && (
-        <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 space-y-2 shadow-2xs">
+        <section className="rounded-xl border border-brand-200 bg-brand-50/50 p-5 space-y-3 shadow-2xs">
           <div className="flex items-center gap-2.5">
             <BookOpen className="w-5 h-5 text-brand-800 shrink-0" />
             <div>
@@ -209,6 +213,57 @@ export function PublisherStatusAlerts({
                 Tim Pentashih LPMQ sedang melakukan penelaahan detail setiap juz, teks ayat, harakat, dan tanda baca naskah Al-Qur'an. Anda dapat memantau riwayat telaah pada tab Riwayat Proses.
               </p>
             </div>
+          </div>
+
+          {/* Durasi & Deadline Naskah Awal (RF-PUB-08 / T-05) */}
+          <div className="p-3 bg-white rounded-lg border border-brand-100 text-xs space-y-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-ink-muted font-medium">Estimasi Target Penyelesaian Naskah Awal:</span>
+              <strong className="text-brand-900 font-mono">
+                {data.initial_deadline
+                  ? new Date(data.initial_deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : data.sla_deadline
+                  ? new Date(data.sla_deadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : `${data.service_type?.sla_days || 30} Hari Kerja (Dihitung H+1 Pembayaran)`}
+              </strong>
+            </div>
+            <p className="text-[11px] text-ink-muted leading-relaxed italic border-t border-line/60 pt-1.5">
+              <strong>Catatan:</strong> Informasi durasi di atas merupakan estimasi penyelesaian naskah awal. Apabila pada proses pentashihan ditemukan koreksi yang memerlukan perbaikan oleh penerbit, batas waktu perbaikan akan dicantumkan secara khusus pada Surat Hasil Tashih resmi.
+            </p>
+          </div>
+        </section>
+      )}
+
+      {/* 6b. Revision Required from Tashih (R-08, BR-24) */}
+      {['REVISION_REQUIRED', 'WAITING_PUBLISHER_REVISION'].includes(data.status) && (
+        <section className="rounded-xl border border-civic-warningLine bg-civic-warningSoft/70 p-5 space-y-3 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-civic-warningLine pb-3">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-5 h-5 text-civic-warning shrink-0" />
+              <div>
+                <h2 className="font-bold text-ink text-sm">
+                  Pengembalian Naskah: Perbaikan Ke-{data.revision_round || 1} ({data.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})
+                </h2>
+                <p className="text-[11px] text-ink-muted">
+                  Distributor telah menerbitkan Surat Pengembalian dan Catatan Hasil Tashih. Silakan lakukan perbaikan naskah sesuai catatan resmi.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleTabChange('dokumen')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-civic-warning hover:bg-civic-warning/90 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
+            >
+              Unduh Surat Hasil Tashih
+            </button>
+          </div>
+          <div className="p-3 bg-white rounded-lg border border-civic-warningLine/70 text-xs space-y-1">
+            <p className="font-semibold text-civic-warning">
+              Tenggat Waktu Perbaikan: Mengikuti tanggal yang tercantum pada Surat Pengembalian dan Catatan Hasil Tashih.
+            </p>
+            <p className="text-[11px] text-ink-muted">
+              Setelah naskah diperbaiki, serahkan kembali master naskah perbaikan untuk pemeriksaan siklus berikutnya.
+            </p>
           </div>
         </section>
       )}
