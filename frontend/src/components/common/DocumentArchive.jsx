@@ -17,12 +17,12 @@ const labels = {
 };
 
 const statusBadgeClasses = {
-  DRAFT: 'bg-slate-100 text-slate-700 border-slate-200',
+  DRAFT: 'bg-surface-subtle text-ink border-line-strong',
   SUBMITTED: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
-  APPROVED: 'bg-brand-50 text-brand-800 border-brand-200',
+  APPROVED: 'bg-brand-50 text-brand-800 border-brand-100',
   SIGNING: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
-  SIGNED: 'bg-brand-100 text-brand-900 border-brand-200',
-  ISSUED: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  SIGNED: 'bg-brand-100 text-brand-900 border-brand-100',
+  ISSUED: 'bg-civic-successSoft text-civic-success border-civic-successLine',
 };
 
 export function DocumentArchive({ registrationId }) {
@@ -114,7 +114,7 @@ export function DocumentArchive({ registrationId }) {
             <FileText className="w-4 h-4 text-brand-800" />
             Arsip Dokumen Resmi & Riwayat Versi
           </h3>
-          <p className="text-[11px] text-ink-muted mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Salinan penetapan naskah dinas resmi LPMQ Kementerian Agama RI.
           </p>
         </div>
@@ -131,7 +131,7 @@ export function DocumentArchive({ registrationId }) {
         <div className="p-6 text-center rounded-xl border border-dashed border-line bg-canvas/50 space-y-1">
           <FileText className="w-8 h-8 text-ink-muted/50 mx-auto" />
           <p className="text-xs font-semibold text-ink">Belum Ada Dokumen Resmi</p>
-          <p className="text-[11px] text-ink-muted">
+          <p className="text-xs text-ink-muted">
             Dokumen resmi (Disposisi, Surat Hasil, Berita Acara, STT) akan muncul secara otomatis saat tahapan verifikasi dan pentashihan diproses.
           </p>
         </div>
@@ -166,10 +166,10 @@ export function DocumentArchive({ registrationId }) {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <h4 className="font-bold text-ink text-sm">Tinjau dokumen</h4>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase ${statusBadgeClasses[selected.status] || 'bg-slate-100 text-slate-700'}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded border uppercase ${statusBadgeClasses[selected.status] || 'bg-surface-subtle text-ink border-line'}`}>
                   {selected.status}
                 </span>
-                <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
+                <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
                   Versi {selected.version}
                 </span>
               </div>
@@ -209,7 +209,7 @@ export function DocumentArchive({ registrationId }) {
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-xs bg-canvas/50 p-4 rounded-xl border border-line">
             {metadata.map(([label, value]) => (
               <div key={label} className="border-b border-line/60 sm:border-0 pb-1.5 sm:pb-0">
-                <dt className="text-[11px] text-ink-muted font-medium">{label}</dt>
+                <dt className="text-xs text-ink-muted font-medium">{label}</dt>
                 <dd className="mt-0.5 font-semibold text-ink break-words">{value}</dd>
               </div>
             ))}
@@ -220,7 +220,7 @@ export function DocumentArchive({ registrationId }) {
             <details className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 space-y-3">
               <summary className="cursor-pointer text-xs font-bold text-brand-900 flex items-center justify-between">
                 <span>Lampiran Kode Billing & Bukti SIMPONI</span>
-                <span className="text-[10px] text-brand-700 underline font-normal">Klik untuk pratinjau</span>
+                <span className="text-xs text-brand-700 underline font-normal">Klik untuk pratinjau</span>
               </summary>
               <div className="pt-2">
                 <PrivateFileViewer
@@ -241,7 +241,7 @@ export function DocumentArchive({ registrationId }) {
                 <FileText className="w-3.5 h-3.5 text-brand-700" />
                 Ringkasan Isi Dokumen Resmi
               </h5>
-              <span className="text-[10px] text-ink-muted">Format Standar Tata Naskah Dinas LPMQ</span>
+              <span className="text-xs text-ink-muted">Format Standar Tata Naskah Dinas LPMQ</span>
             </div>
             <p className="text-xs text-ink whitespace-pre-wrap leading-relaxed">
               {text}
@@ -289,7 +289,7 @@ export function DocumentArchive({ registrationId }) {
             <iframe
               title="Penampil PDF arsip dokumen"
               src={pdfUrl}
-              className="flex-1 w-full border-0 bg-slate-100"
+              className="flex-1 w-full border-0 bg-surface-subtle"
             />
           </div>
         </div>

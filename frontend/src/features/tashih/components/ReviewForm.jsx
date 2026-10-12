@@ -140,7 +140,7 @@ export const ReviewForm = ({
                   <label className="block text-xs font-bold text-ink uppercase tracking-wider">
                     Berkas Rekapan Koreksi Internal
                   </label>
-                  <span className="text-[10px] text-ink-muted">1 berkas per rentang penugasan</span>
+                  <span className="text-xs text-ink-muted">1 berkas per rentang penugasan</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line-strong bg-white hover:bg-surface-subtle cursor-pointer text-xs font-semibold text-ink shadow-2xs">
@@ -163,7 +163,7 @@ export const ReviewForm = ({
                   )}
                 </div>
                 {uploadError && <p className="text-xs text-civic-danger">{uploadError}</p>}
-                <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-[11px] text-brand-900 flex items-start gap-2">
+                <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-xs text-brand-900 flex items-start gap-2">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-brand-700 mt-0.5" />
                   <span>
                     <strong>Kerahasiaan Internal (RF-DIST-19):</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distributor. Berkas ini bersifat internal dan tidak dikirim ke penerbit atau dokumentator.
@@ -196,7 +196,7 @@ export const ReviewForm = ({
                     />
                     <div>
                       <div className="font-bold text-xs text-ink">Lolos Tanpa Catatan (Bersih)</div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         Teks Al-Qur'an bersih, rasm usmani dan harakat telah sesuai standar.
                       </div>
                     </div>
@@ -221,7 +221,7 @@ export const ReviewForm = ({
                     />
                     <div>
                       <div className="font-bold text-xs text-ink">Perlu Perbaikan Naskah</div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         Terdapat kesalahan rasm, harakat, ayat, atau waqaf yang wajib diperbaiki penerbit.
                       </div>
                     </div>
@@ -235,7 +235,7 @@ export const ReviewForm = ({
                   <label className="block text-xs font-bold text-ink uppercase tracking-wider">
                     Catatan Koreksi & Telaah Lafazh / Rasm
                   </label>
-                  <span className="text-[11px] text-ink-muted">Wajib diisi</span>
+                  <span className="text-xs text-ink-muted">Wajib diisi</span>
                 </div>
                 <textarea
                   rows={5}
@@ -246,7 +246,7 @@ export const ReviewForm = ({
                   placeholder="Contoh format telaah:&#10;[Juz 1, Hal 15, QS. Al-Baqarah: 25] - Lafazh '...' kurang harakat fathah.&#10;[Juz 2, Hal 32, QS. Al-Baqarah: 142] - Tanda waqaf lazim tertukar dengan waqaf jaiz.&#10;Jika bersih tanpa koreksi: Naskah telah ditashih dan sesuai standar Mushaf Indonesia."
                   className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                 />
-                <p className="text-[11px] text-ink-muted mt-1 flex items-center gap-1">
+                <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                   <span>
                     Catatan ini akan dikompilasi oleh koordinator Distributor untuk keputusan lanjut STT atau surat perbaikan ke penerbit.

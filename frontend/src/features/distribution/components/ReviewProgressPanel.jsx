@@ -57,15 +57,15 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                         <span className="font-mono text-xs font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-100">
                           {reg.registration_no}
                         </span>
-                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-surface-subtle text-ink border border-line">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-surface-subtle text-ink border border-line">
                           Iterasi #{maxIter}
                         </span>
                         {isReadyToReview ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-900 border border-brand-100">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-900 border border-brand-100">
                             <CheckCircle2 className="w-3 h-3" /> Seluruh Pentashih Selesai ({completedMembers}/{totalMembers})
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-md bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
                             <Clock className="w-3 h-3" /> Sidang Berjalan: {completedMembers} dari {totalMembers} Selesai
                           </span>
                         )}
@@ -86,7 +86,7 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
 
                       {/* Anggota Pentashih Badges */}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="text-[11px] font-semibold text-ink-muted">Anggota Sidang:</span>
+                        <span className="text-xs font-semibold text-ink-muted">Anggota Sidang:</span>
                         {currentAssignments.map((a) => {
                           const rev = a.reviews?.[0];
                           const isDone = a.status === 'COMPLETED' && rev;
@@ -94,7 +94,7 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                             <span
                               key={a.id}
                               className={clsx(
-                                'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px]',
+                                'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs',
                                 isDone
                                   ? rev.result === 'PASSED'
                                     ? 'bg-brand-50 text-brand-800 border border-brand-100 font-semibold'

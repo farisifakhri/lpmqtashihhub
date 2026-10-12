@@ -45,7 +45,7 @@ export const InspectionDialogs = ({
                   className="w-full text-xs p-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-danger/20 focus:border-civic-danger"
                   required
                 />
-                <span className="text-[11px] text-ink-muted">Minimal 5 karakter.</span>
+                <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-2">

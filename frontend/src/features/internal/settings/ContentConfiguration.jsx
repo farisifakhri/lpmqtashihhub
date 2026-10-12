@@ -614,7 +614,7 @@ export const ContentConfiguration = () => {
             <Package className="w-4 h-4 text-brand-700" />
           </div>
           <div className="text-2xl font-bold text-ink mt-2">{stats.total}</div>
-          <p className="text-[11px] text-ink-muted mt-1">Jenis layanan terdaftar</p>
+          <p className="text-xs text-ink-muted mt-1">Jenis layanan terdaftar</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
@@ -622,7 +622,7 @@ export const ContentConfiguration = () => {
             <Star className="w-4 h-4 text-civicGold-700" />
           </div>
           <div className="text-2xl font-bold text-ink mt-2">{stats.popular}</div>
-          <p className="text-[11px] text-ink-muted mt-1">Ditandai sebagai unggulan</p>
+          <p className="text-xs text-ink-muted mt-1">Ditandai sebagai unggulan</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
@@ -630,7 +630,7 @@ export const ContentConfiguration = () => {
             <FileText className="w-4 h-4 text-civic-info" />
           </div>
           <div className="text-2xl font-bold text-ink mt-2">{stats.categories}</div>
-          <p className="text-[11px] text-ink-muted mt-1">Kelompok jenis mushaf</p>
+          <p className="text-xs text-ink-muted mt-1">Kelompok jenis mushaf</p>
         </Card>
         <Card className="p-4">
           <div className="flex items-center justify-between text-ink-muted text-xs font-medium">
@@ -638,7 +638,7 @@ export const ContentConfiguration = () => {
             <Coins className="w-4 h-4 text-brand-700" />
           </div>
           <div className="text-2xl font-bold text-ink mt-2">{stats.freeServices}</div>
-          <p className="text-[11px] text-ink-muted mt-1">Tanpa biaya PNBP</p>
+          <p className="text-xs text-ink-muted mt-1">Tanpa biaya PNBP</p>
         </Card>
       </div>
 
@@ -742,7 +742,7 @@ export const ContentConfiguration = () => {
                               {item.description}
                             </span>
                           )}
-                          <span className="text-[11px] text-ink-muted block mt-0.5 font-mono">
+                          <span className="text-xs text-ink-muted block mt-0.5 font-mono">
                             {item.unitLabel} · {item.defaultUnitCount} unit default
                           </span>
                         </div>
@@ -760,7 +760,7 @@ export const ContentConfiguration = () => {
                         )}
                       </span>
                       {item.costPerUnit > 0 && (
-                        <span className="text-[11px] text-ink-muted block mt-0.5">
+                        <span className="text-xs text-ink-muted block mt-0.5">
                           + {formatCurrency(item.costPerUnit)} / unit
                         </span>
                       )}
@@ -771,11 +771,11 @@ export const ContentConfiguration = () => {
                           <Clock className="w-3 h-3 text-brand-700" />
                           {item.baseDurationDays} hari
                         </span>
-                        <span className="text-[10px] text-ink-muted">
+                        <span className="text-xs text-ink-muted">
                           Revisi: {item.revisionDurationDays}d · Dumi: {item.dummyDurationDays}d
                         </span>
                         {item.durationPer100UnitsDays > 0 && (
-                          <span className="text-[10px] text-ink-muted">
+                          <span className="text-xs text-ink-muted">
                             +{item.durationPer100UnitsDays}d / 100 unit
                           </span>
                         )}
@@ -876,7 +876,7 @@ export const ContentConfiguration = () => {
                     placeholder="Contoh: Mushaf Al-Qur'an 30 Juz"
                   />
                   {formErrors.name && (
-                    <p className="text-[11px] text-civic-danger mt-1">{formErrors.name}</p>
+                    <p className="text-xs text-civic-danger mt-1">{formErrors.name}</p>
                   )}
                 </div>
                 <div>
@@ -902,7 +902,7 @@ export const ContentConfiguration = () => {
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" />
                   </div>
                   {formErrors.category && (
-                    <p className="text-[11px] text-civic-danger mt-1">{formErrors.category}</p>
+                    <p className="text-xs text-civic-danger mt-1">{formErrors.category}</p>
                   )}
                 </div>
               </div>
@@ -944,7 +944,7 @@ export const ContentConfiguration = () => {
                       }`}
                     />
                     {formErrors.baseCost && (
-                      <p className="text-[11px] text-civic-danger mt-1">{formErrors.baseCost}</p>
+                      <p className="text-xs text-civic-danger mt-1">{formErrors.baseCost}</p>
                     )}
                   </div>
                   <div>
@@ -1001,7 +1001,7 @@ export const ContentConfiguration = () => {
                             : 'border-line'
                         }`}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">
                         hari
                       </span>
                     </div>
@@ -1020,7 +1020,7 @@ export const ContentConfiguration = () => {
                         }
                         className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">
                         hari
                       </span>
                     </div>
@@ -1039,7 +1039,7 @@ export const ContentConfiguration = () => {
                         }
                         className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">
                         hari
                       </span>
                     </div>
@@ -1058,7 +1058,7 @@ export const ContentConfiguration = () => {
                         }
                         className="w-full px-3 py-2.5 text-sm border border-line rounded-md focus:outline-none focus:ring-2 focus:ring-brand-700 bg-white pr-12 transition-colors"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-ink-muted">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-muted">
                         hari
                       </span>
                     </div>
@@ -1131,7 +1131,7 @@ export const ContentConfiguration = () => {
                   <span className="text-sm font-medium text-ink">
                     Tandai sebagai Layanan Populer
                   </span>
-                  <p className="text-[11px] text-ink-muted">
+                  <p className="text-xs text-ink-muted">
                     Layanan ini akan ditampilkan dengan badge "Populer" di formulir pendaftaran.
                   </p>
                 </div>

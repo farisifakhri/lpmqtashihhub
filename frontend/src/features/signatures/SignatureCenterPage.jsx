@@ -384,7 +384,7 @@ export const SignatureCenterPage = () => {
             <span className="text-2xl font-black text-ink">{stats.needSign}</span>
             <span className="text-xs text-ink-muted">dokumen aktif</span>
           </div>
-          <p className="text-[11px] text-brand-700 mt-1 font-medium">Menunggu konfirmasi internal Anda</p>
+          <p className="text-xs text-brand-700 mt-1 font-medium">Menunggu konfirmasi internal Anda</p>
         </div>
 
         <div
@@ -405,7 +405,7 @@ export const SignatureCenterPage = () => {
             <span className="text-2xl font-black text-ink">{stats.waitingOthers}</span>
             <span className="text-xs text-ink-muted">dokumen</span>
           </div>
-          <p className="text-[11px] text-civic-warning mt-1 font-medium">Dalam alur urutan multi-sign</p>
+          <p className="text-xs text-civic-warning mt-1 font-medium">Dalam alur urutan multi-sign</p>
         </div>
 
         <div
@@ -426,7 +426,7 @@ export const SignatureCenterPage = () => {
             <span className="text-2xl font-black text-ink">{stats.signedCount}</span>
             <span className="text-xs text-ink-muted">arsip resmi</span>
           </div>
-          <p className="text-[11px] text-civic-info mt-1 font-medium">Siap kirim & tersimpan dalam log audit</p>
+          <p className="text-xs text-civic-info mt-1 font-medium">Siap kirim & tersimpan dalam log audit</p>
         </div>
       </div>
 
@@ -447,7 +447,7 @@ export const SignatureCenterPage = () => {
               <PenTool className="w-3.5 h-3.5" />
               <span>Perlu Konfirmasi Anda</span>
               {stats.needSign > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800 text-[10px] font-mono font-bold">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-800 text-xs font-mono font-bold">
                   {stats.needSign}
                 </span>
               )}
@@ -465,7 +465,7 @@ export const SignatureCenterPage = () => {
               <Clock className="w-3.5 h-3.5" />
               <span>Menunggu Penandatangan Lain</span>
               {stats.waitingOthers > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning text-[10px] font-mono font-bold">
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning text-xs font-mono font-bold">
                   {stats.waitingOthers}
                 </span>
               )}
@@ -482,7 +482,7 @@ export const SignatureCenterPage = () => {
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
               <span>Selesai Ditandatangani</span>
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-strong text-ink text-[10px] font-mono font-bold">
+              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-surface-strong text-ink text-xs font-mono font-bold">
                 {stats.signedCount}
               </span>
             </button>
@@ -582,7 +582,7 @@ export const SignatureCenterPage = () => {
                     />
                     <span className="font-semibold">Pilih Semua ({filteredDocuments.length} Dokumen)</span>
                   </label>
-                  <span className="text-[11px] text-ink-muted">
+                  <span className="text-xs text-ink-muted">
                     Gunakan centang untuk penandatanganan massal
                   </span>
                 </div>
@@ -615,17 +615,17 @@ export const SignatureCenterPage = () => {
                         <span className="text-xs font-black text-ink font-mono">
                           {doc.document_no}
                         </span>
-                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-surface-subtle text-ink border border-line">
+                        <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-surface-subtle text-ink border border-line">
                           {doc.document_type === 'BERITA_ACARA_VERIFIKASI'
                             ? 'Berita Acara Verifikasi'
                             : 'Surat Hasil Verifikasi'}
                         </span>
                         {doc.status === 'SIGNED' ? (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-brand-100 text-brand-900 border border-brand-100">
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-brand-100 text-brand-900 border border-brand-100">
                             Lengkap Ditandatangani
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
                             Menunggu Konfirmasi
                           </span>
                         )}
@@ -636,16 +636,16 @@ export const SignatureCenterPage = () => {
                         <span className="text-ink-muted mx-1.5">·</span>
                         <span className="text-ink-muted">{doc.publisher_name}</span>
                         <span className="text-ink-muted mx-1.5">·</span>
-                        <span className="font-mono text-[11px] text-ink-muted">#{doc.registration_no}</span>
+                        <span className="font-mono text-xs text-ink-muted">#{doc.registration_no}</span>
                       </div>
 
                       {/* Signatories progress chips */}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <span className="text-[11px] text-ink-muted font-medium">Penandatangan:</span>
+                        <span className="text-xs text-ink-muted font-medium">Penandatangan:</span>
                         {doc.signatories?.map((sig, idx) => (
                           <span
                             key={idx}
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold border ${
                               sig.status === 'SIGNED'
                                 ? 'bg-brand-50 text-brand-900 border-brand-100'
                                 : 'bg-surface-subtle text-ink-muted border-line'

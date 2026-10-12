@@ -81,7 +81,7 @@ export function PublisherDetailHeader({
       'VERIFICATION_APPROVED',
     ].includes(s) || isVerificationRevision;
 
-    let p2StatusText = 'Menunggu Pengajuan';
+    let p2StatusText = 'Menunggu Permohonan';
     let p2Desc = 'Master fisik A4 & berkas digital';
     if (p2Done) {
       p2StatusText = 'Lolos Verifikasi';
@@ -406,7 +406,7 @@ export function PublisherDetailHeader({
                   </p>
                 </div>
 
-                <p className="text-[11px] text-ink-muted mt-2 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-ink-muted mt-2 line-clamp-2 leading-relaxed">
                   {phase.desc}
                 </p>
               </div>

@@ -273,7 +273,7 @@ export const PublisherBillingPage = () => {
           <span className="font-bold text-ink">Billing PNBP</span>
         </div>
 
-        <span className="text-[11px] font-mono font-semibold px-2.5 py-1 bg-brand-50 text-brand-800 rounded-lg border border-brand-100">
+        <span className="text-xs font-mono font-semibold px-2.5 py-1 bg-brand-50 text-brand-800 rounded-lg border border-brand-100">
           SLA Pembayaran: 7 Hari Kalender
         </span>
       </div>
@@ -313,7 +313,7 @@ export const PublisherBillingPage = () => {
       <div className="bg-brand-900 text-white rounded-xl border border-brand-800 shadow-2xs p-6 sm:p-7 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <span className="text-[11px] font-mono uppercase tracking-widest text-civicGold-700 font-bold bg-white/10 px-2.5 py-0.5 rounded border border-white/20">
+            <span className="text-xs font-mono uppercase tracking-widest text-civicGold-700 font-bold bg-white/10 px-2.5 py-0.5 rounded border border-white/20">
               Penerimaan Negara Bukan Pajak (PNBP)
             </span>
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
@@ -342,7 +342,7 @@ export const PublisherBillingPage = () => {
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-brand-100/80 font-medium">Menunggu Bayar</p>
+                <p className="text-xs text-brand-100/80 font-medium">Menunggu Bayar</p>
                 <p className="text-lg font-extrabold text-white">{metrics.unpaidCount} Tagihan</p>
               </div>
             </div>
@@ -352,7 +352,7 @@ export const PublisherBillingPage = () => {
                 <Receipt className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-brand-100/80 font-medium">Dalam Verifikasi</p>
+                <p className="text-xs text-brand-100/80 font-medium">Dalam Verifikasi</p>
                 <p className="text-lg font-extrabold text-white">{metrics.paidCount} Tagihan</p>
               </div>
             </div>
@@ -362,7 +362,7 @@ export const PublisherBillingPage = () => {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[11px] text-brand-100/80 font-medium">Lunas & Sah</p>
+                <p className="text-xs text-brand-100/80 font-medium">Lunas & Sah</p>
                 <p className="text-lg font-extrabold text-white">{metrics.verifiedCount} Tagihan</p>
               </div>
             </div>
@@ -455,7 +455,7 @@ export const PublisherBillingPage = () => {
                         Bukti Pembayaran Sebelumnya Perlu Diperbaiki:
                       </p>
                       <p className="text-civic-danger mt-0.5 leading-relaxed">{item.rejection_reason}</p>
-                      <p className="text-civic-danger text-[11px] mt-1 italic">
+                      <p className="text-civic-danger text-xs mt-1 italic">
                         Silakan unggah kembali bukti setoran bank yang sah dan pastikan NTPN terbaca jelas.
                       </p>
                     </div>
@@ -466,7 +466,7 @@ export const PublisherBillingPage = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-canvas border border-line px-2.5 py-1 rounded-lg">
-                      <span className="text-[11px] font-mono text-ink-muted">No. Billing:</span>
+                      <span className="text-xs font-mono text-ink-muted">No. Billing:</span>
                       <span className="font-mono text-xs font-bold text-ink">
                         {item.billing_no}
                       </span>
@@ -483,7 +483,7 @@ export const PublisherBillingPage = () => {
                       </button>
                     </div>
 
-                    <span className="font-mono text-[11px] font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
+                    <span className="font-mono text-xs font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
                       {reg.registration_no || '-'}
                     </span>
                   </div>
@@ -491,7 +491,7 @@ export const PublisherBillingPage = () => {
                   <div className="flex items-center gap-2">
                     {sla && (
                       <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
+                        className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg border ${
                           sla.isExpired
                             ? 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine'
                             : sla.isWarning
@@ -539,7 +539,7 @@ export const PublisherBillingPage = () => {
 
                 {/* Card Action Footer */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line">
-                  <div className="text-[11px] text-ink-muted">
+                  <div className="text-xs text-ink-muted">
                     Metode Pembayaran:{' '}
                     <span className="font-semibold text-ink">
                       Bank Persepsi / SIMPONI Kemenag
@@ -551,7 +551,7 @@ export const PublisherBillingPage = () => {
                       <Button
                         variant="primary"
                         onClick={() => openConfirmModal(item)}
-                        className="w-full sm:w-auto text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-4 py-2 inline-flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-4 py-2 inline-flex items-center justify-center gap-1.5"
                       >
                         <UploadCloud className="w-4 h-4" />
                         Konfirmasi Pembayaran
@@ -635,7 +635,7 @@ export const PublisherBillingPage = () => {
                   className="w-full text-xs p-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono"
                   required
                 />
-                <span className="text-[11px] text-ink-muted mt-1 block">
+                <span className="text-xs text-ink-muted mt-1 block">
                   Nomor NTPN tercetak pada bukti setoran bank atau struk teller/ATM.
                 </span>
               </div>
@@ -657,14 +657,14 @@ export const PublisherBillingPage = () => {
                     {receiptFile ? (
                       <div className="text-xs">
                         <p className="font-bold text-brand-700">{receiptFile.name}</p>
-                        <p className="text-ink-muted text-[11px]">
+                        <p className="text-ink-muted text-xs">
                           {(receiptFile.size / 1024).toFixed(1)} KB &bull; Klik untuk mengganti
                         </p>
                       </div>
                     ) : (
                       <div className="text-xs">
                         <p className="font-semibold text-ink">Pilih berkas bukti transfer</p>
-                        <p className="text-ink-muted text-[11px]">Format PDF, PNG, atau JPG (Maks 5 MB)</p>
+                        <p className="text-ink-muted text-xs">Format PDF, PNG, atau JPG (Maks 5 MB)</p>
                       </div>
                     )}
                   </label>
@@ -694,7 +694,7 @@ export const PublisherBillingPage = () => {
                 <Button
                   type="submit"
                   disabled={actionLoading}
-                  className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-5 py-2"
+                  className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-5 py-2"
                 >
                   {actionLoading ? 'Mengirimkan...' : 'Kirim Konfirmasi Pembayaran'}
                 </Button>
@@ -714,21 +714,21 @@ export const PublisherBillingPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
             <p className="font-bold text-ink">1. Salin Kode Billing</p>
-            <p className="text-[11px] leading-relaxed text-ink-muted">
+            <p className="text-xs leading-relaxed text-ink-muted">
               Gunakan Nomor Billing yang tertera di atas. Pastikan pembayaran dilakukan sebelum batas waktu SLA (7 hari kalender).
             </p>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
             <p className="font-bold text-ink">2. Setor ke Bank Persepsi</p>
-            <p className="text-[11px] leading-relaxed text-ink-muted">
+            <p className="text-xs leading-relaxed text-ink-muted">
               Bayar melalui Teller Bank, ATM, atau Mobile Banking mitra SIMPONI (Bank Mandiri, BRI, BNI, BSI, BCA) menggunakan menu Pembayaran Penerimaan Negara.
             </p>
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-line space-y-1.5 shadow-2xs">
             <p className="font-bold text-ink">3. Konfirmasi di Portal</p>
-            <p className="text-[11px] leading-relaxed text-ink-muted">
+            <p className="text-xs leading-relaxed text-ink-muted">
               Masukkan Nomor Transaksi Penerimaan Negara (NTPN) serta unggah foto/PDF bukti bayar agar verifikator LPMQ dapat memverifikasi pelunasan.
             </p>
           </div>

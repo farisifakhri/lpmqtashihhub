@@ -83,7 +83,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 {data.external_sync_status && (
                   <span
                     className={clsx(
-                      'inline-flex items-center rounded-md font-semibold border px-2 py-0.5 text-[11px]',
+                      'inline-flex items-center rounded-md font-semibold border px-2 py-0.5 text-xs',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.bgClass || 'bg-surface-subtle',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.textClass || 'text-ink',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.borderClass || 'border-line'

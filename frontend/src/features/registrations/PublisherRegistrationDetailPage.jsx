@@ -355,7 +355,7 @@ export function PublisherRegistrationDetailPage() {
                 >
                   <FileText className="w-4 h-4" />
                   <span>Dokumen & Berkas</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
+                  <span className="font-mono text-xs px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
                     {(data.manuscript_files?.length || 0) + (data.official_documents?.length || 0) + (data.foreign_metadata?.surat_permohonan_file_id ? 1 : 0)}
                   </span>
                 </button>
@@ -371,7 +371,7 @@ export function PublisherRegistrationDetailPage() {
                 >
                   <Clock className="w-4 h-4" />
                   <span>Riwayat & Lacak Proses</span>
-                  <span className="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-surface-subtle border border-line text-ink">
+                  <span className="font-mono text-xs px-1.5 py-0.2 rounded-full bg-surface-subtle border border-line text-ink">
                     {data.timeline?.length || 0}
                   </span>
                 </button>
@@ -383,7 +383,7 @@ export function PublisherRegistrationDetailPage() {
               {/* Span Nav / Sub-Navigasi Seksi Dokumen & Berkas */}
               <div className="sticky top-0 z-20 py-2 px-3 bg-white/95 backdrop-blur-sm border-b border-line mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg shadow-2xs">
                 <div className="flex items-center gap-1.5 overflow-x-auto text-xs py-0.5">
-                  <span className="text-[11px] font-bold text-ink-muted mr-1 hidden sm:inline">Navigasi Cepat:</span>
+                  <span className="text-xs font-bold text-ink-muted mr-1 hidden sm:inline">Navigasi Cepat:</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -417,7 +417,7 @@ export function PublisherRegistrationDetailPage() {
                   >
                     <FileUp className="w-3.5 h-3.5" />
                     <span>Naskah Digital</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    <span className={`px-1.5 py-0.2 rounded-full text-xs font-mono ${
                       subSection === 'digital' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
                     }`}>
                       {data.manuscript_files?.length || 0}
@@ -439,7 +439,7 @@ export function PublisherRegistrationDetailPage() {
                   >
                     <PackageCheck className="w-3.5 h-3.5" />
                     <span>Master Fisik & Resi</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    <span className={`px-1.5 py-0.2 rounded-full text-xs font-mono ${
                       subSection === 'physical' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
                     }`}>
                       {data.physical_master_intake?.status === 'RECEIVED' ? 'Diterima' : data.physical_dispatch_status === 'DISPATCHED' ? 'Terkirim' : 'Fisik'}
@@ -461,14 +461,14 @@ export function PublisherRegistrationDetailPage() {
                   >
                     <FileCheck className="w-3.5 h-3.5" />
                     <span>Dokumen Resmi & STT</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                    <span className={`px-1.5 py-0.2 rounded-full text-xs font-mono ${
                       subSection === 'official' ? 'bg-white/20 text-white' : 'bg-brand-100 text-brand-800'
                     }`}>
                       {data.official_documents?.length || 0}
                     </span>
                   </button>
                 </div>
-                <p className="text-[11px] text-ink-muted hidden lg:block">
+                <p className="text-xs text-ink-muted hidden lg:block">
                   Pilih tab seksi untuk fokus ke satu bagian tanpa perlu scroll berlebih.
                 </p>
               </div>

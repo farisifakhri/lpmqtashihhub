@@ -24,7 +24,7 @@ export function PublisherOfficialDocsTab({
             <FileText className="w-4 h-4 text-brand-800" />
             Dokumen Permohonan & Kelengkapan Penerbit
           </h2>
-          <p className="text-[11px] text-ink-muted mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Berkas resmi yang diunggah penerbit saat permohonan tanda tashih.
           </p>
         </div>
@@ -42,7 +42,7 @@ export function PublisherOfficialDocsTab({
                   <p className="text-xs text-ink-muted mt-0.5">
                     Surat permohonan resmi berkop penerbit yang diajukan ke Kepala LPMQ.
                   </p>
-                  <span className="inline-block mt-1 font-mono text-[10px] text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">
+                  <span className="inline-block mt-1 font-mono text-xs text-brand-800 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded">
                     Dokumen Resmi Penerbit
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export function PublisherOfficialDocsTab({
               <Printer className="w-4 h-4 text-brand-800" />
               Bukti Pendaftaran Resmi (Tanda Terima)
             </h2>
-            <p className="text-[11px] text-ink-muted mt-0.5">
+            <p className="text-xs text-ink-muted mt-0.5">
               Tanda terima pendaftaran permohonan tashih dengan kode QR verifikasi resmi LPMQ.
             </p>
           </div>
@@ -176,7 +176,7 @@ export function PublisherOfficialDocsTab({
         </div>
         <div className="p-3 bg-canvas rounded-lg border border-line text-xs space-y-1">
           <p className="text-ink">Nomor Registrasi: <strong className="font-mono text-brand-800">{data.registration_no}</strong></p>
-          <p className="text-ink-muted text-[11px]">Dapat dicetak sebagai bukti penyerahan saat datang langsung ke LPMQ TMII.</p>
+          <p className="text-ink-muted text-xs">Dapat dicetak sebagai bukti penyerahan saat datang langsung ke LPMQ TMII.</p>
         </div>
       </section>
 

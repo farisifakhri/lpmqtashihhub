@@ -44,7 +44,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[700px]">
                 <thead>
-                  <tr className="bg-canvas/80 text-ink-muted text-[11px] font-bold uppercase tracking-wider border-b border-line">
+                  <tr className="bg-canvas/80 text-ink-muted text-xs font-bold uppercase tracking-wider border-b border-line">
                     <th className="py-3 px-6">Nomor & Tanggal</th>
                     <th className="py-3 px-6">Judul Naskah & Penerbit</th>
                     <th className="py-3 px-6">Layanan</th>
@@ -59,7 +59,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                         <span className="font-mono font-bold text-ink block">
                           {reg.registration_no}
                         </span>
-                        <span className="text-[11px] text-ink-muted">
+                        <span className="text-xs text-ink-muted">
                           {new Date(reg.created_at).toLocaleDateString('id-ID', {
                             day: 'numeric',
                             month: 'short',
@@ -71,24 +71,32 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                         <span className="font-bold text-ink block line-clamp-1">
                           {reg.title}
                         </span>
-                        <span className="text-brand-800 font-semibold text-[11px]">
+                        <span className="text-brand-800 font-semibold text-xs">
                           {reg.publisher?.legal_name || 'Penerbit'}
                         </span>
                       </td>
                       <td className="py-4 px-6">
                         <span className="font-medium text-ink block">
-                          {reg.service_type?.name}
+                          {reg.fee_sla_snapshot?.service_name || reg.service_type?.name}
                         </span>
-                        <span className="text-[11px] text-ink-muted">
-                          {reg.service_type?.category?.name || 'Mushaf Cetak'}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                            <Clock className="w-3 h-3 text-brand-700" />
+                            SLA: {reg.fee_sla_snapshot?.sla_initial_days || reg.service_type?.duration_initial || 15} HK
+                          </span>
+                          {(reg.foreign_metadata?.jenis_naskah || []).some(j => typeof j === 'string' && (j.startsWith('3.') || /transliterasi|terjemah|tajwid|waqaf|tafsir|perkata/i.test(j))) && (
+                            <span className="text-xs text-brand-900 font-semibold bg-brand-50 px-1.5 py-0.5 rounded border border-brand-200">
+                              +Konten Khusus
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-6">
                         <div className="space-y-1">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-800 border border-brand-100">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-800 border border-brand-100">
                             <CheckCircle2 className="w-3 h-3" /> PNBP Lunas
                           </span>
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-civic-infoSoft text-civic-info border border-civic-infoLine block w-fit">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-infoSoft text-civic-info border border-civic-infoLine block w-fit">
                             <PackageCheck className="w-3 h-3" /> Fisik Diterima
                           </span>
                         </div>
@@ -105,7 +113,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                             Tetapkan Tim Sidang
                           </Button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted font-medium bg-surface-subtle px-2.5 py-1 rounded-lg">
+                          <span className="inline-flex items-center gap-1 text-xs text-ink-muted font-medium bg-surface-subtle px-2.5 py-1 rounded-lg">
                             <Clock className="w-3.5 h-3.5" /> Menunggu penetapan oleh Admin
                           </span>
                         )}
