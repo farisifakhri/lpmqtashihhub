@@ -146,11 +146,11 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
                 <h2 id="receipt-dialog-title" className="font-bold text-ink text-xs sm:text-sm truncate">
                   Tanda Terima Permohonan Surat Tanda Tashih
                 </h2>
-                <span className="hidden sm:inline-block font-mono text-[11px] font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
+                <span className="hidden sm:inline-block font-mono text-xs font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
                   {regNo}
                 </span>
               </div>
-              <p className="text-[11px] text-ink-muted truncate hidden sm:block">
+              <p className="text-xs text-ink-muted truncate hidden sm:block">
                 Dokumen resmi ber-QR diterbitkan elektronik oleh LPMQ Kemenag RI
               </p>
             </div>
@@ -240,7 +240,7 @@ export const RegistrationReceiptDialog = ({ isOpen = true, onClose, registration
 
         {/* Sticky Footer Bar */}
         <div className="shrink-0 px-4 sm:px-6 py-2.5 bg-canvas border-t border-line flex items-center justify-between">
-          <p className="text-[11px] text-ink-muted hidden sm:block">
+          <p className="text-xs text-ink-muted hidden sm:block">
             Petunjuk: Cetak 1 eksemplar tanda terima ini sebagai bukti pendaftaran resmi LPMQ.
           </p>
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto">

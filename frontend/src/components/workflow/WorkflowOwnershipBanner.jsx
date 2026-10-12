@@ -109,7 +109,7 @@ export const WorkflowOwnershipBanner = ({
               </strong>
             </span>
           ) : (
-            <span>SLA mengikuti standar hari kerja SOP v2.2</span>
+            <span>SLA mengikuti standar hari kerja SOP Pentashihan LPMQ</span>
           )}
         </div>
 
@@ -136,7 +136,7 @@ export const WorkflowOwnershipBanner = ({
               </Link>
             )
           ) : (
-            <span className="text-[11px] text-ink-muted italic">
+            <span className="text-xs text-ink-muted italic">
               {canUserAct
                 ? 'Tidak ada tindakan lanjutan yang diperlukan.'
                 : `Tindakan berikutnya merupakan kewenangan ${ownerRoleLabel}.`}

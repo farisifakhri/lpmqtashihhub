@@ -9,8 +9,22 @@ import { ENV } from './config/env.js';
 
 const app = express();
 
+// Konfigurasi trust proxy untuk deployment di balik Nginx / reverse proxy
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : 1);
+
+// Disable ETag dan aktifkan no-store untuk mencegah kebocoran cache antar akun / sesi (P0 Tenant Isolation)
+app.set('etag', false);
+
 // Security & utility middlewares
 app.use(helmet());
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.set('Pragma', 'no-cache');
+  res.set('Expires', '0');
+  res.set('Surrogate-Control', 'no-store');
+  res.set('Vary', 'Authorization, Accept-Encoding');
+  next();
+});
 
 const corsOptions = {
   origin: (origin, callback) => {

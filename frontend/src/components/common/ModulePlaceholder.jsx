@@ -136,7 +136,7 @@ export const ModulePlaceholder = ({
   targetTables = [],
   apiEndpoints = [],
   allowedRoles = ['SUPERADMIN'],
-  sopReference = "SOP Pentashihan Mushaf Al-Qur'an (Kemenag RI v2.2)",
+  sopReference = "SOP Pentashihan Mushaf Al-Qur'an (LPMQ Kemenag RI)",
   businessRules = [],
 }) => {
   const { currentUser } = useAuth();
@@ -285,7 +285,7 @@ export const ModulePlaceholder = ({
               {viewMode === 'business' ? `Tahap Roadmap: ${sprintTarget}` : `Sprint: ${sprintTarget}`}
             </span>
             <span className="text-xs font-medium px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
-              {viewMode === 'business' ? 'SOP Resmi Kemenag RI v2.2' : 'Modular Monolith Service'}
+              {viewMode === 'business' ? 'SOP Resmi Pentashihan LPMQ' : 'Modular Monolith Service'}
             </span>
           </div>
           <h1 className="text-2xl font-bold text-ink">{title}</h1>
@@ -360,7 +360,7 @@ export const ModulePlaceholder = ({
                   {viewMode === 'business' ? 'Siap Melayani Permohonan' : healthData?.system || 'LPMQ Backend'}
                 </span>
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
                     isBackendUp ? 'bg-brand-100 text-brand-800' : 'bg-civic-dangerSoft text-civic-danger'
                   }`}
                 >
@@ -396,7 +396,7 @@ export const ModulePlaceholder = ({
                   {viewMode === 'business' ? 'Pangkalan Data Mushaf' : healthData?.database?.database_name || 'lpmq_db'}
                 </span>
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
                     isDbConnected ? 'bg-brand-100 text-brand-800' : 'bg-civic-dangerSoft text-civic-danger'
                   }`}
                 >
@@ -434,7 +434,7 @@ export const ModulePlaceholder = ({
                   {currentRoleName}
                 </span>
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold shrink-0 ${
                     isAuthorized ? 'bg-civic-infoSoft text-civic-info' : 'bg-civic-warningSoft text-civic-warning'
                   }`}
                 >
@@ -525,7 +525,7 @@ export const ModulePlaceholder = ({
                   </h3>
                 </div>
                 <span className="text-xs text-ink-muted font-medium">
-                  {viewMode === 'business' ? 'Arsip Resmi Terakreditasi' : 'MySQL Schema v2.2'}
+                  {viewMode === 'business' ? 'Arsip Resmi Terakreditasi' : 'MySQL Schema LPMQ'}
                 </span>
               </div>
               <p className="text-xs text-ink-muted leading-relaxed">
@@ -554,9 +554,9 @@ export const ModulePlaceholder = ({
                           </span>
                         </div>
                         {viewMode === 'business' ? (
-                          <p className="text-[11px] text-ink-muted leading-snug">{bMeta.desc}</p>
+                          <p className="text-xs text-ink-muted leading-snug">{bMeta.desc}</p>
                         ) : (
-                          <p className="text-[11px] text-ink-muted font-mono">Tabel MySQL: {tbl.name}</p>
+                          <p className="text-xs text-ink-muted font-mono">Tabel MySQL: {tbl.name}</p>
                         )}
                       </div>
 
@@ -564,7 +564,7 @@ export const ModulePlaceholder = ({
                         <span className="text-xs font-semibold px-2.5 py-1 rounded bg-brand-100 text-brand-800">
                           {tbl.row_count !== undefined ? `${tbl.row_count} rekod` : 'Tersedia'}
                         </span>
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-100 text-brand-800">
                           {viewMode === 'business' ? 'SIAP' : 'READY'}
                         </span>
                       </div>
@@ -586,7 +586,7 @@ export const ModulePlaceholder = ({
                   </h3>
                 </div>
                 <span className="text-xs text-ink-muted font-medium">
-                  {viewMode === 'business' ? 'Jalur Terproteksi' : 'REST Express v2.2'}
+                  {viewMode === 'business' ? 'Jalur Terproteksi' : 'REST Express LPMQ'}
                 </span>
               </div>
               <p className="text-xs text-ink-muted leading-relaxed">
@@ -611,7 +611,7 @@ export const ModulePlaceholder = ({
                       <div className="space-y-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${
                               ep.method === 'GET'
                                 ? 'bg-civic-infoSoft text-civic-info'
                                 : ep.method === 'POST'
@@ -626,7 +626,7 @@ export const ModulePlaceholder = ({
                           </span>
                         </div>
                         {viewMode === 'technical' && (
-                          <p className="text-[11px] text-ink-muted font-mono">{ep.path}</p>
+                          <p className="text-xs text-ink-muted font-mono">{ep.path}</p>
                         )}
                       </div>
                       <ChevronRight className={`w-4 h-4 shrink-0 ${isSelected ? 'text-brand-700' : 'text-ink-muted'}`} />
@@ -683,7 +683,7 @@ export const ModulePlaceholder = ({
                     {selectedEndpoint.desc || selectedEndpoint.description}
                   </span>
                 </div>
-                <span className="text-[11px] text-ink-muted font-mono">
+                <span className="text-xs text-ink-muted font-mono">
                   {selectedEndpoint.path}
                 </span>
               </div>
@@ -718,7 +718,7 @@ export const ModulePlaceholder = ({
                     >
                       {showJsonRaw ? 'Sembunyikan Rincian Teknis' : 'Tampilkan Rincian Teknis (JSON)'}
                     </button>
-                    <span className="text-[11px] text-ink-muted font-mono">
+                    <span className="text-xs text-ink-muted font-mono">
                       {new Date().toLocaleTimeString('id-ID')}
                     </span>
                   </div>
@@ -786,7 +786,7 @@ export const ModulePlaceholder = ({
             <div className="overflow-x-auto border border-line rounded-lg">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-canvas border-b border-line text-ink font-semibold uppercase tracking-wider text-[11px]">
+                  <tr className="bg-canvas border-b border-line text-ink font-semibold uppercase tracking-wider text-xs">
                     <th className="p-3">Nomor Registrasi / Kode</th>
                     <th className="p-3">Judul Naskah / Nama Dokumen</th>
                     <th className="p-3">Penerbit Pemohon / Instansi</th>
@@ -818,12 +818,12 @@ export const ModulePlaceholder = ({
                           {TOKENS.registrationStatus[statusText] ? (
                             <StatusBadge status={statusText} />
                           ) : (
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-surface-subtle text-ink">
+                            <span className="px-2 py-0.5 rounded text-xs font-bold bg-surface-subtle text-ink">
                               {statusText}
                             </span>
                           )}
                         </td>
-                        <td className="p-3 text-right text-ink-muted font-mono text-[11px]">
+                        <td className="p-3 text-right text-ink-muted font-mono text-xs">
                           {new Date(dateStr).toLocaleDateString('id-ID', {
                             day: 'numeric',
                             month: 'short',

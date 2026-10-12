@@ -43,4 +43,52 @@ export const getMe = async (req, res, next) => {
   }
 };
 
-export default { login, registerPublisher, getMe };
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const result = await authService.forgotPassword({
+      email: req.body.email,
+      req,
+    });
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const result = await authService.resetPassword({
+      token: req.body.token,
+      new_password: req.body.new_password,
+      req,
+    });
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const result = await authService.changePassword({
+      user: req.user,
+      current_password: req.body.current_password,
+      new_password: req.body.new_password,
+      req,
+    });
+    res.status(200).json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export default { login, registerPublisher, getMe, forgotPassword, resetPassword, changePassword };

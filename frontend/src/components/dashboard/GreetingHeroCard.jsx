@@ -107,17 +107,17 @@ export const GreetingHeroCard = ({
               <Activity className="w-3.5 h-3.5" /> Pusat Kendali
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 text-xs font-semibold text-brand-100 border border-white/20 shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-civicGold-700" />
+              <ShieldCheck className="w-3.5 h-3.5 text-civicGold-500" />
               <span>{roleLabel}</span>
             </span>
             {badgeExtra && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-brand-950/70 text-xs font-mono text-civicGold-700 border border-civicGold-700/30">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-brand-950/70 text-xs font-mono text-civicGold-100 border border-white/20">
                 {badgeExtra}
               </span>
             )}
             {/* Status Jam Kerja Kedinasan Sesuai Zona Waktu Lokal */}
             <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold border ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${
                 isWorkingHours
                   ? 'bg-brand-700/20 text-brand-100 border-brand-700/40'
                   : 'bg-civic-warning/20 text-civic-warning border-civic-warningLine/40'
@@ -149,7 +149,7 @@ export const GreetingHeroCard = ({
                 role="tab"
                 aria-selected={selectedZone === zoneKey}
                 onClick={() => setSelectedZone(zoneKey)}
-                className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-xs font-bold transition-all cursor-pointer ${
                   selectedZone === zoneKey
                     ? 'bg-civicGold-500 text-brand-950 shadow-xs'
                     : 'text-brand-100 hover:text-white hover:bg-white/10'
@@ -162,15 +162,15 @@ export const GreetingHeroCard = ({
           </div>
 
           <div className="font-mono text-3xl sm:text-4xl font-extrabold tracking-wider text-white drop-shadow-xs tabular-nums flex items-center gap-2.5">
-            <Clock className="w-5 h-5 text-civicGold-700 opacity-85 hidden sm:inline-block" />
+            <Clock className="w-5 h-5 text-civicGold-500 opacity-90 hidden sm:inline-block" />
             <span>{timeString}</span>
-            <span className="text-xs font-mono font-bold text-civicGold-700 bg-white/10 px-1.5 py-0.5 rounded border border-white/10">
+            <span className="text-xs font-mono font-bold text-white bg-white/20 px-2 py-0.5 rounded border border-white/20">
               {selectedZone}
             </span>
           </div>
 
           <div className="text-xs sm:text-sm font-medium text-brand-100 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-civicGold-700 opacity-85" />
+            <Calendar className="w-3.5 h-3.5 text-civicGold-500 opacity-90" />
             <span>{dateString}</span>
           </div>
         </div>

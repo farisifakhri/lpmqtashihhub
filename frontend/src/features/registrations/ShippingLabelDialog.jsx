@@ -71,7 +71,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
               <h2 id="shipping-label-title" className="text-sm font-bold text-ink">
                 Label Pengiriman Master Fisik ke LPMQ
               </h2>
-              <p className="text-[11px] text-ink-muted">Format A4 resmi Kementerian Agama RI</p>
+              <p className="text-xs text-ink-muted">Format A4 resmi Kementerian Agama RI</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                 <h4 className="text-xs sm:text-sm font-bold text-ink uppercase tracking-wide">
                   Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ)
                 </h4>
-                <p className="text-[11px] sm:text-xs text-ink font-medium">
+                <p className="text-xs sm:text-xs text-ink font-medium">
                   Badan Moderasi Beragama dan Pengembangan SDM — Kementerian Agama RI
                 </p>
                 <div className="pt-1">
@@ -156,7 +156,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
               <tbody>
                 {/* Penerima */}
                 <tr className="border border-black">
-                  <td className="w-32 sm:w-36 p-3 sm:p-4 font-semibold align-top border-r border-black bg-slate-50/50">
+                  <td className="w-32 sm:w-36 p-3 sm:p-4 font-semibold align-top border-r border-black bg-surface-subtle/50">
                     Penerima
                   </td>
                   <td className="p-3 sm:p-4 leading-relaxed">
@@ -171,7 +171,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
 
                 {/* Pengirim */}
                 <tr className="border border-black">
-                  <td className="p-3 sm:p-4 font-semibold align-top border-r border-black bg-slate-50/50">
+                  <td className="p-3 sm:p-4 font-semibold align-top border-r border-black bg-surface-subtle/50">
                     Pengirim
                   </td>
                   <td className="p-3 sm:p-4 leading-relaxed">
@@ -183,7 +183,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                       )}
                       <p className="font-mono text-ink">Telp/WA: <strong>{pjWa}</strong></p>
                       {pjEmail && pjEmail !== '-' && (
-                        <p className="text-ink-muted print:text-black text-[11px]">Email: {pjEmail}</p>
+                        <p className="text-ink-muted print:text-black text-xs">Email: {pjEmail}</p>
                       )}
                     </div>
                   </td>
@@ -191,7 +191,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
 
                 {/* Detail Barang */}
                 <tr className="border border-black">
-                  <td className="p-3 sm:p-4 font-semibold align-top border-r border-black bg-slate-50/50">
+                  <td className="p-3 sm:p-4 font-semibold align-top border-r border-black bg-surface-subtle/50">
                     Detail barang
                   </td>
                   <td className="p-3 sm:p-4 leading-relaxed space-y-1">
@@ -202,7 +202,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                     <p>
                       Nama mushaf: <strong className="text-ink">{namaMushaf}</strong>
                     </p>
-                    <p className="text-ink-muted print:text-black text-[11px]">
+                    <p className="text-ink-muted print:text-black text-xs">
                       Jenis & Kategori: <span className="text-ink font-medium">{jenisMushaf}</span> ({kategori})
                     </p>
                     <p className="font-medium text-ink pt-0.5">
@@ -214,7 +214,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
             </table>
 
             {/* Catatan Bawah */}
-            <div className="pt-2 text-[10px] text-ink-muted flex items-center justify-between border-t border-line print:border-black">
+            <div className="pt-2 text-xs text-ink-muted flex items-center justify-between border-t border-line print:border-black">
               <span>* Tempelkan label ini secara jelas pada bagian luar kardus atau paket pengiriman fisik naskah.</span>
               <span className="font-mono font-bold text-ink">LPMQ Kemenag RI</span>
             </div>
@@ -229,7 +229,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
 
         {/* Footer (Hidden during print) */}
         <div className="px-5 py-3 border-t border-line bg-surface-subtle flex flex-wrap items-center justify-between gap-2 print:hidden">
-          <p className="text-[11px] text-ink-muted hidden sm:block">
+          <p className="text-xs text-ink-muted hidden sm:block">
             Label siap dicetak atau diunduh sebagai berkas PDF resmi.
           </p>
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">

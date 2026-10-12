@@ -215,7 +215,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
   try {
     return await prisma.$transaction(async tx => {
       requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
-      await tx.$queryRawUnsafe('SELECT id, status FROM registrations WHERE id = ? FOR UPDATE', id);
+      await tx.$queryRaw`SELECT id, status FROM registrations WHERE id = ${id} FOR UPDATE`;
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
       if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {

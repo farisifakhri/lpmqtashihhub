@@ -206,7 +206,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                     <Users className="w-3.5 h-3.5 text-ink-muted" />
                     <span>Telaah Anggota Tim Sidang ({currentAssignments.length} Pentashih)</span>
                   </label>
-                  <span className="text-[11px] text-ink-muted">
+                  <span className="text-xs text-ink-muted">
                     Iterasi #{currentAssignments[0]?.iteration || 1}
                   </span>
                 </div>
@@ -233,7 +233,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             <span className="font-bold text-ink">
                               {a.assignee?.name || 'Pentashih'}
                             </span>
-                            <span className="text-[10px] text-ink-muted font-mono">
+                            <span className="text-xs text-ink-muted font-mono">
                               ({a.stage})
                             </span>
                           </div>
@@ -241,16 +241,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                           <div>
                             {isDone ? (
                               rev.result === 'PASSED' ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 font-bold text-[10px] border border-brand-100">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 font-bold text-xs border border-brand-100">
                                   <CheckCircle2 className="w-3 h-3" /> Lolos Bersih
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning font-bold text-[10px] border border-civic-warningLine">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning font-bold text-xs border border-civic-warningLine">
                                   <AlertTriangle className="w-3 h-3" /> Perlu Perbaikan
                                 </span>
                               )
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-strong text-ink font-semibold text-[10px]">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-strong text-ink font-semibold text-xs">
                                 <Clock className="w-3 h-3" /> Belum Selesai
                               </span>
                             )}
@@ -258,11 +258,11 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         </div>
 
                         {rev?.notes ? (
-                          <div className="p-2 rounded-lg bg-white border border-line/80 text-[11px] text-ink italic font-mono whitespace-pre-line">
+                          <div className="p-2 rounded-lg bg-white border border-line/80 text-xs text-ink italic font-mono whitespace-pre-line">
                             "{((rev?.notes || '').replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim()) || 'Lolos tanpa catatan.'}"
                           </div>
                         ) : (
-                          <div className="text-[11px] text-ink-muted">
+                          <div className="text-xs text-ink-muted">
                             Menunggu input hasil sidang dari pentashih bersangkutan.
                           </div>
                         )}
@@ -272,15 +272,15 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                               href={`/api/v1/uploads/${a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1]}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-[11px] font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
                             >
                               <FileText className="w-3.5 h-3.5 text-brand-700" />
                               <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
                             </a>
-                            <span className="text-[10px] text-ink-muted">Kerahasiaan Internal</span>
+                            <span className="text-xs text-ink-muted">Kerahasiaan Internal</span>
                           </div>
                         )}
-                        {a.juz_items?.length > 0 && <div className="space-y-1.5 pt-2 border-t border-line">{a.juz_items.map(item => <div key={item.id} className="text-[11px] text-ink"><strong>Juz {item.juz_number}:</strong> {item.result === 'PASSED' ? 'Selesai' : item.result === 'REVISION_REQUIRED' ? 'Perlu perbaikan' : 'Menunggu checklist'}{item.notes ? ` — ${item.notes}` : ''}</div>)}</div>}
+                        {a.juz_items?.length > 0 && <div className="space-y-1.5 pt-2 border-t border-line">{a.juz_items.map(item => <div key={item.id} className="text-xs text-ink"><strong>Juz {item.juz_number}:</strong> {item.result === 'PASSED' ? 'Selesai' : item.result === 'REVISION_REQUIRED' ? 'Perlu perbaikan' : 'Menunggu checklist'}{item.notes ? ` — ${item.notes}` : ''}</div>)}</div>}
                       </div>
                     );
                   })}
@@ -330,7 +330,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             <div className="font-bold text-xs text-ink">
                               Rekomendasikan Penetapan STT
                             </div>
-                            <div className="text-[11px] text-ink-muted mt-0.5">
+                            <div className="text-xs text-ink-muted mt-0.5">
                               Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.
                             </div>
                           </div>
@@ -357,7 +357,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             <div className="font-bold text-xs text-ink">
                               Kembalikan ke Penerbit (Perbaikan)
                             </div>
-                            <div className="text-[11px] text-ink-muted mt-0.5">
+                            <div className="text-xs text-ink-muted mt-0.5">
                               Status beralih ke <code>REVISION_REQUIRED</code>. Penerbit memperbaiki master dan kirim ulang.
                             </div>
                           </div>
@@ -370,7 +370,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             <span className="text-xs font-bold text-ink">
                               Ronde Pengembalian: <strong className="font-mono text-civic-warning">Perbaikan Ke-{(registration?.revision_round || 0) + 1}</strong>
                             </span>
-                            <span className="text-[10px] text-brand-800 font-semibold px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
+                            <span className="text-xs text-brand-800 font-semibold px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
                               Surat Hasil Tashih Otomatis Terbit
                             </span>
                           </div>
@@ -398,7 +398,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                                 />
                                 <div>
                                   <div>Naskah Perbaikan</div>
-                                  <div className="text-[10px] text-ink-muted font-normal mt-0.5">
+                                  <div className="text-xs text-ink-muted font-normal mt-0.5">
                                     Siklus koreksi naskah berkala (tahap awal / revisi lanjutan).
                                   </div>
                                 </div>
@@ -422,7 +422,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                                 />
                                 <div>
                                   <div>Naskah Dumi</div>
-                                  <div className="text-[10px] text-ink-muted font-normal mt-0.5">
+                                  <div className="text-xs text-ink-muted font-normal mt-0.5">
                                     Format mock-up / dumi cetak akhir sebelum cetak massal.
                                   </div>
                                 </div>
@@ -430,7 +430,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             </div>
                           </div>
 
-                          <div className="p-2.5 rounded-lg bg-white border border-civic-warningLine/70 text-[11px] text-ink space-y-1">
+                          <div className="p-2.5 rounded-lg bg-white border border-civic-warningLine/70 text-xs text-ink space-y-1">
                             <strong className="text-civic-warning block font-bold">
                               Panduan Ketentuan Naskah Dumi (T-04):
                             </strong>
@@ -442,7 +442,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                       )}
 
                       {!canPassSTT && (
-                        <p className="text-[11px] text-civic-warning mt-1.5 flex items-center gap-1">
+                        <p className="text-xs text-civic-warning mt-1.5 flex items-center gap-1">
                           <Info className="w-3.5 h-3.5 shrink-0" />
                           <span>
                             Rekomendasi STT terkunci karena ada pentashih yang memberikan catatan perbaikan.
@@ -457,7 +457,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         <label className="block text-xs font-bold text-ink uppercase tracking-wider">
                           Catatan Keputusan Reviu Distributor
                         </label>
-                        <span className="text-[11px] text-ink-muted">Wajib diisi</span>
+                        <span className="text-xs text-ink-muted">Wajib diisi</span>
                       </div>
                       <textarea
                         rows={4}
@@ -467,7 +467,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         placeholder="Tuliskan arahan perbaikan resmi yang akan dicantumkan pada Surat Pengembalian dan Catatan Hasil Tashih..."
                         className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                       />
-                      <p className="text-[11px] text-ink-muted mt-1">
+                      <p className="text-xs text-ink-muted mt-1">
                         Catatan ini dicantumkan langsung pada Surat Pengembalian dan Catatan Hasil Tashih resmi LPMQ untuk penerbit.
                       </p>
                     </div>

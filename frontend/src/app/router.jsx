@@ -6,15 +6,11 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { TashihLoader } from '@/components/ui/TashihLoader';
 
 // Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
 const PageFallback = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-3 border-brand-700 border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs font-semibold text-ink-muted">Memuat modul...</span>
-    </div>
-  </div>
+  <TashihLoader label="Memuat halaman..." delayMs={150} className="min-h-[400px]" />
 );
 
 const withSuspense = (Component) => (props) => (

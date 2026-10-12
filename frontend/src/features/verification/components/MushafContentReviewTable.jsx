@@ -166,7 +166,7 @@ export function MushafContentReviewTable({
             <BookOpen className="w-4 h-4 text-brand-800" />
             Verifikasi & Koreksi Konten Mushaf (REV-16)
           </h3>
-          <p className="text-[11px] text-ink-muted mt-0.5">
+          <p className="text-xs text-ink-muted mt-0.5">
             Tinjau kesesuaian, lakukan penambahan suplemen fisik yang ditemukan, atau kurangi konten yang tidak sesuai.
           </p>
         </div>
@@ -197,7 +197,7 @@ export function MushafContentReviewTable({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="bg-surface-subtle border-b border-line text-[11px] text-ink-muted font-bold">
+              <tr className="bg-surface-subtle border-b border-line text-xs text-ink-muted font-bold">
                 <th className="py-2.5 px-3.5 w-1/4">Elemen Konten</th>
                 <th className="py-2.5 px-3.5 w-1/4">Klaim Penerbit</th>
                 <th className="py-2.5 px-3.5 w-1/4">Status Penelaahan</th>
@@ -229,7 +229,7 @@ export function MushafContentReviewTable({
                       <div className="space-y-1">
                         <span>{item.category}</span>
                         {item.isCustom && (
-                          <span className="block text-[10px] text-brand-800 font-semibold bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded w-fit">
+                          <span className="block text-xs text-brand-800 font-semibold bg-brand-50 border border-brand-200 px-1.5 py-0.5 rounded w-fit">
                             Konten Tambahan Verifikator
                           </span>
                         )}
@@ -238,7 +238,7 @@ export function MushafContentReviewTable({
 
                     {/* 2. Publisher Claim */}
                     <td className="py-3 px-3.5 align-top text-ink-muted">
-                      <div className="p-2 rounded bg-canvas border border-line text-[11px] leading-relaxed break-words font-medium">
+                      <div className="p-2 rounded bg-canvas border border-line text-xs leading-relaxed break-words font-medium">
                         {item.claimed_value}
                       </div>
                     </td>
@@ -246,7 +246,7 @@ export function MushafContentReviewTable({
                     {/* 3. Action Buttons (Sesuai, Tambah, Kurang, Koreksi) */}
                     <td className="py-3 px-3.5 align-top">
                       <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-1 text-[11px]">
+                        <div className="grid grid-cols-2 gap-1 text-xs">
                           <button
                             type="button"
                             disabled={isReadOnly}
@@ -309,7 +309,7 @@ export function MushafContentReviewTable({
                           <button
                             type="button"
                             onClick={() => handleDeleteItem(item.id)}
-                            className="inline-flex items-center gap-1 text-[10px] text-civic-danger hover:underline cursor-pointer pt-0.5"
+                            className="inline-flex items-center gap-1 text-xs text-civic-danger hover:underline cursor-pointer pt-0.5"
                           >
                             <Trash2 className="w-3 h-3" /> Hapus baris tambahan
                           </button>
@@ -321,13 +321,13 @@ export function MushafContentReviewTable({
                     <td className="py-3 px-3.5 align-top">
                       <div className="space-y-1.5">
                         {isKurang ? (
-                          <div className="p-2 rounded bg-civic-dangerSoft text-civic-danger text-[11px] font-semibold flex items-center gap-1.5">
+                          <div className="p-2 rounded bg-civic-dangerSoft text-civic-danger text-xs font-semibold flex items-center gap-1.5">
                             <MinusCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Konten dicoret / tidak lolos verifikasi fisik.</span>
                           </div>
                         ) : isKoreksi || isTambah ? (
                           <div>
-                            <label className="block text-[10px] font-bold text-ink mb-0.5">
+                            <label className="block text-xs font-bold text-ink mb-0.5">
                               {isTambah ? 'Uraian Konten Tambahan:' : 'Hasil Koreksi Nilai:'}
                             </label>
                             <input
@@ -340,7 +340,7 @@ export function MushafContentReviewTable({
                             />
                           </div>
                         ) : (
-                          <div className="p-1.5 rounded bg-brand-50/50 text-brand-900 border border-brand-100 text-[11px] font-medium truncate">
+                          <div className="p-1.5 rounded bg-brand-50/50 text-brand-900 border border-brand-100 text-xs font-medium truncate">
                             ✓ {item.verified_value || item.claimed_value}
                           </div>
                         )}
@@ -352,7 +352,7 @@ export function MushafContentReviewTable({
                             value={item.notes || ''}
                             onChange={(e) => updateItem(item.id, { notes: e.target.value })}
                             placeholder="Catatan verifikator (opsional)..."
-                            className="w-full text-[11px] p-1 rounded border border-line bg-white text-ink-muted focus:text-ink focus:outline-none"
+                            className="w-full text-xs p-1 rounded border border-line bg-white text-ink-muted focus:text-ink focus:outline-none"
                           />
                         </div>
                       </div>
@@ -367,7 +367,7 @@ export function MushafContentReviewTable({
         {/* Add New Custom Content Row Button */}
         {!isReadOnly && (
           <div className="p-3 bg-surface-subtle border-t border-line flex flex-wrap items-center justify-between gap-3">
-            <span className="text-[11px] text-ink-muted">
+            <span className="text-xs text-ink-muted">
               Menemukan materi tambahan atau suplemen yang belum tercantum pada permohonan penerbit?
             </span>
             <Button
@@ -397,7 +397,7 @@ export function MushafContentReviewTable({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-bold text-ink mb-1">
+              <label className="block text-xs font-bold text-ink mb-1">
                 Kategori Materi
               </label>
               <select
@@ -415,7 +415,7 @@ export function MushafContentReviewTable({
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-ink mb-1">
+              <label className="block text-xs font-bold text-ink mb-1">
                 Uraian / Judul Materi yang Ditemukan <span className="text-civic-danger">*</span>
               </label>
               <input
@@ -430,7 +430,7 @@ export function MushafContentReviewTable({
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold text-ink mb-1">
+            <label className="block text-xs font-bold text-ink mb-1">
               Catatan Dasar Penambahan (Alasan)
             </label>
             <input

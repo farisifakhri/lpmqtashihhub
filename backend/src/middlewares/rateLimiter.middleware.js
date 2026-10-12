@@ -26,7 +26,20 @@ export const registrationRateLimiter = rateLimit({
   },
 });
 
+export const uploadRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 60, // 60 unggah per 15 menit
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Batas unggah berkas tercapai. Silakan coba lagi beberapa saat lagi.',
+  },
+});
+
 export default {
   authRateLimiter,
   registrationRateLimiter,
+  uploadRateLimiter,
 };

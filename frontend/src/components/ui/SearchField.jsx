@@ -41,7 +41,7 @@ export const SearchField = ({
           </button>
         )}
         {shortcut && !value && (
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[11px] font-mono text-ink-muted bg-surface-subtle border border-line rounded">
+          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-ink-muted bg-surface-subtle border border-line rounded">
             {shortcut}
           </kbd>
         )}

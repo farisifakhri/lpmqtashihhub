@@ -416,14 +416,14 @@ export const UserManagementPage = () => {
                       <td className="px-5 py-4">
                         <div className="font-bold text-ink text-sm">{user.name}</div>
                         {user.nip ? (
-                          <div className="text-[11px] text-ink-muted font-mono">NIP: {user.nip}</div>
+                          <div className="text-xs text-ink-muted font-mono">NIP: {user.nip}</div>
                         ) : user.publisher ? (
-                          <div className="text-[11px] text-brand-700 font-medium flex items-center gap-1">
+                          <div className="text-xs text-brand-700 font-medium flex items-center gap-1">
                             <Building2 className="w-3 h-3" />
                             {user.publisher.legal_name}
                           </div>
                         ) : (
-                          <div className="text-[11px] text-ink-muted">Tanpa NIP / Non-PNS</div>
+                          <div className="text-xs text-ink-muted">Tanpa NIP / Non-PNS</div>
                         )}
                       </td>
                       <td className="px-5 py-4 font-mono text-ink">{user.email}</td>
@@ -435,7 +435,7 @@ export const UserManagementPage = () => {
                               return (
                                 <span
                                   key={rCode}
-                                  className={`px-2 py-0.5 rounded-md border text-[11px] font-semibold ${badge.className}`}
+                                  className={`px-2 py-0.5 rounded-md border text-xs font-semibold ${badge.className}`}
                                 >
                                   {badge.label}
                                 </span>
@@ -466,7 +466,7 @@ export const UserManagementPage = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-ink-muted text-[11px]">
+                      <td className="px-5 py-4 text-ink-muted text-xs">
                         {new Date(user.created_at).toLocaleDateString('id-ID', {
                           day: 'numeric',
                           month: 'short',
@@ -645,7 +645,7 @@ export const UserManagementPage = () => {
                   <button
                     type="button"
                     onClick={handleSelectAllRoles}
-                    className="text-[11px] font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
+                    className="text-xs font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
                   >
                     {formData.roles.length === ROLE_OPTIONS.length
                       ? 'Reset Pilihan'
@@ -673,7 +673,7 @@ export const UserManagementPage = () => {
                         />
                         <div>
                           <div className="font-bold text-ink text-xs">{r.label}</div>
-                          <div className="text-[10px] text-ink-muted">{r.desc}</div>
+                          <div className="text-xs text-ink-muted">{r.desc}</div>
                         </div>
                       </label>
                     );
@@ -728,7 +728,7 @@ export const UserManagementPage = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-ink">Edit Data Pengguna</h3>
-                  <p className="text-[11px] text-ink-muted font-mono">ID: {editingUser.id}</p>
+                  <p className="text-xs text-ink-muted font-mono">ID: {editingUser.id}</p>
                 </div>
               </div>
               <button
@@ -824,7 +824,7 @@ export const UserManagementPage = () => {
                   <button
                     type="button"
                     onClick={handleSelectAllRoles}
-                    className="text-[11px] font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
+                    className="text-xs font-semibold text-brand-700 hover:underline inline-flex items-center gap-1"
                   >
                     {formData.roles.length === ROLE_OPTIONS.length
                       ? 'Reset Pilihan'
@@ -852,7 +852,7 @@ export const UserManagementPage = () => {
                         />
                         <div>
                           <div className="font-bold text-ink text-xs">{r.label}</div>
-                          <div className="text-[10px] text-ink-muted">{r.desc}</div>
+                          <div className="text-xs text-ink-muted">{r.desc}</div>
                         </div>
                       </label>
                     );

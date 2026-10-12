@@ -24,7 +24,7 @@ export const HandoverPanel = ({
             </span>
           </div>
           <p className="text-2xl font-black text-ink">{pendingCount}</p>
-          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
+          <p className="text-xs text-ink-muted">Jumlah pada halaman ini</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
@@ -37,7 +37,7 @@ export const HandoverPanel = ({
           <p className="text-2xl font-black text-ink">
             {handovers.filter((h) => h.status === 'RECEIVED').length}
           </p>
-          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
+          <p className="text-xs text-ink-muted">Jumlah pada halaman ini</p>
         </div>
 
         <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
@@ -50,7 +50,7 @@ export const HandoverPanel = ({
           <p className="text-2xl font-black text-ink">
             {handovers.filter((h) => h.status === 'RETURNED').length}
           </p>
-          <p className="text-[11px] text-ink-muted">Jumlah pada halaman ini</p>
+          <p className="text-xs text-ink-muted">Jumlah pada halaman ini</p>
         </div>
       </div>
 
@@ -182,7 +182,7 @@ export const HandoverPanel = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-line pb-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="flex items-center gap-1.5 bg-canvas border border-line px-2.5 py-1 rounded-lg">
-                      <span className="text-[11px] font-mono text-ink-muted">BAST:</span>
+                      <span className="text-xs font-mono text-ink-muted">BAST:</span>
                       <span className="font-mono text-xs font-bold text-ink">{item.receipt_no}</span>
                       <button
                         onClick={() => handleCopyText(item.receipt_no, item.id)}
@@ -197,13 +197,13 @@ export const HandoverPanel = ({
                       </button>
                     </div>
 
-                    <span className="font-mono text-[11px] font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
+                    <span className="font-mono text-xs font-semibold text-brand-800 bg-brand-50 px-2.5 py-1 rounded-lg border border-brand-100">
                       {reg.registration_no || '-'}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-ink-muted">
                       Diserahkan: {formatDate(item.handed_over_at)}
                     </span>
                     {renderHandoverBadge(item.status)}
@@ -259,7 +259,7 @@ export const HandoverPanel = ({
                           <Calendar className="w-3.5 h-3.5 text-brand-700" />
                           {formatDateOnly(item.tashih_due_at)}
                         </p>
-                        <p className="text-[11px] text-ink-muted">Target Sidang Tashih</p>
+                        <p className="text-xs text-ink-muted">Target Sidang Tashih</p>
                       </div>
                     ) : isPending ? (
                       <p className="text-civic-warning font-medium italic">
@@ -281,7 +281,7 @@ export const HandoverPanel = ({
 
                 {/* Action Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-line">
-                  <div className="text-[11px] text-ink-muted">
+                  <div className="text-xs text-ink-muted">
                     Tahap: <span className="font-semibold text-ink">{item.stage}</span>
                     {item.received_at && (
                       <span className="ml-2">
@@ -323,7 +323,7 @@ export const HandoverPanel = ({
                             size="sm"
                             onClick={() => openReceiveModal(item)}
                             disabled={actionLoading}
-                            className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-4 py-2"
+                            className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-4 py-2"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                             Konfirmasi Diterima (Langkah 8)

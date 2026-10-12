@@ -116,7 +116,7 @@ export const WorkflowTimeline = ({
               </span>
 
               {isCurrent && (
-                <span className="text-[11px] font-medium text-civic-info mt-0.5">
+                <span className="text-xs font-medium text-civic-info mt-0.5">
                   {isCancelled ? 'Dibatalkan' : 'Fase Aktif'}
                 </span>
               )}
@@ -169,13 +169,13 @@ export const WorkflowTimeline = ({
                     <p className={clsx('font-bold', isCurrent ? 'text-ink' : isCompleted ? 'text-brand-950' : 'text-ink-muted')}>
                       {phaseNumber}. {phase.label}
                     </p>
-                    <p className="text-ink-muted text-[11px]">{phase.description}</p>
+                    <p className="text-ink-muted text-xs">{phase.description}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {isCurrent && (
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-civic-infoSoft text-civic-info">
+                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-civic-infoSoft text-civic-info">
                       {isCancelled ? 'Dibatalkan' : 'Aktif'}
                     </span>
                   )}
@@ -188,7 +188,7 @@ export const WorkflowTimeline = ({
               </div>
 
               {isExpanded && (
-                <div className="mt-2.5 pt-2 border-t border-line/80 text-ink-muted text-[11px] space-y-1">
+                <div className="mt-2.5 pt-2 border-t border-line/80 text-ink-muted text-xs space-y-1">
                   <p><strong>Deskripsi:</strong> {phase.description}</p>
                   {isCurrent && (
                     <>

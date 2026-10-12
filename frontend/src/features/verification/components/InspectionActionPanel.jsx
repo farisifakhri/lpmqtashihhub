@@ -2,7 +2,7 @@ import React from 'react';
 import { StickyActionBar } from '@/components/layout/StickyActionBar';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { Button } from '@/components/ui/Button';
-import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 
 export const InspectionActionPanel = ({
   isInProgress, sesuaiCount, tidakBerlakuCount, isDirty, canHeadApprove,
@@ -15,6 +15,8 @@ export const InspectionActionPanel = ({
   minutesDocumentNo, setMinutesDocumentNo,
   latestResultDoc, beritaAcaraDoc,
   approveModalError, setApproveModalError,
+  showDocumentPdf,
+  billingNo, billingFileId,
 }) => (
   <>
       {/* STICKY ACTION BAR FOR WORKSPACE */}
@@ -26,7 +28,7 @@ export const InspectionActionPanel = ({
                 Checklist: {sesuaiCount + tidakBerlakuCount}/4 Butir Selesai
               </span>
               <span>·</span>
-              <span className="text-ink-muted font-mono text-[11px]">
+              <span className="text-ink-muted font-mono text-xs">
                 {isDirty ? 'Ada perubahan belum disimpan' : 'Tersimpan otomatis'}
               </span>
             </div>
@@ -42,6 +44,11 @@ export const InspectionActionPanel = ({
             <span className="font-bold text-civic-info">
               Menunggu Penandatanganan Dokumen Resmi
             </span>
+          ) : canVerifierSend && !isAllFullySigned ? (
+            <span className="font-bold text-civic-warning flex items-center gap-1.5">
+              <AlertCircle className="w-4 h-4 text-civic-warning shrink-0" />
+              Draf Disetujui — Konfirmasi Tanda Tangan Internal Diperlukan Sebelum Kirim
+            </span>
           ) : assignment.status === 'READY_TO_SEND' ? (
             <span className="font-bold text-brand-900">
               Dokumen Telah Lengkap Ditandatangani — Siap Dikirim ke Penerbit
@@ -54,6 +61,17 @@ export const InspectionActionPanel = ({
         }
         secondaryActions={
           <>
+            {showDocumentPdf && latestResultDoc?.id && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => showDocumentPdf(latestResultDoc.id, 'Surat Hasil')}
+                className="text-xs text-brand-800 border-brand-300 hover:bg-brand-50"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                Pratinjau PDF Surat
+              </Button>
+            )}
             {canVerifierWork && (
               <Button
                 variant="outline"
@@ -80,15 +98,23 @@ export const InspectionActionPanel = ({
         }
         primaryAction={
           canVerifierWork ? (
-            <Button
-              variant="primary"
-              onClick={handleOpenSubmitConfirm}
-              disabled={actionLoading}
-              className="text-xs"
-            >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Mengajukan...' : 'Ajukan Draf ke Kepala LPMQ'}
-            </Button>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
+              {decision === 'PASSED' && (!billingNo?.trim() || !billingFileId) && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-civic-warning bg-civic-warningSoft border border-civic-warningLine shadow-2xs">
+                  <AlertTriangle className="w-3.5 h-3.5 text-civic-warning shrink-0" />
+                  <span>Kode Billing & Berkas PDF Belum Lengkap</span>
+                </span>
+              )}
+              <Button
+                variant="primary"
+                onClick={handleOpenSubmitConfirm}
+                disabled={actionLoading}
+                className="text-xs"
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                {actionLoading ? 'Mengajukan...' : 'Ajukan Draf ke Kepala LPMQ'}
+              </Button>
+            </div>
           ) : canHeadApprove ? (
             <Button
               variant="primary"
@@ -103,15 +129,18 @@ export const InspectionActionPanel = ({
               {actionLoading ? 'Memproses...' : 'Setujui Surat Bertanda Tangan Verifikator'}
             </Button>
           ) : canVerifierSend ? (
-            <Button
-              variant="primary"
-              onClick={handleSendDocument}
-              disabled={actionLoading || !isAllFullySigned}
-              className="text-xs"
-            >
-              <Send className="w-3.5 h-3.5 mr-1.5" />
-              Kirim Surat Resmi ke Penerbit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                onClick={handleSendDocument}
+                disabled={actionLoading || !isAllFullySigned}
+                className="text-xs"
+                title={!isAllFullySigned ? 'Perlu konfirmasi tanda tangan internal sebelum dikirim ke penerbit' : undefined}
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                Kirim Surat Resmi ke Penerbit
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -135,6 +164,12 @@ export const InspectionActionPanel = ({
             label: 'Keputusan Verifikator',
             value: decision === 'PASSED' ? 'Lolos Verifikasi' : 'Perlu Perbaikan Penerbit',
           },
+          ...(decision === 'PASSED'
+            ? [
+                { label: 'Kode Billing PNBP', value: billingNo || '-' },
+                { label: 'Dokumen Billing (PDF)', value: billingFileId ? 'Terlampir (PDF)' : 'Belum diunggah' },
+              ]
+            : []),
         ]}
         impactMessage={
           decision === 'PASSED'
@@ -163,6 +198,13 @@ export const InspectionActionPanel = ({
         confirmLabel="Sahkan dan Terbitkan PDF"
         confirmVariant="primary"
         loading={actionLoading}
+        summaryItems={[
+          { label: 'Nomor Registrasi', value: registration.registration_no || '-' },
+          { label: 'Naskah Mushaf', value: registration.title || '-' },
+          ...(latestResultDoc?.content_snapshot?.billing_no || billingNo
+            ? [{ label: 'Kode Billing PNBP (Simponi)', value: latestResultDoc?.content_snapshot?.billing_no || billingNo }]
+            : []),
+        ]}
       >
         <div className="space-y-3 pt-2 border-t border-line text-xs">
           <div>
@@ -182,7 +224,7 @@ export const InspectionActionPanel = ({
               className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
               required
             />
-            <p className="text-[11px] text-ink-muted mt-0.5">
+            <p className="text-xs text-ink-muted mt-0.5">
               Nomor resmi surat hasil yang dicetak pada PDF final dan diverifikasi via QR.
             </p>
           </div>
@@ -205,7 +247,7 @@ export const InspectionActionPanel = ({
                 className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
                 required
               />
-              <p className="text-[11px] text-ink-muted mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 Nomor resmi berita acara verifikasi fisik dan telaah naskah.
               </p>
             </div>

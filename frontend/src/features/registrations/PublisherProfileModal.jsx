@@ -83,7 +83,7 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
             </div>
             <div>
               <h3 className="font-bold text-ink text-sm">Profil Badan Usaha Penerbit</h3>
-              <p className="text-[11px] text-ink-muted">Informasi identitas hukum penerbit terdaftar</p>
+              <p className="text-xs text-ink-muted">Informasi identitas hukum penerbit terdaftar</p>
             </div>
           </div>
           <button
@@ -103,7 +103,7 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
               <Lock className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold block">Akses Mengubah Data Terkunci</span>
-                <p className="text-[11px] leading-relaxed text-civic-warning">
+                <p className="text-xs leading-relaxed text-civic-warning">
                   Profil penerbit dikunci secara permanen untuk menjaga keaslian identitas hukum surat negara. Penerbit tidak diberikan akses mengganti data kecuali telah diberikan izin resmi oleh Kepala LPMQ / Administrator.
                 </p>
               </div>
@@ -113,7 +113,7 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
               <Unlock className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold">Akses Ubah Data Dibuka oleh Petinggi</span>
-                <p className="text-[11px] text-brand-800">
+                <p className="text-xs text-brand-800">
                   Izin khusus telah diberikan untuk memperbarui data badan usaha Anda.
                 </p>
               </div>

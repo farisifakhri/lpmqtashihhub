@@ -20,6 +20,27 @@ export const authApi = {
       method: 'GET',
     });
   },
+
+  forgotPassword: async (email) => {
+    return apiClient('/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
+  resetPassword: async ({ token, new_password }) => {
+    return apiClient('/auth/reset-password', {
+      method: 'POST',
+      body: { token, new_password },
+    });
+  },
+
+  changePassword: async ({ current_password, new_password }) => {
+    return apiClient('/auth/change-password', {
+      method: 'POST',
+      body: { current_password, new_password },
+    });
+  },
 };
 
 export default authApi;

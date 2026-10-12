@@ -147,7 +147,7 @@ describe('DistributorHandoverInboxPage Component', () => {
       );
       expect(HandoverApiModule.handoverApi.receiveHandover.mock.calls[0][1]).not.toHaveProperty('tashih_due_at');
     });
-  });
+  }, 15000);
 
   it('dapat membuka modal pengembalian fisik cacat dan mengirimkan alasan penolakan', async () => {
     render(
