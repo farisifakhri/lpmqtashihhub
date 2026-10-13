@@ -164,6 +164,11 @@ export const PublisherBillingPage = () => {
   };
 
   const openConfirmModal = (payment) => {
+    if (payment.status !== 'UNPAID') return;
+    if (payment.registration?.status && !['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION'].includes(payment.registration.status)) {
+      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus ${payment.registration.status}. Formulir konfirmasi pembayaran dikunci sampai verifikasi berkas disetujui.`);
+      return;
+    }
     setSelectedPayment(payment);
     setNtpn(payment.external_ref || '');
     setReceiptFile(null);
@@ -180,9 +185,14 @@ export const PublisherBillingPage = () => {
     paymentApi.getRegistrationPayment(preselectedRegId).then(response => {
       if (!active) return;
       const payment = response.data?.id ? response.data : response.data?.payment;
-      if (payment?.status === 'UNPAID') openConfirmModal(payment);
-      else if (!payment) setSuccessMessage('Tagihan untuk naskah ini belum tersedia. Tunggu penerbitan kode billing oleh petugas.');
-      else setSuccessMessage('Bukti pembayaran naskah ini sudah dikirim atau diverifikasi. Tidak perlu mengirim ulang.');
+      const reg = response.data?.registration;
+      if (payment?.status === 'UNPAID') {
+        openConfirmModal(payment);
+      } else if (!payment) {
+        setError(`Alur Pembayaran Belum Dibuka: Permohonan ${reg?.registration_no || 'ini'} belum mencapai tahap pembayaran PNBP (Status: ${reg?.status || 'Proses Verifikasi'}). Menu pengisian pembayaran dikunci hingga surat hasil verifikasi diterbitkan.`);
+      } else {
+        setSuccessMessage('Bukti pembayaran naskah ini sudah dikirim atau diverifikasi. Tidak perlu mengirim ulang.');
+      }
     }).catch(err => { if (active) setError(err.message || 'Tagihan naskah tidak dapat dimuat.'); });
     return () => { active = false; };
   }, [preselectedRegId]);
@@ -423,14 +433,51 @@ export const PublisherBillingPage = () => {
           <p className="text-xs text-ink-muted font-medium">Memuat data tagihan PNBP...</p>
         </div>
       ) : payments.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-2xl border border-line space-y-3">
-          <Receipt className="w-12 h-12 text-line-strong mx-auto" />
-          <h3 className="text-sm font-bold text-ink">Tidak Ada Tagihan Ditemukan</h3>
-          <p className="text-xs text-ink-muted max-w-sm mx-auto">
-            {activeTab !== 'ALL'
-              ? `Belum ada tagihan dengan status ${activeTab}.`
-              : 'Naskah Anda belum memiliki tagihan PNBP. Tagihan akan otomatis terbit setelah surat hasil verifikasi disahkan.'}
-          </p>
+        <div className="bg-white rounded-2xl border border-line p-8 space-y-6 shadow-xs">
+          <div className="text-center max-w-lg mx-auto space-y-2">
+            <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-700 mx-auto flex items-center justify-center border border-brand-100">
+              <Receipt className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-ink">Tidak Ada Tagihan Ditemukan</h3>
+            <p className="text-xs text-ink-muted leading-relaxed">
+              {activeTab !== 'ALL'
+                ? `Belum ada tagihan dengan status ${activeTab}.`
+                : 'Tahapan pembayaran PNBP SIMPONI hanya dapat diakses dan diisi setelah naskah Anda dinyatakan lolos verifikasi oleh Verifikator LPMQ dan Surat Hasil Verifikasi disahkan oleh Kepala LPMQ.'}
+            </p>
+          </div>
+
+          {activeTab === 'ALL' && (
+            <div className="max-w-xl mx-auto rounded-xl border border-line bg-canvas p-5 space-y-4">
+              <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Alur Tahapan Layanan Pentashihan:</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
+                <div className="p-3 rounded-lg bg-white border border-line space-y-1">
+                  <span className="font-bold text-brand-700 block">1. Pengajuan</span>
+                  <p className="text-2xs text-ink-muted">Pendaftaran naskah dan dokumen master</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-line space-y-1">
+                  <span className="font-bold text-brand-700 block">2. Verifikasi</span>
+                  <p className="text-2xs text-ink-muted">Pemeriksaan berkas dan sampel mushaf</p>
+                </div>
+                <div className="p-3 rounded-lg bg-brand-50 border border-brand-200 space-y-1 ring-1 ring-brand-300">
+                  <span className="font-bold text-brand-900 block">3. Pembayaran</span>
+                  <p className="text-2xs text-brand-800">Billing SIMPONI (Terkunci sampai lolos)</p>
+                </div>
+                <div className="p-3 rounded-lg bg-white border border-line space-y-1 opacity-70">
+                  <span className="font-bold text-ink block">4. Sidang</span>
+                  <p className="text-2xs text-ink-muted">Pentashihan 30 juz oleh tim pentashih</p>
+                </div>
+              </div>
+              <div className="flex justify-center pt-2">
+                <Link
+                  to="/publisher/registrations"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs transition-colors"
+                >
+                  Lihat Status Permohonan Saya
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

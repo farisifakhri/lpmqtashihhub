@@ -23,6 +23,8 @@ export async function readPrivateFile(id, user) {
       await assertManuscriptAccess(manuscript.registration, user);
     } else {
       // Pengecekan kerahasiaan berkas rekapan pentashih (Keputusan 8 Okt: hanya pentashih terkait, distributor, dan admin internal)
+      // TODO(SEC): Ganti pencarian [RECAP_FILE:id] di kolom notes teks bebas dengan kolom eksplisit recap_file_id di tabel tashih_reviews.
+      //            Saat ini rentan jika format catatan berubah atau dimanipulasi.
       const recapReview = await prisma.tashihReview.findFirst({
         where: { notes: { contains: `[RECAP_FILE:${file.id}]` } },
         include: { assignment: true },

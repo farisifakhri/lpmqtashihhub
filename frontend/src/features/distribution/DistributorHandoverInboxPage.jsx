@@ -10,6 +10,7 @@ import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { DistributorReviewDialog } from './DistributorReviewDialog';
 import { TeamAssignmentPanel } from './components/TeamAssignmentPanel';
 import { ReviewProgressPanel } from './components/ReviewProgressPanel';
+import { SttWorkflowPanel } from './components/SttWorkflowPanel';
 import { HandoverPanel } from './components/HandoverPanel';
 import { HandoverDialogs } from './components/HandoverDialogs';
 import {
@@ -21,6 +22,7 @@ import {
   AlertTriangle,
   ShieldCheck,
   Users,
+  FileCheck2,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -29,18 +31,33 @@ export const DistributorHandoverInboxPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTab = searchParams.get('tab') || searchParams.get('stage');
   const [hubStage, setHubStage] = useState(
-    urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+    urlTab === 'STT' || urlTab === 'STT_LIFECYCLE'
+      ? 'STT_LIFECYCLE'
+      : urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
       ? 'MONITORING'
       : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT'
       ? 'ASSIGNMENT'
       : 'HANDOVER'
   );
   useEffect(() => {
-    setHubStage(urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
-      ? 'MONITORING' : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT' ? 'ASSIGNMENT' : 'HANDOVER');
+    setHubStage(
+      urlTab === 'STT' || urlTab === 'STT_LIFECYCLE'
+        ? 'STT_LIFECYCLE'
+        : urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+        ? 'MONITORING'
+        : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT'
+        ? 'ASSIGNMENT'
+        : 'HANDOVER'
+    );
   }, [urlTab]);
 
-  const { waitingDistRegistrations, inProgressRegistrations, distLoading, fetchDistributionData } = useDistributionQueues(hubStage);
+  const {
+    waitingDistRegistrations,
+    inProgressRegistrations,
+    readyForSttRegistrations,
+    distLoading,
+    fetchDistributionData,
+  } = useDistributionQueues(hubStage);
 
   const [assignmentModalId, setAssignmentModalId] = useState(null);
   const [reviewDialogRegId, setReviewDialogRegId] = useState(null);
@@ -398,6 +415,26 @@ export const DistributorHandoverInboxPage = () => {
             {inProgressRegistrations.length}
           </span>
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHubStage('STT_LIFECYCLE');
+            setSearchParams({ stage: 'STT_LIFECYCLE' });
+          }}
+          className={clsx(
+            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
+            hubStage === 'STT_LIFECYCLE'
+              ? 'bg-white text-brand-800 shadow-xs'
+              : 'text-ink-muted hover:text-ink'
+          )}
+        >
+          <FileCheck2 className="w-4 h-4" />
+          <span>4. Pengajuan STT & TU</span>
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
+            {readyForSttRegistrations.length}
+          </span>
+        </button>
       </div>
 
       {hubStage === 'HANDOVER' && (
@@ -450,6 +487,14 @@ export const DistributorHandoverInboxPage = () => {
           inProgressRegistrations={inProgressRegistrations}
           fetchDistributionData={fetchDistributionData}
           setReviewDialogRegId={setReviewDialogRegId}
+        />
+      )}
+
+      {hubStage === 'STT_LIFECYCLE' && (
+        <SttWorkflowPanel
+          distLoading={distLoading}
+          readyRegistrations={readyForSttRegistrations}
+          fetchDistributionData={fetchDistributionData}
         />
       )}
 

@@ -279,6 +279,7 @@ model Registration {
   external_sync_error      String?                  @db.Text
   external_sync_attempts   Int                      @default(0)
   previous_registration_id String?
+  apk_url                  String?                  // URL unduhan mushaf digital (harus HTTPS, divalidasi di validator)
   status RegistrationStatus @default(DRAFT)
   stage_entered_at          DateTime                 @default(now())
   // Status: DRAFT, READY_FOR_VERIFICATION, VERIFICATION_ASSIGNED, IN_VERIFICATION,
@@ -295,6 +296,7 @@ model Registration {
   core_documenter_id       String?
   created_at               DateTime                 @default(now())
   updated_at               DateTime                 @updatedAt
+
 
   // Relations
   publisher                Publisher                @relation(fields: [publisher_id], references: [id])

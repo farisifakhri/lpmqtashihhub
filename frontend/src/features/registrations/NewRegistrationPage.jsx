@@ -31,7 +31,8 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-const AUTOSAVE_KEY = 'lpmq_registration_autosave_v1';
+// AUTOSAVE_KEY is computed per-user inside the component to prevent cross-user data leaks
+const AUTOSAVE_KEY_PREFIX = 'lpmq_registration_autosave_v2';
 
 export const resolveMatchedServiceAndAddons = ({
   kategoriPendaftaran = 'Mushaf Baru',
@@ -161,6 +162,7 @@ export const resolveMatchedServiceAndAddons = ({
 export const NewRegistrationPage = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const AUTOSAVE_KEY = `${AUTOSAVE_KEY_PREFIX}_${currentUser?.id || 'guest'}`;
 
   // Navigation Steps
   const [currentStep, setCurrentStep] = useState(1);
@@ -269,7 +271,7 @@ export const NewRegistrationPage = () => {
   // Check sessionStorage for autosaved draft on mount
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem(AUTOSAVE_KEY);
+      const raw = sessionStorage.getItem(AUTOSAVE_KEY) || sessionStorage.getItem('lpmq_registration_autosave_v1');
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.namaMushaf || parsed?.penanggungJawabProduk) {
@@ -277,12 +279,12 @@ export const NewRegistrationPage = () => {
         }
       }
     } catch {}
-  }, []);
+  }, [AUTOSAVE_KEY]);
 
   // Restore autosaved draft
   const handleRestoreAutosave = () => {
     try {
-      const raw = sessionStorage.getItem(AUTOSAVE_KEY);
+      const raw = sessionStorage.getItem(AUTOSAVE_KEY) || sessionStorage.getItem('lpmq_registration_autosave_v1');
       if (!raw) return;
       const data = JSON.parse(raw);
       if (data.namaMushaf) setNamaMushaf(data.namaMushaf);
@@ -312,6 +314,7 @@ export const NewRegistrationPage = () => {
   const handleDiscardAutosave = () => {
     try {
       sessionStorage.removeItem(AUTOSAVE_KEY);
+      sessionStorage.removeItem('lpmq_registration_autosave_v1');
     } catch {}
     setHasAutosaveDraft(false);
   };

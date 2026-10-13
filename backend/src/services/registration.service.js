@@ -11,6 +11,58 @@ import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
 import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
 
+// Canonical enum untuk jenis materi / naskah mushaf agar penentuan tarif dan jenis layanan
+// tidak bergantung pada pencocokan teks bebas (label string matching) yang rentan berubah.
+export const NASKAH_CONTENT_ENUM = Object.freeze({
+  BRAILLE: 'BRAILLE',
+  FOREIGN: 'FOREIGN',
+  AUDIO_VISUAL: 'AUDIO_VISUAL',
+  TAFSIR: 'TAFSIR',
+  WORD_BY_WORD_TRANSLATION: 'WORD_BY_WORD_TRANSLATION',
+  WORD_BY_WORD_TRANSLITERATION: 'WORD_BY_WORD_TRANSLITERATION',
+  TRANSLITERATION: 'TRANSLITERATION',
+  TRANSLATION: 'TRANSLATION',
+  TAJWID_WARNA: 'TAJWID_WARNA',
+  TAJWID_KODE: 'TAJWID_KODE',
+  WAQAF_IBTIDA: 'WAQAF_IBTIDA',
+  METODE_BACA_TULIS: 'METODE_BACA_TULIS',
+  YASIN_TAHLIL: 'YASIN_TAHLIL',
+  JUZ_AMMA: 'JUZ_AMMA',
+  MAJMU_SYARIF: 'MAJMU_SYARIF',
+  KALIGRAFI: 'KALIGRAFI',
+  DIGITAL: 'DIGITAL',
+  STANDARD_30_JUZ: 'STANDARD_30_JUZ',
+});
+
+export const CONTENT_TO_ENUM_MAP = [
+  { enumCode: NASKAH_CONTENT_ENUM.BRAILLE, keywords: ['braille'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.FOREIGN, keywords: ['luar negeri', 'foreign'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.AUDIO_VISUAL, keywords: ['audio/visual', 'audio visual'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.TAFSIR, keywords: ['tafsir'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION, keywords: ['terjemah perkata'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION, keywords: ['transliterasi perkata'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.TRANSLITERATION, keywords: ['transliterasi'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.TRANSLATION, keywords: ['terjemah'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.TAJWID_WARNA, keywords: ['tajwid warna'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.TAJWID_KODE, keywords: ['kode tajwid', 'tajwid'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.WAQAF_IBTIDA, keywords: ['waqaf', 'ibtida'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.METODE_BACA_TULIS, keywords: ['metode baca tulis', 'metode'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.YASIN_TAHLIL, keywords: ['yasin'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.JUZ_AMMA, keywords: ['juz \'amma', "juz 'amma", 'juz-juz pilihan', 'juz amma'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.MAJMU_SYARIF, keywords: ['majmu'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.KALIGRAFI, keywords: ['kaligrafi'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.DIGITAL, keywords: ['digital'], isAdditionalMateri: false },
+];
+
+export function resolveNaskahEnum(text) {
+  if (!text || typeof text !== 'string') return null;
+  const lower = text.toLowerCase();
+  for (const entry of CONTENT_TO_ENUM_MAP) {
+    if (entry.keywords.some(k => lower.includes(k))) return entry.enumCode;
+  }
+  return null;
+}
+
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
   DRAFT: {
@@ -217,35 +269,37 @@ export const createDraft = async (data, user, req) => {
     const jenisMushaf = data.foreign_metadata?.jenis_mushaf || data.mushaf_details?.jenis_mushaf || data.jenis_mushaf;
 
     let matched = null;
-    if (jenisMushaf === 'Mushaf Standar Braille') {
+    const detectedEnums = jenisNaskah.map(resolveNaskahEnum).filter(Boolean);
+
+    if (jenisMushaf === 'Mushaf Standar Braille' || detectedEnums.includes(NASKAH_CONTENT_ENUM.BRAILLE)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'BRAILLE' } });
-    } else if (data.registration_type === 'FOREIGN_MANUSCRIPT' || jenisNaskah.includes("1. Mushaf Al-Qur'an Luar Negeri")) {
+    } else if (data.registration_type === 'FOREIGN_MANUSCRIPT' || detectedEnums.includes(NASKAH_CONTENT_ENUM.FOREIGN)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Luar Negeri' } } });
-    } else if (jenisNaskah.includes('2. Audio/Visual')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.AUDIO_VISUAL)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'AUDIO_VISUAL' } });
-    } else if (jenisNaskah.includes('3. Tafsir')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAFSIR)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tafsir' } } });
-    } else if (jenisNaskah.includes('3. Terjemah Perkata') || jenisNaskah.includes('3. Transliterasi Perkata')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION) || detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Perkata' } } });
-    } else if (jenisNaskah.includes('3. Transliterasi')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLITERATION)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Transliterasi' } } });
-    } else if (jenisNaskah.includes('3. Terjemah')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLATION)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Terjemah' } } });
-    } else if (jenisNaskah.includes('3. Tajwid Warna') || jenisNaskah.includes('3. Kode Tajwid')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_WARNA) || detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_KODE)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tajwid' } } });
-    } else if (jenisNaskah.includes("3. Waqaf Ibtida'")) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WAQAF_IBTIDA)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Waqaf' } } });
-    } else if (jenisNaskah.includes('1. Metode Baca Tulis Al-Qur\'an')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.METODE_BACA_TULIS)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Metode' } } });
-    } else if (jenisNaskah.includes('1. Surah Yasin dan Bacaan Tahlil')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.YASIN_TAHLIL)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Yasin' } } });
-    } else if (jenisNaskah.includes("1. Juz 'Amma") || jenisNaskah.includes('1. Juz-juz pilihan')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.JUZ_AMMA)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Juz' } } });
-    } else if (jenisNaskah.includes("1. Majmu' Syarif/ Surah-surah pilihan")) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.MAJMU_SYARIF)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Majmu' } } });
-    } else if (jenisNaskah.includes('1. Kaligrafi')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.KALIGRAFI)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Kaligrafi' } } });
-    } else if (jenisNaskah.includes('2. Digital')) {
+    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.DIGITAL)) {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'DIGITAL' } });
     }
 
@@ -346,11 +400,12 @@ export const createDraft = async (data, user, req) => {
     ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
     ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
   ];
-  const hasAdditionalContentInJenisNaskah = jenisNaskahList.some(
-    (item) =>
-      typeof item === 'string' &&
-      (item.startsWith('3.') || /transliterasi|terjemah|tajwid|waqaf|tafsir|perkata/i.test(item))
-  );
+  const hasAdditionalContentInJenisNaskah = jenisNaskahList.some((item) => {
+    const enumCode = resolveNaskahEnum(item);
+    if (!enumCode) return typeof item === 'string' && item.startsWith('3.');
+    const def = CONTENT_TO_ENUM_MAP.find((e) => e.enumCode === enumCode);
+    return Boolean(def?.isAdditionalMateri);
+  });
 
   if (hasAdditionalContentInJenisNaskah) {
     const addMateri = await prisma.serviceAddon.findUnique({
@@ -457,6 +512,7 @@ export const createDraft = async (data, user, req) => {
             ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
             ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
             ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
+            ...(data.apk_url ? { apk_url: data.apk_url } : {}),
             ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
             ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
           };
@@ -474,6 +530,7 @@ export const createDraft = async (data, user, req) => {
               statement_accepted: Boolean(data.statement_accepted),
               previous_registration_id: registrationType === 'EXTENSION' && data.previous_registration_id ? data.previous_registration_id : null,
               status: 'DRAFT',
+              apk_url: data.apk_url || null,
             },
           });
 

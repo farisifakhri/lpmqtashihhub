@@ -5,12 +5,14 @@ import { validate } from '../middlewares/validate.middleware.js';
 import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
 import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
+import * as documentation from '../services/documentation.service.js';
 import * as distribution from '../services/distribution.service.js';
 import * as payment from '../services/payment.service.js';
 import * as notifications from '../services/notification.service.js';
-import { upload, MAX_UPLOAD_BYTES } from '../services/storage.service.js';
+import { upload, MAX_UPLOAD_BYTES, MAX_DOC_BYTES, MAX_APK_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
 import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
+import { documentationArchiveSchema } from '../validators/workflow.validator.js';
 
 const router = Router();
 const action = (fn, status = 200) => async (req, res, next) => {
@@ -36,8 +38,19 @@ router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN_IN
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(reviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
-router.post('/registrations/:id/official-documents', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
-router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => documents.signDocument(req.params.id, req.user)));
+
+// Alur Penerbitan STT & Dokumen Resmi
+router.post('/registrations/:id/official-documents', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
+router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
+router.post('/official-documents/:id/send-to-distributor', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.sendDraftToDistributor(req.params.id, req.user, req)));
+router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
+router.post('/official-documents/:id/paraf-1', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ'), action(req => documents.parafDocument(req.params.id, 1, req.body, req.user, req)));
+router.post('/official-documents/:id/paraf-2', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ'), action(req => documents.parafDocument(req.params.id, 2, req.body, req.user, req)));
+router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => documents.signDocument(req.params.id, req.user, req)));
+
+// Halaman Dokumentator & Pengarsipan Fisik (5 Eksemplar & Lokasi Arsip)
+router.get('/registrations/:id/documentation', authenticate, authorize('DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => documentation.getDocumentationDetail(req.params.id, req.user)));
+router.post('/registrations/:id/documentation', authenticate, authorize('DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(documentationArchiveSchema), action(req => documentation.recordDocumentationArchive(req.params.id, req.body, req.user, req)));
 router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
@@ -48,6 +61,27 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'A
 });
 
 router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
+  (req, res, next) => {
+    const ctype = req.get('content-type')?.split(';')[0]?.toLowerCase();
+    const clen = Number(req.get('content-length'));
+    // Pisahkan batas per tipe di parser sebelum ditampung di memori
+    if (['application/pdf', 'image/png', 'image/jpeg'].includes(ctype)) {
+      if (clen && clen > MAX_DOC_BYTES) {
+        return res.status(400).json({
+          success: false,
+          message: 'Berkas dokumen/gambar melebihi batas ukuran 10 MB. Harap perkecil ukuran berkas, lalu unggah kembali.',
+        });
+      }
+    } else if (['application/vnd.android.package-archive', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'].includes(ctype)) {
+      if (clen && clen > MAX_APK_BYTES) {
+        return res.status(400).json({
+          success: false,
+          message: 'Berkas APK Android melebihi batas ukuran 10 MB. Harap kompres atau gunakan versi yang lebih kecil.',
+        });
+      }
+    }
+    next();
+  },
   express.raw({
     type: [
       'application/pdf',

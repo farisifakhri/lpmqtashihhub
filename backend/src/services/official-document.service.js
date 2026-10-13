@@ -3,27 +3,39 @@ import { fileURLToPath } from 'node:url';
 import { readFile } from 'node:fs/promises';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { prisma } from '../config/database.js';
-import { fail, requireRole, registration, requireStatus, audit } from './workflow-utils.js';
+import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
 export const createDocument = (id, data, user) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN']);
+  requireRole(user, ['ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
-  requireStatus(reg, ['READY_FOR_STT']);
-  if (reg.core_team_number && ![reg.core_distributor_id, reg.core_documenter_id].includes(user.id)) fail(403, 'Dokumen ini hanya dapat dibuat oleh tim inti pengajuan.');
+  if (data.document_type === 'SURAT_TANDA_TASHIH') {
+    const verifiedPayment = await tx.paymentRecord.findFirst({
+      where: { registration_id: id, status: 'VERIFIED' },
+    });
+    if (!verifiedPayment && !['READY_FOR_STT', 'STT_ISSUED'].includes(reg.status)) {
+      fail(409, 'Draf Surat Tanda Tashih (STT) baru dapat dibuat setelah setoran PNBP diverifikasi lunas.');
+    }
+  } else {
+    requireStatus(reg, ['READY_FOR_STT']);
+  }
+  if (reg.core_team_number && !user.roles.includes('ADMIN_INTERNAL') && !user.roles.includes('SUPERADMIN') && ![reg.core_distributor_id, reg.core_documenter_id].includes(user.id)) fail(403, 'Dokumen ini hanya dapat dibuat oleh tim inti pengajuan.');
   const source = await tx.registration.findUnique({ where: { id }, include: {
     publisher: { select: { legal_name: true } },
     verification_assignments: { select: { notes: true, decision: true, verifier: { select: { name: true } } } },
     assignments: { include: { reviews: true, assignee: { select: { name: true } }, team: { select: { name: true, decree_no: true } } } },
   } });
   const last = await tx.officialDocument.findFirst({ where: { registration_id: id, document_type: data.document_type }, orderBy: { version: 'desc' } });
-  if (last && last.status !== 'DRAFT') fail(409, 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
+  if (last && last.status === 'DRAFT' && data.reuse_existing_draft) {
+    return last;
+  }
+  if (last && last.status !== 'DRAFT' && data.document_type !== 'SURAT_TANDA_TASHIH') fail(409, 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
   const snapshot = {
-    title: reg.title, registration_no: reg.registration_no, publisher: source.publisher.legal_name,
-    fee_sla: reg.fee_sla_snapshot, verification: source.verification_assignments,
-    assignments: source.assignments.map(item => ({ stage: item.stage, iteration: item.iteration, assignee: item.assignee.name, team: item.team, status: item.status, due_at: item.due_at, reviews: item.reviews })),
+    title: reg.title, registration_no: reg.registration_no, publisher: source?.publisher?.legal_name || 'Penerbit Terdaftar',
+    fee_sla: reg.fee_sla_snapshot, verification: source?.verification_assignments || [],
+    assignments: (source?.assignments || []).map(item => ({ stage: item.stage, iteration: item.iteration, assignee: item.assignee?.name, team: item.team, status: item.status, due_at: item.due_at, reviews: item.reviews })),
   };
   const document = await tx.officialDocument.create({ data: {
     registration_id: id, document_type: data.document_type, document_no: `DRAFT-${randomUUID()}`,
@@ -207,9 +219,287 @@ export async function documentPdf(document) {
   return bytes;
 }
 
-export async function signDocument(id, user) {
-  // No technical administrator bypass for the authority to issue state documents.
+export const requestSttFromAdmin = (id, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  const reg = await registration(tx, id);
+  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN')) {
+    fail(403, 'Hanya distributor tim inti yang dapat mengajukan STT.');
+  }
+
+  const lastAssignment = await tx.assignment.findFirst({
+    where: { registration_id: id },
+    orderBy: { iteration: 'desc' },
+  });
+  if (!lastAssignment) {
+    fail(409, 'Naskah belum memiliki riwayat sidang pentashihan.');
+  }
+
+  const activeAssignments = await tx.assignment.findMany({
+    where: { registration_id: id, iteration: lastAssignment.iteration },
+    include: { reviews: true },
+  });
+  if (activeAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) {
+    fail(409, 'Masih ada pentashih yang belum menyelesaikan sidang telaah.');
+  }
+  if (activeAssignments.some(item => item.reviews.some(r => r.result !== 'PASSED'))) {
+    fail(409, 'Pengajuan STT tidak dapat diproses karena ada hasil telaah yang belum lulus.');
+  }
+
+  if (reg.status === 'TASHIH_IN_PROGRESS') {
+    await move(tx, reg, 'READY_FOR_STT', user, 'Sidang pentashihan selesai, distributor mengajukan STT ke Admin', req);
+  }
+
+  const admins = await tx.userRole.findMany({
+    where: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } },
+    select: { user_id: true },
+  });
+  for (const admin of admins) {
+    await tx.notification.create({
+      data: {
+        user_id: admin.user_id,
+        registration_id: id,
+        type: 'STT_REQUEST',
+        title: 'Permintaan Penerbitan Draf STT',
+        payload: {
+          link: `/internal/distributions`,
+          registration_no: reg.registration_no,
+          notes: data?.notes || 'Sidang pentashihan telah lengkap & disetujui.',
+        },
+      },
+    });
+  }
+
+  await audit(tx, user, 'REQUEST_STT_FROM_ADMIN', 'Registration', id, { notes: data?.notes }, req);
+  return { success: true, message: 'Permintaan penerbitan STT berhasil dikirimkan ke Admin Internal.' };
+}, { isolationLevel: 'ReadCommitted' });
+
+export const sendDraftToDistributor = (documentId, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
+  const doc = await tx.officialDocument.findUnique({
+    where: { id: documentId },
+    include: { registration: true },
+  });
+  if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
+  if (doc.status !== 'DRAFT') fail(409, 'Hanya draf dokumen yang dapat dikirimkan ke distributor.');
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  snapshot.admin_draft_ready = true;
+  snapshot.admin_sent_at = new Date().toISOString();
+  snapshot.admin_sent_by = { id: user.id, name: user.name };
+
+  const updated = await tx.officialDocument.update({
+    where: { id: documentId },
+    data: { content_snapshot: snapshot },
+  });
+
+  const distributorId = doc.registration.core_distributor_id;
+  if (distributorId) {
+    await tx.notification.create({
+      data: {
+        user_id: distributorId,
+        registration_id: doc.registration_id,
+        type: 'STT_DRAFT_SENT',
+        title: 'Draf STT Siap untuk Pengesahan TU',
+        payload: {
+          document_id: doc.id,
+          link: `/internal/documents`,
+          message: 'Admin telah menyelesaikan draf STT. Silakan teruskan ke Tata Usaha (TU).',
+        },
+      },
+    });
+  }
+
+  await audit(tx, user, 'SEND_STT_DRAFT_TO_DISTRIBUTOR', 'OfficialDocument', documentId, snapshot, req);
+  return updated;
+}, { isolationLevel: 'ReadCommitted' });
+
+export const submitToTu = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+  const doc = await tx.officialDocument.findUnique({
+    where: { id: documentId },
+    include: { registration: true, signatories: true },
+  });
+  if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
+  if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
+
+  const existingSigs = doc.signatories || [];
+  
+  const findUserByRole = async (code) => {
+    const ur = await tx.userRole.findFirst({
+      where: { role: { code } },
+      include: { user: true },
+    });
+    return ur?.user;
+  };
+
+  const kepala = await findUserByRole('KEPALA_LPMQ') || user;
+  const penandatangan1 = data?.signer_1_id 
+    ? await tx.user.findUnique({ where: { id: data.signer_1_id } })
+    : await findUserByRole('ADMIN_INTERNAL') || user;
+  const penandatangan2 = data?.signer_2_id
+    ? await tx.user.findUnique({ where: { id: data.signer_2_id } })
+    : await findUserByRole('SUPERADMIN') || user;
+
+  const signatoriesConfig = [
+    { order: 1, title: 'Penandatangan 1 - Tata Usaha (Paraf 1)', user: penandatangan1 },
+    { order: 2, title: 'Penandatangan 2 - Tata Usaha (Paraf 2)', user: penandatangan2 },
+    { order: 3, title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an', user: kepala },
+  ];
+
+  for (const item of signatoriesConfig) {
+    const exists = existingSigs.find(s => s.name_position_snapshot.includes(item.title) || s.name_position_snapshot.includes(`Paraf ${item.order}`));
+    if (!exists) {
+      await tx.documentSignatory.create({
+        data: {
+          official_document_id: doc.id,
+          signer_user_id: item.user.id,
+          name_position_snapshot: `${item.user.name} (${item.title})`,
+          method: 'INTERNAL_APPROVAL',
+          signing_status: 'PENDING',
+        },
+      });
+    }
+  }
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  snapshot.tu_workflow = {
+    submitted_at: new Date().toISOString(),
+    submitted_by: { id: user.id, name: user.name },
+    status: 'SUBMITTED_TO_TU',
+  };
+
+  const updated = await tx.officialDocument.update({
+    where: { id: doc.id },
+    data: { content_snapshot: snapshot },
+    include: { signatories: true },
+  });
+
+  await audit(tx, user, 'SUBMIT_STT_TO_TU', 'OfficialDocument', doc.id, snapshot, req);
+  return updated;
+}, { isolationLevel: 'ReadCommitted' });
+
+export const parafDocument = (documentId, order, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ']);
+  const doc = await tx.officialDocument.findUnique({
+    where: { id: documentId },
+    include: { signatories: true, registration: true },
+  });
+  if (!doc) fail(404, 'Dokumen STT tidak ditemukan.');
+  if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
+
+  const orderTitle = order === 1 ? 'Paraf 1' : 'Paraf 2';
+  const sig = doc.signatories.find(s => s.name_position_snapshot.includes(orderTitle))
+    || doc.signatories[order - 1];
+
+  if (sig) {
+    await tx.documentSignatory.update({
+      where: { id: sig.id },
+      data: {
+        signing_status: 'SIGNED',
+        signed_at: new Date(),
+        method: 'INTERNAL_APPROVAL',
+      },
+    });
+  }
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  if (!snapshot.tu_workflow) snapshot.tu_workflow = {};
+  snapshot.tu_workflow[`paraf_${order}`] = {
+    signed_by: { id: user.id, name: user.name, nip: user.nip || '-' },
+    signed_at: new Date().toISOString(),
+    notes: data?.notes || 'Disetujui dan dibubuhi paraf resmi Tata Usaha.',
+  };
+
+  const updated = await tx.officialDocument.update({
+    where: { id: doc.id },
+    data: { content_snapshot: snapshot },
+    include: { signatories: true },
+  });
+
+  await audit(tx, user, `PARAF_STT_ORDER_${order}`, 'OfficialDocument', doc.id, { order, notes: data?.notes }, req);
+  return updated;
+}, { isolationLevel: 'ReadCommitted' });
+
+export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['KEPALA_LPMQ']);
-  await getDocument(id, user);
-  fail(409, 'Dokumen belum dapat ditetapkan karena format resmi dan alur penandatanganan masih menunggu keputusan stakeholder. Dokumen tetap berstatus draf; hubungi pengelola layanan untuk informasi tindak lanjut.');
-}
+  const doc = await tx.officialDocument.findUnique({
+    where: { id },
+    include: { signatories: true, registration: true },
+  });
+  if (!doc) fail(404, 'Dokumen tidak ditemukan.');
+  if (doc.document_type !== 'SURAT_TANDA_TASHIH') {
+    fail(409, 'Dokumen belum dapat ditetapkan karena format resmi dan alur penandatanganan masih menunggu keputusan stakeholder. Dokumen tetap berstatus draf; hubungi pengelola layanan untuk informasi tindak lanjut.');
+  }
+  if (doc.status === 'ISSUED') fail(409, 'Dokumen ini sudah resmi diterbitkan.');
+
+  const now = new Date();
+  const validUntil = new Date(now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000); // 2 tahun kalender
+
+  const year = now.getFullYear();
+  const cleanId = doc.id.replace(/[^A-Za-z0-9]/g, '').slice(0, 6).toUpperCase();
+  const officialDocNo = doc.document_no.startsWith('DRAFT-')
+    ? `STT/LPMQ/${year}/${cleanId}`
+    : doc.document_no;
+
+  const kepalaSig = doc.signatories.find(s => s.name_position_snapshot.includes('Kepala') || s.name_position_snapshot.includes('LPMQ'));
+  if (kepalaSig) {
+    await tx.documentSignatory.update({
+      where: { id: kepalaSig.id },
+      data: {
+        signing_status: 'SIGNED',
+        signed_at: now,
+        method: 'INTERNAL_APPROVAL',
+      },
+    });
+  }
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  snapshot.final_signature = {
+    signed_by: { id: user.id, name: user.name, title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an' },
+    signed_at: now.toISOString(),
+    method: 'INTERNAL_DIGITAL_SIGNATURE',
+    valid_until: validUntil.toISOString(),
+  };
+
+  const updatedDoc = await tx.officialDocument.update({
+    where: { id },
+    data: {
+      document_no: officialDocNo,
+      status: 'ISSUED',
+      issued_at: now,
+      valid_until: validUntil,
+      qr_token: randomUUID(),
+      content_snapshot: snapshot,
+    },
+    include: { signatories: true },
+  });
+
+  const reg = await registration(tx, doc.registration_id);
+  if (reg.status !== 'STT_ISSUED') {
+    await move(tx, reg, 'STT_ISSUED', user, 'Surat Tanda Tashih (STT) resmi telah disahkan dan diterbitkan oleh Kepala LPMQ', req);
+  }
+
+  const publisherUser = await tx.publisher.findUnique({
+    where: { id: reg.publisher_id },
+    select: { user_id: true },
+  });
+  if (publisherUser?.user_id) {
+    await tx.notification.create({
+      data: {
+        user_id: publisherUser.user_id,
+        registration_id: reg.id,
+        type: 'STT_ISSUED',
+        title: 'Surat Tanda Tashih (STT) Resmi Terbit',
+        payload: {
+          document_id: doc.id,
+          document_no: officialDocNo,
+          link: '/publisher/documents',
+          message: `Surat Tanda Tashih untuk ${reg.title} telah diterbitkan dan berlaku selama 2 tahun.`,
+        },
+      },
+    });
+  }
+
+  await audit(tx, user, 'SIGN_OFFICIAL_DOCUMENT', 'OfficialDocument', id, { document_no: officialDocNo, valid_until: validUntil }, req);
+  return updatedDoc;
+}, { isolationLevel: 'ReadCommitted' });

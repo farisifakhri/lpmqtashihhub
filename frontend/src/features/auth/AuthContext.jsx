@@ -162,6 +162,14 @@ export const AuthProvider = ({ children }) => {
     setTokenState(null);
     setIsInitializing(false);
     localStorage.removeItem('lpmq_user');
+    // Clear all registration autosave drafts (security: prevent cross-user data exposure)
+    try {
+      Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('lpmq_registration_autosave_v'))
+        .forEach((key) => sessionStorage.removeItem(key));
+    } catch {
+      // sessionStorage not available
+    }
     setCurrentUser(null);
   };
 
