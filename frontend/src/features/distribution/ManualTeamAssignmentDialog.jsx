@@ -87,7 +87,20 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
     <form onSubmit={submit} className="space-y-5 p-5 sm:p-6">
       {error && <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger"><AlertCircle className="h-5 w-5 shrink-0" />{error}</p>}
       {loading ? <p role="status" className="text-sm text-ink-muted">Memuat tim dan kelayakan pengajuan…</p> : registration && <>
-        <div><p className="font-mono text-xs text-brand-700">{registration.registration_no}</p><p className="font-bold text-ink mt-1">{registration.title}</p><p className="text-xs text-ink-muted mt-1">Tahap {stage} · Tenggat dihitung server dari kalender hari kerja.</p></div>
+        <div className="bg-canvas p-3.5 rounded-xl border border-line space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-xs font-bold text-brand-700">{registration.registration_no}</span>
+            <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+              SLA Sidang: {registration.fee_sla_snapshot?.[`sla_${stage.toLowerCase()}_days`] || (stage === 'INITIAL' ? (registration.service_type?.duration_initial || 15) : stage === 'REVISION' ? (registration.service_type?.duration_revision || 7) : (registration.service_type?.duration_dummy || 3))} Hari Kerja
+            </span>
+          </div>
+          <p className="font-bold text-ink text-sm">{registration.title}</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-ink-muted text-xs pt-1.5 border-t border-line/60">
+            <span>Layanan: <strong className="text-ink font-semibold">{registration.fee_sla_snapshot?.service_name || registration.service_type?.name || "Mushaf Standar 30 Juz"}</strong></span>
+            <span>Tahap: <strong className="text-brand-900 font-semibold">{stage}</strong></span>
+            <span>· Tenggat dihitung server dari kalender hari kerja Kemenag RI</span>
+          </div>
+        </div>
         {!ready && <p className="rounded-lg bg-civic-warningSoft p-3 text-sm text-civic-warning">Pengajuan harus berstatus Menunggu Distribusi dan pembayaran sudah terverifikasi. Admin tidak dapat melewati tahapan verifikasi atau penerimaan fisik.</p>}
         <div><label htmlFor="manual-team-select" className="block text-sm font-semibold text-ink mb-2">Tim dengan SK aktif</label><select id="manual-team-select" disabled={!ready || saving} value={teamId} onChange={event => { setTeamId(event.target.value); setSelected([]); setJuzByAssignee({}); }} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm"><option value="">Pilih tim pentashih</option>{teams.map(item => <option key={item.id} value={item.id}>{item.name} · {item.decree_no}</option>)}</select>{!teams.length && <p className="text-xs text-civic-warning mt-2">Belum ada tim dengan SK aktif. Hubungi Super Admin.</p>}</div>
         {teamId && <fieldset disabled={saving || !ready} className="space-y-3"><legend className="text-sm font-semibold text-ink mb-2">Pentashih aktif ({selected.length} dipilih)</legend><p className="text-xs text-ink-muted">Pilih rentang juz naskah untuk tiap pentashih (mis. Juz 1–5, 6–10) atau tentukan sendiri.</p>{members.length ? members.map(member => {
@@ -112,7 +125,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
               {selected.includes(member.user_id) && (
                 <div className="space-y-2.5 pl-7 border-t border-line/60 pt-2.5">
                   <div>
-                    <span className="block text-[11px] font-semibold text-ink-muted mb-1.5">Preset Rentang Cepat:</span>
+                    <span className="block text-xs font-semibold text-ink-muted mb-1.5">Preset Rentang Cepat:</span>
                     <div className="flex flex-wrap gap-1.5">
                       {[
                         { label: 'Juz 1–5', from: 1, to: 5 },

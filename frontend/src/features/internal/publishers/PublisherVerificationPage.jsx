@@ -3,6 +3,7 @@ import { Building2, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { publisherApi } from '@/api/publisher.api';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 
 const STATUS_LABELS = {
   UNVERIFIED: 'Menunggu verifikasi',
@@ -35,9 +36,16 @@ export const PublisherVerificationPage = () => {
 
   useEffect(() => { loadPublishers(); }, [loadPublishers]);
 
-  const handleVerify = async (publisher) => {
+  const [verifyTarget, setVerifyTarget] = useState(null);
+
+  const handleVerify = (publisher) => {
+    setVerifyTarget(publisher);
+  };
+
+  const confirmVerify = async () => {
+    if (!verifyTarget) return;
+    const publisher = verifyTarget;
     const name = publisher.legal_name || publisher.user?.name || 'penerbit ini';
-    if (!window.confirm(`Pastikan dokumen ${name} sudah diperiksa dan memenuhi persyaratan. Tandai sebagai terverifikasi?`)) return;
     setPendingId(publisher.id);
     setError('');
     setSuccess('');
@@ -47,6 +55,7 @@ export const PublisherVerificationPage = () => {
         notes: 'Dokumen penerbit telah diperiksa dan memenuhi persyaratan verifikasi.',
       });
       setSuccess(`${name} berhasil diverifikasi.`);
+      setVerifyTarget(null);
       await loadPublishers();
     } catch (err) {
       setError(err.message || 'Status penerbit gagal diperbarui.');
@@ -109,7 +118,7 @@ export const PublisherVerificationPage = () => {
                     <p className="mt-1 text-xs text-ink-muted">{publisher.entity_type || 'Jenis badan usaha belum dicantumkan'} · {publisher.documents?.length || 0} dokumen terlampir</p>
                     {publisher.documents?.length > 0 && (
                       <ul className="mt-2 flex flex-wrap gap-1.5">
-                        {publisher.documents.map(document => <li key={document.id} className="rounded-md bg-surface-subtle px-2 py-1 text-[11px] text-ink-muted">{document.document_type.replaceAll('_', ' ')} · {document.status}</li>)}
+                        {publisher.documents.map(document => <li key={document.id} className="rounded-md bg-surface-subtle px-2 py-1 text-xs text-ink-muted">{document.document_type.replaceAll('_', ' ')} · {document.status}</li>)}
                       </ul>
                     )}
                   </div>
@@ -136,6 +145,20 @@ export const PublisherVerificationPage = () => {
           </div>
         </div>
       )}
+
+      <ConfirmationSummaryDialog
+        isOpen={Boolean(verifyTarget)}
+        onClose={() => setVerifyTarget(null)}
+        onConfirm={confirmVerify}
+        loading={Boolean(pendingId)}
+        title="Verifikasi Akun Penerbit"
+        description="Periksa dan pastikan kelengkapan dokumen legalitas penerbit sebelum memberikan status verifikasi resmi."
+        objectName={verifyTarget?.legal_name || verifyTarget?.user?.name}
+        statusChange="UNVERIFIED → VERIFIED"
+        impactMessage={`Memberikan status terverifikasi kepada ${verifyTarget?.legal_name || 'penerbit'} sehingga berhak mengajukan permohonan tanda tashih mushaf baru dan mengakses seluruh fitur portal LPMQ.`}
+        confirmLabel="Ya, Verifikasi Penerbit"
+        confirmVariant="primary"
+      />
     </div>
   );
 };

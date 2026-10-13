@@ -17,6 +17,7 @@ export const EmptyState = ({
   icon = <Inbox className="w-10 h-10 text-line-strong stroke-1" />,
   title = 'Tidak Ada Data',
   description = 'Belum ada data atau berkas yang tercatat dalam daftar ini.',
+  nextStep,
   actionLabel,
   onAction,
   actionHref,
@@ -26,7 +27,7 @@ export const EmptyState = ({
   return (
     <div
       className={clsx(
-        'rounded-xl border border-dashed border-line-strong bg-white p-8 sm:p-12 text-center space-y-3.5 shadow-2xs',
+        'rounded-xl border border-dashed border-line-strong bg-surface p-8 sm:p-12 text-center space-y-3.5 shadow-2xs',
         className
       )}
     >
@@ -39,6 +40,12 @@ export const EmptyState = ({
         <p className="text-xs sm:text-sm text-ink-muted leading-relaxed font-normal">
           {description}
         </p>
+        {nextStep && (
+          <div className="pt-1.5 text-xs text-brand-800 font-semibold inline-flex items-center gap-1.5 bg-brand-50 px-2.5 py-1 rounded-md border border-brand-100">
+            <span>Langkah selanjutnya:</span>
+            <span>{nextStep}</span>
+          </div>
+        )}
       </div>
 
       {(actionLabel && (onAction || actionHref)) && (

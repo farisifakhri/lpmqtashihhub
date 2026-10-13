@@ -21,7 +21,23 @@ export async function readPrivateFile(id, user) {
     const manuscript = await prisma.manuscriptFile.findFirst({ where: { file_id: file.id }, include: { registration: true } });
     if (manuscript) {
       await assertManuscriptAccess(manuscript.registration, user);
-    } else if (!isInternalStaff) {
+    } else {
+      // Pengecekan kerahasiaan berkas rekapan pentashih (Keputusan 8 Okt: hanya pentashih terkait, distributor, dan admin internal)
+      const recapReview = await prisma.tashihReview.findFirst({
+        where: { notes: { contains: `[RECAP_FILE:${file.id}]` } },
+        include: { assignment: true },
+      });
+      if (recapReview) {
+        const isAuthorizedRecapReader =
+          file.owner_id === user.id ||
+          recapReview.assignment?.assignee_id === user.id ||
+          user.roles.includes('SUPERADMIN') ||
+          user.roles.includes('ADMIN_INTERNAL') ||
+          user.roles.includes('DISTRIBUTOR');
+        if (!isAuthorizedRecapReader) {
+          fail(403, 'Akses berkas rekapan telaah pentashih bersifat rahasia dan dibatasi hanya untuk Pentashih terkait, Distributor, dan Admin Internal.');
+        }
+      } else if (!isInternalStaff) {
       const receipt = await prisma.paymentRecord.findFirst({
         where: { receipt_file_id: file.id },
         include: { registration: true },
@@ -33,8 +49,9 @@ export async function readPrivateFile(id, user) {
       });
       const isVDocPublisher = vDoc && user.roles.includes('PENERBIT') && vDoc.registration?.publisher_id === user.publisherId;
 
-      if (!isOwnerPublisher && !isVDocPublisher && file.owner_id !== user.id) {
-        fail(403, 'Akses berkas ditolak.');
+        if (!isOwnerPublisher && !isVDocPublisher && file.owner_id !== user.id) {
+          fail(403, 'Akses berkas ditolak.');
+        }
       }
     }
   }

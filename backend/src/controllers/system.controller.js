@@ -22,20 +22,19 @@ export const getHealth = async (req, res, next) => {
   const isHealthy = dbStatus === 'CONNECTED';
   const totalLatency = Date.now() - startTime;
 
+  const isProd = process.env.NODE_ENV === 'production';
+
   res.status(isHealthy ? 200 : 503).json({
     success: isHealthy,
     status: isHealthy ? 'UP' : 'DEGRADED',
     system: 'LPMQ Backend API',
-    version: '2.2.0',
     timestamp: new Date().toISOString(),
     uptime_seconds: Math.floor(process.uptime()),
     latency_ms: totalLatency,
     database: {
-      provider: 'mysql',
-      database_name: 'lpmq_db',
       status: dbStatus,
       latency_ms: dbLatency,
-      error: dbError,
+      ...(isProd ? {} : { provider: 'mysql', database_name: 'lpmq_db', error: dbError }),
     },
   });
 };

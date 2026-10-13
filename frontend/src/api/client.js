@@ -59,6 +59,7 @@ export async function apiClient(endpoint, options = {}) {
 
   const config = {
     method: body ? 'POST' : 'GET',
+    cache: 'no-store',
     ...customConfig,
     headers: {
       ...defaultHeaders,

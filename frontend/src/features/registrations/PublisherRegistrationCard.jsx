@@ -76,7 +76,7 @@ export function PublisherRegistrationCard({ registration }) {
               {registration.service_type?.name || 'Reguler'}
             </span>
             {registration.foreign_metadata?.nama_mushaf && (
-              <span className="text-[11px] text-ink-muted bg-surface-subtle border border-line px-2 py-0.2 rounded-md">
+              <span className="text-xs text-ink-muted bg-surface-subtle border border-line px-2 py-0.2 rounded-md">
                 {registration.foreign_metadata.nama_mushaf}
               </span>
             )}
@@ -86,7 +86,7 @@ export function PublisherRegistrationCard({ registration }) {
 
       {/* 3-Phase Stepper Tracker (REV-13: Jangan Disembunyikan) */}
       <div className="pt-2 border-t border-line/60">
-        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[11px]">
+        <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs">
           {/* Phase 1 */}
           <div className={`p-2 rounded-lg border flex flex-col justify-between ${
             isPhase1Done
@@ -101,7 +101,7 @@ export function PublisherRegistrationCard({ registration }) {
                 <Clock className="w-3.5 h-3.5 text-ink-muted shrink-0" />
               )}
             </div>
-            <span className="text-[10px] text-ink-muted mt-0.5 truncate">
+            <span className="text-xs text-ink-muted mt-0.5 truncate">
               {isPhase1Done ? 'Terkirim' : 'Draf'}
             </span>
           </div>
@@ -124,7 +124,7 @@ export function PublisherRegistrationCard({ registration }) {
                 <span className="w-3.5 h-3.5 rounded-full border border-line shrink-0" />
               )}
             </div>
-            <span className="text-[10px] mt-0.5 truncate">
+            <span className="text-xs mt-0.5 truncate">
               {isPhase2Done
                 ? 'Lolos'
                 : status === 'REVISION_REQUIRED'
@@ -153,7 +153,7 @@ export function PublisherRegistrationCard({ registration }) {
                 <span className="w-3.5 h-3.5 rounded-full border border-line shrink-0" />
               )}
             </div>
-            <span className="text-[10px] mt-0.5 truncate">
+            <span className="text-xs mt-0.5 truncate">
               {isPhase3Done
                 ? 'Terbit'
                 : status === 'AWAITING_PAYMENT'

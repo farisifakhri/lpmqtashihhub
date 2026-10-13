@@ -162,11 +162,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-ink-muted">
             <div>
-              <span className="text-ink-muted block text-[11px]">Judul Naskah:</span>
+              <span className="text-ink-muted block text-xs">Judul Naskah:</span>
               <span className="font-semibold text-ink">{registration?.title || '-'}</span>
             </div>
             <div>
-              <span className="text-ink-muted block text-[11px]">Master Fisik Loket:</span>
+              <span className="text-ink-muted block text-xs">Master Fisik Loket:</span>
               <span className="font-mono text-brand-800 font-semibold">
                 {physicalMaster.receipt_no || 'Diterima'} ({physicalMaster.volume_count ?? 30} jilid)
               </span>
@@ -183,7 +183,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 Pilih Verifikator <span className="text-civic-danger">*</span>
               </label>
               {verifiers.length > 3 && (
-                <span className="text-[11px] text-ink-muted">
+                <span className="text-xs text-ink-muted">
                   {filteredVerifiers.length} dari {verifiers.length} petugas
                 </span>
               )}
@@ -226,7 +226,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 </select>
               </div>
             )}
-            <p className="text-[11px] text-ink-muted">
+            <p className="text-xs text-ink-muted">
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
             </p>
           </div>}
@@ -247,8 +247,8 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               placeholder="Contoh: ND.01/LPMQ.01/TL.00/09/2026"
               className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 font-mono ${notaError ? 'border-civic-danger focus:ring-civic-danger/20 focus:border-civic-danger' : 'border-line-strong focus:ring-brand-700/20 focus:border-brand-700'}`}
             />
-            {notaError && <p id="nota-no-error" className="text-[11px] font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Disposisi yang berbeda.</p>}
-            <p className="text-[11px] text-ink-muted">
+            {notaError && <p id="nota-no-error" className="text-xs font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Disposisi yang berbeda.</p>}
+            <p className="text-xs text-ink-muted">
               Masukkan nomor Disposisi resmi sebagai dasar penugasan verifikator oleh Helper Admin.
             </p>
           </div>
@@ -273,27 +273,27 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2 text-xs">
             <div className="font-bold text-ink border-b border-line/60 pb-1.5 flex items-center justify-between">
               <span>Ringkasan Konfirmasi Penugasan</span>
-              <span className="text-[11px] font-normal text-ink-muted">Mulai: saat dikonfirmasi</span>
+              <span className="text-xs font-normal text-ink-muted">Mulai: saat dikonfirmasi</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-ink-muted">
               <div>
-                <span className="text-ink-muted text-[11px] block">Registrasi:</span>
+                <span className="text-ink-muted text-xs block">Registrasi:</span>
                 <span className="font-mono font-semibold text-ink">{registration?.registration_no || '-'}</span>
               </div>
               <div>
-                <span className="text-ink-muted text-[11px] block">Penerbit:</span>
+                <span className="text-ink-muted text-xs block">Penerbit:</span>
                 <span className="font-semibold text-ink truncate block">{publisher.legal_name || '-'}</span>
               </div>
               <div>
-                <span className="text-ink-muted text-[11px] block">Verifikator:</span>
+                <span className="text-ink-muted text-xs block">Verifikator:</span>
                 <span className="font-semibold text-ink">{selectedVerifier?.name || '(Belum dipilih)'}</span>
               </div>
               <div>
-                <span className="text-ink-muted text-[11px] block">Nomor Disposisi:</span>
+                <span className="text-ink-muted text-xs block">Nomor Disposisi:</span>
                 <span className="font-mono font-semibold text-ink">{notaNo.trim() || '(Belum diisi)'}</span>
               </div>
             </div>
-            <div className="pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-brand-900">
+            <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs text-brand-900">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-brand-700 shrink-0" />
                 <span>Tanggal: <strong>{todayFormatted}</strong></span>

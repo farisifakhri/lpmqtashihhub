@@ -12,6 +12,9 @@ test('upload rejects executable content, empty files and excessive size', () => 
     assert.throws(() => detectMime(bytes), error => error.statusCode === 400);
   }
   assert.equal(detectMime(Buffer.from('%PDF-1.4\n%%EOF')), 'application/pdf');
+  assert.equal(detectMime(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0])), 'image/png');
+  assert.equal(detectMime(Buffer.from([255, 216, 255, 0, 255, 217])), 'image/jpeg');
+  assert.equal(detectMime(Buffer.from([0x50, 0x4B, 0x03, 0x04, 0, 0, 0, 0])), 'application/vnd.android.package-archive');
 });
 
 test('unassigned internal users and other publishers cannot access manuscripts', async () => {

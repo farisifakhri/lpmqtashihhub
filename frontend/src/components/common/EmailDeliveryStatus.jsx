@@ -54,7 +54,7 @@ export const EmailDeliveryStatus = ({
               Notifikasi Surat Resmi ke Penerbit
             </p>
             {recipient && (
-              <p className="text-ink-muted text-[11px]">
+              <p className="text-ink-muted text-xs">
                 Tujuan: <strong className="text-ink font-mono">{recipient}</strong>
               </p>
             )}
@@ -99,7 +99,7 @@ export const EmailDeliveryStatus = ({
       </div>
 
       {isFailed && (
-        <div className="p-3 bg-white rounded-lg border border-civic-dangerLine text-[11px] text-civic-danger space-y-1">
+        <div className="p-3 bg-white rounded-lg border border-civic-dangerLine text-xs text-civic-danger space-y-1">
           <p className="font-semibold text-civic-danger">Kendala Pengiriman Surat:</p>
           <p className="leading-relaxed">
             {errorMessage ||

@@ -16,6 +16,7 @@ export const createRegistrationSchema = {
       contoh_halaman_file_id: z.string().uuid().optional().nullable(),
       surat_pernyataan_perubahan_file_id: z.string().uuid().optional().nullable(),
       apk_file_id: z.string().uuid().optional().nullable(),
+      apk_url: z.string().url('URL aplikasi mushaf digital harus valid (cth: https://...)').optional().nullable(),
       bukti_tashih_file_id: z.string().uuid().optional().nullable(),
       surat_rekomendasi_file_id: z.string().uuid().optional().nullable(),
       statement_accepted: z.boolean().optional(),
@@ -106,7 +107,7 @@ export const transitionStatusSchema = {
 
 export const createManuscriptFileSchema = {
   body: z.object({
-    type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'DUMMY', 'MASTER_COMPLETED']),
+    type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'SAMPLE_PAGE', 'DUMMY', 'MASTER_COMPLETED']).transform((val) => val === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : val),
     file_id: z.string().uuid('Gunakan ID hasil endpoint unggah berkas.'),
   }).strict(),
 };

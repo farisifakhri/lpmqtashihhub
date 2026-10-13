@@ -23,7 +23,7 @@ export const WORKFLOW_STAGES = [
     shortName: 'Pendaftaran',
     icon: FileEdit,
     description: 'Pengajuan data naskah & kelengkapan berkas digital oleh penerbit',
-    matchingStatuses: ['DRAFT', 'READY_FOR_VERIFICATION'],
+    matchingStatuses: ['DRAFT', 'SUBMITTED', 'READY_FOR_VERIFICATION'],
   },
   {
     id: 2,
@@ -59,7 +59,12 @@ export const WORKFLOW_STAGES = [
     shortName: 'Distribusi',
     icon: Send,
     description: 'Penyerahan master fisik kepada Tim Pentashih sesuai SK penugasan',
-    matchingStatuses: ['WAITING_DISTRIBUTION', 'WAITING_DISTRIBUTOR_RECEIPT'],
+    matchingStatuses: [
+      'WAITING_DISTRIBUTION',
+      'WAITING_DISTRIBUTOR_RECEIPT',
+      'PHYSICAL_HANDOVER_CORRECTION_REQUIRED',
+      'READY_FOR_PHYSICAL_HANDOVER',
+    ],
   },
   {
     id: 6,
@@ -91,9 +96,15 @@ export const WORKFLOW_STAGES = [
 ];
 
 /**
- * Mendapatkan indeks tahapan aktif (1-based) dari status registrasi
+ * Mendapatkan indeks tahapan aktif (1-based) dari status registrasi & assignment
  */
-export const getActiveStageIndex = (status) => {
+export const getActiveStageIndex = (status, assignmentStatus) => {
+  // Jika assignment verifikasi sedang menunggu persetujuan atau telah disetujui Kepala LPMQ
+  if (assignmentStatus === 'WAITING_APPROVAL' || assignmentStatus === 'APPROVED') {
+    if (!status || status === 'IN_VERIFICATION' || status === 'VERIFICATION_ASSIGNED') {
+      return 3;
+    }
+  }
   if (!status) return 1;
   const stage = WORKFLOW_STAGES.find((s) => s.matchingStatuses.includes(status));
   return stage ? stage.id : 1;
@@ -102,10 +113,11 @@ export const getActiveStageIndex = (status) => {
 export const WorkflowStepper = ({
   currentStatus,
   currentStageId,
+  assignmentStatus,
   className,
   compact = false,
 }) => {
-  const activeStage = currentStageId || getActiveStageIndex(currentStatus);
+  const activeStage = currentStageId || getActiveStageIndex(currentStatus, assignmentStatus);
   const isRevision = currentStatus === 'REVISION_REQUIRED';
 
   return (
@@ -157,6 +169,7 @@ export const WorkflowStepper = ({
                 <div
                   key={stage.id}
                   className="flex flex-col items-center text-center relative z-10 group px-1 flex-1 min-w-[85px]"
+                  title={stage.description}
                 >
                   {/* Circle Node */}
                   <div
@@ -183,7 +196,7 @@ export const WorkflowStepper = ({
                   <div className="mt-2.5 space-y-0.5 max-w-[100px]">
                     <p
                       className={clsx(
-                        'text-[11px] leading-tight font-semibold transition-colors',
+                        'text-xs leading-tight font-semibold transition-colors',
                         isPast && 'text-ink',
                         isCurrent && 'text-brand-900 font-bold',
                         isFuture && 'text-ink-muted'
@@ -192,7 +205,7 @@ export const WorkflowStepper = ({
                       {compact ? stage.shortName : stage.name}
                     </p>
                     {isCurrent && (
-                      <span className="inline-block text-[10px] font-bold text-civicGold-700 bg-civicGold-100 border border-civicGold-700/80 px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
+                      <span className="inline-block text-xs font-bold text-civicGold-700 bg-civicGold-100 border border-civicGold-700/80 px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
                         Sedang Berjalan
                       </span>
                     )}

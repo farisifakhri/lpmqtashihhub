@@ -155,7 +155,7 @@ export const RegisterPublisherPage = () => {
                 <h3 className="text-sm font-bold text-white leading-snug">
                   Terbuka untuk Lembaga Penerbit maupun Pemohon Perorangan
                 </h3>
-                <p className="text-[11px] text-white/80 leading-relaxed pt-0.5">
+                <p className="text-xs text-white/80 leading-relaxed pt-0.5">
                   Setiap mushaf Al-Qur'an, juz 'amma, surah pilihan, braille,
                   maupun kaligrafi yang akan diedarkan wajib ditashih oleh
                   LPMQ Kemenag RI.
@@ -287,7 +287,7 @@ export const RegisterPublisherPage = () => {
 
                       {/* Nama */}
                       <div>
-                        <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                        <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                           Nama Lengkap Pemohon (Sesuai KTP) *
                         </label>
 
@@ -305,7 +305,7 @@ export const RegisterPublisherPage = () => {
                       {/* Phone + Address */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Nomor WhatsApp / HP Aktif *
                           </label>
                           <input
@@ -320,7 +320,7 @@ export const RegisterPublisherPage = () => {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Alamat Domisili / KTP
                           </label>
                           <input
@@ -339,7 +339,7 @@ export const RegisterPublisherPage = () => {
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Nama Lembaga / Penerbit *
                           </label>
                           <input
@@ -354,7 +354,7 @@ export const RegisterPublisherPage = () => {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Bentuk Usaha *
                           </label>
                           <select
@@ -378,7 +378,7 @@ export const RegisterPublisherPage = () => {
                       {/* PIC + Phone */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Nama Penanggung Jawab (PIC) *
                           </label>
                           <input
@@ -393,7 +393,7 @@ export const RegisterPublisherPage = () => {
                         </div>
 
                         <div>
-                          <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                             Nomor WhatsApp / Kantor
                           </label>
                           <input
@@ -409,7 +409,7 @@ export const RegisterPublisherPage = () => {
 
                       {/* Address */}
                       <div>
-                        <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                        <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                           Alamat Kantor / Sekretariat
                         </label>
                         <input
@@ -429,7 +429,7 @@ export const RegisterPublisherPage = () => {
 
                     {/* Email */}
                     <div>
-                      <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                      <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                         Email Akun (Untuk Login) *
                       </label>
                       <input
@@ -445,7 +445,7 @@ export const RegisterPublisherPage = () => {
 
                     {/* Password */}
                     <div className="relative">
-                      <label className="block text-[11px] font-bold text-ink uppercase tracking-wider mb-1">
+                      <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-1">
                         Kata Sandi (Min. 8 Karakter) *
                       </label>
                       <input
@@ -497,7 +497,7 @@ export const RegisterPublisherPage = () => {
             </div>
 
             {/* Footer Bawah */}
-            <div className="pt-4 text-center text-[11px] text-ink-muted">
+            <div className="pt-4 text-center text-xs text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
 

@@ -38,7 +38,7 @@ export const AssignedOfficer = ({
         </div>
 
         {notaNo && (
-          <span className="font-mono text-[11px] bg-white border border-line px-2 py-0.5 rounded text-ink">
+          <span className="font-mono text-xs bg-white border border-line px-2 py-0.5 rounded text-ink">
             {notaNo}
           </span>
         )}

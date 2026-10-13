@@ -336,7 +336,7 @@ export const PublisherDashboard = () => {
             </div>
             <div className="flex-1">
               <h3 className="text-xs font-bold text-ink">{title}</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">{desc}</p>
+              <p className="text-xs text-ink-muted mt-0.5">{desc}</p>
             </div>
             <ArrowRight className="h-4 w-4 text-ink-muted group-hover:text-brand-800 transition-colors" />
           </Link>

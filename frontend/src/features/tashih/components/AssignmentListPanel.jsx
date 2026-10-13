@@ -17,14 +17,14 @@ export const AssignmentListPanel = ({
             <div className="w-9 h-9 rounded-lg bg-civic-warning text-white flex items-center justify-center">
               <Clock className="w-4.5 h-4.5" />
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
               Perlu Ditelaah
             </span>
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-civic-warning tabular-nums">{activeCount}</div>
             <div className="text-xs font-bold text-civic-warning mt-0.5">Tugas Sidang Aktif</div>
-            <div className="text-[11px] text-ink-muted">Pada halaman {page}</div>
+            <div className="text-xs text-ink-muted">Pada halaman {page}</div>
           </div>
         </div>
 
@@ -33,14 +33,14 @@ export const AssignmentListPanel = ({
             <div className="w-9 h-9 rounded-lg bg-brand-700 text-white flex items-center justify-center">
               <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
               Selesai
             </span>
           </div>
           <div className="mt-3">
             <div className="text-2xl font-black text-brand-950 tabular-nums">{completedCount}</div>
             <div className="text-xs font-bold text-brand-900 mt-0.5">Riwayat Selesai</div>
-            <div className="text-[11px] text-ink-muted">Pada halaman {page}</div>
+            <div className="text-xs text-ink-muted">Pada halaman {page}</div>
           </div>
         </div>
 
@@ -49,14 +49,14 @@ export const AssignmentListPanel = ({
             <div className="w-9 h-9 rounded-lg bg-civic-info text-white flex items-center justify-center">
               <ShieldCheck className="w-4.5 h-4.5" />
             </div>
-            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+            <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
               Kewenangan
             </span>
           </div>
           <div className="mt-3">
             <div className="text-sm font-black text-civic-info">{currentUser?.name || 'Pentashih'}</div>
             <div className="text-xs font-bold text-civic-info mt-0.5">Anggota Tim Pentashih LPMQ</div>
-            <div className="text-[11px] text-ink-muted">Penugasan berbasis SK aktif Kepala LPMQ</div>
+            <div className="text-xs text-ink-muted">Penugasan berbasis SK aktif Kepala LPMQ</div>
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@ export const AssignmentListPanel = ({
                 )}
               >
                 <span>Tugas Sidang Aktif</span>
-                <span className="px-1.5 py-0.2 rounded-full bg-civic-warningSoft text-civic-warning text-[10px] font-bold">
+                <span className="px-1.5 py-0.2 rounded-full bg-civic-warningSoft text-civic-warning text-xs font-bold">
                   {activeCount}
                 </span>
               </button>
@@ -94,7 +94,7 @@ export const AssignmentListPanel = ({
                 )}
               >
                 <span>Riwayat Selesai</span>
-                <span className="px-1.5 py-0.2 rounded-full bg-surface-strong text-ink text-[10px]">
+                <span className="px-1.5 py-0.2 rounded-full bg-surface-strong text-ink text-xs">
                   {completedCount}
                 </span>
               </button>
@@ -163,17 +163,17 @@ export const AssignmentListPanel = ({
                       <span className="font-mono text-xs font-bold text-brand-800 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-100">
                         {reg?.registration_no || 'REG-LPMQ'}
                       </span>
-                      <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-md bg-surface-subtle text-ink border border-line">
+                      <span className="inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md bg-surface-subtle text-ink border border-line">
                         {getStageLabel(assignment.stage)} • Iterasi #{assignment.iteration}
                       </span>
                       {assignment.team && (
-                        <span className="text-[11px] text-ink-muted font-medium">
+                        <span className="text-xs text-ink-muted font-medium">
                           {assignment.team.name}
                         </span>
                       )}
-                      {assignment.juz_items?.length > 0 && <span className="text-[11px] font-semibold text-brand-800">Juz {assignment.juz_items.map(item => item.juz_number).join(', ')} · {assignment.juz_items.filter(item => item.result).length}/{assignment.juz_items.length} selesai</span>}
+                      {assignment.juz_items?.length > 0 && <span className="text-xs font-semibold text-brand-800">Juz {assignment.juz_items.map(item => item.juz_number).join(', ')} · {assignment.juz_items.filter(item => item.result).length}/{assignment.juz_items.length} selesai</span>}
                       {isOverdue && !hasReview && (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                           <AlertTriangle className="w-3 h-3" /> Overdue SLA
                         </span>
                       )}
@@ -231,15 +231,15 @@ export const AssignmentListPanel = ({
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-ink">Rekomendasi Anda:</span>
                           {review.result === 'PASSED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 font-bold border border-brand-100 text-[11px]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-100 text-brand-800 font-bold border border-brand-100 text-xs">
                               <CheckCircle2 className="w-3 h-3" /> Lolos Tanpa Catatan (Bersih)
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning font-bold border border-civic-warningLine text-[11px]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning font-bold border border-civic-warningLine text-xs">
                               <AlertTriangle className="w-3 h-3" /> Perlu Perbaikan Naskah
                             </span>
                           )}
-                          <span className="text-ink-muted text-[11px] ml-auto">
+                          <span className="text-ink-muted text-xs ml-auto">
                             {new Date(review.completed_at).toLocaleDateString('id-ID', {
                               day: 'numeric',
                               month: 'short',

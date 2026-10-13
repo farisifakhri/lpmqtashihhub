@@ -186,7 +186,7 @@ export function PublisherProgress({ registration }) {
             <span>{stage.label}</span>
           </span>
           {stage.isLoop && (
-            <span className="text-[10px] text-ink-muted font-medium hidden sm:inline">
+            <span className="text-xs text-ink-muted font-medium hidden sm:inline">
               (Proses Tashih ⇄ Perbaikan)
             </span>
           )}
@@ -194,7 +194,7 @@ export function PublisherProgress({ registration }) {
 
         {/* Indikator Persentase Resmi */}
         <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
-          <span className="text-[10px] text-ink-muted uppercase">Progres</span>
+          <span className="text-xs text-ink-muted uppercase">Progres</span>
           <span className="text-ink">{stage.percent}%</span>
         </div>
       </div>
@@ -208,7 +208,7 @@ export function PublisherProgress({ registration }) {
       </div>
 
       {/* Rincian Keterangan Tahapan */}
-      <div className="flex items-center justify-between text-[11px] text-ink-muted">
+      <div className="flex items-center justify-between text-xs text-ink-muted">
         <span className="truncate pr-2">{stage.description}</span>
         <span className="shrink-0 font-semibold text-brand-800">{stage.label}</span>
       </div>

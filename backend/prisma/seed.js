@@ -355,27 +355,27 @@ async function main() {
     }
   }
 
-  // Pertahankan alias default untuk kompatibilitas test lama
+  // Pertahankan alias default untuk arsip riwayat lama (status INACTIVE agar tidak muncul di form baru)
   const distributorUser = await prisma.user.findUnique({ where: { email: 'distributor@lpmq.kemenag.go.id' } });
   const pentashihUser = await prisma.user.findUnique({ where: { email: 'pentashih@lpmq.kemenag.go.id' } });
   const defaultTeam = await prisma.distributionTeam.upsert({
     where: { id: 'team-pentashihan-2026-default' },
     update: {
-      name: 'Tim Pentashihan Reguler 2026',
+      name: 'Tim Pentashihan Reguler 2026 (Legacy)',
       decree_no: 'SK-LPMQ/01/2026',
       year: 2026,
       leader_user_id: distributorUser?.id,
       active_from: new Date('2026-01-01'),
-      status: 'ACTIVE',
+      status: 'INACTIVE',
     },
     create: {
       id: 'team-pentashihan-2026-default',
-      name: 'Tim Pentashihan Reguler 2026',
+      name: 'Tim Pentashihan Reguler 2026 (Legacy)',
       decree_no: 'SK-LPMQ/01/2026',
       year: 2026,
       leader_user_id: distributorUser?.id,
       active_from: new Date('2026-01-01'),
-      status: 'ACTIVE',
+      status: 'INACTIVE',
     },
   });
 

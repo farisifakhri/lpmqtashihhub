@@ -96,14 +96,13 @@ export const DocumentPreview = ({
       </div>
 
       {/* Content Area: File Viewer OR Official Letterhead Typography */}
-      <div className="p-4 sm:p-6 overflow-auto max-h-[750px] bg-slate-50/50">
+      <div className="p-4 sm:p-6 overflow-auto max-h-[750px] bg-surface-subtle/50">
         {fileId ? (
           <PrivateFileViewer fileId={fileId} fileName={fileName} height="550px" />
         ) : letterHtml ? (
-          <div
-            className="prose prose-sm max-w-none text-ink leading-relaxed font-sans bg-white p-6 sm:p-8 rounded-xl border border-line shadow-2xs print:border-0 print:p-0"
-            dangerouslySetInnerHTML={{ __html: letterHtml }}
-          />
+          <div className="prose prose-sm max-w-none text-ink leading-relaxed font-sans bg-white p-6 sm:p-8 rounded-xl border border-line shadow-2xs print:border-0 print:p-0 whitespace-pre-wrap">
+            {letterHtml}
+          </div>
         ) : (
           /* Official Indonesian State Letter Layout (LPMQ Letterhead) */
           <div className="max-w-3xl mx-auto bg-white p-6 sm:p-10 rounded-xl border border-line shadow-xs space-y-6 text-ink print:border-0 print:p-0 print:shadow-none font-serif">
@@ -122,7 +121,7 @@ export const DocumentPreview = ({
                   <h4 className="text-sm sm:text-base font-black tracking-wide text-ink font-sans uppercase">
                     LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN
                   </h4>
-                  <p className="text-[11px] text-ink font-sans leading-tight">
+                  <p className="text-xs text-ink font-sans leading-tight">
                     Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560<br />
                     Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807<br />
                     Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id
@@ -147,20 +146,20 @@ export const DocumentPreview = ({
             {/* Tabel Identitas Naskah */}
             {activeSnapshot && (activeSnapshot.title || activeSnapshot.registration_no || activeSnapshot.publisher) && (
               <div className="bg-canvas/60 rounded-lg border border-line p-3 sm:p-4 text-xs font-sans space-y-2">
-                <h5 className="font-bold text-ink border-b border-line pb-1.5 uppercase text-[11px] tracking-wider text-brand-900">
+                <h5 className="font-bold text-ink border-b border-line pb-1.5 uppercase text-xs tracking-wider text-brand-900">
                   Data Naskah Mushaf Al-Qur'an
                 </h5>
                 <dl className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
-                    <dt className="text-ink-muted text-[11px]">Judul Naskah:</dt>
+                    <dt className="text-ink-muted text-xs">Judul Naskah:</dt>
                     <dd className="font-semibold text-ink break-words">{activeSnapshot.title || '-'}</dd>
                   </div>
                   <div>
-                    <dt className="text-ink-muted text-[11px]">Nomor Registrasi:</dt>
+                    <dt className="text-ink-muted text-xs">Nomor Registrasi:</dt>
                     <dd className="font-mono font-semibold text-brand-800">{activeSnapshot.registration_no || '-'}</dd>
                   </div>
                   <div>
-                    <dt className="text-ink-muted text-[11px]">Penerbit Pemohon:</dt>
+                    <dt className="text-ink-muted text-xs">Penerbit Pemohon:</dt>
                     <dd className="font-semibold text-ink break-words">{activeSnapshot.publisher || '-'}</dd>
                   </div>
                 </dl>
@@ -211,7 +210,7 @@ export const DocumentPreview = ({
                           <tr key={idx} className="bg-white">
                             <td className="p-2 font-medium text-ink">{v.verifier?.name || '-'}</td>
                             <td className="p-2">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${v.decision === 'PASSED' ? 'bg-brand-50 text-brand-800' : 'bg-civic-warningSoft text-civic-warning'}`}>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${v.decision === 'PASSED' ? 'bg-brand-50 text-brand-800' : 'bg-civic-warningSoft text-civic-warning'}`}>
                                 {v.decision || 'SESUAI'}
                               </span>
                             </td>
@@ -243,7 +242,7 @@ export const DocumentPreview = ({
                             <td className="p-2 font-medium text-ink">{a.assignee || '-'}</td>
                             <td className="p-2 text-ink-muted">{a.team?.name || 'Tim Pentashihan'}</td>
                             <td className="p-2">
-                              <span className="px-2 py-0.5 rounded bg-surface-subtle border border-line text-[10px] font-semibold text-ink">
+                              <span className="px-2 py-0.5 rounded bg-surface-subtle border border-line text-xs font-semibold text-ink">
                                 {a.status || '-'}
                               </span>
                             </td>
@@ -268,7 +267,7 @@ export const DocumentPreview = ({
 
             {/* Footer / Pengesahan Resmi */}
             <footer className="pt-6 border-t border-line font-sans flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 text-xs">
-              <div className="space-y-1 text-[11px] text-ink-muted">
+              <div className="space-y-1 text-xs text-ink-muted">
                 <div className="flex items-center gap-1.5 text-brand-800 font-semibold">
                   <ShieldCheck className="w-4 h-4 text-brand-700" />
                   <span>Dokumen Resmi Terverifikasi Sistem LPMQ</span>
@@ -281,7 +280,7 @@ export const DocumentPreview = ({
                   Lajnah Pentashihan Mushaf Al-Qur'an
                 </p>
                 <div className="py-2 flex justify-end">
-                  <div className="px-3 py-1.5 bg-brand-50 border border-brand-200 rounded text-brand-900 text-[10px] font-mono font-bold inline-flex items-center gap-1">
+                  <div className="px-3 py-1.5 bg-brand-50 border border-brand-200 rounded text-brand-900 text-xs font-mono font-bold inline-flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                     TERVERIFIKASI DIGITAL
                   </div>
@@ -289,7 +288,7 @@ export const DocumentPreview = ({
                 <p className="font-bold text-ink underline">
                   {activeSnapshot?.verifier_name || 'Kepala LPMQ Kemenag RI'}
                 </p>
-                <p className="text-[10px] text-ink-muted">Kementerian Agama RI</p>
+                <p className="text-xs text-ink-muted">Kementerian Agama RI</p>
               </div>
             </footer>
           </div>

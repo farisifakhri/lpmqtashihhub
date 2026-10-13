@@ -55,7 +55,7 @@ export const DocumentVersionHistory = ({
                 <div className="flex items-center gap-2">
                   <span
                     className={clsx(
-                      'px-2 py-0.5 rounded font-mono font-bold text-[11px] border',
+                      'px-2 py-0.5 rounded font-mono font-bold text-xs border',
                       isCurrent
                         ? 'bg-brand-800 text-white border-brand-900'
                         : 'bg-surface-subtle text-ink border-line-strong'
@@ -67,13 +67,13 @@ export const DocumentVersionHistory = ({
                     {item.file_name || item.name || 'Naskah Mushaf'}
                   </span>
                   {isCurrent && (
-                    <span className="text-[10px] font-bold text-brand-800 bg-brand-100 px-1.5 py-0.2 rounded">
+                    <span className="text-xs font-bold text-brand-800 bg-brand-100 px-1.5 py-0.2 rounded">
                       Aktif
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 text-ink-muted text-[11px]">
+                <div className="flex flex-wrap items-center gap-3 text-ink-muted text-xs">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 text-ink-muted" />
                     {formattedDate} WIB
@@ -87,7 +87,7 @@ export const DocumentVersionHistory = ({
                 </div>
 
                 {item.notes && (
-                  <p className="text-ink-muted text-[11px] pt-1 italic">
+                  <p className="text-ink-muted text-xs pt-1 italic">
                     Catatan: “{item.notes}”
                   </p>
                 )}

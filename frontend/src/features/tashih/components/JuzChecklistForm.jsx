@@ -121,7 +121,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
             <input type="radio" name="rangeResult" value="PASSED" checked={rangeResult === 'PASSED'} onChange={e => setRangeResult(e.target.value)} className="mt-0.5 text-brand-700" />
             <div>
               <div className="text-xs font-bold text-ink">Lolos Tanpa Catatan (Bersih)</div>
-              <div className="text-[11px] text-ink-muted">Seluruh ayat dan rasm pada rentang juz ini telah sesuai kaidah.</div>
+              <div className="text-xs text-ink-muted">Seluruh ayat dan rasm pada rentang juz ini telah sesuai kaidah.</div>
             </div>
           </label>
           <label className={`p-3 rounded-lg border-2 flex items-start gap-2.5 cursor-pointer transition-all ${
@@ -130,7 +130,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
             <input type="radio" name="rangeResult" value="REVISION_REQUIRED" checked={rangeResult === 'REVISION_REQUIRED'} onChange={e => setRangeResult(e.target.value)} className="mt-0.5 text-civic-warning" />
             <div>
               <div className="text-xs font-bold text-ink">Perlu Perbaikan Naskah</div>
-              <div className="text-[11px] text-ink-muted">Terdapat catatan rasm/harakat yang wajib diperbaiki penerbit.</div>
+              <div className="text-xs text-ink-muted">Terdapat catatan rasm/harakat yang wajib diperbaiki penerbit.</div>
             </div>
           </label>
         </div>
@@ -151,7 +151,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
         <div className="p-3 bg-white rounded-lg border border-line space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-ink">Berkas Rekapan Koreksi Internal (Opsional)</span>
-            <span className="text-[10px] text-ink-muted">PDF / Gambar</span>
+            <span className="text-xs text-ink-muted">PDF / Gambar</span>
           </div>
 
           {recapFileId ? (
@@ -170,7 +170,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
             </label>
           )}
 
-          <p className="text-[10px] text-ink-muted leading-relaxed">
+          <p className="text-xs text-ink-muted leading-relaxed">
             🔒 <strong>Kerahasiaan Internal:</strong> Berkas rekapan koreksi hanya dapat dilihat oleh Anda dan Koordinator Distributor. Berkas ini tidak dikirim ke penerbit.
           </p>
         </div>

@@ -9,6 +9,7 @@ export default {
           DEFAULT: 'rgb(var(--surface-rgb) / <alpha-value>)',
           subtle: 'rgb(var(--surface-subtle-rgb) / <alpha-value>)',
           strong: 'rgb(var(--surface-strong-rgb) / <alpha-value>)',
+          elevated: 'rgb(var(--surface-elevated-rgb) / <alpha-value>)',
         },
         brand: {
           950: 'rgb(var(--brand-950-rgb) / <alpha-value>)',

@@ -13,8 +13,8 @@ Dokumen ini memetakan status menyeluruh implementasi Sistem Manajemen Layanan Pe
 | 3 | **Ceklis Verifikator Resmi & Arsip Sidebar** | T-06, RF-VER-01, RF-VER-04, BR-32 | Selesai (Ceklis Berita Acara resmi, tombol "Ajukan Draft", arsip dokumen dipindah ke sidebar) |
 | 4 | **Penugasan Rentang Juz & Evaluasi Pentashih** | T-01, RF-DIST-05, RF-DIST-18, RF-DIST-19 | Selesai (Rentang juz non-overlap, unggah berkas rekapan rahasia internal `recap_file_id`) |
 | 5 | **Surat Pengembalian Revisi & Penetapan Dumi** | T-04, T-06, RF-DIST-08, RF-DIST-17 | Selesai (Pilihan `NASKAH_PERBAIKAN` vs `NASKAH_DUMI`, penomoran ronde otomatis 1, 2, 3, penerbitan `REVISION_RETURN_LETTER`) |
-| 6 | **Perhitungan SLA H+1 & Template Dokumen** | T-02, T-05, RF-CALC-05, RF-PUB-08, RF-PBL-01 | Selesai (SLA H+1 pasca bayar sah, unduhan `template-surat-permohonan-tashih.docx`, label pengiriman beresolusi tinggi) |
-| 7 | **Pengujian Otomatis CI/CD** | RNF-REL-01 s.d. 04 | **Backend**: 21 migrasi, 63 unit tests, 101 integration tests lulus (100%).<br>**Frontend**: 43 test suites, 201 tests lulus (100%). |
+| 6 | **Perhitungan SLA & Tarif PNBP Jenis Naskah** | T-02, T-05, PP 59/2020, Adendum 12 Okt 2026 | Selesai (SLA H+1 pasca bayar sah; penambahan SLA 15→22/45 HK & add-on PNBP +Rp 500rb dipicu oleh Group 3 Jenis Naskah; materi pelengkap non-tarif Rp 0; tampilan presisi di Verifikator & Distributor) |
+| 7 | **Pengujian Otomatis CI/CD** | RNF-REL-01 s.d. 04 | **Backend**: 21 migrasi, 63 unit tests, 101 integration tests lulus (100%).<br>**Frontend**: 43 test suites, 202 tests lulus (100%). |
 
 ---
 
