@@ -83,15 +83,15 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
         return { label: 'Helper Admin', color: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator Dokumen', color: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Verifikator Dokumen', color: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'DISTRIBUTOR':
-        return { label: 'Koordinator Distribusi', color: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Koordinator Distribusi', color: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih Naskah', color: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Pentashih Naskah', color: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Administrator Dokumen', color: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Administrator Dokumen', color: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', color: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
@@ -172,15 +172,15 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-surface-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700"
+                className="p-2 rounded-lg text-ink-muted hover:text-[#2e5d07] hover:bg-[#f0f7e9] transition-colors focus:outline-none focus:ring-2 focus:ring-[#579b0a]"
                 aria-label={sidebarOpen ? 'Tutup navigasi utama' : 'Buka navigasi utama'}
                 title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
 
-              {/* Official Logos */}
-              <div className="flex items-center gap-1.5 shrink-0">
+              {/* Official Logos (Shown on mobile/tablet when sidebar is hidden) */}
+              <div className="flex lg:hidden items-center gap-1.5 shrink-0">
                 <div className="h-9 w-9 rounded-lg bg-surface border border-line shadow-2xs flex items-center justify-center p-1">
                   <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain" />
                 </div>
@@ -195,10 +195,10 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <li className="flex items-center">
                     <Link
                       to={homePath}
-                      className="p-1 rounded text-ink-muted hover:text-brand-800 hover:bg-surface-subtle transition-colors"
+                      className="p-1 rounded text-ink-muted hover:text-[#4e9508] hover:bg-[#f0f7e9] transition-colors"
                       title="Beranda"
                     >
-                      <Home className="w-4 h-4 text-brand-700" />
+                      <Home className="w-4 h-4 text-[#4e9508]" />
                     </Link>
                   </li>
                   {breadcrumb.parent && (
@@ -245,19 +245,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                 title={`Kepadatan Tampilan: ${isCompact ? 'Ringkas (Klik untuk beralih ke Nyaman)' : 'Nyaman (Klik untuk beralih ke Ringkas)'}`}
                 aria-label="Ganti mode kepadatan tampilan"
               >
-                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-brand-700" /> : <Maximize2 className="w-3.5 h-3.5 text-brand-700" />}
+                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-[#4e9508]" /> : <Maximize2 className="w-3.5 h-3.5 text-[#4e9508]" />}
                 <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
               </button>
-
-              {/* Public QR Demo Link */}
-              <Link
-                to="/verify-documents/DEMO-QR-TOKEN-2026"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted hover:text-brand-900 bg-surface-subtle hover:bg-surface-strong/70 px-2.5 py-1.5 rounded-lg border border-line transition-colors"
-                title="Pratinjau Verifikasi QR Publik"
-              >
-                <QrCode className="w-3.5 h-3.5 text-brand-700" />
-                <span className="hidden lg:inline">Validasi Dokumen</span>
-              </Link>
 
               {/* Profile Menu Dropdown */}
               {currentUser && (
@@ -265,16 +255,16 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-700 cursor-pointer"
+                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-[#579b0a] cursor-pointer"
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
                   >
                     <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-md bg-brand-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                      <div className="w-8 h-8 rounded-md bg-[#579b0a] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                         {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-brand-700 rounded-full border-2 border-white" />
+                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-[#4e9508] rounded-full border-2 border-white" />
                     </div>
 
                     <div className="hidden lg:block leading-tight">

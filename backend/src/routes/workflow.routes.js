@@ -9,7 +9,7 @@ import * as documentation from '../services/documentation.service.js';
 import * as distribution from '../services/distribution.service.js';
 import * as payment from '../services/payment.service.js';
 import * as notifications from '../services/notification.service.js';
-import { upload, MAX_UPLOAD_BYTES } from '../services/storage.service.js';
+import { upload, MAX_UPLOAD_BYTES, MAX_DOC_BYTES, MAX_APK_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
 import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 import { documentationArchiveSchema } from '../validators/workflow.validator.js';
@@ -61,6 +61,27 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'A
 });
 
 router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
+  (req, res, next) => {
+    const ctype = req.get('content-type')?.split(';')[0]?.toLowerCase();
+    const clen = Number(req.get('content-length'));
+    // Pisahkan batas per tipe di parser sebelum ditampung di memori
+    if (['application/pdf', 'image/png', 'image/jpeg'].includes(ctype)) {
+      if (clen && clen > MAX_DOC_BYTES) {
+        return res.status(400).json({
+          success: false,
+          message: 'Berkas dokumen/gambar melebihi batas ukuran 10 MB. Harap perkecil ukuran berkas, lalu unggah kembali.',
+        });
+      }
+    } else if (['application/vnd.android.package-archive', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'].includes(ctype)) {
+      if (clen && clen > MAX_APK_BYTES) {
+        return res.status(400).json({
+          success: false,
+          message: 'Berkas APK Android melebihi batas ukuran 10 MB. Harap kompres atau gunakan versi yang lebih kecil.',
+        });
+      }
+    }
+    next();
+  },
   express.raw({
     type: [
       'application/pdf',

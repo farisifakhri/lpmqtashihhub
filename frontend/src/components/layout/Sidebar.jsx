@@ -81,15 +81,15 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         return { label: 'Helper Admin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Verifikator', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'DISTRIBUTOR':
-        return { label: 'Distributor', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Distributor', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Pentashih', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', badgeClass: 'bg-brand-50 text-brand-900 border-brand-100' };
+        return { label: 'Dokumentator', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
@@ -375,7 +375,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         title: 'PROSES PENTASHIHAN',
         items: [
           {
-            label: '1. Penugasan Verifikator',
+            label: 'Penugasan Verifikator',
             path: '/internal/verifications?tab=NEED_ASSIGNMENT',
             icon: <UserCheck className="w-4 h-4 shrink-0" />,
             description: 'Superadmin dapat menugaskan verifikator',
@@ -387,13 +387,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             description: 'Pemeriksaan kelengkapan & rasm',
           },
           {
-            label: '1a. Intake Master Fisik',
+            label: 'Intake Master Fisik',
             path: '/internal/master-intake',
             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
             description: 'Print-out master A4',
           },
           {
-            label: '1b. Verifikasi Pembayaran',
+            label: 'Verifikasi Pembayaran',
             path: '/internal/payments',
             icon: <CreditCard className="w-4 h-4 shrink-0" />,
             description: 'Setoran PNBP SIMPONI',
@@ -428,7 +428,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             description: 'Kategori, tarif, dan SLA',
           },
           {
-            label: '6. Identitas dan Akses',
+            label: 'Identitas dan Akses',
             path: '/internal/users',
             icon: <Users className="w-4 h-4 shrink-0" />,
             description: 'Akun, peran, dan wewenang',
@@ -514,7 +514,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 </div>
               </div>
               <div className="min-w-0">
-                <span className="text-xs font-extrabold tracking-wider uppercase text-brand-800 block leading-tight">
+                <span className="text-xs font-extrabold tracking-wider uppercase text-[#4e9508] block leading-tight">
                   Kemenag RI
                 </span>
                 <span className="text-xs font-black text-ink block leading-tight truncate">
@@ -536,14 +536,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
           {/* User Mini Profile Card */}
           {currentUser && (
-            <div className="mx-3 mt-3 px-3 py-2.5 rounded-lg border border-line bg-surface-subtle/70">
+            <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl border border-line bg-surface-subtle/70">
               <div className="flex items-center gap-2.5">
                 <div className="relative shrink-0">
-                  <div className="w-8 h-8 rounded-md bg-brand-800 text-white font-bold flex items-center justify-center text-xs shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-[#579b0a] text-white font-bold flex items-center justify-center text-xs shadow-2xs">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-brand-700 rounded-full border-2 border-white"
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4e9508] rounded-full border-2 border-white"
                     title="Online"
                   />
                 </div>
@@ -554,11 +554,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                   <div className="mt-1">
                     <span
                       className={clsx(
-                        'inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border leading-none',
+                        'inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border leading-none',
                         roleBadge.badgeClass
                       )}
                     >
-                      <ShieldCheck className="w-3 h-3" />
+                      <ShieldCheck className="w-3 h-3 text-[#4e9508]" />
                       <span>{roleBadge.label}</span>
                     </span>
                   </div>
@@ -586,9 +586,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                       }}
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs font-medium transition-colors group',
+                          'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors group',
                           isCurrentItem(item, isActive)
-                            ? 'bg-brand-50 border border-brand-100 text-brand-950 font-bold shadow-2xs'
+                            ? 'bg-[#f0f7e9] border border-[#dcf2c2] text-[#2e5d07] font-bold shadow-2xs'
                             : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
                         )
                       }
@@ -598,7 +598,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'transition-colors shrink-0',
-                              isCurrentItem(item, isActive) ? 'text-brand-700' : 'text-ink-muted group-hover:text-brand-700'
+                              isCurrentItem(item, isActive) ? 'text-[#4e9508]' : 'text-ink-muted group-hover:text-[#4e9508]'
                             )}
                           >
                             {item.icon}
@@ -606,7 +606,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div className="flex-1 min-w-0">
                             <span className="block leading-tight truncate">{item.label}</span>
                             {item.description && !isCurrentItem(item, isActive) && (
-                              <span className="hidden group-hover:block text-xs text-ink-muted truncate mt-0.5 animate-fadeIn">
+                              <span className="hidden group-hover:block text-[11px] text-ink-muted truncate mt-0.5 animate-fadeIn">
                                 {item.description}
                               </span>
                             )}
@@ -622,13 +622,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
           {/* Institutional Compliance Footer */}
           <div className="p-2.5 border-t border-line bg-surface">
-            <div className="p-2 rounded-lg bg-surface-subtle border border-line/60">
+            <div className="p-2.5 rounded-xl bg-surface-subtle border border-line/60">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#4e9508] shrink-0" />
                 <span className="text-xs font-bold text-ink">Standar Pentashihan</span>
               </div>
-              <p className="text-xs text-ink-muted mt-0.5 leading-tight">
-                Mushaf Standar Usmani Kemenag RI (SOP Pentashihan LPMQ)
+              <p className="text-[11px] text-ink-muted mt-0.5 leading-tight">
+                Mushaf Standar Usmani Kemenag RI
               </p>
             </div>
           </div>
