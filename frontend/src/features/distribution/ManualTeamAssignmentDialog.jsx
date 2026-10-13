@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Users, AlertCircle } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
@@ -29,29 +29,24 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
     return () => { active = false; if (element.close) element.close(); previousFocus?.focus(); };
   }, [id]);
   const previous = registration?.assignments?.length > 0;
-  const stage = previous ? 'REVISION' : registration?.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
+  const lastRevLetter = registration?.official_documents?.find(d => d.document_type === 'REVISION_RETURN_LETTER');
+  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' || registration?.revision_kind === 'NASKAH_DUMI';
+  const stage = isDummyRevision ? 'DUMMY' : previous ? 'REVISION' : registration?.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
   const team = teams.find(item => item.id === teamId);
   const members = (team?.members || []).filter(member => member.status === 'ACTIVE' && member.user?.status === 'ACTIVE' && member.user.roles?.some(item => (item.role?.code || item) === 'PENTASHIH'));
-  const ready = registration?.status === 'WAITING_DISTRIBUTION' && registration.payment_records?.some(item => item.status === 'VERIFIED');
+  const ready = ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(registration?.status) && registration.payment_records?.some(item => item.status === 'VERIFIED');
   const allSelectedHaveJuz = selected.length > 0 && selected.every(userId => (juzByAssignee[userId] || []).length > 0);
   const [rangeInputs, setRangeInputs] = useState({});
+
+  const hasOverlap = useMemo(() => {
+    const all = selected.flatMap(uid => juzByAssignee[uid] || []);
+    return all.length > 0 && new Set(all).size !== all.length;
+  }, [selected, juzByAssignee]);
 
   const setJuzRange = (userId, from, to) => {
     const f = Math.min(Math.max(Number(from) || 1, 1), 30);
     const t = Math.max(Math.min(Number(to) || 30, 30), f);
     const range = Array.from({ length: t - f + 1 }, (_, i) => f + i);
-
-    const conflict = range.find(juz => {
-      const otherOwner = selected.find(otherId => otherId !== userId && (juzByAssignee[otherId] || []).includes(juz));
-      return Boolean(otherOwner);
-    });
-
-    if (conflict) {
-      const otherOwner = selected.find(otherId => otherId !== userId && (juzByAssignee[otherId] || []).includes(conflict));
-      const otherMember = members.find(m => m.user_id === otherOwner);
-      setError(`Rentang bertabrakan: Juz ${conflict} sudah ditugaskan kepada ${otherMember?.user?.name || 'pentashih lain'}.`);
-      return false;
-    }
 
     setError('');
     setJuzByAssignee(prev => ({ ...prev, [userId]: range }));
@@ -77,7 +72,12 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
     if (!ready || !teamId || !allSelectedHaveJuz || saving) return;
     setSaving(true); setError('');
     try {
-      await registrationApi.createAssignments(id, { team_id: teamId, juz_assignments: selected.map(assignee_id => ({ assignee_id, juz_numbers: juzByAssignee[assignee_id] })), stage });
+      await registrationApi.createAssignments(id, {
+        team_id: teamId,
+        juz_assignments: selected.map(assignee_id => ({ assignee_id, juz_numbers: juzByAssignee[assignee_id] })),
+        stage,
+        ...(hasOverlap ? { allow_overlap: true } : {}),
+      });
       onAssigned();
     } catch (err) { setError(err.message || 'Penugasan gagal. Muat ulang untuk memeriksa status terbaru.'); }
     finally { setSaving(false); }
@@ -103,7 +103,13 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
         </div>
         {!ready && <p className="rounded-lg bg-civic-warningSoft p-3 text-sm text-civic-warning">Pengajuan harus berstatus Menunggu Distribusi dan pembayaran sudah terverifikasi. Admin tidak dapat melewati tahapan verifikasi atau penerimaan fisik.</p>}
         <div><label htmlFor="manual-team-select" className="block text-sm font-semibold text-ink mb-2">Tim dengan SK aktif</label><select id="manual-team-select" disabled={!ready || saving} value={teamId} onChange={event => { setTeamId(event.target.value); setSelected([]); setJuzByAssignee({}); }} className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm"><option value="">Pilih tim pentashih</option>{teams.map(item => <option key={item.id} value={item.id}>{item.name} · {item.decree_no}</option>)}</select>{!teams.length && <p className="text-xs text-civic-warning mt-2">Belum ada tim dengan SK aktif. Hubungi Super Admin.</p>}</div>
-        {teamId && <fieldset disabled={saving || !ready} className="space-y-3"><legend className="text-sm font-semibold text-ink mb-2">Pentashih aktif ({selected.length} dipilih)</legend><p className="text-xs text-ink-muted">Pilih rentang juz naskah untuk tiap pentashih (mis. Juz 1–5, 6–10) atau tentukan sendiri.</p>{members.length ? members.map(member => {
+        {teamId && <fieldset disabled={saving || !ready} className="space-y-3"><legend className="text-sm font-semibold text-ink mb-2">Pentashih aktif ({selected.length} dipilih)</legend><p className="text-xs text-ink-muted">Pilih rentang juz naskah untuk tiap pentashih (mis. Juz 1–5, 6–10) atau tentukan sendiri.</p>
+        {hasOverlap && (
+          <div className="p-2.5 rounded-lg bg-brand-50 border border-brand-200 text-xs text-brand-900 flex items-center gap-2">
+            <span className="font-bold">Mode Pentashihan Dinamis / Ulang:</span>
+            <span>Nomor juz yang sama akan ditelaah secara bersama/silang oleh pentashih terpilih.</span>
+          </div>
+        )}{members.length ? members.map(member => {
           const userJuz = juzByAssignee[member.user_id] || [];
           const currentFrom = rangeInputs[member.user_id]?.from ?? (userJuz[0] || 1);
           const currentTo = rangeInputs[member.user_id]?.to ?? (userJuz[userJuz.length - 1] || 5);

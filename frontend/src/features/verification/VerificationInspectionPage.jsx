@@ -840,7 +840,14 @@ export const VerificationInspectionPage = () => {
 
       {/* Workflow Ownership Banner */}
       {workflowVm && (
-        <WorkflowOwnershipBanner viewModel={workflowVm} />
+        <WorkflowOwnershipBanner
+          viewModel={workflowVm}
+          onDirectAction={
+            workflowVm.operationalState === 'READY_FOR_PHYSICAL_HANDOVER'
+              ? () => setHandoverModalOpen(true)
+              : undefined
+          }
+        />
       )}
 
       {/* Workflow Stepper */}

@@ -106,7 +106,10 @@ export const UnifiedDashboard = () => {
   }, [currentUser, filterMyTasksOnly, page, statusFilter, debouncedSearch]);
 
   useEffect(() => {
-    if (!isPublisher) {
+    const canViewPerformance = userRoles.some(r =>
+      ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'VERIFIKATOR'].includes(r)
+    );
+    if (canViewPerformance) {
       reportApi
         .getVerificationPerformance()
         .then((res) => {
@@ -118,7 +121,7 @@ export const UnifiedDashboard = () => {
           // Metrik non-kritis, diamkan agar tidak mengganggu tabel utama
         });
     }
-  }, [currentUser, isPublisher]);
+  }, [currentUser, isPublisher, userRoles]);
 
   // Kalkulasi Metrik Internal
   const countStatuses = statuses => counts

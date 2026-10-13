@@ -11,19 +11,37 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   } else {
     requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   }
-  requireStatus(reg, ['WAITING_DISTRIBUTION']);
+  requireStatus(reg, ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);
   if (!await tx.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } })) fail(409, 'Penugasan belum dapat dibuat karena pembayaran belum dinyatakan lunas. Minta verifikator memeriksa bukti pembayaran terlebih dahulu.');
   const previous = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
-  const expectedStage = previous ? 'REVISION' : reg.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
-  if (data.stage !== expectedStage) fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
+  const lastRevLetter = await tx.officialDocument?.findFirst({
+    where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
+    orderBy: { created_at: 'desc' },
+  });
+  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
+  const expectedStage = isDummyRevision
+    ? 'DUMMY'
+    : previous
+    ? (data.stage === 'DUMMY' ? 'DUMMY' : (reg.status === 'TASHIH_IN_PROGRESS' ? (previous.stage || 'INITIAL') : 'REVISION'))
+    : reg.registration_type === 'EXTENSION'
+    ? 'DUMMY'
+    : 'INITIAL';
+  if (data.stage && data.stage !== expectedStage && reg.status !== 'TASHIH_IN_PROGRESS') {
+    fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
+  }
   const now = new Date();
   const team = await tx.distributionTeam.findUnique({ where: { id: data.team_id }, include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } } });
   if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) fail(409, 'Tim yang dipilih tidak tersedia atau masa berlaku SK-nya belum dimulai/sudah berakhir. Pilih tim dengan SK aktif atau minta administrator memperbarui data tim.');
+  
   const entries = data.juz_assignments || data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] }));
-  const allJuz = entries.flatMap(e => e.juz_numbers || []);
-  if (allJuz.length > 0 && new Set(allJuz).size !== allJuz.length) {
-    fail(400, 'Rentang atau nomor juz tidak boleh tumpang tindih antar pentashih.');
+  
+  // Clean duplicate juz per assignee to protect @@unique([assignment_id, juz_number])
+  for (const entry of entries) {
+    if (entry.juz_numbers && entry.juz_numbers.length) {
+      entry.juz_numbers = Array.from(new Set(entry.juz_numbers.map(Number)));
+    }
   }
+
   for (const { assignee_id: id } of entries) {
     const member = team.members.find(member => member.user_id === id);
     if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
@@ -35,21 +53,48 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   const receivedHandover = data.stage === 'REVISION' ? null : await tx.physicalManuscriptHandover.findFirst({
     where: { registration_id: id, status: 'RECEIVED' }, orderBy: { received_at: 'desc' }, select: { tashih_due_at: true },
   });
-  const slaDays = Number(reg.fee_sla_snapshot?.[`sla_${data.stage.toLowerCase()}_days`]) || 15;
+  const currentStage = data.stage || expectedStage;
+  const slaDays = Number(reg.fee_sla_snapshot?.[`sla_${currentStage.toLowerCase()}_days`]) || 15;
   const slaBaseDate = verifiedPayment?.verified_at || now;
   const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, slaBaseDate, slaDays, { applyCutoff: true });
+
+  const iteration = reg.status === 'TASHIH_IN_PROGRESS' && previous?.iteration
+    ? previous.iteration
+    : (previous?.iteration || 0) + 1;
+
+  if (reg.status === 'TASHIH_IN_PROGRESS') {
+    const existingActive = await tx.assignment.findMany({
+      where: {
+        registration_id: id,
+        stage: currentStage,
+        iteration,
+        status: { in: ['ASSIGNED', 'IN_PROGRESS'] },
+      },
+      select: { assignee_id: true },
+    });
+    const existingIds = new Set(existingActive.map(a => a.assignee_id));
+    const duplicates = entries.filter(e => existingIds.has(e.assignee_id));
+    if (duplicates.length > 0) {
+      fail(409, 'Ada pentashih yang dipilih sudah memiliki penugasan aktif pada tahap ini.');
+    }
+  }
+
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
     const assignment = await tx.assignment.create({ data: {
-      registration_id: id, team_id: team.id, assignee_id, stage: data.stage,
-      iteration: (previous?.iteration || 0) + 1, due_at,
-      ...(juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
+      registration_id: id, team_id: team.id, assignee_id, stage: currentStage,
+      iteration, due_at,
+      ...(juz_numbers && juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
     } });
     assignments.push(assignment);
     await audit(tx, user, 'CREATE_ASSIGNMENT', 'Assignment', assignment.id, assignment);
     await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
   }
-  await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Tim dan pentashih ditetapkan');
+  if (reg.status !== 'TASHIH_IN_PROGRESS') {
+    await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Tim dan pentashih ditetapkan');
+  } else {
+    await audit(tx, user, 'ADD_PENTASHIH_ASSIGNMENT', 'Registration', reg.id, { added_count: assignments.length, note: 'Penambahan pentashih / pentashihan ulang' });
+  }
   return assignments;
 }, { isolationLevel: 'ReadCommitted' });
 

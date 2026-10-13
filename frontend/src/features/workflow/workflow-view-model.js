@@ -317,7 +317,7 @@ export function getWorkflowViewModel(registration, currentUser) {
       registration.verification_assignment?.id ||
       registration.verification_assignments?.[0]?.id ||
       registration.id;
-    nextActionPath = `/internal/verifications/${assignmentId}`;
+    nextActionPath = `/internal/verifications/${assignmentId}?handover=1`;
   }
 
   const isTashihRev = operationalState === 'TASHIH_REVISION_REQUIRED';

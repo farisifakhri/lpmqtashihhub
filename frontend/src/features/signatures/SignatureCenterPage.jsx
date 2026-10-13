@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
+import { registrationApi } from '@/api/registration.api';
+import { documentationApi } from '@/api/documentation.api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { SearchField } from '@/components/ui/SearchField';
@@ -47,6 +49,7 @@ export const SignatureCenterPage = () => {
 
   // Data lists
   const [assignments, setAssignments] = useState([]);
+  const [sttRegistrations, setSttRegistrations] = useState([]);
   const [selectedDocIds, setSelectedDocIds] = useState([]);
 
   // Dialogs state
@@ -72,10 +75,12 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       // Load assignments to extract documents requiring signatures
-      const [resWaitingSig, resReady, resCompleted] = await Promise.all([
+      const [resWaitingSig, resReady, resCompleted, resStt, resSttIssued] = await Promise.all([
         verificationApi.listAssignments({ status: 'WAITING_SIGNATURE', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'READY_TO_SEND', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'COMPLETED', limit: 50 }).catch(() => ({ data: { items: [] } })),
+        registrationApi.listRegistrations({ status: 'READY_FOR_STT', limit: 50 }).catch(() => ({ data: { items: [] } })),
+        registrationApi.listRegistrations({ status: 'STT_ISSUED', limit: 20 }).catch(() => ({ data: { items: [] } })),
       ]);
 
       const allItems = [
@@ -93,6 +98,12 @@ export const SignatureCenterPage = () => {
       });
 
       setAssignments(Array.from(uniqueMap.values()));
+
+      const sttItems = [
+        ...(Array.isArray(resStt?.data) ? resStt.data : (resStt?.data?.items || [])),
+        ...(Array.isArray(resSttIssued?.data) ? resSttIssued.data : (resSttIssued?.data?.items || [])),
+      ];
+      setSttRegistrations(sttItems);
     } catch (err) {
       setError(err.message || 'Gagal memuat antrean dokumen tanda tangan.');
     } finally {
@@ -194,8 +205,56 @@ export const SignatureCenterPage = () => {
       }
     });
 
+    // Map official STT documents
+    sttRegistrations.forEach((reg) => {
+      const docs = reg.official_documents || [];
+      const sttDocs = docs.filter((d) => d.document_type === 'SURAT_TANDA_TASHIH');
+      sttDocs.forEach((doc) => {
+        const isCompleted = doc.status === 'ISSUED' || reg.status === 'STT_ISSUED';
+        const tuWorkflow = doc.content_snapshot?.tu_workflow;
+        const isSubmittedToTu = tuWorkflow?.status === 'SUBMITTED_TO_TU';
+
+        const signatories = [
+          {
+            role_label: 'Penandatangan 1 - Tata Usaha (Paraf 1)',
+            name: tuWorkflow?.paraf_1?.signed_by?.name || 'Tata Usaha (Penandatangan 1)',
+            status: tuWorkflow?.paraf_1 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
+          },
+          {
+            role_label: 'Penandatangan 2 - Tata Usaha (Paraf 2)',
+            name: tuWorkflow?.paraf_2?.signed_by?.name || 'Tata Usaha (Penandatangan 2)',
+            status: tuWorkflow?.paraf_2 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
+          },
+          {
+            role_label: 'Kepala LPMQ (Tanda Tangan STT)',
+            name: doc.content_snapshot?.final_signature?.signed_by?.name || 'Kepala LPMQ',
+            status: isCompleted ? 'SIGNED' : 'PENDING',
+          },
+        ];
+
+        const canUserSign = (isHead || currentUser?.roles?.includes('SUPERADMIN')) && !isCompleted && isSubmittedToTu;
+
+        list.push({
+          id: doc.id,
+          document_no: doc.document_no || `DRAFT-STT-${doc.id.slice(0, 6)}`,
+          document_type: 'SURAT_TANDA_TASHIH',
+          version: doc.version || 1,
+          status: isCompleted ? 'SIGNED' : (isSubmittedToTu ? 'WAITING_SIGNATURE' : 'DRAFT'),
+          assignment_status: isCompleted ? 'COMPLETED' : 'WAITING_SIGNATURE',
+          created_at: doc.created_at || reg.created_at,
+          registration_id: reg.id,
+          registration_no: reg.registration_no,
+          manuscript_title: reg.title,
+          publisher_name: reg.publisher?.legal_name || 'Penerbit Terdaftar',
+          isAssignedToMe: false,
+          canUserSign,
+          signatories,
+        });
+      });
+    });
+
     return list;
-  }, [assignments, isHead, isVerifier, currentUser]);
+  }, [assignments, sttRegistrations, isHead, isVerifier, currentUser]);
 
   // Filter documents by active tab and search
   const filteredDocuments = useMemo(() => {
@@ -266,8 +325,13 @@ export const SignatureCenterPage = () => {
     setActionLoading(true);
     setError(null);
     try {
-      await verificationApi.signDocument(signDialogDoc.id);
-      setSuccessMessage(`Persetujuan internal dokumen ${signDialogDoc.document_no} berhasil dicatat.`);
+      if (signDialogDoc.document_type === 'SURAT_TANDA_TASHIH') {
+        await documentationApi.signStt(signDialogDoc.id);
+        setSuccessMessage(`Surat Tanda Tashih (STT) ${signDialogDoc.document_no} resmi disahkan dan ditandatangani oleh Kepala LPMQ.`);
+      } else {
+        await verificationApi.signDocument(signDialogDoc.id);
+        setSuccessMessage(`Persetujuan internal dokumen ${signDialogDoc.document_no} berhasil dicatat.`);
+      }
       setSignDialogDoc(null);
       await fetchAssignments();
     } catch (err) {
@@ -528,6 +592,7 @@ export const SignatureCenterPage = () => {
               className="text-xs px-2.5 py-1.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 font-medium"
             >
               <option value="ALL">Semua Jenis Dokumen</option>
+              <option value="SURAT_TANDA_TASHIH">Surat Tanda Tashih (STT)</option>
               <option value="SURAT_HASIL_VERIFIKASI">Surat Hasil Verifikasi</option>
               <option value="BERITA_ACARA_VERIFIKASI">Berita Acara Verifikasi</option>
               <option value="NOTA_DINAS_VERIFIKASI">Disposisi Penugasan</option>
