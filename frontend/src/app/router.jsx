@@ -6,6 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { LandingPage } from '@/features/LandingPage/LandingPage';
 import { TashihLoader } from '@/components/ui/TashihLoader';
 
 // Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
@@ -42,6 +43,15 @@ const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/ve
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
 const router = createBrowserRouter([
+  // Rute Publik (Landing Page)
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
+  {
+    path: '/landing',
+    element: <LandingPage />,
+  },
   // Rute Autentikasi Mandiri
   {
     path: '/login',
@@ -52,11 +62,10 @@ const router = createBrowserRouter([
     element: <RegisterPublisherPage />,
   },
   {
-    path: '/',
     element: <AppLayout />,
     children: [
       {
-        index: true,
+        path: 'home',
         element: <HomeRedirect />,
       },
       // Rute Portal Penerbit
