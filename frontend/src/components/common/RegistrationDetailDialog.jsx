@@ -19,7 +19,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('HELPER_ADMIN') || userRoles.includes('SUPERADMIN') || currentUser?.role === 'HELPER_ADMIN' || currentUser?.role === 'SUPERADMIN';
+  const isAdmin = userRoles.includes('ADMIN_INTERNAL') || userRoles.includes('SUPERADMIN') || currentUser?.role === 'ADMIN_INTERNAL' || currentUser?.role === 'SUPERADMIN';
 
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
@@ -83,7 +83,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 {data.external_sync_status && (
                   <span
                     className={clsx(
-                      'inline-flex items-center rounded-md font-semibold border px-2 py-0.5 text-[11px]',
+                      'inline-flex items-center rounded-md font-semibold border px-2 py-0.5 text-xs',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.bgClass || 'bg-surface-subtle',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.textClass || 'text-ink',
                       TOKENS.externalSyncStatus?.[data.external_sync_status]?.borderClass || 'border-line'

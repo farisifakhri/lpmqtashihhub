@@ -26,11 +26,11 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
 
   const role = currentUser?.role || '';
   const roles = currentUser?.roles || [];
-  const isPublisher = role === 'ADMIN_PENERBIT' || roles.includes('ADMIN_PENERBIT');
+  const isPublisher = role === 'PENERBIT' || roles.includes('PENERBIT');
   const isHead = role === 'KEPALA_LPMQ' || roles.includes('KEPALA_LPMQ');
   const isSuperAdmin = role === 'SUPERADMIN' || roles.includes('SUPERADMIN');
   const isVerifikator = role === 'VERIFIKATOR' || roles.includes('VERIFIKATOR');
-  const isAdmin = role === 'HELPER_ADMIN' || roles.includes('HELPER_ADMIN');
+  const isAdmin = role === 'ADMIN_INTERNAL' || roles.includes('ADMIN_INTERNAL');
   const isDistributor = role === 'DISTRIBUTOR' || roles.includes('DISTRIBUTOR');
 
   // Build searchable items based on user role
@@ -158,7 +158,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
               <X className="w-4 h-4" />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-[11px] font-mono text-ink-muted bg-surface-subtle border border-line rounded">
+          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-ink-muted bg-surface-subtle border border-line rounded">
             ESC
           </kbd>
         </div>
@@ -201,11 +201,11 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold truncate">{item.label}</span>
-                        <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle text-ink-muted border border-line/60">
+                        <span className="text-xs uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle text-ink-muted border border-line/60">
                           {item.category}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-muted truncate mt-0.5">{item.desc}</p>
+                      <p className="text-xs text-ink-muted truncate mt-0.5">{item.desc}</p>
                     </div>
                   </div>
                   <ArrowRight
@@ -221,7 +221,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 border-t border-line bg-surface-subtle/60 text-[11px] text-ink-muted flex items-center justify-between">
+        <div className="px-4 py-2 border-t border-line bg-surface-subtle/60 text-xs text-ink-muted flex items-center justify-between">
           <span>Gunakan panah ↑↓ untuk navigasi, Enter untuk memilih</span>
           <span className="font-mono">Pencarian Cepat</span>
         </div>

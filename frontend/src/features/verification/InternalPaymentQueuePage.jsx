@@ -292,16 +292,16 @@ export const InternalPaymentQueuePage = () => {
                   <h4 className="font-bold text-ink text-xs line-clamp-1">
                     {reg.title || 'Naskah Mushaf'}
                   </h4>
-                  <p className="text-[11px] text-ink-muted truncate mt-0.5">
+                  <p className="text-xs text-ink-muted truncate mt-0.5">
                     {pub.legal_name || 'Penerbit Pemohon'}
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-line text-[11px]">
+                <div className="flex items-center justify-between pt-1 border-t border-line text-xs">
                   <strong className="text-brand-800 font-extrabold">
                     {formatCurrency(item.amount)}
                   </strong>
-                  <span className="text-ink-muted font-mono text-[10px]">
+                  <span className="text-ink-muted font-mono text-xs">
                     {item.external_ref ? `NTPN: ${item.external_ref}` : 'Belum NTPN'}
                   </span>
                 </div>
@@ -369,7 +369,7 @@ export const InternalPaymentQueuePage = () => {
           </div>
 
           <div className="text-left sm:text-right">
-            <span className="text-[11px] text-ink-muted block">Tarif Layanan PNBP</span>
+            <span className="text-xs text-ink-muted block">Tarif Layanan PNBP</span>
             <span className="text-xl font-black text-brand-800">
               {formatCurrency(selectedPayment.amount)}
             </span>
@@ -379,17 +379,17 @@ export const InternalPaymentQueuePage = () => {
         {/* Snapshot Meta Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div className="p-3 bg-canvas rounded-lg border border-line space-y-1">
-            <span className="text-ink-muted block text-[11px]">Penerbit Pemohon:</span>
+            <span className="text-ink-muted block text-xs">Penerbit Pemohon:</span>
             <strong className="text-ink block font-semibold">
               {selectedPayment.registration?.publisher?.legal_name || '-'}
             </strong>
-            <p className="text-ink-muted text-[11px] truncate">
+            <p className="text-ink-muted text-xs truncate">
               {selectedPayment.registration?.publisher?.address || 'Alamat terdaftar'}
             </p>
           </div>
 
           <div className="p-3 bg-canvas rounded-lg border border-line space-y-1">
-            <span className="text-ink-muted block text-[11px]">Nomor NTPN / Referensi:</span>
+            <span className="text-ink-muted block text-xs">Nomor NTPN / Referensi:</span>
             {selectedPayment.external_ref ? (
               <strong className="text-ink block font-mono font-bold">
                 {selectedPayment.external_ref}
@@ -397,17 +397,17 @@ export const InternalPaymentQueuePage = () => {
             ) : (
               <span className="text-ink-muted italic block">Belum ada NTPN</span>
             )}
-            <p className="text-ink-muted text-[11px]">
+            <p className="text-ink-muted text-xs">
               Waktu Setor: {formatDate(selectedPayment.paid_at || selectedPayment.created_at)}
             </p>
           </div>
 
           <div className="p-3 bg-canvas rounded-lg border border-line space-y-1">
-            <span className="text-ink-muted block text-[11px]">Layanan Pentashihan:</span>
+            <span className="text-ink-muted block text-xs">Layanan Pentashihan:</span>
             <strong className="text-ink block font-semibold">
               {selectedPayment.registration?.service_type?.name || 'Mushaf Standar'}
             </strong>
-            <p className="text-ink-muted text-[11px]">
+            <p className="text-ink-muted text-xs">
               Registrasi: {selectedPayment.registration?.registration_no || '-'}
             </p>
           </div>
@@ -424,7 +424,7 @@ export const InternalPaymentQueuePage = () => {
             </h3>
           </div>
           {selectedPayment.receipt_file_id && (
-            <span className="font-mono text-[11px] text-ink-muted">
+            <span className="font-mono text-xs text-ink-muted">
               ID Berkas: {selectedPayment.receipt_file_id.substring(0, 8)}...
             </span>
           )}
@@ -531,7 +531,7 @@ export const InternalPaymentQueuePage = () => {
             </div>
 
             {/* SOP Step Guidance */}
-            <div className="pt-3 border-t border-brand-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-brand-800">
+            <div className="pt-3 border-t border-brand-100/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-brand-800">
               <div className="flex items-center gap-2">
                 <span className="font-bold uppercase tracking-wider text-brand-900">Alur SOP Selanjutnya:</span>
                 <span>Langkah 7: Verifikator serahkan master cetak & terbitkan BAST</span>
@@ -682,7 +682,7 @@ export const InternalPaymentQueuePage = () => {
                   className="w-full text-xs p-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-danger/20 focus:border-civic-danger"
                   required
                 />
-                <span className="text-[11px] text-ink-muted">Minimal 5 karakter.</span>
+                <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-2">

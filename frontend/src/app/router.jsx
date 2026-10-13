@@ -6,16 +6,10 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { LandingPage } from '@/features/LandingPage/LandingPage';
 
 // Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
 const PageFallback = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 border-3 border-brand-700 border-t-transparent rounded-full animate-spin" />
-      <span className="text-xs font-semibold text-ink-muted">Memuat modul...</span>
-    </div>
-  </div>
+  <TashihLoader label="Memuat halaman..." delayMs={150} className="min-h-[400px]" />
 );
 
 const withSuspense = (Component) => (props) => (
@@ -121,7 +115,7 @@ const router = createBrowserRouter([
       // Rute Aplikasi Internal LPMQ
       {
         path: 'internal/archive',
-        element: <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
+        element: <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}><DocumentArchivePage /></ProtectedRoute>,
       },
       {
         path: 'internal',
@@ -166,7 +160,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/distributions',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'HELPER_ADMIN', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
           </ProtectedRoute>
         ),
@@ -174,7 +168,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/master-intake',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['HELPER_ADMIN', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'SUPERADMIN']}>
             <AdminMasterIntakePage />
           </ProtectedRoute>
         ),

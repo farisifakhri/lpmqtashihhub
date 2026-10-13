@@ -8,6 +8,7 @@
     "dev:frontend": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "check:colors": "node scripts/check-colors.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

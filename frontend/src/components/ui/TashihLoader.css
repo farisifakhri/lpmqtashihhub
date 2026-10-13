@@ -1,0 +1,83 @@
+/* Loader logo Tashih — memakai token warna yang sudah ada (mendukung mode gelap). */
+.tashih-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 6rem;
+  color: rgb(var(--ink-muted-rgb));
+}
+
+.tashih-loader--sm { min-height: 0; flex-direction: row; gap: 0.5rem; }
+.tashih-loader--lg { gap: 1rem; }
+
+.tashih-loader--screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: rgb(var(--canvas-rgb));
+}
+
+.tashih-loader__mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  /* cincin sedikit lebih besar dari logo */
+  width: calc(var(--tl-logo) * 1.4);
+  height: calc(var(--tl-logo) * 1.4);
+}
+
+.tashih-loader__ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  animation: tashih-spin 1.6s linear infinite;
+}
+
+.tashih-loader__track,
+.tashih-loader__arc {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.tashih-loader__track { stroke: rgb(var(--line-rgb)); }
+
+.tashih-loader__arc {
+  stroke: rgb(var(--brand-700-rgb));
+  stroke-dasharray: 70 220;
+  animation: tashih-dash 1.6s ease-in-out infinite;
+}
+
+.tashih-loader__logo {
+  width: var(--tl-logo);
+  height: var(--tl-logo);
+  object-fit: contain;
+  animation: tashih-pulse 1.8s ease-in-out infinite;
+  user-select: none;
+}
+
+.tashih-loader__label {
+  font-size: 0.8125rem; /* 13px pada ukuran dasar; ikut skala zoom/font browser */
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+@keyframes tashih-spin  { to { transform: rotate(270deg); } }
+@keyframes tashih-dash  {
+  0%   { stroke-dasharray: 20 270; }
+  50%  { stroke-dasharray: 150 140; }
+  100% { stroke-dasharray: 20 270; }
+}
+@keyframes tashih-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.9; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+/* Pengguna yang meminta gerak dikurangi: logo diam, tanpa cincin berputar. */
+@media (prefers-reduced-motion: reduce) {
+  .tashih-loader__ring { display: none; }
+  .tashih-loader__logo { animation: none; opacity: 1; }
+}

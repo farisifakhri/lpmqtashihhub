@@ -15,26 +15,43 @@ export async function readPrivateFile(id, user) {
 
   if (file.owner_id !== user.id && !user.roles.includes('SUPERADMIN')) {
     const isInternalStaff = user.roles.some(role =>
-      ['VERIFIKATOR', 'VERIFICATOR', 'HELPER_ADMIN', 'KEPALA_LPMQ', 'DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(role)
+      ['VERIFIKATOR', 'VERIFICATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(role)
     );
 
     const manuscript = await prisma.manuscriptFile.findFirst({ where: { file_id: file.id }, include: { registration: true } });
     if (manuscript) {
       await assertManuscriptAccess(manuscript.registration, user);
-    } else if (!isInternalStaff) {
+    } else {
+      // Pengecekan kerahasiaan berkas rekapan pentashih (Keputusan 8 Okt: hanya pentashih terkait, distributor, dan admin internal)
+      const recapReview = await prisma.tashihReview.findFirst({
+        where: { notes: { contains: `[RECAP_FILE:${file.id}]` } },
+        include: { assignment: true },
+      });
+      if (recapReview) {
+        const isAuthorizedRecapReader =
+          file.owner_id === user.id ||
+          recapReview.assignment?.assignee_id === user.id ||
+          user.roles.includes('SUPERADMIN') ||
+          user.roles.includes('ADMIN_INTERNAL') ||
+          user.roles.includes('DISTRIBUTOR');
+        if (!isAuthorizedRecapReader) {
+          fail(403, 'Akses berkas rekapan telaah pentashih bersifat rahasia dan dibatasi hanya untuk Pentashih terkait, Distributor, dan Admin Internal.');
+        }
+      } else if (!isInternalStaff) {
       const receipt = await prisma.paymentRecord.findFirst({
         where: { receipt_file_id: file.id },
         include: { registration: true },
       });
-      const isOwnerPublisher = receipt && user.roles.includes('ADMIN_PENERBIT') && receipt.registration?.publisher_id === user.publisherId;
+      const isOwnerPublisher = receipt && user.roles.includes('PENERBIT') && receipt.registration?.publisher_id === user.publisherId;
       const vDoc = await prisma.verificationDocument.findFirst({
         where: { file_id: file.id },
         include: { registration: true },
       });
-      const isVDocPublisher = vDoc && user.roles.includes('ADMIN_PENERBIT') && vDoc.registration?.publisher_id === user.publisherId;
+      const isVDocPublisher = vDoc && user.roles.includes('PENERBIT') && vDoc.registration?.publisher_id === user.publisherId;
 
-      if (!isOwnerPublisher && !isVDocPublisher && file.owner_id !== user.id) {
-        fail(403, 'Akses berkas ditolak.');
+        if (!isOwnerPublisher && !isVDocPublisher && file.owner_id !== user.id) {
+          fail(403, 'Akses berkas ditolak.');
+        }
       }
     }
   }

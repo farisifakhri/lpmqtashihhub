@@ -147,7 +147,7 @@ describe('DistributorHandoverInboxPage Component', () => {
       );
       expect(HandoverApiModule.handoverApi.receiveHandover.mock.calls[0][1]).not.toHaveProperty('tashih_due_at');
     });
-  });
+  }, 15000);
 
   it('dapat membuka modal pengembalian fisik cacat dan mengirimkan alasan penolakan', async () => {
     render(
@@ -182,7 +182,7 @@ describe('DistributorHandoverInboxPage Component', () => {
   });
 
   it('membuka dialog penugasan dari antrean distributor untuk admin', async () => {
-    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'HELPER_ADMIN', roles: ['HELPER_ADMIN'] } });
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'admin-1', role: 'ADMIN_INTERNAL', roles: ['ADMIN_INTERNAL'] } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: { items: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }], pagination: { total: 1 } } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
     vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });

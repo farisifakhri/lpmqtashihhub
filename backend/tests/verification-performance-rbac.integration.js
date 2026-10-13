@@ -42,16 +42,16 @@ export async function runVerificationPerformanceRbacTests({
     return result.json.data;
   };
 
-  // 1. Setup Admin Internal Murni (Role HELPER_ADMIN saja, bukan SUPERADMIN)
+  // 1. Setup Admin Internal Murni (Role ADMIN_INTERNAL saja, bukan SUPERADMIN)
   let internalAdminToken = null;
   const internalAdminEmail = `admin.internal.${Date.now()}@lpmq.kemenag.go.id`;
 
-  // Pastikan role HELPER_ADMIN ada di database
-  let adminRole = await prisma.role.findUnique({ where: { code: 'HELPER_ADMIN' } });
+  // Pastikan role ADMIN_INTERNAL ada di database
+  let adminRole = await prisma.role.findUnique({ where: { code: 'ADMIN_INTERNAL' } });
   if (!adminRole) {
     adminRole = await prisma.role.create({
       data: {
-        code: 'HELPER_ADMIN',
+        code: 'ADMIN_INTERNAL',
         name: 'Administrator Internal LPMQ',
       },
     });
@@ -103,19 +103,19 @@ export async function runVerificationPerformanceRbacTests({
     assert.equal(typeof data.handovers.total_handovers, 'number');
   });
 
-  await test('Laporan Kinerja: HELPER_ADMIN internal dapat mengakses laporan kinerja verifikasi', async () => {
+  await test('Laporan Kinerja: ADMIN_INTERNAL internal dapat mengakses laporan kinerja verifikasi', async () => {
     const data = await expect('/reports/verification-performance', internalAdminToken, 'GET', undefined, 200);
     assert.ok(data.summary);
     assert.ok(data.status_distribution);
   });
 
-  await test('Negative: ADMIN_PENERBIT dilarang mengakses laporan kinerja internal verifikasi (403)', async () => {
+  await test('Negative: PENERBIT dilarang mengakses laporan kinerja internal verifikasi (403)', async () => {
     const res = await call('/reports/verification-performance', publisherToken, 'GET');
     assert.equal(res.status, 403);
   });
 
   // -------------------------------------------------------------
-  // TEST SUITE: RBAC HARDENING (SUPERADMIN vs HELPER_ADMIN INTERNAL)
+  // TEST SUITE: RBAC HARDENING (SUPERADMIN vs ADMIN_INTERNAL INTERNAL)
   // -------------------------------------------------------------
   await test('RBAC Hardening: Buat naskah baru oleh Penerbit A untuk pengujian batas wewenang', async () => {
     const regPayload = {
@@ -129,8 +129,8 @@ export async function runVerificationPerformanceRbacTests({
     assert.ok(testReg.id);
   });
 
-  await test('RBAC Hardening: HELPER_ADMIN internal DITOLAK saat membatalkan naskah penerbit via portal publisher (403)', async () => {
-    // Admin internal tidak punya publisherId dan bukan ADMIN_PENERBIT / SUPERADMIN
+  await test('RBAC Hardening: ADMIN_INTERNAL internal DITOLAK saat membatalkan naskah penerbit via portal publisher (403)', async () => {
+    // Admin internal tidak punya publisherId dan bukan PENERBIT / SUPERADMIN
     const res = await call(`/registrations/${testReg.id}/status`, internalAdminToken, 'PATCH', {
       to_status: 'CANCELLED',
       notes: 'Admin internal mencoba membatalkan naskah penerbit secara ilegal',
@@ -175,7 +175,7 @@ export async function runVerificationPerformanceRbacTests({
     });
   });
 
-  await test('Timeline: Internal (HELPER_ADMIN / SUPERADMIN) melihat detail lengkap tanpa sanitasi', async () => {
+  await test('Timeline: Internal (ADMIN_INTERNAL / SUPERADMIN) melihat detail lengkap tanpa sanitasi', async () => {
     const data = await expect(`/registrations/${timelineReg.id}/timeline`, adminToken, 'GET', undefined, 200);
     assert.equal(data.is_sanitized, false, 'Timeline untuk internal tidak disanitasi');
     assert.ok(Array.isArray(data.timeline));

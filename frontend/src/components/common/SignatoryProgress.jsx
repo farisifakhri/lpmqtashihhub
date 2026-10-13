@@ -54,7 +54,7 @@ export const SignatoryProgress = ({
                     <span className="text-ink-muted font-medium">({sig.name})</span>
                   )}
                 </div>
-                {sig.title && <p className="text-ink-muted text-[11px]">{sig.title}</p>}
+                {sig.title && <p className="text-ink-muted text-xs">{sig.title}</p>}
               </div>
 
               <div className="flex items-center gap-2 shrink-0">

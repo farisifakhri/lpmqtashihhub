@@ -30,10 +30,10 @@ describe('bootstrap autentikasi', () => {
     expect(screen.queryByText('SUPERADMIN')).not.toBeInTheDocument();
 
     await act(async () => {
-      resolveMe({ data: { id: 'user-1', name: 'Penerbit', roles: ['ADMIN_PENERBIT'] } });
+      resolveMe({ data: { id: 'user-1', name: 'Penerbit', roles: ['PENERBIT'] } });
     });
 
-    expect(screen.getByText('ADMIN_PENERBIT')).toBeInTheDocument();
+    expect(screen.getByText('PENERBIT')).toBeInTheDocument();
     expect(localStorage.getItem('lpmq_user')).toBeNull();
   });
 });

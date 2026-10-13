@@ -24,6 +24,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SignatoryProgress } from '@/components/common/SignatoryProgress';
 import { EmailDeliveryStatus } from '@/components/common/EmailDeliveryStatus';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
+import { showToast } from '@/components/ui/toast';
 import {
   CheckCircle2,
   AlertTriangle,
@@ -45,28 +47,44 @@ import {
 
 const CHECKLIST_DEFINITIONS = [
   {
-    code: 'REGISTRATION_DATA',
-    title: '1. Kelengkapan & Kesesuaian Data Registrasi',
-    description:
-      'Pemeriksaan identitas pemohon, legalitas penerbit (badan hukum/kemenag), alamat kantor resmi, kesesuaian kategori mushaf, dan keabsahan surat permohonan.',
+    code: 'COMPLETENESS_JUZ',
+    title: '1. Kelengkapan Juz',
+    description: 'Pemeriksaan kelengkapan mushaf 30 juz secara utuh.',
   },
   {
-    code: 'DIGITAL_FILES',
-    title: '2. Kelengkapan Berkas Digital',
-    description:
-      'Pemeriksaan file cover mushaf resolusi tinggi serta kelengkapan 5 halaman penanda naskah (Surah Al-Fatihah dan awal Al-Baqarah) berformat PDF sesuai standar.',
+    code: 'COMPLETENESS_SURAH',
+    title: '2. Kelengkapan Surah',
+    description: 'Pemeriksaan kelengkapan 114 surah mulai Al-Fatihah sampai An-Nas.',
   },
   {
-    code: 'PHYSICAL_MASTER',
-    title: '3. Kesesuaian Master Fisik Mushaf (A4 Per Juz)',
-    description:
-      'Pemeriksaan print-out master mushaf ukuran A4 yang dijilid rapi per juz, jumlah jilid (30 juz), kondisi fisik tidak cacat, dan tanda terima resmi penerimaan LPMQ.',
+    code: 'PAGE_ORDER',
+    title: '3. Urutan Halaman',
+    description: 'Pemeriksaan kerapian dan keteraturan urutan halaman mushaf tanpa ada yang tertukar atau terlewat.',
   },
   {
-    code: 'MANUSCRIPT_CONTENT',
-    title: '4. Format & Rasm Naskah Awal',
-    description:
-      'Pemeriksaan awal kesesuaian Rasm Usmani Standar Indonesia, penempatan tanda harakat, kejelasan ayat awal, kelengkapan tanda waqaf, dan iluminasi cover.',
+    code: 'MSI_CONFORMITY',
+    title: '4. Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia',
+    description: 'Pemeriksaan kaidah rasm Usmani, tanda harakat, tanda waqaf, dan tanda baca sesuai pedoman Mushaf Standar Indonesia (MSI).',
+  },
+  {
+    code: 'TAJWID_COLOR',
+    title: '5. Kesesuaian Dengan Kaidah Tajwid Warna',
+    description: 'Pemeriksaan penerapan kode dan panduan tajwid warna sesuai pedoman LPMQ (bila menggunakan tajwid warna).',
+  },
+  {
+    code: 'TRANSLATION_KEMENAG',
+    title: '6. Kesesuaian Dengan Terjemah Kemenag',
+    description: "Pemeriksaan teks terjemahan Al-Qur'an Kementerian Agama RI edisi mutakhir (bila mushaf berterjemah).",
+  },
+  {
+    code: 'BRAILLE_PEDOMAN',
+    title: "7. Kesesuaian Dengan Pedoman Penulisan Al-Qur'an Braille Kemenag",
+    description: "Pemeriksaan sistem simbol dan standarisasi Al-Qur'an Braille Kemenag RI (khusus mushaf braille).",
+  },
+  {
+    code: 'TRANSLITERATION_PEDOMAN',
+    title: '8. Kesesuaian Dengan Pedoman Transliterasi',
+    description: 'Pemeriksaan pedoman transliterasi Arab-Latin SKB Menteri Agama dan Mendikbud (bila memuat transliterasi).',
   },
 ];
 
@@ -101,6 +119,7 @@ export const VerificationInspectionPage = () => {
   const [resultDocumentNo, setResultDocumentNo] = useState('');
   const [minutesDocumentNo, setMinutesDocumentNo] = useState('');
   const [approveModalError, setApproveModalError] = useState(null);
+  const [billingNoticeModalOpen, setBillingNoticeModalOpen] = useState(false);
   const [pdfPreview, setPdfPreview] = useState(null);
 
   useEffect(() => () => {
@@ -310,6 +329,8 @@ export const VerificationInspectionPage = () => {
 
   const handleSaveDraft = async () => {
     if (!validateForm(false)) {
+      setError('Formulir pemeriksaan belum valid. Silakan lengkapi catatan untuk butir checklist yang Tidak Sesuai.');
+      showToast('Catatan wajib diisi untuk butir checklist yang Tidak Sesuai.', 'warning');
       return;
     }
     setActionLoading(true);
@@ -338,6 +359,15 @@ export const VerificationInspectionPage = () => {
 
   const handleOpenSubmitConfirm = () => {
     if (!validateForm(true)) {
+      if (decision === 'PASSED' && (!billingNo || billingNo.trim().length < 3 || !billingFileId)) {
+        showToast('Draf Lolos Verifikasi belum dapat diajukan: Harap lengkapi Kode Billing PNBP dan Dokumen PDF Billing.', 'warning');
+        setError('Draf Lolos Verifikasi belum dapat diajukan: Kode billing PNBP dan dokumen PDF billing wajib dilengkapi terlebih dahulu.');
+        setBillingNoticeModalOpen(true);
+        return;
+      }
+
+      setError('Formulir pemeriksaan belum lengkap. Silakan periksa kembali isian checklist dan draf surat hasil.');
+      showToast('Formulir pemeriksaan belum lengkap. Silakan periksa kembali isian Anda.', 'warning');
       return;
     }
     setSubmitConfirmOpen(true);
@@ -434,9 +464,17 @@ export const VerificationInspectionPage = () => {
     }
   };
 
-  const handleSignDocument = async (docId) => {
+  const [signConfirmDocId, setSignConfirmDocId] = useState(null);
+
+  const handleSignDocument = (docId) => {
     if (!docId) return;
-    if (!window.confirm('Konfirmasi persetujuan internal dokumen ini?')) return;
+    setSignConfirmDocId(docId);
+  };
+
+  const confirmSignDocument = async () => {
+    if (!signConfirmDocId) return;
+    const docId = signConfirmDocId;
+    setSignConfirmDocId(null);
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -505,9 +543,16 @@ export const VerificationInspectionPage = () => {
     }
   };
 
-  const handleSendDocument = async () => {
+  const [sendConfirmModalOpen, setSendConfirmModalOpen] = useState(false);
+
+  const handleSendDocument = () => {
     if (!latestResultDoc?.id) return;
-    if (!window.confirm('Kirimkan surat hasil verifikasi resmi kepada penerbit dan terbitkan tagihan pembayaran PNBP?')) return;
+    setSendConfirmModalOpen(true);
+  };
+
+  const confirmSendDocument = async () => {
+    if (!latestResultDoc?.id) return;
+    setSendConfirmModalOpen(false);
     setActionLoading(true);
     setError(null);
     setSuccessMessage(null);
@@ -799,7 +844,10 @@ export const VerificationInspectionPage = () => {
       )}
 
       {/* Workflow Stepper */}
-      <WorkflowStepper currentStatus={registration.status} currentStageId={2} />
+      <WorkflowStepper
+        currentStatus={registration.status}
+        assignmentStatus={assignment?.status}
+      />
 
       {/* Return reason alert banner if returned by Kepala */}
       {assignment.status === 'IN_PROGRESS' && assignment.return_reason && (
@@ -812,7 +860,7 @@ export const VerificationInspectionPage = () => {
             <p className="text-civic-danger leading-relaxed">
               <strong>Catatan Perbaikan:</strong> &ldquo;{assignment.return_reason}&rdquo;
             </p>
-            <p className="text-civic-danger text-[11px]">
+            <p className="text-civic-danger text-xs">
               Silakan periksa kembali berkas/checklist yang perlu disesuaikan, lalu ajukan draf perbaikan.
             </p>
           </div>
@@ -934,15 +982,6 @@ export const VerificationInspectionPage = () => {
         >
           Hasil & Surat
         </button>
-        <button
-          type="button"
-          onClick={() => setActiveMobileTab('arsip')}
-          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
-            activeMobileTab === 'arsip' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
-          }`}
-        >
-          Arsip Dokumen
-        </button>
       </div>
 
       {/* THE SPLIT-STUDIO WORKSTATION */}
@@ -981,7 +1020,7 @@ export const VerificationInspectionPage = () => {
               >
                 <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
                 <span>Checklist (4 Butir)</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
                   {sesuaiCount + tidakBerlakuCount}/4
                 </span>
               </button>
@@ -997,7 +1036,7 @@ export const VerificationInspectionPage = () => {
               >
                 <BookOpen className="w-3.5 h-3.5 text-brand-700" />
                 <span>Konten Mushaf</span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                <span className="text-xs px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
                   REV-16
                 </span>
               </button>
@@ -1013,26 +1052,13 @@ export const VerificationInspectionPage = () => {
               >
                 <FileText className="w-3.5 h-3.5 text-brand-700" />
                 <span>Hasil & Draf Surat</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                <span className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
                   decision === 'PASSED'
                     ? 'bg-brand-50 text-brand-800 border border-brand-200'
                     : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
                 }`}>
                   {decision === 'PASSED' ? 'Lolos' : 'Perbaikan'}
                 </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('arsip')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'arsip'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <History className="w-3.5 h-3.5 text-brand-700" />
-                <span>Arsip & Dokumen</span>
               </button>
             </div>
           </div>
@@ -1066,36 +1092,7 @@ export const VerificationInspectionPage = () => {
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'}`}>
-            <ResultLetterPanel
-              activeMobileTab="hasil"
-              decision={decision}
-              setDecision={setDecision}
-              loadOfficialTemplate={loadOfficialTemplate}
-              setIsDirty={setIsDirty}
-              isReadOnly={isReadOnly}
-              validationErrors={validationErrors}
-              notes={notes}
-              setNotes={setNotes}
-              letterTab={letterTab}
-              setLetterTab={setLetterTab}
-              letterText={letterText}
-              setLetterText={setLetterText}
-              billingNo={billingNo}
-              setBillingNo={setBillingNo}
-              billingFileId={billingFileId}
-              billingFileName={billingFileName}
-              billingUploading={billingUploading}
-              handleBillingFile={handleBillingFile}
-              resultDocumentId={latestResultDoc?.id}
-              registration={registration}
-              publisher={publisher}
-              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
-            />
-          </div>
-
-          {/* TAB 4: ARSIP & DOKUMEN RESMI */}
-          <div className={`${activeMobileTab === 'arsip' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'arsip' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
+          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
             {/* Multi-Signatory Progress & Email Status Banners */}
             {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
               <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
@@ -1158,7 +1155,32 @@ export const VerificationInspectionPage = () => {
               />
             )}
 
-            <DocumentArchive registrationId={registration.id} />
+            <ResultLetterPanel
+              activeMobileTab="hasil"
+              decision={decision}
+              setDecision={setDecision}
+              loadOfficialTemplate={loadOfficialTemplate}
+              setIsDirty={setIsDirty}
+              isReadOnly={isReadOnly}
+              validationErrors={validationErrors}
+              notes={notes}
+              setNotes={setNotes}
+              letterTab={letterTab}
+              setLetterTab={setLetterTab}
+              letterText={letterText}
+              setLetterText={setLetterText}
+              billingNo={billingNo}
+              setBillingNo={setBillingNo}
+              billingFileId={billingFileId}
+              billingFileName={billingFileName}
+              billingUploading={billingUploading}
+              handleBillingFile={handleBillingFile}
+              resultDocumentId={latestResultDoc?.id}
+              registration={registration}
+              publisher={publisher}
+              showDocumentPdf={showDocumentPdf}
+              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+            />
           </div>
         </div>
       </div>
@@ -1196,6 +1218,9 @@ export const VerificationInspectionPage = () => {
         beritaAcaraDoc={beritaAcaraDoc}
         approveModalError={approveModalError}
         setApproveModalError={setApproveModalError}
+        showDocumentPdf={showDocumentPdf}
+        billingNo={billingNo}
+        billingFileId={billingFileId}
       />
       <InspectionDialogs
         returnModalOpen={returnModalOpen}
@@ -1216,6 +1241,71 @@ export const VerificationInspectionPage = () => {
         setHandoverVolumeCount={setHandoverVolumeCount}
         handoverNotes={handoverNotes}
         setHandoverNotes={setHandoverNotes}
+      />
+
+      {/* Dialog Notifikasi Prasyarat Billing */}
+      <ConfirmationSummaryDialog
+        isOpen={billingNoticeModalOpen}
+        onClose={() => setBillingNoticeModalOpen(false)}
+        onConfirm={() => {
+          setBillingNoticeModalOpen(false);
+          const targetId = (!billingNo || billingNo.trim().length < 3)
+            ? 'verification-billing-no'
+            : 'verification-billing-file';
+          const el = document.getElementById(targetId);
+          if (el) {
+            el.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => el.focus?.(), 300);
+          }
+        }}
+        title="Prasyarat Billing Belum Lengkap"
+        description="Sesuai SOP Pentashihan LPMQ, pengajuan draf surat dengan keputusan Lolos Verifikasi mewajibkan pencatatan kode billing PNBP SIMPONI dan unggahan dokumen billing resmi."
+        confirmLabel="Lengkapi Kode Billing Sekarang"
+        cancelLabel="Tutup"
+        confirmVariant="primary"
+        icon={<AlertTriangle className="w-6 h-6 text-civic-warning" />}
+        summaryItems={[
+          {
+            label: 'Kode Billing PNBP (SIMPONI)',
+            value: billingNo && billingNo.trim().length >= 3 ? billingNo.trim() : 'Belum diisi (Wajib)',
+          },
+          {
+            label: 'Dokumen Lampiran Billing (PDF)',
+            value: billingFileId ? (billingFileName || 'Dokumen PDF terlampir') : 'Belum diunggah (Wajib format PDF)',
+          },
+        ]}
+        impactMessage="Setelah kode billing dan berkas PDF dilengkapi, Verifikator dapat menandatangani internal dan mengajukan draf kepada Kepala LPMQ untuk disahkan."
+      />
+
+      {/* Dialog Konfirmasi Persetujuan Internal Verifikator */}
+      <ConfirmationSummaryDialog
+        isOpen={Boolean(signConfirmDocId)}
+        onClose={() => setSignConfirmDocId(null)}
+        onConfirm={confirmSignDocument}
+        loading={actionLoading}
+        title="Konfirmasi Persetujuan Internal"
+        description="Periksa dan pastikan seluruh hasil telaah verifikasi berkas telah memenuhi standar sebelum memberikan persetujuan internal."
+        objectName={detail?.registration?.title}
+        statusChange="DRAFT → VERIFICATION_APPROVED"
+        impactMessage="Persetujuan internal ini akan mencatat tanda tangan elektronik Anda sebagai verifikator berwenang atas draf surat keputusan ini."
+        confirmLabel="Ya, Setujui Dokumen"
+        confirmVariant="primary"
+      />
+
+      {/* Dialog Konfirmasi Pengiriman Surat Hasil Verifikasi & Terbitkan Tagihan PNBP */}
+      <ConfirmationSummaryDialog
+        isOpen={sendConfirmModalOpen}
+        onClose={() => setSendConfirmModalOpen(false)}
+        onConfirm={confirmSendDocument}
+        loading={actionLoading}
+        title="Kirim Surat Hasil Verifikasi & Terbitkan Tagihan PNBP"
+        description="Pastikan surat keputusan hasil verifikasi resmi dan data billing Simponi telah valid sebelum dikirimkan ke penerbit."
+        objectName={detail?.registration?.title}
+        nextActor={detail?.registration?.publisher?.legal_name || 'Penerbit Naskah'}
+        statusChange="VERIFICATION_APPROVED → AWAITING_PAYMENT"
+        impactMessage={`Akan mengirimkan surat hasil verifikasi resmi ke portal penerbit dan menerbitkan kewajiban pembayaran tagihan PNBP sebesar Rp ${(detail?.calculated_fee?.total_fee || detail?.registration?.calculated_fee?.total_fee || 0).toLocaleString('id-ID')} kepada ${detail?.registration?.publisher?.legal_name || 'penerbit'}.`}
+        confirmLabel="Ya, Kirim & Terbitkan Billing"
+        confirmVariant="gold"
       />
     </div>
   );

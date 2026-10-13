@@ -41,9 +41,9 @@ import { AssignVerificationDialog } from '@/features/verification/AssignVerifica
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
-  const isPublisher = userRoles.includes('ADMIN_PENERBIT') || currentUser?.role === 'ADMIN_PENERBIT';
+  const isPublisher = userRoles.includes('PENERBIT') || currentUser?.role === 'PENERBIT';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
-  const isAdmin = userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN' || isSuperAdmin;
+  const isAdmin = userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL' || isSuperAdmin;
   const isKepala = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
 
   // Super Admin dapat melihat perspektif Operasional Internal atau Perspektif Layanan Penerbit
@@ -147,7 +147,7 @@ export const UnifiedDashboard = () => {
       minimumFractionDigits: 0,
     }).format(val);
 
-  // Quick Actions disesuaikan dengan role
+  // Quick Actions disesuaikan dengan role - Harmonisasi satu warna aksen brand untuk semua modul
   const quickActions = useMemo(() => {
     if (isPublisher && !isAdmin) {
       return [
@@ -164,24 +164,24 @@ export const UnifiedDashboard = () => {
           desc: 'Pantau tahapan proses dan rekam jejak status',
           icon: Layers,
           path: '/publisher/registrations',
-          iconBg: 'bg-civic-info text-white',
-          cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
+          iconBg: 'bg-brand-700 text-white',
+          cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         },
         {
           title: 'Tagihan PNBP',
           desc: 'Kelola kode billing SIMPONI dan bukti pembayaran',
           icon: CreditCard,
           path: '/publisher/billing',
-          iconBg: 'bg-civic-warning text-white',
-          cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
+          iconBg: 'bg-brand-700 text-white',
+          cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         },
         {
           title: 'Arsip Surat Tashih',
           desc: 'Akses dokumen STT resmi dengan validasi QR',
           icon: Award,
           path: '/publisher/documents',
-          iconBg: 'bg-civic-info text-white',
-          cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
+          iconBg: 'bg-brand-700 text-white',
+          cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         },
       ];
     }
@@ -192,8 +192,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
         icon: PackageCheck,
         path: '/internal/master-intake',
-        iconBg: 'bg-civic-warning text-white',
-        cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
+        iconBg: 'bg-brand-700 text-white',
+        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isAdmin || isSuperAdmin || isKepala,
       },
       {
@@ -210,8 +210,8 @@ export const UnifiedDashboard = () => {
         desc: isKepala ? 'Disposisi penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
-        iconBg: 'bg-civic-info text-white',
-        cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
+        iconBg: 'bg-brand-700 text-white',
+        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
@@ -228,8 +228,8 @@ export const UnifiedDashboard = () => {
         desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
-        iconBg: 'bg-civic-warning text-white',
-        cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
+        iconBg: 'bg-brand-700 text-white',
+        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin || userRoles.includes('PENTASHIH'),
       },
       {
@@ -237,8 +237,8 @@ export const UnifiedDashboard = () => {
         desc: 'Berita acara sidang & pengesahan dokumen',
         icon: Award,
         path: '/internal/documents',
-        iconBg: 'bg-civic-warning text-white',
-        cardHover: 'hover:border-civic-warningLine hover:bg-civic-warningSoft/40',
+        iconBg: 'bg-brand-700 text-white',
+        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
@@ -246,8 +246,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
         icon: Sliders,
         path: '/internal/settings',
-        iconBg: 'bg-brand-900 text-white',
-        cardHover: 'hover:border-civic-infoLine hover:bg-civic-infoSoft/40',
+        iconBg: 'bg-brand-700 text-white',
+        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin,
       },
       {
@@ -255,7 +255,7 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola akun, peran, dan matriks kewenangan',
         icon: Users,
         path: '/internal/users',
-        iconBg: 'bg-brand-800 text-white',
+        iconBg: 'bg-brand-700 text-white',
         cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
         allowed: isSuperAdmin,
       },
@@ -273,7 +273,7 @@ export const UnifiedDashboard = () => {
     ? 'Penerbit Mushaf Terdaftar'
     : isSuperAdmin
     ? 'Super Administrator Sistem LPMQ'
-    : (userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'HELPER_ADMIN')
+    : (userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL')
     ? 'Helper Admin LPMQ'
     : `Petugas LPMQ — ${currentUser?.role || 'Staff'}`;
   const greetingExtra = isPublisher
@@ -306,7 +306,7 @@ export const UnifiedDashboard = () => {
             <Compass className="w-4 h-4 text-brand-700" />
             <span>Akses Proses Utama</span>
           </h3>
-          <span className="text-[11px] text-ink-muted font-medium">
+          <span className="text-xs text-ink-muted font-medium">
             {isPublisher ? 'Layanan sesuai profil penerbit' : 'Akses berbasis peran dan kewenangan'}
           </span>
         </div>
@@ -328,7 +328,7 @@ export const UnifiedDashboard = () => {
                     {action.title}
                   </div>
                 </div>
-                <div className="text-[11px] text-ink-muted group-hover:text-ink line-clamp-2 leading-relaxed">
+                <div className="text-xs text-ink-muted group-hover:text-ink line-clamp-2 leading-relaxed">
                   {action.desc}
                 </div>
               </Link>
@@ -398,7 +398,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <CheckSquare className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
                   Tahap 1
                 </span>
               </div>
@@ -407,7 +407,7 @@ export const UnifiedDashboard = () => {
                   {countVerification}
                 </div>
                 <div className="text-xs font-bold text-civic-info mt-1">Verifikasi Berkas</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Pemeriksaan naskah & kelengkapan</div>
+                <div className="text-xs text-ink-muted mt-0.5">Pemeriksaan naskah & kelengkapan</div>
               </div>
             </div>
 
@@ -417,7 +417,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-warning text-white flex items-center justify-center shadow-sm shadow-civic-warning/25">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
                   Tahap 2
                 </span>
               </div>
@@ -426,7 +426,7 @@ export const UnifiedDashboard = () => {
                   {countTashih}
                 </div>
                 <div className="text-xs font-bold text-civic-warning mt-1">Sidang Pentashihan</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Telaah lafaz & rasm usmani</div>
+                <div className="text-xs text-ink-muted mt-0.5">Telaah lafaz & rasm usmani</div>
               </div>
             </div>
 
@@ -436,7 +436,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <Award className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
                   Tahap 3
                 </span>
               </div>
@@ -445,7 +445,7 @@ export const UnifiedDashboard = () => {
                   {countSTT}
                 </div>
                 <div className="text-xs font-bold text-civic-info mt-1">Penetapan Dokumen STT</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Berita acara & tanda tashih sah</div>
+                <div className="text-xs text-ink-muted mt-0.5">Berita acara & tanda tashih sah</div>
               </div>
             </div>
 
@@ -455,7 +455,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center shadow-sm shadow-brand-700/25">
                   <Users className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
                   Total
                 </span>
               </div>
@@ -464,7 +464,7 @@ export const UnifiedDashboard = () => {
                   {registrations.length}
                 </div>
                 <div className="text-xs font-bold text-brand-900 mt-1">Total Naskah Masuk</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Seluruh berkas dalam antrean</div>
+                <div className="text-xs text-ink-muted mt-0.5">Seluruh berkas dalam antrean</div>
               </div>
             </div>
           </div>
@@ -477,7 +477,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-warning text-white flex items-center justify-center shadow-sm shadow-civic-warning/25">
                   <CreditCard className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civicGold-100 text-civicGold-700 border border-civicGold-700">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civicGold-100 text-civicGold-700 border border-civicGold-700">
                   SIMPONI
                 </span>
               </div>
@@ -486,7 +486,7 @@ export const UnifiedDashboard = () => {
                   {formatRupiah(totalBilling)}
                 </div>
                 <div className="text-xs font-bold text-civic-warning mt-1">Billing PNBP Terdaftar</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Nominal naskah pada halaman ini</div>
+                <div className="text-xs text-ink-muted mt-0.5">Nominal naskah pada halaman ini</div>
               </div>
             </div>
 
@@ -496,7 +496,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <Clock className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
                   Diproses
                 </span>
               </div>
@@ -505,7 +505,7 @@ export const UnifiedDashboard = () => {
                   {inProgressCount}
                 </div>
                 <div className="text-xs font-bold text-civic-info mt-1">Sedang Ditashih</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Dalam verifikasi & sidang</div>
+                <div className="text-xs text-ink-muted mt-0.5">Dalam verifikasi & sidang</div>
               </div>
             </div>
 
@@ -515,7 +515,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center shadow-sm shadow-brand-700/25">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-100">
                   Selesai
                 </span>
               </div>
@@ -524,7 +524,7 @@ export const UnifiedDashboard = () => {
                   {completedCount}
                 </div>
                 <div className="text-xs font-bold text-brand-900 mt-1">Surat Tashih Terbit</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Dokumen sah bersertifikat</div>
+                <div className="text-xs text-ink-muted mt-0.5">Dokumen sah bersertifikat</div>
               </div>
             </div>
 
@@ -534,7 +534,7 @@ export const UnifiedDashboard = () => {
                 <div className="w-10 h-10 rounded-xl bg-civic-info text-white flex items-center justify-center shadow-sm shadow-civic-info/25">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
                   Naskah
                 </span>
               </div>
@@ -543,7 +543,7 @@ export const UnifiedDashboard = () => {
                   {registrations.length}
                 </div>
                 <div className="text-xs font-bold text-civic-info mt-1">Total Permohonan</div>
-                <div className="text-[11px] text-ink-muted mt-0.5">Semua riwayat permohonan</div>
+                <div className="text-xs text-ink-muted mt-0.5">Semua riwayat permohonan</div>
               </div>
             </div>
           </div>
@@ -560,9 +560,9 @@ export const UnifiedDashboard = () => {
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-line-strong">
-                  Kinerja Verifikasi & Kepatuhan SLA (SOP v2.2)
+                  Kinerja Verifikasi & Kepatuhan SLA (SOP Pentashihan LPMQ)
                 </h4>
-                <p className="text-[11px] text-ink-muted">
+                <p className="text-xs text-ink-muted">
                   Parameter SLA: telaah berkas maksimal 48 jam • pembayaran PNBP maksimal 7 hari
                 </p>
               </div>
@@ -575,31 +575,31 @@ export const UnifiedDashboard = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
             <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <div className="text-ink-muted text-[11px] mb-1">Rata-rata Waktu Telaah</div>
+              <div className="text-ink-muted text-xs mb-1">Rata-rata Waktu Telaah</div>
               <div className="text-lg font-black text-white">
                 {performanceReport.summary?.avg_duration_hours ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">jam</span>
               </div>
-              <div className="text-[10px] text-brand-700 mt-0.5">SOP Max: 48 jam</div>
+              <div className="text-xs text-brand-700 mt-0.5">SOP Max: 48 jam</div>
             </div>
 
             <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <div className="text-ink-muted text-[11px] mb-1">Keputusan Telaah</div>
+              <div className="text-ink-muted text-xs mb-1">Keputusan Telaah</div>
               <div className="text-lg font-black text-white">
                 <span className="text-brand-700">{performanceReport.summary?.total_passed ?? 0}</span>
                 <span className="text-ink-muted text-xs font-normal mx-1">/</span>
                 <span className="text-civic-warning">{performanceReport.summary?.total_revision ?? 0}</span>
               </div>
-              <div className="text-[10px] text-line-strong mt-0.5">Lolos vs Perlu Revisi</div>
+              <div className="text-xs text-line-strong mt-0.5">Lolos vs Perlu Revisi</div>
             </div>
 
             <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <div className="text-ink-muted text-[11px] mb-1">Antrean Overdue SLA</div>
+              <div className="text-ink-muted text-xs mb-1">Antrean Overdue SLA</div>
               <div className="text-lg font-black text-white">
                 {performanceReport.summary?.total_overdue ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">berkas</span>
               </div>
-              <div className="text-[10px] text-line-strong mt-0.5">
+              <div className="text-xs text-line-strong mt-0.5">
                 {(performanceReport.summary?.total_overdue || 0) > 0 ? (
                   <span className="text-civic-danger font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-2.5 h-2.5" /> Perlu atensi
@@ -611,11 +611,11 @@ export const UnifiedDashboard = () => {
             </div>
 
             <div className="bg-white/5 rounded-xl p-3 border border-white/10">
-              <div className="text-ink-muted text-[11px] mb-1">PNBP Terverifikasi</div>
+              <div className="text-ink-muted text-xs mb-1">PNBP Terverifikasi</div>
               <div className="text-sm sm:text-base font-black text-civic-warning truncate">
                 {formatRupiah(performanceReport.payments?.total_verified_amount ?? 0)}
               </div>
-              <div className="text-[10px] text-line-strong mt-0.5">
+              <div className="text-xs text-line-strong mt-0.5">
                 {performanceReport.payments?.verified_count ?? 0} transaksi lunas
               </div>
             </div>
@@ -756,7 +756,7 @@ export const UnifiedDashboard = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[760px]">
               <thead>
-                <tr className="bg-canvas/80 text-ink-muted text-[11px] font-bold uppercase tracking-wider border-b border-line">
+                <tr className="bg-canvas/80 text-ink-muted text-xs font-bold uppercase tracking-wider border-b border-line">
                   <th className="py-3.5 px-6">Referensi & Tanggal</th>
                   <th className="py-3.5 px-6">Entitas & Naskah</th>
                   <th className="py-3.5 px-6">Profil Layanan</th>
@@ -771,7 +771,7 @@ export const UnifiedDashboard = () => {
                       <span className="font-mono text-xs font-bold text-ink block">
                         {item.registration_no || item.registrationNumber}
                       </span>
-                      <span className="text-[11px] text-ink-muted">
+                      <span className="text-xs text-ink-muted">
                         {new Date(item.created_at || item.submittedAt).toLocaleDateString('id-ID', {
                            day: 'numeric',
                            month: 'short',
@@ -791,7 +791,7 @@ export const UnifiedDashboard = () => {
                       <span className="font-semibold text-ink block">
                         {item.service_type?.name || item.serviceType || 'Tashih Reguler'}
                       </span>
-                      <span className="text-[11px] text-ink-muted">
+                      <span className="text-xs text-ink-muted">
                         {item.service_type?.category?.name || 'Mushaf Cetak'}
                       </span>
                     </td>

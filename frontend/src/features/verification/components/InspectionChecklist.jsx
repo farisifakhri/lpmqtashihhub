@@ -23,12 +23,12 @@ export const InspectionChecklist = ({
                   <CheckSquare className="w-4 h-4 text-brand-800" />
                   Lembar Kerja Checklist Pemeriksaan
                 </h3>
-                <p className="text-[11px] text-ink-muted mt-0.5">
-                  Evaluasi 4 butir standar verifikasi administrasi & rasm
+                <p className="text-xs text-ink-muted mt-0.5">
+                  Evaluasi {CHECKLIST_DEFINITIONS?.length || 8} butir standar verifikasi administrasi & rasm
                 </p>
               </div>
               <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-900 border border-brand-100">
-                {sesuaiCount + tidakBerlakuCount}/4 Lengkap
+                {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS?.length || 8} Lengkap
               </span>
             </div>
 
@@ -59,7 +59,7 @@ export const InspectionChecklist = ({
                           {def.title}
                         </span>
                       </div>
-                      <p className="text-[11px] text-ink-muted leading-relaxed">
+                      <p className="text-xs text-ink-muted leading-relaxed">
                         {def.description}
                       </p>
                     </div>
@@ -143,7 +143,7 @@ export const InspectionChecklist = ({
                             : 'border-line focus:ring-brand-700/20 focus:border-brand-700'
                         } ${isReadOnly ? 'bg-canvas text-ink-muted' : ''}`}
                       />
-                      {itemError && <p className="text-[11px] text-civic-danger mt-0.5 font-medium">{itemError}</p>}
+                      {itemError && <p className="text-xs text-civic-danger mt-0.5 font-medium">{itemError}</p>}
                     </div>
                   </div>
                 );

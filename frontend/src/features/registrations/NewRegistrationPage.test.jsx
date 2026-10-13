@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { NewRegistrationPage } from './NewRegistrationPage';
@@ -9,8 +9,14 @@ import { registrationApi } from '@/api/registration.api';
 import { fileApi } from '@/api/file.api';
 
 describe('Publisher new registration handoff', () => {
+  beforeEach(() => {
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/mock-receipt');
+    global.URL.revokeObjectURL = vi.fn();
+    vi.spyOn(registrationApi, 'getReceiptPdf').mockResolvedValue(new Blob(['pdf content']));
+  });
+
   it('menahan judul kurang dari 3 karakter dan menampilkan validasi di field', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -27,7 +33,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('removes an added ukuran dan oplah row while keeping the required first row', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -42,7 +48,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('mewajibkan nama penanggung jawab sejak simpan draf', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -60,7 +66,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('creates one draft when clicking Simpan Draf', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -85,7 +91,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('renders foreign mushaf fields when Mushaf Luar Negeri is selected and creates foreign registration draft', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({
       data: [
@@ -152,7 +158,7 @@ describe('Publisher new registration handoff', () => {
   });
 
   it('menampilkan modal konfirmasi dengan peringatan REV-07 dan mengirim permohonan langsung tanpa perlu submit dua kali', async () => {
-    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['ADMIN_PENERBIT'] } });
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
     vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', status: 'ACTIVE' }] });
     vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
@@ -205,5 +211,106 @@ describe('Publisher new registration handoff', () => {
     });
 
     expect(await screen.findByText('Halaman Detail Permohonan')).toBeInTheDocument();
+  });
+
+  it('memetakan transliterasi dan materi tambahan ke service type dan addon tanpa menampilkan kartu kalkulasi di penerbit', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf Cetak' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({
+      data: [
+        { id: 'svc-std', category_id: 'cat1', name: "Mushaf Al-Qur'an 30 Juz", base_fee: 1000000, duration_initial: 15, status: 'ACTIVE' },
+        { id: 'svc-trans', category_id: 'cat1', name: "Mushaf Al-Qur'an Transliterasi", base_fee: 1000000, duration_initial: 22, status: 'ACTIVE' },
+      ],
+    });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({
+      data: [{ id: 'addon-materi-id', code: 'ADD-MATERI', name: 'Tambahan materi selain konten ayat', fee: 500000, status: 'ACTIVE' }],
+    });
+    vi.spyOn(registrationApi, 'createDraft').mockResolvedValue({ data: { id: 'reg-trans-1', registration_no: 'REG-TR-001' } });
+
+    render(
+      <MemoryRouter initialEntries={['/publisher/new-registration']}>
+        <Routes>
+          <Route path="/publisher/new-registration" element={<NewRegistrationPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const draftButtons = screen.getAllByRole('button', { name: 'Simpan Draf' });
+    await waitFor(() => expect(draftButtons[0]).toBeEnabled());
+
+    // Pastikan tidak ada Bagian IV / Estimasi Tarif PNBP di halaman penerbit
+    expect(screen.queryByText(/IV\. Estimasi Tarif PNBP/i)).not.toBeInTheDocument();
+
+    // Isi formulir
+    fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Mushaf Transliterasi Nusantara' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Ahmad Transliterasi' } });
+
+    // Pilih jenis naskah "3. Transliterasi"
+    const transliterasiCheckbox = screen.getByLabelText('3. Transliterasi');
+    fireEvent.click(transliterasiCheckbox);
+
+    // Pilih materi tambahan "Hadis"
+    const hadisCheckbox = screen.getByLabelText('Hadis');
+    fireEvent.click(hadisCheckbox);
+
+    // Klik Simpan Draf
+    fireEvent.click(draftButtons[0]);
+
+    // Verifikasi createDraft menerima service_type_id svc-trans dan addon_ids
+    await waitFor(() => {
+      expect(registrationApi.createDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Mushaf Transliterasi Nusantara',
+          service_type_id: 'svc-trans',
+          addon_ids: expect.arrayContaining(['addon-materi-id']),
+        })
+      );
+    });
+  });
+
+  it('does NOT attach ADD-MATERI addon when only Bagian II materi pelengkap is selected without Group 3 jenis naskah', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({
+      data: [
+        { id: 'svc-std', category_id: 'cat1', name: "Mushaf Al-Qur'an 30 Juz", base_fee: 1000000, duration_initial: 15, status: 'ACTIVE' },
+      ],
+    });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({
+      data: [{ id: 'addon-materi-id', code: 'ADD-MATERI', name: 'Tambahan materi selain konten ayat', fee: 500000, status: 'ACTIVE' }],
+    });
+    vi.spyOn(registrationApi, 'createDraft').mockResolvedValue({ data: { id: 'reg-std-1', registration_no: 'REG-STD-001' } });
+
+    render(
+      <MemoryRouter initialEntries={['/publisher/new-registration']}>
+        <Routes>
+          <Route path="/publisher/new-registration" element={<NewRegistrationPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const draftButtons = screen.getAllByRole('button', { name: 'Simpan Draf' });
+    await waitFor(() => expect(draftButtons[0]).toBeEnabled());
+
+    fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Mushaf Standar dengan Hadis' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Ahmad Hadis' } });
+
+    // Pilih materi tambahan "Hadis" di Bagian II
+    const hadisCheckbox = screen.getByLabelText('Hadis');
+    fireEvent.click(hadisCheckbox);
+
+    // Klik Simpan Draf
+    fireEvent.click(draftButtons[0]);
+
+    // Verifikasi createDraft TIDAK menyertakan addon-materi-id
+    await waitFor(() => {
+      expect(registrationApi.createDraft).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'Mushaf Standar dengan Hadis',
+          service_type_id: 'svc-std',
+          addon_ids: [],
+        })
+      );
+    });
   });
 });

@@ -6,9 +6,10 @@ import { publicVerification } from '../services/verification-document-pdf.servic
 
 const router = Router();
 
-// Endpoint verifikasi publik tanpa otentikasi
-router.get('/verify-document/:token', publicController.verifyDocumentByQrToken);
 const qrLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false });
+
+// Endpoint verifikasi publik tanpa otentikasi
+router.get('/verify-document/:token', qrLimit, publicController.verifyDocumentByQrToken);
 router.get('/verify-internal/:token', qrLimit, async (req, res, next) => {
   try { res.json({ success: true, data: await publicVerification(req.params.token) }); }
   catch (error) { next(error); }

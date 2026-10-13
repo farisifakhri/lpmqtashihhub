@@ -119,7 +119,7 @@ describe('LoginPage Protected Area Verification', () => {
   });
 
   it('submits credentials through auth context', async () => {
-    mockLogin.mockResolvedValue({ success: true, user: { role: 'ADMIN_PENERBIT' } });
+    mockLogin.mockResolvedValue({ success: true, user: { role: 'PENERBIT' } });
 
     render(
       <MemoryRouter>
@@ -134,5 +134,19 @@ describe('LoginPage Protected Area Verification', () => {
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('user@example.com', 'secret123');
     });
+  });
+
+  it('renders Lupa kata sandi button and opens ForgotPasswordModal', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    const forgotBtn = screen.getByRole('button', { name: /Lupa kata sandi\?/i });
+    expect(forgotBtn).toBeInTheDocument();
+
+    fireEvent.click(forgotBtn);
+    expect(screen.getByText('Pemulihan Kata Sandi Akun')).toBeInTheDocument();
   });
 });

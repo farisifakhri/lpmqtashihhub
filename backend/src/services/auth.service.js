@@ -13,7 +13,11 @@ export const login = async ({ email, password, req }) => {
     },
   });
 
-  if (!user) {
+  // Constant-time comparison untuk mencegah timing attack / enumerasi akun
+  const DUMMY_HASH = '$2a$10$7EqJtq98hPqEX7fNZaFWoO.8/lI2/w16/K8L9.lZ63xV1L6o2y72e';
+  const isMatch = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+
+  if (!user || !isMatch) {
     const error = new Error('Email atau password tidak sesuai.');
     error.statusCode = 401;
     throw error;
@@ -22,13 +26,6 @@ export const login = async ({ email, password, req }) => {
   if (user.status !== 'ACTIVE') {
     const error = new Error('Akun Anda sedang dinonaktifkan. Hubungi admin LPMQ.');
     error.statusCode = 403;
-    throw error;
-  }
-
-  const isMatch = await bcrypt.compare(password, user.password_hash);
-  if (!isMatch) {
-    const error = new Error('Email atau password tidak sesuai.');
-    error.statusCode = 401;
     throw error;
   }
 
@@ -78,11 +75,11 @@ export const registerPublisher = async (data, req) => {
   }
 
   const role = await prisma.role.findUnique({
-    where: { code: 'ADMIN_PENERBIT' },
+    where: { code: 'PENERBIT' },
   });
 
   if (!role) {
-    const error = new Error('Role ADMIN_PENERBIT belum dikonfigurasi pada database.');
+    const error = new Error('Role PENERBIT belum dikonfigurasi pada database.');
     error.statusCode = 500;
     throw error;
   }
@@ -132,7 +129,7 @@ export const registerPublisher = async (data, req) => {
     {
       userId: result.user.id,
       email: result.user.email,
-      roles: ['ADMIN_PENERBIT'],
+      roles: ['PENERBIT'],
       publisherId: result.publisher.id,
     },
     ENV.JWT_SECRET,
@@ -145,10 +142,111 @@ export const registerPublisher = async (data, req) => {
       id: result.user.id,
       name: result.user.name,
       email: result.user.email,
-      roles: ['ADMIN_PENERBIT'],
+      roles: ['PENERBIT'],
       publisher: result.publisher,
     },
   };
 };
 
-export default { login, registerPublisher };
+export const forgotPassword = async ({ email, req }) => {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || user.status !== 'ACTIVE') {
+    // Hindari enumerasi akun
+    return {
+      message: 'Jika email terdaftar dan aktif di sistem, tautan atau petunjuk reset kata sandi telah diproses.',
+    };
+  }
+
+  const resetToken = jwt.sign(
+    { userId: user.id, email: user.email, type: 'password_reset' },
+    ENV.JWT_SECRET,
+    { expiresIn: '1h' }
+  );
+
+  await logAudit({
+    actorId: user.id,
+    action: 'FORGOT_PASSWORD_REQUEST',
+    subjectType: 'User',
+    subjectId: user.id,
+    req,
+  });
+
+  return {
+    message: 'Permohonan pemulihan kata sandi berhasil dibuat. Gunakan token atau tautan pemulihan untuk mengatur ulang kata sandi.',
+    resetToken,
+  };
+};
+
+export const resetPassword = async ({ token, new_password, req }) => {
+  let decoded;
+  try {
+    decoded = jwt.verify(token, ENV.JWT_SECRET);
+  } catch (err) {
+    const error = new Error('Token pemulihan kata sandi tidak valid atau telah kedaluwarsa.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (decoded.type !== 'password_reset' || !decoded.userId) {
+    const error = new Error('Token tidak valid untuk penyetelan ulang kata sandi.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+  if (!user || user.status !== 'ACTIVE') {
+    const error = new Error('Pengguna tidak ditemukan atau berstatus tidak aktif.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(new_password, 10);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password_hash: passwordHash },
+  });
+
+  await logAudit({
+    actorId: user.id,
+    action: 'RESET_PASSWORD',
+    subjectType: 'User',
+    subjectId: user.id,
+    req,
+  });
+
+  return { message: 'Kata sandi berhasil diperbarui. Silakan masuk menggunakan kata sandi baru Anda.' };
+};
+
+export const changePassword = async ({ user, current_password, new_password, req }) => {
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!dbUser) {
+    const error = new Error('Pengguna tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isMatch = await bcrypt.compare(current_password, dbUser.password_hash);
+  if (!isMatch) {
+    const error = new Error('Kata sandi saat ini tidak sesuai.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const passwordHash = await bcrypt.hash(new_password, 10);
+  await prisma.user.update({
+    where: { id: dbUser.id },
+    data: { password_hash: passwordHash },
+  });
+
+  await logAudit({
+    actorId: dbUser.id,
+    action: 'CHANGE_PASSWORD',
+    subjectType: 'User',
+    subjectId: dbUser.id,
+    req,
+  });
+
+  return { message: 'Kata sandi berhasil diubah.' };
+};
+
+export default { login, registerPublisher, forgotPassword, resetPassword, changePassword };

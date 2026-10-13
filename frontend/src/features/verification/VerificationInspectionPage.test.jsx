@@ -75,7 +75,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     });
   });
 
-  it('merender lembar pemeriksaan naskah, checklist 4 butir, dan tombol simpan draf', async () => {
+  it('merender lembar pemeriksaan naskah, checklist butir pemeriksaan, dan tombol simpan draf', async () => {
     render(
       <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
         <Routes>
@@ -88,10 +88,10 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
       expect(screen.getByText('REG-2026-001')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Standar Kemenag')).toBeInTheDocument();
       expect(screen.getByText(/Lembar Kerja Checklist Pemeriksaan/i)).toBeInTheDocument();
-      expect(screen.getByText(/1. Kelengkapan & Kesesuaian Data Registrasi/i)).toBeInTheDocument();
-      expect(screen.getByText(/2. Kelengkapan Berkas Digital/i)).toBeInTheDocument();
-      expect(screen.getByText(/3. Kesesuaian Master Fisik Mushaf/i)).toBeInTheDocument();
-      expect(screen.getByText(/4. Format & Rasm Naskah Awal/i)).toBeInTheDocument();
+      expect(screen.getByText(/1. Kelengkapan Juz/i)).toBeInTheDocument();
+      expect(screen.getByText(/2. Kelengkapan Surah/i)).toBeInTheDocument();
+      expect(screen.getByText(/3. Urutan Halaman/i)).toBeInTheDocument();
+      expect(screen.getByText(/4. Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia/i)).toBeInTheDocument();
       expect(screen.getByText('Simpan Draf Pemeriksaan')).toBeInTheDocument();
       expect(screen.getByText('Ajukan Draf ke Kepala LPMQ')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Disposisi' })).toBeInTheDocument();
@@ -340,6 +340,75 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
           BERITA_ACARA_VERIFIKASI: 'BA-100/LPMQ.01/TL.00/09/2026',
         },
       });
+    });
+  });
+
+  it('menampilkan notifikasi prasyarat billing jika verifikator mengajukan draf lolos tanpa kode billing', async () => {
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await screen.findByText('REG-2026-001');
+
+    // Keputusan default adalah PASSED (Lolos Verifikasi), kode billing masih kosong
+    expect(screen.getByText(/Prasyarat Pengajuan Draf Belum Lengkap/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Belum Diisi/i).length).toBeGreaterThan(0);
+
+    // Verifikator mencoba klik "Ajukan Draf ke Kepala LPMQ"
+    const submitBtn = screen.getByRole('button', { name: /Ajukan Draf ke Kepala LPMQ/i });
+    fireEvent.click(submitBtn);
+
+    // Muncul modal notifikasi prasyarat billing yang jelas dan ramah UX
+    expect(await screen.findByRole('heading', { name: 'Prasyarat Billing Belum Lengkap' })).toBeInTheDocument();
+    expect(screen.getByText(/Kode Billing PNBP \(SIMPONI\)/i)).toBeInTheDocument();
+    expect(screen.getByText('Belum diisi (Wajib)')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Lengkapi Kode Billing Sekarang' })).toBeInTheDocument();
+
+    // Klik tombol aksi cepat "Lengkapi Kode Billing Sekarang" menutup dialog
+    fireEvent.click(screen.getByRole('button', { name: 'Lengkapi Kode Billing Sekarang' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: 'Prasyarat Billing Belum Lengkap' })).not.toBeInTheDocument();
+    });
+  });
+
+  it('WorkflowStepper merefleksikan tahapan dinamis secara akurat sesuai status registrasi', async () => {
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'WAITING_APPROVAL',
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: "Mushaf Al-Qur'an Standar Kemenag",
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', status: 'SUBMITTED' },
+        result_documents: [],
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Tahapan stepper harus secara dinamis menunjukkan Tahap 3 (Penetapan Hasil Verifikasi)
+    await waitFor(() => {
+      expect(screen.getByText(/dari 8/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Penetapan Hasil Verifikasi/i).length).toBeGreaterThanOrEqual(1);
     });
   });
 });

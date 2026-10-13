@@ -18,7 +18,7 @@ try {
   ]);
   assert.ok(admin && head && verifier && distributor && documenter && publisher?.user && serviceType);
   const adminActor = { id: admin.id, name: admin.name, roles: ['SUPERADMIN'] };
-  const publisherActor = { id: publisher.user.id, name: publisher.user.name, publisherId: publisher.id, roles: ['ADMIN_PENERBIT'] };
+  const publisherActor = { id: publisher.user.id, name: publisher.user.name, publisherId: publisher.id, roles: ['PENERBIT'] };
   const makeMembers = async (template, roleCode) => {
     const role = await prisma.role.findUnique({ where: { code: roleCode } });
     const members = [template.id];

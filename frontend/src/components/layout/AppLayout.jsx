@@ -10,6 +10,7 @@ import {
   Award,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { TashihLoader } from '@/components/ui/TashihLoader';
 
 // 4 item bottom navigation maksimal pada portal Penerbit sesuai Mandat Bab 5.3
 const publisherMobileBottomItems = [
@@ -46,9 +47,9 @@ export const AppLayout = () => {
   const role = currentUser?.role || '';
   const roles = currentUser?.roles || [];
   const isPublisher =
-    role === 'ADMIN_PENERBIT' ||
+    role === 'PENERBIT' ||
     role === 'PUBLISHER' ||
-    roles.includes('ADMIN_PENERBIT');
+    roles.includes('PENERBIT');
 
   // Dokumen atau review workspace diperbolehkan full width
   const isFullWidthWorkspace =
@@ -65,14 +66,7 @@ export const AppLayout = () => {
   }, []);
 
   if (isInitializing) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-canvas" role="status" aria-live="polite">
-        <div className="flex items-center gap-3 rounded-xl border border-line bg-surface px-5 py-4 text-xs font-semibold text-ink shadow-2xs">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-100 border-t-brand-700" />
-          Memvalidasi sesi dan kewenangan...
-        </div>
-      </div>
-    );
+    return <TashihLoader size="lg" fullScreen label="Memvalidasi sesi dan kewenangan..." />;
   }
 
   if (!currentUser) {
@@ -158,7 +152,7 @@ export const AppLayout = () => {
                           isActive ? 'text-brand-700' : 'text-ink-muted'
                         )}
                       />
-                      <span className="text-[11px] truncate max-w-full px-0.5 font-medium leading-tight">
+                      <span className="text-xs truncate max-w-full px-0.5 font-medium leading-tight">
                         {item.label}
                       </span>
                     </>

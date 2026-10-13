@@ -43,7 +43,7 @@ export function InspectionDocumentStudio({
             <h3 className="text-xs font-bold text-ink">
               Studio Naskah & Berkas Digital
             </h3>
-            <p className="text-[10px] text-ink-muted">
+            <p className="text-xs text-ink-muted">
               Pilih tab untuk menelaah dokumen naskah
             </p>
           </div>
@@ -70,7 +70,7 @@ export function InspectionDocumentStudio({
                 <span>{getFileLabel(f)}</span>
                 {f.version && (
                   <span
-                    className={`font-mono text-[9px] px-1 py-0.2 rounded ${
+                    className={`font-mono text-xs px-1 py-0.2 rounded ${
                       isSelected
                         ? 'bg-brand-900/60 text-white'
                         : 'bg-surface-subtle text-ink-muted'
@@ -92,11 +92,11 @@ export function InspectionDocumentStudio({
             <span className="font-bold text-ink truncate">
               {getFileLabel(activeFile)}
             </span>
-            <span className="text-ink-muted truncate text-[11px]">
+            <span className="text-ink-muted truncate text-xs">
               ({activeFile.file_name || activeFile.original_name || 'Dokumen PDF'})
             </span>
           </div>
-          <span className="font-mono text-[10px] text-ink-muted shrink-0">
+          <span className="font-mono text-xs text-ink-muted shrink-0">
             Ukuran: {activeFile.file_size ? `${Math.round(activeFile.file_size / 1024)} KB` : 'PDF Dokumen'}
           </span>
         </div>
@@ -145,12 +145,12 @@ export function InspectionDocumentStudio({
             <Building2 className="w-4 h-4 text-brand-800" />
             <span>Identitas Naskah & Tanda Terima Fisik</span>
             {physicalMaster.receipt_no && (
-              <span className="font-mono text-[10px] bg-brand-100 text-brand-800 border border-brand-200 px-2 py-0.5 rounded-full font-bold">
+              <span className="font-mono text-xs bg-brand-100 text-brand-800 border border-brand-200 px-2 py-0.5 rounded-full font-bold">
                 ✓ Fisik Diterima
               </span>
             )}
           </span>
-          <span className="text-ink-muted flex items-center gap-1 text-[11px] font-medium">
+          <span className="text-ink-muted flex items-center gap-1 text-xs font-medium">
             {showMetaDrawer ? 'Sembunyikan' : 'Lihat Detail'}
             {showMetaDrawer ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </span>
@@ -161,14 +161,14 @@ export function InspectionDocumentStudio({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Identitas Pemohon */}
               <div className="p-3 bg-white rounded-xl border border-line space-y-1.5">
-                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
                   Penerbit Pemohon
                 </span>
                 <p className="font-bold text-ink">{publisher.legal_name || '-'}</p>
-                <p className="text-ink-muted text-[11px] leading-relaxed">
+                <p className="text-ink-muted text-xs leading-relaxed">
                   {publisher.address || 'Alamat kantor terdaftar'}
                 </p>
-                <div className="pt-1 text-[11px] text-ink-muted flex items-center gap-1.5">
+                <div className="pt-1 text-xs text-ink-muted flex items-center gap-1.5">
                   <span>Layanan:</span>
                   <strong className="text-brand-900 font-semibold">
                     {registration.service_type?.name || 'Mushaf Standar'}
@@ -178,11 +178,11 @@ export function InspectionDocumentStudio({
 
               {/* Tanda Terima Fisik */}
               <div className="p-3 bg-white rounded-xl border border-line space-y-1.5">
-                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                <span className="text-xs font-bold text-ink-muted uppercase tracking-wider block">
                   Penerimaan Master Fisik di TMII
                 </span>
                 {physicalMaster.receipt_no ? (
-                  <div className="space-y-1 text-[11px]">
+                  <div className="space-y-1 text-xs">
                     <div className="flex items-center justify-between">
                       <span className="font-mono font-bold text-brand-900">
                         {physicalMaster.receipt_no}
@@ -190,7 +190,7 @@ export function InspectionDocumentStudio({
                       <button
                         type="button"
                         onClick={() => handleCopyReceipt(physicalMaster.receipt_no)}
-                        className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-800 hover:underline cursor-pointer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-brand-800 hover:underline cursor-pointer"
                       >
                         {copiedReceipt ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                         {copiedReceipt ? 'Tersalin' : 'Salin'}
@@ -205,7 +205,7 @@ export function InspectionDocumentStudio({
                     </p>
                   </div>
                 ) : (
-                  <p className="text-ink-muted text-[11px] italic">
+                  <p className="text-ink-muted text-xs italic">
                     Menunggu verifikasi fisik di loket LPMQ.
                   </p>
                 )}

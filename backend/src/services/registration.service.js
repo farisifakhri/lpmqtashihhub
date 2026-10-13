@@ -9,30 +9,30 @@ import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
-import { renderRegistrationReceiptPdf } from './registration-receipt-pdf.service.js';
+import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
 export const TRANSITION_POLICY = {
   DRAFT: {
     READY_FOR_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan disubmit untuk verifikasi administrasi & dokumen naskah',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Draf pengajuan dibatalkan oleh pemohon',
     },
   },
   READY_FOR_VERIFICATION: {
     VERIFICATION_ASSIGNED: {
-      allowedRoles: ['HELPER_ADMIN', 'SUPERADMIN'],
+      allowedRoles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
       domainAction: true,
       description: 'Helper Admin menugaskan verifikator tim inti dan mencatat Nota Dinas Verifikasi',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan ditarik kembali oleh pemohon',
     },
@@ -56,19 +56,24 @@ export const TRANSITION_POLICY = {
   },
   REVISION_REQUIRED: {
     READY_FOR_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
     },
     TASHIH_IN_PROGRESS: {
-      allowedRoles: ['ADMIN_PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
     },
     CANCELLED: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Pengajuan dibatalkan oleh pemohon',
+    },
+    WAITING_DISTRIBUTOR_RECEIPT: {
+      allowedRoles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Admin Internal menerima naskah fisik perbaikan/dumi dan menyerahkan kepada Distributor',
     },
   },
   WAITING_VERIFICATION_APPROVAL: {
@@ -96,7 +101,7 @@ export const TRANSITION_POLICY = {
   },
   AWAITING_PAYMENT: {
     PAYMENT_VERIFICATION: {
-      allowedRoles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
       description: 'Penerbit melakukan konfirmasi / unggah bukti bayar PNBP',
     },
@@ -204,11 +209,55 @@ export const createDraft = async (data, user, req) => {
 
   let serviceTypeId = data.service_type_id;
   if (!serviceTypeId) {
-    const defaultType = await prisma.serviceType.findFirst({
-      where: { status: 'ACTIVE' },
-      orderBy: { created_at: 'asc' },
-    });
-    serviceTypeId = defaultType?.id;
+    const jenisNaskah = [
+      ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
+      ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
+      ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
+    ];
+    const jenisMushaf = data.foreign_metadata?.jenis_mushaf || data.mushaf_details?.jenis_mushaf || data.jenis_mushaf;
+
+    let matched = null;
+    if (jenisMushaf === 'Mushaf Standar Braille') {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'BRAILLE' } });
+    } else if (data.registration_type === 'FOREIGN_MANUSCRIPT' || jenisNaskah.includes("1. Mushaf Al-Qur'an Luar Negeri")) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Luar Negeri' } } });
+    } else if (jenisNaskah.includes('2. Audio/Visual')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'AUDIO_VISUAL' } });
+    } else if (jenisNaskah.includes('3. Tafsir')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tafsir' } } });
+    } else if (jenisNaskah.includes('3. Terjemah Perkata') || jenisNaskah.includes('3. Transliterasi Perkata')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Perkata' } } });
+    } else if (jenisNaskah.includes('3. Transliterasi')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Transliterasi' } } });
+    } else if (jenisNaskah.includes('3. Terjemah')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Terjemah' } } });
+    } else if (jenisNaskah.includes('3. Tajwid Warna') || jenisNaskah.includes('3. Kode Tajwid')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tajwid' } } });
+    } else if (jenisNaskah.includes("3. Waqaf Ibtida'")) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Waqaf' } } });
+    } else if (jenisNaskah.includes('1. Metode Baca Tulis Al-Qur\'an')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Metode' } } });
+    } else if (jenisNaskah.includes('1. Surah Yasin dan Bacaan Tahlil')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Yasin' } } });
+    } else if (jenisNaskah.includes("1. Juz 'Amma") || jenisNaskah.includes('1. Juz-juz pilihan')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Juz' } } });
+    } else if (jenisNaskah.includes("1. Majmu' Syarif/ Surah-surah pilihan")) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Majmu' } } });
+    } else if (jenisNaskah.includes('1. Kaligrafi')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Kaligrafi' } } });
+    } else if (jenisNaskah.includes('2. Digital')) {
+      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'DIGITAL' } });
+    }
+
+    if (!matched) {
+      matched = (await prisma.serviceType.findFirst({
+        where: { status: 'ACTIVE', name: { contains: '30 Juz' } },
+      })) || (await prisma.serviceType.findFirst({
+        where: { status: 'ACTIVE' },
+        orderBy: { created_at: 'asc' },
+      }));
+    }
+    serviceTypeId = matched?.id;
   }
 
   // Verifikasi service type aktif
@@ -232,6 +281,22 @@ export const createDraft = async (data, user, req) => {
       const error = new Error('Pengajuan perpanjangan (EXTENSION) wajib menyertakan previous_registration_id atau nomor pendaftaran lama.');
       error.statusCode = 400;
       throw error;
+    }
+
+    // Jika nomor pendaftaran lama diisi, cari dan pastikan tidak membajak pengajuan milik penerbit lain
+    if (!data.previous_registration_id && legacyNo) {
+      const matchedLegacy = await prisma.registration.findFirst({
+        where: { registration_no: legacyNo.trim() },
+        select: { id: true, publisher_id: true, status: true, registration_no: true },
+      });
+      if (matchedLegacy) {
+        if (matchedLegacy.publisher_id !== publisherId && !user.roles.includes('SUPERADMIN')) {
+          const error = new Error(`Nomor permohonan lama ${legacyNo} terdaftar sebagai milik penerbit lain. Anda tidak dapat mengajukan perpanjangan atas naskah penerbit lain.`);
+          error.statusCode = 403;
+          throw error;
+        }
+        data.previous_registration_id = matchedLegacy.id;
+      }
     }
 
     if (data.previous_registration_id) {
@@ -272,12 +337,47 @@ export const createDraft = async (data, user, req) => {
   }
 
   // Normalisasi daftar addon
-  const requestedAddonIds = data.addons || data.addon_ids || [];
+  const requestedAddonIds = Array.isArray(data.addons || data.addon_ids) ? [...(data.addons || data.addon_ids)] : [];
+
+  // Otomatis tambahkan addon ADD-MATERI (+Rp 500.000) jika pada jenis_naskah dipilih konten tambahan (Group 3: Transliterasi, Terjemah, Tajwid, Waqaf, Tafsir, dll.)
+  // Catatan: Checklist materi tambahan pada mushaf (Bagian II: Asbabun Nuzul, Hadis, Do'a) TIDAK menambah biaya sama sekali (Rp 0).
+  const jenisNaskahList = [
+    ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
+    ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
+    ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
+  ];
+  const hasAdditionalContentInJenisNaskah = jenisNaskahList.some(
+    (item) =>
+      typeof item === 'string' &&
+      (item.startsWith('3.') || /transliterasi|terjemah|tajwid|waqaf|tafsir|perkata/i.test(item))
+  );
+
+  if (hasAdditionalContentInJenisNaskah) {
+    const addMateri = await prisma.serviceAddon.findUnique({
+      where: { code: 'ADD-MATERI' },
+      select: { id: true },
+    });
+    if (addMateri && !requestedAddonIds.includes(addMateri.id)) {
+      requestedAddonIds.push(addMateri.id);
+    }
+  }
+
+  // Otomatis tambahkan TAR-BRAILLE jika naskah braille
+  if (serviceType.service_kind === 'BRAILLE' || (serviceType.name && serviceType.name.toLowerCase().includes('braille'))) {
+    const addBraille = await prisma.serviceAddon.findUnique({
+      where: { code: 'TAR-BRAILLE' },
+      select: { id: true },
+    });
+    if (addBraille && !requestedAddonIds.includes(addBraille.id)) {
+      requestedAddonIds.push(addBraille.id);
+    }
+  }
 
   // Validasi kepemilikan berkas lampiran (P0)
   const fileIdsToCheck = [
     data.cover_file_id,
     data.surat_permohonan_file_id,
+    data.contoh_halaman_file_id,
     data.surat_pernyataan_perubahan_file_id,
     data.apk_file_id,
     data.bukti_tashih_file_id,
@@ -322,7 +422,7 @@ export const createDraft = async (data, user, req) => {
     data.registration_category ||
     (registrationType === 'EXTENSION'
       ? 'EXTENSION'
-      : serviceType.name.toLowerCase().includes('luar negeri')
+      : (serviceType.name || '').toLowerCase().includes('luar negeri')
       ? 'FOREIGN_MANUSCRIPT'
       : 'NEW');
 
@@ -485,14 +585,14 @@ export const dispatchPhysical = async (id, data, user, req) => {
   const updated = await prisma.$transaction(async (tx) => {
     const reg = await lockRegistration(tx, id);
     requireOwner(reg, user);
-    requireStatus(reg, ['READY_FOR_VERIFICATION']);
+    requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
 
     const previousIntake = await tx.physicalMasterIntake.findUnique({
       where: { registration_id: id },
     });
 
     if (previousIntake?.status === 'RECEIVED') {
-      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas loket bila data pengiriman perlu diperbaiki.');
+      fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
     const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
@@ -598,7 +698,11 @@ export const submitRegistration = async (id, user, req) => {
   };
 
   const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
-  const submitStatus = hasVerifiedPayment ? 'WAITING_DISTRIBUTION' : 'READY_FOR_VERIFICATION';
+  let submitStatus = 'READY_FOR_VERIFICATION';
+  if (hasVerifiedPayment) {
+    const intake = await prisma.physicalMasterIntake.findUnique({ where: { registration_id: id } });
+    submitStatus = intake?.status === 'RECEIVED' ? 'WAITING_DISTRIBUTOR_RECEIPT' : 'REVISION_REQUIRED';
+  }
 
   // Lock registration, then rotation. A failed submit rolls both changes back.
   const updated = await prisma.$transaction(async (tx) => {
@@ -635,7 +739,11 @@ export const submitRegistration = async (id, user, req) => {
         from_status: reg.status,
         to_status: submitStatus,
         actor_id: user.id,
-        notes: 'Pengajuan disubmit untuk verifikasi',
+        notes: hasVerifiedPayment
+          ? (submitStatus === 'WAITING_DISTRIBUTOR_RECEIPT'
+            ? 'Pengajuan perbaikan disubmit penerbit; master fisik telah diterima Admin Internal'
+            : 'Pengajuan perbaikan disubmit penerbit; menunggu naskah fisik diterima Admin Internal')
+          : 'Pengajuan disubmit untuk verifikasi',
       },
     });
 
@@ -905,12 +1013,12 @@ export const listRegistrations = async ({
   const where = {};
 
   // Scope filter berdasarkan Role
-  const publisherScope = user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN');
+  const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
   if (publisherScope) {
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
     where.publisher_id = user.publisherId;
   }
-  if (!publisherScope && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
+  if (!publisherScope && !user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))) {
     if (user.roles.includes('VERIFIKATOR')) where.core_verifier_id = user.id;
     else if (user.roles.includes('DISTRIBUTOR')) where.core_distributor_id = user.id;
     else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
@@ -954,7 +1062,7 @@ export const listRegistrations = async ({
 
   const paging = queuePagination({ page, limit });
   const { skip, limit: take } = paging;
-  const fifo = !user.roles.includes('ADMIN_PENERBIT') || user.roles.includes('SUPERADMIN');
+  const fifo = !user.roles.includes('PENERBIT') || user.roles.includes('SUPERADMIN');
 
   const [total, items, counts, issuedSTT] = await Promise.all([
     prisma.registration.count({ where }),
@@ -1058,7 +1166,7 @@ export const getDetail = async (id, user) => {
 
   // Cross-tenant permission check
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1067,7 +1175,7 @@ export const getDetail = async (id, user) => {
     throw error;
   }
 
-  if (reg.core_team_number && !user.roles.some(role => ['HELPER_ADMIN', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
+  if (reg.core_team_number && !user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
       && reg.publisher_id !== user.publisherId
       && ![reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].includes(user.id)
       && !reg.assignments.some(item => item.assignee_id === user.id)) {
@@ -1094,7 +1202,7 @@ export const getDetail = async (id, user) => {
     if (error.statusCode !== 403) throw error;
     reg.manuscript_files = [];
   }
-  if (user.roles.includes('ADMIN_PENERBIT') && !user.roles.includes('SUPERADMIN')) {
+  if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
     if (reg.verification_assignments) {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
@@ -1154,7 +1262,7 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
   }
 
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1167,11 +1275,12 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     const current = await lockRegistration(tx, registrationId);
     await assertManuscriptAccess(current, user, true, tx);
     const file = await ownedFile(tx, data.file_id, user);
-    const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: data.type }, orderBy: { version: 'desc' } });
+    const manuscriptType = data.type === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : data.type;
+    const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: manuscriptType }, orderBy: { version: 'desc' } });
     const created = await tx.manuscriptFile.create({
     data: {
       registration_id: registrationId,
-      type: data.type,
+      type: manuscriptType,
       file_id: data.file_id,
       version: (last?.version || 0) + 1,
       checksum: file.checksum,
@@ -1198,7 +1307,7 @@ export const listManuscriptFiles = async (registrationId, user) => {
   }
 
   if (
-    user.roles.includes('ADMIN_PENERBIT') &&
+    user.roles.includes('PENERBIT') &&
     !user.roles.includes('SUPERADMIN') &&
     reg.publisher_id !== user.publisherId
   ) {
@@ -1227,7 +1336,7 @@ export const deleteRegistration = async (id, user, req) => {
   }
 
   const isSuperadmin = user.roles.includes('SUPERADMIN');
-  const isPublisher = user.roles.includes('ADMIN_PENERBIT');
+  const isPublisher = user.roles.includes('PENERBIT');
 
   if (isPublisher && !isSuperadmin) {
     if (reg.publisher_id !== user.publisherId) {
@@ -1300,7 +1409,7 @@ export const generateReceiptPdf = async (id, user) => {
   }
 
   const isInternal = user.roles.some((r) =>
-    ['SUPERADMIN', 'HELPER_ADMIN', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+    ['SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
   );
   if (!isInternal && reg.publisher_id !== user.publisherId) {
     const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh bukti permohonan ini.');
@@ -1311,6 +1420,38 @@ export const generateReceiptPdf = async (id, user) => {
   const buffer = await renderRegistrationReceiptPdf(reg);
   const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
   const filename = `Tanda-Terima-${safeRegNo}.pdf`;
+
+  return { buffer, filename };
+};
+
+export const generateShippingLabelPdf = async (id, user) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: {
+      publisher: true,
+      service_type: { include: { category: true } },
+      physical_master_intake: true,
+    },
+  });
+
+  if (!reg) {
+    const error = new Error('Pengajuan tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isInternal = user.roles.some((r) =>
+    ['SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'].includes(r)
+  );
+  if (!isInternal && reg.publisher_id !== user.publisherId) {
+    const error = new Error('Akses ditolak. Anda tidak memiliki izin untuk mengunduh label pengiriman ini.');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const buffer = await renderShippingLabelPdf(reg);
+  const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
+  const filename = `Label-Pengiriman-${safeRegNo}.pdf`;
 
   return { buffer, filename };
 };
@@ -1326,5 +1467,6 @@ export default {
   listManuscriptFiles,
   deleteRegistration,
   generateReceiptPdf,
+  generateShippingLabelPdf,
   TRANSITION_POLICY,
 };

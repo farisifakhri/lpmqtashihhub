@@ -20,3 +20,24 @@ export const registerPublisherSchema = {
     phone: z.string().optional(),
   }),
 };
+
+export const forgotPasswordSchema = {
+  body: z.object({
+    email: z.string().email('Format email tidak valid'),
+  }),
+};
+
+export const resetPasswordSchema = {
+  body: z.object({
+    token: z.string().min(1, 'Token reset kata sandi wajib disertakan'),
+    new_password: z.string().min(8, 'Kata sandi baru minimal 8 karakter'),
+  }),
+};
+
+export const changePasswordSchema = {
+  body: z.object({
+    current_password: z.string().min(1, 'Kata sandi saat ini wajib diisi'),
+    new_password: z.string().min(8, 'Kata sandi baru minimal 8 karakter'),
+  }),
+};
+

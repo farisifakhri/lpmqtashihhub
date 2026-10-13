@@ -12,8 +12,8 @@ const db = {
 
 test('archive includes draft verification and tashih versions for the owner and approved internal roles', async () => {
   for (const user of [
-    { roles: ['ADMIN_PENERBIT'], publisherId: 'p1' },
-    { roles: ['HELPER_ADMIN'] },
+    { roles: ['PENERBIT'], publisherId: 'p1' },
+    { roles: ['ADMIN_INTERNAL'] },
     { roles: ['DOKUMENTATOR'] },
   ]) {
     const result = await listDocumentArchive('r1', user, db);
@@ -23,7 +23,7 @@ test('archive includes draft verification and tashih versions for the owner and 
 
 test('archive denies another publisher and unrelated staff', async () => {
   for (const user of [
-    { roles: ['ADMIN_PENERBIT'], publisherId: 'p2' },
+    { roles: ['PENERBIT'], publisherId: 'p2' },
     { roles: ['VERIFIKATOR'] },
   ]) {
     await assert.rejects(listDocumentArchive('r1', user, db), error => error.statusCode === 403);

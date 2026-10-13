@@ -81,24 +81,24 @@ export function PublisherDetailHeader({
       'VERIFICATION_APPROVED',
     ].includes(s) || isVerificationRevision;
 
-    let p2StatusText = 'Menunggu Pengajuan';
+    let p2StatusText = 'Menunggu Permohonan';
     let p2Desc = 'Master fisik A4 & berkas digital';
     if (p2Done) {
       p2StatusText = 'Lolos Verifikasi';
       p2Desc = 'Administrasi & fisik dinyatakan sah';
     } else if (isVerificationRevision) {
       p2StatusText = 'Perlu Perbaikan';
-      p2Desc = 'Periksa catatan verifikator loket';
+      p2Desc = 'Periksa catatan verifikator';
     } else if (p2Active) {
       if (isPhysicalReceived) {
         p2StatusText = 'Sedang Ditelaah';
-        p2Desc = 'Master fisik diterima di loket LPMQ';
+        p2Desc = 'Master fisik diterima di LPMQ';
       } else if (isDispatched) {
         p2StatusText = 'Fisik Dikirim';
-        p2Desc = 'Dalam pengiriman menuju loket LPMQ';
+        p2Desc = 'Dalam pengiriman menuju LPMQ';
       } else {
         p2StatusText = 'Kirim Master Fisik';
-        p2Desc = 'Kirim berkas fisik A4 per juz ke loket';
+        p2Desc = 'Kirim berkas fisik A4 per juz ke LPMQ';
       }
     }
 
@@ -406,7 +406,7 @@ export function PublisherDetailHeader({
                   </p>
                 </div>
 
-                <p className="text-[11px] text-ink-muted mt-2 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-ink-muted mt-2 line-clamp-2 leading-relaxed">
                   {phase.desc}
                 </p>
               </div>

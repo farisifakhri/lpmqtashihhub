@@ -106,7 +106,7 @@ export const HandoverDialogs = ({
                 <Button
                   type="submit"
                   disabled={actionLoading}
-                  className="text-xs bg-[#146C43] hover:bg-[#0E5139] text-white font-bold px-5 py-2.5"
+                  className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-5 py-2.5"
                 >
                   {actionLoading ? 'Memproses...' : 'Sahkan Penerimaan & Lanjut Distribusi'}
                 </Button>
@@ -159,7 +159,7 @@ export const HandoverDialogs = ({
                   className="w-full p-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-danger/20 focus:border-civic-danger"
                   required
                 />
-                <span className="text-[11px] text-ink-muted">Minimal 5 karakter.</span>
+                <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">

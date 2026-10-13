@@ -205,7 +205,7 @@ export const PublicDocumentVerification = () => {
                     <Award className="w-4 h-4" />
                     <span>Sertifikat Asli Bersertifikasi</span>
                   </div>
-                  <p className="text-[10px] font-mono text-ink-muted mt-1">
+                  <p className="text-xs font-mono text-ink-muted mt-1">
                     Token: {token || 'DEMO-TOKEN'}
                   </p>
                 </div>

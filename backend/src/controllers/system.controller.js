@@ -22,20 +22,19 @@ export const getHealth = async (req, res, next) => {
   const isHealthy = dbStatus === 'CONNECTED';
   const totalLatency = Date.now() - startTime;
 
+  const isProd = process.env.NODE_ENV === 'production';
+
   res.status(isHealthy ? 200 : 503).json({
     success: isHealthy,
     status: isHealthy ? 'UP' : 'DEGRADED',
     system: 'LPMQ Backend API',
-    version: '2.2.0',
     timestamp: new Date().toISOString(),
     uptime_seconds: Math.floor(process.uptime()),
     latency_ms: totalLatency,
     database: {
-      provider: 'mysql',
-      database_name: 'lpmq_db',
       status: dbStatus,
       latency_ms: dbLatency,
-      error: dbError,
+      ...(isProd ? {} : { provider: 'mysql', database_name: 'lpmq_db', error: dbError }),
     },
   });
 };
@@ -193,7 +192,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'POST', path: '/api/v1/registrations', desc: 'Buat Draf Pengajuan Baru' },
             { method: 'POST', path: '/api/v1/registrations/:id/submit', desc: 'Submit ke Verifikasi' },
           ],
-          rbac_roles: ['ADMIN_PENERBIT', 'SUPERADMIN'],
+          rbac_roles: ['PENERBIT', 'SUPERADMIN'],
           sample_records: sample,
         };
         break;
@@ -263,7 +262,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'GET', path: '/api/v1/registrations?status=AWAITING_PAYMENT', desc: 'Daftar Tagihan PNBP' },
             { method: 'PATCH', path: '/api/v1/registrations/:id/status', desc: 'Konfirmasi Verifikasi Pembayaran' },
           ],
-          rbac_roles: ['ADMIN_PENERBIT', 'SUPERADMIN', 'VERIFIKATOR'],
+          rbac_roles: ['PENERBIT', 'SUPERADMIN', 'VERIFIKATOR'],
           sample_records: sample,
         };
         break;
@@ -372,7 +371,7 @@ export const getModuleDiagnostics = async (req, res, next) => {
             { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_STT', desc: 'Naskah Siap Penetapan STT' },
             { method: 'GET', path: '/api/v1/public/verify-document/:token', desc: 'Verifikasi Publik Keabsahan QR' },
           ],
-          rbac_roles: ['DOKUMENTATOR', 'KEPALA_LPMQ', 'ADMIN_PENERBIT', 'SUPERADMIN'],
+          rbac_roles: ['DOKUMENTATOR', 'KEPALA_LPMQ', 'PENERBIT', 'SUPERADMIN'],
           sample_records: sample,
         };
         break;

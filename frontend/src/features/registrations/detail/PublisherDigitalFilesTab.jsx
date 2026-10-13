@@ -44,7 +44,7 @@ export function PublisherDigitalFilesTab({
               <FileText className="w-4 h-4 text-brand-800" />
               Berkas naskah digital
             </h2>
-            <p className="text-[11px] text-ink-muted mt-0.5 leading-relaxed">
+            <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
               Sampul dan sampel halaman 1–5 naskah mushaf yang diverifikasi oleh LPMQ Kemenag RI (PDF, PNG, atau JPEG maksimal 10 MB).
             </p>
           </div>
@@ -64,14 +64,14 @@ export function PublisherDigitalFilesTab({
                       <span className="font-semibold text-ink block truncate">
                         {FILE_TYPES[item.type] || item.type}
                       </span>
-                      <span className="text-[10px] text-ink-muted block">
+                      <span className="text-xs text-ink-muted block">
                         Versi {item.version}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono text-[11px] text-ink-muted bg-surface border border-line px-2 py-0.5 rounded">
+                    <span className="font-mono text-xs text-ink-muted bg-surface border border-line px-2 py-0.5 rounded">
                       v{item.version}
                     </span>
                     {item.file_id && (
@@ -157,7 +157,7 @@ export function PublisherDigitalFilesTab({
               </Button>
             </form>
           ) : (
-            <p className="text-[11px] text-ink-muted italic pt-1">
+            <p className="text-xs text-ink-muted italic pt-1">
               Berkas digital naskah terkunci selama proses verifikasi berlangsung.
             </p>
           )}
@@ -204,10 +204,14 @@ export function PublisherDigitalFilesTab({
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleTabChange('berkas-fisik')}
+                onClick={() => {
+                  handleTabChange('dokumen');
+                  const el = document.getElementById('section-physical-master');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="text-xs font-bold inline-flex items-center gap-1.5"
               >
-                <span>Buka Penyerahan Berkas Fisik</span>
+                <span>Lihat Penyerahan Berkas Fisik</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>

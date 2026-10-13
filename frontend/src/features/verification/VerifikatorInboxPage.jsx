@@ -55,7 +55,7 @@ export const VerifikatorInboxPage = () => {
   const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('HELPER_ADMIN') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'HELPER_ADMIN';
+  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN_INTERNAL';
   const isAssignmentAdmin = isAdmin;
 
   const normalizeTab = (tab) => {
@@ -603,7 +603,7 @@ export const VerifikatorInboxPage = () => {
                               {reg.registration_no || '-'}
                             </span>
                             {item.isUnassigned ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-800 border border-brand-100">
                                 Siap ditugaskan
                               </span>
                             ) : (
@@ -619,14 +619,14 @@ export const VerifikatorInboxPage = () => {
                           </div>
 
                           {item.isUnassigned ? (
-                            <div className="bg-canvas p-2 rounded-lg border border-line/60 text-[11px] space-y-1 text-ink-muted">
+                            <div className="bg-canvas p-2 rounded-lg border border-line/60 text-xs space-y-1 text-ink-muted">
                               <div className="flex items-center justify-between">
                                 <span className="font-mono text-ink">
                                   TT: <strong>{reg.physical_master?.receipt_no || reg.physical_master_intake?.receipt_no || '-'}</strong>
                                 </span>
                                 <span>{(reg.physical_master?.volume_count ?? reg.physical_master_intake?.volume_count ?? 30)} jilid</span>
                               </div>
-                              <div className="flex items-center justify-between text-ink-muted text-[10px]">
+                              <div className="flex items-center justify-between text-ink-muted text-xs">
                                 <span>
                                   Diterima: {(reg.physical_master?.received_at || reg.physical_master_intake?.received_at) ? new Date(reg.physical_master?.received_at || reg.physical_master_intake?.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
                                 </span>
@@ -637,7 +637,7 @@ export const VerifikatorInboxPage = () => {
                             </div>
                           ) : null}
 
-                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-line text-[11px] text-ink-muted">
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-line text-xs text-ink-muted">
                             {item.due_at ? (
                               <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
                             ) : item.isUnassigned ? (
@@ -750,7 +750,7 @@ export const VerifikatorInboxPage = () => {
                             Informasi Penugasan & SLA Verifikasi
                           </h4>
                           {isRevoked ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                               Penugasan Dicabut (Revoked)
                             </span>
                           ) : null}
@@ -758,31 +758,31 @@ export const VerifikatorInboxPage = () => {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-ink-muted">
                           <div>
-                            <span className="text-ink-muted block text-[11px]">Verifikator Ditugaskan:</span>
+                            <span className="text-ink-muted block text-xs">Verifikator Ditugaskan:</span>
                             <span className="font-semibold text-ink">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-ink-muted block text-[11px]">Nomor Disposisi:</span>
+                            <span className="text-ink-muted block text-xs">Nomor Disposisi:</span>
                             <span className="font-mono font-semibold text-ink">{notaDoc?.document_no || '-'}</span>
                           </div>
                           <div>
-                            <span className="text-ink-muted block text-[11px]">Waktu Penugasan:</span>
+                            <span className="text-ink-muted block text-xs">Waktu Penugasan:</span>
                             <span>{selectedAssignment.assigned_at ? new Date(selectedAssignment.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
                           </div>
                           <div>
-                            <span className="text-ink-muted block text-[11px]">Target Selesai (SLA):</span>
+                            <span className="text-ink-muted block text-xs">Target Selesai (SLA):</span>
                             <span>{selectedAssignment.due_at ? new Date(selectedAssignment.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '2 Hari Kerja'}</span>
                           </div>
                         </div>
 
                         {isRevoked && selectedAssignment.revocation_reason && (
-                          <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-[11px]">
+                          <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs">
                             <strong>Alasan Pencabutan:</strong> {selectedAssignment.revocation_reason}
                           </div>
                         )}
 
                         {['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(selectedAssignment.status) && (
-                          <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-lg text-brand-900 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-lg text-brand-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <span>
                               Pemeriksaan verifikator telah diajukan. Tanggung jawab saat ini:{' '}
                               <strong>

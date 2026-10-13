@@ -148,6 +148,19 @@ export const downloadReceiptPdf = async (req, res, next) => {
   }
 };
 
+export const downloadShippingLabelPdf = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { buffer, filename } = await registrationService.generateShippingLabelPdf(id, req.user);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
@@ -159,5 +172,6 @@ export default {
   listManuscriptFiles,
   deleteRegistration,
   downloadReceiptPdf,
+  downloadShippingLabelPdf,
 };
 

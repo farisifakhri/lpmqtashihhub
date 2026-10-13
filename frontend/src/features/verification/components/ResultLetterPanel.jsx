@@ -1,5 +1,7 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, AlertCircle, FileText } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, AlertCircle, FileText, CreditCard, Eye, Printer } from 'lucide-react';
+import { clsx } from 'clsx';
+import { Button } from '@/components/ui/Button';
 import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 
 export const ResultLetterPanel = ({
@@ -8,7 +10,7 @@ export const ResultLetterPanel = ({
   letterText, setLetterText,
   billingNo, setBillingNo,
   billingFileId, billingFileName, billingUploading, handleBillingFile, resultDocumentId,
-  registration, publisher,
+  registration, publisher, showDocumentPdf,
   className,
 }) => (
           <div
@@ -18,7 +20,7 @@ export const ResultLetterPanel = ({
           >
             <div className="border-b border-line pb-3">
               <h3 className="text-base font-bold text-ink">Hasil Pemeriksaan & Draf Surat</h3>
-              <p className="text-[11px] text-ink-muted mt-0.5">
+              <p className="text-xs text-ink-muted mt-0.5">
                 Tentukan hasil pemeriksaan, tulis alasan, lalu periksa surat sebelum diajukan ke Kepala LPMQ.
               </p>
             </div>
@@ -54,7 +56,7 @@ export const ResultLetterPanel = ({
                     <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                     Lolos Verifikasi (PASSED)
                   </strong>
-                  <p className="text-ink-muted text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-ink-muted text-xs mt-0.5 leading-relaxed">
                     Seluruh butir terpenuhi. Rekomendasikan penerbitan billing PNBP.
                   </p>
                 </div>
@@ -85,7 +87,7 @@ export const ResultLetterPanel = ({
                     <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
                     Perlu Perbaikan Penerbit (REVISION_REQUIRED)
                   </strong>
-                  <p className="text-ink-muted text-[11px] mt-0.5 leading-relaxed">
+                  <p className="text-ink-muted text-xs mt-0.5 leading-relaxed">
                     Terdapat butir tidak sesuai yang wajib diperbaiki pemohon.
                   </p>
                 </div>
@@ -100,30 +102,197 @@ export const ResultLetterPanel = ({
             )}
 
             {decision === 'PASSED' && (
-              <div className="space-y-3 text-xs border-l-2 border-brand-700 pl-4 py-1">
-                <label htmlFor="verification-billing-no" className="block font-bold text-ink">Kode billing PNBP <span className="text-civic-danger">*</span></label>
-                <input
-                  id="verification-billing-no"
-                  type="text"
-                  value={billingNo || ''}
-                  onChange={event => { setBillingNo(event.target.value); setIsDirty(true); }}
-                  disabled={isReadOnly}
-                  maxLength={191}
-                  placeholder="Masukkan kode billing yang sudah diterbitkan"
-                  className="w-full rounded-lg border border-line-strong bg-white p-2.5 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-brand-700/20"
-                />
-                <p className="text-[11px] text-ink-muted">Kode ini akan tercantum pada PDF surat hasil dan tagihan penerbit.</p>
-                {validationErrors.billing_no && <p className="text-civic-danger font-semibold">{validationErrors.billing_no}</p>}
+              <div className="space-y-3.5 text-xs border-l-2 border-brand-700 pl-4 py-1">
+                {/* Visual Requirement Notice Banner */}
+                <div
+                  className={clsx(
+                    "p-3.5 rounded-xl border transition-all space-y-2.5",
+                    (!billingNo?.trim() || !billingFileId)
+                      ? "bg-civic-warningSoft border-civic-warningLine text-civic-warning shadow-2xs"
+                      : "bg-civic-successSoft border-civic-successLine text-civic-success shadow-2xs"
+                  )}
+                  role="status"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {(!billingNo?.trim() || !billingFileId) ? (
+                        <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
+                      )}
+                      <div>
+                        <h5 className="font-bold text-xs">
+                          {(!billingNo?.trim() || !billingFileId)
+                            ? "Prasyarat Pengajuan Draf Belum Lengkap"
+                            : "Prasyarat Billing Lengkap untuk Pengajuan Draf"}
+                        </h5>
+                        <p className="text-xs opacity-80 mt-0.5 leading-relaxed">
+                          {(!billingNo?.trim() || !billingFileId)
+                            ? "Untuk naskah Lolos Verifikasi, SOP Pentashihan LPMQ mewajibkan pengisian Kode Billing SIMPONI dan unggahan berkas PDF billing sebelum draf diajukan atau disahkan."
+                            : "Kode billing dan lampiran berkas PDF telah siap. Draf surat hasil verifikasi dapat diajukan kepada Kepala LPMQ."}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={clsx(
+                        "px-2 py-0.5 rounded-full text-xs font-extrabold uppercase shrink-0 tracking-wider",
+                        (!billingNo?.trim() || !billingFileId)
+                          ? "bg-civic-warningSoft text-civic-warning border border-civic-warningLine"
+                          : "bg-civic-successSoft text-civic-success border border-civic-successLine"
+                      )}
+                    >
+                      {(!billingNo?.trim() || !billingFileId) ? "Wajib Dilengkapi" : "Siap Diajukan"}
+                    </span>
+                  </div>
+
+                  {/* Checklist item badges */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 border-t border-black/10">
+                    <div
+                      className={clsx(
+                        "flex items-center justify-between p-2 rounded-lg border text-xs",
+                        billingNo?.trim()?.length >= 3
+                          ? "bg-civic-successSoft border-civic-successLine text-civic-success"
+                          : "bg-white/90 border-civic-warningLine text-civic-warning"
+                      )}
+                    >
+                      <span className="font-semibold flex items-center gap-1.5">
+                        {billingNo?.trim()?.length >= 3 ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
+                        ) : (
+                          <AlertCircle className="w-3.5 h-3.5 text-civic-warning" />
+                        )}
+                        Kode Billing PNBP
+                      </span>
+                      <span className="font-mono font-bold text-xs">
+                        {billingNo?.trim()?.length >= 3 ? billingNo.trim() : "Belum Diisi"}
+                      </span>
+                    </div>
+
+                    <div
+                      className={clsx(
+                        "flex items-center justify-between p-2 rounded-lg border text-xs",
+                        billingFileId
+                          ? "bg-civic-successSoft border-civic-successLine text-civic-success"
+                          : "bg-white/90 border-civic-warningLine text-civic-warning"
+                      )}
+                    >
+                      <span className="font-semibold flex items-center gap-1.5">
+                        {billingFileId ? (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
+                        ) : (
+                          <AlertCircle className="w-3.5 h-3.5 text-civic-warning" />
+                        )}
+                        Berkas PDF Billing
+                      </span>
+                      <span className="font-bold text-xs truncate max-w-[130px]" title={billingFileName || 'Dokumen PDF'}>
+                        {billingFileId ? (billingFileName || 'Terlampir') : "Belum Diunggah"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Petunjuk Nominal Billing PNBP Sesuai Naskah */}
+                {(() => {
+                  const baseFee = Number(registration?.fee_sla_snapshot?.base_fee ?? registration?.service_type?.base_fee ?? 1000000);
+                  const hasGroup3Content = (registration?.foreign_metadata?.jenis_naskah || []).some(
+                    j => typeof j === 'string' && (j.startsWith('3.') || /transliterasi|terjemah|tajwid|waqaf|tafsir|perkata/i.test(j))
+                  );
+                  const addonsFee = Number(
+                    registration?.fee_sla_snapshot?.addons_fee ??
+                    (registration?.addons?.length
+                      ? registration.addons.reduce((sum, item) => sum + Number(item.fee_snapshot || item.addon?.fee || 0), 0)
+                      : (hasGroup3Content ? 500000 : 0))
+                  );
+                  const totalFee = Number(registration?.fee_sla_snapshot?.total_fee ?? (baseFee + addonsFee));
+                  const serviceName = registration?.fee_sla_snapshot?.service_name || registration?.service_type?.name || "Mushaf Al-Qur'an";
+
+                  return (
+                    <div className="p-3 bg-brand-50/70 border border-brand-200 rounded-xl space-y-1 text-brand-950">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold flex items-center gap-1.5 text-brand-900">
+                          <CreditCard className="w-4 h-4 text-brand-700" />
+                          Nominal Billing PNBP (Simponi):
+                        </span>
+                        <span className="font-mono font-extrabold text-sm text-civic-success">
+                          {totalFee === 0 ? 'Rp 0 (Bebas Tarif)' : `Rp ${totalFee.toLocaleString('id-ID')}`}
+                        </span>
+                      </div>
+                      <p className="text-xs text-ink-muted leading-relaxed">
+                        Layanan: <strong>{serviceName}</strong>
+                        {addonsFee > 0 ? ` (Tarif Dasar: Rp ${baseFee.toLocaleString('id-ID')} + Addon Konten Naskah: Rp ${addonsFee.toLocaleString('id-ID')})` : ''}.
+                        Pastikan nominal pada surat billing Simponi sesuai dengan perhitungan resmi ini.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <div>
+                  <label htmlFor="verification-billing-no" className="block font-bold text-ink mb-1">
+                    Kode billing PNBP <span className="text-civic-danger">*</span>
+                  </label>
+                  <input
+                    id="verification-billing-no"
+                    type="text"
+                    value={billingNo || ''}
+                    onChange={event => { setBillingNo(event.target.value); setIsDirty(true); }}
+                    disabled={isReadOnly}
+                    maxLength={191}
+                    placeholder="Masukkan kode billing yang sudah diterbitkan (contoh: 82026090123)"
+                    className={clsx(
+                      "w-full rounded-lg border p-2.5 font-mono text-xs focus:outline-none focus:ring-2 transition-all",
+                      validationErrors.billing_no
+                        ? "border-civic-danger bg-civic-dangerSoft/20 text-civic-danger focus:ring-civic-danger/30 ring-1 ring-civic-danger"
+                        : "border-line-strong bg-white focus:ring-brand-700/20"
+                    )}
+                  />
+                  <p className="text-xs text-ink-muted mt-1">Kode ini akan tercantum pada PDF surat hasil dan tagihan pemohon.</p>
+                  {validationErrors.billing_no && (
+                    <p role="alert" className="text-civic-danger font-semibold flex items-center gap-1.5 mt-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{validationErrors.billing_no}</span>
+                    </p>
+                  )}
+                </div>
+
                 <div className="border-t border-line pt-3 space-y-2">
-                  <label htmlFor="verification-billing-file" className="block font-bold text-ink">Dokumen billing PNBP (PDF) <span className="text-civic-danger">*</span></label>
-                  {!isReadOnly && <input id="verification-billing-file" type="file" accept="application/pdf,.pdf" onChange={handleBillingFile} disabled={billingUploading} className="block w-full rounded-lg border border-line bg-white p-2 text-xs" />}
+                  <label htmlFor="verification-billing-file" className="block font-bold text-ink">
+                    Dokumen billing PNBP (PDF) <span className="text-civic-danger">*</span>
+                  </label>
+                  {!isReadOnly && (
+                    <input
+                      id="verification-billing-file"
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      onChange={handleBillingFile}
+                      disabled={billingUploading}
+                      className={clsx(
+                        "block w-full rounded-lg border bg-white p-2 text-xs",
+                        validationErrors.billing_file_id ? "border-civic-danger ring-1 ring-civic-danger" : "border-line"
+                      )}
+                    />
+                  )}
                   {billingUploading && <p role="status">Mengunggah dokumen billing…</p>}
                   {billingFileId && <p className="font-medium text-brand-900">Lampiran tersimpan: {billingFileName || 'Dokumen billing PNBP.pdf'}</p>}
-                  {validationErrors.billing_file_id && <p role="alert" className="text-civic-danger font-semibold">{validationErrors.billing_file_id}</p>}
-                  {billingFileId && <details className="rounded-lg border border-line bg-white p-3">
-                    <summary className="cursor-pointer font-semibold text-brand-900">Tinjau lampiran billing</summary>
-                    <div className="pt-3"><PrivateFileViewer fileId={billingFileId} fileName={billingFileName || 'billing-pnbp.pdf'} mimeType="application/pdf" height="360px" endpoint={isReadOnly && resultDocumentId ? `/verification-documents/${resultDocumentId}/attachments/${billingFileId}` : undefined} /></div>
-                  </details>}
+                  {validationErrors.billing_file_id && (
+                    <p role="alert" className="text-civic-danger font-semibold flex items-center gap-1.5 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{validationErrors.billing_file_id}</span>
+                    </p>
+                  )}
+                  {billingFileId && (
+                    <details className="rounded-lg border border-line bg-white p-3">
+                      <summary className="cursor-pointer font-semibold text-brand-900">Tinjau lampiran billing</summary>
+                      <div className="pt-3">
+                        <PrivateFileViewer
+                          fileId={billingFileId}
+                          fileName={billingFileName || 'billing-pnbp.pdf'}
+                          mimeType="application/pdf"
+                          height="360px"
+                          endpoint={isReadOnly && resultDocumentId ? `/verification-documents/${resultDocumentId}/attachments/${billingFileId}` : undefined}
+                        />
+                      </div>
+                    </details>
+                  )}
                 </div>
               </div>
             )}
@@ -160,34 +329,54 @@ export const ResultLetterPanel = ({
             {/* Draf Surat Teks */}
             <div className="space-y-3 text-xs min-w-0">
               <h4 className="text-sm font-semibold text-ink">Naskah surat untuk penerbit</h4>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label className="font-bold text-ink flex items-center gap-1.5">
                   <FileText className="w-3.5 h-3.5 text-brand-800" />
                   Teks Draf Surat Hasil Verifikasi
                 </label>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setLetterTab('editor')}
-                    className={`px-2 py-0.5 text-[11px] rounded font-semibold ${
-                      letterTab === 'editor' ? 'bg-surface-strong text-ink' : 'text-ink-muted'
-                    }`}
-                  >
-                    Editor
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLetterTab('preview')}
-                    className={`px-2 py-0.5 text-[11px] rounded font-semibold ${
-                      letterTab === 'preview' ? 'bg-surface-strong text-ink' : 'text-ink-muted'
-                    }`}
-                  >
-                    Pratinjau
-                  </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {showDocumentPdf && resultDocumentId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => showDocumentPdf(resultDocumentId, 'Surat Hasil')}
+                      className="text-xs h-7 px-2.5 text-brand-800 border-brand-300 hover:bg-brand-50"
+                    >
+                      <Printer className="w-3.5 h-3.5 mr-1 text-brand-700" />
+                      Lihat PDF Resmi
+                    </Button>
+                  )}
+                  <div className="flex items-center p-0.5 bg-surface-subtle border border-line rounded-lg text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setLetterTab('editor')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        letterTab === 'editor'
+                          ? 'bg-white text-ink shadow-2xs font-bold'
+                          : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Editor</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLetterTab('preview')}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        letterTab === 'preview'
+                          ? 'bg-white text-brand-900 shadow-2xs font-bold'
+                          : 'text-ink-muted hover:text-ink'
+                      }`}
+                    >
+                      <Eye className="w-3.5 h-3.5 text-brand-700" />
+                      <span>Pratinjau</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-ink-muted leading-relaxed">
+              <p className="text-xs text-ink-muted leading-relaxed">
                 Kop, nomor surat, alamat penerbit, dan penutup ditambahkan otomatis pada PDF. Tulis isi surat di bawah ini.
               </p>
 
@@ -205,19 +394,23 @@ export const ResultLetterPanel = ({
                   placeholder="Tuliskan teks draf surat hasil verifikasi resmi..."
                   className="w-full min-h-[320px] p-4 text-sm leading-relaxed rounded-lg border border-line font-sans focus:outline-none focus:ring-2 focus:ring-brand-700/20 resize-y"
                 />
-                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-muted">
                   <span>{letterText.length}/10000 karakter</span>
                   {!isReadOnly && <button type="button" onClick={() => loadOfficialTemplate(decision)} className="font-semibold text-brand-800 hover:underline">Isi ulang dari contoh surat</button>}
                 </div>
                 </div>
               ) : (
                 <div className="mx-auto max-w-[680px] min-h-[520px] bg-white border border-line-strong shadow-sm p-6 sm:p-10 text-[12px] leading-relaxed text-ink">
-                  <div className="flex items-center gap-3 border-b-2 border-ink pb-3 mb-6">
-                    <img src="/assets/logo-kemenag.png" alt="Lambang Kementerian Agama" className="h-14 w-14 object-contain shrink-0" />
-                    <div className="text-center flex-1">
-                      <p className="font-bold">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
-                      <p className="font-bold">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
-                      <p className="text-[10px]">Gedung Bayt Al-Qur'an & Museum Istiqlal, Jl. Raya TMII Pintu I, Jakarta Timur 13560</p>
+                  <div className="relative text-center border-b-2 border-ink pb-3 mb-6">
+                    <img src="/favicon.png" alt="Lambang Kementerian Agama" className="h-12 w-12 object-contain absolute left-0 top-1/2 -translate-y-1/2 hidden sm:block" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-xs uppercase tracking-wider">KEMENTERIAN AGAMA REPUBLIK INDONESIA</p>
+                      <p className="font-bold text-xs uppercase tracking-wider">LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN</p>
+                      <p className="text-xs text-ink leading-tight">
+                        Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560<br />
+                        Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807<br />
+                        Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id
+                      </p>
                     </div>
                   </div>
                   <div className="space-y-1 mb-6">
@@ -237,7 +430,7 @@ export const ResultLetterPanel = ({
                     <p>Kepala Lajnah Pentashihan Mushaf Al-Qur'an,</p>
                     <p className="mt-8 text-ink-muted">Menunggu persetujuan</p>
                   </div>
-                  <p className="mt-8 text-[10px] text-ink-muted">Pratinjau isi · {registration?.registration_no || '-'}</p>
+                  <p className="mt-8 text-xs text-ink-muted">Pratinjau isi · {registration?.registration_no || '-'}</p>
                 </div>
               )}
             </div>

@@ -12,21 +12,28 @@ import {
   Search,
   ExternalLink,
   Building2,
+  KeyRound,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useDensity } from '@/context/DensityContext';
 import { CommandSearchDialog } from './CommandSearchDialog';
 import { NotificationCenter } from './NotificationCenter';
 import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
+import { ChangePasswordModal } from '@/features/auth/ChangePasswordModal';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const { currentUser, logout } = useAuth();
+  const { density, toggleDensity, isCompact } = useDensity();
   const navigate = useNavigate();
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [commandSearchOpen, setCommandSearchOpen] = useState(false);
+  const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   // Global shortcut handler for Ctrl/Cmd + K and "/"
@@ -62,9 +69,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const role = currentUser?.role || '';
   const isPublisher =
-    role === 'ADMIN_PENERBIT' ||
+    role === 'PENERBIT' ||
     role === 'PUBLISHER' ||
-    currentUser?.roles?.includes('ADMIN_PENERBIT');
+    currentUser?.roles?.includes('PENERBIT');
 
   const homePath = isPublisher ? '/publisher' : '/internal';
 
@@ -72,7 +79,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     switch (userRole) {
       case 'SUPERADMIN':
         return { label: 'Administrator Sistem', color: 'bg-surface-subtle text-ink border-line-strong' };
-      case 'HELPER_ADMIN':
+      case 'ADMIN_INTERNAL':
         return { label: 'Helper Admin', color: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
@@ -88,7 +95,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', color: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
-      case 'ADMIN_PENERBIT':
+      case 'PENERBIT':
       case 'PUBLISHER':
         return { label: 'Penerbit Terverifikasi', color: 'bg-surface-subtle text-ink border-line-strong' };
       default:
@@ -222,13 +229,25 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               >
                 <Search className="w-4 h-4 text-ink-muted" />
                 <span className="hidden md:inline font-medium">Cari perintah...</span>
-                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-ink-muted bg-surface border border-line rounded">
+                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-ink-muted bg-surface border border-line rounded">
                   Ctrl+K
                 </kbd>
               </button>
 
               {/* Notification Center */}
               <NotificationCenter />
+
+              {/* Mode Kepadatan Tampilan (Nyaman / Ringkas) */}
+              <button
+                type="button"
+                onClick={toggleDensity}
+                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-strong/70 border border-line text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                title={`Kepadatan Tampilan: ${isCompact ? 'Ringkas (Klik untuk beralih ke Nyaman)' : 'Nyaman (Klik untuk beralih ke Ringkas)'}`}
+                aria-label="Ganti mode kepadatan tampilan"
+              >
+                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-brand-700" /> : <Maximize2 className="w-3.5 h-3.5 text-brand-700" />}
+                <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
+              </button>
 
               {/* Public QR Demo Link */}
               <Link
@@ -262,7 +281,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       <div className="text-xs font-bold text-ink truncate max-w-[130px]">
                         {currentUser.name}
                       </div>
-                      <div className="text-[11px] text-ink-muted truncate max-w-[130px]">
+                      <div className="text-xs text-ink-muted truncate max-w-[130px]">
                         {roleConfig.label}
                       </div>
                     </div>
@@ -274,21 +293,21 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-64 bg-surface rounded-xl shadow-xl border border-line py-1.5 z-50 animate-slideUp">
                       <div className="px-3.5 py-2.5 border-b border-line">
-                        <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider">Sesi Aktif</p>
+                        <p className="text-xs text-ink-muted font-bold uppercase tracking-wider">Sesi Aktif</p>
                         <p className="text-xs font-bold text-ink truncate mt-0.5">{currentUser.name}</p>
-                        <p className="text-[11px] text-ink-muted truncate mt-0.5">
+                        <p className="text-xs text-ink-muted truncate mt-0.5">
                           {currentUser.publisherName || currentUser.email}
                         </p>
                         <div className="mt-2">
-                          <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border ${roleConfig.color}`}>
+                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border ${roleConfig.color}`}>
                             <ShieldCheck className="w-3 h-3" />
                             <span>{roleConfig.label}</span>
                           </span>
                         </div>
                       </div>
 
-                      <div className="px-3.5 py-2 bg-surface-subtle/70 border-b border-line text-[11px] text-ink-muted">
-                        Kontrol proses mengacu pada SOP v2.2
+                      <div className="px-3.5 py-2 bg-surface-subtle/70 border-b border-line text-xs text-ink-muted">
+                        Kontrol proses mengacu pada SOP Pentashihan LPMQ
                       </div>
 
                       <div className="p-1 space-y-0.5">
@@ -313,6 +332,18 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                           <ExternalLink className="w-3.5 h-3.5 text-ink-muted" />
                           <span>Pratinjau Verifikasi QR</span>
                         </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setChangePasswordModalOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                        >
+                          <KeyRound className="w-3.5 h-3.5 text-ink-muted" />
+                          <span>Ganti Kata Sandi</span>
+                        </button>
 
                         <button
                           type="button"
@@ -342,6 +373,12 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       <PublisherProfileModal
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
+      />
+
+      {/* Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={changePasswordModalOpen}
+        onClose={() => setChangePasswordModalOpen(false)}
       />
     </>
   );

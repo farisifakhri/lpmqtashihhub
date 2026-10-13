@@ -12,9 +12,9 @@ describe('AdminMasterIntakePage Component', () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
         id: 'admin-1',
-        name: 'Petugas Loket LPMQ',
-        role: 'HELPER_ADMIN',
-        roles: ['HELPER_ADMIN'],
+        name: 'Petugas Admin Internal LPMQ',
+        role: 'ADMIN_INTERNAL',
+        roles: ['ADMIN_INTERNAL'],
       },
     });
 
@@ -78,7 +78,7 @@ describe('AdminMasterIntakePage Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Loket Intake Master Fisik Mushaf')).toBeInTheDocument();
+    expect(screen.getByText('Penerimaan Master Fisik Mushaf')).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText(/Contoh: REG-2026-001/i);
     fireEvent.change(input, { target: { value: 'REG-2026-001' } });
@@ -88,7 +88,7 @@ describe('AdminMasterIntakePage Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('1. Deklarasi Dokumen Penerbit')).toBeInTheDocument();
-      expect(screen.getByText('2. Verifikasi Fisik Aktual di Loket')).toBeInTheDocument();
+      expect(screen.getByText('2. Verifikasi Fisik Aktual Admin Internal')).toBeInTheDocument();
       expect(screen.getByText('Terima Master Fisik & Terbitkan Tanda Terima')).toBeInTheDocument();
       expect(screen.getByText('Kembalikan ke Penerbit')).toBeInTheDocument();
     });
@@ -106,7 +106,7 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(screen.getByText('Periksa Naskah'));
 
     await waitFor(() => {
-      expect(screen.getByText('2. Verifikasi Fisik Aktual di Loket')).toBeInTheDocument();
+      expect(screen.getByText('2. Verifikasi Fisik Aktual Admin Internal')).toBeInTheDocument();
     });
 
     const volumeInput = screen.getByDisplayValue('30');
@@ -160,7 +160,7 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(screen.getByText('Periksa Naskah'));
 
     await waitFor(() => {
-      expect(screen.getByText('Master Fisik Telah Resmi Diterima di Loket LPMQ')).toBeInTheDocument();
+      expect(screen.getByText('Master Fisik Telah Resmi Diterima oleh Admin Internal LPMQ')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Tugaskan Verifikator Sekarang/i })).toBeInTheDocument();
       expect(screen.getByText('Lihat / Cetak PDF Tanda Terima')).toBeInTheDocument();
     });
@@ -174,22 +174,22 @@ describe('AdminMasterIntakePage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Antrean Naskah Menunggu Master Fisik di Loket')).toBeInTheDocument();
-      expect(screen.getByText('Proses Penerimaan Fisik')).toBeInTheDocument();
+      expect(screen.getByText('Antrean Naskah Menunggu Master Fisik')).toBeInTheDocument();
+      expect(screen.getAllByText('Proses Penerimaan Fisik')[0]).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Proses Penerimaan Fisik'));
+    fireEvent.click(screen.getAllByText('Proses Penerimaan Fisik')[0]);
 
     await waitFor(() => {
       expect(screen.getByText('1. Deklarasi Dokumen Penerbit')).toBeInTheDocument();
-      expect(screen.getByText('Kembali ke Antrean Intake Loket')).toBeInTheDocument();
+      expect(screen.getByText('Kembali ke Antrean Penerimaan Fisik')).toBeInTheDocument();
     });
 
     // Navigasi kembali ke daftar antrean
-    fireEvent.click(screen.getByText('Kembali ke Antrean Intake Loket'));
+    fireEvent.click(screen.getByText('Kembali ke Antrean Penerimaan Fisik'));
 
     await waitFor(() => {
-      expect(screen.getByText('Antrean Naskah Menunggu Master Fisik di Loket')).toBeInTheDocument();
+      expect(screen.getByText('Antrean Naskah Menunggu Master Fisik')).toBeInTheDocument();
     });
   });
 

@@ -6,6 +6,7 @@ import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
 import Switcher from '../darkmode/Switcher';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 export const LoginPage = () => {
   const { login, isLoading, authError } = useAuth();
@@ -16,6 +17,7 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
 
   const handleSubmit = async (e) => {
@@ -29,7 +31,7 @@ export const LoginPage = () => {
 
     const res = await login(email, password);
     if (res.success) {
-      const isPublisher = res.user.roles?.includes('ADMIN_PENERBIT') || res.user.role === 'ADMIN_PENERBIT';
+      const isPublisher = res.user.roles?.includes('PENERBIT') || res.user.role === 'PENERBIT';
       const defaultTarget = isPublisher ? '/publisher' : '/internal';
       const redirectTarget = location.state?.from?.pathname || defaultTarget;
       navigate(redirectTarget, { replace: true });
@@ -169,8 +171,15 @@ export const LoginPage = () => {
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-0.5">
-                  <span className="text-xs text-ink-muted">Hubungi administrator apabila akses terkunci.</span>
+                <div className="flex items-center justify-between pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    className="text-xs font-semibold text-brand-700 hover:text-brand-800 hover:underline transition-colors cursor-pointer"
+                  >
+                    Lupa kata sandi?
+                  </button>
+                  <span className="text-xs text-ink-muted">Bantuan admin</span>
                 </div>
 
                 {/* Tombol Masuk / Sign In (Gradien / Bayangan Mewah) */}
@@ -192,12 +201,18 @@ export const LoginPage = () => {
             </div>
 
             {/* Footer Bawah */}
-            <div className="pt-6 text-center text-[11px] text-ink-muted">
+            <div className="pt-6 text-center text-xs text-ink-muted">
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama RI
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modal Lupa Kata Sandi */}
+      <ForgotPasswordModal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+      />
     </div>
   );
 };

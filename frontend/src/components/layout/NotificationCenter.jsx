@@ -87,7 +87,7 @@ export const NotificationCenter = () => {
   const { currentUser } = useAuth();
 
   const role = currentUser?.role || '';
-  const isPublisher = role === 'ADMIN_PENERBIT' || currentUser?.roles?.includes('ADMIN_PENERBIT');
+  const isPublisher = role === 'PENERBIT' || currentUser?.roles?.includes('PENERBIT');
 
   const fetchNotifications = useCallback(async () => {
     if (!currentUser) return;
@@ -175,7 +175,7 @@ export const NotificationCenter = () => {
               {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-muted" />}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">
+              <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">
                 {unreadCount} Perlu Tindakan
               </span>
               <button
@@ -259,12 +259,12 @@ export const NotificationCenter = () => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-ink truncate">{item.title}</span>
-                      <span className="text-[10px] text-ink-muted shrink-0 flex items-center gap-1">
+                      <span className="text-xs text-ink-muted shrink-0 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {timeStr}
                       </span>
                     </div>
-                    <p className="text-[11px] text-ink-muted leading-relaxed">{desc}</p>
+                    <p className="text-xs text-ink-muted leading-relaxed">{desc}</p>
                     <div className="pt-1 flex items-center justify-between">
                       {link ? (
                         <Link
@@ -273,7 +273,7 @@ export const NotificationCenter = () => {
                             if (isUnread) handleMarkAsRead(e, item.id);
                             setIsOpen(false);
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-700 hover:text-brand-800 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 hover:text-brand-800 hover:underline"
                         >
                           <span>Buka Pekerjaan</span>
                           <ArrowRight className="w-3 h-3" />
@@ -285,7 +285,7 @@ export const NotificationCenter = () => {
                         <button
                           type="button"
                           onClick={(e) => handleMarkAsRead(e, item.id)}
-                          className="inline-flex items-center gap-1 text-[10px] text-ink-muted hover:text-brand-700 font-medium px-1.5 py-0.5 rounded hover:bg-surface border border-line/40 transition-colors"
+                          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-medium px-1.5 py-0.5 rounded hover:bg-surface border border-line/40 transition-colors"
                           title="Tandai sudah dibaca"
                         >
                           <Check className="w-3 h-3" />

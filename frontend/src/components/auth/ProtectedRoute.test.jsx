@@ -27,9 +27,9 @@ describe('ProtectedRoute Security Guard', () => {
     );
   };
 
-  it.each([['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['DISTRIBUTOR', 'SUPERADMIN'], ['PENTASHIH', 'SUPERADMIN'], ['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['SUPERADMIN']])('HELPER_ADMIN cannot enter an operational/admin module guarded by %j', (...roles) => {
+  it.each([['VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['DISTRIBUTOR', 'SUPERADMIN'], ['PENTASHIH', 'SUPERADMIN'], ['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'], ['SUPERADMIN']])('ADMIN_INTERNAL cannot enter an operational/admin module guarded by %j', (...roles) => {
     renderWithRouter(
-      { id: 'internal-admin', role: 'HELPER_ADMIN', roles: ['HELPER_ADMIN'] },
+      { id: 'internal-admin', role: 'ADMIN_INTERNAL', roles: ['ADMIN_INTERNAL'] },
       <ProtectedRoute portalType="internal" allowedRoles={roles}><div>Restricted module</div></ProtectedRoute>
     );
     expect(screen.getByText('Portal Internal')).toBeInTheDocument();
@@ -65,8 +65,8 @@ describe('ProtectedRoute Security Guard', () => {
     const publisherUser = {
       id: 'pub-1',
       name: 'Penerbit A',
-      roles: ['ADMIN_PENERBIT'],
-      role: 'ADMIN_PENERBIT',
+      roles: ['PENERBIT'],
+      role: 'PENERBIT',
     };
 
     renderWithRouter(
@@ -83,8 +83,8 @@ describe('ProtectedRoute Security Guard', () => {
     const publisherUser = {
       id: 'pub-1',
       name: 'Penerbit A',
-      roles: ['ADMIN_PENERBIT'],
-      role: 'ADMIN_PENERBIT',
+      roles: ['PENERBIT'],
+      role: 'PENERBIT',
     };
 
     renderWithRouter(

@@ -82,7 +82,7 @@ export const DistributorHandoverInboxPage = () => {
     : [];
   const isDistributor = userRoles.includes('DISTRIBUTOR') || currentUser?.role === 'DISTRIBUTOR';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
-  const isAdmin = isSuperAdmin || userRoles.includes('HELPER_ADMIN');
+  const isAdmin = isSuperAdmin || userRoles.includes('ADMIN_INTERNAL');
   const canConfirm = isDistributor;
 
   const fetchHandovers = async () => {
@@ -290,7 +290,7 @@ export const DistributorHandoverInboxPage = () => {
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-bold bg-brand-50 text-brand-800 border border-brand-100">
               <ShieldCheck className="w-3.5 h-3.5 text-brand-700" />
-              SOP v2.2 &bull; Langkah 8
+              SOP Pentashihan LPMQ &bull; Langkah 8
             </span>
             <Button
               variant="outline"
@@ -354,7 +354,7 @@ export const DistributorHandoverInboxPage = () => {
         >
           <PackageCheck className="w-4 h-4" />
           <span>1. Serah-Terima Fisik dari Verifikator</span>
-          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
             {pendingCount}
           </span>
         </button>
@@ -374,7 +374,7 @@ export const DistributorHandoverInboxPage = () => {
         >
           <Users className="w-4 h-4" />
           <span>2. Siap Penugasan Tim SK</span>
-          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
             {waitingDistRegistrations.length}
           </span>
         </button>
@@ -394,7 +394,7 @@ export const DistributorHandoverInboxPage = () => {
         >
           <ShieldCheck className="w-4 h-4" />
           <span>3. Monitoring Sidang & Reviu</span>
-          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-[10px]">
+          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
             {inProgressRegistrations.length}
           </span>
         </button>

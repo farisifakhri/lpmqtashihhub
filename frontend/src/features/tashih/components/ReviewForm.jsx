@@ -1,12 +1,44 @@
-import React from 'react';
-import { BookOpen, X, AlertCircle, FileText, Download, Info, Send } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, X, AlertCircle, FileText, Download, Info, Send, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
+import { fileApi } from '@/api/file.api';
 
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
   submitting, modalError, closeReviewModal, handleReviewSubmit, getStageLabel,
-}) => (
+  recapFileId, setRecapFileId,
+}) => {
+  const [uploadingRecap, setUploadingRecap] = useState(false);
+  const [recapFileName, setRecapFileName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setUploadingRecap(true);
+    setUploadError('');
+    try {
+      const response = await fileApi.upload(file);
+      const uploadedId = response?.data?.id || response?.id;
+      if (setRecapFileId) {
+        setRecapFileId(uploadedId);
+      }
+      setRecapFileName(file.name);
+    } catch (err) {
+      setUploadError(err.message || 'Gagal mengunggah berkas rekapan.');
+    } finally {
+      setUploadingRecap(false);
+    }
+  };
+
+  const juzRangeText = selectedAssignment?.juz_from && selectedAssignment?.juz_to
+    ? `Juz ${selectedAssignment.juz_from} s.d. ${selectedAssignment.juz_to}`
+    : (selectedAssignment?.juz_items?.length
+        ? `Juz ${selectedAssignment.juz_items.map((j) => j.juz_number).join(', ')}`
+        : null);
+
+  return (
 <>
       {selectedAssignment && (
         <div
@@ -53,8 +85,15 @@ export const ReviewForm = ({
 
               {/* Rincian Naskah */}
               <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
-                <div className="font-bold text-sm text-ink">
-                  {selectedAssignment.registration?.title}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-bold text-sm text-ink">
+                    {selectedAssignment.registration?.title}
+                  </div>
+                  {juzRangeText && (
+                    <span className="px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 font-bold text-xs shrink-0">
+                      {juzRangeText}
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-ink-muted flex flex-wrap gap-y-1 gap-x-3">
                   <span>Penerbit: <strong>{selectedAssignment.registration?.publisher?.legal_name}</strong></span>
@@ -95,6 +134,43 @@ export const ReviewForm = ({
                 )}
               </div>
 
+              {/* Berkas Rekapan Internal Pentashih (RF-DIST-18, RF-DIST-19) */}
+              <div className="space-y-2 p-3.5 rounded-xl border border-line bg-surface">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                    Berkas Rekapan Koreksi Internal
+                  </label>
+                  <span className="text-xs text-ink-muted">1 berkas per rentang penugasan</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line-strong bg-white hover:bg-surface-subtle cursor-pointer text-xs font-semibold text-ink shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-brand-700" />
+                    <span>{uploadingRecap ? 'Mengunggah…' : recapFileId ? 'Ganti Berkas Rekapan' : 'Pilih Berkas Rekapan'}</span>
+                    <input
+                      type="file"
+                      onChange={handleFileUpload}
+                      disabled={uploadingRecap || selectedAssignment.status === 'COMPLETED'}
+                      className="sr-only"
+                    />
+                  </label>
+                  {recapFileName ? (
+                    <span className="text-xs text-brand-800 font-medium inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
+                      {recapFileName}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-ink-muted italic">Belum ada berkas rekapan terpilih (opsional)</span>
+                  )}
+                </div>
+                {uploadError && <p className="text-xs text-civic-danger">{uploadError}</p>}
+                <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-xs text-brand-900 flex items-start gap-2">
+                  <ShieldCheck className="h-4 w-4 shrink-0 text-brand-700 mt-0.5" />
+                  <span>
+                    <strong>Kerahasiaan Internal (RF-DIST-19):</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distributor. Berkas ini bersifat internal dan tidak dikirim ke penerbit atau dokumentator.
+                  </span>
+                </div>
+              </div>
+
               {/* Pilihan Rekomendasi / Keputusan Sidang */}
               <div>
                 <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
@@ -120,7 +196,7 @@ export const ReviewForm = ({
                     />
                     <div>
                       <div className="font-bold text-xs text-ink">Lolos Tanpa Catatan (Bersih)</div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         Teks Al-Qur'an bersih, rasm usmani dan harakat telah sesuai standar.
                       </div>
                     </div>
@@ -145,7 +221,7 @@ export const ReviewForm = ({
                     />
                     <div>
                       <div className="font-bold text-xs text-ink">Perlu Perbaikan Naskah</div>
-                      <div className="text-[11px] text-ink-muted mt-0.5">
+                      <div className="text-xs text-ink-muted mt-0.5">
                         Terdapat kesalahan rasm, harakat, ayat, atau waqaf yang wajib diperbaiki penerbit.
                       </div>
                     </div>
@@ -159,7 +235,7 @@ export const ReviewForm = ({
                   <label className="block text-xs font-bold text-ink uppercase tracking-wider">
                     Catatan Koreksi & Telaah Lafazh / Rasm
                   </label>
-                  <span className="text-[11px] text-ink-muted">Wajib diisi</span>
+                  <span className="text-xs text-ink-muted">Wajib diisi</span>
                 </div>
                 <textarea
                   rows={5}
@@ -170,7 +246,7 @@ export const ReviewForm = ({
                   placeholder="Contoh format telaah:&#10;[Juz 1, Hal 15, QS. Al-Baqarah: 25] - Lafazh '...' kurang harakat fathah.&#10;[Juz 2, Hal 32, QS. Al-Baqarah: 142] - Tanda waqaf lazim tertukar dengan waqaf jaiz.&#10;Jika bersih tanpa koreksi: Naskah telah ditashih dan sesuai standar Mushaf Indonesia."
                   className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                 />
-                <p className="text-[11px] text-ink-muted mt-1 flex items-center gap-1">
+                <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                   <span>
                     Catatan ini akan dikompilasi oleh koordinator Distributor untuk keputusan lanjut STT atau surat perbaikan ke penerbit.
@@ -206,5 +282,6 @@ export const ReviewForm = ({
           </div>
         </div>
       )}
-</>
-);
+    </>
+  );
+};
