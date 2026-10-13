@@ -16,7 +16,10 @@ export const createRegistrationSchema = {
       contoh_halaman_file_id: z.string().uuid().optional().nullable(),
       surat_pernyataan_perubahan_file_id: z.string().uuid().optional().nullable(),
       apk_file_id: z.string().uuid().optional().nullable(),
-      apk_url: z.string().url('URL aplikasi mushaf digital harus valid (cth: https://...)').optional().nullable(),
+      apk_url: z.string().url('URL aplikasi mushaf digital harus valid (cth: https://...)').refine(
+        (val) => { try { const u = new URL(val); return u.protocol === 'https:'; } catch { return false; } },
+        { message: 'URL aplikasi mushaf digital harus menggunakan protokol HTTPS (bukan http://, javascript:, atau data:).' }
+      ).optional().nullable(),
       bukti_tashih_file_id: z.string().uuid().optional().nullable(),
       surat_rekomendasi_file_id: z.string().uuid().optional().nullable(),
       statement_accepted: z.boolean().optional(),

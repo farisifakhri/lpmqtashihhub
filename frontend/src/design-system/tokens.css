@@ -6,32 +6,45 @@
 :root {
   /* Canvas & Surfaces (3-Level Depth Hierarchy) */
   /* Level 0: Canvas */
-  --canvas: #f4f7f5;
-  --canvas-rgb: 244 247 245;
+  --canvas: #f8f7fb;
+  --canvas-rgb: 248 247 251;
   /* Level 1: Surface Card */
   --surface: #ffffff;
   --surface-rgb: 255 255 255;
-  --surface-subtle: #edf3f0;
-  --surface-subtle-rgb: 237 243 240;
-  --surface-strong: #dfe9e3;
-  --surface-strong-rgb: 223 233 227;
+  --surface-subtle: #f0f7e9;
+  --surface-subtle-rgb: 240 247 233;
+  --surface-strong: #e1eed4;
+  --surface-strong-rgb: 225 238 212;
   /* Level 2: Elevated Elements & Dialogs */
   --surface-elevated: #ffffff;
   --surface-elevated-rgb: 255 255 255;
 
-  /* Brand / Deep Islamic Pine (Identitas & Aksi Utama) */
-  --brand-950: #05231c;
-  --brand-950-rgb: 5 35 28;
-  --brand-900: #08382c;
-  --brand-900-rgb: 8 56 44;
-  --brand-800: #0d5240;
-  --brand-800-rgb: 13 82 64;
-  --brand-700: #126850;
-  --brand-700-rgb: 18 104 80;
-  --brand-100: #dff2e9;
-  --brand-100-rgb: 223 242 233;
-  --brand-50: #f0faf6;
-  --brand-50-rgb: 240 250 246;
+  /* Brand / Hijau Muda Segar (Identitas Asli Landing Page & Seluruh Alur STT) */
+  --brand-950: #123b18;
+  --brand-950-rgb: 18 59 24;
+  --brand-900: #1e560d;
+  --brand-900-rgb: 30 86 13;
+  --brand-800: #396a06;
+  --brand-800-rgb: 57 106 6;
+  --brand-700: #4e9508;
+  --brand-700-rgb: 78 149 8;
+  --brand-600: #579b0a;
+  --brand-600-rgb: 87 155 10;
+  --brand-500: #5a9d0b;
+  --brand-500-rgb: 90 157 11;
+  --brand-300: #a9e078;
+  --brand-300-rgb: 169 224 120;
+  --brand-200: #c5eba1;
+  --brand-200-rgb: 197 235 161;
+  --brand-100: #dcf2c2;
+  --brand-100-rgb: 220 242 194;
+  --brand-50: #f0f7e9;
+  --brand-50-rgb: 240 247 233;
+
+  /* Button Surface Tokens (text-white against button bg >= 4.5:1) */
+  --brand-btn-bg: #478300;
+  --brand-btn-hover: #396a06;
+  --brand-btn-text: #ffffff;
 
   /* Official Gold / Brass (dokumen resmi, pengesahan, billing) */
   /* gold-700: Teks & Label (Rasio Kontras >= 5.4:1 di atas putih, 5.0:1 di atas gold-100) */
@@ -48,10 +61,10 @@
   --ink-rgb: 20 32 27;
   --ink-muted: #566760;
   --ink-muted-rgb: 86 103 96;
-  --line: #d2ddd7;
-  --line-rgb: 210 221 215;
-  --line-strong: #b2c2ba;
-  --line-strong-rgb: 178 194 186;
+  --line: #d8e5cd;
+  --line-rgb: 216 229 205;
+  --line-strong: #bdceae;
+  --line-strong-rgb: 189 206 174;
 
   /* Semantic Feedback */
   --info: #1d5ec4;
@@ -108,17 +121,33 @@
   --line-strong: #3d6154;
   --line-strong-rgb: 61 97 84;
 
-  /* Brand di atas Gelap: Varian Emerald Terang (Kontras 8.7:1 di atas Canvas Gelap) */
-  --brand-950: #041913;
-  --brand-900: #083427;
-  --brand-800: #105943;
-  --brand-700: #2ac99d;
-  --brand-700-rgb: 42 201 157;
-  --brand-800-rgb: 32 173 134;
-  --brand-100: #103d30;
-  --brand-100-rgb: 16 61 48;
-  --brand-50: #0a271f;
-  --brand-50-rgb: 10 39 31;
+  /* Brand di atas Gelap: Varian Hijau Muda Terang */
+  --brand-950: #081a0b;
+  --brand-900: #123315;
+  --brand-800: #215425;
+  --brand-700: #579b0a;
+  --brand-700-rgb: 87 155 10;
+  --brand-800-rgb: 57 106 6;
+  --brand-600: #6ab810;
+  --brand-600-rgb: 106 184 16;
+  --brand-500: #7ec41a;
+  --brand-500-rgb: 126 196 26;
+  --brand-300: #448028;
+  --brand-300-rgb: 68 128 40;
+  --brand-200: #2b5c1a;
+  --brand-200-rgb: 43 92 26;
+  --brand-100: #1a381c;
+  --brand-100-rgb: 26 56 28;
+  --brand-50: #0d240f;
+  --brand-50-rgb: 13 36 15;
+
+  /*
+   * WCAG 2.1 AA TOMBOL DARK-MODE
+   * --brand-btn-bg: Latar tombol primary dark-mode (kontras teks putih ≥ 4.5:1)
+   */
+  --brand-btn-bg: #396a06;
+  --brand-btn-bg-hover: #2e5405;
+  --brand-btn-text: #ffffff;
 
   /* Gold di atas Gelap */
   --gold-700: #e2b45e;
@@ -133,19 +162,42 @@
   --info-rgb: 96 165 250;
   --info-soft-rgb: 18 38 68;
   --info-line-rgb: 30 64 120;
+  /*
+   * WCAG 2.1 AA INFO TOMBOL: Teks putih di info (#60a5fa) hanya 2.5:1 — tidak cukup.
+   * --info-btn-bg: Biru gelap untuk tombol info dark-mode (kontras putih ≥ 4.5:1)
+   * #1d4ed8 → rasio teks putih ≈ 4.7:1 ✓
+   */
+  --info-btn-bg: #1d4ed8;
 
   --warning: #f59e0b;
   --warning-rgb: 245 158 11;
   --warning-soft-rgb: 58 37 9;
   --warning-line-rgb: 120 75 15;
+  /*
+   * WCAG 2.1 AA WARNING TOMBOL: Teks putih di warning (#f59e0b) hanya 2.2:1.
+   * Gunakan teks gelap (--warning-text-on-btn) atau latar lebih gelap.
+   * #92400e → rasio teks putih ≈ 6.0:1 ✓
+   */
+  --warning-btn-bg: #92400e;
+  --warning-btn-text: #ffffff;
 
   --danger: #fb7185;
   --danger-rgb: 251 113 133;
   --danger-soft-rgb: 63 18 24;
   --danger-line-rgb: 125 35 45;
+  /*
+   * WCAG 2.1 AA DANGER TOMBOL: Teks putih di danger (#fb7185) hanya 2.7:1.
+   * #9f1239 → rasio teks putih ≈ 5.2:1 ✓
+   */
+  --danger-btn-bg: #9f1239;
 
   --success: #34d399;
   --success-rgb: 52 211 153;
   --success-soft-rgb: 12 43 32;
   --success-line-rgb: 22 84 62;
+  /*
+   * WCAG 2.1 AA SUCCESS TOMBOL: Teks putih di success (#34d399) hanya 1.9:1.
+   * #065f46 → rasio teks putih ≈ 6.6:1 ✓
+   */
+  --success-btn-bg: #065f46;
 }

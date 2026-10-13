@@ -106,7 +106,10 @@ export const UnifiedDashboard = () => {
   }, [currentUser, filterMyTasksOnly, page, statusFilter, debouncedSearch]);
 
   useEffect(() => {
-    if (!isPublisher) {
+    const canViewPerformance = userRoles.some(r =>
+      ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'VERIFIKATOR'].includes(r)
+    );
+    if (canViewPerformance) {
       reportApi
         .getVerificationPerformance()
         .then((res) => {
@@ -118,7 +121,7 @@ export const UnifiedDashboard = () => {
           // Metrik non-kritis, diamkan agar tidak mengganggu tabel utama
         });
     }
-  }, [currentUser, isPublisher]);
+  }, [currentUser, isPublisher, userRoles]);
 
   // Kalkulasi Metrik Internal
   const countStatuses = statuses => counts
@@ -192,8 +195,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
         icon: PackageCheck,
         path: '/internal/master-intake',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isAdmin || isSuperAdmin || isKepala,
       },
       {
@@ -201,8 +204,8 @@ export const UnifiedDashboard = () => {
         desc: 'Tetapkan tim pentashih pada naskah yang siap distribusi',
         icon: Users,
         path: '/internal#antrean-tim',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: canAssignTeam,
       },
       {
@@ -210,8 +213,8 @@ export const UnifiedDashboard = () => {
         desc: isKepala ? 'Disposisi penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
@@ -219,8 +222,8 @@ export const UnifiedDashboard = () => {
         desc: 'Penugasan berkas ke SK Tim Pentashih & serah terima fisik',
         icon: Send,
         path: '/internal/distributions',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin || userRoles.includes('DISTRIBUTOR') || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
@@ -228,8 +231,8 @@ export const UnifiedDashboard = () => {
         desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin || userRoles.includes('PENTASHIH'),
       },
       {
@@ -237,8 +240,8 @@ export const UnifiedDashboard = () => {
         desc: 'Berita acara sidang & pengesahan dokumen',
         icon: Award,
         path: '/internal/documents',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
@@ -246,8 +249,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
         icon: Sliders,
         path: '/internal/settings',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin,
       },
       {
@@ -255,8 +258,8 @@ export const UnifiedDashboard = () => {
         desc: 'Kelola akun, peran, dan matriks kewenangan',
         icon: Users,
         path: '/internal/users',
-        iconBg: 'bg-brand-700 text-white',
-        cardHover: 'hover:border-brand-700 hover:bg-brand-50/40',
+        iconBg: 'bg-[#f0f7e9] text-[#4e9508] border border-[#dcf2c2]',
+        cardHover: 'hover:border-[#4e9508] hover:bg-[#f0f7e9]/30',
         allowed: isSuperAdmin,
       },
     ];
@@ -550,16 +553,16 @@ export const UnifiedDashboard = () => {
         )}
       </div>
 
-      {/* 4b. Ringkasan Kinerja & Kepatuhan SLA (VER-I06) */}
+      {/* 4b. Ringkasan Kinerja & Kepatuhan SLA (VER-I06) - Clean & Professional */}
       {showOperationalCards && performanceReport && (
-        <div className="bg-brand-900 rounded-xl p-5 text-white shadow-2xs border border-brand-800">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-ink/60">
+        <div className="bg-surface rounded-xl p-5 text-ink shadow-2xs border border-line">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-line">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-brand-700/20 text-brand-700 flex items-center justify-center border border-brand-700/30">
+              <div className="w-8 h-8 rounded-lg bg-[#f0f7e9] text-[#4e9508] flex items-center justify-center border border-[#dcf2c2]">
                 <Activity className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-line-strong">
+                <h4 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-ink">
                   Kinerja Verifikasi & Kepatuhan SLA (SOP Pentashihan LPMQ)
                 </h4>
                 <p className="text-xs text-ink-muted">
@@ -567,55 +570,55 @@ export const UnifiedDashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand-700/10 text-brand-100 text-xs font-semibold border border-brand-700/20 self-start sm:self-auto">
-              <TrendingUp className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f0f7e9] text-[#2e5d07] text-xs font-bold border border-[#c5eba1] self-start sm:self-auto">
+              <TrendingUp className="w-3.5 h-3.5 text-[#4e9508]" />
               <span>SLA Kepatuhan: {performanceReport.summary?.compliance_rate_percent ?? 100}%</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
               <div className="text-ink-muted text-xs mb-1">Rata-rata Waktu Telaah</div>
-              <div className="text-lg font-black text-white">
+              <div className="text-xl font-black text-ink">
                 {performanceReport.summary?.avg_duration_hours ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">jam</span>
               </div>
-              <div className="text-xs text-brand-700 mt-0.5">SOP Max: 48 jam</div>
+              <div className="text-xs text-[#4e9508] font-semibold mt-0.5">SOP Max: 48 jam</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
               <div className="text-ink-muted text-xs mb-1">Keputusan Telaah</div>
-              <div className="text-lg font-black text-white">
-                <span className="text-brand-700">{performanceReport.summary?.total_passed ?? 0}</span>
+              <div className="text-xl font-black text-ink">
+                <span className="text-[#4e9508] font-bold">{performanceReport.summary?.total_passed ?? 0}</span>
                 <span className="text-ink-muted text-xs font-normal mx-1">/</span>
-                <span className="text-civic-warning">{performanceReport.summary?.total_revision ?? 0}</span>
+                <span className="text-civic-warning font-bold">{performanceReport.summary?.total_revision ?? 0}</span>
               </div>
-              <div className="text-xs text-line-strong mt-0.5">Lolos vs Perlu Revisi</div>
+              <div className="text-xs text-ink-muted font-medium mt-0.5">Lolos vs Perlu Revisi</div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
               <div className="text-ink-muted text-xs mb-1">Antrean Overdue SLA</div>
-              <div className="text-lg font-black text-white">
+              <div className="text-xl font-black text-ink">
                 {performanceReport.summary?.total_overdue ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">berkas</span>
               </div>
-              <div className="text-xs text-line-strong mt-0.5">
+              <div className="text-xs mt-0.5">
                 {(performanceReport.summary?.total_overdue || 0) > 0 ? (
                   <span className="text-civic-danger font-semibold flex items-center gap-1">
                     <AlertTriangle className="w-2.5 h-2.5" /> Perlu atensi
                   </span>
                 ) : (
-                  <span className="text-brand-700">Semua sesuai jadwal</span>
+                  <span className="text-[#4e9508] font-semibold">Semua sesuai jadwal</span>
                 )}
               </div>
             </div>
 
-            <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+            <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
               <div className="text-ink-muted text-xs mb-1">PNBP Terverifikasi</div>
-              <div className="text-sm sm:text-base font-black text-civic-warning truncate">
+              <div className="text-base sm:text-lg font-black text-civicGold-700 truncate">
                 {formatRupiah(performanceReport.payments?.total_verified_amount ?? 0)}
               </div>
-              <div className="text-xs text-line-strong mt-0.5">
+              <div className="text-xs text-ink-muted font-medium mt-0.5">
                 {performanceReport.payments?.verified_count ?? 0} transaksi lunas
               </div>
             </div>

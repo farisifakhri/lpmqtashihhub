@@ -59,10 +59,18 @@ export const PentashihWorkspacePage = () => {
   }, [assignments]);
 
   const handleJuzSaved = updated => {
-    setSelectedAssignment(previous => previous ? {
-      ...previous,
-      juz_items: previous.juz_items.map(item => item.id === updated.id ? updated : item),
-    } : previous);
+    setSelectedAssignment(previous => {
+      if (!previous) return previous;
+      const newItems = previous.juz_items?.map(item => item.id === updated.id ? updated : item) || [];
+      const allDone = newItems.length > 0 && newItems.every(i => i.result);
+      if (allDone) {
+        setSuccessMessage(`Seluruh ${newItems.length} juz penugasan selesai diperiksa dan hasil sidang berhasil dicatat.`);
+        setReviewModalOpen(false);
+        fetchAssignments();
+        return null;
+      }
+      return { ...previous, juz_items: newItems };
+    });
     setSuccessMessage(`Checklist juz ${updated.juz_number} berhasil disimpan.`);
     fetchAssignments();
   };
@@ -117,7 +125,16 @@ export const PentashihWorkspacePage = () => {
       setRecapFileId(null);
       fetchAssignments();
     } catch (err) {
-      setModalError(err.message || 'Gagal menyimpan hasil telaah sidang.');
+      if (err.status === 409 || err.message?.includes('sudah disimpan')) {
+        setSuccessMessage(
+          `Hasil telaah untuk naskah ${selectedAssignment.registration?.registration_no} sudah tercatat.`
+        );
+        setReviewModalOpen(false);
+        setSelectedAssignment(null);
+        fetchAssignments();
+      } else {
+        setModalError(err.message || 'Gagal menyimpan hasil telaah sidang.');
+      }
     } finally {
       setSubmitting(false);
     }

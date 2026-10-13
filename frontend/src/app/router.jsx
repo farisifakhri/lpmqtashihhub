@@ -39,6 +39,7 @@ const PublisherVerificationPage = withSuspense(lazy(() => import('@/features/int
 const ContentConfiguration = withSuspense(lazy(() => import('@/features/internal/settings/ContentConfiguration').then(m => ({ default: m.ContentConfiguration }))));
 const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/settings/CoreTeamPage')));
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
+const DokumentatorArchivePage = withSuspense(lazy(() => import('@/features/internal/DokumentatorArchivePage').then(m => ({ default: m.DokumentatorArchivePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
@@ -186,27 +187,8 @@ const router = createBrowserRouter([
       {
         path: 'internal/documents',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
-            <ModulePlaceholder
-              moduleCode="DOC-02"
-              title="Pengesahan Berita Acara & Surat Tanda Tashih"
-              moduleName="DOC-02/03 Berita Acara & SK Tashih"
-              sprintTarget="Sprint 5"
-              description="Distributor mereviu rekomendasi pentashih; alur Berita Acara dan penetapan STT menunggu keputusan SOP lanjutan."
-              targetTables={['official_documents', 'document_signatories', 'documentation_items', 'registrations']}
-              apiEndpoints={[
-                { method: 'GET', path: '/api/v1/registrations?status=READY_FOR_STT', desc: 'Naskah siap penetapan STT' },
-                { method: 'GET', path: '/api/v1/registrations?status=STT_ISSUED', desc: 'Naskah dengan STT terbit' },
-                { method: 'GET', path: '/api/v1/public/verify-document/:token', desc: 'Verifikasi publik keabsahan dokumen QR' },
-              ]}
-              allowedRoles={['DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}
-              sopReference="SOP Dokumentasi & Penetapan STT (v2.2)"
-              businessRules={[
-                'Distributor mereviu rekomendasi tiap pentashih atau pembaca naskah sebelum pengajuan dokumen',
-                'Kepala LPMQ menetapkan Surat Tanda Tashih (STT)',
-                'Dokumentator mencatat tanda terima deposit 5 eksemplar setelah STT terbit',
-              ]}
-            />
+          <ProtectedRoute portalType="internal" allowedRoles={['DOKUMENTATOR', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DokumentatorArchivePage />
           </ProtectedRoute>
         ),
       },

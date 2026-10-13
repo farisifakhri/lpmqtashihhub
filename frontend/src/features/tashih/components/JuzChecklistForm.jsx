@@ -67,8 +67,15 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
     }
   };
 
+  const isAlreadyCompleted = assignment.status === 'COMPLETED' || (assignment.reviews && assignment.reviews.length > 0) || (items.length > 0 && items.every(item => item.result));
+
   const submitRangeReview = async event => {
     event.preventDefault();
+    if (isAlreadyCompleted) {
+      onSaved?.({ id: assignment.id, status: 'COMPLETED' });
+      onClose();
+      return;
+    }
     if (!rangeNotes.trim()) {
       setRangeError('Catatan hasil telaah rentang naskah wajib diisi.');
       return;
@@ -84,7 +91,12 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
       onSaved({ id: assignment.id, status: 'COMPLETED' });
       onClose();
     } catch (err) {
-      setRangeError(err.message || 'Gagal menyimpan hasil telaah rentang naskah.');
+      if (err.status === 409 || err.message?.includes('sudah disimpan')) {
+        onSaved?.({ id: assignment.id, status: 'COMPLETED' });
+        onClose();
+      } else {
+        setRangeError(err.message || 'Gagal menyimpan hasil telaah rentang naskah.');
+      }
     } finally {
       setRangeSaving(false);
     }
@@ -103,7 +115,18 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
         <button type="button" onClick={onClose} className="rounded-lg border border-line px-3 py-1.5 text-xs text-ink hover:bg-surface-subtle">Tutup</button>
       </div>
 
-      {/* Form Telaah Rentang Sekaligus (R-09, R-10, T-01) */}
+      {isAlreadyCompleted ? (
+        <div className="rounded-xl border border-brand-200 bg-brand-50/70 p-4 space-y-2">
+          <div className="flex items-center gap-2 text-brand-900 font-bold text-xs">
+            <CheckCircle2 className="w-4 h-4 text-brand-700" />
+            <span>Hasil Sidang Rentang Naskah ({rangeText}) Telah Selesai Disimpan</span>
+          </div>
+          <p className="text-xs text-ink-muted leading-relaxed">
+            Seluruh juz pada rentang ini telah selesai dinilai dan tercatat resmi pada server pentashihan.
+          </p>
+        </div>
+      ) : (
+      /* Form Telaah Rentang Sekaligus (R-09, R-10, T-01) */
       <form onSubmit={submitRangeReview} className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 space-y-4">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-brand-700 shrink-0" />
@@ -183,6 +206,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
           {rangeSaving ? 'Menyimpan Hasil Telaah…' : `Simpan Keputusan Rentang ${rangeText}`}
         </button>
       </form>
+      )}
 
       {/* Rincian Checklist Tiap Juz (Kompatibilitas & Detail) */}
       <div className="border-t border-line pt-3 space-y-3">

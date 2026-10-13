@@ -417,7 +417,15 @@ export const deleteUser = async (id, currentUser, req) => {
     user.publisher?.registrations.length
   );
 
-  // Jika force delete diminta atau akun sama sekali belum pernah terlibat transaksi resmi (misal salah input saat buat akun)
+  // Jika force delete diminta pada akun yang memiliki transaksi resmi kenegaraan -> cegah perusakan audit trail & foreign key
+  if (force && hasOfficialTransactions) {
+    fail(
+      400,
+      'Pengguna ini tidak dapat dihapus permanen karena memiliki riwayat penugasan atau transaksi resmi kenegaraan yang mengikat. Silakan nonaktifkan akun (jangan centang opsi Hapus Permanen) agar integritas data audit tetap terjaga.'
+    );
+  }
+
+  // Jika akun sama sekali belum pernah terlibat transaksi resmi (misal salah input saat buat akun)
   if (force || !hasOfficialTransactions) {
     if (user.publisher?.registrations.length && !force) {
       fail(400, 'Penerbit ini masih memiliki berkas pengajuan. Hapus pengajuan terkait terlebih dahulu atau gunakan opsi Hapus Permanen.');

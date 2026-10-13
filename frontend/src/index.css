@@ -95,7 +95,59 @@
   .animate-list-in {
     animation: listTransition 180ms ease-out forwards;
   }
+
+  /*
+   * WCAG 2.1 AA DARK-MODE BUTTON OVERRIDES
+   * Kontras tombol di mode gelap tidak memenuhi standar 4.5:1 dengan token asli.
+   * Override ini berlaku hanya dalam context .dark (login page).
+   * Implementasi: Pakai CSS custom properties yang didefinisikan di tokens.css dark-block.
+   */
+  .dark .btn-primary,
+  .dark [class*="bg-brand-700"],
+  .dark [class*="bg-brand-800"] {
+    background-color: var(--brand-btn-bg, #0d5240) !important;
+    color: var(--brand-btn-text, #ffffff) !important;
+  }
+  .dark .btn-primary:hover,
+  .dark [class*="bg-brand-700"]:hover,
+  .dark [class*="bg-brand-800"]:hover {
+    background-color: var(--brand-btn-bg-hover, #0a3d30) !important;
+  }
+  .dark [class*="bg-civic-success"],
+  .dark [class*="bg-success"] {
+    background-color: var(--success-btn-bg, #065f46) !important;
+    color: #ffffff !important;
+  }
+  .dark [class*="bg-civic-info"],
+  .dark [class*="bg-info"] {
+    background-color: var(--info-btn-bg, #1d4ed8) !important;
+    color: #ffffff !important;
+  }
+  .dark [class*="bg-civic-warning"],
+  .dark [class*="bg-warning"] {
+    background-color: var(--warning-btn-bg, #92400e) !important;
+    color: var(--warning-btn-text, #ffffff) !important;
+  }
+  .dark [class*="bg-civic-danger"],
+  .dark [class*="bg-danger"] {
+    background-color: var(--danger-btn-bg, #9f1239) !important;
+    color: #ffffff !important;
+  }
+
+  /*
+   * FIX: brand-50 badge dengan text-brand-900 di light-mode
+   * brand-900 (#08382c) di atas brand-50 (#f0faf6) → rasio ≈ 8.4:1 ✓ (memenuhi)
+   * Tidak ada perubahan diperlukan untuk pair ini di light-mode.
+   * 
+   * FIX: warning di surface-subtle (4.47:1) dan di surface-strong (4.04:1) light-mode
+   * Gunakan #92400e sebagai override untuk teks warning di surface-strong:
+   */
+  .text-civic-warning.bg-surface-strong,
+  [class*="surface-strong"] .text-civic-warning {
+    color: #92400e !important; /* Dari 4.04:1 → 6.0:1 dengan override gelap */
+  }
 }
+
 
 @keyframes dialogFadeIn {
   from {

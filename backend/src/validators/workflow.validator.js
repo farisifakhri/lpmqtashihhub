@@ -13,6 +13,7 @@ export const assignmentSchema = { params, body: z.object({
     juz_numbers: z.array(z.number().int().min(1).max(30)).min(1).max(30),
   }).strict()).min(1).max(50).optional(),
   stage: z.enum(['INITIAL', 'REVISION', 'DUMMY']),
+  allow_overlap: z.boolean().optional(),
 }).strict().superRefine((data, ctx) => {
   if (Boolean(data.assignee_ids) === Boolean(data.juz_assignments)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Pilih penugasan per juz atau format lama.' });
@@ -20,9 +21,46 @@ export const assignmentSchema = { params, body: z.object({
   }
   const assignees = data.assignee_ids || data.juz_assignments.map(item => item.assignee_id);
   if (new Set(assignees).size !== assignees.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Anggota tidak boleh duplikat.' });
-  const juz = data.juz_assignments?.flatMap(item => item.juz_numbers) || [];
-  if (new Set(juz).size !== juz.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Setiap juz hanya boleh ditugaskan kepada satu pentashih pada iterasi ini.' });
+  for (const item of (data.juz_assignments || [])) {
+    if (new Set(item.juz_numbers).size !== item.juz_numbers.length) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nomor juz tidak boleh duplikat pada satu pentashih.' });
+    }
+  }
+  if (!data.allow_overlap) {
+    const juz = data.juz_assignments?.flatMap(item => item.juz_numbers) || [];
+    if (new Set(juz).size !== juz.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Setiap juz hanya boleh ditugaskan kepada satu pentashih pada iterasi ini.' });
+  }
 }) };
+
+export const documentationArchiveSchema = {
+  params,
+  body: z.object({
+    has_master_documentation: z.boolean(),
+    has_received_5_exemplars: z.boolean(),
+    storage_location: z.object({
+      cabinet: z.string().trim().max(191).optional(),
+      rack: z.string().trim().max(191).optional(),
+      archive_box: z.string().trim().max(191).optional(),
+      notes: z.string().trim().max(1000).optional(),
+    }).optional(),
+    survey: z.object({
+      mushaf_print_quality: z.enum(['SANGAT_BAIK', 'BAIK', 'CUKUP', 'KURANG']).optional(),
+      rasm_compliance: z.enum(['SESUAI_STANDAR', 'PERLU_PERBAIKAN']).optional(),
+      exemplar_timeliness: z.enum(['TEPAT_WAKTU', 'TERLAMBAT']).optional(),
+      notes: z.string().trim().max(2000).optional(),
+    }).optional(),
+  }).strict().superRefine((data, ctx) => {
+    if (data.has_master_documentation && data.has_received_5_exemplars) {
+      if (!data.storage_location?.cabinet && !data.storage_location?.rack && !data.storage_location?.archive_box) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['storage_location'],
+          message: 'Tempat pengarsipan fisik (lemari/rak/no. berkas) wajib diisi bila kedua persyaratan terpenuhi.',
+        });
+      }
+    }
+  }),
+};
 export const juzChecklistSchema = {
   params: z.object({ id: z.string().uuid(), juzNumber: z.coerce.number().int().min(1).max(30) }),
   body: z.object({

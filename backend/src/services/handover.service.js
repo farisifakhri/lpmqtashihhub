@@ -157,7 +157,18 @@ export const receiveHandover = (handoverId, data, user, req) =>
     const previousAssignment = await tx.assignment.findFirst({
       where: { registration_id: reg.id }, orderBy: { iteration: 'desc' }, select: { id: true },
     });
-    const stage = previousAssignment ? 'REVISION' : reg.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
+    const lastRevLetter = await tx.officialDocument?.findFirst({
+      where: { registration_id: reg.id, document_type: 'REVISION_RETURN_LETTER' },
+      orderBy: { created_at: 'desc' },
+    });
+    const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
+    const stage = isDummyRevision
+      ? 'DUMMY'
+      : previousAssignment
+      ? 'REVISION'
+      : reg.registration_type === 'EXTENSION'
+      ? 'DUMMY'
+      : 'INITIAL';
     const receivedAt = new Date();
     const tashihDueAt = await calculateDueAt(tx, receivedAt, Number(reg.fee_sla_snapshot?.[`sla_${stage.toLowerCase()}_days`]), { applyCutoff: true });
 

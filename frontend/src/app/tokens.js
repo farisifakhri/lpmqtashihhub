@@ -13,16 +13,17 @@ import { WORKFLOW_PRESENTATION } from '@/features/workflow/workflow-presentation
 
 export const TOKENS = {
   colors: {
-    // Primary - Deep Islamic Pine / Sovereign Forest
-    primary950: '#05231C',
-    primary900: '#08382C',
-    primary800: '#0D5240',
-    primary700: '#126850', // Header, sidebar aktif, tombol utama
-    primary600: '#15755B',
-    primary500: '#188266', // Aksen tombol, ikon aktif, tab terpilih
-    primary200: '#BCE1D0',
-    primary100: '#DFF2E9', // Latar kartu info, hover, badge positif
-    primary50:  '#F0FAF6',
+    // Primary - Hijau Muda Segar / Alur STT
+    primary950: '#123B18',
+    primary900: '#1E560D',
+    primary800: '#396A06',
+    primary700: '#4E9508', // Header, sidebar aktif, tombol utama
+    primary600: '#579B0A',
+    primary500: '#5A9D0B', // Aksen tombol, ikon aktif, tab terpilih
+    primary300: '#A9E078',
+    primary200: '#C5EBA1',
+    primary100: '#DCF2C2', // Latar kartu info, hover, badge positif
+    primary50:  '#F0F7E9',
 
     // Netral - Crisp Slate Neutrals
     neutralWhite: '#FFFFFF', // Latar kartu permukaan utama
