@@ -478,24 +478,25 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
   return (
     <>
       {/* Mobile Backdrop Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-ink/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
-          onClick={onClose}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className={clsx(
+          'fixed inset-0 bg-ink/40 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200 ease-out',
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
       {/* Sidebar Container (260px, modern civic workspace) */}
       <aside
         className={clsx(
           'fixed lg:static inset-y-0 left-0 z-50 lg:z-0',
-          'w-[264px] shrink-0 bg-surface border-r border-line flex flex-col justify-between',
-          'transition-all duration-200 ease-in-out shadow-lg lg:shadow-none',
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:hidden'
+          'w-[264px] shrink-0 overflow-hidden bg-surface border-r border-line flex flex-col justify-between',
+          'transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none',
+          isOpen ? 'translate-x-0 lg:w-[264px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'
         )}
       >
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex h-full w-[264px] min-w-[264px] flex-col overflow-hidden">
           {/* Header Brand */}
           <div className="px-4 py-3.5 border-b border-line bg-surface flex items-center justify-between">
             <Link
@@ -586,7 +587,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                       }}
                       className={({ isActive }) =>
                         clsx(
-                          'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors group',
+                          'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out group hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none',
                           isCurrentItem(item, isActive)
                             ? 'bg-brand-50 border border-brand-100 text-brand-800 font-bold shadow-2xs'
                             : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
@@ -597,7 +598,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         <>
                           <div
                             className={clsx(
-                              'transition-colors shrink-0',
+                              'shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:transform-none',
                               isCurrentItem(item, isActive) ? 'text-brand-fg' : 'text-ink-muted group-hover:text-brand-fg'
                             )}
                           >
