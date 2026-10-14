@@ -110,14 +110,14 @@ export const LandingPage = () => {
           <div className="hidden items-center gap-3 lg:flex">
             <a
               href="tel:+622187798807"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-fill px-6 text-[12px] font-medium text-white transition hover:bg-brand-fill-hover"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-[#579b0a] px-6 text-[12px] font-medium text-white transition hover:bg-[#478300]"
             >
               <Phone className="h-3.5 w-3.5" />
               Kontak Kami
             </a>
             <Link
               to="/login"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-civic-infoSoft px-6 text-[12px] font-medium text-brand-fg transition hover:bg-civic-infoLine"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[#e3eaff] px-6 text-[12px] font-medium text-[#4e9508] transition hover:bg-[#d8e1ff]"
             >
               Masuk
             </Link>
@@ -126,7 +126,7 @@ export const LandingPage = () => {
           <button
             type="button"
             onClick={() => setMenuOpen((value) => !value)}
-            className="ml-auto rounded-xl p-2 text-brand-700 lg:hidden"
+            className="ml-auto rounded-xl p-2 text-[#4e9508] lg:hidden"
             aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
             aria-expanded={menuOpen}
           >
@@ -142,7 +142,7 @@ export const LandingPage = () => {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
-                  className="rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-brand-700"
+                  className="rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-[#4e9508]"
                 >
                   {item.label}
                 </a>
@@ -150,14 +150,14 @@ export const LandingPage = () => {
               <div className="mt-2 flex gap-2">
                 <a
                   href="tel:+622187798807"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-brand-fill px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-fill-hover"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#579b0a] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#478300]"
                 >
                   <Phone className="h-4 w-4" />
                   Kontak Kami
                 </a>
                 <Link
                   to="/login"
-                  className="flex flex-1 items-center justify-center rounded-full bg-civic-infoSoft px-4 py-3 text-sm font-medium text-brand-fg transition hover:bg-civic-infoLine"
+                  className="flex flex-1 items-center justify-center rounded-full bg-[#e3eaff] px-4 py-3 text-sm font-medium text-[#4e9508] transition hover:bg-[#d8e1ff]"
                 >
                   Masuk
                 </Link>
@@ -172,7 +172,7 @@ export const LandingPage = () => {
         {/* Section 1: Hero */}
         <section
           id="beranda"
-          className="relative isolate flex min-h-[500px] items-center justify-center overflow-hidden rounded-[28px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
+          className="relative isolate flex min-h-[500px] items-center justify-center overflow-hidden rounded-[28px] bg-[#123b18] sm:min-h-[560px] lg:min-h-[610px]"
           aria-labelledby="hero-title"
         >
           <img
@@ -180,8 +180,8 @@ export const LandingPage = () => {
             alt="Al-Qur'an"
             className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/35 via-black/25 to-brand-900/95" />
-          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-brand-900/95 to-transparent" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/35 via-black/25 to-[#278000]/95" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-[#287e00]/95 to-transparent" />
 
           <div className="w-full max-w-4xl px-5 text-center text-white sm:px-8">
             <span className="inline-block px-3.5 py-1.5 mb-4 text-xs font-semibold rounded-full bg-white/10 text-white border border-white/20 backdrop-blur">
@@ -214,7 +214,7 @@ export const LandingPage = () => {
               />
               <button
                 type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-fill text-white transition hover:bg-brand-fill-hover"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#5a9d0b] text-white transition hover:bg-[#478300]"
                 aria-label="Cari"
               >
                 <ArrowRight className="h-5 w-5" />

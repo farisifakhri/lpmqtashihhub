@@ -198,7 +198,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       className="p-1 rounded text-ink-muted hover:text-brand-fg hover:bg-brand-50 transition-colors"
                       title="Beranda"
                     >
-                      <Home className="w-4 h-4 text-brand-fg" />
+                      <Home className="w-4 h-4 text-[#4e9508]" />
                     </Link>
                   </li>
                   {breadcrumb.parent && (
@@ -245,7 +245,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                 title={`Kepadatan Tampilan: ${isCompact ? 'Ringkas (Klik untuk beralih ke Nyaman)' : 'Nyaman (Klik untuk beralih ke Ringkas)'}`}
                 aria-label="Ganti mode kepadatan tampilan"
               >
-                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-brand-fg" /> : <Maximize2 className="w-3.5 h-3.5 text-brand-fg" />}
+                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-[#4e9508]" /> : <Maximize2 className="w-3.5 h-3.5 text-[#4e9508]" />}
                 <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
               </button>
 
@@ -255,16 +255,16 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-700/20 cursor-pointer"
+                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-[#579b0a] cursor-pointer"
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
                   >
                     <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-md bg-brand-fill text-white flex items-center justify-center font-bold text-xs shadow-2xs">
+                      <div className="w-8 h-8 rounded-md bg-[#579b0a] text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                         {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-brand-700 rounded-full border-2 border-white" />
+                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-[#4e9508] rounded-full border-2 border-white" />
                     </div>
 
                     <div className="hidden lg:block leading-tight">
