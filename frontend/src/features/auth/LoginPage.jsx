@@ -59,7 +59,7 @@ export const LoginPage = () => {
             {/* Badge Kemenag Overlay Atas */}
             <div className="relative z-10 p-4">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface/95 border border-line shadow-2xs backdrop-blur">
-                <ShieldCheck className="w-4 h-4 text-[#579b0a]" />
+                <ShieldCheck className="w-4 h-4 text-brand-600" />
                 <span className="text-xs font-bold tracking-wide text-ink">
                   LPMQ Kemenag RI
                 </span>
@@ -69,7 +69,7 @@ export const LoginPage = () => {
             {/* Caption Bawah - Glassmorphism Elegan & Bersih */}
             <div className="relative z-10 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-8">
               <div className="bg-black/40 backdrop-blur-md p-3.5 rounded-xl border border-white/15 text-white shadow-2xs">
-                <p className="text-[11px] font-bold text-[#c5eba1] mb-0.5">
+                <p className="text-[11px] font-bold text-brand-fg mb-0.5">
                   SIPNA (Sistem Informasi Pentashih Mushaf Quran)
                 </p>
                 <h3 className="text-xs font-semibold text-white/90 leading-snug">
@@ -89,7 +89,7 @@ export const LoginPage = () => {
                 <span>Belum terdaftar?&nbsp;</span>
                 <Link
                   to="/register"
-                  className="font-bold text-[#4e9508] hover:text-[#396a06] hover:underline transition-colors"
+                  className="font-bold text-brand-fg hover:text-brand-fill-hover hover:underline transition-colors"
                 >
                   Registrasi penerbit
                 </Link>
@@ -146,7 +146,7 @@ export const LoginPage = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="nama@instansi.go.id"
                     autoComplete="email"
-                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-[#579b0a]/20 focus:border-[#4e9508] transition-all text-ink placeholder:text-ink-muted"
+                    className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted"
                     required
                   />
                 </div>
@@ -163,7 +163,7 @@ export const LoginPage = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Masukkan kata sandi"
                       autoComplete="current-password"
-                      className="w-full pl-3.5 pr-10 py-2.5 text-xs sm:text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-[#579b0a]/20 focus:border-[#4e9508] transition-all text-ink placeholder:text-ink-muted"
+                      className="w-full pl-3.5 pr-10 py-2.5 text-xs sm:text-sm bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted"
                       required
                     />
                     <button
@@ -181,7 +181,7 @@ export const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowForgotModal(true)}
-                    className="text-xs font-semibold text-[#4e9508] hover:text-[#396a06] hover:underline transition-colors cursor-pointer"
+                    className="text-xs font-semibold text-brand-fg hover:text-brand-fill-hover hover:underline transition-colors cursor-pointer"
                   >
                     Lupa kata sandi?
                   </button>
@@ -192,7 +192,7 @@ export const LoginPage = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-2.5 px-5 rounded-lg text-white font-bold text-xs sm:text-sm bg-[#579b0a] hover:bg-[#478300] active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+                  className="w-full py-2.5 px-5 rounded-lg text-white font-bold text-xs sm:text-sm bg-brand-fill hover:bg-brand-fill-hover active:scale-[0.99] transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
                 >
                   {isLoading ? (
                     <span className="inline-flex items-center gap-2">
@@ -228,4 +228,3 @@ export const LoginPage = () => {
 };
 
 export default LoginPage;
-
