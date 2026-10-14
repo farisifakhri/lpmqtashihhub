@@ -81,15 +81,15 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         return { label: 'Helper Admin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
+        return { label: 'Verifikator', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
       case 'DISTRIBUTOR':
-        return { label: 'Distributor', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
+        return { label: 'Distributor', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
+        return { label: 'Pentashih', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', badgeClass: 'bg-[#f0f7e9] text-[#2e5d07] border-[#dcf2c2]' };
+        return { label: 'Dokumentator', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
@@ -514,7 +514,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 </div>
               </div>
               <div className="min-w-0">
-                <span className="text-xs font-extrabold tracking-wider uppercase text-[#4e9508] block leading-tight">
+                <span className="text-xs font-extrabold tracking-wider uppercase text-brand-fg block leading-tight">
                   Kemenag RI
                 </span>
                 <span className="text-xs font-black text-ink block leading-tight truncate">
@@ -539,11 +539,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl border border-line bg-surface-subtle/70">
               <div className="flex items-center gap-2.5">
                 <div className="relative shrink-0">
-                  <div className="w-8 h-8 rounded-lg bg-[#579b0a] text-white font-bold flex items-center justify-center text-xs shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs shadow-2xs">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#4e9508] rounded-full border-2 border-white"
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-700 rounded-full border-2 border-white"
                     title="Online"
                   />
                 </div>
@@ -558,7 +558,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         roleBadge.badgeClass
                       )}
                     >
-                      <ShieldCheck className="w-3 h-3 text-[#4e9508]" />
+                      <ShieldCheck className="w-3 h-3 text-brand-fg" />
                       <span>{roleBadge.label}</span>
                     </span>
                   </div>
@@ -588,7 +588,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         clsx(
                           'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors group',
                           isCurrentItem(item, isActive)
-                            ? 'bg-[#f0f7e9] border border-[#dcf2c2] text-[#2e5d07] font-bold shadow-2xs'
+                            ? 'bg-brand-50 border border-brand-100 text-brand-800 font-bold shadow-2xs'
                             : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
                         )
                       }
@@ -598,7 +598,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'transition-colors shrink-0',
-                              isCurrentItem(item, isActive) ? 'text-[#4e9508]' : 'text-ink-muted group-hover:text-[#4e9508]'
+                              isCurrentItem(item, isActive) ? 'text-brand-fg' : 'text-ink-muted group-hover:text-brand-fg'
                             )}
                           >
                             {item.icon}
@@ -624,7 +624,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           <div className="p-2.5 border-t border-line bg-surface">
             <div className="p-2.5 rounded-xl bg-surface-subtle border border-line/60">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-[#4e9508] shrink-0" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-brand-fg shrink-0" />
                 <span className="text-xs font-bold text-ink">Standar Pentashihan</span>
               </div>
               <p className="text-[11px] text-ink-muted mt-0.5 leading-tight">
@@ -639,4 +639,3 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 };
 
 export default Sidebar;
-

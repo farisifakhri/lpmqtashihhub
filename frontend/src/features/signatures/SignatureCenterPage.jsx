@@ -448,7 +448,7 @@ export const SignatureCenterPage = () => {
             <span className="text-2xl font-black text-ink">{stats.needSign}</span>
             <span className="text-xs text-ink-muted">dokumen aktif</span>
           </div>
-          <p className="text-xs text-brand-700 mt-1 font-medium">Menunggu konfirmasi internal Anda</p>
+          <p className="text-xs text-brand-fg mt-1 font-medium">Menunggu konfirmasi internal Anda</p>
         </div>
 
         <div

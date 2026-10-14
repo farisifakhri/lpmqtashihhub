@@ -182,7 +182,7 @@ export const PentashihWorkspacePage = () => {
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="text-brand-700 hover:text-brand-900 font-bold"
+            className="text-brand-fg hover:text-brand-900 font-bold"
           >
             Tutup
           </button>

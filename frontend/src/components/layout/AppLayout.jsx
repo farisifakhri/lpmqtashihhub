@@ -82,7 +82,7 @@ export const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-canvas font-sans text-ink">
+    <div className="h-screen flex flex-col overflow-hidden bg-canvas font-sans text-ink">
       {/* Skip to Main Content Link for WCAG Accessibility */}
       <a
         href="#main-content"
@@ -95,7 +95,7 @@ export const AppLayout = () => {
       <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
       {/* Main Container */}
-      <div className="flex flex-1 relative overflow-hidden">
+      <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {/* Sidebar Component (264px) */}
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
 
@@ -103,15 +103,13 @@ export const AppLayout = () => {
         <main
           id="main-content"
           tabIndex={-1}
-          className={clsx(
-            'flex-1 min-w-0 overflow-y-auto outline-none',
-            'px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7',
-            isPublisher && 'pb-20 lg:pb-7'
-          )}
+          className="flex-1 min-w-0 overflow-y-auto outline-none"
         >
           <div
             className={clsx(
               'mx-auto w-full',
+              'px-3.5 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-7',
+              isPublisher && 'pb-20 lg:pb-7',
               isFullWidthWorkspace ? 'max-w-none' : 'max-w-[1440px]'
             )}
           >

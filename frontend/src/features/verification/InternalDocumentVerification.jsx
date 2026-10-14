@@ -42,7 +42,7 @@ export default function InternalDocumentVerification() {
 
   return <main className="min-h-screen bg-surface-subtle px-4 py-12 text-ink">
     <article className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-6 shadow-sm space-y-5">
-      <header><p className="text-xs font-semibold uppercase tracking-wide text-brand-700">LPMQ Kementerian Agama RI</p>
+      <header><p className="text-xs font-semibold uppercase tracking-wide text-brand-fg">LPMQ Kementerian Agama RI</p>
         <h1 className="mt-2 text-2xl font-bold">Verifikasi dokumen internal</h1>
         <p className="mt-2 text-sm text-ink-muted">Status di bawah berasal dari catatan sistem saat halaman ini dibuka. QR ini bukan tanda tangan elektronik tersertifikasi.</p></header>
       {error && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">{error}</p>}

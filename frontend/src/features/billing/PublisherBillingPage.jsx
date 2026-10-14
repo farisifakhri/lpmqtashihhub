@@ -451,11 +451,11 @@ export const PublisherBillingPage = () => {
               <h4 className="text-xs font-bold text-ink uppercase tracking-wider">Alur Tahapan Layanan Pentashihan:</h4>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-xs">
                 <div className="p-3 rounded-lg bg-white border border-line space-y-1">
-                  <span className="font-bold text-brand-700 block">1. Pengajuan</span>
+                  <span className="font-bold text-brand-fg block">1. Pengajuan</span>
                   <p className="text-2xs text-ink-muted">Pendaftaran naskah dan dokumen master</p>
                 </div>
                 <div className="p-3 rounded-lg bg-white border border-line space-y-1">
-                  <span className="font-bold text-brand-700 block">2. Verifikasi</span>
+                  <span className="font-bold text-brand-fg block">2. Verifikasi</span>
                   <p className="text-2xs text-ink-muted">Pemeriksaan berkas dan sampel mushaf</p>
                 </div>
                 <div className="p-3 rounded-lg bg-brand-50 border border-brand-200 space-y-1 ring-1 ring-brand-300">
@@ -703,7 +703,7 @@ export const PublisherBillingPage = () => {
                     <UploadCloud className="w-8 h-8 text-ink-muted mx-auto" />
                     {receiptFile ? (
                       <div className="text-xs">
-                        <p className="font-bold text-brand-700">{receiptFile.name}</p>
+                        <p className="font-bold text-brand-fg">{receiptFile.name}</p>
                         <p className="text-ink-muted text-xs">
                           {(receiptFile.size / 1024).toFixed(1)} KB &bull; Klik untuk mengganti
                         </p>

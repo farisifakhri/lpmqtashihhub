@@ -62,7 +62,7 @@ test('database failure during authentication is forwarded instead of falsely rep
   const original = prisma.user.findUnique;
   prisma.user.findUnique = async () => { throw failure; };
   t.after(() => { prisma.user.findUnique = original; });
-  const token = jwt.sign({ userId: 'user' }, ENV.JWT_SECRET);
+  const token = jwt.sign({ userId: 'user', type: 'access' }, ENV.JWT_SECRET);
   let forwarded;
   const res = response();
   await authenticate({ headers: { authorization: `Bearer ${token}` } }, res, error => { forwarded = error; });

@@ -65,13 +65,19 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Check Design System Colors & WCAG Contrast
+        working-directory: frontend
+        run: |
+          npm run check:colors
+          npm run check:contrast
 
       - name: Run Frontend Component Tests
         working-directory: frontend

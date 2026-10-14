@@ -38,11 +38,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
     setLoading(true);
     try {
       const res = await authApi.forgotPassword(email);
-      setSuccess(res.message || 'Instruksi reset kata sandi telah diproses.');
-      if (res.resetToken) {
-        setToken(res.resetToken);
-        setStep('RESET');
-      }
+      setSuccess(res.message || 'Jika email terdaftar, petunjuk telah dikirim.');
     } catch (err) {
       setError(err.message || 'Gagal memproses permohonan pemulihan kata sandi.');
     } finally {

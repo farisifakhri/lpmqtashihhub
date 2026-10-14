@@ -1,3 +1,4 @@
+/* Tailwind CSS and Design Tokens */
 @import './design-system/tokens.css';
 
 @tailwind base;
@@ -197,4 +198,25 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--line-strong);
+}
+
+@layer utilities {
+  .bg-brand-fill {
+    background-color: #579b0a;
+  }
+  .hover\:bg-brand-fill-hover:hover {
+    background-color: #478300;
+  }
+  .text-brand-fg {
+    color: #4e9508;
+  }
+  .hover\:text-brand-fill-hover:hover {
+    color: #396a06;
+  }
+  .border-brand-fg {
+    border-color: #4e9508;
+  }
+  .border-brand-fill {
+    border-color: #579b0a;
+  }
 }

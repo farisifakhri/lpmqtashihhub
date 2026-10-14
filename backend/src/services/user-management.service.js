@@ -292,6 +292,7 @@ export const updateUser = async (id, data, currentUser, req) => {
 
   if (data.password && data.password.trim().length >= 6) {
     updateFields.password_hash = await bcrypt.hash(data.password, 10);
+    updateFields.password_changed_at = new Date();
   }
 
   await prisma.$transaction(async (tx) => {

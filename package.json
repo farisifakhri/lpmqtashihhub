@@ -16,10 +16,12 @@
     "prisma:studio": "npm --prefix backend run prisma:studio"
   },
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "concurrently": "^9.2.1",
+    "prisma": "7.10.0"
   },
   "license": "UNLICENSED",
   "dependencies": {
+    "@prisma/client": "^7.10.0",
     "@tailwindcss/vite": "^4.3.3",
     "tailwindcss": "^4.3.3"
   }

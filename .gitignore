@@ -49,3 +49,6 @@ storage/
 backend/storage/
 ~$*.xlsx
 ~$*.docx
+
+.agent/
+.impeccable/

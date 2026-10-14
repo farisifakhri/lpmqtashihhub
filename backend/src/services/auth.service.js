@@ -1,8 +1,10 @@
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { logAudit } from './audit.service.js';
+import { emailProvider } from './email-provider.service.js';
 
 export const login = async ({ email, password, req }) => {
   const user = await prisma.user.findUnique({
@@ -36,6 +38,7 @@ export const login = async ({ email, password, req }) => {
       email: user.email,
       roles,
       publisherId: user.publisher ? user.publisher.id : null,
+      type: 'access',
     },
     ENV.JWT_SECRET,
     { expiresIn: ENV.JWT_EXPIRES_IN }
@@ -131,6 +134,7 @@ export const registerPublisher = async (data, req) => {
       email: result.user.email,
       roles: ['PENERBIT'],
       publisherId: result.publisher.id,
+      type: 'access',
     },
     ENV.JWT_SECRET,
     { expiresIn: ENV.JWT_EXPIRES_IN }
@@ -149,19 +153,65 @@ export const registerPublisher = async (data, req) => {
 };
 
 export const forgotPassword = async ({ email, req }) => {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || user.status !== 'ACTIVE') {
-    // Hindari enumerasi akun
-    return {
-      message: 'Jika email terdaftar dan aktif di sistem, tautan atau petunjuk reset kata sandi telah diproses.',
-    };
+  if (ENV.ENABLE_PASSWORD_RESET === false) {
+    const error = new Error('Fitur pemulihan kata sandi mandiri dinonaktifkan sementara. Silakan hubungi administrator LPMQ.');
+    error.statusCode = 503;
+    throw error;
   }
 
-  const resetToken = jwt.sign(
-    { userId: user.id, email: user.email, type: 'password_reset' },
-    ENV.JWT_SECRET,
-    { expiresIn: '1h' }
-  );
+  const GENERIC_RESPONSE = {
+    message: 'Jika email terdaftar, petunjuk telah dikirim.',
+  };
+
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  // Dummy compare to avoid timing attack / account enumeration
+  const DUMMY_HASH = '$2a$10$7EqJtq98hPqEX7fNZaFWoO.8/lI2/w16/K8L9.lZ63xV1L6o2y72e';
+  if (!user || user.status !== 'ACTIVE') {
+    await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
+    return GENERIC_RESPONSE;
+  }
+
+  // Consistent dummy compare so timing is identical for existing vs non-existing
+  await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 menit
+  const requestedIp = req?.ip || req?.headers?.['x-forwarded-for'] || null;
+
+  // Hapus token lama yang belum digunakan saat permintaan baru dibuat
+  await prisma.passwordResetToken.deleteMany({
+    where: { user_id: user.id },
+  });
+
+  await prisma.passwordResetToken.create({
+    data: {
+      user_id: user.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      requested_ip: typeof requestedIp === 'string' ? requestedIp : null,
+    },
+  });
+
+  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
+
+  try {
+    await emailProvider.sendEmail({
+      to: user.email,
+      toName: user.name,
+      subject: 'Petunjuk Pemulihan Kata Sandi - LPMQ Tashih Hub',
+      template: 'PASSWORD_RESET',
+      payload: {
+        resetUrl,
+        expiresMinutes: 30,
+      },
+    });
+  } catch (emailErr) {
+    // Jangan biarkan kegagalan email mengekspos token ke respons HTTP
+    console.error('Peringatan: Gagal mengirim email pemulihan kata sandi:', emailErr.message);
+  }
 
   await logAudit({
     actorId: user.id,
@@ -171,39 +221,73 @@ export const forgotPassword = async ({ email, req }) => {
     req,
   });
 
-  return {
-    message: 'Permohonan pemulihan kata sandi berhasil dibuat. Gunakan token atau tautan pemulihan untuk mengatur ulang kata sandi.',
-    resetToken,
-  };
+  return GENERIC_RESPONSE;
 };
 
 export const resetPassword = async ({ token, new_password, req }) => {
-  let decoded;
-  try {
-    decoded = jwt.verify(token, ENV.JWT_SECRET);
-  } catch (err) {
+  if (!token || typeof token !== 'string') {
     const error = new Error('Token pemulihan kata sandi tidak valid atau telah kedaluwarsa.');
     error.statusCode = 400;
     throw error;
   }
 
-  if (decoded.type !== 'password_reset' || !decoded.userId) {
-    const error = new Error('Token tidak valid untuk penyetelan ulang kata sandi.');
+  const tokenHash = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+  const resetRecord = await prisma.passwordResetToken.findUnique({
+    where: { token_hash: tokenHash },
+    include: { user: true },
+  });
+
+  if (!resetRecord) {
+    const error = new Error('Token pemulihan kata sandi tidak valid atau telah kedaluwarsa.');
     error.statusCode = 400;
     throw error;
   }
 
-  const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+  if (resetRecord.used_at) {
+    const error = new Error('Token pemulihan kata sandi telah digunakan.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (new Date() > new Date(resetRecord.expires_at)) {
+    const error = new Error('Token pemulihan kata sandi telah kedaluwarsa.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const user = resetRecord.user;
   if (!user || user.status !== 'ACTIVE') {
     const error = new Error('Pengguna tidak ditemukan atau berstatus tidak aktif.');
     error.statusCode = 400;
     throw error;
   }
 
+  const isSameAsOld = await bcrypt.compare(new_password, user.password_hash);
+  if (isSameAsOld) {
+    const error = new Error('Kata sandi baru tidak boleh sama dengan kata sandi lama.');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const passwordHash = await bcrypt.hash(new_password, 10);
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { password_hash: passwordHash },
+  const now = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: user.id },
+      data: {
+        password_hash: passwordHash,
+        password_changed_at: now,
+      },
+    });
+
+    await tx.passwordResetToken.update({
+      where: { id: resetRecord.id },
+      data: {
+        used_at: now,
+      },
+    });
   });
 
   await logAudit({
@@ -232,10 +316,21 @@ export const changePassword = async ({ user, current_password, new_password, req
     throw error;
   }
 
+  const isSameAsOld = await bcrypt.compare(new_password, dbUser.password_hash);
+  if (isSameAsOld) {
+    const error = new Error('Kata sandi baru tidak boleh sama dengan kata sandi lama.');
+    error.statusCode = 400;
+    throw error;
+  }
+
   const passwordHash = await bcrypt.hash(new_password, 10);
+  const now = new Date();
   await prisma.user.update({
     where: { id: dbUser.id },
-    data: { password_hash: passwordHash },
+    data: {
+      password_hash: passwordHash,
+      password_changed_at: now,
+    },
   });
 
   await logAudit({

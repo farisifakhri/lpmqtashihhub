@@ -41,6 +41,14 @@
   --brand-50: #f0f7e9;
   --brand-50-rgb: 240 247 233;
 
+  /* Brand Role Tokens for WCAG 2.1 AA Contrast */
+  --brand-fg: #3b7305;
+  --brand-fg-rgb: 59 115 5;
+  --brand-fill: #478300;
+  --brand-fill-rgb: 71 131 0;
+  --brand-fill-hover: #396a06;
+  --brand-fill-hover-rgb: 57 106 6;
+
   /* Button Surface Tokens (text-white against button bg >= 4.5:1) */
   --brand-btn-bg: #478300;
   --brand-btn-hover: #396a06;
@@ -72,8 +80,8 @@
   --info-soft-rgb: 239 246 255;
   --info-line-rgb: 191 219 254;
 
-  --warning: #b45309;
-  --warning-rgb: 180 83 9;
+  --warning: #9a4a07;
+  --warning-rgb: 154 74 7;
   --warning-soft-rgb: 255 247 237;
   --warning-line-rgb: 245 213 170;
 
@@ -140,6 +148,14 @@
   --brand-100-rgb: 26 56 28;
   --brand-50: #0d240f;
   --brand-50-rgb: 13 36 15;
+
+  /* Brand Role Tokens for Dark Mode */
+  --brand-fg: #7ec41a;
+  --brand-fg-rgb: 126 196 26;
+  --brand-fill: #396a06;
+  --brand-fill-rgb: 57 106 6;
+  --brand-fill-hover: #2e5405;
+  --brand-fill-hover-rgb: 46 84 5;
 
   /*
    * WCAG 2.1 AA TOMBOL DARK-MODE

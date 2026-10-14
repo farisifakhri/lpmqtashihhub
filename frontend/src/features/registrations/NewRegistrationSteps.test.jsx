@@ -84,4 +84,31 @@ describe('NewRegistration Stepper and Enhancements', () => {
     expect(await screen.findByText('Nama mushaf minimal 3 karakter.')).toBeInTheDocument();
     expect(screen.getByText('Nama penanggung jawab produk/mushaf wajib diisi.')).toBeInTheDocument();
   });
+
+  it('accepts valid email and valid WhatsApp in Step 1 without validation errors', async () => {
+    render(
+      <MemoryRouter>
+        <NewRegistrationPage />
+      </MemoryRouter>
+    );
+
+    const mushafInput = screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/i);
+    const pjInput = screen.getByPlaceholderText(/Tulis nama penanggung jawab Produk\/Mushaf/i);
+    const waInput = screen.getByPlaceholderText(/Tulis nomor WhatsApp/i);
+    const emailInput = screen.getByPlaceholderText(/Tulis email penanggung jawab/i);
+
+    fireEvent.change(mushafInput, { target: { value: 'Mushaf Al-Qur\'an Standar' } });
+    fireEvent.change(pjInput, { target: { value: 'Jasmin Izzah' } });
+    fireEvent.change(waInput, { target: { value: '081234567890' } });
+    fireEvent.change(emailInput, { target: { value: 'jasmine24@gmail.com' } });
+
+    const nextBtn = screen.getByRole('button', { name: /Lanjut: Langkah 2/i });
+    fireEvent.click(nextBtn);
+
+    // Errors for email and whatsapp must NOT be in document
+    expect(screen.queryByText(/Format alamat email tidak valid/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nomor WhatsApp tidak valid/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Nama mushaf minimal 3 karakter.')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nama penanggung jawab produk/mushaf wajib diisi.')).not.toBeInTheDocument();
+  });
 });

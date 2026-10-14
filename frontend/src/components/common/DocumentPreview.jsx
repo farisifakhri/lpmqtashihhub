@@ -78,7 +78,7 @@ export const DocumentPreview = ({
               className="text-xs"
               title="Cetak Dokumen"
             >
-              <Printer className="w-3.5 h-3.5 mr-1 text-brand-700" /> Cetak
+              <Printer className="w-3.5 h-3.5 mr-1 text-brand-fg" /> Cetak
             </Button>
           )}
           {onDownload && (
@@ -89,7 +89,7 @@ export const DocumentPreview = ({
               className="text-xs"
               title="Unduh Salinan Resmi"
             >
-              <Download className="w-3.5 h-3.5 mr-1 text-brand-700" /> Unduh PDF
+              <Download className="w-3.5 h-3.5 mr-1 text-brand-fg" /> Unduh PDF
             </Button>
           )}
         </div>

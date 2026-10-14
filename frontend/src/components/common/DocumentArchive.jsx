@@ -220,7 +220,7 @@ export function DocumentArchive({ registrationId }) {
             <details className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 space-y-3">
               <summary className="cursor-pointer text-xs font-bold text-brand-900 flex items-center justify-between">
                 <span>Lampiran Kode Billing & Bukti SIMPONI</span>
-                <span className="text-xs text-brand-700 underline font-normal">Klik untuk pratinjau</span>
+                <span className="text-xs text-brand-fg underline font-normal">Klik untuk pratinjau</span>
               </summary>
               <div className="pt-2">
                 <PrivateFileViewer
