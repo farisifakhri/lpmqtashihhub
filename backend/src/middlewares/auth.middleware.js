@@ -15,6 +15,13 @@ export const authenticate = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, ENV.JWT_SECRET);
 
+    if (!decoded.type || decoded.type !== 'access') {
+      return res.status(401).json({
+        success: false,
+        message: 'Tipe token tidak valid untuk mengakses layanan ini. Silakan masuk kembali.',
+      });
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: {
@@ -30,6 +37,16 @@ export const authenticate = async (req, res, next) => {
         success: false,
         message: 'Akun tidak tersedia atau sudah tidak aktif. Hubungi administrator untuk memeriksa akses akun Anda.',
       });
+    }
+
+    if (user.password_changed_at) {
+      const pwdChangedSec = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+      if (decoded.iat && decoded.iat < pwdChangedSec) {
+        return res.status(401).json({
+          success: false,
+          message: 'Sesi Anda telah berakhir karena kata sandi akun telah diubah. Silakan masuk kembali.',
+        });
+      }
     }
 
     req.user = {

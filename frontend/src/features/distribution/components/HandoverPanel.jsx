@@ -29,8 +29,8 @@ export const HandoverPanel = ({
 
         <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-brand-700">Telah Diterima & Disahkan</span>
-            <span className="p-2 rounded-xl bg-brand-50 text-brand-700">
+            <span className="text-xs font-semibold text-brand-fg">Telah Diterima & Disahkan</span>
+            <span className="p-2 rounded-xl bg-brand-50 text-brand-fg">
               <CheckSquare className="w-4 h-4" />
             </span>
           </div>

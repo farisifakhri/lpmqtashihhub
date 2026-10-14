@@ -13,11 +13,16 @@ import { WORKFLOW_PRESENTATION } from '@/features/workflow/workflow-presentation
 
 export const TOKENS = {
   colors: {
+    // Brand Role Tokens (WCAG 2.1 AA)
+    brandFg: '#3B7305',
+    brandFill: '#478300',
+    brandFillHover: '#396A06',
+
     // Primary - Hijau Muda Segar / Alur STT
     primary950: '#123B18',
     primary900: '#1E560D',
     primary800: '#396A06',
-    primary700: '#4E9508', // Header, sidebar aktif, tombol utama
+    primary700: '#4E9508', // Header, sidebar aktif, aksen
     primary600: '#579B0A',
     primary500: '#5A9D0B', // Aksen tombol, ikon aktif, tab terpilih
     primary300: '#A9E078',

@@ -73,6 +73,12 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Check Design System Colors & WCAG Contrast
+        working-directory: frontend
+        run: |
+          npm run check:colors
+          npm run check:contrast
+
       - name: Run Frontend Component Tests
         working-directory: frontend
         run: npm test

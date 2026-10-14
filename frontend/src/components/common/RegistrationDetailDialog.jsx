@@ -75,7 +75,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
         </div>
         <div className="p-5 sm:p-6 space-y-5">
           {error ? <p role="alert" className="flex gap-2 text-sm text-civic-danger"><AlertCircle className="h-5 w-5 shrink-0" />{error}</p> : !data ? <p role="status" className="text-sm text-ink-muted">Memuat detail naskah…</p> : <>
-            <div><p className="font-mono text-xs text-brand-700">{data.registration_no}</p><h3 className="text-xl font-bold text-ink mt-1">{data.title}</h3><p className="text-sm text-ink-muted mt-1">{data.publisher?.legal_name}</p></div>
+            <div><p className="font-mono text-xs text-brand-fg">{data.registration_no}</p><h3 className="text-xl font-bold text-ink mt-1">{data.title}</h3><p className="text-sm text-ink-muted mt-1">{data.publisher?.legal_name}</p></div>
             {(isAdmin || userRoles.includes('DOKUMENTATOR')) && <DocumentArchive registrationId={data.id} />}
             <div className="rounded-xl bg-canvas border border-line p-4 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -94,8 +94,20 @@ export function RegistrationDetailDialog({ id, onClose }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-ink-muted flex gap-2"><Clock className="h-4 w-4" />Tahap ini dimulai: {data.stage_entered_at ? new Date(data.stage_entered_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : 'Belum tercatat'}</p>
               <p className="text-xs text-ink-muted">{data.service_type?.name}</p>
+              {data.apk_url && (
+                <p className="text-xs text-ink-muted flex items-center gap-1.5 pt-1">
+                  <span>Tautan Aplikasi:</span>
+                  <a
+                    href={data.apk_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-fg underline hover:text-brand-800 break-all"
+                  >
+                    {data.apk_url}
+                  </a>
+                </p>
+              )}
             </div>
             <WorkflowPhaseStatus registration={data} />
             <div><h4 className="text-sm font-bold text-ink mb-3">Riwayat proses</h4>
@@ -109,7 +121,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="sticky bottom-0 bg-canvas border-t border-line p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 z-10">
           <div className="text-xs text-ink-muted">
             {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived ? (
-              <span className="text-brand-700 font-semibold">Master fisik diterima loket. Siap ditugaskan Helper Admin.</span>
+              <span className="text-brand-fg font-semibold">Master fisik diterima loket. Siap ditugaskan Helper Admin.</span>
             ) : data.status === 'READY_FOR_VERIFICATION' ? (
               <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di loket LPMQ.</span>
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (

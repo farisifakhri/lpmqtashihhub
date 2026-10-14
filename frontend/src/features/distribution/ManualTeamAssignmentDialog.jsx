@@ -89,7 +89,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
       {loading ? <p role="status" className="text-sm text-ink-muted">Memuat tim dan kelayakan pengajuan…</p> : registration && <>
         <div className="bg-canvas p-3.5 rounded-xl border border-line space-y-2 text-xs">
           <div className="flex items-center justify-between">
-            <span className="font-mono text-xs font-bold text-brand-700">{registration.registration_no}</span>
+            <span className="font-mono text-xs font-bold text-brand-fg">{registration.registration_no}</span>
             <span className="font-bold text-xs px-2.5 py-0.5 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
               SLA Sidang: {registration.fee_sla_snapshot?.[`sla_${stage.toLowerCase()}_days`] || (stage === 'INITIAL' ? (registration.service_type?.duration_initial || 15) : stage === 'REVISION' ? (registration.service_type?.duration_revision || 7) : (registration.service_type?.duration_dummy || 3))} Hari Kerja
             </span>

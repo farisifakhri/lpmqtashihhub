@@ -394,6 +394,11 @@ export const Step1MushafData = ({
               setPenanggungJawabEmail(e.target.value);
               clearFieldError?.('penanggungJawabEmail');
             }}
+            onBlur={() => {
+              if (penanggungJawabEmail) {
+                setPenanggungJawabEmail(penanggungJawabEmail.trim());
+              }
+            }}
             aria-invalid={Boolean(fieldErrors.penanggungJawabEmail)}
             aria-describedby={fieldErrors.penanggungJawabEmail ? 'registration-pj-email-error' : undefined}
             placeholder="Tulis email penanggung jawab (cth: pj.mushaf@penerbit.com)"

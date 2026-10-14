@@ -120,8 +120,8 @@ export const SttWorkflowPanel = ({
                       </span>
                       <StatusBadge status={reg.status} size="xs" />
                       {isIssued && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-200">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-successSoft text-civic-success border border-civic-successLine">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
                           STT Resmi Diterbitkan
                         </span>
                       )}
@@ -148,7 +148,7 @@ export const SttWorkflowPanel = ({
                         size="sm"
                         disabled={actionLoadingId === reg.id}
                         onClick={() => setRequestNotesModalReg(reg)}
-                        className="bg-brand-700 hover:bg-brand-800 text-white shadow-xs text-xs font-bold"
+                        className="bg-brand-fill hover:bg-brand-fill-hover text-white shadow-xs text-xs font-bold"
                         icon={<Send className="w-3.5 h-3.5" />}
                       >
                         Ajukan Pembuatan STT ke Admin
@@ -162,7 +162,7 @@ export const SttWorkflowPanel = ({
                         size="sm"
                         disabled={actionLoadingId === reg.id}
                         onClick={() => handleSubmitToTu(reg.id, sttDoc.id)}
-                        className="bg-blue-700 hover:bg-blue-800 text-white shadow-xs text-xs font-bold"
+                        className="bg-civic-info hover:opacity-90 text-white shadow-xs text-xs font-bold"
                         icon={<UserCheck className="w-3.5 h-3.5" />}
                       >
                         {actionLoadingId === reg.id ? 'Mengirim...' : 'Kirim ke TU untuk Pengesahan'}
@@ -188,7 +188,7 @@ export const SttWorkflowPanel = ({
                 <div className="bg-surface-subtle/50 rounded-xl p-4 border border-line text-xs grid grid-cols-1 sm:grid-cols-4 gap-3">
                   {/* Step 1: Sidang Selesai */}
                   <div className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
                     <div>
                       <div className="font-bold text-ink">1. Pentashihan Selesai</div>
                       <div className="text-ink-muted text-[11px]">Rekomendasi lolos telah disetujui</div>
@@ -198,9 +198,9 @@ export const SttWorkflowPanel = ({
                   {/* Step 2: Pengajuan ke Admin */}
                   <div className="flex items-start gap-2">
                     {sttRequest ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
                     ) : (
-                      <Clock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                      <Clock className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
                     )}
                     <div>
                       <div className="font-bold text-ink">2. Permintaan STT ke Admin</div>
@@ -213,9 +213,9 @@ export const SttWorkflowPanel = ({
                   {/* Step 3: Draf STT & Pengiriman ke TU */}
                   <div className="flex items-start gap-2">
                     {isSubmittedToTu ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
                     ) : sttDoc ? (
-                      <Clock className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <Clock className="w-4 h-4 text-civic-info shrink-0 mt-0.5" />
                     ) : (
                       <Clock className="w-4 h-4 text-ink-muted shrink-0 mt-0.5" />
                     )}
@@ -230,7 +230,7 @@ export const SttWorkflowPanel = ({
                   {/* Step 4: Pengesahan & TTD Kepala */}
                   <div className="flex items-start gap-2">
                     {isIssued ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
                     ) : (
                       <Clock className="w-4 h-4 text-ink-muted shrink-0 mt-0.5" />
                     )}
@@ -245,27 +245,27 @@ export const SttWorkflowPanel = ({
 
                 {/* TU Signatories Detail (if submitted to TU) */}
                 {isSubmittedToTu && (
-                  <div className="bg-blue-50/60 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-950">
+                  <div className="bg-civic-infoSoft border border-civic-infoLine rounded-xl p-3.5 text-xs text-ink">
                     <div className="font-bold flex items-center gap-1.5 mb-2">
-                      <UserCheck className="w-4 h-4 text-blue-700" />
+                      <UserCheck className="w-4 h-4 text-civic-info" />
                       Status Pembubuhan Paraf & Pengesahan Tata Usaha:
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                      <div className="p-2 bg-white/80 rounded-lg border border-blue-100 flex items-center justify-between">
+                      <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
                         <span>Penandatangan 1 (Paraf 1):</span>
-                        <span className="font-bold text-emerald-700">
+                        <span className="font-bold text-civic-success">
                           {tuWorkflow?.paraf_1 ? '✓ Sudah Paraf' : 'Menunggu'}
                         </span>
                       </div>
-                      <div className="p-2 bg-white/80 rounded-lg border border-blue-100 flex items-center justify-between">
+                      <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
                         <span>Penandatangan 2 (Paraf 2):</span>
-                        <span className="font-bold text-emerald-700">
+                        <span className="font-bold text-civic-success">
                           {tuWorkflow?.paraf_2 ? '✓ Sudah Paraf' : 'Menunggu'}
                         </span>
                       </div>
-                      <div className="p-2 bg-white/80 rounded-lg border border-blue-100 flex items-center justify-between">
+                      <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
                         <span>Kepala LPMQ (TTD Resmi):</span>
-                        <span className="font-bold text-emerald-700">
+                        <span className="font-bold text-civic-success">
                           {isIssued ? '✓ Resmi Sah' : 'Menunggu'}
                         </span>
                       </div>
@@ -281,18 +281,18 @@ export const SttWorkflowPanel = ({
       {/* Modal Dialog: Catatan Pengajuan STT */}
       {requestNotesModalReg && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-gray-100 space-y-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-line space-y-4">
             <div>
-              <h3 className="text-lg font-bold text-gray-900">
+              <h3 className="text-lg font-bold text-ink">
                 Ajukan Pembuatan Draf STT ke Admin
               </h3>
-              <p className="text-xs text-gray-600 mt-1">
+              <p className="text-xs text-ink-muted mt-1">
                 Pengajuan untuk naskah <strong>{requestNotesModalReg.registration_no}</strong> ({requestNotesModalReg.title}).
               </p>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
+              <label className="block text-xs font-semibold text-ink mb-1">
                 Catatan Distributor untuk Admin Internal (Opsional)
               </label>
               <textarea
@@ -300,11 +300,11 @@ export const SttWorkflowPanel = ({
                 placeholder="Misal: Seluruh catatan pentashihan telah terpenuhi dan rekomendasi sidang disetujui tanpa catatan perbaikan."
                 value={requestNotes}
                 onChange={(e) => setRequestNotes(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+                className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 outline-none"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
               <Button
                 variant="outline"
                 size="sm"
@@ -320,7 +320,7 @@ export const SttWorkflowPanel = ({
                 size="sm"
                 disabled={actionLoadingId === requestNotesModalReg.id}
                 onClick={() => handleRequestStt(requestNotesModalReg.id)}
-                className="bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs"
+                className="bg-brand-fill hover:bg-brand-fill-hover text-white font-bold text-xs"
               >
                 {actionLoadingId === requestNotesModalReg.id ? 'Mengirim...' : 'Kirim Pengajuan STT'}
               </Button>

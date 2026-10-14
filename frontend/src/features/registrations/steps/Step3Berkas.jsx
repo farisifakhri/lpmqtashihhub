@@ -161,7 +161,7 @@ export const Step3Berkas = ({
                 Desain sampul depan dan belakang mushaf (Format PNG atau JPEG/JPG, maksimal 10 MB).
               </p>
             </div>
-            <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
+            <span className="text-xs font-semibold text-brand-fg bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
               Wajib (PNG/JPEG)
             </span>
           </div>
@@ -230,7 +230,7 @@ export const Step3Berkas = ({
                 Sampel tata letak halaman mushaf (Al-Fatihah dan awal Al-Baqarah) (Format PDF, maksimal 10 MB).
               </p>
             </div>
-            <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
+            <span className="text-xs font-semibold text-brand-fg bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
               Wajib (PDF)
             </span>
           </div>
@@ -400,7 +400,7 @@ export const Step3Berkas = ({
                   Surat pernyataan bermaterai bahwa tidak terdapat perubahan isi pada master mushaf (Format PDF, maksimal 10 MB).
                 </p>
               </div>
-              <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
+              <span className="text-xs font-semibold text-brand-fg bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
                 Wajib (PDF)
               </span>
             </div>
@@ -468,7 +468,7 @@ export const Step3Berkas = ({
                   Unggah tanda tashih dari lembaga pentashih mushaf asal di luar negeri (Format PDF/PNG/JPEG, maksimal 10 MB).
                 </p>
               </div>
-              <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
+              <span className="text-xs font-semibold text-brand-fg bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
                 Wajib
               </span>
             </div>

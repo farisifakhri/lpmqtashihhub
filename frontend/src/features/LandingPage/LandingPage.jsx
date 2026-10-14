@@ -9,7 +9,7 @@ import {
   FileCheck2,
   Clock,
   ShieldAlert,
-  Send,
+  Mail,
   HelpCircle,
   ExternalLink,
   ChevronDown,
@@ -57,13 +57,6 @@ export const LandingPage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
-  const [complaintSubmitted, setComplaintSubmitted] = useState(false);
-  const [complaintForm, setComplaintForm] = useState({
-    name: '',
-    email: '',
-    topic: 'layanan',
-    message: '',
-  });
 
   const filteredFaqs = useMemo(() => {
     if (!searchQuery.trim()) return FAQ_LIST;
@@ -79,12 +72,6 @@ export const LandingPage = () => {
     if (faqSection) {
       faqSection.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const handleComplaintSubmit = (e) => {
-    e.preventDefault();
-    setComplaintSubmitted(true);
-    setComplaintForm({ name: '', email: '', topic: 'layanan', message: '' });
   };
 
   return (
@@ -123,14 +110,14 @@ export const LandingPage = () => {
           <div className="hidden items-center gap-3 lg:flex">
             <a
               href="tel:+622187798807"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-[#579b0a] px-6 text-[12px] font-medium text-white transition hover:bg-[#478300]"
+              className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-fill px-6 text-[12px] font-medium text-white transition hover:bg-brand-fill-hover"
             >
               <Phone className="h-3.5 w-3.5" />
               Kontak Kami
             </a>
             <Link
               to="/login"
-              className="inline-flex h-10 items-center justify-center rounded-full bg-[#e3eaff] px-6 text-[12px] font-medium text-[#4e9508] transition hover:bg-[#d8e1ff]"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-civic-infoSoft px-6 text-[12px] font-medium text-brand-fg transition hover:bg-civic-infoLine"
             >
               Masuk
             </Link>
@@ -163,14 +150,14 @@ export const LandingPage = () => {
               <div className="mt-2 flex gap-2">
                 <a
                   href="tel:+622187798807"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#579b0a] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#478300]"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-brand-fill px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-fill-hover"
                 >
                   <Phone className="h-4 w-4" />
                   Kontak Kami
                 </a>
                 <Link
                   to="/login"
-                  className="flex flex-1 items-center justify-center rounded-full bg-[#e3eaff] px-4 py-3 text-sm font-medium text-[#4e9508] transition hover:bg-[#d8e1ff]"
+                  className="flex flex-1 items-center justify-center rounded-full bg-civic-infoSoft px-4 py-3 text-sm font-medium text-brand-fg transition hover:bg-civic-infoLine"
                 >
                   Masuk
                 </Link>
@@ -185,7 +172,7 @@ export const LandingPage = () => {
         {/* Section 1: Hero */}
         <section
           id="beranda"
-          className="relative isolate flex min-h-[500px] items-center justify-center overflow-hidden rounded-[28px] bg-[#123b18] sm:min-h-[560px] lg:min-h-[610px]"
+          className="relative isolate flex min-h-[500px] items-center justify-center overflow-hidden rounded-[28px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
           aria-labelledby="hero-title"
         >
           <img
@@ -193,8 +180,8 @@ export const LandingPage = () => {
             alt="Al-Qur'an"
             className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/35 via-black/25 to-[#278000]/95" />
-          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-[#287e00]/95 to-transparent" />
+          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/35 via-black/25 to-brand-900/95" />
+          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-brand-900/95 to-transparent" />
 
           <div className="w-full max-w-4xl px-5 text-center text-white sm:px-8">
             <span className="inline-block px-3.5 py-1.5 mb-4 text-xs font-semibold rounded-full bg-white/10 text-white border border-white/20 backdrop-blur">
@@ -227,7 +214,7 @@ export const LandingPage = () => {
               />
               <button
                 type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#5a9d0b] text-white transition hover:bg-[#478300]"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-fill text-white transition hover:bg-brand-fill-hover"
                 aria-label="Cari"
               >
                 <ArrowRight className="h-5 w-5" />
@@ -259,7 +246,7 @@ export const LandingPage = () => {
         <section id="alur-stt" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
             <div>
-              <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Tahapan Layanan</span>
+              <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Tahapan Layanan</span>
               <h2 className="text-2xl font-black text-ink mt-1">Alur Penerbitan Surat Tanda Tashih (STT)</h2>
               <p className="text-xs sm:text-sm text-ink-muted mt-1">
                 Enam tahapan terpadu proses pentashihan Al-Qur'an resmi Kementerian Agama Republik Indonesia.
@@ -267,7 +254,7 @@ export const LandingPage = () => {
             </div>
             <Link
               to="/login"
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-700 hover:bg-brand-800 text-white font-semibold text-xs transition shadow-2xs self-start sm:self-auto"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-fill hover:bg-brand-fill-hover text-white font-semibold text-xs transition shadow-2xs self-start sm:self-auto"
             >
               Mulai Pendaftaran <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -328,7 +315,7 @@ export const LandingPage = () => {
         {/* Section 2: Informasi Layanan */}
         <section id="informasi" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Regulasi & Ketentuan</span>
+            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Regulasi & Ketentuan</span>
             <h2 className="text-2xl font-black text-ink mt-1">Informasi Layanan Pentashihan</h2>
             <p className="text-xs sm:text-sm text-ink-muted mt-1">
               Dasar hukum pelaksanaan pentashihan berlandaskan PMA Nomor 44 Tahun 2016 tentang Penerbitan, Pentashihan, dan Peredaran Mushaf Al-Qur'an.
@@ -371,7 +358,7 @@ export const LandingPage = () => {
         {/* Section 3: Layanan Pengaduan */}
         <section id="pengaduan" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Layanan Masyarakat</span>
+            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Layanan Masyarakat</span>
             <h2 className="text-2xl font-black text-ink mt-1">Saluran Pengaduan & Bantuan</h2>
             <p className="text-xs sm:text-sm text-ink-muted mt-1">
               Sampaikan saran, kendala layanan, atau temuan mushaf yang diduga mengalami kesalahan cetak langsung kepada petugas LPMQ.
@@ -407,82 +394,55 @@ export const LandingPage = () => {
             </div>
 
             <div className="lg:col-span-7">
-              {complaintSubmitted ? (
-                <div className="p-6 rounded-xl bg-brand-50 border border-brand-100 text-center space-y-2">
-                  <h4 className="font-bold text-brand-900 text-sm">Pengaduan Berhasil Terkirim</h4>
-                  <p className="text-xs text-brand-800">
-                    Terima kasih atas laporan Anda. Tim kami akan menindaklanjuti informasi tersebut dalam 1-3 hari kerja.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setComplaintSubmitted(false)}
-                    className="text-xs text-brand-700 underline font-semibold mt-2"
-                  >
-                    Kirim pengaduan lain
-                  </button>
+              <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-6 space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-bold w-fit">
+                  <Clock className="w-3.5 h-3.5 text-brand-700" />
+                  <span>Formulir Daring Segera Hadir</span>
                 </div>
-              ) : (
-                <form onSubmit={handleComplaintSubmit} className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-ink mb-1">Nama Lengkap</label>
-                      <input
-                        type="text"
-                        required
-                        value={complaintForm.name}
-                        onChange={(e) => setComplaintForm({ ...complaintForm, name: e.target.value })}
-                        placeholder="Nama pelapor"
-                        className="w-full text-xs px-3 py-2 rounded-lg border border-line bg-canvas focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-700"
-                      />
+
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-ink">
+                    Pengaduan Kesalahan Naskah & Layanan Terintegrasi
+                  </h3>
+                  <p className="text-xs text-ink-muted leading-relaxed">
+                    Sistem pelaporan kesalahan teks mushaf dengan verifikasi kontak dan nomor tiket mandiri sedang dalam integrasi penuh (Tahap 5 SOP LPMQ). Selama masa persiapan, seluruh laporan masyarakat ditindaklanjuti secara manual dan resmi melalui saluran berikut:
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="p-3.5 rounded-lg bg-surface border border-line flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-brand-50 text-brand-700 shrink-0">
+                      <Mail className="w-4 h-4" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-ink mb-1">Email / Kontak</label>
-                      <input
-                        type="email"
-                        required
-                        value={complaintForm.email}
-                        onChange={(e) => setComplaintForm({ ...complaintForm, email: e.target.value })}
-                        placeholder="email@instansi.com"
-                        className="w-full text-xs px-3 py-2 rounded-lg border border-line bg-canvas focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-700"
-                      />
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-bold text-ink">Kanal Email Resmi Pentashihan</h4>
+                      <p className="text-xs text-ink font-semibold">lajnah@kemenag.go.id</p>
+                      <p className="text-[11px] text-ink-muted">
+                        Format subjek: <span className="font-mono text-ink">[PENGADUAN] Judul Mushaf / Nama Penerbit / Temuan</span>. Lampirkan foto halaman naskah yang keliru dan halaman tanda tashih (jika ada).
+                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-ink mb-1">Kategori Laporan</label>
-                    <select
-                      value={complaintForm.topic}
-                      onChange={(e) => setComplaintForm({ ...complaintForm, topic: e.target.value })}
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-line bg-canvas focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-700"
-                    >
-                      <option value="layanan">Kendala Layanan & Sistem</option>
-                      <option value="kesalahan_cetak">Temuan Kesalahan Cetak Al-Qur'an</option>
-                      <option value="legalitas">Peredaran Mushaf Tanpa STT</option>
-                      <option value="lainnya">Pertanyaan Umum Lainnya</option>
-                    </select>
+                  <div className="p-3.5 rounded-lg bg-surface border border-line flex items-start gap-3">
+                    <div className="p-2 rounded-md bg-brand-50 text-brand-700 shrink-0">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <h4 className="text-xs font-bold text-ink">Hotline & Telepon Resmi</h4>
+                      <p className="text-xs text-ink font-semibold">(021) 87798807 / 8416466</p>
+                      <p className="text-[11px] text-ink-muted">
+                        Melayani konsultasi teknis, verifikasi keabsahan STT mushaf, dan pelaporan peredaran naskah pada hari kerja pukul 08.00 - 15.30 WIB.
+                      </p>
+                    </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-ink mb-1">Rincian Laporan / Pertanyaan</label>
-                    <textarea
-                      rows={4}
-                      required
-                      value={complaintForm.message}
-                      onChange={(e) => setComplaintForm({ ...complaintForm, message: e.target.value })}
-                      placeholder="Jelaskan secara rinci judul naskah, penerbit, nomor registrasi (bila ada), atau bentuk kesalahan yang ditemukan..."
-                      className="w-full text-xs px-3 py-2 rounded-lg border border-line bg-canvas focus:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-700"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white font-semibold text-xs transition shadow-2xs"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    Kirim Pengaduan
-                  </button>
-                </form>
-              )}
+                <div className="rounded-lg bg-surface-subtle p-3 border border-line text-[11px] text-ink-muted leading-normal">
+                  <p>
+                    <strong>Komitmen LPMQ:</strong> Setiap laporan yang menyertakan identitas pelapor dan bukti visual akan diverifikasi langsung oleh Tim Pentashih Mushaf Al-Qur'an Kementerian Agama RI.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -490,7 +450,7 @@ export const LandingPage = () => {
         {/* Section 4: Permohonan Master */}
         <section id="master" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Mushaf Standar</span>
+            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Mushaf Standar</span>
             <h2 className="text-2xl font-black text-ink mt-1">Permohonan Master Mushaf Standar Indonesia</h2>
             <p className="text-xs sm:text-sm text-ink-muted mt-1">
               LPMQ menyediakan salinan rujukan Mushaf Standar Indonesia (MSI) dalam rasm Usmani bagi penerbit berizin.
@@ -523,11 +483,24 @@ export const LandingPage = () => {
         {/* Section 5: FAQ */}
         <section id="faq" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-700 uppercase tracking-wider">Tanya Jawab</span>
+            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Tanya Jawab</span>
             <h2 className="text-2xl font-black text-ink mt-1">Pertanyaan yang Sering Diajukan (FAQ)</h2>
-            <p className="text-xs sm:text-sm text-ink-muted mt-1">
-              Informasi lengkap seputar mekanisme pendaftaran, biaya, dan tata cara pentashihan Al-Qur'an.
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-1">
+              <p className="text-xs sm:text-sm text-ink-muted">
+                {searchQuery
+                  ? `Menampilkan hasil pencarian untuk "${searchQuery}" (${filteredFaqs.length} ditemukan)`
+                  : 'Informasi lengkap seputar mekanisme pendaftaran, biaya, dan tata cara pentashihan Al-Qur\'an.'}
+              </p>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs font-semibold text-brand-fg hover:underline w-fit"
+                >
+                  Reset Pencarian
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -575,10 +548,10 @@ export const LandingPage = () => {
             Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
           </p>
           <div className="flex items-center gap-4">
-            <a href="#informasi" className="hover:text-brand-700">Regulasi</a>
-            <a href="#pengaduan" className="hover:text-brand-700">Pengaduan</a>
-            <a href="#faq" className="hover:text-brand-700">FAQ</a>
-            <Link to="/login" className="font-semibold text-brand-700 hover:underline">
+            <a href="#informasi" className="hover:text-brand-fg">Regulasi</a>
+            <a href="#pengaduan" className="hover:text-brand-fg">Pengaduan</a>
+            <a href="#faq" className="hover:text-brand-fg">FAQ</a>
+            <Link to="/login" className="font-semibold text-brand-fg hover:underline">
               Portal Penerbit
             </Link>
           </div>

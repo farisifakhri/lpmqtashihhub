@@ -754,7 +754,7 @@ export const ContentConfiguration = () => {
                     <td className="py-4 px-6 text-right">
                       <span className="font-bold text-ink block">
                         {item.baseCost === 0 ? (
-                          <span className="text-brand-700">Gratis</span>
+                          <span className="text-brand-fg">Gratis</span>
                         ) : (
                           formatCurrency(item.baseCost)
                         )}
@@ -768,7 +768,7 @@ export const ContentConfiguration = () => {
                     <td className="py-4 px-6 text-center">
                       <div className="flex flex-col items-center gap-0.5">
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-ink">
-                          <Clock className="w-3 h-3 text-brand-700" />
+                          <Clock className="w-3 h-3 text-brand-fg" />
                           {item.baseDurationDays} hari
                         </span>
                         <span className="text-xs text-ink-muted">
