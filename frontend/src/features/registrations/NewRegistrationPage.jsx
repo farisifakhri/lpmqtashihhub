@@ -536,11 +536,13 @@ export const NewRegistrationPage = () => {
       errors.penanggungJawabProduk = 'Nama penanggung jawab produk/mushaf wajib diisi.';
       setPenanggungJawabError('Nama penanggung jawab produk/mushaf wajib diisi.');
     }
-    if (penanggungJawabWa.trim() && !validateWhatsApp(penanggungJawabWa)) {
-      errors.penanggungJawabWa = 'Nomor WhatsApp tidak valid (contoh: 08123456789 atau +628123456789).';
+    if (penanggungJawabWa.trim()) {
+      const waError = validateWhatsApp(penanggungJawabWa);
+      if (waError) errors.penanggungJawabWa = waError;
     }
-    if (penanggungJawabEmail.trim() && !validateEmail(penanggungJawabEmail)) {
-      errors.penanggungJawabEmail = 'Format alamat email tidak valid.';
+    if (penanggungJawabEmail.trim()) {
+      const emailError = validateEmail(penanggungJawabEmail);
+      if (emailError) errors.penanggungJawabEmail = emailError;
     }
     if (sizes.some((s) => s.ukuran.trim() && !s.oplah)) {
       errors.sizes = 'Jika ukuran diisi, rencana oplah juga wajib diisi.';

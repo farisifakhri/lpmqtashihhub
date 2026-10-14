@@ -1,4 +1,5 @@
 import { fail } from './workflow-utils.js';
+import { ENV } from '../config/env.js';
 
 const API_BASE = 'https://quran-api.lpmqkemenag.id/api-alquran';
 
@@ -43,8 +44,8 @@ async function requestOfficial(path, username, token) {
 }
 
 export async function getOfficialVerse(surahNumber, ayahNumber) {
-  const username = process.env.LPMQ_QURAN_USERNAME;
-  const token = process.env.LPMQ_QURAN_TOKEN;
+  const username = ENV.LPMQ_QURAN_USERNAME || process.env.LPMQ_QURAN_USERNAME;
+  const token = ENV.LPMQ_QURAN_TOKEN || process.env.LPMQ_QURAN_TOKEN;
   if (!username || !token) fail(503, 'Akses API Qur’an LPMQ belum dikonfigurasi pada server.');
   const payload = await requestOfficial(`/ayat/local/${surahNumber}`, username, token);
   let surahName = surahNames.get(surahNumber);

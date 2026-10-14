@@ -99,7 +99,12 @@ router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', '
 router.get('/uploads/:id', authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), async (req, res, next) => {
   try {
     const { file, bytes } = await readPrivateFile(req.params.id, req.user);
-    res.set({ 'Content-Type': file.mime_type, 'Content-Disposition': `attachment; filename="${file.id}"`, 'Cache-Control': 'private, no-store' });
+    res.set({
+      'Content-Type': file.mime_type,
+      'Content-Disposition': `attachment; filename="${file.id}"`,
+      'X-Content-Type-Options': 'nosniff',
+      'Cache-Control': 'private, no-store',
+    });
     res.send(bytes);
   } catch (error) { next(error); }
 });

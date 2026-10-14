@@ -43,6 +43,14 @@ export const ENV = {
     ? rawAllowedOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
     : defaultOrigins,
   PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || (isProduction ? null : 'http://localhost:5173'),
+  ENABLE_PASSWORD_RESET: process.env.ENABLE_PASSWORD_RESET !== 'false',
+  AV_SCAN_MODE: (process.env.AV_SCAN_MODE || (isProduction ? 'required' : 'optional')).toLowerCase(),
+  CLAMAV_HOST: process.env.CLAMAV_HOST || '127.0.0.1',
+  CLAMAV_PORT: parseInt(process.env.CLAMAV_PORT || '3310', 10),
+  CLAMAV_SOCKET: process.env.CLAMAV_SOCKET || null,
+  CLAMAV_TIMEOUT_MS: parseInt(process.env.CLAMAV_TIMEOUT_MS || '10000', 10),
+  LPMQ_QURAN_USERNAME: process.env.LPMQ_QURAN_USERNAME || null,
+  LPMQ_QURAN_TOKEN: process.env.LPMQ_QURAN_TOKEN || null,
 };
 
 export default ENV;

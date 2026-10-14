@@ -599,7 +599,7 @@ export const AdminMasterIntakePage = () => {
                         </span>
                         <span className="text-xs font-bold text-brand-800">Jilid</span>
                       </div>
-                      <span className="text-xs text-brand-700 block">Wajib diverifikasi fisik</span>
+                      <span className="text-xs text-brand-fg block">Wajib diverifikasi fisik</span>
                     </div>
                   </div>
 
@@ -607,7 +607,7 @@ export const AdminMasterIntakePage = () => {
                   <div className="p-3.5 rounded-xl bg-surface-subtle/80 border border-line text-xs space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-ink flex items-center gap-1.5 text-xs">
-                        <Truck className="w-3.5 h-3.5 text-brand-700" />
+                        <Truck className="w-3.5 h-3.5 text-brand-fg" />
                         Logistik & Ekspedisi Pengiriman:
                       </span>
                       <span className="text-xs font-semibold text-ink-muted bg-white px-2 py-0.5 rounded border border-line">

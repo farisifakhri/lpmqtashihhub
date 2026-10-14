@@ -74,7 +74,7 @@ export const PublisherVerificationPage = () => {
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Tata Kelola Penerbit</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-brand-fg">Tata Kelola Penerbit</p>
           <h1 className="mt-1 text-2xl font-bold text-ink">Verifikasi Penerbit</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-muted">Periksa dokumen dan profil penerbit sebelum menyetujui akun. Penerbit terverifikasi dapat mengajukan pentashihan.</p>
         </div>

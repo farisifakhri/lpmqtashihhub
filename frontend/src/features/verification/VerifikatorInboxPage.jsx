@@ -365,7 +365,7 @@ export const VerifikatorInboxPage = () => {
               <button
                 type="button"
                 onClick={() => setSuccessMessage(null)}
-                className="text-brand-700 hover:text-brand-900 p-1 rounded-md"
+                className="text-brand-fg hover:text-brand-900 p-1 rounded-md"
                 aria-label="Tutup pesan sukses"
               >
                 <X className="w-3.5 h-3.5" />
@@ -641,7 +641,7 @@ export const VerifikatorInboxPage = () => {
                             {item.due_at ? (
                               <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
                             ) : item.isUnassigned ? (
-                              <span className="text-brand-700 font-semibold flex items-center gap-1">
+                              <span className="text-brand-fg font-semibold flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
                                 Siap Ditugaskan
                               </span>

@@ -213,11 +213,15 @@ export const Step4ReviewSubmit = ({
 
             {isDigital && (
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-                <Smartphone className="w-4 h-4 text-brand-700 shrink-0" />
+                <Smartphone className="w-4 h-4 text-brand-fg shrink-0" />
                 <div className="min-w-0">
                   <div className="font-semibold truncate">Aplikasi Digital</div>
                   <div className="text-xs text-ink-muted truncate">
-                    {apkFile ? apkFile.name : (apkUrl ? 'Tautan cloud disediakan' : (apkFileId ? 'Berkas tersimpan' : '⚠️ Belum disediakan'))}
+                    {apkFile ? apkFile.name : (apkUrl ? (
+                      <a href={apkUrl} target="_blank" rel="noopener noreferrer" className="text-brand-fg underline hover:underline break-all">
+                        {apkUrl}
+                      </a>
+                    ) : (apkFileId ? 'Berkas tersimpan' : '⚠️ Belum disediakan'))}
                   </div>
                 </div>
               </div>

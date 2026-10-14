@@ -69,7 +69,7 @@ export function CoreTeamPage() {
       <p className="text-sm text-ink-muted">Tim baru berlaku untuk permohonan berikutnya. Tim yang sudah melekat pada permohonan tetap sama.</p>
     </div>
     {error && <p role="alert" className="text-civic-danger">{error}</p>}
-    {message && <p role="status" className="text-brand-700">{message}</p>}
+    {message && <p role="status" className="text-brand-fg">{message}</p>}
     <section className="border rounded-xl p-4 space-y-3">
       <h2 className="font-semibold">Nomor tim berikutnya</h2>
       <p className="text-sm">Versi roster: {config?.active_version || '—'} · Nomor saat ini: {config?.next_team_number || '—'}</p>
@@ -77,7 +77,7 @@ export function CoreTeamPage() {
         <select aria-label="Nomor tim berikutnya" value={nextNumber} onChange={event => setNextNumber(Number(event.target.value))} className="border rounded p-2">
           {Array.from({ length: 9 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
         </select>
-        <button type="button" disabled={busy || !config || reason.trim().length < 5} onClick={() => save('/core-teams/next', { next_team_number: nextNumber, reason: reason.trim() })} className="bg-brand-700 text-white rounded px-4 py-2 disabled:opacity-50">Simpan nomor</button>
+        <button type="button" disabled={busy || !config || reason.trim().length < 5} onClick={() => save('/core-teams/next', { next_team_number: nextNumber, reason: reason.trim() })} className="bg-brand-fill hover:bg-brand-fill-hover text-white rounded px-4 py-2 disabled:opacity-50">Simpan nomor</button>
       </div>
     </section>
     <section className="border rounded-xl p-4 space-y-3">

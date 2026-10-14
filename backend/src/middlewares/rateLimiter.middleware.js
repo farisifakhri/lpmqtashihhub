@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 
 export const shouldSkipRateLimit = () => process.env.NODE_ENV === 'test';
 
@@ -38,8 +38,26 @@ export const uploadRateLimiter = rateLimit({
   },
 });
 
+export const forgotPasswordRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 5, // 5 permintaan pemulihan per 15 menit per IP & email
+  skip: shouldSkipRateLimit,
+  keyGenerator: (req) => {
+    const ip = ipKeyGenerator(req);
+    const email = (req.body?.email || '').trim().toLowerCase();
+    return email ? `${ip}_${email}` : ip;
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Terlalu banyak permintaan pemulihan kata sandi. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
 export default {
   authRateLimiter,
   registrationRateLimiter,
   uploadRateLimiter,
+  forgotPasswordRateLimiter,
 };

@@ -12,6 +12,11 @@ export default {
           elevated: 'rgb(var(--surface-elevated-rgb) / <alpha-value>)',
         },
         brand: {
+          fg: 'rgb(var(--brand-fg-rgb) / <alpha-value>)',
+          fill: {
+            DEFAULT: 'rgb(var(--brand-fill-rgb) / <alpha-value>)',
+            hover: 'rgb(var(--brand-fill-hover-rgb) / <alpha-value>)',
+          },
           950: 'rgb(var(--brand-950-rgb) / <alpha-value>)',
           900: 'rgb(var(--brand-900-rgb) / <alpha-value>)',
           800: 'rgb(var(--brand-800-rgb) / <alpha-value>)',

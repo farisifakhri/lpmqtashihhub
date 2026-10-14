@@ -21,6 +21,7 @@ model User {
   whatsapp_number String?
   whatsapp_verified_at DateTime?
   password_hash String
+  password_changed_at DateTime?
   nip           String?     @unique
   status UserStatus @default(ACTIVE) // ACTIVE, INACTIVE, SUSPENDED
   created_at    DateTime    @default(now())
@@ -29,6 +30,7 @@ model User {
   // Relations
   roles                    UserRole[]
   publisher                Publisher?
+  password_reset_tokens    PasswordResetToken[]
   verification_assignments VerificationAssignment[]
   verification_assignments_made VerificationAssignment[] @relation("VerificationAssignmentIssuer")
   verification_assignments_revoked VerificationAssignment[] @relation("VerificationAssignmentRevoker")
@@ -77,6 +79,21 @@ model UserRole {
 
   @@unique([user_id, role_id])
   @@map("user_roles")
+}
+
+model PasswordResetToken {
+  id           String    @id @default(uuid())
+  user_id      String
+  token_hash   String    @unique
+  expires_at   DateTime
+  used_at      DateTime?
+  requested_ip String?
+  created_at   DateTime  @default(now())
+
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("password_reset_tokens")
 }
 
 // Tim inti berbeda dari DistributionTeam (kelompok pentashih).

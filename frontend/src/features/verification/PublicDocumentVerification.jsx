@@ -123,7 +123,7 @@ export const PublicDocumentVerification = () => {
               <p className="text-sm tracking-wider uppercase font-bold text-ink">
                 BADAN LITBANG DAN DIKLAT
               </p>
-              <h1 className="text-lg sm:text-xl font-bold text-brand-700 tracking-wide mt-1">
+              <h1 className="text-lg sm:text-xl font-bold text-brand-fg tracking-wide mt-1">
                 LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN
               </h1>
               <p className="text-xs text-ink-muted mt-1">
@@ -138,7 +138,7 @@ export const PublicDocumentVerification = () => {
                 <h2 className="text-sm font-bold text-brand-900">
                   DOKUMEN RESMI TERCATAT & TERVERIFIKASI
                 </h2>
-                <p className="text-xs text-brand-700">
+                <p className="text-xs text-brand-fg">
                   Surat Tanda Tashih sah dan tercatat dalam pangkalan data Lajnah Pentashihan Mushaf Al-Qur'an Kemenag RI.
                 </p>
               </div>
@@ -178,7 +178,7 @@ export const PublicDocumentVerification = () => {
 
                 <div className="flex items-center justify-between border-b border-line pb-2.5">
                   <span className="text-ink-muted text-xs">Dasar Berita Acara Tashih:</span>
-                  <span className="font-mono text-xs font-semibold text-brand-700">
+                  <span className="font-mono text-xs font-semibold text-brand-fg">
                     {doc?.beritaAcaraRef}
                   </span>
                 </div>

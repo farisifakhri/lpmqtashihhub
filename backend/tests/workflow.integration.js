@@ -43,6 +43,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await prisma.registration.update({ where: { id: reg.id }, data: { status: 'IN_VERIFICATION' } });
     const read = await fetch(`${base}/uploads/${file.id}`, { headers: { Authorization: `Bearer ${verifikatorToken}` } });
     assert.equal(read.status, 200);
+    assert.equal(read.headers.get('content-disposition'), `attachment; filename="${file.id}"`);
+    assert.equal(read.headers.get('x-content-type-options'), 'nosniff');
     await expect(`/registrations/${reg.id}/status`, verifikatorToken, 'PATCH', { to_status: 'WAITING_VERIFICATION_APPROVAL' });
   });
 

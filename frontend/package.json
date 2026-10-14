@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:colors": "node scripts/check-colors.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

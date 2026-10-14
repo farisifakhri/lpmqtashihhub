@@ -2,13 +2,16 @@ import { randomUUID, createHash } from 'node:crypto';
 import { mkdir, writeFile, readFile, unlink } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import yauzl from 'yauzl';
 import { prisma } from '../config/database.js';
 import { fail, audit } from './workflow-utils.js';
+import { executeAntivirusScan } from './clamav.service.js';
 
 const root = fileURLToPath(new URL('../../storage/private/', import.meta.url));
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB global body limit
 export const MAX_APK_BYTES = 10 * 1024 * 1024; // 10 MB for APK files
 export const MAX_DOC_BYTES = 10 * 1024 * 1024;
+export const MAX_ZIP_ENTRIES = 10000;
 
 export function detectMime(bytes) {
   if (!Buffer.isBuffer(bytes) || !bytes.length || bytes.length > MAX_UPLOAD_BYTES) {
@@ -28,17 +31,102 @@ export function detectMime(bytes) {
   }
   if (bytes.subarray(0, 4).equals(Buffer.from([0x50, 0x4B, 0x03, 0x04]))) {
     if (bytes.length > MAX_APK_BYTES) fail(400, 'Berkas APK Android melebihi batas ukuran 10 MB. Harap kompres atau gunakan versi yang lebih kecil.');
-    // Tolak dokumen Microsoft Office (.docx/.xlsx/.pptx) atau Java Archive (.jar) yang bertopeng awalan ZIP PK
-    if (bytes.includes(Buffer.from('[Content_Types].xml')) || bytes.includes(Buffer.from('word/')) || bytes.includes(Buffer.from('xl/'))) {
-      fail(400, 'Berkas dikenali sebagai dokumen Microsoft Office (.docx/.xlsx), bukan berkas APK Android yang sah.');
-    }
-    // Jika berkas berupa arsip nyata (>100 bytes), pastikan memuat AndroidManifest.xml
-    if (bytes.length > 100 && !bytes.includes(Buffer.from('AndroidManifest.xml'))) {
-      fail(400, 'Berkas ZIP tidak memuat AndroidManifest.xml. Berkas ini bukan paket aplikasi Android (APK) yang sah.');
-    }
     return 'application/vnd.android.package-archive';
   }
   fail(400, 'Berkas tidak dikenali sebagai PDF, PNG, JPEG, atau APK Android yang didukung. Ekspor ulang ke salah satu format tersebut; mengganti nama atau ekstensi berkas saja tidak cukup.');
+}
+
+/**
+ * Validates APK archive structure by reading ZIP entries with yauzl.
+ *
+ * Rules:
+ * 1. Must contain AndroidManifest.xml
+ * 2. Must contain classes.dex (or classes*.dex) or resources.arsc
+ * 3. Must not contain directory traversal paths ('../' or '..\')
+ * 4. Must not exceed MAX_ZIP_ENTRIES
+ */
+export async function validateApkArchive(bytes) {
+  return new Promise((resolve, reject) => {
+    yauzl.fromBuffer(bytes, { lazyEntries: true, validateEntrySizes: true }, (err, zipfile) => {
+      if (err) {
+        return reject({
+          statusCode: 400,
+          message: `Berkas arsip APK rusak atau tidak dapat dibaca: ${err.message}`,
+        });
+      }
+
+      let entryCount = 0;
+      let hasManifest = false;
+      let hasDexOrArsc = false;
+
+      zipfile.readEntry();
+
+      zipfile.on('entry', (entry) => {
+        entryCount++;
+        if (entryCount > MAX_ZIP_ENTRIES) {
+          zipfile.close();
+          return reject({
+            statusCode: 400,
+            message: `Berkas APK melebihi batas maksimum ${MAX_ZIP_ENTRIES} entri berkas.`,
+          });
+        }
+
+        const fileName = entry.fileName;
+        if (fileName.includes('../') || fileName.includes('..\\') || path.isAbsolute(fileName)) {
+          zipfile.close();
+          return reject({
+            statusCode: 400,
+            message: 'Berkas APK memuat entri jalur tidak aman (directory traversal).',
+          });
+        }
+
+        if (fileName === 'AndroidManifest.xml') {
+          hasManifest = true;
+        }
+
+        if (
+          fileName === 'classes.dex' ||
+          (fileName.startsWith('classes') && fileName.endsWith('.dex')) ||
+          fileName === 'resources.arsc'
+        ) {
+          hasDexOrArsc = true;
+        }
+
+        zipfile.readEntry();
+      });
+
+      zipfile.on('end', () => {
+        if (!hasManifest) {
+          return reject({
+            statusCode: 400,
+            message: 'Berkas ZIP tidak memuat AndroidManifest.xml. Berkas ini bukan paket aplikasi Android (APK) yang sah.',
+          });
+        }
+
+        if (!hasDexOrArsc) {
+          return reject({
+            statusCode: 400,
+            message: 'Berkas APK tidak memuat classes.dex atau resources.arsc. Berkas ini bukan paket aplikasi Android (APK) yang lengkap dan sah.',
+          });
+        }
+
+        resolve({ entryCount, hasManifest, hasDexOrArsc });
+      });
+
+      zipfile.on('error', (zipErr) => {
+        let msg = zipErr.message;
+        if (msg.includes('invalid relative path') || msg.includes('..')) {
+          msg = `Berkas APK memuat entri jalur tidak aman (directory traversal): ${zipErr.message}`;
+        } else {
+          msg = `Terjadi kesalahan saat membaca paket APK: ${zipErr.message}`;
+        }
+        reject({
+          statusCode: 400,
+          message: msg,
+        });
+      });
+    });
+  });
 }
 
 export async function upload(bytes, mime, user) {
@@ -49,10 +137,19 @@ export async function upload(bytes, mime, user) {
     fail(400, 'Jenis berkas yang dikirim tidak sesuai dengan isi berkasnya. Pilih ulang berkas asli dalam format PDF, PNG, JPEG, atau APK, lalu unggah kembali.');
   }
 
-  // Pemindaian malware signature (EICAR & ancaman umum)
+  // Validasi struktur berkas paket APK Android menggunakan daftar entri ZIP riil
+  if (detected === 'application/vnd.android.package-archive') {
+    try {
+      await validateApkArchive(bytes);
+    } catch (apkErr) {
+      fail(apkErr.statusCode || 400, apkErr.message || 'Validasi paket APK gagal.');
+    }
+  }
+
+  // Pemeriksaan string uji standar antivirus EICAR (hanya untuk pengujian integrasi non-destruktif)
   const eicarSig = 'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*';
   if (bytes.includes(Buffer.from(eicarSig))) {
-    fail(400, 'Berkas terdeteksi mengandung ancaman keamanan/malware.');
+    fail(400, 'Berkas terdeteksi mengandung string uji standar antivirus (EICAR). Unggahan ditolak.');
   }
 
   const id = randomUUID();
@@ -60,23 +157,19 @@ export async function upload(bytes, mime, user) {
   const targetPath = path.join(root, id);
   await writeFile(targetPath, bytes, { flag: 'wx' });
 
-  // Pemindaian malware menggunakan ClamAV jika terpasang pada sistem operasi
+  // Pemindaian malware menggunakan ClamAV clamd daemon (INSTREAM socket)
   try {
-    const { execFile } = await import('node:child_process');
-    await new Promise((resolve, reject) => {
-      execFile('clamscan', ['--no-summary', targetPath], (err, stdout) => {
-        if (err && (err.code === 1 || stdout?.includes('FOUND'))) {
-          return reject(new Error('Berkas terdeteksi mengandung malware oleh pemindai ClamAV.'));
-        }
-        resolve();
-      });
-    });
-  } catch (scanErr) {
-    if (scanErr.message.includes('malware')) {
+    const scanResult = await executeAntivirusScan(bytes);
+    if (!scanResult.clean) {
       await unlink(targetPath).catch(() => {});
-      fail(400, scanErr.message);
+      fail(400, `Berkas terdeteksi mengandung malware (${scanResult.virus || 'ancaman terdeteksi'}) oleh pemindai ClamAV.`);
     }
-    // Jika clamscan tidak terpasang di host, lanjutkan dengan aman
+  } catch (scanErr) {
+    await unlink(targetPath).catch(() => {});
+    if (scanErr.statusCode) {
+      fail(scanErr.statusCode, scanErr.message);
+    }
+    throw scanErr;
   }
 
   try {
