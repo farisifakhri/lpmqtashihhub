@@ -220,3 +220,18 @@
     border-color: #579b0a;
   }
 }
+
+form input[type="search"],
+form input[type="search"]:focus,
+form input[type="search"]:focus-visible {
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+form:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
