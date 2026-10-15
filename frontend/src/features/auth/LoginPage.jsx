@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight, ArrowLeft, Sun, Moon } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -41,7 +41,18 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex items-center justify-center p-3 sm:p-4">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-3 sm:p-4">
+      {/* Tombol Navigasi Kembali ke Landing Page */}
+      <div className="w-full max-w-4xl mb-2.5 flex items-center justify-start">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink-muted hover:text-ink bg-surface border border-line shadow-2xs hover:border-brand-600/30 hover:bg-surface-subtle transition-all group"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-brand-fg transition-transform group-hover:-translate-x-0.5" />
+          <span>Kembali</span>
+        </Link>
+      </div>
+
       {/* Main Container - Compact and responsive on 100% zoom */}
       <div className="w-full max-w-4xl bg-surface rounded-2xl shadow-sm border border-line p-2 sm:p-2.5">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-stretch">

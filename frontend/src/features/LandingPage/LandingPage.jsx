@@ -199,19 +199,24 @@ export const LandingPage = () => {
               Layanan resmi penerbitan Surat Tanda Tashih (STT) untuk mushaf cetak, mushaf digital, dan rekaman audio/visual.
             </p>
 
+            {
+            
+           
             <form
               className="mx-auto mt-8 flex h-[58px] max-w-[520px] items-center rounded-full bg-surface p-1.5 shadow-lg sm:mt-9"
               onSubmit={handleSearchSubmit}
             >
               <Search className="ml-4 h-5 w-5 shrink-0 text-ink-muted" />
+
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari syarat, alur, atau pertanyaan FAQ..."
                 aria-label="Cari informasi"
-                className="min-w-0 flex-1 bg-transparent px-3 text-sm text-ink outline-none placeholder:text-ink-muted"
+                className="min-w-0 flex-1 appearance-none border-0 bg-transparent px-3 text-sm text-ink outline-none shadow-none ring-0 focus:border-0 focus:outline-none focus:shadow-none focus:ring-0 focus-visible:outline-none active:outline-none placeholder:text-ink-muted"
               />
+
               <button
                 type="submit"
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-fill text-white transition hover:bg-brand-fill-hover"
@@ -220,6 +225,7 @@ export const LandingPage = () => {
                 <ArrowRight className="h-5 w-5" />
               </button>
             </form>
+           }
           </div>
         </section>
 
