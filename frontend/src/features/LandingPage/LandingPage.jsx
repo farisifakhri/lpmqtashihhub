@@ -219,7 +219,7 @@ export const LandingPage = () => {
 
               <button
                 type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#356B08] text-white transition hover:bg-[#285406]"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-fill text-white transition hover:bg-brand-fill-hover"
                 aria-label="Cari"
               >
                 <ArrowRight className="h-5 w-5" />
