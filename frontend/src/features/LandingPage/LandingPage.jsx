@@ -213,16 +213,16 @@ export const LandingPage = () => {
                           : 'opacity-0 scale-95 -translate-y-1.5 pointer-events-none'
                       }`}
                     >
-                      <div className="rounded-2xl border border-gray-100 bg-white p-2 shadow-2xl">
+                      <div className="rounded-2xl border border-line bg-surface p-2 shadow-2xl">
                         <div className="flex flex-col gap-1">
                           {item.children.map((child, cIdx) => (
                             <a
                               key={cIdx}
                               href={child.href}
                               onClick={() => setActiveDropdown(null)}
-                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-gray-800 hover:bg-[#f0f7e9] hover:text-[#4e9508] transition-colors"
+                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-brand-50 hover:text-brand-700 transition-colors"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#579b0a] shrink-0" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
                               <span>{child.label}</span>
                             </a>
                           ))}
@@ -326,7 +326,7 @@ export const LandingPage = () => {
 
                       {/* Submenu Mobile Collapsible dengan Background Putih */}
                       {isMobileOpen && (
-                        <div className="mx-2 mb-2 p-2 bg-white rounded-xl border border-gray-100 shadow-sm flex flex-col gap-1">
+                        <div className="mx-2 mb-2 p-2 bg-surface rounded-xl border border-line shadow-sm flex flex-col gap-1">
                           {item.children.map((child, cIdx) => (
                             <a
                               key={cIdx}
@@ -335,9 +335,9 @@ export const LandingPage = () => {
                                 setMenuOpen(false);
                                 setMobileDropdown(null);
                               }}
-                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-gray-700 hover:text-[#4e9508] hover:bg-[#f0f7e9] transition-colors"
+                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:text-brand-700 hover:bg-brand-50 transition-colors"
                             >
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#579b0a]/70 shrink-0" />
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600/70 shrink-0" />
                               <span>{child.label}</span>
                             </a>
                           ))}
