@@ -41,7 +41,7 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-3 sm:p-4">
+    <div className="min-h-screen bg-canvas flex flex-col items-center justify-center p-3 sm:p-4 animate-page-in">
       {/* Tombol Navigasi Kembali ke Landing Page */}
       <div className="w-full max-w-4xl mb-2.5 flex items-center justify-start">
         <Link

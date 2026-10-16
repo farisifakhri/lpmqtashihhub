@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   ArrowRight,
+  ArrowUpRight,
   Menu,
   Phone,
   Search,
@@ -9,6 +10,7 @@ import {
   FileCheck2,
   Clock,
   ShieldAlert,
+  ShieldCheck,
   Mail,
   HelpCircle,
   ExternalLink,
@@ -16,18 +18,75 @@ import {
   Building2,
   MessageSquareWarning,
   Layers,
+  Plus,
+  Minus,
+  LogIn,
+  UserPlus,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import heroImage from '@/assets/berandaa.webp';
+import { Link, useNavigate } from 'react-router-dom';
+import heroImage from '@/assets/berandaaku.webp';
 import logoTashih from '@/assets/logo-lpmq1.webp';
 
 const navItems = [
   { label: 'Beranda', href: '#beranda' },
-  { label: 'Alur STT', href: '#alur-stt' },
-  { label: 'Informasi', href: '#informasi' },
-  { label: 'Pengaduan', href: '#pengaduan' },
+  {
+    label: 'Informasi',
+    href: '#informasi',
+    children: [
+      { label: 'Informasi Layanan Pentashihan', href: '#informasi' },
+      { label: 'Alur & Regulasi STT', href: '#alur-stt' },
+      { label: 'Persyaratan Berkas Naskah', href: '#informasi' },
+    ],
+  },
   { label: 'Permohonan Master', href: '#master' },
+  {
+    label: 'Pengaduan',
+    href: '#pengaduan',
+    children: [
+      { label: 'Saluran Pengaduan Masyarakat', href: '#pengaduan' },
+      { label: 'Cek Status Laporan Naskah', href: '#pengaduan' },
+      { label: 'Kontak Pusat Bantuan LPMQ', href: '#pengaduan' },
+    ],
+  },
   { label: 'FAQ', href: '#faq' },
+];
+
+const quickAccessItems = [
+  {
+    title: 'Login Penerbit',
+    desc: 'Masuk ke portal akun resmi penerbit mushaf',
+    href: '/login',
+    isInternal: true,
+    icon: LogIn,
+  },
+  {
+    title: 'Pendaftaran Penerbit',
+    desc: 'Registrasi akun perorangan atau lembaga penerbit',
+    href: '/register',
+    isInternal: true,
+    icon: UserPlus,
+  },
+  {
+    title: 'Alur Pelayanan',
+    desc: 'Panduan 6 tahapan proses penerbitan STT resmi',
+    href: '#informasi',
+    isInternal: false,
+    icon: Clock,
+  },
+  {
+    title: 'Prosedur Pelayanan',
+    desc: 'Tata cara dan SOP pengajuan naskah Al-Qur\'an',
+    href: '#informasi',
+    isInternal: false,
+    icon: BookOpen,
+  },
+  {
+    title: 'Standar Pelayanan',
+    desc: 'Maklumat mutu, jangka waktu SLA, dan tarif PNBP',
+    href: '#informasi',
+    isInternal: false,
+    icon: ShieldCheck,
+  },
 ];
 
 const FAQ_LIST = [
@@ -54,9 +113,35 @@ const FAQ_LIST = [
 ];
 
 export const LandingPage = () => {
+  const navigate = useNavigate();
+  const [isNavigating, setIsNavigating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const [mobileDropdown, setMobileDropdown] = useState(null);
+
+  const handleNavigate = (path, e) => {
+    if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) {
+      return;
+    }
+    if (e) {
+      e.preventDefault();
+    }
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      navigate(path);
+      return;
+    }
+
+    setIsNavigating(true);
+    setTimeout(() => {
+      navigate(path);
+    }, 280);
+  };
 
   const filteredFaqs = useMemo(() => {
     if (!searchQuery.trim()) return FAQ_LIST;
@@ -75,24 +160,93 @@ export const LandingPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas font-sans text-ink">
+    <>
+      <div
+        className={`min-h-screen bg-canvas font-sans text-ink transition-opacity duration-300 ease-out animate-page-in ${
+          isNavigating ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 border-b border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex h-[76px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-12">
           <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigasi utama">
-            {navItems.map((item, index) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className={`text-[13px] font-medium transition-colors ${
-                  index === 0
-                    ? 'text-brand-700 font-semibold'
-                    : 'text-ink-muted hover:text-brand-700'
-                }`}
-              >
-                {item.label}
-              </a>
-            ))}
+            {navItems.map((item, index) => {
+              const hasChildren = item.children && item.children.length > 0;
+              const isOpen = activeDropdown === item.label;
+
+              if (hasChildren) {
+                return (
+                  <div
+                    key={item.label}
+                    className="relative py-2"
+                    onMouseEnter={() => setActiveDropdown(item.label)}
+                    onMouseLeave={() => setActiveDropdown(null)}
+                  >
+                    <a
+                      href={item.href}
+                      className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
+                        isOpen
+                          ? 'text-brand-700 font-semibold'
+                          : 'text-ink-muted hover:text-brand-700'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      <span
+                        className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded text-[11px] font-bold transition-transform duration-200 ${
+                          isOpen ? 'text-brand-700 rotate-180' : 'text-ink-muted'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {isOpen ? (
+                          <Minus className="h-3 w-3 stroke-[2.5]" />
+                        ) : (
+                          <Plus className="h-3 w-3 stroke-[2.5]" />
+                        )}
+                      </span>
+                    </a>
+
+                    {/* Dropdown Menu Desktop dengan Background Putih & Animasi Smooth */}
+                    <div
+                      className={`absolute left-0 top-full pt-2 w-64 z-50 transition-all duration-200 ease-out origin-top-left ${
+                        isOpen
+                          ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
+                          : 'opacity-0 scale-95 -translate-y-1.5 pointer-events-none'
+                      }`}
+                    >
+                      <div className="rounded-2xl border border-line bg-surface p-2 shadow-2xl">
+                        <div className="flex flex-col gap-1">
+                          {item.children.map((child, cIdx) => (
+                            <a
+                              key={cIdx}
+                              href={child.href}
+                              onClick={() => setActiveDropdown(null)}
+                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-brand-50 hover:text-brand-700 transition-colors"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
+                              <span>{child.label}</span>
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className={`text-[13px] font-medium transition-colors py-2 ${
+                    index === 0
+                      ? 'text-brand-700 font-semibold'
+                      : 'text-ink-muted hover:text-brand-700'
+                  }`}
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </nav>
 
           <a
@@ -117,6 +271,7 @@ export const LandingPage = () => {
             </a>
             <Link
               to="/login"
+              onClick={(e) => handleNavigate('/login', e)}
               className="inline-flex h-10 items-center justify-center rounded-full bg-civic-infoSoft px-6 text-[12px] font-medium text-civic-info transition hover:bg-civic-infoLine"
             >
               Masuk
@@ -137,16 +292,72 @@ export const LandingPage = () => {
         {menuOpen && (
           <div className="border-t border-line bg-surface px-5 py-4 lg:hidden">
             <div className="flex flex-col gap-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-brand-fg"
-                >
-                  {item.label}
-                </a>
-              ))}
+              {navItems.map((item) => {
+                const hasChildren = item.children && item.children.length > 0;
+                const isMobileOpen = mobileDropdown === item.label;
+
+                if (hasChildren) {
+                  return (
+                    <div key={item.label} className="rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle">
+                        <a
+                          href={item.href}
+                          onClick={() => setMenuOpen(false)}
+                          className="flex-1 hover:text-brand-fg"
+                        >
+                          {item.label}
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setMobileDropdown((prev) => (prev === item.label ? null : item.label))
+                          }
+                          className="p-1 rounded-md text-ink-muted hover:text-brand-fg focus:outline-none"
+                          aria-label={`Toggle submenu ${item.label}`}
+                          aria-expanded={isMobileOpen}
+                        >
+                          {isMobileOpen ? (
+                            <Minus className="h-4 w-4 stroke-[2.5]" />
+                          ) : (
+                            <Plus className="h-4 w-4 stroke-[2.5]" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Submenu Mobile Collapsible dengan Background Putih */}
+                      {isMobileOpen && (
+                        <div className="mx-2 mb-2 p-2 bg-surface rounded-xl border border-line shadow-sm flex flex-col gap-1">
+                          {item.children.map((child, cIdx) => (
+                            <a
+                              key={cIdx}
+                              href={child.href}
+                              onClick={() => {
+                                setMenuOpen(false);
+                                setMobileDropdown(null);
+                              }}
+                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:text-brand-700 hover:bg-brand-50 transition-colors"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600/70 shrink-0" />
+                              <span>{child.label}</span>
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-brand-fg"
+                  >
+                    {item.label}
+                  </a>
+                );
+              })}
               <div className="mt-2 flex gap-2">
                 <a
                   href="tel:+622187798807"
@@ -157,6 +368,10 @@ export const LandingPage = () => {
                 </a>
                 <Link
                   to="/login"
+                  onClick={(e) => {
+                    setMenuOpen(false);
+                    handleNavigate('/login', e);
+                  }}
                   className="flex flex-1 items-center justify-center rounded-full bg-civic-infoSoft px-4 py-3 text-sm font-medium text-civic-info transition hover:bg-civic-infoLine"
                 >
                   Masuk
@@ -229,23 +444,69 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* Quick Links Grid */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Ringkasan layanan">
-          {[
-            { title: 'Alur Layanan STT', desc: '6 tahapan penerbitan tanda tashih', href: '#alur-stt' },
-            { title: 'Informasi Layanan', desc: 'Syarat & regulasi pentashihan', href: '#informasi' },
-            { title: 'Layanan Pengaduan', desc: 'Konsultasi & kendala naskah', href: '#pengaduan' },
-            { title: 'Permohonan Master', desc: 'Mushaf Standar Indonesia', href: '#master' },
-          ].map((item) => (
-            <a
-              key={item.title}
-              href={item.href}
-              className="rounded-2xl bg-surface p-5 border border-line shadow-2xs transition hover:-translate-y-0.5 hover:shadow-md hover:border-brand-700"
-            >
-              <p className="text-sm font-bold text-ink">{item.title}</p>
-              <p className="mt-1 text-xs text-ink-muted">{item.desc}</p>
-            </a>
-          ))}
+        {/* Quick Links Section: Akses Menu Cepat */}
+        <section className="space-y-4" aria-label="Akses Menu Cepat">
+          <div className="text-center pb-2">
+            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider block mb-1">
+              Pintasan Layanan
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-ink">
+              Akses Menu Cepat
+            </h2>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            {quickAccessItems.map((item) => {
+              const Icon = item.icon;
+              const CardContent = (
+                <>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-700 group-hover:scale-105 transition-transform shadow-2xs">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className="w-7 h-7 rounded-full bg-surface-subtle group-hover:bg-brand-fill group-hover:text-white flex items-center justify-center text-ink-muted transition-colors">
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-ink group-hover:text-brand-fg transition-colors">
+                      {item.title}
+                    </h3>
+                    {/* Deskripsi tersembunyi secara default dan hanya muncul saat kursor diarahkan (hover) */}
+                    <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] group-focus-visible:grid-rows-[1fr] transition-all duration-300 ease-in-out opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100">
+                      <div className="overflow-hidden">
+                        <p className="pt-1.5 text-xs text-ink-muted leading-relaxed">
+                          {item.desc}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+
+              const cardClasses =
+                "rounded-2xl bg-surface p-5 border border-line shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-brand-600/50 group flex flex-col justify-between";
+
+              if (item.isInternal) {
+                return (
+                  <Link
+                    key={item.title}
+                    to={item.href}
+                    onClick={(e) => handleNavigate(item.href, e)}
+                    className={cardClasses}
+                  >
+                    {CardContent}
+                  </Link>
+                );
+              }
+
+              return (
+                <a key={item.title} href={item.href} className={cardClasses}>
+                  {CardContent}
+                </a>
+              );
+            })}
+          </div>
         </section>
 
         {/* Section: Alur Layanan STT (Surat Tanda Tashih) */}
@@ -260,6 +521,7 @@ export const LandingPage = () => {
             </div>
             <Link
               to="/login"
+              onClick={(e) => handleNavigate('/login', e)}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-fill hover:bg-brand-fill-hover text-white font-semibold text-xs transition shadow-2xs self-start sm:self-auto"
             >
               Mulai Pendaftaran <ArrowRight className="w-3.5 h-3.5" />
@@ -557,13 +819,33 @@ export const LandingPage = () => {
             <a href="#informasi" className="hover:text-brand-fg">Regulasi</a>
             <a href="#pengaduan" className="hover:text-brand-fg">Pengaduan</a>
             <a href="#faq" className="hover:text-brand-fg">FAQ</a>
-            <Link to="/login" className="font-semibold text-brand-fg hover:underline">
+            <Link
+              to="/login"
+              onClick={(e) => handleNavigate('/login', e)}
+              className="font-semibold text-brand-fg hover:underline"
+            >
               Portal Penerbit
             </Link>
           </div>
         </div>
       </footer>
     </div>
+
+    {/* Loading Overlay Elegan saat Navigasi Berlangsung */}
+    {isNavigating && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-canvas/60 backdrop-blur-xs transition-opacity duration-200 animate-page-in"
+        role="status"
+        aria-live="polite"
+        aria-label="Memuat halaman..."
+      >
+        <div className="flex flex-col items-center gap-3 px-6 py-5 rounded-2xl bg-surface/95 border border-line shadow-xl backdrop-blur-md">
+          <div className="w-7 h-7 rounded-full border-3 border-brand-200 border-t-brand-700 animate-spin" />
+          <span className="text-xs font-semibold text-ink-muted">Memuat halaman...</span>
+        </div>
+      </div>
+    )}
+  </>
   );
 };
 
