@@ -124,7 +124,7 @@ export const RegisterPublisherPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-canvas flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4 sm:p-6 lg:p-8 animate-page-in">
       {/* Main Container */}
       <div className="w-full max-w-5xl bg-surface rounded-xl shadow-xs border border-line p-2 sm:p-3">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
