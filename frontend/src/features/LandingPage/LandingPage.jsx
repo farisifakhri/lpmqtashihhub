@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -22,10 +22,19 @@ import {
   Minus,
   LogIn,
   UserPlus,
+  Target,
+  List,
+  Quote,
+  FileCheck,
+  Users,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import heroImage from '@/assets/berandaaku.webp';
 import logoTashih from '@/assets/logo-lpmq1.webp';
+import logoyt from '@/assets/logoyt.webp';
+import logox from '@/assets/logox.webp';
+import logoig from '@/assets/logoig.webp';
+import logofb from '@/assets/logofb.webp';
 
 const navItems = [
   { label: 'Beranda', href: '#beranda' },
@@ -34,7 +43,7 @@ const navItems = [
     href: '#informasi',
     children: [
       { label: 'Informasi Layanan Pentashihan', href: '#informasi' },
-      { label: 'Alur & Regulasi STT', href: '#alur-stt' },
+      { label: 'Alur & Regulasi STT', href: '#informasi' },
       { label: 'Persyaratan Berkas Naskah', href: '#informasi' },
     ],
   },
@@ -49,6 +58,69 @@ const navItems = [
     ],
   },
   { label: 'FAQ', href: '#faq' },
+];
+
+const socialMediaLinks = [
+  {
+    name: 'YouTube',
+    href: 'https://www.youtube.com/@LajnahKemenag',
+    icon: logoyt,
+    ariaLabel: 'Kanal YouTube Resmi LPMQ',
+  },
+  {
+    name: 'X',
+    href: 'https://x.com/LPMQKemenagRI',
+    icon: logox,
+    ariaLabel: 'Akun X Resmi LPMQ',
+  },
+  {
+    name: 'Instagram',
+    href: 'https://www.instagram.com/lpmq_kemenag_ri',
+    icon: logoig,
+    ariaLabel: 'Akun Instagram Resmi LPMQ',
+  },
+  {
+    name: 'Facebook',
+    href: 'https://www.facebook.com/LPMQKemenagRI/',
+    icon: logofb,
+    ariaLabel: 'Akun Facebook Resmi LPMQ',
+  },
+];
+
+const serviceStatistics = [
+  {
+    count: '100',
+    label: 'Surat Tanda Tashih Diterbitkan',
+    icon: FileCheck,
+  },
+  {
+    count: '99',
+    label: "Penerbit Mushaf Al-Qur'an",
+    icon: Building2,
+  },
+  {
+    count: '53',
+    label: "Pentashih Mushaf Al-Qur'an",
+    icon: Users,
+  },
+];
+
+const serviceValues = [
+  {
+    title: 'Visi',
+    desc: 'Terwujudnya mushaf Al-Qur’an yang sahih dan mudah dibaca.',
+    icon: Target,
+  },
+  {
+    title: 'Misi',
+    desc: 'Menjaga kesahihan mushaf Al-Qur’an.',
+    icon: List,
+  },
+  {
+    title: 'Motto',
+    desc: 'Sahih Melayani.',
+    icon: Quote,
+  },
 ];
 
 const quickAccessItems = [
@@ -112,6 +184,61 @@ const FAQ_LIST = [
   },
 ];
 
+const StatCounter = ({ target, isVisible, duration = 1600 }) => {
+  const numericTarget = typeof target === 'number' ? target : parseInt(target, 10) || 0;
+  const [count, setCount] = useState(() => {
+    // Di lingkungan pengujian (jsdom) atau SSR tanpa IntersectionObserver, tampilkan target langsung
+    if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
+      return numericTarget;
+    }
+    return 0;
+  });
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setCount(numericTarget);
+      return;
+    }
+
+    let startTime = null;
+    let animationFrameId;
+
+    const animate = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing out cubic: berhitung cepat di awal lalu melambat secara proporsional dan presisi
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(easedProgress * numericTarget);
+
+      setCount(current);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(animate);
+      } else {
+        setCount(numericTarget);
+      }
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [isVisible, numericTarget, duration]);
+
+  return <>{count}</>;
+};
+
 export const LandingPage = () => {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
@@ -120,6 +247,37 @@ export const LandingPage = () => {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileDropdown, setMobileDropdown] = useState(null);
+  const statsRef = useRef(null);
+  const [statsVisible, setStatsVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
+      setStatsVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry && entry.isIntersecting) {
+          setStatsVisible(true);
+          observer.disconnect();
+        }
+      },
+      {
+        threshold: 0.15,
+      }
+    );
+
+    const currentEl = statsRef.current;
+    if (currentEl) {
+      observer.observe(currentEl);
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   const handleNavigate = (path, e) => {
     if (e && (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)) {
@@ -509,74 +667,103 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* Section: Alur Layanan STT (Surat Tanda Tashih) */}
-        <section id="alur-stt" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
-          <div className="border-b border-line pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-            <div>
-              <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Tahapan Layanan</span>
-              <h2 className="text-2xl font-black text-ink mt-1">Alur Penerbitan Surat Tanda Tashih (STT)</h2>
-              <p className="text-xs sm:text-sm text-ink-muted mt-1">
-                Enam tahapan terpadu proses pentashihan Al-Qur'an resmi Kementerian Agama Republik Indonesia.
-              </p>
-            </div>
-            <Link
-              to="/login"
-              onClick={(e) => handleNavigate('/login', e)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-fill hover:bg-brand-fill-hover text-white font-semibold text-xs transition shadow-2xs self-start sm:self-auto"
-            >
-              Mulai Pendaftaran <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                step: '01',
-                title: 'Pengajuan & Registrasi Naskah',
-                desc: 'Penerbit mendaftarkan akun, melengkapi identitas legalitas (NIB/Akta), mengisi spesifikasi mushaf, dan mengunggah berkas draf naskah (PDF/APK).'
-              },
-              {
-                step: '02',
-                title: 'Verifikasi Dokumen & Administrasi',
-                desc: 'Petugas verifikator LPMQ memeriksa kelengkapan format mushaf, surat permohonan, sampel halaman, dan validitas URL/APK digital.'
-              },
-              {
-                step: '03',
-                title: 'Pembayaran Tarif PNBP Resmi',
-                desc: 'Penerbit melunasi billing PNBP resmi (SIMPONI Kemenkeu) sesuai jenis naskah dan komponen add-on materi (terjemah/tafsir).'
-              },
-              {
-                step: '04',
-                title: 'Sidang & Telaah Pentashihan',
-                desc: 'Tim pentashih LPMQ menelaah teks ayat Al-Qur’an, harakat, waqaf, dan rasm Usmani secara mendalam melalui lembar kerja telaah.'
-              },
-              {
-                step: '05',
-                title: 'Penyerahan Master & Dumi Cetak',
-                desc: 'Penerbit menyerahkan master fisik/dumi cetak untuk validasi kesesuaian cetak terakhir oleh distributor dan pentashih.'
-              },
-              {
-                step: '06',
-                title: 'Penerbitan STT Resmi Ber-QR',
-                desc: 'Kepala LPMQ menandatangani Surat Tanda Tashih elektronik yang dilengkapi QR Code pengesahan berizin edar nasional.'
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="p-5 rounded-xl border border-line bg-surface-subtle hover:border-brand-700 hover:shadow-2xs transition space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="w-9 h-9 rounded-xl bg-brand-700 text-white flex items-center justify-center font-black text-xs shadow-2xs">
-                    {item.step}
-                  </span>
-                  <span className="text-[11px] font-bold text-brand-700 uppercase tracking-wider">
-                    Langkah {item.step}
-                  </span>
-                </div>
-                <h3 className="text-sm font-bold text-ink">{item.title}</h3>
-                <p className="text-xs text-ink-muted leading-relaxed">{item.desc}</p>
+        {/* Section: Informasi Pelayanan (Maklumat Pelayanan) */}
+        <section
+          id="informasi-pelayanan"
+          aria-label="Informasi Pelayanan"
+          className="rounded-2xl sm:rounded-3xl bg-surface p-6 sm:p-8 lg:p-10 border border-line shadow-xs"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+            {/* Kolom Kiri: Maklumat Pelayanan, Media Sosial, Statistik & Tanggal */}
+            <div className="lg:col-span-7 flex flex-col justify-between space-y-6 sm:space-y-8">
+              <div className="space-y-3">
+                <h2
+                  className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-700 tracking-tight"
+                  aria-label="Informasi Pelayanan - Maklumat Pelayanan"
+                >
+                  Informasi Pelayanan
+                  <span className="sr-only"> - Maklumat Pelayanan</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-ink leading-relaxed">
+                  Dengan ini kami menyatakan sanggup menyelenggarakan pelayanan sesuai standar pelayanan yang telah ditetapkan. Apabila terdapat janji layanan (memberikan pelayanan secara profesional dan sepenuh hati) tegurlah dan laporkan ke unit pengaduan.
+                </p>
               </div>
-            ))}
+
+              {/* Ikon Media Sosial */}
+              <div className="flex items-center gap-3 sm:gap-4">
+                {socialMediaLinks.map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.ariaLabel}
+                    className="inline-flex items-center justify-center transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-md"
+                  >
+                    <img
+                      src={social.icon}
+                      alt={social.name}
+                      className="h-5 sm:h-6 w-auto object-contain"
+                    />
+                  </a>
+                ))}
+              </div>
+
+              {/* Tiga Kartu Statistik / Tracker dengan Animasi Berhitung saat Terlihat */}
+              <div ref={statsRef} className="space-y-3 pt-2">
+                <div className="grid grid-cols-3 gap-2 sm:gap-6">
+                  {serviceStatistics.map((stat, idx) => {
+                    const IconComponent = stat.icon;
+                    return (
+                      <div
+                        key={idx}
+                        className="flex flex-col items-center text-center p-2 sm:p-3 space-y-2"
+                      >
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-2xs">
+                          <IconComponent className="w-6 h-6 stroke-[2.2]" />
+                        </div>
+                        <span className="text-2xl sm:text-3xl font-black text-ink tracking-tight">
+                          <StatCounter target={stat.count} isVisible={statsVisible} />
+                        </span>
+                        <span className="text-[11px] sm:text-xs font-semibold text-ink-muted leading-snug">
+                          {stat.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Keterangan Tanggal Pembaruan Data Dummy */}
+                <p className="text-[11px] text-ink-muted text-center sm:text-left">
+                  Data diambil per tanggal: 17 Oktober 2026
+                </p>
+              </div>
+            </div>
+
+            {/* Kolom Kanan: Visi, Misi, dan Motto */}
+            <div className="lg:col-span-5 flex flex-col justify-between gap-4">
+              {serviceValues.map((val, idx) => {
+                const IconComponent = val.icon;
+                return (
+                  <div
+                    key={idx}
+                    className="flex-1 rounded-2xl bg-brand-600 text-white p-5 sm:p-6 shadow-sm flex items-center gap-4 transition-all duration-200 hover:bg-brand-700"
+                  >
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white border border-white/20">
+                      <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base sm:text-lg font-bold text-white tracking-wide">
+                        {val.title}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-white/90 leading-snug">
+                        {val.desc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
