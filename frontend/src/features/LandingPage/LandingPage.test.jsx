@@ -22,10 +22,61 @@ describe('LandingPage Components & P0-2 Honest Complaint Placeholder', () => {
     expect(screen.getByText('Kementerian Agama Republik Indonesia')).toBeInTheDocument();
 
     // Section headings
-    expect(screen.getByText('Alur Penerbitan Surat Tanda Tashih (STT)')).toBeInTheDocument();
+    expect(screen.getByText('Informasi Pelayanan')).toBeInTheDocument();
+    expect(screen.queryByText('Alur Penerbitan Surat Tanda Tashih (STT)')).not.toBeInTheDocument();
     expect(screen.getByText('Saluran Pengaduan & Bantuan')).toBeInTheDocument();
     expect(screen.getByText('Permohonan Master Mushaf Standar Indonesia')).toBeInTheDocument();
     expect(screen.getByText('Pertanyaan yang Sering Diajukan (FAQ)')).toBeInTheDocument();
+  });
+
+  it('renders Informasi Pelayanan section with text maklumat, social links, statistics, and values', () => {
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    // Heading dan teks maklumat verbatim
+    expect(screen.getByText('Informasi Pelayanan')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Dengan ini kami menyatakan sanggup menyelenggarakan pelayanan sesuai standar pelayanan yang telah ditetapkan/i
+      )
+    ).toBeInTheDocument();
+
+    // Kartu Visi, Misi, Motto
+    expect(screen.getByText('Visi')).toBeInTheDocument();
+    expect(screen.getByText(/Terwujudnya mushaf Al-Qur’an yang sahih dan mudah dibaca/i)).toBeInTheDocument();
+    expect(screen.getByText('Misi')).toBeInTheDocument();
+    expect(screen.getByText(/Menjaga kesahihan mushaf Al-Qur’an/i)).toBeInTheDocument();
+    expect(screen.getByText('Motto')).toBeInTheDocument();
+    expect(screen.getByText(/Sahih Melayani/i)).toBeInTheDocument();
+
+    // Tiga kartu statistik & tanggal pembaruan data
+    expect(screen.getByText('100')).toBeInTheDocument();
+    expect(screen.getByText('Surat Tanda Tashih Diterbitkan')).toBeInTheDocument();
+    expect(screen.getByText('99')).toBeInTheDocument();
+    expect(screen.getByText("Penerbit Mushaf Al-Qur'an")).toBeInTheDocument();
+    expect(screen.getByText('53')).toBeInTheDocument();
+    expect(screen.getByText("Pentashih Mushaf Al-Qur'an")).toBeInTheDocument();
+    expect(screen.getByText(/Data diambil per tanggal: 17 Oktober 2026/i)).toBeInTheDocument();
+
+    // Tautan media sosial resmi
+    const ytLink = screen.getByRole('link', { name: /Kanal YouTube Resmi LPMQ/i });
+    expect(ytLink).toHaveAttribute('href', 'https://www.youtube.com/@LajnahKemenag');
+    expect(ytLink).toHaveAttribute('target', '_blank');
+
+    const xLink = screen.getByRole('link', { name: /Akun X Resmi LPMQ/i });
+    expect(xLink).toHaveAttribute('href', 'https://x.com/LPMQKemenagRI');
+    expect(xLink).toHaveAttribute('target', '_blank');
+
+    const igLink = screen.getByRole('link', { name: /Akun Instagram Resmi LPMQ/i });
+    expect(igLink).toHaveAttribute('href', 'https://www.instagram.com/lpmq_kemenag_ri');
+    expect(igLink).toHaveAttribute('target', '_blank');
+
+    const fbLink = screen.getByRole('link', { name: /Akun Facebook Resmi LPMQ/i });
+    expect(fbLink).toHaveAttribute('href', 'https://www.facebook.com/LPMQKemenagRI/');
+    expect(fbLink).toHaveAttribute('target', '_blank');
   });
 
   it('P0-2: provides honest complaint placeholder without fake submission or false success message', () => {
