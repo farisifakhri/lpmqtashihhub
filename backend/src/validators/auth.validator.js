@@ -2,15 +2,15 @@ import { z } from 'zod';
 
 export const loginSchema = {
   body: z.object({
-    email: z.string().email('Format email tidak valid'),
-    password: z.string().min(6, 'Password minimal 6 karakter'),
+    email: z.string().trim().toLowerCase().email('Format email tidak valid'),
+    password: z.string().min(1, 'Password wajib diisi'),
   }),
 };
 
 export const registerPublisherSchema = {
   body: z.object({
     name: z.string().min(3, 'Nama penanggung jawab minimal 3 karakter'),
-    email: z.string().email('Format email tidak valid'),
+    email: z.string().trim().toLowerCase().email('Format email tidak valid'),
     password: z.string()
       .min(8, 'Kata sandi minimal 8 karakter')
       .regex(/[A-Z]/, 'Kata sandi harus mengandung minimal satu huruf kapital')
@@ -26,7 +26,7 @@ export const registerPublisherSchema = {
 
 export const forgotPasswordSchema = {
   body: z.object({
-    email: z.string().email('Format email tidak valid'),
+    email: z.string().trim().toLowerCase().email('Format email tidak valid'),
   }),
 };
 
