@@ -2,8 +2,7 @@
 
 - [Daftar sembilan tim inti](roster-tim-inti-2026-09-24.jpeg): tiap baris terdiri dari verifikator, distributor, dan dokumentator. `DistributionTeam` dalam aplikasi adalah kelompok pentashih dan bukan daftar ini.
 - [Perkiraan HK untuk 17 jenis naskah](durasi-17-jenis-naskah-2026-09-24.jpeg): tiga kolom master awal, perbaikan, dan dumi/perpanjangan. Batas STT dua HK sesudah dumi cetak dinyatakan bersih adalah aturan terpisah.
-- [Keputusan Lanjutan 8 Oktober 2026 & Addendum SRS v3.1](keputusan-2026-10-08.md): penetapan alur rentang juz pentashihan, berkas rekapan internal rahasia, surat perbaikan resmi, penanganan naskah dumi, hitungan SLA H+1 pasca bayar, dan peran teknis intake Admin Internal.
-- [Peta Jalan & Sisa Pekerjaan SRS v3.0 & v3.1](sisa-pekerjaan-srs-v3-1.md): rekapitulasi capaian dan rincian teknis 4 paket sisa pekerjaan (Survei IKM, Landing Page Publik, Modul Layanan Publik, Tata Naskah Kemenag).
+- [Peta Jalan & Backlog Fase Lanjutan](../tugas/README.md): rekapitulasi capaian, kontrak pendaftaran penerbit, dan pembagian tugas tim (Faisal, Fakhri, Nabil, Choirul) sesuai [Backlog Fase Lanjutan v0.2](../tugas/BACKLOG-FASE-LANJUTAN.md).
 
 ## Aktivasi roster tim inti
 

@@ -70,13 +70,24 @@ Semua branch fitur dibuat dari **satu** `<BASE>` yang sama. Jangan dari `fronten
 
 ## 6. Keputusan yang sudah dikunci
 
-Pendaftaran penerbit:
-- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Data perorangan yang ada adalah data uji dan dihapus semua.
+Pendaftaran & Akun Penerbit:
+- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Data perorangan yang ada adalah data uji dan telah dibersihkan.
 - Dokumen per jenis mengikuti `KONTRAK_PENDAFTARAN_PENERBIT.md`. NIB cukup (SIUP/TDP tidak diwajibkan).
-- Penerbit wajib mengajukan pendaftaran dan diverifikasi oleh SUPERADMIN dan/atau admin internal sebelum mengajukan naskah atau mengakses dashboard.
-- Penerbit belum terverifikasi **tidak boleh login**. Ada halaman khusus cek status pendaftaran.
-- "Perlu perbaikan" dibedakan dari "ditolak". Ditolak bersifat final.
+- Penerbit wajib mengajukan pendaftaran dan diverifikasi oleh salah satu: `SUPERADMIN` atau `ADMIN_INTERNAL` sebelum dapat login atau mengakses dashboard.
+- Penerbit belum terverifikasi **mutlak tidak boleh login** (diberi respons 403 `PUBLISHER_NOT_APPROVED`) dan **tidak boleh menembus dashboard**. Pengecekan status pendaftaran disediakan di halaman publik mandiri (`/cek-status`).
+- "Perlu perbaikan" dibedakan dari "ditolak". Ditolak bersifat final, tetapi NPWP/NIB/Email dibebaskan agar dapat mendaftar baru jika diperlukan.
 - Alamat pengiriman adalah alamat penerbit.
+
+Peran & Kewenangan Internal (RBAC):
+- **Admin Internal (`ADMIN_INTERNAL`)**:
+  - Tetap dipertahankan dalam sistem.
+  - Berwenang mengelola akun staf teknis dan melakukan reset password staf teknis/pengguna.
+  - Berwenang melakukan verifikasi dan pengambilan keputusan atas pendaftaran penerbit (cukup salah satu dari `SUPERADMIN` atau `ADMIN_INTERNAL`).
+  - Untuk penugasan tim dan keputusan pengerjaan pentashihan naskah bersifat **readonly** (tidak ikut campur dalam keputusan subtansi pentashihan).
+- **Distributor (`DISTRIBUTOR`)**:
+  - Tetap berwenang penuh memilih tim atau kelompok pentashihan.
+  - Berhak memilih lebih dari satu kelompok, per individu, atau kombinasi kelompok-individu dengan penjatahan rentang juz fleksibel (misal 20-10 juz, dll).
+  - Hak penugasan manual tim pentashihan **tidak dicabut**.
 
 Alur naskah (untuk fase lanjutan):
 - Satu pengajuan boleh berisi banyak naskah. **STT per pengajuan** dan menunggu semua naskah. Jika diajukan terpisah, STT terpisah.
@@ -87,13 +98,12 @@ Alur naskah (untuk fase lanjutan):
 - Status "menunggu penerbit" tidak dihitung SLA, tanpa tenggat, dengan pengingat berkala tanpa konsekuensi dan indikator umur untuk admin.
 - Batas 5 eksemplar: satu bulan kalender sejak STT dan surat hasil terbit. Status faktual "kewajiban eksemplar belum terpenuhi" terpisah dari label "penerbit bermasalah" yang ditetapkan admin.
 
-## 7. Asumsi yang masih perlu dikonfirmasi
+## 7. Asumsi dan status integrasi
 
-- Format nomor surat belum ada. Dibuat default dan bisa diganti lewat konfigurasi.
+- Format nomor surat resmi (B-03): dibuat format default terkonfigurasi dan dapat diganti lewat konfigurasi sistem.
+- Kanal notifikasi: Saat ini integrasi gateway WhatsApp dan SMTP Email resmi belum aktif di server. Sistem menyediakan tautan dan token rahasia secara langsung (in-app fallback) untuk keperluan perbaikan pendaftaran dan reset password mandiri sampai gateway resmi terpasang.
 - Arti kalimat notulensi "halaman login: peringatan menghapus" belum jelas. Jangan diubah sebelum dikonfirmasi.
-- Keluhan UX dokumentator belum konkret. Kumpulkan contoh langkah yang membingungkan sebelum mengerjakan.
-- Kanal notifikasi: email dulu. Penyedia email dan kredensialnya di server belum ditetapkan.
-- Masa berlaku tautan perbaikan dan format kode pendaftaran: usulan di kontrak, perlu disetujui.
+- Keluhan UX dokumentator: diselesaikan melalui perbaikan UI card mushaf dan filter berjenjang di paket B-11.
 
 ## 8. Glosarium sementara
 
