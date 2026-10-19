@@ -22,6 +22,7 @@ import { CommandSearchDialog } from './CommandSearchDialog';
 import { NotificationCenter } from './NotificationCenter';
 import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
 import { ChangePasswordModal } from '@/features/auth/ChangePasswordModal';
+import Switcher from '@/features/darkmode/Switcher';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 
@@ -248,6 +249,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                 {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-brand-fg" /> : <Maximize2 className="w-3.5 h-3.5 text-brand-fg" />}
                 <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
               </button>
+
+              {/* Mode Tema Gelap / Terang */}
+              <Switcher />
 
               {/* Profile Menu Dropdown */}
               {currentUser && (
