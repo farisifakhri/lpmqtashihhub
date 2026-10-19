@@ -11,6 +11,22 @@ export default {
           strong: 'rgb(var(--surface-strong-rgb) / <alpha-value>)',
           elevated: 'rgb(var(--surface-elevated-rgb) / <alpha-value>)',
         },
+        sidebar: {
+          bg: 'var(--sidebar-bg)',
+          border: 'var(--sidebar-border)',
+          card: 'var(--sidebar-card-bg)',
+          cardBorder: 'var(--sidebar-card-border)',
+          cardHover: 'var(--sidebar-card-hover)',
+          text: 'var(--sidebar-text)',
+          muted: 'var(--sidebar-text-muted)',
+          hover: 'var(--sidebar-item-hover)',
+          activeBg: 'var(--sidebar-active-bg)',
+          activeText: 'var(--sidebar-active-text)',
+          activeIcon: 'var(--sidebar-active-icon)',
+          avatarBg: 'var(--sidebar-avatar-bg)',
+          avatarText: 'var(--sidebar-avatar-text)',
+          online: 'var(--sidebar-status-online)',
+        },
         brand: {
           fg: 'rgb(var(--brand-fg-rgb) / <alpha-value>)',
           fill: {

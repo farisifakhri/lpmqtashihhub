@@ -5,54 +5,73 @@
 
 :root {
   /* Canvas & Surfaces (3-Level Depth Hierarchy) */
-  /* Level 0: Canvas */
-  --canvas: #f8f7fb;
-  --canvas-rgb: 248 247 251;
+  /* Level 0: Canvas (White from palette #FAF9F6) */
+  --canvas: #FAF9F6;
+  --canvas-rgb: 250 249 246;
   /* Level 1: Surface Card */
   --surface: #ffffff;
   --surface-rgb: 255 255 255;
-  --surface-subtle: #f0f7e9;
-  --surface-subtle-rgb: 240 247 233;
-  --surface-strong: #e1eed4;
-  --surface-strong-rgb: 225 238 212;
+  --surface-subtle: #f2f7ef;
+  --surface-subtle-rgb: 242 247 239;
+  --surface-strong: #dce8d5;
+  --surface-strong-rgb: 220 232 213;
   /* Level 2: Elevated Elements & Dialogs */
   --surface-elevated: #ffffff;
   --surface-elevated-rgb: 255 255 255;
 
-  /* Brand / Hijau Muda Segar (Identitas Asli Landing Page & Seluruh Alur STT) */
-  --brand-950: #123b18;
-  --brand-950-rgb: 18 59 24;
-  --brand-900: #1e560d;
-  --brand-900-rgb: 30 86 13;
-  --brand-800: #396a06;
-  --brand-800-rgb: 57 106 6;
-  --brand-700: #4e9508;
-  --brand-700-rgb: 78 149 8;
-  --brand-600: #579b0a;
-  --brand-600-rgb: 87 155 10;
-  --brand-500: #5a9d0b;
-  --brand-500-rgb: 90 157 11;
-  --brand-300: #a9e078;
-  --brand-300-rgb: 169 224 120;
-  --brand-200: #c5eba1;
-  --brand-200-rgb: 197 235 161;
-  --brand-100: #dcf2c2;
-  --brand-100-rgb: 220 242 194;
-  --brand-50: #f0f7e9;
-  --brand-50-rgb: 240 247 233;
+  /* Brand / Identitas Hijau LPMQ Berbasis Palet Resmi */
+  /* Forest: #31572C, Grass: #40916C, Moss: #90A955, Leaf: #ECF39E, White: #FAF9F6 */
+  --brand-950: #1a3017;
+  --brand-950-rgb: 26 48 23;
+  --brand-900: #31572C;
+  --brand-900-rgb: 49 87 44;
+  --brand-800: #396633;
+  --brand-800-rgb: 57 102 51;
+  --brand-700: #40916C;
+  --brand-700-rgb: 64 145 108;
+  --brand-600: #499e76;
+  --brand-600-rgb: 73 158 118;
+  --brand-500: #90A955;
+  --brand-500-rgb: 144 169 85;
+  --brand-300: #b5ce75;
+  --brand-300-rgb: 181 206 117;
+  --brand-200: #d5e693;
+  --brand-200-rgb: 213 230 147;
+  --brand-100: #ECF39E;
+  --brand-100-rgb: 236 243 158;
+  --brand-50: #f5f8ea;
+  --brand-50-rgb: 245 248 234;
 
   /* Brand Role Tokens for WCAG 2.1 AA Contrast */
-  --brand-fg: #3b7305;
-  --brand-fg-rgb: 59 115 5;
-  --brand-fill: #478300;
-  --brand-fill-rgb: 71 131 0;
-  --brand-fill-hover: #396a06;
-  --brand-fill-hover-rgb: 57 106 6;
+  --brand-fg: #285425;
+  --brand-fg-rgb: 40 84 37;
+  --brand-fill: #31572C;
+  --brand-fill-rgb: 49 87 44;
+  --brand-fill-hover: #264522;
+  --brand-fill-hover-rgb: 38 69 34;
 
   /* Button Surface Tokens (text-white against button bg >= 4.5:1) */
-  --brand-btn-bg: #478300;
-  --brand-btn-hover: #396a06;
+  --brand-btn-bg: #31572C;
+  --brand-btn-hover: #264522;
   --brand-btn-text: #ffffff;
+
+  /* Sidebar Tokens - Simulasi 2 (Hijau Sage + Lime) */
+  --sidebar-bg: #b9d0a4;
+  --sidebar-bg-rgb: 185 208 164;
+  --sidebar-border: #9fb789;
+  --sidebar-border-rgb: 159 183 137;
+  --sidebar-card-bg: #d8e7c3;
+  --sidebar-card-border: #bed3a7;
+  --sidebar-card-hover: #e2eed1;
+  --sidebar-text: #203a19;
+  --sidebar-text-muted: #38552f;
+  --sidebar-item-hover: rgba(255, 255, 255, 0.45);
+  --sidebar-active-bg: #ECF39E;
+  --sidebar-active-text: #203a19;
+  --sidebar-active-icon: #203a19;
+  --sidebar-avatar-bg: #40916C;
+  --sidebar-avatar-text: #FAF9F6;
+  --sidebar-status-online: #31572C;
 
   /* Official Gold / Brass (dokumen resmi, pengesahan, billing) */
   /* gold-700: Teks & Label (Rasio Kontras >= 5.4:1 di atas putih, 5.0:1 di atas gold-100) */
@@ -117,9 +136,9 @@
   --surface-elevated: #1e332c;
   --surface-elevated-rgb: 30 51 44;
 
-  /* Ink (Teks Utama & Sekunder) */
-  --ink: #f0f6f3;
-  --ink-rgb: 240 246 243;
+  /* Ink (Teks Utama & Sekunder - White from palette #FAF9F6) */
+  --ink: #FAF9F6;
+  --ink-rgb: 250 249 246;
   --ink-muted: #9cb3a8;
   --ink-muted-rgb: 156 179 168;
 
@@ -129,41 +148,59 @@
   --line-strong: #3d6154;
   --line-strong-rgb: 61 97 84;
 
-  /* Brand di atas Gelap: Varian Hijau Muda Terang */
-  --brand-950: #081a0b;
-  --brand-900: #123315;
-  --brand-800: #215425;
-  --brand-700: #579b0a;
-  --brand-700-rgb: 87 155 10;
-  --brand-800-rgb: 57 106 6;
-  --brand-600: #6ab810;
-  --brand-600-rgb: 106 184 16;
-  --brand-500: #7ec41a;
-  --brand-500-rgb: 126 196 26;
-  --brand-300: #448028;
-  --brand-300-rgb: 68 128 40;
-  --brand-200: #2b5c1a;
-  --brand-200-rgb: 43 92 26;
-  --brand-100: #1a381c;
-  --brand-100-rgb: 26 56 28;
-  --brand-50: #0d240f;
-  --brand-50-rgb: 13 36 15;
+  /* Brand di atas Gelap: Varian Hijau Alami Berbasis Palet Resmi */
+  --brand-950: #0a190e;
+  --brand-900: #132d1c;
+  --brand-800: #1b3d27;
+  --brand-700: #40916C;
+  --brand-700-rgb: 64 145 108;
+  --brand-800-rgb: 27 61 39;
+  --brand-600: #54a680;
+  --brand-600-rgb: 84 166 128;
+  --brand-500: #90A955;
+  --brand-500-rgb: 144 169 85;
+  --brand-300: #b5ce75;
+  --brand-300-rgb: 181 206 117;
+  --brand-200: #d5e693;
+  --brand-200-rgb: 213 230 147;
+  --brand-100: #ECF39E;
+  --brand-100-rgb: 236 243 158;
+  --brand-50: #142a1b;
+  --brand-50-rgb: 20 42 27;
 
   /* Brand Role Tokens for Dark Mode */
-  --brand-fg: #7ec41a;
-  --brand-fg-rgb: 126 196 26;
-  --brand-fill: #396a06;
-  --brand-fill-rgb: 57 106 6;
-  --brand-fill-hover: #2e5405;
-  --brand-fill-hover-rgb: 46 84 5;
+  --brand-fg: #90A955;
+  --brand-fg-rgb: 144 169 85;
+  --brand-fill: #31572C;
+  --brand-fill-rgb: 49 87 44;
+  --brand-fill-hover: #264522;
+  --brand-fill-hover-rgb: 38 69 34;
 
   /*
    * WCAG 2.1 AA TOMBOL DARK-MODE
    * --brand-btn-bg: Latar tombol primary dark-mode (kontras teks putih ≥ 4.5:1)
    */
-  --brand-btn-bg: #396a06;
-  --brand-btn-bg-hover: #2e5405;
+  --brand-btn-bg: #31572C;
+  --brand-btn-bg-hover: #264522;
   --brand-btn-text: #ffffff;
+
+  /* Sidebar Tokens - Simulasi 3 (Forest Gelap + Aksen Lime) */
+  --sidebar-bg: #133826;
+  --sidebar-bg-rgb: 19 56 38;
+  --sidebar-border: #1e4a34;
+  --sidebar-border-rgb: 30 74 52;
+  --sidebar-card-bg: #1c4530;
+  --sidebar-card-border: #28573f;
+  --sidebar-card-hover: #23523a;
+  --sidebar-text: #FAF9F6;
+  --sidebar-text-muted: #95bda4;
+  --sidebar-item-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-active-bg: #ECF39E;
+  --sidebar-active-text: #133826;
+  --sidebar-active-icon: #133826;
+  --sidebar-avatar-bg: #40916C;
+  --sidebar-avatar-text: #FAF9F6;
+  --sidebar-status-online: #ECF39E;
 
   /* Gold di atas Gelap */
   --gold-700: #e2b45e;

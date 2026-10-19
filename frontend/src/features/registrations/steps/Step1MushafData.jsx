@@ -396,7 +396,7 @@ export const Step1MushafData = ({
             }}
             onBlur={() => {
               if (penanggungJawabEmail) {
-                setPenanggungJawabEmail(penanggungJawabEmail.trim());
+                setPenanggungJawabEmail(penanggungJawabEmail.trim().toLowerCase());
               }
             }}
             aria-invalid={Boolean(fieldErrors.penanggungJawabEmail)}

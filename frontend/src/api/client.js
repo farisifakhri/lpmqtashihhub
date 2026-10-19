@@ -104,7 +104,17 @@ export async function apiClient(endpoint, options = {}) {
     return data;
   } catch (error) {
     if (error instanceof ApiError) {
-      if (error.status === 0 || error.status === 401 || error.status === 403 || error.status === 404 || error.status === 429 || error.status >= 500) showToast(error.message);
+      const isLoginAttempt = cleanEndpoint === '/auth/login';
+      if (
+        error.status === 0 ||
+        (error.status === 401 && !isLoginAttempt) ||
+        error.status === 403 ||
+        error.status === 404 ||
+        error.status === 429 ||
+        error.status >= 500
+      ) {
+        showToast(error.message);
+      }
       throw error;
     }
     if (error.name === 'AbortError') throw new ApiError('Permintaan dibatalkan. Periksa hasilnya sebelum mengirim ulang.', 0);

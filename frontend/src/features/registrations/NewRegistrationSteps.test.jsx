@@ -111,4 +111,27 @@ describe('NewRegistration Stepper and Enhancements', () => {
     expect(screen.queryByText('Nama mushaf minimal 3 karakter.')).not.toBeInTheDocument();
     expect(screen.queryByText('Nama penanggung jawab produk/mushaf wajib diisi.')).not.toBeInTheDocument();
   });
+
+  it('focuses on invalid WhatsApp input (registration-pj-wa) when validation fails', async () => {
+    render(
+      <MemoryRouter>
+        <NewRegistrationPage />
+      </MemoryRouter>
+    );
+
+    const mushafInput = screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/i);
+    const pjInput = screen.getByPlaceholderText(/Tulis nama penanggung jawab Produk\/Mushaf/i);
+    const waInput = document.getElementById('registration-pj-wa');
+    const waFocusSpy = vi.spyOn(waInput, 'focus');
+
+    fireEvent.change(mushafInput, { target: { value: 'Mushaf Al-Qur\'an Standar' } });
+    fireEvent.change(pjInput, { target: { value: 'Jasmin Izzah' } });
+    fireEvent.change(waInput, { target: { value: '123' } });
+
+    const nextBtn = screen.getByRole('button', { name: /Lanjut: Langkah 2/i });
+    fireEvent.click(nextBtn);
+
+    expect(await screen.findByText(/Format nomor WhatsApp tidak valid/i)).toBeInTheDocument();
+    expect(waFocusSpy).toHaveBeenCalled();
+  });
 });

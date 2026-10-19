@@ -34,4 +34,16 @@ describe('pesan kesalahan API', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ...reply(200), json: async () => { throw new SyntaxError('Unexpected token'); } }));
     await expect(apiClient('/test')).rejects.toMatchObject({ status: 200, message: expect.stringContaining('Jawaban server tidak dapat dibaca') });
   });
+  it('tidak menampilkan floating toast untuk 401 pada /auth/login agar terhindar dari double alert', async () => {
+    const received = [];
+    const unsubscribe = subscribeToasts(toast => received.push(toast.message));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply(401, { message: 'Email atau password tidak sesuai.' })));
+    await expect(apiClient('/auth/login', { body: { email: 'test@example.com', password: 'wrong' } })).rejects.toMatchObject({
+      status: 401,
+      message: 'Email atau password tidak sesuai.',
+    });
+    expect(received).toEqual([]);
+    unsubscribe();
+
+  });
 });

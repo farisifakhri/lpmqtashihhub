@@ -300,25 +300,137 @@ async function main() {
   }
   console.log(`✅ 90 Personil Pentashih resmi LPMQ (SK 2025) berhasil diselaraskan`);
 
-  // Konfigurasi 6 Kelompok Utama (masing-masing 10-11 pentashih)
-  const sixGroups = [
-    { id: 'kelompok-1', name: 'Kelompok Pentashihan I', leaderIdx: 0, start: 0, end: 11 },
-    { id: 'kelompok-2', name: 'Kelompok Pentashihan II', leaderIdx: 15, start: 11, end: 22 },
-    { id: 'kelompok-3', name: 'Kelompok Pentashihan III', leaderIdx: 30, start: 22, end: 33 },
-    { id: 'kelompok-4', name: 'Kelompok Pentashihan IV', leaderIdx: 45, start: 33, end: 44 },
-    { id: 'kelompok-5', name: 'Kelompok Pentashihan V', leaderIdx: 60, start: 44, end: 55 },
-    { id: 'kelompok-6', name: 'Kelompok Pentashihan VI', leaderIdx: 75, start: 55, end: 66 },
+  // 5b. Seed the 6 Parallel Pentashih Groups (SK Pembagian Kelompok Kerja Pentashihan - CPNS 2025)
+  const cpns2025GroupRoster = [
+    {
+      id: 'kelompok-1',
+      name: 'Kelompok Pentashihan I',
+      members: [
+        'Nur Azka Inayatussahara',
+        'Ahmad Jauhari Abbas',
+        'Saiful Akmal',
+        'Aisyah',
+        'Ahmad Hariyanto',
+        'Fikri Mustofa',
+        'Ida Nur Laila Sari',
+        'Ismail Reza Anggara',
+        'Anisa Resti Damayanti',
+        'Sakinah Nst',
+        'Solihin', // Cadangan/rotasi (*)
+      ],
+    },
+    {
+      id: 'kelompok-2',
+      name: 'Kelompok Pentashihan II',
+      members: [
+        'Siti Iyam Muslimah',
+        'Muhammad Syafqy Abda',
+        'Muhammad Addien Nastiar',
+        'Aufa Aqiq Filosofi',
+        'Muhamad Rizki Ridho',
+        "Muhamad A'thoillah Mubarok",
+        'Siti Nur Ismah',
+        'Firda Sholihah',
+        'Tammiya Nurfuadi',
+        'Indah Rhowdlotul Jannah',
+        'Ilhamani', // Cadangan/rotasi (*)
+      ],
+    },
+    {
+      id: 'kelompok-3',
+      name: 'Kelompok Pentashihan III',
+      members: [
+        'Abdul Wahid',
+        'Septia Aisyah Rusda',
+        'Munafisah',
+        'Rafi Dinilhaq',
+        'Muhammad Ilham Mursyid',
+        'Tamama Zuhriyah',
+        'Bayu Muhammad',
+        'Vina Hidayati',
+        'Shera Diva Zahiyah',
+        'Inayah Nur Wafiq',
+      ],
+    },
+    {
+      id: 'kelompok-4',
+      name: 'Kelompok Pentashihan IV',
+      members: [
+        'Minnatul Maula',
+        'Muhammad Ibnu Abbas',
+        'Raziq Ahmadi',
+        'Fathy Fatullah Muchtar',
+        'Muhammad Azhar Fuadi',
+        'Mohammad Iqbal Muadzin',
+        'Iqbal Hayyis Surur',
+        'Himmah Aliyah',
+        "Ra'yal Aidin Al Fadhli",
+        'Ali Mustawa Ritonga',
+      ],
+    },
+    {
+      id: 'kelompok-5',
+      name: 'Kelompok Pentashihan V',
+      members: [
+        'Ami Muftil Anami',
+        'Ahmad Akmal Mujaddid',
+        'Ali Fitriana Rahmat',
+        'Lalu Nuzul Ilham Hadi',
+        'Ayun Matsani Rizki Syauqi',
+        'Muhamad Hasin Tuba',
+        'Hairatu Saleha',
+        'Alya Izzat Mulyadi Razak',
+        'Afrokhul Banat',
+        'Alkurni Isnaeni',
+      ],
+    },
+    {
+      id: 'kelompok-6',
+      name: 'Kelompok Pentashihan VI',
+      members: [
+        'Fuadiyati Firdausiana',
+        'Maria Ulfah',
+        'Mohammad Adi Junanto',
+        'Salaful Amin',
+        'Meyke Alif Alviani',
+        'Muhammad Azzam',
+        'Ivva Amalia',
+        'Siti Aisyah Fatihaturrizqiyah',
+        'Syifa Nasibah Mujahidah',
+        'Haiva Satriana Zahrah Siregar',
+      ],
+    },
   ];
 
-  for (const grp of sixGroups) {
-    const leader = allPentashihUsers[grp.leaderIdx] || allPentashihUsers[0];
+  // Helper normalisasi nama untuk pencocokan dengan pentashih-roster-2025.json
+  const normalizeName = (str) =>
+    str
+      .toLowerCase()
+      .replace(/\b(dr|dra|drs|h|hj)\.?\s+/gi, '')
+      .replace(/['’`]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  for (const grp of cpns2025GroupRoster) {
+    const matchedMembers = grp.members
+      .map((targetName) => {
+        const normTarget = normalizeName(targetName);
+        return allPentashihUsers.find((u) => {
+          const normUser = normalizeName(u.name);
+          return normUser === normTarget || normUser.startsWith(normTarget) || normTarget.startsWith(normUser);
+        });
+      })
+      .filter(Boolean);
+
+    const leaderUser = matchedMembers[0] || allPentashihUsers[0];
+
     const distTeam = await prisma.distributionTeam.upsert({
       where: { id: grp.id },
       update: {
         name: grp.name,
         decree_no: 'SK-LPMQ/01/2025',
         year: 2025,
-        leader_user_id: leader?.id,
+        leader_user_id: leaderUser?.id,
         active_from: new Date('2025-01-01'),
         status: 'ACTIVE',
       },
@@ -327,31 +439,36 @@ async function main() {
         name: grp.name,
         decree_no: 'SK-LPMQ/01/2025',
         year: 2025,
-        leader_user_id: leader?.id,
+        leader_user_id: leaderUser?.id,
         active_from: new Date('2025-01-01'),
         status: 'ACTIVE',
       },
     });
 
-    const membersChunk = allPentashihUsers.slice(grp.start, grp.end);
-    for (const m of membersChunk) {
-      if (m) {
-        await prisma.teamMember.upsert({
-          where: {
-            team_id_user_id: {
-              team_id: distTeam.id,
-              user_id: m.id,
-            },
+    // Bersihkan anggota lama di kelompok ini agar tidak tercampur hasil slice() sebelumnya
+    await prisma.teamMember.deleteMany({
+      where: { team_id: grp.id },
+    });
+
+    for (const memberUser of matchedMembers) {
+      await prisma.teamMember.upsert({
+        where: {
+          team_id_user_id: {
+            team_id: grp.id,
+            user_id: memberUser.id,
           },
-          update: { role_in_team: m.id === leader?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH' },
-          create: {
-            team_id: distTeam.id,
-            user_id: m.id,
-            role_in_team: m.id === leader?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH',
-            status: 'ACTIVE',
-          },
-        });
-      }
+        },
+        update: {
+          role_in_team: memberUser.id === leaderUser?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH',
+          status: 'ACTIVE',
+        },
+        create: {
+          team_id: grp.id,
+          user_id: memberUser.id,
+          role_in_team: memberUser.id === leaderUser?.id ? 'KETUA_KELOMPOK' : 'PENTASHIH',
+          status: 'ACTIVE',
+        },
+      });
     }
   }
 
@@ -390,6 +507,23 @@ async function main() {
       update: {},
       create: {
         team_id: defaultTeam.id,
+        user_id: pentashihUser.id,
+        role_in_team: 'PENTASHIH',
+        status: 'ACTIVE',
+      },
+    });
+
+    // Pastikan akun demo pentashih (pentashih@lpmq.kemenag.go.id) juga aktif di Kelompok 1 untuk pengujian alur penugasan & demo
+    await prisma.teamMember.upsert({
+      where: {
+        team_id_user_id: {
+          team_id: 'kelompok-1',
+          user_id: pentashihUser.id,
+        },
+      },
+      update: { role_in_team: 'PENTASHIH', status: 'ACTIVE' },
+      create: {
+        team_id: 'kelompok-1',
         user_id: pentashihUser.id,
         role_in_team: 'PENTASHIH',
         status: 'ACTIVE',

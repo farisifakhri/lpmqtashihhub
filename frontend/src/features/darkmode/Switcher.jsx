@@ -8,31 +8,22 @@ export default function Switcher() {
 
   return (
     <button
-        type="button"
-        onClick={toggleTheme}
-        aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
-        aria-pressed={isDark}
-        className="
-            flex items-center gap-2
-            rounded-lg
-            border border-line
-            px-3 py-2
-            text-ink
-            hover:bg-surface-subtle
-            focus-visible:outline
-            focus-visible:outline-2
-            focus-visible:outline-brand-700
-        "
-        >
-        {isDark ? (
-            <Sun className="h-4 w-4" />
-        ) : (
-            <Moon className="h-4 w-4" />
-        )}
+      type="button"
+      onClick={toggleTheme}
+      aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
+      aria-pressed={isDark}
+      title={isDark ? "Beralih ke Mode Terang" : "Beralih ke Mode Gelap"}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-strong/70 border border-line text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
+    >
+      {isDark ? (
+        <Sun className="h-3.5 w-3.5 text-brand-fg" />
+      ) : (
+        <Moon className="h-3.5 w-3.5 text-brand-fg" />
+      )}
 
-        <span className="hidden sm:inline">
-            {isDark ? "Terang" : "Gelap"}
-        </span>
+      <span className="hidden sm:inline">
+        {isDark ? "Terang" : "Gelap"}
+      </span>
     </button>
   );
 };

@@ -152,16 +152,18 @@ export const getUserDetail = async (id, currentUser) => {
 export const createUser = async (data, currentUser, req) => {
   requireRole(currentUser, ['SUPERADMIN']);
 
+  const normalizedEmail = data.email.trim().toLowerCase();
   const existingEmail = await prisma.user.findUnique({
-    where: { email: data.email },
+    where: { email: normalizedEmail },
   });
   if (existingEmail) {
     fail(409, 'Alamat email sudah digunakan oleh akun lain.');
   }
 
-  if (data.nip) {
+  const normalizedNip = data.nip ? data.nip.trim() : null;
+  if (normalizedNip) {
     const existingNip = await prisma.user.findUnique({
-      where: { nip: data.nip },
+      where: { nip: normalizedNip },
     });
     if (existingNip) {
       fail(409, 'NIP sudah terdaftar pada akun lain.');
@@ -182,11 +184,11 @@ export const createUser = async (data, currentUser, req) => {
   const result = await prisma.$transaction(async (tx) => {
     const newUser = await tx.user.create({
       data: {
-        name: data.name,
-        email: data.email,
-        whatsapp_number: data.whatsapp_number || null,
+        name: data.name.trim(),
+        email: normalizedEmail,
+        whatsapp_number: data.whatsapp_number ? data.whatsapp_number.trim() : null,
         password_hash: passwordHash,
-        nip: data.nip || null,
+        nip: normalizedNip,
         status: data.status || 'ACTIVE',
       },
     });
@@ -262,18 +264,26 @@ export const updateUser = async (id, data, currentUser, req) => {
     }
   }
 
-  if (data.email && data.email !== user.email) {
-    const existingEmail = await prisma.user.findUnique({
-      where: { email: data.email },
+  const normalizedEmail = data.email ? data.email.trim().toLowerCase() : undefined;
+  if (normalizedEmail) {
+    const existingEmail = await prisma.user.findFirst({
+      where: {
+        email: normalizedEmail,
+        NOT: { id },
+      },
     });
     if (existingEmail) {
       fail(409, 'Alamat email sudah digunakan oleh akun lain.');
     }
   }
 
-  if (data.nip && data.nip !== user.nip) {
-    const existingNip = await prisma.user.findUnique({
-      where: { nip: data.nip },
+  const normalizedNip = data.nip !== undefined ? (data.nip ? data.nip.trim() : null) : undefined;
+  if (normalizedNip) {
+    const existingNip = await prisma.user.findFirst({
+      where: {
+        nip: normalizedNip,
+        NOT: { id },
+      },
     });
     if (existingNip) {
       fail(409, 'NIP sudah terdaftar pada akun lain.');
@@ -281,13 +291,13 @@ export const updateUser = async (id, data, currentUser, req) => {
   }
 
   const updateFields = {};
-  if (data.name !== undefined) updateFields.name = data.name;
-  if (data.email !== undefined) updateFields.email = data.email;
+  if (data.name !== undefined) updateFields.name = data.name.trim();
+  if (normalizedEmail !== undefined) updateFields.email = normalizedEmail;
   if (data.whatsapp_number !== undefined && data.whatsapp_number !== user.whatsapp_number) {
-    updateFields.whatsapp_number = data.whatsapp_number || null;
+    updateFields.whatsapp_number = data.whatsapp_number ? data.whatsapp_number.trim() : null;
     updateFields.whatsapp_verified_at = null;
   }
-  if (data.nip !== undefined) updateFields.nip = data.nip || null;
+  if (data.nip !== undefined) updateFields.nip = normalizedNip;
   if (data.status !== undefined) updateFields.status = data.status;
 
   if (data.password && data.password.trim().length >= 6) {
