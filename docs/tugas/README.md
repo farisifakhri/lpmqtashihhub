@@ -8,20 +8,18 @@ Dokumen ini adalah pintu masuk. Setiap paket pekerjaan punya file sendiri dan **
 
 ## 1. Isi folder
 
-| File | Pemilik | Branch |
-|---|---|---|
-| `fakhri/T-F01-kontrak-api.md` | Fakhri | `docs/kontrak-api-pendaftaran-penerbit` |
-| `fakhri/T-F02-rbac-admin-internal.md` | Fakhri | `feat/rbac-admin-internal` |
-| `fakhri/T-F03-bersihkan-data-perorangan.md` | Fakhri | `chore/bersihkan-data-penerbit-perorangan` |
-| `fakhri/T-F04-skema-pendaftaran-penerbit.md` | Fakhri | `feat/skema-pendaftaran-penerbit` |
-| `fakhri/T-F05-upload-dokumen-aman.md` | Fakhri | `feat/upload-dokumen-aman` |
-| `fakhri/T-F06-api-pendaftaran-penerbit.md` | Fakhri | `feat/api-pendaftaran-penerbit` |
-| `fakhri/T-F07-hardening-keamanan.md` | Fakhri | `chore/hardening-keamanan-dasar` |
-| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` |
-| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` |
-| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` |
-| `BACKLOG-FASE-LANJUTAN.md` | Fakhri (usulan) | satu branch per paket B-xx |
-| `../api/KONTRAK_PENDAFTARAN_PENERBIT.md` | Fakhri, dibaca Faisal | lihat T-F01 |
+| File / Paket | Pemilik (PIC) | Branch | Keterangan |
+|---|---|---|---|
+| **Fase 1 (Pendaftaran Penerbit)** | | | |
+| `fakhri/T-F01` s.d. `T-F07` | Fakhri | `feat/api-pendaftaran-penerbit` | Selesai & Di-push (Backend & Security) |
+| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Tugas Utama**: Form Pendaftaran |
+| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Tugas Utama**: Cek Status & Perbaikan |
+| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Tugas Utama**: Antrean Verifikasi Admin |
+| **Fase Lanjutan** | | | |
+| `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Pengajuan naskah varian, nomor surat, billing |
+| `B-05` s.d. `B-08` | *(Menunggu arahan)* | `feat/distribusi-kelompok-juz` dkk. | Distribusi juz, rekap pentashih, siklus revisi |
+| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Surat hasil/STT, 5 eksemplar, UX dokumentator |
+| `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Glosarium istilah & Dashboard penerbit |
 
 ## 2. Urutan dan dependensi (Fase 1: pendaftaran penerbit)
 
