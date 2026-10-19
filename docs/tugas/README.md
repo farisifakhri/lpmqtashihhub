@@ -8,20 +8,18 @@ Dokumen ini adalah pintu masuk. Setiap paket pekerjaan punya file sendiri dan **
 
 ## 1. Isi folder
 
-| File | Pemilik | Branch |
-|---|---|---|
-| `fakhri/T-F01-kontrak-api.md` | Fakhri | `docs/kontrak-api-pendaftaran-penerbit` |
-| `fakhri/T-F02-rbac-admin-internal.md` | Fakhri | `feat/rbac-admin-internal` |
-| `fakhri/T-F03-bersihkan-data-perorangan.md` | Fakhri | `chore/bersihkan-data-penerbit-perorangan` |
-| `fakhri/T-F04-skema-pendaftaran-penerbit.md` | Fakhri | `feat/skema-pendaftaran-penerbit` |
-| `fakhri/T-F05-upload-dokumen-aman.md` | Fakhri | `feat/upload-dokumen-aman` |
-| `fakhri/T-F06-api-pendaftaran-penerbit.md` | Fakhri | `feat/api-pendaftaran-penerbit` |
-| `fakhri/T-F07-hardening-keamanan.md` | Fakhri | `chore/hardening-keamanan-dasar` |
-| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` |
-| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` |
-| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` |
-| `BACKLOG-FASE-LANJUTAN.md` | Fakhri (usulan) | satu branch per paket B-xx |
-| `../api/KONTRAK_PENDAFTARAN_PENERBIT.md` | Fakhri, dibaca Faisal | lihat T-F01 |
+| File / Paket | Pemilik (PIC) | Branch | Keterangan |
+|---|---|---|---|
+| **Fase 1 (Pendaftaran Penerbit)** | | | |
+| `fakhri/T-F01` s.d. `T-F07` | Fakhri | `feat/api-pendaftaran-penerbit` | Selesai & Di-push (Backend & Security) |
+| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Tugas Utama**: Form Pendaftaran |
+| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Tugas Utama**: Cek Status & Perbaikan |
+| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Tugas Utama**: Antrean Verifikasi Admin |
+| **Fase Lanjutan** | | | |
+| `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Pengajuan naskah varian, nomor surat, billing |
+| `B-05` s.d. `B-08` | *(Menunggu arahan)* | `feat/distribusi-kelompok-juz` dkk. | Distribusi juz, rekap pentashih, siklus revisi |
+| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Surat hasil/STT, 5 eksemplar, UX dokumentator |
+| `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Glosarium istilah & Dashboard penerbit |
 
 ## 2. Urutan dan dependensi (Fase 1: pendaftaran penerbit)
 
@@ -72,13 +70,24 @@ Semua branch fitur dibuat dari **satu** `<BASE>` yang sama. Jangan dari `fronten
 
 ## 6. Keputusan yang sudah dikunci
 
-Pendaftaran penerbit:
-- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Data perorangan yang ada adalah data uji dan dihapus semua.
+Pendaftaran & Akun Penerbit:
+- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Data perorangan yang ada adalah data uji dan telah dibersihkan.
 - Dokumen per jenis mengikuti `KONTRAK_PENDAFTARAN_PENERBIT.md`. NIB cukup (SIUP/TDP tidak diwajibkan).
-- Penerbit wajib mengajukan pendaftaran dan diverifikasi oleh SUPERADMIN dan/atau admin internal sebelum mengajukan naskah atau mengakses dashboard.
-- Penerbit belum terverifikasi **tidak boleh login**. Ada halaman khusus cek status pendaftaran.
-- "Perlu perbaikan" dibedakan dari "ditolak". Ditolak bersifat final.
+- Penerbit wajib mengajukan pendaftaran dan diverifikasi oleh salah satu: `SUPERADMIN` atau `ADMIN_INTERNAL` sebelum dapat login atau mengakses dashboard.
+- Penerbit belum terverifikasi **mutlak tidak boleh login** (diberi respons 403 `PUBLISHER_NOT_APPROVED`) dan **tidak boleh menembus dashboard**. Pengecekan status pendaftaran disediakan di halaman publik mandiri (`/cek-status`).
+- "Perlu perbaikan" dibedakan dari "ditolak". Ditolak bersifat final, tetapi NPWP/NIB/Email dibebaskan agar dapat mendaftar baru jika diperlukan.
 - Alamat pengiriman adalah alamat penerbit.
+
+Peran & Kewenangan Internal (RBAC):
+- **Admin Internal (`ADMIN_INTERNAL`)**:
+  - Tetap dipertahankan dalam sistem.
+  - Berwenang mengelola akun staf teknis dan melakukan reset password staf teknis/pengguna.
+  - Berwenang melakukan verifikasi dan pengambilan keputusan atas pendaftaran penerbit (cukup salah satu dari `SUPERADMIN` atau `ADMIN_INTERNAL`).
+  - Untuk penugasan tim dan keputusan pengerjaan pentashihan naskah bersifat **readonly** (tidak ikut campur dalam keputusan subtansi pentashihan).
+- **Distributor (`DISTRIBUTOR`)**:
+  - Tetap berwenang penuh memilih tim atau kelompok pentashihan.
+  - Berhak memilih lebih dari satu kelompok, per individu, atau kombinasi kelompok-individu dengan penjatahan rentang juz fleksibel (misal 20-10 juz, dll).
+  - Hak penugasan manual tim pentashihan **tidak dicabut**.
 
 Alur naskah (untuk fase lanjutan):
 - Satu pengajuan boleh berisi banyak naskah. **STT per pengajuan** dan menunggu semua naskah. Jika diajukan terpisah, STT terpisah.
@@ -89,13 +98,12 @@ Alur naskah (untuk fase lanjutan):
 - Status "menunggu penerbit" tidak dihitung SLA, tanpa tenggat, dengan pengingat berkala tanpa konsekuensi dan indikator umur untuk admin.
 - Batas 5 eksemplar: satu bulan kalender sejak STT dan surat hasil terbit. Status faktual "kewajiban eksemplar belum terpenuhi" terpisah dari label "penerbit bermasalah" yang ditetapkan admin.
 
-## 7. Asumsi yang masih perlu dikonfirmasi
+## 7. Asumsi dan status integrasi
 
-- Format nomor surat belum ada. Dibuat default dan bisa diganti lewat konfigurasi.
+- Format nomor surat resmi (B-03): dibuat format default terkonfigurasi dan dapat diganti lewat konfigurasi sistem.
+- Kanal notifikasi: Saat ini integrasi gateway WhatsApp dan SMTP Email resmi belum aktif di server. Sistem menyediakan tautan dan token rahasia secara langsung (in-app fallback) untuk keperluan perbaikan pendaftaran dan reset password mandiri sampai gateway resmi terpasang.
 - Arti kalimat notulensi "halaman login: peringatan menghapus" belum jelas. Jangan diubah sebelum dikonfirmasi.
-- Keluhan UX dokumentator belum konkret. Kumpulkan contoh langkah yang membingungkan sebelum mengerjakan.
-- Kanal notifikasi: email dulu. Penyedia email dan kredensialnya di server belum ditetapkan.
-- Masa berlaku tautan perbaikan dan format kode pendaftaran: usulan di kontrak, perlu disetujui.
+- Keluhan UX dokumentator: diselesaikan melalui perbaikan UI card mushaf dan filter berjenjang di paket B-11.
 
 ## 8. Glosarium sementara
 
