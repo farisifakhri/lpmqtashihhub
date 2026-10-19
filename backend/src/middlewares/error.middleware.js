@@ -11,6 +11,15 @@ export const errorHandler = (err, req, res, next) => {
     message = req.path?.endsWith('/uploads')
       ? 'Berkas terlalu besar. Unggah PDF, PNG, atau JPEG berukuran maksimal 10 MB.'
       : 'Data yang dikirim terlalu besar. Kurangi isi formulir; kirim berkas melalui fasilitas unggah.';
+  } else if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      statusCode = 413;
+      err.code = 'FILE_TOO_LARGE';
+      message = 'Ukuran berkas melampaui batas maksimum yang diizinkan.';
+    } else {
+      statusCode = 400;
+      message = `Gagal mengunggah berkas: ${err.message}`;
+    }
   }
 
   // Tangani error CORS
@@ -63,7 +72,10 @@ export const errorHandler = (err, req, res, next) => {
 
   res.status(statusCode).json({
     success: false,
+    ...(err.code && { code: err.code }),
     message,
+    ...(err.errors && { errors: err.errors }),
+    ...(err.data && { data: err.data }),
     ...(process.env.NODE_ENV === 'development' && {
       stack: err.stack,
       prisma_code: err.code,

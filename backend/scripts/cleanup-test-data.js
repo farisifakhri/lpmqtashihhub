@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -37,21 +37,20 @@ try {
     if (hash.digest('hex') !== metadata.sha256) throw new Error('Backup checksum mismatch.');
     const ids = candidates.map(item => item.id);
     if (ids.some(id => !/^[a-f0-9-]{36}$/i.test(id))) throw new Error('Unexpected registration ID.');
-    const sqlIds = ids.map(id => `'${id}'`).join(',');
     const manifest = `${backup}.cleanup.json`;
     await writeFile(manifest, JSON.stringify({ database: metadata.database, backup, expected, candidates, completed: false }, null, 2), { flag: 'wx' });
     const result = await db.$transaction(async tx => {
-      const parents = await tx.$queryRawUnsafe(`SELECT id, title FROM registrations WHERE id IN (${sqlIds}) FOR UPDATE`);
+      const parents = await tx.$queryRaw`SELECT id, title FROM registrations WHERE id IN (${Prisma.join(ids)}) FOR UPDATE`;
       if (parents.length !== expected || parents.some(item => !fixtures.includes(item.title))) throw new Error('Targets changed; cleanup rolled back.');
       const foreignKeys = await tx.$queryRaw`SELECT TABLE_NAME AS table_name, DELETE_RULE AS delete_rule FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = 'registrations'`;
       if (foreignKeys.some(fk => fk.table_name !== 'registrations' && fk.delete_rule !== 'CASCADE')) throw new Error('Unexpected non-cascading FK; refusing cleanup.');
-      const externalExtensions = await tx.$queryRawUnsafe(`SELECT id FROM registrations WHERE previous_registration_id IN (${sqlIds}) AND id NOT IN (${sqlIds})`);
+      const externalExtensions = await tx.$queryRaw`SELECT id FROM registrations WHERE previous_registration_id IN (${Prisma.join(ids)}) AND id NOT IN (${Prisma.join(ids)})`;
       if (externalExtensions.length) throw new Error('A retained extension references a fixture; refusing cleanup.');
       const preservedAccounts = await tx.user.count();
       const preservedPublishers = await tx.publisher.count();
       const preservedAudit = await tx.auditLog.count();
       const before = await tx.registration.count();
-      const deleted = await tx.$executeRawUnsafe(`DELETE FROM registrations WHERE id IN (${sqlIds})`);
+      const deleted = await tx.$executeRaw`DELETE FROM registrations WHERE id IN (${Prisma.join(ids)})`;
       const after = await tx.registration.count();
       if (deleted !== expected || before - after !== expected || await tx.user.count() !== preservedAccounts || await tx.publisher.count() !== preservedPublishers || await tx.auditLog.count() !== preservedAudit) throw new Error('Post-delete count mismatch; rolling back.');
       return { deleted, remaining: after, accounts: preservedAccounts, publishers: preservedPublishers, audit_logs: preservedAudit };

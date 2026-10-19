@@ -13,6 +13,7 @@ export const login = async ({ email, password, req }) => {
     include: {
       roles: { include: { role: true } },
       publisher: true,
+      publisher_registration: true,
     },
   });
 
@@ -23,6 +24,17 @@ export const login = async ({ email, password, req }) => {
   if (!user || !isMatch) {
     const error = new Error('Email atau password tidak sesuai.');
     error.statusCode = 401;
+    throw error;
+  }
+
+  // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
+  if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    error.statusCode = 403;
+    error.code = 'PUBLISHER_NOT_APPROVED';
+    error.data = {
+      status_pendaftaran: user.publisher_registration.status,
+    };
     throw error;
   }
 

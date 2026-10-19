@@ -55,9 +55,37 @@ export const forgotPasswordRateLimiter = rateLimit({
   },
 });
 
+export const publisherRegistrationRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 10, // Maksimal 10 pendaftaran per 15 menit per IP
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak percobaan pendaftaran akun penerbit dari IP ini. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
+export const publisherStatusCheckRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 20, // Maksimal 20 pengecekan status per 15 menit per IP
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak permintaan pengecekan status dari IP ini. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
 export default {
   authRateLimiter,
   registrationRateLimiter,
   uploadRateLimiter,
   forgotPasswordRateLimiter,
+  publisherRegistrationRateLimiter,
+  publisherStatusCheckRateLimiter,
 };

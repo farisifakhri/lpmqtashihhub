@@ -19,6 +19,7 @@ export const validate = (schema) => (req, res, next) => {
       const messages = [...new Set(errors.map(issue => issue.message))];
       return res.status(400).json({
         success: false,
+        code: 'VALIDATION_ERROR',
         message: `Periksa isian Anda: ${messages.slice(0, 3).join(' ')}${messages.length > 3 ? ' Periksa juga isian lainnya yang belum sesuai.' : ''}`,
         errors,
       });

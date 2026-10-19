@@ -1,6 +1,10 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { audit, fail, requireRole } from './workflow-utils.js';
+import { emailProvider } from './email-provider.service.js';
+import { whatsAppProvider } from './whatsapp-provider.service.js';
+import { ENV } from '../config/env.js';
 
 export const ALL_ROLE_CODES = [
   'SUPERADMIN',
@@ -25,7 +29,7 @@ export const getAvailableRoles = async () => {
 };
 
 export const listUsers = async (query, currentUser) => {
-  requireRole(currentUser, ['SUPERADMIN']);
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
   const where = {};
 
@@ -117,7 +121,7 @@ export const listUsers = async (query, currentUser) => {
 };
 
 export const getUserDetail = async (id, currentUser) => {
-  requireRole(currentUser, ['SUPERADMIN']);
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -150,7 +154,14 @@ export const getUserDetail = async (id, currentUser) => {
 };
 
 export const createUser = async (data, currentUser, req) => {
-  requireRole(currentUser, ['SUPERADMIN']);
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
+
+  if (!currentUser.roles.includes('SUPERADMIN')) {
+    const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    if (disallowedRoles.length > 0) {
+      fail(403, 'Admin Internal hanya berwenang membuat akun staf operasional (Verifikator, Distributor, Pentashih, Dokumentator, Penerbit).');
+    }
+  }
 
   const normalizedEmail = data.email.trim().toLowerCase();
   const existingEmail = await prisma.user.findUnique({
@@ -230,7 +241,7 @@ export const createUser = async (data, currentUser, req) => {
 };
 
 export const updateUser = async (id, data, currentUser, req) => {
-  requireRole(currentUser, ['SUPERADMIN']);
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -238,6 +249,20 @@ export const updateUser = async (id, data, currentUser, req) => {
   });
   if (!user) {
     fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if (!currentUser.roles.includes('SUPERADMIN')) {
+    const targetRoles = user.roles.map((r) => r.role.code);
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    if (hasPrivilegedRole) {
+      fail(403, 'Admin Internal tidak memiliki izin untuk mengubah akun administrator atau pimpinan.');
+    }
+    if (Array.isArray(data.roles)) {
+      const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+      if (disallowedRoles.length > 0) {
+        fail(403, 'Admin Internal tidak berwenang memberikan hak akses administrator atau pimpinan.');
+      }
+    }
   }
 
   if ((data.status && data.status !== 'ACTIVE') || Array.isArray(data.roles)) {
@@ -360,7 +385,7 @@ export const updateUser = async (id, data, currentUser, req) => {
 };
 
 export const deleteUser = async (id, currentUser, req) => {
-  requireRole(currentUser, ['SUPERADMIN']);
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
   if (id === currentUser.id) {
     fail(400, 'Anda tidak dapat menghapus akun Anda sendiri.');
@@ -369,6 +394,7 @@ export const deleteUser = async (id, currentUser, req) => {
   const user = await prisma.user.findUnique({
     where: { id },
     include: {
+      roles: { select: { role: { select: { code: true } } } },
       verification_assignments: { select: { id: true }, take: 1 },
       verification_assignments_made: { select: { id: true }, take: 1 },
       verification_assignments_revoked: { select: { id: true }, take: 1 },
@@ -398,6 +424,14 @@ export const deleteUser = async (id, currentUser, req) => {
 
   if (!user) {
     fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if (!currentUser.roles.includes('SUPERADMIN')) {
+    const targetRoles = user.roles.map((r) => r.role.code);
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    if (hasPrivilegedRole) {
+      fail(403, 'Admin Internal tidak memiliki izin untuk menonaktifkan atau menghapus akun administrator atau pimpinan.');
+    }
   }
 
   const rotation = await prisma.coreTeamRotation.findUnique({ where: { id: 1 } });
@@ -504,5 +538,103 @@ export const grantAllRolesToSuperadmin = async (userId, currentUser, req) => {
   });
 
   return getUserDetail(userId, currentUser);
+};
+
+export const requestPasswordResetForUser = async (id, currentUser, req) => {
+  requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      roles: {
+        include: { role: true },
+      },
+    },
+  });
+
+  if (!user) {
+    fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if (!currentUser.roles.includes('SUPERADMIN')) {
+    const targetRoles = user.roles.map((r) => r.role.code);
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    if (hasPrivilegedRole) {
+      fail(403, 'Admin Internal tidak memiliki izin untuk mereset kata sandi akun administrator atau pimpinan.');
+    }
+  }
+
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 menit
+  const requestedIp = req?.ip || req?.headers?.['x-forwarded-for'] || null;
+
+  await prisma.passwordResetToken.deleteMany({
+    where: { user_id: user.id },
+  });
+
+  await prisma.passwordResetToken.create({
+    data: {
+      user_id: user.id,
+      token_hash: tokenHash,
+      expires_at: expiresAt,
+      requested_ip: typeof requestedIp === 'string' ? requestedIp : null,
+    },
+  });
+
+  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
+
+  let sentEmail = false;
+  try {
+    if (user.email) {
+      await emailProvider.sendEmail({
+        to: user.email,
+        toName: user.name,
+        subject: 'Reset Kata Sandi Akun - LPMQ Tashih Hub',
+        template: 'PASSWORD_RESET',
+        payload: {
+          resetUrl,
+          expiresMinutes: 30,
+          actorName: currentUser.name || 'Administrator',
+        },
+      });
+      sentEmail = true;
+    }
+  } catch (emailErr) {
+    console.error('Peringatan: Gagal mengirim email reset password staf:', emailErr.message);
+  }
+
+  let sentWa = false;
+  try {
+    if (user.whatsapp_number) {
+      await whatsAppProvider.sendWhatsApp({
+        to: user.whatsapp_number,
+        message: `Halo ${user.name},\n\nTautan pemulihan kata sandi akun LPMQ Anda telah dibuat oleh ${currentUser.name || 'Administrator'}.\n\nSilakan klik tautan berikut untuk membuat kata sandi baru:\n${resetUrl}\n\nTautan berlaku selama 30 menit.`,
+        template: 'ADMIN_PASSWORD_RESET',
+        payload: { resetUrl },
+      });
+      sentWa = true;
+    }
+  } catch (waErr) {
+    console.error('Peringatan: Gagal mengirim WhatsApp reset password staf:', waErr.message);
+  }
+
+  await audit(prisma, currentUser, 'ADMIN_RESET_PASSWORD', 'User', user.id, {
+    target_email: user.email,
+    sent_email: sentEmail,
+    sent_whatsapp: sentWa,
+  }, req);
+
+  return {
+    user_id: user.id,
+    name: user.name,
+    email: user.email,
+    whatsapp_number: user.whatsapp_number,
+    reset_url: resetUrl,
+    expires_at: expiresAt,
+    sent_to_email: sentEmail,
+    sent_to_whatsapp: sentWa,
+  };
 };
 

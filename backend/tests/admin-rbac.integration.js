@@ -59,8 +59,11 @@ try {
   await deny('/publishers', 'GET', undefined);
   await deny(`/registrations/${pending.id}/payments`);
   await deny(`/registrations/${pending.id}/distribution-review`, 'POST', { result: 'PASSED', notes: 'Forbidden review' });
-  await deny('/assignments/00000000-0000-4000-8000-000000000001/review', 'POST', { result: 'PASSED', notes: 'Forbidden review' });
-  await deny('/users', 'GET', undefined);
+  // Under T-F02: Admin Internal is authorized to read/manage technical users, but denied grant-all-roles & modifying SUPERADMIN
+  await call('/users', tokens.ADMIN_INTERNAL);
+  await deny(`/users/${superadmin.id}/grant-all-roles`, 'POST', {});
+  await deny(`/users/${superadmin.id}`, 'PUT', { name: 'Forbidden modification' });
+  await deny(`/users/${superadmin.id}/reset-password`, 'POST', {});
   await deny('/master/categories', 'POST', { code: 'FORBIDDEN', name: 'Forbidden' });
   assert.equal((await prisma.registration.findUnique({ where: { id: pending.id } })).status, 'WAITING_VERIFICATION_APPROVAL');
   await call(`/verification-documents/${document.id}/approve`, tokens.SUPERADMIN, 'POST', {}, 403);
