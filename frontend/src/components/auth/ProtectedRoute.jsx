@@ -19,8 +19,14 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
   const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
 
   // Proteksi portal: Penerbit vs Petugas Internal
-  if (portalType === 'publisher' && !isPublisher && !isAdmin) {
-    return <Navigate to="/internal" replace />;
+  if (portalType === 'publisher') {
+    if (!isPublisher && !isAdmin) {
+      return <Navigate to="/internal" replace />;
+    }
+    const status = currentUser.publisher?.verification_status || currentUser.verificationStatus;
+    if (isPublisher && !isAdmin && (status === 'UNVERIFIED' || status === 'REJECTED')) {
+      return <Navigate to="/login" state={{ error: 'Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas LPMQ.' }} replace />;
+    }
   }
 
   if (portalType === 'internal' && isPublisher && !isAdmin) {

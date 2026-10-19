@@ -21,9 +21,10 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 | # | Aksi | Trigger / Syarat | Output |
 |---|---|---|---|
-| 0 | Unduh template resmi Surat Permohonan Pentashihan Mushaf format `.docx` (`RF-PBL-01`) | Sebelum pengajuan / di landing page | Berkas template siap diisi kop & legalitas perusahaan |
-| 1 | Login ke sistem, isi formulir pendaftaran, unggah sampul, surat permohonan, & naskah digital | Akun penerbit terverifikasi | Draf pendaftaran tersimpan |
-| 2 | Cetak label pengiriman resmi berlogo Kemenag & LPMQ jelas (`RF-REG-10`), lalu kirim bukti pendaftaran + **naskah master fisik** (cetak A4 dijilid per juz) ke loket LPMQ | Formulir disubmit (`READY_FOR_VERIFICATION`) | Diterima oleh Staf TU / Admin Internal loket |
+| 0a | Pendaftaran Akun Penerbit (PT/CV, Yayasan, Lembaga Pemerintah) & unggah berkas legalitas (`POST /publisher-registrations`) | Publik / sebelum menggunakan sistem | Kode pendaftaran didapat; menunggu verifikasi admin (penerbit unverified tidak bisa login) |
+| 0b | Unduh template resmi Surat Permohonan Pentashihan Mushaf format `.docx` (`RF-PBL-01`) | Sebelum pengajuan / di landing page | Berkas template siap diisi kop & legalitas perusahaan |
+| 1 | Login ke sistem setelah akun disetujui, isi formulir permohonan, unggah sampul, surat permohonan, & naskah digital | Akun penerbit terverifikasi (`VERIFIED`) | Draf pendaftaran tersimpan |
+| 2 | Cetak label pengiriman resmi berlogo Kemenag & LPMQ jelas (`RF-REG-10`), lalu kirim bukti pendaftaran + **naskah master fisik** (cetak A4 dijilid per juz) ke loket LPMQ | Formulir disubmit (`READY_FOR_VERIFICATION`) | Diterima oleh Admin Internal loket |
 | 3 | Terima Surat Pemberitahuan Hasil Verifikasi resmi via email | Verifikasi selesai & disetujui Kepala LPMQ | Tahu status lolos/perlu perbaikan; menerima kode billing jika lolos |
 | 4a | *(Jika perlu perbaikan verifikasi)* Perbaiki berkas/sampel & ajukan ulang | Email/surat meminta revisi | Naskah masuk kembali ke `READY_FOR_VERIFICATION` |
 | 4b | *(Jika lolos)* Bayar PNBP via kode billing & konfirmasi bukti bayar | Maks. 7 hari sejak surat diterima | Verifikator memvalidasi pembayaran sah |
@@ -38,7 +39,7 @@ Diagram visual lintas-role: [`docs/diagrams/user-flow.mermaid`](../diagrams/user
 
 ---
 
-## 2. Staf TU / Layanan Loket (`HELPER_ADMIN`)
+## 2. Staf TU / Layanan Loket (`ADMIN_INTERNAL`)
 
 | # | Aksi | Trigger | Output |
 |---|---|---|---|
@@ -163,7 +164,7 @@ menangani hal yang sama di unit berbeda?
   kinerja Dokumentator.
 - ✅ Naskah digital/audio tidak melalui proses eksemplar fisik sama
   sekali — dokumentasi selesai begitu berkas digital lengkap.
-- ✅ Intake naskah master fisik A4 per juz dilakukan oleh Staf TU / Admin (`HELPER_ADMIN`) di loket LPMQ, bukan oleh Kepala LPMQ ataupun Verifikator.
+- ✅ Intake naskah master fisik A4 per juz dilakukan oleh Staf TU / Admin (`ADMIN_INTERNAL`) di loket LPMQ, bukan oleh Kepala LPMQ ataupun Verifikator.
 - ✅ Penugasan Verifikator dilakukan secara atomik bersama Nota Dinas Verifikasi oleh Kepala LPMQ dengan SLA 2 hari kerja kalender `Asia/Jakarta`.
 - ✅ Pemisahan dokumen verifikasi (Nota Dinas, Surat Hasil Verifikasi, Berita Acara Verifikasi) dengan penandatanganan digital bertingkat (multi-signatory).
 - ✅ Pengiriman Surat Hasil Verifikasi dilakukan secara nyata dan andal melalui modul `EmailOutbox` dengan idempotency key dan mekanisme retry.

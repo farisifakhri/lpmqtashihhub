@@ -38,6 +38,17 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
+  // Penghalang Login: Jika entitas penerbit belum berstatus VERIFIED (misal UNVERIFIED / REJECTED)
+  if (user.publisher && user.publisher.verification_status !== 'VERIFIED') {
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    error.statusCode = 403;
+    error.code = 'PUBLISHER_NOT_APPROVED';
+    error.data = {
+      verification_status: user.publisher.verification_status,
+    };
+    throw error;
+  }
+
   if (user.status !== 'ACTIVE') {
     const error = new Error('Akun Anda sedang dinonaktifkan. Hubungi admin LPMQ.');
     error.statusCode = 403;
@@ -140,6 +151,21 @@ export const registerPublisher = async (data, req) => {
     subjectId: result.publisher.id,
     req,
   });
+
+  // Jangan menerbitkan token aktif untuk penerbit yang belum diverifikasi
+  if (result.publisher.verification_status !== 'VERIFIED') {
+    return {
+      token: null,
+      message: 'Pendaftaran penerbit berhasil diajukan dan sedang menunggu verifikasi oleh petugas LPMQ. Anda belum dapat masuk sampai pendaftaran disetujui.',
+      user: {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        roles: ['PENERBIT'],
+        publisher: result.publisher,
+      },
+    };
+  }
 
   const token = jwt.sign(
     {

@@ -88,6 +88,8 @@ export const AuthProvider = ({ children }) => {
             role: u.roles?.[0] || 'PENERBIT',
             publisherId: u.publisher?.id,
             publisherName: u.publisher?.legal_name,
+            publisher: u.publisher || null,
+            verificationStatus: u.publisher?.verification_status || null,
           };
           setCurrentUser(userObj);
         }
@@ -128,6 +130,8 @@ export const AuthProvider = ({ children }) => {
           role: u.roles?.[0] || 'PENERBIT',
           publisherId: u.publisher?.id || (u.roles?.includes('PENERBIT') ? u.id : null),
           publisherName: u.publisher?.legal_name || (u.roles?.includes('PENERBIT') ? u.name : null),
+          publisher: u.publisher || null,
+          verificationStatus: u.publisher?.verification_status || null,
         };
 
         setCurrentUser(userObj);
