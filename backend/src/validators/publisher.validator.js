@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const updatePublisherProfileSchema = {
   body: z.object({
     legal_name: z.string().min(3).optional(),
-    entity_type: z.enum(['PT', 'CV', 'YAYASAN', 'PERORANGAN', 'LAINNYA']).optional(),
+    entity_type: z.enum(['PT', 'CV', 'YAYASAN', 'LEMBAGA_PEMERINTAH', 'LAINNYA']).optional(),
     address: z.string().optional(),
     phone: z.string().optional(),
   }),
