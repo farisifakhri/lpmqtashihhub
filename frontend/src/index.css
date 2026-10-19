@@ -147,6 +147,89 @@
   [class*="surface-strong"] .text-civic-warning {
     color: #92400e !important; /* Dari 4.04:1 → 6.0:1 dengan override gelap */
   }
+  /* ================================================================
+   * Sidebar Theme Classes — Simulasi 2 (light) & Simulasi 3 (dark)
+   * Menggunakan var() langsung agar tidak bergantung pada mekanisme
+   * rgb(hex / opacity) Tailwind v3 yang tidak kompatibel dengan hex.
+   * ================================================================ */
+   .lpmq-sidebar {
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+  }
+  .lpmq-sidebar-border-r {
+    border-right-color: var(--sidebar-border);
+  }
+  .lpmq-sidebar-header {
+    background-color: var(--sidebar-bg);
+    border-bottom-color: var(--sidebar-border);
+  }
+  .lpmq-sidebar-logo-box {
+    background-color: #ffffff;
+    border-color: var(--sidebar-border);
+  }
+  .lpmq-sidebar-text {
+    color: var(--sidebar-text);
+  }
+  .lpmq-sidebar-muted {
+    color: var(--sidebar-text-muted);
+  }
+  .lpmq-sidebar-card {
+    background-color: var(--sidebar-card-bg);
+    border-color: var(--sidebar-card-border);
+  }
+  .lpmq-sidebar-avatar {
+    background-color: var(--sidebar-avatar-bg);
+    color: var(--sidebar-avatar-text);
+  }
+  .lpmq-sidebar-online-dot {
+    background-color: var(--sidebar-status-online);
+    border-color: var(--sidebar-card-bg);
+  }
+  .lpmq-sidebar-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--sidebar-card-border);
+    color: var(--sidebar-text);
+  }
+  .lpmq-sidebar-close-btn {
+    color: var(--sidebar-text-muted);
+  }
+  .lpmq-sidebar-close-btn:hover {
+    color: var(--sidebar-text);
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  .lpmq-sidebar-nav-active {
+    background-color: var(--sidebar-active-bg);
+    color: var(--sidebar-active-text);
+  }
+  .lpmq-sidebar-nav-inactive {
+    color: var(--sidebar-text);
+  }
+  .lpmq-sidebar-nav-inactive:hover {
+    background-color: var(--sidebar-item-hover);
+  }
+  .lpmq-sidebar-nav-icon-active {
+    color: var(--sidebar-active-icon);
+  }
+  .lpmq-sidebar-nav-icon-inactive {
+    color: var(--sidebar-text);
+  }
+  .lpmq-sidebar-section-border {
+    border-top-color: var(--sidebar-border);
+  }
+  .lpmq-sidebar-section-title {
+    color: var(--sidebar-text-muted);
+  }
+  .lpmq-sidebar-footer {
+    background-color: var(--sidebar-bg);
+    border-top-color: var(--sidebar-border);
+  }
+  .lpmq-sidebar-footer-card {
+    background-color: var(--sidebar-card-bg);
+    border-color: var(--sidebar-card-border);
+  }
+  .lpmq-sidebar-online-icon {
+    color: var(--sidebar-status-online);
+  }
 }
 
 

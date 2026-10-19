@@ -494,8 +494,8 @@ export const NewRegistrationPage = () => {
     const fieldMapping = {
       namaMushaf: 'registration-mushaf-name',
       penanggungJawabProduk: 'registration-product-owner',
-      penanggungJawabWa: 'registration-owner-wa',
-      penanggungJawabEmail: 'registration-owner-email',
+      penanggungJawabWa: 'registration-pj-wa',
+      penanggungJawabEmail: 'registration-pj-email',
       noPendaftaranLama: 'old-reg-no',
       negaraAsalMushaf: 'foreign-country-select',
       penerbitAsalMushaf: 'foreign-publisher',
@@ -541,7 +541,7 @@ export const NewRegistrationPage = () => {
       if (waError) errors.penanggungJawabWa = waError;
     }
     if (penanggungJawabEmail.trim()) {
-      const emailError = validateEmail(penanggungJawabEmail);
+      const emailError = validateEmail(penanggungJawabEmail.trim().toLowerCase());
       if (emailError) errors.penanggungJawabEmail = emailError;
     }
     if (sizes.some((s) => s.ukuran.trim() && !s.oplah)) {
@@ -747,7 +747,7 @@ export const NewRegistrationPage = () => {
         nama_mushaf: namaMushaf.trim(),
         penanggung_jawab_produk: penanggungJawabProduk.trim(),
         penanggung_jawab_wa: normalizeWhatsApp(penanggungJawabWa),
-        penanggung_jawab_email: penanggungJawabEmail.trim(),
+        penanggung_jawab_email: penanggungJawabEmail.trim().toLowerCase(),
         sizes: sizes.filter((s) => s.ukuran.trim() || s.oplah),
         jenis_naskah: selectedJenisNaskah,
         jenis_mushaf: jenisStandarMushaf,

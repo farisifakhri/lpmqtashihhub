@@ -28,7 +28,7 @@ export const validateWhatsApp = (value) => {
 export const validateEmail = (value) => {
   if (!value || !value.trim()) return null;
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!regex.test(value.trim())) {
+  if (!regex.test(value.trim().toLowerCase())) {
     return 'Format alamat email tidak valid (contoh: pj.mushaf@penerbit.com).';
   }
   return null;

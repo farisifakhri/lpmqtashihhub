@@ -7,8 +7,9 @@ import { logAudit } from './audit.service.js';
 import { emailProvider } from './email-provider.service.js';
 
 export const login = async ({ email, password, req }) => {
-  const user = await prisma.user.findUnique({
-    where: { email },
+  const normalizedEmail = email ? email.trim().toLowerCase() : '';
+  const user = await prisma.user.findFirst({
+    where: { email: normalizedEmail },
     include: {
       roles: { include: { role: true } },
       publisher: true,

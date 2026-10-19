@@ -491,14 +491,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
       <aside
         className={clsx(
           'fixed lg:static inset-y-0 left-0 z-50 lg:z-0',
-          'w-[264px] shrink-0 overflow-hidden bg-surface border-r border-line flex flex-col justify-between',
+          'w-[264px] shrink-0 overflow-hidden lpmq-sidebar border-r lpmq-sidebar-border-r flex flex-col justify-between',
           'transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none',
           isOpen ? 'translate-x-0 lg:w-[264px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'
         )}
       >
         <div className="flex h-full w-[264px] min-w-[264px] flex-col overflow-hidden">
           {/* Header Brand */}
-          <div className="px-4 py-3.5 border-b border-line bg-surface flex items-center justify-between">
+          <div className="px-4 py-3.5 border-b lpmq-sidebar-header flex items-center justify-between">
             <Link
               to={isPublisher ? '/publisher' : '/internal'}
               className="flex items-center gap-2.5 hover:opacity-95 transition-opacity"
@@ -507,18 +507,18 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
               }}
             >
               <div className="flex items-center gap-1.5 shrink-0">
-                <div className="w-9 h-9 rounded-lg bg-surface border border-line shadow-2xs flex items-center justify-center p-1">
+                <div className="w-9 h-9 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-1">
                   <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain" />
                 </div>
-                <div className="w-8 h-8 rounded-lg bg-surface border border-line shadow-2xs flex items-center justify-center p-0.5">
+                <div className="w-8 h-8 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-0.5">
                   <img src={lpmqLogo} alt="Logo LPMQ" className="h-full w-auto object-contain rounded" />
                 </div>
               </div>
               <div className="min-w-0">
-                <span className="text-xs font-extrabold tracking-wider uppercase text-brand-fg block leading-tight">
+                <span className="text-xs font-extrabold tracking-wider uppercase lpmq-sidebar-text block leading-tight">
                   Kemenag RI
                 </span>
-                <span className="text-xs font-black text-ink block leading-tight truncate">
+                <span className="text-xs font-black lpmq-sidebar-text block leading-tight truncate">
                   Sistem Pentashihan
                 </span>
               </div>
@@ -528,7 +528,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-subtle lg:hidden"
+              className="p-1.5 rounded-lg lpmq-sidebar-close-btn lg:hidden"
               aria-label="Tutup Menu"
             >
               <X className="w-5 h-5" />
@@ -537,29 +537,26 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
           {/* User Mini Profile Card */}
           {currentUser && (
-            <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl border border-line bg-surface-subtle/70">
+            <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl border lpmq-sidebar-card shadow-2xs">
               <div className="flex items-center gap-2.5">
                 <div className="relative shrink-0">
-                  <div className="w-8 h-8 rounded-lg bg-brand-600 text-white font-bold flex items-center justify-center text-xs shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg lpmq-sidebar-avatar font-bold flex items-center justify-center text-xs shadow-2xs">
                     {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
                   </div>
                   <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-700 rounded-full border-2 border-white"
+                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 lpmq-sidebar-online-dot rounded-full border-2"
                     title="Online"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-ink truncate leading-tight">
+                  <h4 className="text-xs font-bold lpmq-sidebar-text truncate leading-tight">
                     {currentUser.name}
                   </h4>
                   <div className="mt-1">
                     <span
-                      className={clsx(
-                        'inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border leading-none',
-                        roleBadge.badgeClass
-                      )}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border leading-none lpmq-sidebar-badge"
                     >
-                      <ShieldCheck className="w-3 h-3 text-brand-fg" />
+                      <ShieldCheck className="w-3 h-3" />
                       <span>{roleBadge.label}</span>
                     </span>
                   </div>
@@ -571,8 +568,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           {/* Navigation Sections */}
           <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
             {navSections.map((section, idx) => (
-              <div key={idx} className="space-y-1 pt-3 border-t border-line/60 first:border-t-0 first:pt-0">
-                <div className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider text-ink-muted">
+              <div key={idx} className="space-y-1 pt-3 border-t lpmq-sidebar-section-border first:border-t-0 first:pt-0">
+                <div className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider lpmq-sidebar-section-title">
                   {section.title}
                 </div>
                 <nav className="space-y-0.5">
@@ -589,8 +586,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         clsx(
                           'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out group hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none',
                           isCurrentItem(item, isActive)
-                            ? 'bg-brand-50 border border-brand-100 text-brand-800 font-bold shadow-2xs'
-                            : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
+                            ? 'lpmq-sidebar-nav-active font-bold shadow-2xs'
+                            : 'lpmq-sidebar-nav-inactive'
                         )
                       }
                     >
@@ -599,7 +596,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div
                             className={clsx(
                               'shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:transform-none',
-                              isCurrentItem(item, isActive) ? 'text-brand-fg' : 'text-ink-muted group-hover:text-brand-fg'
+                              isCurrentItem(item, isActive) ? 'lpmq-sidebar-nav-icon-active' : 'lpmq-sidebar-nav-icon-inactive'
                             )}
                           >
                             {item.icon}
@@ -607,7 +604,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                           <div className="flex-1 min-w-0">
                             <span className="block leading-tight truncate">{item.label}</span>
                             {item.description && !isCurrentItem(item, isActive) && (
-                              <span className="hidden group-hover:block text-[11px] text-ink-muted truncate mt-0.5 animate-fadeIn">
+                              <span className="hidden group-hover:block text-[11px] lpmq-sidebar-muted truncate mt-0.5 animate-fadeIn">
                                 {item.description}
                               </span>
                             )}
@@ -622,13 +619,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
           </div>
 
           {/* Institutional Compliance Footer */}
-          <div className="p-2.5 border-t border-line bg-surface">
-            <div className="p-2.5 rounded-xl bg-surface-subtle border border-line/60">
+          <div className="p-2.5 border-t lpmq-sidebar-footer">
+            <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card">
               <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-brand-fg shrink-0" />
-                <span className="text-xs font-bold text-ink">Standar Pentashihan</span>
+                <CheckCircle2 className="w-3.5 h-3.5 lpmq-sidebar-online-icon shrink-0" />
+                <span className="text-xs font-bold lpmq-sidebar-text">Standar Pentashihan</span>
               </div>
-              <p className="text-[11px] text-ink-muted mt-0.5 leading-tight">
+              <p className="text-[11px] lpmq-sidebar-muted mt-0.5 leading-tight">
                 Mushaf Standar Usmani Kemenag RI
               </p>
             </div>
