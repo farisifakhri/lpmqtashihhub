@@ -50,6 +50,8 @@ model User {
   core_roster_verifier     CoreTeamRoster[] @relation("CoreRosterVerifier")
   core_roster_distributor  CoreTeamRoster[] @relation("CoreRosterDistributor")
   core_roster_documenter   CoreTeamRoster[] @relation("CoreRosterDocumenter")
+  decided_publisher_registrations PublisherRegistration[] @relation("RegistrationDecidedBy")
+  publisher_registration   PublisherRegistration?   @relation("RegistrationUserAccount")
 
   @@map("users")
 }
@@ -130,7 +132,7 @@ model Publisher {
   id                  String              @id @default(uuid())
   user_id             String?             @unique
   legal_name          String              // Nama Badan Hukum / PT / CV / Yayasan
-  entity_type         String              // PT, CV, YAYASAN, PERORANGAN
+  entity_type         String              // PT, CV, YAYASAN, LEMBAGA_PEMERINTAH, LAINNYA
   verification_status PublisherVerificationStatus @default(UNVERIFIED) // UNVERIFIED, VERIFIED, REJECTED
   address             String?
   phone               String?
@@ -144,6 +146,7 @@ model Publisher {
   user                User?               @relation(fields: [user_id], references: [id], onDelete: SetNull)
   documents           PublisherDocument[]
   registrations       Registration[]
+  registration_submission PublisherRegistration?
 
   @@map("publishers")
 }
@@ -163,6 +166,97 @@ model PublisherDocument {
   publisher     Publisher @relation(fields: [publisher_id], references: [id], onDelete: Cascade)
 
   @@map("publisher_documents")
+}
+
+enum PublisherType {
+  PERUSAHAAN
+  YAYASAN
+  LEMBAGA_PEMERINTAH
+}
+
+enum PublisherRegistrationStatus {
+  DIAJUKAN
+  PERLU_PERBAIKAN
+  DISETUJUI
+  DITOLAK
+}
+
+enum PublisherRegistrationDocumentType {
+  SURAT_PENDAFTARAN
+  AKTA_NOTARIS
+  PROFIL
+  NPWP
+  NIB
+  KTP_PENANGGUNG_JAWAB
+}
+
+model PublisherRegistration {
+  id                String                      @id @default(uuid())
+  registration_code String                      @unique(map: "pub_reg_code_key") @db.VarChar(64)
+  publisher_type    PublisherType
+  name              String                      @db.VarChar(255)
+  address           String                      @db.Text
+  pic_name          String                      @db.VarChar(255)
+  pic_phone         String                      @db.VarChar(50)
+  email             String                      @db.VarChar(255)
+  npwp              String                      @db.VarChar(50)
+  nib               String?                     @db.VarChar(50)
+  active_npwp       String?                     @unique(map: "pub_reg_active_npwp_key") @db.VarChar(50)
+  active_nib        String?                     @unique(map: "pub_reg_active_nib_key") @db.VarChar(50)
+  status            PublisherRegistrationStatus @default(DIAJUKAN)
+  reason            String?                     @db.Text
+  version           Int                         @default(1)
+  decided_at        DateTime?
+  decided_by_id     String?
+  decided_by        User?                       @relation("RegistrationDecidedBy", fields: [decided_by_id], references: [id], onDelete: SetNull)
+  user_id           String?                     @unique(map: "pub_reg_user_id_key")
+  user              User?                       @relation("RegistrationUserAccount", fields: [user_id], references: [id], onDelete: SetNull)
+  publisher_id      String?                     @unique(map: "pub_reg_publisher_id_key")
+  publisher         Publisher?                  @relation(fields: [publisher_id], references: [id], onDelete: SetNull)
+
+  documents         PublisherRegistrationDocument[]
+  revision_tokens   PublisherRevisionToken[]
+
+  created_at        DateTime                    @default(now())
+  updated_at        DateTime                    @updatedAt
+
+  @@index([status, created_at], map: "pub_reg_status_created_idx")
+  @@index([email], map: "pub_reg_email_idx")
+  @@map("publisher_registrations")
+}
+
+model PublisherRegistrationDocument {
+  id                String                            @id @default(uuid())
+  registration_id   String
+  registration      PublisherRegistration             @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  document_type     PublisherRegistrationDocumentType
+  storage_path      String                            @db.VarChar(500)
+  original_filename String                            @db.VarChar(255)
+  file_size         Int
+  file_hash         String                            @db.VarChar(64)
+  mime_type         String                            @default("application/pdf") @db.VarChar(100)
+  has_links         Boolean                           @default(false)
+  detected_links    Json?
+  is_replaced       Boolean                           @default(false)
+  uploaded_at       DateTime                          @default(now())
+  created_at        DateTime                          @default(now())
+  updated_at        DateTime                          @updatedAt
+
+  @@index([registration_id, document_type], map: "pub_reg_docs_reg_doc_type_idx")
+  @@map("publisher_registration_documents")
+}
+
+model PublisherRevisionToken {
+  id              String                @id @default(uuid())
+  registration_id String
+  registration    PublisherRegistration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  token_hash      String                @unique(map: "pub_rev_tokens_token_hash_key") @db.VarChar(64)
+  expires_at      DateTime
+  used_at         DateTime?
+  created_at      DateTime              @default(now())
+
+  @@index([registration_id, expires_at], map: "pub_rev_tokens_reg_expires_idx")
+  @@map("publisher_revision_tokens")
 }
 
 // -------------------------------------------------------------
