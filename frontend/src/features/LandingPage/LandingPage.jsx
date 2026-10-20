@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -9,15 +9,8 @@ import {
   BookOpen,
   FileCheck2,
   Clock,
-  ShieldAlert,
   ShieldCheck,
-  Mail,
-  HelpCircle,
-  ExternalLink,
-  ChevronDown,
   Building2,
-  MessageSquareWarning,
-  Layers,
   Plus,
   Minus,
   LogIn,
@@ -26,6 +19,7 @@ import {
   List,
   Quote,
   FileCheck,
+  FilePlus,
   Users,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -36,28 +30,30 @@ import logox from '@/assets/logox.webp';
 import logoig from '@/assets/logoig.webp';
 import logofb from '@/assets/logofb.webp';
 
+const DistributionMap = lazy(() => import('./DistributionMap'));
+
 const navItems = [
   { label: 'Beranda', href: '#beranda' },
   {
     label: 'Informasi',
-    href: '#informasi',
+    href: '#',
     children: [
-      { label: 'Informasi Layanan Pentashihan', href: '#informasi' },
-      { label: 'Alur & Regulasi STT', href: '#informasi' },
-      { label: 'Persyaratan Berkas Naskah', href: '#informasi' },
+      { label: 'Informasi Layanan Pentashihan', href: '#' },
+      { label: 'Alur & Regulasi STT', href: '#' },
+      { label: 'Persyaratan Berkas Naskah', href: '#' },
     ],
   },
-  { label: 'Permohonan Master', href: '#master' },
+  { label: 'Permohonan Master', href: '#beranda' },
   {
     label: 'Pengaduan',
-    href: '#pengaduan',
+    href: '#',
     children: [
-      { label: 'Saluran Pengaduan Masyarakat', href: '#pengaduan' },
-      { label: 'Cek Status Laporan Naskah', href: '#pengaduan' },
-      { label: 'Kontak Pusat Bantuan LPMQ', href: '#pengaduan' },
+      { label: 'Saluran Pengaduan Masyarakat', href: '#' },
+      { label: 'Cek Status Laporan Naskah', href: '#' },
+      { label: 'Kontak Pusat Bantuan LPMQ', href: '#' },
     ],
   },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'FAQ', href: '#beranda' },
 ];
 
 const socialMediaLinks = [
@@ -123,6 +119,27 @@ const serviceValues = [
   },
 ];
 
+const pentashihanServices = [
+  {
+    title: "Pendaftaran Mushaf Al-Qur'an",
+    icon: FilePlus,
+    href: '/login',
+    isInternal: true,
+  },
+  {
+    title: 'Pengecekan Tanda Tashih',
+    icon: FileCheck2,
+    href: null,
+    isInternal: false,
+  },
+  {
+    title: "Pencarian Mushaf Al-Qur'an",
+    icon: Search,
+    href: null,
+    isInternal: false,
+  },
+];
+
 const quickAccessItems = [
   {
     title: 'Login Penerbit',
@@ -141,46 +158,23 @@ const quickAccessItems = [
   {
     title: 'Alur Pelayanan',
     desc: 'Panduan 6 tahapan proses penerbitan STT resmi',
-    href: '#informasi',
+    href: '#informasi-pelayanan',
     isInternal: false,
     icon: Clock,
   },
   {
     title: 'Prosedur Pelayanan',
     desc: 'Tata cara dan SOP pengajuan naskah Al-Qur\'an',
-    href: '#informasi',
+    href: '#informasi-pelayanan',
     isInternal: false,
     icon: BookOpen,
   },
   {
     title: 'Standar Pelayanan',
     desc: 'Maklumat mutu, jangka waktu SLA, dan tarif PNBP',
-    href: '#informasi',
+    href: '#informasi-pelayanan',
     isInternal: false,
     icon: ShieldCheck,
-  },
-];
-
-const FAQ_LIST = [
-  {
-    q: 'Berapa lama masa berlaku Surat Tanda Tashih (STT)?',
-    a: 'Surat Tanda Tashih resmi berlaku selama 2 (dua) tahun kalender sejak tanggal pengesahan oleh Kepala LPMQ. Penerbit dapat mengajukan perpanjangan (extension) sebelum masa berlaku berakhir.',
-  },
-  {
-    q: 'Bagaimana alur pendaftaran naskah mushaf Al-Qur’an?',
-    a: 'Alur meliputi: 1) Registrasi Akun Penerbit & verifikasi legalitas; 2) Pengajuan draf mushaf & unggah berkas naskah; 3) Verifikasi kelengkapan naskah oleh verifikator; 4) Pembayaran tarif PNBP; 5) Sidang pentashihan oleh tim pentashih; 6) Penerbitan Surat Tanda Tashih (STT) resmi ber-QR Code.',
-  },
-  {
-    q: 'Apakah mushaf digital atau aplikasi Android (APK) dapat ditashih?',
-    a: 'Ya, LPMQ melayani pentashihan mushaf digital dalam bentuk berkas paket Android (APK) maupun tautan resmi (URL HTTPS). Verifikator dan pentashih akan memeriksa integritas teks ayat, harakat, dan tanda baca pada aplikasi.',
-  },
-  {
-    q: 'Apakah ada biaya tambahan untuk revisi naskah yang memerlukan perbaikan?',
-    a: 'Tidak ada biaya tambahan untuk putaran perbaikan telaah pentashihan. Tarif PNBP dihitung per naskah/STT dan add-on materi tambahan (seperti terjemah, transliterasi, atau tafsir) yang tercatat resmi pada saat pendaftaran awal.',
-  },
-  {
-    q: 'Di mana lokasi penyerahan master naskah fisik jika diperlukan?',
-    a: 'Naskah fisik diserahkan ke Loket Pelayanan Pentashihan LPMQ di Gedung Bayt Al-Qur\'an & Museum Istiqlal, Jalan Raya TMII Pintu I, Jakarta Timur 13560.',
   },
 ];
 
@@ -244,7 +238,7 @@ export const LandingPage = () => {
   const [isNavigating, setIsNavigating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [searchMessage, setSearchMessage] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileDropdown, setMobileDropdown] = useState(null);
   const statsRef = useRef(null);
@@ -301,20 +295,26 @@ export const LandingPage = () => {
     }, 280);
   };
 
-  const filteredFaqs = useMemo(() => {
-    if (!searchQuery.trim()) return FAQ_LIST;
-    const query = searchQuery.toLowerCase();
-    return FAQ_LIST.filter(
-      (item) => item.q.toLowerCase().includes(query) || item.a.toLowerCase().includes(query)
-    );
-  }, [searchQuery]);
-
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    const faqSection = document.getElementById('faq');
-    if (faqSection) {
-      faqSection.scrollIntoView({ behavior: 'smooth' });
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      setSearchMessage('');
+      return;
     }
+
+    const matchingSection = Array.from(document.querySelectorAll('main > section')).find(
+      (section) => section.id !== 'beranda' && section.textContent.toLowerCase().includes(query)
+    );
+
+    if (!matchingSection) {
+      setSearchMessage('Tidak ditemukan informasi yang sesuai.');
+      return;
+    }
+
+    const heading = matchingSection.querySelector('h2')?.textContent?.trim();
+    setSearchMessage(heading ? `Bagian "${heading}" ditemukan.` : 'Bagian terkait ditemukan.');
+    matchingSection.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -342,6 +342,11 @@ export const LandingPage = () => {
                   >
                     <a
                       href={item.href}
+                      onClick={(e) => {
+                        if (!item.href || item.href === '#') {
+                          e.preventDefault();
+                        }
+                      }}
                       className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
                         isOpen
                           ? 'text-brand-700 font-semibold'
@@ -377,7 +382,12 @@ export const LandingPage = () => {
                             <a
                               key={cIdx}
                               href={child.href}
-                              onClick={() => setActiveDropdown(null)}
+                              onClick={(e) => {
+                                if (!child.href || child.href === '#') {
+                                  e.preventDefault();
+                                }
+                                setActiveDropdown(null);
+                              }}
                               className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-brand-50 hover:text-brand-700 transition-colors"
                             >
                               <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
@@ -460,7 +470,14 @@ export const LandingPage = () => {
                       <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle">
                         <a
                           href={item.href}
-                          onClick={() => setMenuOpen(false)}
+                          onClick={(e) => {
+                            if (!item.href || item.href === '#') {
+                              e.preventDefault();
+                              setMobileDropdown((prev) => (prev === item.label ? null : item.label));
+                              return;
+                            }
+                            setMenuOpen(false);
+                          }}
                           className="flex-1 hover:text-brand-fg"
                         >
                           {item.label}
@@ -489,7 +506,10 @@ export const LandingPage = () => {
                             <a
                               key={cIdx}
                               href={child.href}
-                              onClick={() => {
+                              onClick={(e) => {
+                                if (!child.href || child.href === '#') {
+                                  e.preventDefault();
+                                }
                                 setMenuOpen(false);
                                 setMobileDropdown(null);
                               }}
@@ -572,9 +592,6 @@ export const LandingPage = () => {
               Layanan resmi penerbitan Surat Tanda Tashih (STT) untuk mushaf cetak, mushaf digital, dan rekaman audio/visual.
             </p>
 
-            {
-            
-           
             <form
               className="mx-auto mt-8 flex h-[58px] max-w-[520px] items-center rounded-full bg-surface p-1.5 shadow-lg sm:mt-9"
               onSubmit={handleSearchSubmit}
@@ -584,8 +601,11 @@ export const LandingPage = () => {
               <input
                 type="search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari syarat, alur, atau pertanyaan FAQ..."
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSearchMessage('');
+                }}
+                placeholder="Cari informasi layanan yang tersedia..."
                 aria-label="Cari informasi"
                 className="min-w-0 flex-1 appearance-none border-0 bg-transparent px-3 text-sm text-ink outline-none shadow-none ring-0 focus:border-0 focus:outline-none focus:shadow-none focus:ring-0 focus-visible:outline-none active:outline-none placeholder:text-ink-muted"
               />
@@ -598,7 +618,11 @@ export const LandingPage = () => {
                 <ArrowRight className="h-5 w-5" />
               </button>
             </form>
-           }
+            {searchMessage && (
+              <p className="mt-2 text-xs text-white" role="status">
+                {searchMessage}
+              </p>
+            )}
           </div>
         </section>
 
@@ -681,7 +705,7 @@ export const LandingPage = () => {
                   className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-700 tracking-tight"
                   aria-label="Informasi Pelayanan - Maklumat Pelayanan"
                 >
-                  Informasi Pelayanan
+                  Maklumat Pelayanan
                   <span className="sr-only"> - Maklumat Pelayanan</span>
                 </h2>
                 <p className="text-xs sm:text-sm text-ink leading-relaxed">
@@ -767,233 +791,84 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* Section 2: Informasi Layanan */}
-        <section id="informasi" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
+        {/* Section 2: Layanan Pentashihan */}
+        <section id="layanan-pentashihan" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
           <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Regulasi & Ketentuan</span>
-            <h2 className="text-2xl font-black text-ink mt-1">Informasi Layanan Pentashihan</h2>
+            {/* <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Layanan Utama</span> */}
+            <h2 className="text-2xl font-black text-ink mt-1">Layanan Pentashihan</h2>
             <p className="text-xs sm:text-sm text-ink-muted mt-1">
-              Dasar hukum pelaksanaan pentashihan berlandaskan PMA Nomor 44 Tahun 2016 tentang Penerbitan, Pentashihan, dan Peredaran Mushaf Al-Qur'an.
+              Anda dapat memilih beberapa layanan pentashihan
             </p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-3">
-            <div className="p-4 rounded-xl bg-surface-subtle border border-line space-y-2">
-              <div className="p-2 rounded-lg bg-brand-100 text-brand-800 w-fit">
-                <BookOpen className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-ink">Naskah yang Wajib Ditashih</h3>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Setiap mushaf Al-Qur'an dalam bentuk cetak 30 juz, surah pilihan (Yasin, Juz 'Amma), mushaf digital (APK/Web), dan audio/visual yang diterbitkan atau diedarkan di Indonesia wajib memiliki Surat Tanda Tashih yang masih berlaku.
-              </p>
-            </div>
+            {pentashihanServices.map((service, idx) => {
+              const IconComponent = service.icon;
+              const hasRoute = Boolean(service.href);
 
-            <div className="p-4 rounded-xl bg-surface-subtle border border-line space-y-2">
-              <div className="p-2 rounded-lg bg-brand-100 text-brand-800 w-fit">
-                <FileCheck2 className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-ink">Dokumen Persyaratan</h3>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Penerbit wajib mengunggah: 1) Akta Perusahaan/NIB; 2) Surat Permohonan resmi; 3) Draf halaman cover; 4) Contoh halaman naskah; 5) Berkas paket APK atau URL resmi untuk mushaf digital.
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl bg-surface-subtle border border-line space-y-2">
-              <div className="p-2 rounded-lg bg-brand-100 text-brand-800 w-fit">
-                <Clock className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold text-ink">Standar Waktu Layanan (SLA)</h3>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Pemeriksaan tahap awal diselesaikan dalam 15 hari kerja. Putaran revisi perbaikan ditelaah dalam 7 hari kerja, dan pemeriksaan dumi cetak akhir selesai dalam 3 hari kerja.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 3: Layanan Pengaduan */}
-        <section id="pengaduan" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
-          <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Layanan Masyarakat</span>
-            <h2 className="text-2xl font-black text-ink mt-1">Saluran Pengaduan & Bantuan</h2>
-            <p className="text-xs sm:text-sm text-ink-muted mt-1">
-              Sampaikan saran, kendala layanan, atau temuan mushaf yang diduga mengalami kesalahan cetak langsung kepada petugas LPMQ.
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-5 space-y-4">
-              <div className="p-4 rounded-xl bg-surface-subtle border border-line space-y-3">
-                <div className="flex items-center gap-2 text-ink font-bold text-sm">
-                  <Building2 className="w-4 h-4 text-brand-700" />
-                  <span>Loket Pelayanan Langsung</span>
-                </div>
-                <p className="text-xs text-ink-muted leading-relaxed">
-                  Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I, Jakarta Timur 13560.
-                </p>
-                <p className="text-xs text-ink-muted">
-                  Senin - Jumat: 08.00 - 15.30 WIB
-                </p>
-              </div>
-
-              <div className="p-4 rounded-xl bg-surface-subtle border border-line space-y-3">
-                <div className="flex items-center gap-2 text-ink font-bold text-sm">
-                  <Phone className="w-4 h-4 text-brand-700" />
-                  <span>Kontak Resmi</span>
-                </div>
-                <p className="text-xs text-ink-muted">
-                  Telepon: (021) 87798807 / 8416466<br />
-                  Email: lajnah@kemenag.go.id<br />
-                  Website: lajnah.kemenag.go.id
-                </p>
-              </div>
-            </div>
-
-            <div className="lg:col-span-7">
-              <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-6 space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-bold w-fit">
-                  <Clock className="w-3.5 h-3.5 text-brand-700" />
-                  <span>Formulir Daring Segera Hadir</span>
-                </div>
-
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold text-ink">
-                    Pengaduan Kesalahan Naskah & Layanan Terintegrasi
-                  </h3>
-                  <p className="text-xs text-ink-muted leading-relaxed">
-                    Sistem pelaporan kesalahan teks mushaf dengan verifikasi kontak dan nomor tiket mandiri sedang dalam integrasi penuh (Tahap 5 SOP LPMQ). Selama masa persiapan, seluruh laporan masyarakat ditindaklanjuti secara manual dan resmi melalui saluran berikut:
-                  </p>
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="p-3.5 rounded-lg bg-surface border border-line flex items-start gap-3">
-                    <div className="p-2 rounded-md bg-brand-50 text-brand-700 shrink-0">
-                      <Mail className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-ink">Kanal Email Resmi Pentashihan</h4>
-                      <p className="text-xs text-ink font-semibold">lajnah@kemenag.go.id</p>
-                      <p className="text-[11px] text-ink-muted">
-                        Format subjek: <span className="font-mono text-ink">[PENGADUAN] Judul Mushaf / Nama Penerbit / Temuan</span>. Lampirkan foto halaman naskah yang keliru dan halaman tanda tashih (jika ada).
-                      </p>
-                    </div>
+              const cardContent = (
+                <div className="p-6 rounded-2xl border border-line bg-surface-subtle hover:bg-surface hover:border-brand-600 hover:shadow-sm transition-all duration-300 group flex flex-col justify-between min-h-[140px] h-full cursor-pointer">
+                  <div className="w-12 h-12 rounded-xl bg-brand-100 text-brand-800 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors shadow-2xs">
+                    <IconComponent className="w-6 h-6 stroke-[2]" />
                   </div>
-
-                  <div className="p-3.5 rounded-lg bg-surface border border-line flex items-start gap-3">
-                    <div className="p-2 rounded-md bg-brand-50 text-brand-700 shrink-0">
-                      <Phone className="w-4 h-4" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-ink">Hotline & Telepon Resmi</h4>
-                      <p className="text-xs text-ink font-semibold">(021) 87798807 / 8416466</p>
-                      <p className="text-[11px] text-ink-muted">
-                        Melayani konsultasi teknis, verifikasi keabsahan STT mushaf, dan pelaporan peredaran naskah pada hari kerja pukul 08.00 - 15.30 WIB.
-                      </p>
-                    </div>
+                  <div className="mt-5">
+                    <h3 className="text-base font-bold text-ink group-hover:text-brand-700 transition-colors leading-snug">
+                      {service.title}
+                    </h3>
                   </div>
                 </div>
+              );
 
-                <div className="rounded-lg bg-surface-subtle p-3 border border-line text-[11px] text-ink-muted leading-normal">
-                  <p>
-                    <strong>Komitmen LPMQ:</strong> Setiap laporan yang menyertakan identitas pelapor dan bukti visual akan diverifikasi langsung oleh Tim Pentashih Mushaf Al-Qur'an Kementerian Agama RI.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 4: Permohonan Master */}
-        <section id="master" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
-          <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Mushaf Standar</span>
-            <h2 className="text-2xl font-black text-ink mt-1">Permohonan Master Mushaf Standar Indonesia</h2>
-            <p className="text-xs sm:text-sm text-ink-muted mt-1">
-              LPMQ menyediakan salinan rujukan Mushaf Standar Indonesia (MSI) dalam rasm Usmani bagi penerbit berizin.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="p-5 rounded-xl border border-line bg-surface-subtle space-y-2">
-              <div className="flex items-center gap-2 text-ink font-bold text-sm">
-                <Layers className="w-4 h-4 text-brand-700" />
-                <span>Master Fisik Cetak 30 Juz</span>
-              </div>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Salinan master fisik rujukan resmi ukuran A4 per juz. Disediakan untuk penerbit yang ingin menerbitkan mushaf cetak standar Usmani sesuai ketetapan Muktamar Ulama Al-Qur'an.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-xl border border-line bg-surface-subtle space-y-2">
-              <div className="flex items-center gap-2 text-ink font-bold text-sm">
-                <FileCheck2 className="w-4 h-4 text-brand-700" />
-                <span>Font & Aset Digital Resmi</span>
-              </div>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Font LPMQ Misbah dan aset glif resmi dapat digunakan oleh pengembang aplikasi Al-Qur'an digital setelah memperoleh rekomendasi teknis dari LPMQ.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Section 5: FAQ */}
-        <section id="faq" className="rounded-2xl bg-surface p-6 sm:p-8 border border-line space-y-6">
-          <div className="border-b border-line pb-4">
-            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider">Tanya Jawab</span>
-            <h2 className="text-2xl font-black text-ink mt-1">Pertanyaan yang Sering Diajukan (FAQ)</h2>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-1">
-              <p className="text-xs sm:text-sm text-ink-muted">
-                {searchQuery
-                  ? `Menampilkan hasil pencarian untuk "${searchQuery}" (${filteredFaqs.length} ditemukan)`
-                  : 'Informasi lengkap seputar mekanisme pendaftaran, biaya, dan tata cara pentashihan Al-Qur\'an.'}
-              </p>
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery('')}
-                  className="text-xs font-semibold text-brand-fg hover:underline w-fit"
-                >
-                  Reset Pencarian
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {filteredFaqs.length === 0 ? (
-              <p className="text-xs text-ink-muted py-4 text-center">
-                Tidak ada pertanyaan yang sesuai dengan kata kunci "{searchQuery}".
-              </p>
-            ) : (
-              filteredFaqs.map((faq, idx) => {
-                const isOpen = openFaqIndex === idx;
+              if (hasRoute && service.isInternal) {
                 return (
-                  <div
-                    key={faq.q}
-                    className="rounded-xl border border-line bg-surface-subtle overflow-hidden transition"
+                  <Link
+                    key={idx}
+                    to={service.href}
+                    onClick={(e) => handleNavigate(service.href, e)}
+                    className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-2xl"
                   >
-                    <button
-                      type="button"
-                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                      className="w-full p-4 text-left flex items-center justify-between gap-3 text-xs sm:text-sm font-bold text-ink"
-                    >
-                      <span>{faq.q}</span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-ink-muted shrink-0 transition-transform ${
-                          isOpen ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-4 pt-1 text-xs text-ink-muted leading-relaxed border-t border-line/60">
-                        {faq.a}
-                      </div>
-                    )}
-                  </div>
+                    {cardContent}
+                  </Link>
                 );
-              })
-            )}
+              }
+
+              return (
+                <div
+                  key={idx}
+                  role="button"
+                  tabIndex={0}
+                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-2xl"
+                  onClick={(e) => {
+                    if (!service.href) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (!service.href && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  {cardContent}
+                </div>
+              );
+            })}
           </div>
         </section>
+
+        <Suspense
+          fallback={
+            <div
+              className="flex h-80 items-center justify-center rounded-xl border border-line bg-surface-subtle text-sm text-ink-muted sm:h-96"
+              role="status"
+            >
+              Memuat peta persebaran...
+            </div>
+          }
+        >
+          <DistributionMap />
+        </Suspense>
+
       </main>
 
       {/* Footer */}
@@ -1003,9 +878,9 @@ export const LandingPage = () => {
             Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
           </p>
           <div className="flex items-center gap-4">
-            <a href="#informasi" className="hover:text-brand-fg">Regulasi</a>
-            <a href="#pengaduan" className="hover:text-brand-fg">Pengaduan</a>
-            <a href="#faq" className="hover:text-brand-fg">FAQ</a>
+            <a href="#informasi-pelayanan" className="hover:text-brand-fg">Regulasi</a>
+            <a href="#beranda" className="hover:text-brand-fg">Pengaduan</a>
+            <a href="#beranda" className="hover:text-brand-fg">FAQ</a>
             <Link
               to="/login"
               onClick={(e) => handleNavigate('/login', e)}
