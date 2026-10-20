@@ -1,0 +1,51 @@
+export const simulatedPublishers = [
+  {
+    id: 'sim-publisher-jakarta',
+    name: 'Penerbit Simulasi Jakarta',
+    address: 'Jakarta Pusat, DKI Jakarta',
+    latitude: -6.1754,
+    longitude: 106.8272,
+  },
+  {
+    id: 'sim-publisher-palembang',
+    name: 'Penerbit Simulasi Palembang',
+    address: 'Kota Palembang, Sumatera Selatan',
+    latitude: -2.9761,
+    longitude: 104.7754,
+  },
+  {
+    id: 'sim-publisher-medan',
+    name: 'Penerbit Simulasi Medan',
+    address: 'Kota Medan, Sumatera Utara',
+    latitude: 3.5952,
+    longitude: 98.6722,
+  },
+  {
+    id: 'sim-publisher-surabaya',
+    name: 'Penerbit Simulasi Surabaya',
+    address: 'Kota Surabaya, Jawa Timur',
+    latitude: -7.2575,
+    longitude: 112.7521,
+  },
+  {
+    id: 'sim-publisher-denpasar',
+    name: 'Penerbit Simulasi Denpasar',
+    address: 'Kota Denpasar, Bali',
+    latitude: -8.65,
+    longitude: 115.2167,
+  },
+  {
+    id: 'sim-publisher-makassar',
+    name: 'Penerbit Simulasi Makassar',
+    address: 'Kota Makassar, Sulawesi Selatan',
+    latitude: -5.1477,
+    longitude: 119.4327,
+  },
+  {
+    id: 'sim-publisher-jayapura',
+    name: 'Penerbit Simulasi Jayapura',
+    address: 'Kota Jayapura, Papua',
+    latitude: -2.5337,
+    longitude: 140.7181,
+  },
+];
