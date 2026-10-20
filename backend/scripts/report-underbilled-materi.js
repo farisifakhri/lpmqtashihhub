@@ -146,3 +146,4 @@ main().catch((err) => {
   console.error('Terjadi kesalahan saat menjalankan laporan:', err);
   process.exit(1);
 });
+
