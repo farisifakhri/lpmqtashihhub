@@ -32,6 +32,7 @@ export const NASKAH_CONTENT_ENUM = Object.freeze({
   KALIGRAFI: 'KALIGRAFI',
   DIGITAL: 'DIGITAL',
   STANDARD_30_JUZ: 'STANDARD_30_JUZ',
+  QIRAAT: 'QIRAAT',
 });
 
 export const CONTENT_TO_ENUM_MAP = [
@@ -39,19 +40,21 @@ export const CONTENT_TO_ENUM_MAP = [
   { enumCode: NASKAH_CONTENT_ENUM.FOREIGN, keywords: ['luar negeri', 'foreign'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.AUDIO_VISUAL, keywords: ['audio/visual', 'audio visual'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.TAFSIR, keywords: ['tafsir'], isAdditionalMateri: true },
-  { enumCode: NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION, keywords: ['terjemah perkata'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION, keywords: ['terjemah perkata', 'perkata'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION, keywords: ['transliterasi perkata'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.TRANSLITERATION, keywords: ['transliterasi'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.TRANSLATION, keywords: ['terjemah'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.TAJWID_WARNA, keywords: ['tajwid warna'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.TAJWID_KODE, keywords: ['kode tajwid', 'tajwid'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.WAQAF_IBTIDA, keywords: ['waqaf', 'ibtida'], isAdditionalMateri: true },
+  { enumCode: NASKAH_CONTENT_ENUM.QIRAAT, keywords: ['qiraat', "qira'at", 'qiroat'], isAdditionalMateri: true },
   { enumCode: NASKAH_CONTENT_ENUM.METODE_BACA_TULIS, keywords: ['metode baca tulis', 'metode'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.YASIN_TAHLIL, keywords: ['yasin'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.JUZ_AMMA, keywords: ['juz \'amma', "juz 'amma", 'juz-juz pilihan', 'juz amma'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.MAJMU_SYARIF, keywords: ['majmu'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.KALIGRAFI, keywords: ['kaligrafi'], isAdditionalMateri: false },
   { enumCode: NASKAH_CONTENT_ENUM.DIGITAL, keywords: ['digital'], isAdditionalMateri: false },
+  { enumCode: NASKAH_CONTENT_ENUM.STANDARD_30_JUZ, keywords: ['30 juz'], isAdditionalMateri: false },
 ];
 
 export function resolveNaskahEnum(text) {
@@ -61,6 +64,81 @@ export function resolveNaskahEnum(text) {
     if (entry.keywords.some(k => lower.includes(k))) return entry.enumCode;
   }
   return null;
+}
+
+/**
+ * Menghitung jumlah unit materi tambahan (ADD-MATERI @ Rp 500.000)
+ * berdasarkan pilihan checklist jenis naskah (Kelompok 3).
+ *
+ * Aturan hitung resmi (Adendum 12 Okt 2026 & B-01):
+ * - Tiap materi tambahan satu unit (Rp 500.000).
+ * - Perkata (terjemah/transliterasi perkata) dan Tafsir masing-masing dua unit (Rp 1.000.000).
+ * - Qiraat satu unit (Rp 500.000).
+ * - Terjemah diabaikan bila dipilih bersama Perkata atau Tafsir.
+ * - Isian Bagian II (Asbabun Nuzul, Hadis, Do'a) tidak menambah biaya (Rp 0).
+ */
+export function calculateAddonMateriUnits(jenisNaskahList = []) {
+  if (!Array.isArray(jenisNaskahList) || jenisNaskahList.length === 0) {
+    return 0;
+  }
+
+  const detectedEnums = new Set();
+  const unmappedGroup3 = new Set();
+
+  for (const item of jenisNaskahList) {
+    if (!item || typeof item !== 'string') continue;
+    const enumCode = resolveNaskahEnum(item);
+    if (enumCode) {
+      const def = CONTENT_TO_ENUM_MAP.find((e) => e.enumCode === enumCode);
+      if (def?.isAdditionalMateri) {
+        detectedEnums.add(enumCode);
+      }
+    } else if (item.trim().startsWith('3.')) {
+      unmappedGroup3.add(item.trim().toLowerCase());
+    }
+  }
+
+  const hasTafsir = detectedEnums.has(NASKAH_CONTENT_ENUM.TAFSIR);
+  const hasPerkata =
+    detectedEnums.has(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION) ||
+    detectedEnums.has(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION);
+  const hasTranslation = detectedEnums.has(NASKAH_CONTENT_ENUM.TRANSLATION);
+  const hasTransliteration = detectedEnums.has(NASKAH_CONTENT_ENUM.TRANSLITERATION);
+  const hasTajwid =
+    detectedEnums.has(NASKAH_CONTENT_ENUM.TAJWID_WARNA) ||
+    detectedEnums.has(NASKAH_CONTENT_ENUM.TAJWID_KODE);
+  const hasWaqaf = detectedEnums.has(NASKAH_CONTENT_ENUM.WAQAF_IBTIDA);
+  const hasQiraat = detectedEnums.has(NASKAH_CONTENT_ENUM.QIRAAT);
+
+  let units = 0;
+
+  // Tafsir: 2 unit
+  if (hasTafsir) units += 2;
+
+  // Perkata: 2 unit
+  if (hasPerkata) units += 2;
+
+  // Terjemah: 1 unit, diabaikan bila dipilih bersama Perkata atau Tafsir
+  if (hasTranslation && !hasPerkata && !hasTafsir) {
+    units += 1;
+  }
+
+  // Transliterasi: 1 unit
+  if (hasTransliteration) units += 1;
+
+  // Tajwid: 1 unit
+  if (hasTajwid) units += 1;
+
+  // Waqaf Ibtida': 1 unit
+  if (hasWaqaf) units += 1;
+
+  // Qiraat: 1 unit
+  if (hasQiraat) units += 1;
+
+  // Item tambahan kelompok 3 lainnya yang tidak terpetakan
+  units += unmappedGroup3.size;
+
+  return units;
 }
 
 // Matriks Kebijakan Transisi Status Resmi Berbasis Peran (TRANSITION_POLICY)
@@ -393,27 +471,23 @@ export const createDraft = async (data, user, req) => {
   // Normalisasi daftar addon
   const requestedAddonIds = Array.isArray(data.addons || data.addon_ids) ? [...(data.addons || data.addon_ids)] : [];
 
-  // Otomatis tambahkan addon ADD-MATERI (+Rp 500.000) jika pada jenis_naskah dipilih konten tambahan (Group 3: Transliterasi, Terjemah, Tajwid, Waqaf, Tafsir, dll.)
+  // Otomatis tambahkan addon ADD-MATERI (+Rp 500.000 per unit) jika pada jenis_naskah dipilih konten tambahan (Group 3: Transliterasi, Terjemah, Tajwid, Waqaf, Tafsir, dll.)
   // Catatan: Checklist materi tambahan pada mushaf (Bagian II: Asbabun Nuzul, Hadis, Do'a) TIDAK menambah biaya sama sekali (Rp 0).
   const jenisNaskahList = [
     ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
     ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
     ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
   ];
-  const hasAdditionalContentInJenisNaskah = jenisNaskahList.some((item) => {
-    const enumCode = resolveNaskahEnum(item);
-    if (!enumCode) return typeof item === 'string' && item.startsWith('3.');
-    const def = CONTENT_TO_ENUM_MAP.find((e) => e.enumCode === enumCode);
-    return Boolean(def?.isAdditionalMateri);
-  });
+  const addonMateriUnits = calculateAddonMateriUnits(jenisNaskahList);
 
-  if (hasAdditionalContentInJenisNaskah) {
-    const addMateri = await prisma.serviceAddon.findUnique({
+  let addMateriRecord = null;
+  if (addonMateriUnits > 0) {
+    addMateriRecord = await prisma.serviceAddon.findUnique({
       where: { code: 'ADD-MATERI' },
-      select: { id: true },
+      select: { id: true, code: true, fee: true },
     });
-    if (addMateri && !requestedAddonIds.includes(addMateri.id)) {
-      requestedAddonIds.push(addMateri.id);
+    if (addMateriRecord && !requestedAddonIds.includes(addMateriRecord.id)) {
+      requestedAddonIds.push(addMateriRecord.id);
     }
   }
 
@@ -575,12 +649,16 @@ export const createDraft = async (data, user, req) => {
           }
 
           for (const add of activeAddons) {
+            const isAddMateri = add.code === 'ADD-MATERI' || (addMateriRecord && add.id === addMateriRecord.id);
+            const quantity = isAddMateri ? Math.max(1, addonMateriUnits) : 1;
+            const feeSnapshot = Number(add.fee) * quantity;
+
             await tx.registrationAddon.create({
               data: {
                 registration_id: created.id,
                 addon_id: add.id,
-                fee_snapshot: add.fee,
-                quantity: 1,
+                fee_snapshot: feeSnapshot,
+                quantity: quantity,
               },
             });
           }
@@ -739,7 +817,15 @@ export const submitRegistration = async (id, user, req) => {
 
   // Hitung snapshot tarif dan SLA (BR-04 & BR-05)
   const baseFee = Number(reg.service_type.base_fee);
-  const addonsTotal = reg.addons.reduce((sum, item) => sum + Number(item.fee_snapshot), 0);
+  const addonsTotal = reg.addons.reduce((sum, item) => {
+    const feeSnapshot = Number(item.fee_snapshot || 0);
+    const quantity = Number(item.quantity || 1);
+    const unitFee = item.addon ? Number(item.addon.fee || 0) : 0;
+    if (quantity > 1 && unitFee > 0 && feeSnapshot === unitFee) {
+      return sum + (unitFee * quantity);
+    }
+    return sum + feeSnapshot;
+  }, 0);
   const totalFee = baseFee + addonsTotal;
 
   const feeSlaSnapshot = {
