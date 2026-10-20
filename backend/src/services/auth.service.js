@@ -13,6 +13,7 @@ export const login = async ({ email, password, req }) => {
     include: {
       roles: { include: { role: true } },
       publisher: true,
+      publisher_registration: true,
     },
   });
 
@@ -23,6 +24,28 @@ export const login = async ({ email, password, req }) => {
   if (!user || !isMatch) {
     const error = new Error('Email atau password tidak sesuai.');
     error.statusCode = 401;
+    throw error;
+  }
+
+  // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
+  if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    error.statusCode = 403;
+    error.code = 'PUBLISHER_NOT_APPROVED';
+    error.data = {
+      status_pendaftaran: user.publisher_registration.status,
+    };
+    throw error;
+  }
+
+  // Penghalang Login: Jika entitas penerbit belum berstatus VERIFIED (misal UNVERIFIED / REJECTED)
+  if (user.publisher && user.publisher.verification_status !== 'VERIFIED') {
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    error.statusCode = 403;
+    error.code = 'PUBLISHER_NOT_APPROVED';
+    error.data = {
+      verification_status: user.publisher.verification_status,
+    };
     throw error;
   }
 
@@ -128,6 +151,21 @@ export const registerPublisher = async (data, req) => {
     subjectId: result.publisher.id,
     req,
   });
+
+  // Jangan menerbitkan token aktif untuk penerbit yang belum diverifikasi
+  if (result.publisher.verification_status !== 'VERIFIED') {
+    return {
+      token: null,
+      message: 'Pendaftaran penerbit berhasil diajukan dan sedang menunggu verifikasi oleh petugas LPMQ. Anda belum dapat masuk sampai pendaftaran disetujui.',
+      user: {
+        id: result.user.id,
+        name: result.user.name,
+        email: result.user.email,
+        roles: ['PENERBIT'],
+        publisher: result.publisher,
+      },
+    };
+  }
 
   const token = jwt.sign(
     {

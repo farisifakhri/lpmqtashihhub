@@ -16,7 +16,7 @@ export const registerPublisherSchema = {
       .regex(/[A-Z]/, 'Kata sandi harus mengandung minimal satu huruf kapital')
       .regex(/[0-9]/, 'Kata sandi harus mengandung minimal satu angka'),
     legal_name: z.string().min(3, 'Nama badan hukum/perusahaan wajib diisi'),
-    entity_type: z.enum(['PT', 'CV', 'YAYASAN', 'PERORANGAN', 'LAINNYA'], {
+    entity_type: z.enum(['PT', 'CV', 'YAYASAN', 'LEMBAGA_PEMERINTAH', 'LAINNYA'], {
       errorMap: () => ({ message: 'Jenis badan hukum tidak valid' }),
     }),
     address: z.string().optional(),

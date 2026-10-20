@@ -186,9 +186,13 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
         const repRes = await call('/reports/verification-performance', login.token);
         assert.equal(repRes.status, 200);
 
-        // Batas akses: Admin Internal DILARANG mengelola akun pengguna (hanya SUPERADMIN) -> 403
+        // Hak akses T-F02: Admin Internal dapat melihat daftar pengguna (staf)
         const usersRes = await call('/users', login.token);
-        assert.equal(usersRes.status, 403);
+        assert.equal(usersRes.status, 200);
+
+        // Batas akses T-F02: Admin Internal DILARANG mengakses grant-all-roles (hanya SUPERADMIN) -> 403
+        const grantAllRes = await call(`/users/${adminInternalId}/grant-all-roles`, login.token, 'POST', {});
+        assert.equal(grantAllRes.status, 403);
       });
 
       await test('User Management: SUPERADMIN dapat membuat akun SUPERADMIN baru', async () => {

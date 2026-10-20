@@ -79,6 +79,26 @@ describe('ProtectedRoute Security Guard', () => {
     expect(screen.getByText('Dasbor Penerbit Sukses')).toBeInTheDocument();
   });
 
+  it('menolak penerbit berstatus UNVERIFIED yang mencoba membuka rute portal publisher (dialihkan ke /login)', () => {
+    const unverifiedPublisher = {
+      id: 'pub-unverified',
+      name: 'Penerbit Belum Verifikasi',
+      roles: ['PENERBIT'],
+      role: 'PENERBIT',
+      publisher: { id: 'p-1', verification_status: 'UNVERIFIED' },
+    };
+
+    renderWithRouter(
+      unverifiedPublisher,
+      <ProtectedRoute portalType="publisher">
+        <div>Dasbor Penerbit Sukses</div>
+      </ProtectedRoute>
+    );
+
+    expect(screen.getByText('Halaman Login')).toBeInTheDocument();
+    expect(screen.queryByText('Dasbor Penerbit Sukses')).not.toBeInTheDocument();
+  });
+
   it('menolak penerbit yang mencoba membuka rute portal internal (dialihkan ke /publisher)', () => {
     const publisherUser = {
       id: 'pub-1',

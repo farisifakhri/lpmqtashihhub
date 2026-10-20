@@ -5,7 +5,7 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 ## Status implementasi
 
 Alur internal Sistem Pentashihan Mushaf Al-Qur'an (SOP v2.2 & Addendum SRS v3.1) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite lulus 100%:
-- **Penerimaan Fisik & Intake Loket (`HELPER_ADMIN`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal (M. Zamroni Ahbab & Mustakim) diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
+- **Penerimaan Fisik & Intake Loket (`ADMIN_INTERNAL`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal (M. Zamroni Ahbab & Mustakim) diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
 - **Verifikasi Berkas & Naskah (`VERIFIKATOR`)**: Penugasan via Nota Dinas, checklist butir pemeriksaan selaras Berita Acara resmi Kemenag RI (T-06), tombol pengajuan "Ajukan Draft" (`RF-VER-04`), penandatanganan digital bertingkat, dan outbox pengiriman hasil verifikasi.
 - **Pembayaran PNBP & Serah-Terima Fisik**: Validasi pembayaran sah, penghitungan SLA H+1 pasca verifikasi bayar (`RF-CALC-05`), serah-terima fisik ke distributor, dan penanganan fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`).
 - **Distribusi & Pentashihan Rentang Juz (`RF-DIST-05`)**: 6 Kelompok Utama Pentashihan (SK LPMQ 2025), penugasan berbasis rentang juz tanpa tumpang tindih, dan workspace pentashih interaktif.

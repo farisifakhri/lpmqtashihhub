@@ -34,6 +34,7 @@ try {
       await run(process.execPath, ['tests/test-api.integration.js']);
     }
     await run(process.execPath, ['tests/admin-rbac.integration.js']);
+    await run(process.execPath, ['tests/publisher-registration.integration.js']);
     await run(process.execPath, ['tests/publisher-dashboard.integration.js']);
     await run(process.execPath, ['tests/core-team.integration.js']);
   }
