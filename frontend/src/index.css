@@ -1,4 +1,5 @@
 /* Tailwind CSS and Design Tokens */
+@import 'leaflet/dist/leaflet.css';
 @import './design-system/tokens.css';
 
 @tailwind base;
