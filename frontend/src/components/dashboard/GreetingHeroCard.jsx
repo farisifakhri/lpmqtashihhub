@@ -103,9 +103,6 @@ export const GreetingHeroCard = ({
         {/* Sisi Kiri: Sapaan & Wewenang Akun */}
         <div className="space-y-2.5 max-w-2xl">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-civicGold-500 text-brand-950 text-xs font-bold uppercase tracking-wider">
-              <Activity className="w-3.5 h-3.5" /> Pusat Kendali
-            </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 text-xs font-semibold text-brand-100 border border-white/20 shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-civicGold-500" />
               <span>{roleLabel}</span>
@@ -115,18 +112,6 @@ export const GreetingHeroCard = ({
                 {badgeExtra}
               </span>
             )}
-            {/* Status Jam Kerja Kedinasan Sesuai Zona Waktu Lokal */}
-            <span
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold border ${
-                isWorkingHours
-                  ? 'bg-brand-700/20 text-brand-100 border-brand-700/40'
-                  : 'bg-civic-warning/20 text-civic-warning border-civic-warningLine/40'
-              }`}
-              title="Jam kerja resmi Kemenag RI: Senin-Jumat 07.30 - 16.00 waktu setempat"
-            >
-              <span className={`w-2 h-2 rounded-full ${isWorkingHours ? 'bg-brand-700 animate-pulse' : 'bg-civic-warningLine'}`} />
-              {isWorkingHours ? 'Jam Layanan Aktif (07.30 - 16.00)' : 'Di Luar Jam Layanan'}
-            </span>
           </div>
 
           <h2 id="dashboard-greeting" className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2.5">

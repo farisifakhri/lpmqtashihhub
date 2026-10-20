@@ -67,6 +67,7 @@ describe('ProtectedRoute Security Guard', () => {
       name: 'Penerbit A',
       roles: ['PENERBIT'],
       role: 'PENERBIT',
+      publisher: { id: 'p-1', verification_status: 'VERIFIED' },
     };
 
     renderWithRouter(
@@ -86,6 +87,30 @@ describe('ProtectedRoute Security Guard', () => {
       roles: ['PENERBIT'],
       role: 'PENERBIT',
       publisher: { id: 'p-1', verification_status: 'UNVERIFIED' },
+    };
+
+    renderWithRouter(
+      unverifiedPublisher,
+      <ProtectedRoute portalType="publisher">
+        <div>Dasbor Penerbit Sukses</div>
+      </ProtectedRoute>
+    );
+
+    expect(screen.getByText('Halaman Login')).toBeInTheDocument();
+    expect(screen.queryByText('Dasbor Penerbit Sukses')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['tanpa profil penerbit', null],
+    ['tanpa status verifikasi', {}],
+    ['dengan status verifikasi tidak dikenal', { verification_status: 'PENDING' }],
+  ])('menolak penerbit %s yang mencoba membuka rute portal publisher', (_description, publisher) => {
+    const unverifiedPublisher = {
+      id: 'pub-unverified',
+      name: 'Penerbit Belum Diverifikasi',
+      roles: ['PENERBIT'],
+      role: 'PENERBIT',
+      publisher,
     };
 
     renderWithRouter(
