@@ -416,6 +416,7 @@ model Registration {
   extensions               Registration[]           @relation("RegistrationExtensions")
   addons                   RegistrationAddon[]
   manuscript_files         ManuscriptFile[]
+  manuscripts              Manuscript[]
   status_histories         StatusHistory[]
   verification_assignments VerificationAssignment[]
   verification_documents   VerificationDocument[]
@@ -453,6 +454,7 @@ model RegistrationAddon {
 model ManuscriptFile {
   id              String       @id @default(uuid())
   registration_id String
+  manuscript_id   String?
   type            String       // COVER, SAMPLE_PAGE_1_5, DUMMY, MASTER_COMPLETED
   version         Int          @default(1)
   file_id         String       // Path storage private
@@ -463,8 +465,87 @@ model ManuscriptFile {
 
   // Relations
   registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  manuscript      Manuscript?  @relation(fields: [manuscript_id], references: [id], onDelete: SetNull)
 
   @@map("manuscript_files")
+}
+
+// -------------------------------------------------------------
+// B-01: MODEL PENGIRIMAN BANYAK NASKAH, ITEM, DAN VARIAN
+// -------------------------------------------------------------
+
+model JenisNaskahItem {
+  id                String       @id @default(uuid())
+  code              String       @unique // Misal: JUZ30, YASIN, TERJEMAH, PERKATA, TAFSIR
+  name              String       // Nama resmi item
+  group_number      Int          // 1, 2, atau 3
+  role              ItemRole     @default(DASAR)
+  service_kind      ServiceKind  @default(CETAK)
+  unit_fee_rate     Int          @default(1) // Pengali unit (misal: Perkata/Tafsir = 2, materi biasa = 1)
+  fee_per_unit      Decimal      @default(500000) @db.Decimal(12, 2)
+  duration_initial  Int          @default(15) // Mutlak untuk DASAR, penambahan hari (+HK) untuk TAMBAHAN
+  duration_revision Int          @default(7)
+  duration_dummy    Int          @default(3)
+  covers_item_code  String?      // Misal: PERKATA dan TAFSIR mencakup 'TERJEMAH'
+  status            ActiveStatus @default(ACTIVE)
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+
+  // Relations
+  manuscript_items  ManuscriptItem[]
+
+  @@map("jenis_naskah_items")
+}
+
+model Manuscript {
+  id              String              @id @default(uuid())
+  registration_id String
+  seq_number      Int                 // Nomor urut naskah dalam pengajuan (1, 2, ..., maks 20)
+  title           String              // Judul mushaf / naskah
+  created_at      DateTime            @default(now())
+  updated_at      DateTime            @updatedAt
+
+  // Relations
+  registration    Registration        @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  items           ManuscriptItem[]
+  variants        ManuscriptVariant[]
+  files           ManuscriptFile[]
+
+  @@unique([registration_id, seq_number])
+  @@map("manuscripts")
+}
+
+model ManuscriptItem {
+  id                     String          @id @default(uuid())
+  manuscript_id          String
+  item_id                String
+  role                   ItemRole        @default(DASAR)
+  fee_snapshot           Decimal         @db.Decimal(12, 2)
+  initial_days_snapshot  Int             @default(0)
+  revision_days_snapshot Int             @default(0)
+  dummy_days_snapshot    Int             @default(0)
+  created_at             DateTime        @default(now())
+
+  // Relations
+  manuscript             Manuscript      @relation(fields: [manuscript_id], references: [id], onDelete: Cascade)
+  item                   JenisNaskahItem @relation(fields: [item_id], references: [id])
+
+  @@unique([manuscript_id, item_id])
+  @@map("manuscript_items")
+}
+
+model ManuscriptVariant {
+  id            String     @id @default(uuid())
+  manuscript_id String
+  ukuran        String     // Format: "Panjang x Lebar" (misal: "21,0 x 29,7")
+  oplah         Int        // Bilangan bulat positif
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  // Relations
+  manuscript    Manuscript @relation(fields: [manuscript_id], references: [id], onDelete: Cascade)
+
+  @@map("manuscript_variants")
 }
 
 model StatusHistory {
@@ -858,6 +939,18 @@ enum UserStatus {
 enum ActiveStatus {
   ACTIVE
   INACTIVE
+}
+
+enum ItemRole {
+  DASAR
+  TAMBAHAN
+}
+
+enum ServiceKind {
+  CETAK
+  DIGITAL
+  AUDIO_VISUAL
+  BRAILLE
 }
 
 enum PublisherDocumentStatus {

@@ -261,3 +261,4 @@ Sesuai instruksi butir 3 Sesi 1, empat pertanyaan ini disampaikan kepada pemilik
    - *Pertanyaan*: STT lama berlaku sampai habis atau kedaluwarsa. Kedaluwarsa dihitung dari waktu (2 tahun). Sedangkan kriteria "habis" membutuhkan data realisasi oplah cetak riil dari penerbit. Apakah disepakati hal ini diputuskan implementasinya di paket B-09 & B-10 (bukan di B-01)?
 4. **Kombinasi Item Terlarang**:
    - *Pertanyaan*: Apakah ada kombinasi item jenis naskah yang secara regulasi dilarang (misal Braille digabung dengan materi tambahan, atau Kaligrafi digabung dengan Tafsir)? Ataukah seluruh kombinasi diizinkan dan tarif/SLA-nya mengikuti aturan penjumlahan standar?
+
