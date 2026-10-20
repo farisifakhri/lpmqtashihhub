@@ -27,6 +27,8 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
+  const roles = user.roles.map((r) => r.role.code);
+
   // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
   if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
     const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
@@ -38,13 +40,13 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
-  // Penghalang Login: Jika entitas penerbit belum berstatus VERIFIED (misal UNVERIFIED / REJECTED)
-  if (user.publisher && user.publisher.verification_status !== 'VERIFIED') {
+  // Penerbit hanya dapat masuk jika profilnya secara eksplisit berstatus VERIFIED.
+  if (roles.includes('PENERBIT') && user.publisher?.verification_status !== 'VERIFIED') {
     const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
     error.statusCode = 403;
     error.code = 'PUBLISHER_NOT_APPROVED';
     error.data = {
-      verification_status: user.publisher.verification_status,
+      verification_status: user.publisher?.verification_status ?? null,
     };
     throw error;
   }
@@ -55,7 +57,6 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
-  const roles = user.roles.map((r) => r.role.code);
   const token = jwt.sign(
     {
       userId: user.id,

@@ -26,6 +26,18 @@ test('existing Kepala route guard rejects pure ADMIN_INTERNAL and preserves Kepa
   // checks KEPALA_LPMQ explicitly (covered by real endpoint integration tests).
   assert.equal(check(guard, { roles: ['SUPERADMIN'] }).next, true);
 });
+test('publisher routes require an explicitly verified publisher profile', () => {
+  const guard = authorize('PENERBIT');
+  assert.equal(check(guard, { roles: ['PENERBIT'], publisher: { verification_status: 'VERIFIED' } }).next, true);
+  for (const publisher of [
+    { verification_status: 'UNVERIFIED' },
+    { verification_status: 'REJECTED' },
+    {},
+    null,
+  ]) {
+    assert.equal(check(guard, { roles: ['PENERBIT'], publisher }).status, 403);
+  }
+});
 test('manual team assignment belongs exclusively to ADMIN_INTERNAL or SUPERADMIN', () => {
   for (const role of ['ADMIN_INTERNAL', 'SUPERADMIN']) assert.equal(check(requireManualTeamAssignment, { roles: [role] }).next, true);
   for (const role of ['DISTRIBUTOR', 'KEPALA_LPMQ', 'PENERBIT', 'PENTASHIH', 'VERIFIKATOR']) assert.equal(check(requireManualTeamAssignment, { roles: [role] }).status, 403);

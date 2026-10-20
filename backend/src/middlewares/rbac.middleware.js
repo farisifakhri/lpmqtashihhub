@@ -25,7 +25,7 @@ export const authorize = (...allowedRoles) => {
 
     // Jika endpoint memerlukan akses PENERBIT, pastikan penerbit berstatus VERIFIED
     if (allowedRoles.includes('PENERBIT') && req.user.roles.includes('PENERBIT')) {
-      if (req.user.publisher && req.user.publisher.verification_status !== 'VERIFIED') {
+      if (req.user.publisher?.verification_status !== 'VERIFIED') {
         return res.status(403).json({
           success: false,
           code: 'PUBLISHER_NOT_APPROVED',

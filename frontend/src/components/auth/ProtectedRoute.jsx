@@ -24,7 +24,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
       return <Navigate to="/internal" replace />;
     }
     const status = currentUser.publisher?.verification_status || currentUser.verificationStatus;
-    if (isPublisher && !isAdmin && (status === 'UNVERIFIED' || status === 'REJECTED')) {
+    if (isPublisher && !isAdmin && status !== 'VERIFIED') {
       return <Navigate to="/login" state={{ error: 'Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas LPMQ.' }} replace />;
     }
   }
