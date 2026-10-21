@@ -18,6 +18,7 @@ import { InspectionDialogs } from './components/InspectionDialogs';
 import { InspectionActionPanel } from './components/InspectionActionPanel';
 import { MushafContentReviewTable } from './components/MushafContentReviewTable';
 import { InspectionDocumentStudio } from './components/InspectionDocumentStudio';
+import { VerificationCalculatorTab } from './components/VerificationCalculatorTab';
 import { useInspection } from './hooks/useInspection';
 import { getInspectionDraft, getInspectionViewModel } from './inspection-view-model';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -43,6 +44,7 @@ import {
   CheckSquare,
   BookOpen,
   History,
+  Calculator,
 } from 'lucide-react';
 
 const CHECKLIST_DEFINITIONS = [
@@ -982,6 +984,15 @@ export const VerificationInspectionPage = () => {
         </button>
         <button
           type="button"
+          onClick={() => setActiveMobileTab('kalkulator')}
+          className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
+            activeMobileTab === 'kalkulator' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
+          }`}
+        >
+          Kalkulator SLA
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveMobileTab('hasil')}
           className={`flex-1 py-2 px-2.5 whitespace-nowrap rounded-lg text-center transition-all ${
             activeMobileTab === 'hasil' ? 'bg-white text-brand-900 shadow-2xs font-bold' : 'text-ink-muted'
@@ -1050,6 +1061,22 @@ export const VerificationInspectionPage = () => {
 
               <button
                 type="button"
+                onClick={() => setActiveWorkbenchTab('kalkulator')}
+                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeWorkbenchTab === 'kalkulator'
+                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
+                }`}
+              >
+                <Calculator className="w-3.5 h-3.5 text-brand-700" />
+                <span>Kalkulator Tarif & SLA</span>
+                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                  U-14
+                </span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveWorkbenchTab('hasil')}
                 className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   activeWorkbenchTab === 'hasil'
@@ -1096,6 +1123,11 @@ export const VerificationInspectionPage = () => {
               }}
               isReadOnly={isReadOnly}
             />
+          </div>
+
+          {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN (U-14) */}
+          <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'}`}>
+            <VerificationCalculatorTab registration={registration} />
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
