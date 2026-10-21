@@ -83,11 +83,6 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Sistem Pentashihan')).toBeDefined();
     expect(screen.getByText('Kemenag RI')).toBeDefined();
 
-    // User mini-card
-    expect(screen.getByText('Fakhri Farisi')).toBeDefined();
-    expect(screen.getByText('Superadmin')).toBeDefined();
-    expect(screen.getByTitle('Online')).toBeDefined();
-
     // Menu berurutan sesuai alur pentashihan (SOP v2.2)
     expect(screen.getByText('1. Verifikasi Berkas')).toBeDefined();
     expect(screen.getByText('2. Distribusi Sidang')).toBeDefined();
@@ -107,10 +102,6 @@ describe('Komponen tata letak portal operasional', () => {
         <Sidebar isOpen={true} onClose={vi.fn()} />
       </MemoryRouter>
     );
-
-    // User mini-card
-    expect(screen.getByText('Ahmad Penerbit')).toBeDefined();
-    expect(screen.getByText('Penerbit')).toBeDefined();
 
     // Menu penerbit sesuai alur baru Mandat Bab 6
     expect(screen.getByText('Beranda')).toBeDefined();

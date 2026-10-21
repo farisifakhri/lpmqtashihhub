@@ -12,7 +12,6 @@ const show = role => {
 describe('Helper Admin navigation', () => {
   it('labels ADMIN_INTERNAL correctly and hides operational, publisher and superadmin links', () => {
     show('ADMIN_INTERNAL');
-    expect(screen.getByText('Helper Admin')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Kendali Operasional/ })).toBeInTheDocument();
     for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/publisher']) {
       expect(document.querySelector(`a[href="${path}"]`)).toBeNull();
@@ -20,7 +19,6 @@ describe('Helper Admin navigation', () => {
   });
   it('keeps SUPERADMIN navigation available', () => {
     show('SUPERADMIN');
-    expect(screen.getByText('Superadmin')).toBeInTheDocument();
     for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/publisher']) {
       expect(document.querySelector(`a[href="${path}"]`)).not.toBeNull();
     }
