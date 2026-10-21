@@ -49,3 +49,4 @@ test('U-16 / B-10: printingReportSchema rejects invalid date or zero oplah', () 
   };
   assert.equal(printingReportSchema.body.safeParse(emptyPrinter).success, false);
 });
+

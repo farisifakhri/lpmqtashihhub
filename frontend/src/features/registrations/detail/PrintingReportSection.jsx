@@ -510,3 +510,4 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
 }
 
 export default PrintingReportSection;
+

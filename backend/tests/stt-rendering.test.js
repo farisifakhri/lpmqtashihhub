@@ -54,3 +54,4 @@ test('U-15: renderSttPdf throws 422 if unsupported Arabic characters are present
     error => error.statusCode === 422
   );
 });
+
