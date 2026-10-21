@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../src/config/database.js';

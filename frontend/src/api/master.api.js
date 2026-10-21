@@ -59,6 +59,12 @@ export const masterApi = {
     return apiClient(`/master/addons/${id}`, { method: 'DELETE' });
   },
 
+  // Master Item Jenis Naskah (B-01 §4)
+  getJenisNaskahItems: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiClient(`/master/jenis-naskah-items${query ? `?${query}` : ''}`);
+  },
+
   // Distribution Teams
   getDistributionTeams: async () => {
     return apiClient('/master/distribution-teams');
