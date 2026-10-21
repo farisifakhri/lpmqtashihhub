@@ -107,9 +107,11 @@ export function PublisherStatusAlerts({
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  handleTabChange('dokumen');
-                  const el = document.getElementById('section-physical-master');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  handleTabChange('dokumen', 'physical');
+                  setTimeout(() => {
+                    const el = document.getElementById('section-physical-master');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 50);
                 }}
                 className="text-xs font-bold"
               >

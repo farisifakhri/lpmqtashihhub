@@ -92,16 +92,10 @@ export function PublisherDigitalFilesTab({
                       <span className="font-semibold text-ink block truncate">
                         {FILE_TYPES[item.type] || item.type}
                       </span>
-                      <span className="text-xs text-ink-muted block">
-                        Versi {item.version}
-                      </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono text-xs text-ink-muted bg-surface border border-line px-2 py-0.5 rounded">
-                      v{item.version}
-                    </span>
                     {item.file_id && (
                       <button
                         type="button"
@@ -233,9 +227,11 @@ export function PublisherDigitalFilesTab({
                 variant="primary"
                 size="sm"
                 onClick={() => {
-                  handleTabChange('dokumen');
-                  const el = document.getElementById('section-physical-master');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  handleTabChange('dokumen', 'physical');
+                  setTimeout(() => {
+                    const el = document.getElementById('section-physical-master');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 50);
                 }}
                 className="text-xs font-bold inline-flex items-center gap-1.5"
               >
