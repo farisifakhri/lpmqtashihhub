@@ -1,6 +1,6 @@
 # Arsitektur B-01: Pengajuan Banyak Naskah, Jenis Naskah Berbasis Item, dan Varian
 
-- **Status Dokumen**: Draf Rancangan Sesi 1 (Menunggu Persetujuan)
+- **Status Dokumen**: Rancangan awal B-01; status implementasi tidak lagi menunggu persetujuan. Bukti kode dan status terkini dicatat di [peta tugas](../tugas/README.md) dan [backlog fase lanjutan](../tugas/BACKLOG-FASE-LANJUTAN.md).
 - **Dasar Branch**: `main`
 - **Branch Kerja**: `feat/pengajuan-naskah-skema`
 - **Terkait Modul**: Registrasi, Verifikasi, Pembayaran (PNBP), Distribusi, Tashih, Dokumentasi (STT), Keamanan Siber
@@ -261,4 +261,3 @@ Sesuai instruksi butir 3 Sesi 1, empat pertanyaan ini disampaikan kepada pemilik
    - *Pertanyaan*: STT lama berlaku sampai habis atau kedaluwarsa. Kedaluwarsa dihitung dari waktu (2 tahun). Sedangkan kriteria "habis" membutuhkan data realisasi oplah cetak riil dari penerbit. Apakah disepakati hal ini diputuskan implementasinya di paket B-09 & B-10 (bukan di B-01)?
 4. **Kombinasi Item Terlarang**:
    - *Pertanyaan*: Apakah ada kombinasi item jenis naskah yang secara regulasi dilarang (misal Braille digabung dengan materi tambahan, atau Kaligrafi digabung dengan Tafsir)? Ataukah seluruh kombinasi diizinkan dan tarif/SLA-nya mengikuti aturan penjumlahan standar?
-

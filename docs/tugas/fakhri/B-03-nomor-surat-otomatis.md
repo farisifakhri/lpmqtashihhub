@@ -11,6 +11,19 @@
 
 ---
 
+## Status implementasi per 21 Oktober 2026
+
+**Status paket: parsial; UAT U-04 belum selesai.** Bukti di checkout menunjukkan skema `DocumentNumberSequence`, migrasi, generator, dan test format/urutan dasar telah ditambahkan. Approval backend memanggil generator hanya jika request mengirim `auto_number: true` atau `auto_generate: true`. `VerificationInspectionPage.jsx` saat ini hanya mengirim `document_numbers` ketika nomor manual terisi dan tidak mengirim kedua flag tersebut; karena itu alur UI tidak otomatis meminta generator dan backend tetap meminta nomor manual ketika nomor kosong. Gap ini juga dicatat pada reviu PR #43. Jangan menyatakan penomoran otomatis end-to-end atau UAT U-04 selesai.
+
+| Sesi | Penilaian saat ini | Bukti / gap |
+|---|---|---|
+| 1 — Skema dan generator | **Parsial** | Model/migrasi, `document-number.service.js`, dan test format serta urutan dasar tersedia; uji konkurensi database belum dibuktikan. |
+| 2 — Integrasi approval | **Parsial** | Generator terhubung ke approval melalui flag opt-in; tanpa flag dan tanpa nomor manual, approval gagal. |
+| 3 — UI approval | **Belum selesai** | UI masih mengirim nomor manual secara opsional dan tidak meminta mode otomatis. |
+| 4 — QA | **Belum diverifikasi** | Test unit dasar bukan bukti uji approval simultan, non-reuse, atau UAT penuh. |
+
+Nomor yang dihasilkan kode saat ini menggunakan segmen `TL.01` (misalnya pada test unit), sedangkan pola usulan di dokumen ini menyebut `TL.00`. Generator yang ditinjau memakai pola hardcoded; dukungan konfigurasi belum terbukti. Format resmi perlu dikonfirmasi sebelum mengubah implementasi atau menyatakan format disahkan.
+
 ## 1. Latar Belakang & Masalah (Temuan UAT U-04)
 
 Berdasarkan hasil UAT sistem per 20 Oktober 2026 (Gambar 20 pada Register Temuan UAT):
@@ -33,7 +46,7 @@ B-03 mengubah alur penomoran surat verifikasi dari manual menjadi **otomatis, at
 flowchart TD
     A["Kepala LPMQ klik 'Sahkan Surat Hasil'"] --> B["Frontend memanggil API Approve"]
     B --> C["Backend Transaction (Prisma Tx)"]
-    C --> D["Atomic Sequence Increment<br/>(PostgreSQL ON CONFLICT DO UPDATE)"]
+    C --> D["Prisma upsert DocumentNumberSequence"]
     D --> E["Format Nomor Resmi Tata Naskah Dinas<br/>(Contoh: B-0123/LPMQ.01/TL.00/X/2026)"]
     E --> F["Simpan ke VerificationDocument.document_no"]
     F --> G["Render & Arsipkan PDF Resmi Berstempel/TTD"]
@@ -41,20 +54,13 @@ flowchart TD
 ```
 
 ### 2.1. Generator Nomor Atomik (*Atomic Sequence Counter*)
-- Menggunakan tabel tersendiri `DocumentNumberSequence` di PostgreSQL dengan *composite key* `sequence_key` (kombinasi `document_type` dan `year`).
-- Increment urutan (*sequence counter*) dilakukan secara transaksional dan atomik:
-  ```sql
-  INSERT INTO document_number_sequences (id, sequence_key, document_type, year, last_number, updated_at)
-  VALUES (gen_random_uuid(), $1, $2, $3, 1, NOW())
-  ON CONFLICT (sequence_key)
-  DO UPDATE SET last_number = document_number_sequences.last_number + 1, updated_at = NOW()
-  RETURNING last_number;
-  ```
-- **Aman dari *Race Condition*:** Dua *request* pengesahan yang masuk pada milidetik yang sama dijamin mendapatkan nomor berurutan yang berbeda tanpa risiko tabrakan (*collision-free*).
-- **Non-Reusable (Nomor Tidak Boleh Dipakai Ulang):** Nomor yang sudah dikeluarkan tidak dapat dialokasikan kembali meskipun pengesahan dibatalkan atau dokumen direvisi.
+- Rancangan awal memakai tabel `DocumentNumberSequence` dengan key `sequence_key` yang menggabungkan tipe dokumen dan tahun.
+- Implementasi pada checkout memakai Prisma `upsert` terhadap model tersebut; migrasinya berada di `backend/prisma/migrations/20261021100000_publisher_nip_and_doc_sequences/migration.sql`.
+- Generator di `backend/src/services/document-number.service.js` juga memeriksa benturan nomor sebelum mengembalikan kandidat. Test yang tersedia memeriksa format serta urutan berurutan dengan mock, bukan jaminan konkurensi pada database nyata.
+- Sifat atomik dan non-reusable tetap merupakan kriteria yang perlu diuji dengan database serta alur approval nyata; jangan menyimpulkannya dari test mock.
 
 ### 2.2. Pola Format Tata Naskah Dinas (*Configurable Format*)
-Format nomor surat diatur melalui konfigurasi lingkungan (`.env`) atau tabel konfigurasi dengan nilai bawaan (*default*) sesuai format tata naskah dinas LPMQ Kemenag:
+Format nomor surat berikut adalah usulan dokumen ini, bukan bukti format resmi yang disahkan, dan belum sesuai persis dengan pola yang diuji oleh generator saat ini:
 
 | Tipe Dokumen | Default Template | Contoh Hasil | Keterangan |
 | :--- | :--- | :--- | :--- |
@@ -69,7 +75,7 @@ Format nomor surat diatur melalui konfigurasi lingkungan (`.env`) atau tabel kon
 - `{month}`: Bulan 2 digit (`10`).
 - `{roman_month}`: Bulan angka Romawi (`I` s.d. `XII`).
 
-### 2.3. Frontend UX (Dialog Pengesahan)
+### 2.3. Target Frontend UX (belum terpenuhi)
 - Input pengetikan manual di dialog *"Sahkan Surat Hasil Verifikasi"* **dihilangkan dari alur wajib**.
 - Dialog menampilkan informasi nomor yang akan digenerate otomatis:
   > *"Nomor surat hasil dan berita acara akan diterbitkan otomatis secara resmi oleh sistem saat disahkan."*
@@ -81,10 +87,10 @@ Format nomor surat diatur melalui konfigurasi lingkungan (`.env`) atau tabel kon
 
 | Sesi | Branch | Lingkup | Status |
 | :---: | :--- | :--- | :---: |
-| **Sesi 1** | `feat/nomor-surat-skema-engine` | **BE + DB:** Skema Prisma `DocumentNumberSequence`, migrasi database, dan modul mesin nomor `document-number.service.js` (generator atomik, format romawi, uji konkurensi dasar). | Siap Dikerjakan |
-| **Sesi 2** | `feat/nomor-surat-integrasi-approval` | **BE:** Integrasi generator otomatis ke `verification-review.service.js`, penggantian validasi manual, pembuatan nomor pada Berita Acara & Surat Hasil, serta pengarsipan PDF berstempel nomor resmi. | Menunggu Sesi 1 |
-| **Sesi 3** | `feat/nomor-surat-ui-approval` | **FE:** Modifikasi `VerificationInspectionPage.jsx`, pembersihan input nomor manual pada modal dialog, penambahan pratinjau badge nomor resmi, dan feedback sukses pengesahan. | Menunggu Sesi 2 |
-| **Sesi 4** | `chore/nomor-surat-siber-concurrency` | **Siber & QA:** Uji penetrasi & beban konkurensi (10–50 approval simultan tanpa duplikasi), validasi integritas audit log, dan verifikasi dokumen PDF. | Menunggu Sesi 3 |
+| **Sesi 1** | `feat/nomor-surat-skema-engine` | **BE + DB:** Skema Prisma `DocumentNumberSequence`, migrasi database, dan modul mesin nomor `document-number.service.js` (generator atomik, format romawi, uji konkurensi dasar). | Selesai pada checkout; uji konkurensi database belum dibuktikan |
+| **Sesi 2** | `feat/nomor-surat-integrasi-approval` | **BE:** Integrasi generator otomatis ke `verification-review.service.js`, penggantian validasi manual, pembuatan nomor pada Berita Acara & Surat Hasil, serta pengarsipan PDF berstempel nomor resmi. | Parsial; generator hanya berjalan dengan flag request |
+| **Sesi 3** | `feat/nomor-surat-ui-approval` | **FE:** Modifikasi `VerificationInspectionPage.jsx`, pembersihan input nomor manual pada modal dialog, penambahan pratinjau badge nomor resmi, dan feedback sukses pengesahan. | Belum selesai; UI belum mengirim flag otomatis |
+| **Sesi 4** | `chore/nomor-surat-siber-concurrency` | **Siber & QA:** Uji penetrasi & beban konkurensi (10–50 approval simultan tanpa duplikasi), validasi integritas audit log, dan verifikasi dokumen PDF. | Belum diverifikasi |
 
 ---
 
@@ -95,4 +101,3 @@ Format nomor surat diatur melalui konfigurasi lingkungan (`.env`) atau tabel kon
 3. **Format Sesuai Standar:** Dokumen PDF resmi memuat nomor surat berformat dinas Kemenag (`B-{seq}/LPMQ.01/TL.00/{roman_month}/{year}`) secara rapi dan presisi.
 4. **Semua Test Lolos:** Seluruh unit test backend, frontend vitest, dan skenario pengesahan terintegrasi lulus tanpa regresi.
 5. **Siap Masuk B-04:** API verifikasi menghasilkan dokumen surat lolos bernomor resmi yang siap digabungkan dengan billing SIMPONI di paket B-04.
-

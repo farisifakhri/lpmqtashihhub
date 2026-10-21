@@ -18,9 +18,8 @@ Menghapus semua data penerbit perorangan (seluruhnya data uji, bertentangan deng
 - [x] Catat hasil (jumlah dihapus, jumlah dipertahankan) di PR.
 
 ## Hasil Eksekusi Lokal
-- **File Cadangan (Backup):** `backend/storage/backups/lpmq_db-2026-10-19T05-13-39-629Z.sql` (5.080.820 byte, diverifikasi via SHA256 metadata).
-- **Manifest:** `backend/storage/backups/lpmq_db-2026-10-19T05-13-39-629Z.sql.cleanup-perorangan.json`.
-- **Dihapus:** 2 penerbit perorangan (`Ahmad Jauhari Abbas, S.Ag.` dan `minnatul maula `), 2 akun user uji (`ahmadjauhariabbas.lpmq@gmail.com` dan `minnatulmaula138@gmail.com`), 1 pendaftaran draf (`REG-202610-0002`).
+- **Cadangan dan manifest:** dibuat serta diverifikasi lokal; path dan identitas record tidak dicantumkan di dokumentasi ini.
+- **Dihapus:** 2 penerbit uji, 2 akun uji, dan 1 pendaftaran draf.
 - **Dipertahankan:** 7 penerbit berbadan hukum resmi (PT & CV), 109 pengguna akun, 10 pendaftaran mushaf valid, 5.595 audit log (100% utuh tanpa pengurangan).
 - **Pengujian Ulang (Idempotency):** Berhasil, kandidat tersisa 0 dan skrip aman dijalankan berulang kali.
 
