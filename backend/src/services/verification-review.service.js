@@ -6,6 +6,7 @@ import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigne
 import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt } from './sla.service.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
+import { getNextDocumentNumber } from './document-number.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -843,7 +844,11 @@ try { return await prisma.$transaction(async tx => {
       fail(409, 'Kepala LPMQ hanya dapat mengesahkan dokumen yang telah ditandatangani Verifikator dan belum berubah isinya.');
     }
     const suppliedNumber = req?.body?.document_numbers?.[rDoc.document_type];
-    const documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
+    let documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
+    // B-03 / U-04: Nomor surat resmi dibuat otomatis jika tidak diisi manual
+    if (!documentNo || documentNo.length < 3) {
+      documentNo = await getNextDocumentNumber(tx, rDoc.document_type, now);
+    }
     if (documentNo.length < 3 || documentNo.length > 191) {
       fail(400, `Nomor resmi ${rDoc.document_type} wajib diisi (3–191 karakter) sebelum persetujuan.`);
     }

@@ -207,51 +207,61 @@ export const InspectionActionPanel = ({
         ]}
       >
         <div className="space-y-3 pt-2 border-t border-line text-xs">
-          <div>
-            <label htmlFor="approve-result-doc-no" className="block font-bold text-ink mb-1">
-              Nomor Surat Hasil Verifikasi <span className="text-civic-danger">*</span>
-            </label>
-            <input
-              id="approve-result-doc-no"
-              type="text"
-              value={resultDocumentNo || ''}
-              onChange={(e) => {
-                setResultDocumentNo?.(e.target.value);
-                if (approveModalError) setApproveModalError?.(null);
-              }}
-              placeholder="Contoh: B-123/LPMQ.01/TL.00/09/2026"
-              maxLength={191}
-              className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
-              required
-            />
-            <p className="text-xs text-ink-muted mt-0.5">
-              Nomor resmi surat hasil yang dicetak pada PDF final dan diverifikasi via QR.
+          <div className="p-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 space-y-1">
+            <div className="flex items-center gap-1.5 font-bold text-xs text-brand-800">
+              <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
+              <span>Penomoran Resmi Diterbitkan Otomatis</span>
+            </div>
+            <p className="text-xs text-brand-700 leading-relaxed">
+              Sistem akan menerbitkan nomor surat hasil dan berita acara secara atomik sesuai standar tata naskah dinas LPMQ (contoh: <code>B-xxxx/LPMQ.01/TL.01/...</code> dan <code>BA-xxxx/LPMQ.01/TL.01/...</code>).
             </p>
           </div>
 
-          {beritaAcaraDoc && (
-            <div>
-              <label htmlFor="approve-ba-doc-no" className="block font-bold text-ink mb-1">
-                Nomor Berita Acara Verifikasi <span className="text-civic-danger">*</span>
-              </label>
-              <input
-                id="approve-ba-doc-no"
-                type="text"
-                value={minutesDocumentNo || ''}
-                onChange={(e) => {
-                  setMinutesDocumentNo?.(e.target.value);
-                  if (approveModalError) setApproveModalError?.(null);
-                }}
-                placeholder="Contoh: BA-123/LPMQ.01/TL.00/09/2026"
-                maxLength={191}
-                className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
-                required
-              />
-              <p className="text-xs text-ink-muted mt-0.5">
-                Nomor resmi berita acara verifikasi fisik dan telaah naskah.
-              </p>
+          <details className="group border border-line rounded-lg p-2.5 bg-surface-subtle">
+            <summary className="font-semibold text-xs text-ink-muted cursor-pointer hover:text-ink flex items-center justify-between select-none">
+              <span>Ubah nomor secara manual (opsional / darurat)</span>
+              <span className="text-xs text-ink-muted group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="space-y-3 pt-2.5 mt-2 border-t border-line">
+              <div>
+                <label htmlFor="approve-result-doc-no" className="block font-medium text-ink mb-1">
+                  Nomor Surat Hasil Verifikasi (Opsional)
+                </label>
+                <input
+                  id="approve-result-doc-no"
+                  type="text"
+                  value={resultDocumentNo || ''}
+                  onChange={(e) => {
+                    setResultDocumentNo?.(e.target.value);
+                    if (approveModalError) setApproveModalError?.(null);
+                  }}
+                  placeholder="Kosongkan untuk nomor otomatis (Contoh: B-0123/LPMQ.01/TL.01/X/2026)"
+                  maxLength={191}
+                  className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
+                />
+              </div>
+
+              {beritaAcaraDoc && (
+                <div>
+                  <label htmlFor="approve-ba-doc-no" className="block font-medium text-ink mb-1">
+                    Nomor Berita Acara Verifikasi (Opsional)
+                  </label>
+                  <input
+                    id="approve-ba-doc-no"
+                    type="text"
+                    value={minutesDocumentNo || ''}
+                    onChange={(e) => {
+                      setMinutesDocumentNo?.(e.target.value);
+                      if (approveModalError) setApproveModalError?.(null);
+                    }}
+                    placeholder="Kosongkan untuk nomor otomatis (Contoh: BA-0089/LPMQ.01/TL.01/X/2026)"
+                    maxLength={191}
+                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
+                  />
+                </div>
+              )}
             </div>
-          )}
+          </details>
 
           {approveModalError && (
             <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2" role="alert">
