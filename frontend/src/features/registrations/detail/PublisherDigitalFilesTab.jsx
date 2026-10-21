@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/Button';
 
 const FILE_TYPES = {
+  SURAT_PERMOHONAN: 'Surat permohonan',
   COVER: 'Sampul / cover',
   SAMPLE_PAGE_1_5: 'Sampel halaman 1–5',
   DUMMY: 'Dumi perbaikan',
@@ -34,6 +35,33 @@ export function PublisherDigitalFilesTab({
   setPreviewFile,
   handleTabChange,
 }) {
+  // Ambil hanya 1 berkas terbaru per jenis berkas (deduplikasi versi ganda)
+  const latestManuscriptFiles = React.useMemo(() => {
+    const files = data.manuscript_files || [];
+    const map = new Map();
+
+    for (const item of files) {
+      const existing = map.get(item.type);
+      if (!existing || (item.version || 1) > (existing.version || 1)) {
+        map.set(item.type, item);
+      }
+    }
+
+    const result = Array.from(map.values());
+
+    // Pastikan surat permohonan juga ditampilkan jika ada di foreign_metadata dan belum ada di manuscript_files
+    const suratPermohonanFileId = data.foreign_metadata?.surat_permohonan_file_id || data.surat_permohonan_file_id;
+    if (suratPermohonanFileId && !map.has('SURAT_PERMOHONAN')) {
+      result.unshift({
+        id: 'surat-permohonan-' + data.id,
+        type: 'SURAT_PERMOHONAN',
+        version: 1,
+        file_id: suratPermohonanFileId,
+      });
+    }
+
+    return result;
+  }, [data.manuscript_files, data.foreign_metadata, data.surat_permohonan_file_id, data.id]);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-start">
       {/* Kolom Kiri: Berkas Digital yang Tersimpan */}
@@ -45,13 +73,13 @@ export function PublisherDigitalFilesTab({
               Berkas naskah digital
             </h2>
             <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
-              Sampul dan sampel halaman 1–5 naskah mushaf yang diverifikasi oleh LPMQ Kemenag RI (PDF, PNG, atau JPEG maksimal 10 MB).
+              Sampul, sampel halaman 1–5, dan surat permohonan naskah mushaf yang diverifikasi oleh LPMQ Kemenag RI (PDF, PNG, atau JPEG maksimal 10 MB).
             </p>
           </div>
 
-          {data.manuscript_files?.length ? (
+          {latestManuscriptFiles.length ? (
             <ul className="space-y-2.5">
-              {data.manuscript_files.map((item) => (
+              {latestManuscriptFiles.map((item) => (
                 <li
                   key={item.id}
                   className="flex justify-between items-center gap-3 rounded-xl bg-canvas border border-line p-3 text-xs text-ink hover:border-brand-200 transition-colors"
