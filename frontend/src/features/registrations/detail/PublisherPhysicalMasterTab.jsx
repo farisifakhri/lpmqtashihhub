@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   PackageCheck,
   BookOpen,
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Download,
   Send,
+  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -25,6 +26,18 @@ export function PublisherPhysicalMasterTab({
   handleDispatch,
   setShowShippingLabel,
 }) {
+  const [downloadedSession, setDownloadedSession] = useState(false);
+  const isLabelDownloaded = Boolean(
+    data?.foreign_metadata?.shipping_label_downloaded_at || downloadedSession
+  );
+
+  const handleOpenShippingLabel = () => {
+    setDownloadedSession(true);
+    if (setShowShippingLabel) {
+      setShowShippingLabel(true);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Petunjuk & Alamat Loket LPMQ */}
@@ -149,7 +162,7 @@ export function PublisherPhysicalMasterTab({
           )}
         </section>
 
-        {/* Form 2: Konfirmasi Pengiriman Berkas Fisik */}
+        {/* Form 2: Konfirmasi Pengiriman Berkas Fisik (U-09: Syarat Unduh Label Terlebih Dahulu) */}
         <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs h-full flex flex-col justify-between">
           <div className="space-y-4">
             <div className="border-b border-line pb-3">
@@ -187,7 +200,7 @@ export function PublisherPhysicalMasterTab({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowShippingLabel(true)}
+                    onClick={handleOpenShippingLabel}
                     className="text-xs font-bold text-brand-800 border-brand-300 hover:bg-brand-50"
                   >
                     <Download className="w-3.5 h-3.5 mr-1.5 text-brand-700" />
@@ -197,6 +210,24 @@ export function PublisherPhysicalMasterTab({
               </div>
             ) : (
               <form onSubmit={handleDispatch} className="space-y-3">
+                {/* Notice U-09: Syarat Unduh Label Sebelum Kirim */}
+                {!isLabelDownloaded ? (
+                  <div className="p-3 rounded-lg bg-civic-warningSoft border border-civic-warningLine text-xs text-civic-warning flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
+                    <div className="space-y-1">
+                      <p className="font-bold">Wajib Unduh Label Pengiriman Terlebih Dahulu:</p>
+                      <p className="leading-relaxed">
+                        Silakan unduh dan cetak <strong>Label Pengiriman</strong> untuk ditempelkan pada paket naskah fisik sebelum mengonfirmasi pengiriman ke LPMQ.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2.5 rounded-lg bg-brand-50 border border-brand-200 text-xs text-brand-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
+                    <span>Label pengiriman telah diunduh. Anda dapat melanjutkan konfirmasi pengiriman di bawah ini.</span>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-ink mb-1">
                     Metode Pengantaran / Ekspedisi
@@ -229,19 +260,32 @@ export function PublisherPhysicalMasterTab({
                   />
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
-                  <Button type="submit" disabled={busy} variant="primary" size="sm" className="text-xs font-bold w-full sm:w-auto">
-                    <Send className="w-3.5 h-3.5 mr-1.5" />
-                    Konfirmasi Pengiriman Berkas ke LPMQ
-                  </Button>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant={isLabelDownloaded ? 'outline' : 'primary'}
                     size="sm"
-                    onClick={() => setShowShippingLabel(true)}
-                    className="text-xs font-bold w-full sm:w-auto text-brand-800 border-brand-300 hover:bg-brand-50"
+                    onClick={handleOpenShippingLabel}
+                    className={`text-xs font-bold w-full sm:w-auto ${
+                      isLabelDownloaded
+                        ? 'text-brand-800 border-brand-300 hover:bg-brand-50'
+                        : 'bg-brand-700 hover:bg-brand-800 text-white'
+                    }`}
                   >
-                    <Download className="w-3.5 h-3.5 mr-1.5 text-brand-700" />
-                    Unduh Label Pengiriman
+                    <Download className="w-3.5 h-3.5 mr-1.5 text-current" />
+                    {isLabelDownloaded ? 'Unduh Ulang Label Pengiriman' : '1. Unduh Label Pengiriman'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={busy || !isLabelDownloaded}
+                    variant={isLabelDownloaded ? 'primary' : 'outline'}
+                    size="sm"
+                    title={!isLabelDownloaded ? 'Unduh label pengiriman terlebih dahulu' : ''}
+                    className={`text-xs font-bold w-full sm:w-auto ${
+                      !isLabelDownloaded ? 'opacity-50 cursor-not-allowed bg-surface-subtle text-ink-muted' : ''
+                    }`}
+                  >
+                    <Send className="w-3.5 h-3.5 mr-1.5" />
+                    2. Konfirmasi Pengiriman ke LPMQ
                   </Button>
                 </div>
               </form>

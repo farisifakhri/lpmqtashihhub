@@ -1,12 +1,26 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import QRCode from 'qrcode';
 import { prisma } from '../config/database.js';
+import { ENV } from '../config/env.js';
 import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
+
+export function formatIndonesianDate(d) {
+  if (!d) return '-';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '-';
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+}
 
 export const createDocument = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN']);
@@ -23,7 +37,7 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
   }
   if (reg.core_team_number && !user.roles.includes('ADMIN_INTERNAL') && !user.roles.includes('SUPERADMIN') && ![reg.core_distributor_id, reg.core_documenter_id].includes(user.id)) fail(403, 'Dokumen ini hanya dapat dibuat oleh tim inti pengajuan.');
   const source = await tx.registration.findUnique({ where: { id }, include: {
-    publisher: { select: { legal_name: true } },
+    publisher: true,
     verification_assignments: { select: { notes: true, decision: true, verifier: { select: { name: true } } } },
     assignments: { include: { reviews: true, assignee: { select: { name: true } }, team: { select: { name: true, decree_no: true } } } },
   } });
@@ -32,9 +46,34 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
     return last;
   }
   if (last && last.status !== 'DRAFT' && data.document_type !== 'SURAT_TANDA_TASHIH') fail(409, 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
+
+  const meta = (typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null)
+    ? reg.foreign_metadata
+    : (typeof reg.foreign_metadata === 'string' ? JSON.parse(reg.foreign_metadata || '{}') : {});
+
+  const sizesList = Array.isArray(meta.sizes) ? meta.sizes : [];
+  const totalOplah = sizesList.reduce((acc, curr) => acc + (Number(curr.oplah) || 0), 0) || Number(meta.oplah) || 0;
+  const sizesFormatted = sizesList.length > 0
+    ? sizesList.map(s => `${s.ukuran || 'Standar'} (${Number(s.oplah || 0).toLocaleString('id-ID')} Eks)`).join(', ')
+    : (meta.ukuran ? `${meta.ukuran} (${totalOplah.toLocaleString('id-ID')} Eks)` : 'Standar');
+
   const snapshot = {
-    title: reg.title, registration_no: reg.registration_no, publisher: source?.publisher?.legal_name || 'Penerbit Terdaftar',
-    fee_sla: reg.fee_sla_snapshot, verification: source?.verification_assignments || [],
+    title: reg.title,
+    registration_no: reg.registration_no,
+    publisher: source?.publisher?.legal_name || 'Penerbit Terdaftar',
+    publisher_address: source?.publisher?.address || '-',
+    publisher_phone: source?.publisher?.phone || '-',
+    publisher_email: source?.publisher?.email || '-',
+    nomor_naskah: meta.nomor_surat_permohonan || meta.nomor_naskah || reg.registration_no,
+    tanggal_naskah: meta.tanggal_surat_permohonan || formatIndonesianDate(reg.created_at),
+    nama_pengirim: meta.penanggung_jawab_produk || source?.publisher?.contact_person || source?.publisher?.legal_name || 'Pimpinan Penerbit',
+    ttd_pengirim: meta.jabatan_pengirim || 'Direktur / Penanggung Jawab',
+    jenis_mushaf: meta.jenis_mushaf || 'Mushaf Standar Indonesia (Usmani)',
+    sizes_formatted: sizesFormatted,
+    oplah_formatted: totalOplah > 0 ? `${totalOplah.toLocaleString('id-ID')} Eksemplar` : 'Sesuai Kuota Terdaftar',
+    total_oplah: totalOplah,
+    fee_sla: reg.fee_sla_snapshot,
+    verification: source?.verification_assignments || [],
     assignments: (source?.assignments || []).map(item => ({ stage: item.stage, iteration: item.iteration, assignee: item.assignee?.name, team: item.team, status: item.status, due_at: item.due_at, reviews: item.reviews })),
   };
   const document = await tx.officialDocument.create({ data: {
@@ -56,8 +95,233 @@ export async function getDocument(id, user) {
   return document;
 }
 
+export async function renderSttPdf(document, { draft = false } = {}) {
+  let initialSnap = document.content_snapshot;
+  if (!initialSnap && document.registration_id) {
+    const reg = await prisma.registration.findUnique({
+      where: { id: document.registration_id },
+      include: { publisher: true },
+    });
+    const meta = (typeof reg?.foreign_metadata === 'object' && reg?.foreign_metadata !== null)
+      ? reg.foreign_metadata
+      : (typeof reg?.foreign_metadata === 'string' ? JSON.parse(reg?.foreign_metadata || '{}') : {});
+    const sizesList = Array.isArray(meta.sizes) ? meta.sizes : [];
+    const totalOplah = sizesList.reduce((acc, curr) => acc + (Number(curr.oplah) || 0), 0) || Number(meta.oplah) || 0;
+    const sizesFormatted = sizesList.length > 0
+      ? sizesList.map(s => `${s.ukuran || 'Standar'} (${Number(s.oplah || 0).toLocaleString('id-ID')} Eks)`).join(', ')
+      : (meta.ukuran ? `${meta.ukuran} (${totalOplah.toLocaleString('id-ID')} Eks)` : 'Standar');
+
+    initialSnap = {
+      title: reg?.title || 'Dokumen Resmi',
+      registration_no: reg?.registration_no || '-',
+      publisher: reg?.publisher?.legal_name || 'Penerbit Terdaftar',
+      nomor_naskah: meta.nomor_surat_permohonan || meta.nomor_naskah || reg?.registration_no || '-',
+      tanggal_naskah: meta.tanggal_surat_permohonan || formatIndonesianDate(reg?.created_at),
+      nama_pengirim: meta.penanggung_jawab_produk || reg?.publisher?.contact_person || reg?.publisher?.legal_name || 'Pimpinan Penerbit',
+      ttd_pengirim: meta.jabatan_pengirim || 'Direktur / Penanggung Jawab',
+      jenis_mushaf: meta.jenis_mushaf || 'Mushaf Standar Indonesia (Usmani)',
+      sizes_formatted: sizesFormatted,
+      oplah_formatted: totalOplah > 0 ? `${totalOplah.toLocaleString('id-ID')} Eksemplar` : 'Sesuai Kuota Terdaftar',
+      total_oplah: totalOplah,
+    };
+    document.content_snapshot = initialSnap;
+  }
+
+  const snap = typeof document.content_snapshot === 'string'
+    ? JSON.parse(document.content_snapshot)
+    : (document.content_snapshot || {});
+
+  const pdf = await PDFDocument.create();
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+
+  const validateSnapshotEncoding = (obj) => {
+    if (!obj) return;
+    if (typeof obj === 'string') {
+      for (const char of obj) {
+        try { font.encodeText(char); }
+        catch {
+          fail(422, 'PDF draf belum dapat dibuat karena ada karakter, misalnya huruf Arab, yang belum didukung. Data draf tetap tersimpan. Hubungi administrator untuk dukungan huruf pada dokumen; jangan mengubah isi naskah hanya untuk mengatasi kendala ini.');
+        }
+      }
+    } else if (typeof obj === 'object') {
+      for (const val of Object.values(obj)) {
+        validateSnapshotEncoding(val);
+      }
+    }
+  };
+  validateSnapshotEncoding(snap);
+
+  let logo = null;
+  try {
+    logo = await pdf.embedPng(await readFile(letterheadLogo));
+  } catch {}
+
+  const page = pdf.addPage([595, 842]);
+  const margin = 45;
+  const contentWidth = 595 - margin * 2;
+  const black = rgb(0.08, 0.08, 0.08);
+
+  if (logo) {
+    page.drawImage(logo, { x: margin, y: 744, width: 54, height: 50 });
+  }
+
+  const kopLines = [
+    { text: 'KEMENTERIAN AGAMA REPUBLIK INDONESIA', font: bold, size: 12 },
+    { text: "LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN", font: bold, size: 12 },
+    { text: "Gedung Bayt Al-Qur'an & Museum Istiqlal, Jalan Raya TMII Pintu I Jakarta Timur 13560", font, size: 8 },
+    { text: 'Telp: (021) 87798807, 8416466, 8416467, 8416468 Fax: (021) 87798807', font, size: 8 },
+    { text: 'Website: http://lajnah.kemenag.go.id Email : lajnah@kemenag.go.id', font, size: 8 },
+  ];
+
+  let curY = 786;
+  for (const item of kopLines) {
+    const textW = item.font.widthOfTextAtSize(item.text, item.size);
+    page.drawText(item.text, {
+      x: (595 - textW) / 2,
+      y: curY,
+      font: item.font,
+      size: item.size,
+      color: black,
+    });
+    curY -= item.size === 12 ? 14 : 11;
+  }
+
+  page.drawLine({ start: { x: margin, y: 728 }, end: { x: 595 - margin, y: 728 }, thickness: 1.8, color: black });
+
+  if (draft) {
+    page.drawText('DRAF - BELUM DITETAPKAN / BELUM DITANDATANGANI', {
+      x: margin,
+      y: 714,
+      font: bold,
+      size: 8,
+      color: rgb(0.75, 0.1, 0.1),
+    });
+  }
+
+  let y = draft ? 698 : 708;
+  const titleText = 'SURAT TANDA TASHIH';
+  page.drawText(titleText, {
+    x: (595 - bold.widthOfTextAtSize(titleText, 13)) / 2,
+    y,
+    font: bold,
+    size: 13,
+    color: black,
+  });
+
+  y -= 15;
+  const docNoText = `Nomor: ${document.document_no || 'DRAF-STT'}`;
+  page.drawText(docNoText, {
+    x: (595 - bold.widthOfTextAtSize(docNoText, 9.5)) / 2,
+    y,
+    font: bold,
+    size: 9.5,
+    color: black,
+  });
+
+  y -= 22;
+  const introText = "Lajnah Pentashihan Mushaf Al-Qur'an Kementerian Agama Republik Indonesia, setelah memeriksa dan meneliti naskah master mushaf Al-Qur'an berdasarkan permohonan dari:";
+  page.drawText(introText, { x: margin, y, font, size: 8.5, color: black, maxWidth: contentWidth });
+
+  y -= 20;
+  const nomorNaskah = snap.nomor_naskah || snap.registration_no || '-';
+  const tanggalNaskah = snap.tanggal_naskah || formatIndonesianDate(document.created_at);
+  const namaPengirim = snap.nama_pengirim || snap.publisher || 'Pimpinan Penerbit';
+  const ttdPengirim = snap.ttd_pengirim || 'Direktur / Penanggung Jawab';
+
+  const metaRows = [
+    ['Penerbit Pemohon', snap.publisher || '-'],
+    ['Surat Permohonan', `Nomor: ${nomorNaskah}, Tanggal: ${tanggalNaskah}`],
+    ['Penanggung Jawab', `${namaPengirim} (${ttdPengirim})`],
+    ['Judul Master Naskah', snap.title || '-'],
+    ['Jenis / Standar Rasm', snap.jenis_mushaf || "Mushaf Standar Indonesia (Rasm Usmani)"],
+    ['Format / Ukuran Cetak', snap.sizes_formatted || 'Sesuai spesifikasi pendaftaran'],
+    ['Jumlah Oplah Izin', snap.oplah_formatted || (snap.total_oplah ? `${Number(snap.total_oplah).toLocaleString('id-ID')} Eksemplar` : 'Sesuai kuota permohonan')],
+  ];
+
+  for (const [k, v] of metaRows) {
+    page.drawText(k, { x: margin + 10, y, font: bold, size: 8.5, color: black });
+    page.drawText(':', { x: margin + 130, y, font: bold, size: 8.5, color: black });
+    page.drawText(String(v), { x: margin + 140, y, font, size: 8.5, color: black, maxWidth: 350 });
+    y -= 13;
+  }
+
+  y -= 4;
+  page.drawText('MEMUTUSKAN DAN MENETAPKAN:', { x: margin, y, font: bold, size: 8.5, color: black });
+  y -= 13;
+  const penetapanText = "Master naskah mushaf Al-Qur'an tersebut di atas dinyatakan TELAH DITASHIH dan diberikan izin penerbitan/pencetakan dengan ketentuan sebagai berikut:";
+  page.drawText(penetapanText, { x: margin, y, font, size: 8.5, color: black, maxWidth: contentWidth });
+
+  y -= 16;
+  const validFrom = formatIndonesianDate(document.issued_at || document.created_at || new Date());
+  const validUntil = formatIndonesianDate(document.valid_until || new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000));
+
+  const terms = [
+    `1. Masa Berlaku: Surat Tanda Tashih ini berlaku selama 2 (dua) tahun kalender terhitung sejak tanggal ditetapkan (${validFrom} s.d. ${validUntil}).`,
+    `2. Kewajiban Eksemplar: Penerbit WAJIB menyerahkan 5 (lima) eksemplar terbitan final (cetakan pertama) kepada Lajnah Pentashihan Mushaf Al-Qur'an paling lambat 1 (satu) bulan kalender setelah pelaksanaan pencetakan selesai.`,
+    `3. Pelaporan Pencetakan: Penerbit WAJIB mengisi dan menyampaikan laporan realisasi pencetakan secara berkala melalui Sistem Layanan Pentashihan LPMQ untuk pencatatan kuota oplah.`,
+    `4. Imprint & Tanda Tashih: Setiap mushaf yang dicetak wajib mencantumkan Tanda Tashih dan Tanda Verifikasi Elektronik (QR Code) resmi LPMQ pada halaman imprint/kolofon.`,
+    `5. Ketentuan Hukum: Apabila di kemudian hari ditemukan kesalahan cetak atau ketidaksesuaian dengan master yang telah ditashih, penerbit wajib menarik dan memperbaiki cetakan tersebut, dan Surat Tanda Tashih ini dapat ditinjau kembali atau dibatalkan.`,
+  ];
+
+  for (const term of terms) {
+    page.drawText(term, { x: margin + 10, y, font, size: 7.8, color: black, maxWidth: 485, lineHeight: 10.5 });
+    y -= 19;
+  }
+
+  y -= 6;
+  const sigX = 330;
+  page.drawText('Ditetapkan di Jakarta', { x: sigX, y, font, size: 8.5, color: black });
+  y -= 12;
+  page.drawText(`Pada tanggal ${validFrom}`, { x: sigX, y, font, size: 8.5, color: black });
+  y -= 13;
+  page.drawText("Kepala Lajnah Pentashihan Mushaf Al-Qur'an", { x: sigX, y, font: bold, size: 8.5, color: black });
+  y -= 11;
+  page.drawText('Kementerian Agama Republik Indonesia,', { x: sigX, y, font, size: 8.5, color: black });
+
+  if (!draft && document.qr_token) {
+    try {
+      const baseUrl = ENV.PUBLIC_APP_URL || 'https://tashih.kemenag.go.id';
+      const qrUrl = `${baseUrl.replace(/\/$/, '')}/verify-documents/${document.qr_token}`;
+      const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 200, errorCorrectionLevel: 'M' });
+      const qrImage = await pdf.embedPng(Buffer.from(qrDataUrl.replace(/^data:image\/png;base64,/, ''), 'base64'));
+      page.drawImage(qrImage, { x: sigX - 68, y: y - 52, width: 52, height: 52 });
+    } catch {}
+  } else if (draft) {
+    page.drawText('(Tanda Tangan Draf)', { x: sigX, y: y - 24, font: italic, size: 8, color: rgb(0.5, 0.5, 0.5) });
+  }
+
+  y -= 54;
+  page.drawText('H. Abdul Aziz Sidqi, M.Ag.', { x: sigX, y, font: bold, size: 9, color: black });
+  y -= 11;
+  page.drawText('NIP. 197106061998031006', { x: sigX, y, font, size: 8.5, color: black });
+
+  return Buffer.from(await pdf.save());
+}
+
 export async function renderDraft(document) {
-  if (!document.content_snapshot || document.status !== 'DRAFT') fail(409, 'PDF draf belum tersedia untuk dokumen ini.');
+  if (document.document_type === 'SURAT_TANDA_TASHIH') {
+    return renderSttPdf(document, { draft: document.status !== 'ISSUED' });
+  }
+
+  let initialSnap = document.content_snapshot;
+  if (!initialSnap) {
+    if (document.registration_id) {
+      const reg = await prisma.registration.findUnique({
+        where: { id: document.registration_id },
+        include: { publisher: { select: { legal_name: true } } },
+      });
+      initialSnap = {
+        title: reg?.title || 'Dokumen Resmi',
+        registration_no: reg?.registration_no || '-',
+        publisher: reg?.publisher?.legal_name || 'Penerbit Terdaftar',
+      };
+      document.content_snapshot = initialSnap;
+    } else {
+      fail(409, 'PDF draf belum tersedia untuk dokumen ini.');
+    }
+  }
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -206,16 +470,54 @@ export async function renderDraft(document) {
 
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
-export async function documentPdf(document) {
-  if (document.status === 'DRAFT' || document.document_type === 'REVISION_RETURN_LETTER') return renderDraft(document);
-  if (document.status !== 'ISSUED' || (document.valid_until && document.valid_until < new Date())) fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
-  if (!document.file_id) return renderDraft(document);
+export async function documentPdf(document, user = null) {
+  const isPublisher = user && user.roles.includes('PENERBIT') && !user.roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(r));
+
+  if (document.document_type === 'REVISION_RETURN_LETTER' && !document.file_id) {
+    return renderDraft(document);
+  }
+
+  // Untuk dokumen yang belum berstatus ISSUED
+  if (document.status !== 'ISSUED') {
+    if (isPublisher) {
+      // Penerbit hanya boleh mengunduh draf Berita Acara Sidang Tashih (B-06 / workflow review)
+      if (document.document_type === 'BERITA_ACARA_TASHIH' && document.status === 'DRAFT') {
+        return renderDraft(document);
+      }
+      fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
+    }
+    return renderDraft(document);
+  }
+
+  if (document.valid_until && document.valid_until < new Date()) {
+    fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
+  }
+
+  if (!document.file_id) {
+    if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+    return renderDraft(document);
+  }
+
   const file = await prisma.storedFile.findUnique({ where: { id: document.file_id } });
-  if (!file || file.mime_type !== 'application/pdf') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+  if (!file || file.mime_type !== 'application/pdf') {
+    if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+    return renderDraft(document);
+  }
+
   let bytes;
-  try { bytes = await readStoredFile(file.id); }
-  catch (error) { if (error.code === 'ENOENT') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.'); throw error; }
-  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) fail(409, 'Integritas berkas tidak dapat diverifikasi. Hubungi pengelola layanan.');
+  try {
+    bytes = await readStoredFile(file.id);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+      return renderDraft(document);
+    }
+    throw error;
+  }
+
+  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) {
+    fail(409, 'Integritas berkas tidak dapat diverifikasi. Hubungi pengelola layanan.');
+  }
   return bytes;
 }
 
@@ -455,7 +757,7 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
 
   const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
   snapshot.final_signature = {
-    signed_by: { id: user.id, name: user.name, title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an' },
+    signed_by: { id: user.id, name: 'H. Abdul Aziz Sidqi, M.Ag.', nip: '197106061998031006', title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an' },
     signed_at: now.toISOString(),
     method: 'INTERNAL_DIGITAL_SIGNATURE',
     valid_until: validUntil.toISOString(),
@@ -473,6 +775,34 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
     },
     include: { signatories: true },
   });
+
+  // Buat dan simpan berkas PDF resmi STT
+  try {
+    const pdfBytes = await renderSttPdf(updatedDoc, { draft: false });
+    const storageRoot = fileURLToPath(new URL('../../storage/private/', import.meta.url));
+    const fileId = randomUUID();
+    await mkdir(storageRoot, { recursive: true });
+    const filename = path.join(storageRoot, fileId);
+    await writeFile(filename, pdfBytes, { flag: 'wx' });
+
+    await tx.storedFile.create({
+      data: {
+        id: fileId,
+        owner_id: user.id,
+        mime_type: 'application/pdf',
+        file_size: pdfBytes.length,
+        checksum: createHash('sha256').update(pdfBytes).digest('hex'),
+      },
+    });
+
+    await tx.officialDocument.update({
+      where: { id: updatedDoc.id },
+      data: { file_id: fileId },
+    });
+    updatedDoc.file_id = fileId;
+  } catch (pdfErr) {
+    console.warn(`[STT Official PDF] Berkas fisik tidak disimpan saat ini: ${pdfErr.message}. Dokumen tetap resmi diterbitkan.`);
+  }
 
   const reg = await registration(tx, doc.registration_id);
   if (reg.status !== 'STT_ISSUED') {

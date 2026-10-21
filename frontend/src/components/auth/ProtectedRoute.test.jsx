@@ -21,6 +21,7 @@ describe('ProtectedRoute Security Guard', () => {
           <Route path="/login" element={<div>Halaman Login</div>} />
           <Route path="/publisher" element={<div>Portal Penerbit</div>} />
           <Route path="/internal" element={<div>Portal Internal</div>} />
+          <Route path="/403" element={<div>Halaman 403 Forbidden</div>} />
           <Route path="/protected" element={element} />
         </Routes>
       </MemoryRouter>
@@ -32,7 +33,7 @@ describe('ProtectedRoute Security Guard', () => {
       { id: 'internal-admin', role: 'ADMIN_INTERNAL', roles: ['ADMIN_INTERNAL'] },
       <ProtectedRoute portalType="internal" allowedRoles={roles}><div>Restricted module</div></ProtectedRoute>
     );
-    expect(screen.getByText('Portal Internal')).toBeInTheDocument();
+    expect(screen.getByText('Halaman 403 Forbidden')).toBeInTheDocument();
     expect(screen.queryByText('Restricted module')).not.toBeInTheDocument();
   });
 
@@ -124,7 +125,7 @@ describe('ProtectedRoute Security Guard', () => {
     expect(screen.queryByText('Dasbor Penerbit Sukses')).not.toBeInTheDocument();
   });
 
-  it('menolak penerbit yang mencoba membuka rute portal internal (dialihkan ke /publisher)', () => {
+  it('menolak penerbit yang mencoba membuka rute portal internal (dialihkan ke /403)', () => {
     const publisherUser = {
       id: 'pub-1',
       name: 'Penerbit A',
@@ -139,7 +140,7 @@ describe('ProtectedRoute Security Guard', () => {
       </ProtectedRoute>
     );
 
-    expect(screen.getByText('Portal Penerbit')).toBeInTheDocument();
+    expect(screen.getByText('Halaman 403 Forbidden')).toBeInTheDocument();
     expect(screen.queryByText('Halaman Khusus Petugas')).not.toBeInTheDocument();
   });
 
@@ -161,7 +162,7 @@ describe('ProtectedRoute Security Guard', () => {
     expect(screen.getByText('Antrean Verifikasi Sukses')).toBeInTheDocument();
   });
 
-  it('menolak verifikator yang mencoba mengakses portal publisher (dialihkan ke /internal)', () => {
+  it('menolak verifikator yang mencoba mengakses portal publisher (dialihkan ke /403)', () => {
     const verifikatorUser = {
       id: 'staff-1',
       name: 'Ahmad Verifikator',
@@ -176,7 +177,7 @@ describe('ProtectedRoute Security Guard', () => {
       </ProtectedRoute>
     );
 
-    expect(screen.getByText('Portal Internal')).toBeInTheDocument();
+    expect(screen.getByText('Halaman 403 Forbidden')).toBeInTheDocument();
     expect(screen.queryByText('Area Khusus Penerbit')).not.toBeInTheDocument();
   });
 
@@ -213,7 +214,7 @@ describe('ProtectedRoute Security Guard', () => {
       </ProtectedRoute>
     );
 
-    expect(screen.getByText('Portal Internal')).toBeInTheDocument();
+    expect(screen.getByText('Halaman 403 Forbidden')).toBeInTheDocument();
     expect(screen.queryByText('Konfigurasi Master Data')).not.toBeInTheDocument();
   });
 });

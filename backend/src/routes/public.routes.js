@@ -3,10 +3,22 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import publicController from '../controllers/public.controller.js';
 import { publicVerification } from '../services/verification-document-pdf.service.js';
+import { verifyPublisherCertificate } from '../services/publisher-registration.service.js';
 
 const router = Router();
 
 const qrLimit = rateLimit({ windowMs: 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false });
+
+// Endpoint verifikasi publik sertifikat penerbit via nomor induk (QR Code)
+router.get('/verify-certificate/:nomorInduk', qrLimit, async (req, res, next) => {
+  try {
+    const { nomorInduk } = req.params;
+    const result = await verifyPublisherCertificate(decodeURIComponent(nomorInduk));
+    return res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    return next(error);
+  }
+});
 
 // Endpoint verifikasi publik tanpa otentikasi
 router.get('/verify-document/:token', qrLimit, publicController.verifyDocumentByQrToken);

@@ -51,7 +51,7 @@ export function PublisherDetailHeader({
     // 1. Permohonan
     const p1 = {
       id: 1,
-      name: '1. Permohonan',
+      name: '1. Permohonan Terdaftar',
       icon: FileText,
       state: s === 'DRAFT' ? 'CURRENT' : 'DONE',
       statusText: s === 'DRAFT' ? 'Draf Belum Diajukan' : 'Permohonan Terdaftar',
@@ -98,13 +98,13 @@ export function PublisherDetailHeader({
         p2Desc = 'Dalam pengiriman menuju LPMQ';
       } else {
         p2StatusText = 'Kirim Master Fisik';
-        p2Desc = 'Kirim berkas fisik A4 per juz ke LPMQ';
+        p2Desc = 'Menunggu Pengiriman Berkas Fisik. Baca Petunjuk & Ketentuan Master Fisik!';
       }
     }
 
     const p2 = {
       id: 2,
-      name: '2. Verifikasi & Fisik',
+      name: '2. Verifikasi Naskah Fisik',
       icon: PackageCheck,
       state: p2Done ? 'DONE' : isVerificationRevision ? 'REVISION' : p2Active ? 'CURRENT' : 'WAITING',
       statusText: p2StatusText,
@@ -234,7 +234,7 @@ export function PublisherDetailHeader({
             className="text-xs font-bold text-ink hover:text-brand-800"
           >
             <Printer className="h-3.5 w-3.5 mr-1 text-brand-700" />
-            Cetak Bukti Pendaftaran
+            Buka Bukti Permohonan
           </Button>
 
           {setShowShippingLabel && data.status !== 'DRAFT' && (
@@ -314,6 +314,14 @@ export function PublisherDetailHeader({
           {data.foreign_metadata?.nama_percetakan && (
             <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-subtle text-ink-muted border border-line text-xs">
               Percetakan: <span className="ml-1 text-ink font-medium">{data.foreign_metadata.nama_percetakan}</span>
+            </span>
+          )}
+
+          {/* U-12: SLA Waktu Layanan saat tahap verifikasi aktif (Sedang Diverifikasi) */}
+          {['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'REVISION_REQUIRED'].includes(data.status) && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 text-brand-900 border border-brand-200 text-xs font-semibold">
+              <Clock className="w-3.5 h-3.5 text-brand-700" />
+              <span>SLA Waktu Layanan: <strong>{data.fee_sla_snapshot?.sla_hari_kerja || 59} Hari Kerja</strong></span>
             </span>
           )}
 

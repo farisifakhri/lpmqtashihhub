@@ -101,4 +101,16 @@ router.post(
   publisherRegistrationController.decideRegistration
 );
 
+// 9. Unduh / Lihat Sertifikat Penerbit (U-06)
+router.get(
+  '/admin/publisher-registrations/:id/certificate',
+  ...adminAuth,
+  publisherRegistrationController.getCertificate
+);
+
+router.get(
+  '/publisher-registrations/:id/certificate',
+  publisherRegistrationController.getCertificate
+);
+
 export default router;

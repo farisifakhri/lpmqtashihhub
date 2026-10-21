@@ -186,16 +186,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             end: true,
                         },
                         {
-                            label: "Penerimaan Master",
+                            label: "Intake Master Fisik",
                             path: "/internal/master-intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Intake naskah fisik A4",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
+                            badge: "Baru",
                         },
                         {
                             label: "Perlu Penugasan",
@@ -208,6 +203,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Setoran PNBP SIMPONI",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
                         },
                     ],
                 },
@@ -432,6 +433,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 title: "PROSES PENTASHIHAN",
                 items: [
                     {
+                        label: "Intake Master Fisik",
+                        path: "/internal/master-intake",
+                        icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                        description: "Print-out master A4",
+                        badge: "Baru",
+                    },
+                    {
                         label: "Penugasan Verifikator",
                         path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                         icon: <UserCheck className="w-4 h-4 shrink-0" />,
@@ -442,12 +450,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/verifications",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Pemeriksaan kelengkapan & rasm",
-                    },
-                    {
-                        label: "Intake Master Fisik",
-                        path: "/internal/master-intake",
-                        icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                        description: "Print-out master A4",
                     },
                     {
                         label: "Verifikasi Pembayaran",
@@ -677,6 +679,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                                 </span>
                                                             )}
                                                     </div>
+                                                    {item.badge && (
+                                                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-brand-700 text-white shadow-2xs">
+                                                            {item.badge}
+                                                        </span>
+                                                    )}
                                                 </>
                                             )}
                                         </NavLink>

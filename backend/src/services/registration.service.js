@@ -2067,6 +2067,30 @@ export const generateShippingLabelPdf = async (id, user) => {
     throw error;
   }
 
+  // Catat metadata unduh label pengiriman untuk validasi U-09
+  try {
+    const existingMeta =
+      typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null
+        ? reg.foreign_metadata
+        : typeof reg.foreign_metadata === 'string'
+        ? JSON.parse(reg.foreign_metadata || '{}')
+        : {};
+
+    if (!existingMeta.shipping_label_downloaded_at) {
+      await prisma.registration.update({
+        where: { id },
+        data: {
+          foreign_metadata: {
+            ...existingMeta,
+            shipping_label_downloaded_at: new Date().toISOString(),
+          },
+        },
+      });
+    }
+  } catch (err) {
+    // Non-blocking metadata recording
+  }
+
   const buffer = await renderShippingLabelPdf(reg);
   const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
   const filename = `Label-Pengiriman-${safeRegNo}.pdf`;

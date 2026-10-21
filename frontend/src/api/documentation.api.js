@@ -46,6 +46,16 @@ export const documentationApi = {
       body: JSON.stringify({}),
     });
   },
+  getPrintingReports: async (registrationId) => {
+    return apiClient(`/registrations/${encodeURIComponent(registrationId)}/printing-reports`);
+  },
+
+  createPrintingReport: async (registrationId, data) => {
+    return apiClient(`/registrations/${encodeURIComponent(registrationId)}/printing-reports`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
 };
 
 export default documentationApi;
