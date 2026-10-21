@@ -10,6 +10,9 @@ import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
 import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
+export {
+  SLA_INITIAL_CAP_DAYS,
+} from '../utils/item-calculator.js';
 import {
   calculateItemTarifAndSla,
   calculateRegistrationSummary,
@@ -329,6 +332,170 @@ const generateRegistrationNo = async (tx) => {
   return `${prefix}${sequenceStr}`;
 };
 
+
+export const ALLOWED_METADATA_KEYS = new Set([
+  'penulis_nama',
+  'penerjemah_nama',
+  'tahun_terbit',
+  'edisi',
+  'jumlah_halaman',
+  'audio_durasi_menit',
+  'font_arab',
+  'deskripsi',
+  'penanggung_jawab_produk',
+  'penanggung_jawab_email',
+  'nomor_pendaftaran_lama',
+  'nama_percetakan',
+  'jenis_mushaf',
+  'sizes',
+  'jenis_naskah',
+  'materi_tambahan',
+  'penanggung_jawab_materi',
+  'deskripsi_mushaf',
+  'catatan',
+]);
+
+export const sanitizeManuscriptMetadata = (raw = {}) => {
+  if (!raw || typeof raw !== 'object') return {};
+  const cleaned = {};
+  for (const [key, val] of Object.entries(raw)) {
+    if (!ALLOWED_METADATA_KEYS.has(key)) continue;
+    if (typeof val === 'string') {
+      cleaned[key] = val.replace(/<[^>]*>?/gm, '').trim();
+    } else if (typeof val === 'number' || typeof val === 'boolean' || Array.isArray(val) || val === null) {
+      cleaned[key] = val;
+    }
+  }
+  return cleaned;
+};
+
+export const calculateManuscriptTarifAndSla = (items = [], options = {}) => {
+  if (!items || items.length === 0) {
+    return {
+      fee: 0,
+      slaInitial: 0,
+      rawSlaInitial: 0,
+      slaRevision: 0,
+      slaDummy: 0,
+      items: [],
+    };
+  }
+
+  const calc = calculateItemTarifAndSla(items, options);
+
+  const itemMap = new Map();
+  if (Array.isArray(items)) {
+    for (const it of items) {
+      if (it && typeof it === 'object') {
+        if (it.code) itemMap.set(it.code.toUpperCase(), it);
+        if (it.id) itemMap.set(it.id, it);
+      }
+    }
+  }
+
+  const enrichedItems = calc.items.map((ci) => {
+    const orig = itemMap.get(ci.code);
+    return {
+      ...ci,
+      id: orig?.id || null,
+      service_kind: orig?.service_kind || calc.service_kind || 'CETAK',
+      duration_initial: ci.delta_initial,
+      duration_revision: ci.delta_revision,
+      duration_dummy: ci.delta_dummy,
+    };
+  });
+
+  return {
+    ...calc,
+    items: enrichedItems,
+  };
+};
+
+export const calculateRegistrationTarifAndSla = (manuscriptCalculations = []) => {
+  const totalFee = manuscriptCalculations.reduce((sum, m) => sum + (m.fee || 0), 0);
+  const maxSlaInitial = manuscriptCalculations.length > 0
+    ? Math.max(...manuscriptCalculations.map((m) => m.slaInitial || 0))
+    : 0;
+  const maxSlaRevision = manuscriptCalculations.length > 0
+    ? Math.max(...manuscriptCalculations.map((m) => m.slaRevision || 0))
+    : 0;
+  const maxSlaDummy = manuscriptCalculations.length > 0
+    ? Math.max(...manuscriptCalculations.map((m) => m.slaDummy || 0))
+    : 0;
+
+  return {
+    totalFee,
+    slaInitial: maxSlaInitial,
+    slaRevision: maxSlaRevision,
+    slaDummy: maxSlaDummy,
+  };
+};
+
+export const resolveLegacyItemsForManuscript = async (manuscriptTitle, data, serviceType) => {
+  const jenisNaskah = [
+    ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
+    ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
+    ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
+  ];
+  const jenisMushaf = data.foreign_metadata?.jenis_mushaf || data.mushaf_details?.jenis_mushaf || data.jenis_mushaf;
+  const detectedEnums = jenisNaskah.map(resolveNaskahEnum).filter(Boolean);
+
+  let dasarCode = 'JUZ30';
+  if (jenisMushaf === 'Mushaf Standar Braille' || detectedEnums.includes(NASKAH_CONTENT_ENUM.BRAILLE) || serviceType?.service_kind === 'BRAILLE') {
+    dasarCode = 'BRAILLE';
+  } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.AUDIO_VISUAL) || serviceType?.service_kind === 'AUDIO_VISUAL') {
+    dasarCode = 'AV';
+  } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.DIGITAL) || serviceType?.service_kind === 'DIGITAL') {
+    dasarCode = 'DIGITAL';
+  } else if (serviceType?.name?.includes('Yasin') || detectedEnums.includes(NASKAH_CONTENT_ENUM.YASIN_TAHLIL)) {
+    dasarCode = 'YASIN';
+  } else if (serviceType?.name?.includes("Juz 'Amma") || detectedEnums.includes(NASKAH_CONTENT_ENUM.JUZ_AMMA)) {
+    dasarCode = 'AMMA';
+  } else if (serviceType?.name?.includes('Majmu') || detectedEnums.includes(NASKAH_CONTENT_ENUM.MAJMU_SYARIF)) {
+    dasarCode = 'MAJMU';
+  } else if (serviceType?.name?.includes('Kaligrafi') || detectedEnums.includes(NASKAH_CONTENT_ENUM.KALIGRAFI)) {
+    dasarCode = 'KALIGRAFI';
+  } else if (serviceType?.name?.includes('Metode') || detectedEnums.includes(NASKAH_CONTENT_ENUM.METODE_BACA_TULIS)) {
+    dasarCode = 'METODE';
+  }
+
+  const itemCodes = [dasarCode];
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLATION)) itemCodes.push('TERJEMAH');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLITERATION)) itemCodes.push('TRANSLITERASI');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_WARNA) || detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_KODE)) itemCodes.push('TAJWID');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WAQAF_IBTIDA)) itemCodes.push('WAQAF');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.QIRAAT)) itemCodes.push('QIRAAT');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION) || detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION)) itemCodes.push('PERKATA');
+  if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAFSIR)) itemCodes.push('TAFSIR');
+
+  return prisma.jenisNaskahItem.findMany({
+    where: { code: { in: [...new Set(itemCodes)] }, status: 'ACTIVE' },
+  });
+};
+
+export const resolveLegacyVariantsForManuscript = (data, isCetak) => {
+  const meta = { ...(data.foreign_metadata || {}), ...(data.mushaf_details || {}) };
+  if (Array.isArray(meta.sizes) && meta.sizes.length > 0) {
+    return meta.sizes.map((s) => ({
+      ukuran: s.ukuran || 'Standar',
+      oplah: Number(s.oplah || 1000),
+    }));
+  }
+  if (meta.ukuran) {
+    return [{
+      ukuran: meta.ukuran,
+      oplah: Number(meta.oplah || 1000),
+    }];
+  }
+  if (isCetak) {
+    return [{
+      ukuran: 'Standar A4 (21,0 x 29,7 cm)',
+      oplah: 1000,
+    }];
+  }
+  return [];
+};
+
 export const createDraft = async (data, user, req) => {
   let publisherId = user.publisherId;
   let submissionSource = 'PUBLISHER_PORTAL';
@@ -476,34 +643,125 @@ export const createDraft = async (data, user, req) => {
     }
   }
 
+  // Validasi dan Resolusi Naskah & Varian B-01
+  const validatedManuscripts = [];
+  const rawManuscriptList = Array.isArray(data.manuscripts) && data.manuscripts.length > 0
+    ? data.manuscripts.filter((m) => m && (m.title || (Array.isArray(m.items) && m.items.length > 0)))
+    : null;
+
+  if (rawManuscriptList && rawManuscriptList.length > 0) {
+    if (rawManuscriptList.length > 20) {
+      const error = new Error('Maksimal 20 naskah dalam satu pengajuan.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    for (let i = 0; i < rawManuscriptList.length; i++) {
+      const m = rawManuscriptList[i];
+      const mTitle = (m.title || data.title || '').trim();
+      if (!mTitle || mTitle.length < 3) {
+        const error = new Error(`Judul naskah ke-${i + 1} minimal 3 karakter.`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      let itemRecords = [];
+      if (Array.isArray(m.items) && m.items.length > 0) {
+        itemRecords = await prisma.jenisNaskahItem.findMany({
+          where: {
+            OR: [
+              { id: { in: m.items } },
+              { code: { in: m.items } },
+            ],
+            status: 'ACTIVE',
+          },
+        });
+
+        if (itemRecords.length !== m.items.length) {
+          const error = new Error(`Satu atau lebih item jenis naskah pada "${mTitle}" tidak ditemukan atau tidak aktif.`);
+          error.statusCode = 400;
+          throw error;
+        }
+      } else {
+        itemRecords = await resolveLegacyItemsForManuscript(mTitle, data, serviceType);
+      }
+
+      // Validasi peran DASAR
+      const hasDasar = itemRecords.some((it) => it.role === 'DASAR');
+      if (!hasDasar) {
+        const error = new Error(`Naskah "${mTitle}" wajib memiliki minimal satu item jenis naskah dengan peran DASAR.`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Validasi varian untuk media CETAK (B-01: tanpa fallback default untuk pengajuan baru)
+      const isCetak = itemRecords.some((it) => it.service_kind === 'CETAK');
+      const variants = Array.isArray(m.variants) ? m.variants : [];
+      if (isCetak && variants.length === 0) {
+        const error = new Error(`Naskah cetak "${mTitle}" wajib memiliki minimal satu varian ukuran dan oplah.`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      if (variants.length > 10) {
+        const error = new Error(`Maksimal 10 varian per naskah ("${mTitle}").`);
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const mCalc = calculateManuscriptTarifAndSla(itemRecords);
+
+      validatedManuscripts.push({
+        seq_number: m.seq_number || (i + 1),
+        title: mTitle,
+        resolvedItems: itemRecords,
+        variants,
+        metadata: m.metadata || {},
+        sample_file_id: m.sample_file_id || null,
+        calc: mCalc,
+      });
+    }
+  } else {
+    // Single legacy manuscript fallback
+    const singleTitle = (data.title || '').trim();
+    if (!singleTitle || singleTitle.length < 3) {
+      const error = new Error('Judul naskah mushaf minimal 3 karakter.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const itemRecords = await resolveLegacyItemsForManuscript(singleTitle, data, serviceType);
+    const hasDasar = itemRecords.some((it) => it.role === 'DASAR');
+    if (!hasDasar) {
+      const error = new Error(`Naskah "${singleTitle}" wajib memiliki minimal satu item jenis naskah dengan peran DASAR.`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const isCetak = itemRecords.some((it) => it.service_kind === 'CETAK');
+    const variants = resolveLegacyVariantsForManuscript(data, isCetak);
+    const mCalc = calculateManuscriptTarifAndSla(itemRecords);
+
+    validatedManuscripts.push({
+      seq_number: 1,
+      title: singleTitle,
+      resolvedItems: itemRecords,
+      variants,
+      metadata: { ...(data.foreign_metadata || {}), ...(data.mushaf_details || {}) },
+      sample_file_id: data.contoh_halaman_file_id || null,
+      calc: mCalc,
+    });
+  }
+
+  // Hitung total tarif & SLA akumulatif
+  const totalManuscriptsFee = validatedManuscripts.reduce((sum, m) => sum + m.calc.fee, 0);
+  const rawInitialSla = Math.max(...validatedManuscripts.map((m) => m.calc.rawSlaInitial));
+  const cappedInitialSla = Math.min(SLA_INITIAL_CAP_DAYS, rawInitialSla);
+  const rawRevisionSla = Math.max(...validatedManuscripts.map((m) => m.calc.slaRevision || 0));
+  const rawDummySla = Math.max(...validatedManuscripts.map((m) => m.calc.slaDummy || 0));
+
   // Normalisasi daftar addon
   const requestedAddonIds = Array.isArray(data.addons || data.addon_ids) ? [...(data.addons || data.addon_ids)] : [];
-
-  // Otomatis tambahkan addon ADD-MATERI (+Rp 500.000 per unit) jika pada jenis_naskah dipilih konten tambahan (Group 3: Transliterasi, Terjemah, Tajwid, Waqaf, Tafsir, dll.)
-  // Catatan: Checklist materi tambahan pada mushaf (Bagian II: Asbabun Nuzul, Hadis, Do'a) TIDAK menambah biaya sama sekali (Rp 0).
-  const addonMateriUnits = calculateAddonMateriUnits(jenisNaskahList);
-
-  let addMateriRecord = null;
-  if (addonMateriUnits > 0) {
-    addMateriRecord = await prisma.serviceAddon.findUnique({
-      where: { code: 'ADD-MATERI' },
-      select: { id: true, code: true, fee: true },
-    });
-    if (addMateriRecord && !requestedAddonIds.includes(addMateriRecord.id)) {
-      requestedAddonIds.push(addMateriRecord.id);
-    }
-  }
-
-  // Otomatis tambahkan TAR-BRAILLE jika naskah braille
-  if (serviceType.service_kind === 'BRAILLE' || (serviceType.name && serviceType.name.toLowerCase().includes('braille'))) {
-    const addBraille = await prisma.serviceAddon.findUnique({
-      where: { code: 'TAR-BRAILLE' },
-      select: { id: true },
-    });
-    if (addBraille && !requestedAddonIds.includes(addBraille.id)) {
-      requestedAddonIds.push(addBraille.id);
-    }
-  }
 
   // Validasi kepemilikan berkas lampiran (P0)
   const fileIdsToCheck = [
@@ -514,6 +772,7 @@ export const createDraft = async (data, user, req) => {
     data.apk_file_id,
     data.bukti_tashih_file_id,
     data.surat_rekomendasi_file_id,
+    ...validatedManuscripts.map((m) => m.sample_file_id).filter(Boolean),
   ].filter(Boolean);
 
   if (fileIdsToCheck.length > 0 && !user.roles.includes('SUPERADMIN')) {
@@ -538,18 +797,6 @@ export const createDraft = async (data, user, req) => {
     }
   }
 
-  // Mendukung pendaftaran lebih dari 1 naskah dalam satu kali permohonan
-  const manuscriptList =
-    Array.isArray(data.manuscripts) && data.manuscripts.length > 0
-      ? data.manuscripts.filter((m) => m && m.title && m.title.trim())
-      : [{ title: data.title }];
-
-  if (manuscriptList.length === 0) {
-    const error = new Error('Minimal satu judul naskah mushaf harus diisi.');
-    error.statusCode = 400;
-    throw error;
-  }
-
   const regCategory =
     data.registration_category ||
     (registrationType === 'EXTENSION'
@@ -563,8 +810,7 @@ export const createDraft = async (data, user, req) => {
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const createdItems = await prisma.$transaction(async (tx) => {
-        const items = [];
+      const createdResult = await prisma.$transaction(async (tx) => {
         const activeAddons =
           requestedAddonIds.length > 0
             ? await tx.serviceAddon.findMany({
@@ -578,154 +824,236 @@ export const createDraft = async (data, user, req) => {
           throw error;
         }
 
-        for (const item of manuscriptList) {
-          const regNo = await generateRegistrationNo(tx);
+        const regNo = await generateRegistrationNo(tx);
 
-          const combinedMetadata = {
-            ...(data.foreign_metadata || {}),
-            ...(data.mushaf_details || {}),
-            ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
-            ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
-            ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
-            ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
-            ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
-            ...(data.apk_url ? { apk_url: data.apk_url } : {}),
-            ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
-            ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
-          };
+        const combinedMetadata = {
+          ...(data.foreign_metadata || {}),
+          ...(data.mushaf_details || {}),
+          ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
+          ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
+          ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
+          ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
+          ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
+          ...(data.apk_url ? { apk_url: data.apk_url } : {}),
+          ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
+          ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
+        };
 
-          let totalAddonsFee = 0;
-          for (const add of activeAddons) {
-            const isAddMateri = add.code === 'ADD-MATERI' || (addMateriRecord && add.id === addMateriRecord.id);
-            const quantity = isAddMateri ? Math.max(1, addonMateriUnits) : 1;
-            totalAddonsFee += Number(add.fee) * quantity;
-          }
+        const regTitle = data.title || validatedManuscripts[0].title;
 
-          const initialFeeSlaSnapshot = {
-            service_name: serviceType.name,
-            service_kind: serviceType.service_kind,
-            layanan_display: itemCalc.layanan_display,
-            base_service_code: itemCalc.dasar_code,
-            base_fee: itemCalc.fee,
-            addons_fee: totalAddonsFee,
-            total_fee: itemCalc.fee + totalAddonsFee,
-            sla_initial_days: itemCalc.sla_initial,
-            sla_revision_days: itemCalc.sla_revision,
-            sla_dummy_days: itemCalc.sla_dummy,
-            items: itemCalc.items,
-          };
+        let totalAddonsFee = 0;
+        for (const add of activeAddons) {
+          totalAddonsFee += Number(add.fee || 0);
+        }
 
-          const created = await tx.registration.create({
+        const totalEstimatedFee = totalManuscriptsFee + totalAddonsFee;
+
+        const initialFeeSlaSnapshot = {
+          service_name: serviceType.name,
+          service_kind: serviceType.service_kind,
+          layanan_display: validatedManuscripts.length === 1
+            ? (validatedManuscripts[0].calc.layanan_display || validatedManuscripts[0].calc.layananDisplay || serviceType.name)
+            : `${validatedManuscripts.length} Naskah: ${validatedManuscripts.map((m) => m.title).join(', ')}`,
+          base_service_code: validatedManuscripts[0].calc.dasar_code || 'JUZ30',
+          base_fee: totalManuscriptsFee > 0 ? totalManuscriptsFee : Number(serviceType.base_fee || 0),
+          addons_fee: totalAddonsFee,
+          total_fee: totalEstimatedFee,
+          sla_initial_days: cappedInitialSla > 0 ? cappedInitialSla : (serviceType.duration_initial || 15),
+          sla_revision_days: rawRevisionSla > 0 ? rawRevisionSla : (serviceType.duration_revision || 7),
+          sla_dummy_days: rawDummySla > 0 ? rawDummySla : (serviceType.duration_dummy || 3),
+          items: validatedManuscripts.length === 1 ? validatedManuscripts[0].calc.items : [],
+          manuscripts: validatedManuscripts.map((m) => ({
+            seq_number: m.seq_number,
+            title: m.title,
+            fee: m.calc.fee,
+            sla_initial: m.calc.slaInitial,
+            sla_revision: m.calc.slaRevision,
+            sla_dummy: m.calc.slaDummy,
+            items: m.calc.items,
+            variants: m.variants,
+          })),
+        };
+
+        const createdReg = await tx.registration.create({
+          data: {
+            registration_no: regNo,
+            publisher_id: publisherId,
+            service_type_id: serviceTypeId,
+            title: regTitle,
+            submission_source: submissionSource,
+            registration_type: registrationType,
+            registration_category: regCategory,
+            foreign_metadata: Object.keys(combinedMetadata).length > 0 ? combinedMetadata : null,
+            statement_accepted: Boolean(data.statement_accepted),
+            previous_registration_id: registrationType === 'EXTENSION' && data.previous_registration_id ? data.previous_registration_id : null,
+            status: 'DRAFT',
+            apk_url: data.apk_url || null,
+            fee_sla_snapshot: initialFeeSlaSnapshot,
+          },
+        });
+
+        const createdManuscripts = [];
+
+        for (let i = 0; i < validatedManuscripts.length; i++) {
+          const m = validatedManuscripts[i];
+          const seqNo = m.seq_number || (i + 1);
+
+          const createdM = await tx.manuscript.create({
             data: {
-              registration_no: regNo,
-              publisher_id: publisherId,
-              service_type_id: serviceTypeId,
-              title: item.title,
-              submission_source: submissionSource,
-              registration_type: registrationType,
-              registration_category: regCategory,
-              foreign_metadata: Object.keys(combinedMetadata).length > 0 ? combinedMetadata : null,
-              statement_accepted: Boolean(data.statement_accepted),
-              previous_registration_id: registrationType === 'EXTENSION' && data.previous_registration_id ? data.previous_registration_id : null,
-              status: 'DRAFT',
-              apk_url: data.apk_url || null,
-              fee_sla_snapshot: initialFeeSlaSnapshot,
+              registration_id: createdReg.id,
+              seq_number: seqNo,
+              title: m.title,
             },
           });
 
-          if (data.cover_file_id) {
-            try {
-              await tx.manuscriptFile.create({
-                data: {
-                  registration_id: created.id,
-                  type: 'COVER',
-                  file_id: data.cover_file_id,
-                  version: 1,
-                },
-              });
-            } catch {}
-          }
-
-          const samplePageFileId = data.contoh_halaman_file_id || data.surat_permohonan_file_id;
-          if (samplePageFileId) {
-            try {
-              await tx.manuscriptFile.create({
-                data: {
-                  registration_id: created.id,
-                  type: 'SAMPLE_PAGE_1_5',
-                  file_id: samplePageFileId,
-                  version: 1,
-                },
-              });
-            } catch {}
-          }
-
-          if (data.bukti_tashih_file_id) {
-            try {
-              await tx.manuscriptFile.create({
-                data: {
-                  registration_id: created.id,
-                  type: 'FOREIGN_TASHIH_CERTIFICATE',
-                  file_id: data.bukti_tashih_file_id,
-                  version: 1,
-                },
-              });
-            } catch {}
-          }
-
-          for (const add of activeAddons) {
-            const isAddMateri = add.code === 'ADD-MATERI' || (addMateriRecord && add.id === addMateriRecord.id);
-            const quantity = isAddMateri ? Math.max(1, addonMateriUnits) : 1;
-            const feeSnapshot = Number(add.fee) * quantity;
-
-            await tx.registrationAddon.create({
+          // Simpan ManuscriptItems dengan snapshot tarif & SLA
+          for (const itemRecord of m.resolvedItems) {
+            const detail = m.calc?.items?.find((ci) => ci.id === itemRecord.id || ci.code === itemRecord.code);
+            await tx.manuscriptItem.create({
               data: {
-                registration_id: created.id,
-                addon_id: add.id,
-                fee_snapshot: feeSnapshot,
-                quantity: quantity,
+                manuscript_id: createdM.id,
+                item_id: itemRecord.id,
+                role: itemRecord.role,
+                fee_snapshot: detail ? detail.fee : Number(itemRecord.fee_per_unit || 0),
+                initial_days_snapshot: detail ? detail.duration_initial : Number(itemRecord.duration_initial || 0),
+                revision_days_snapshot: detail ? detail.duration_revision : Number(itemRecord.duration_revision || 0),
+                dummy_days_snapshot: detail ? detail.duration_dummy : Number(itemRecord.duration_dummy || 0),
               },
             });
           }
 
-          await tx.statusHistory.create({
-            data: {
-              registration_id: created.id,
-              from_status: 'NONE',
-              to_status: 'DRAFT',
-              actor_id: user.id,
-              notes: 'Draf permohonan dibuat',
-            },
-          });
+          // Simpan ManuscriptVariants
+          const createdVariants = [];
+          for (const v of m.variants) {
+            const createdV = await tx.manuscriptVariant.create({
+              data: {
+                manuscript_id: createdM.id,
+                ukuran: v.ukuran,
+                oplah: Number(v.oplah),
+              },
+            });
+            createdVariants.push(createdV);
+          }
 
-          items.push(created);
+          // Tautkan sample_file_id jika ada
+          if (m.sample_file_id) {
+            try {
+              await tx.manuscriptFile.create({
+                data: {
+                  registration_id: createdReg.id,
+                  manuscript_id: createdM.id,
+                  type: 'SAMPLE_PAGE_1_5',
+                  file_id: m.sample_file_id,
+                  version: 1,
+                },
+              });
+            } catch {}
+          }
+
+          createdManuscripts.push({
+            ...createdM,
+            items: m.resolvedItems,
+            variants: createdVariants,
+          });
         }
 
-        return items;
+        // Tautkan berkas lampiran tingkat registrasi
+        if (data.cover_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'COVER',
+                file_id: data.cover_file_id,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        const samplePageFileId = data.contoh_halaman_file_id;
+        if (samplePageFileId && !validatedManuscripts.some((m) => m.sample_file_id === samplePageFileId)) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                manuscript_id: createdManuscripts[0]?.id || null,
+                type: 'SAMPLE_PAGE_1_5',
+                file_id: samplePageFileId,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        if (data.bukti_tashih_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'FOREIGN_TASHIH_CERTIFICATE',
+                file_id: data.bukti_tashih_file_id,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        for (const add of activeAddons) {
+          const feeSnapshot = Number(add.fee);
+          await tx.registrationAddon.create({
+            data: {
+              registration_id: createdReg.id,
+              addon_id: add.id,
+              fee_snapshot: feeSnapshot,
+              quantity: 1,
+            },
+          });
+        }
+
+        await tx.statusHistory.create({
+          data: {
+            registration_id: createdReg.id,
+            from_status: 'NONE',
+            to_status: 'DRAFT',
+            actor_id: user.id,
+            notes: 'Draf permohonan dibuat',
+          },
+        });
+
+        return {
+          registration: createdReg,
+          manuscripts: createdManuscripts,
+          totalEstimatedFee,
+          cappedInitialSla,
+        };
       });
 
       const primaryRegistration = {
-        ...createdItems[0],
-        batch: createdItems.map((item) => ({
-          id: item.id,
-          registration_no: item.registration_no,
+        ...createdResult.registration,
+        estimated_fee: createdResult.totalEstimatedFee,
+        estimated_sla: createdResult.cappedInitialSla,
+        manuscripts: createdResult.manuscripts,
+        batch: createdResult.manuscripts.map((item) => ({
+          id: createdResult.registration.id,
+          manuscript_id: item.id,
+          registration_no: createdResult.registration.registration_no,
           title: item.title,
+          seq_number: item.seq_number,
         })),
       };
 
-      for (const item of createdItems) {
-        await logAudit({
-          actorId: user.id,
-          action: 'CREATE_REGISTRATION_DRAFT',
-          subjectType: 'Registration',
-          subjectId: item.id,
-          afterJson: item,
-          req,
-        });
+      await logAudit({
+        actorId: user.id,
+        action: 'CREATE_REGISTRATION_DRAFT',
+        subjectType: 'Registration',
+        subjectId: createdResult.registration.id,
+        afterJson: primaryRegistration,
+        req,
+      });
 
-        // Sinkronisasi pendaftaran otomatis dengan website existing
-        syncRegistrationToExistingWebsite(item.id).catch(() => {});
-      }
+      // Sinkronisasi pendaftaran otomatis dengan website existing
+      syncRegistrationToExistingWebsite(createdResult.registration.id).catch(() => {});
 
       return primaryRegistration;
     } catch (err) {
@@ -738,7 +1066,7 @@ export const createDraft = async (data, user, req) => {
     }
   }
 
-  throw lastError;
+  throw lastError || new Error('Gagal membuat draf pengajuan.');
 };
 
 export const dispatchPhysical = async (id, data, user, req) => {
@@ -809,6 +1137,13 @@ export const submitRegistration = async (id, user, req) => {
       addons: { include: { addon: true } },
       manuscript_files: true,
       publisher: true,
+      manuscripts: {
+        include: {
+          items: { include: { item: true } },
+          variants: true,
+        },
+        orderBy: { seq_number: 'asc' },
+      },
     },
   });
 
@@ -840,16 +1175,50 @@ export const submitRegistration = async (id, user, req) => {
     throw error;
   }
 
-  // Hitung snapshot tarif dan SLA berbasis item (B-01 §4.3 & Sesi 0b)
-  const jenisNaskahList = [
-    ...(Array.isArray(reg.foreign_metadata?.jenis_naskah) ? reg.foreign_metadata.jenis_naskah : []),
-    ...(Array.isArray(reg.mushaf_details?.jenis_naskah) ? reg.mushaf_details.jenis_naskah : []),
-  ];
-  const itemCodes = normalizeLegacyToItemCodes(jenisNaskahList, { ...reg, ...reg.foreign_metadata });
+  // Hitung snapshot tarif dan SLA (B-01 §4.3 & BR-04/05)
+  const manuscripts = Array.isArray(reg.manuscripts) ? reg.manuscripts : [];
+  let totalBaseFee = 0;
+  let maxInitial = 0;
+  let maxRevision = 0;
+  let maxDummy = 0;
+  const manuscriptSnapshots = [];
   const isExt = reg.registration_type === 'EXTENSION';
-  const itemCalc = calculateItemTarifAndSla(itemCodes, { isExtensionOrTambahOplah: isExt });
 
-  const baseFee = itemCalc.fee > 0 ? itemCalc.fee : Number(reg.service_type?.base_fee || 0);
+  if (manuscripts.length > 0) {
+    for (const m of manuscripts) {
+      const items = (m.items || []).map((mi) => mi.item).filter(Boolean);
+      const mCalc = calculateManuscriptTarifAndSla(items, { isExtensionOrTambahOplah: isExt });
+      totalBaseFee += mCalc.fee;
+      if (mCalc.slaInitial > maxInitial) maxInitial = mCalc.slaInitial;
+      if (mCalc.slaRevision > maxRevision) maxRevision = mCalc.slaRevision;
+      if (mCalc.slaDummy > maxDummy) maxDummy = mCalc.slaDummy;
+      manuscriptSnapshots.push({
+        manuscript_id: m.id,
+        seq_number: m.seq_number,
+        title: m.title,
+        fee: mCalc.fee,
+        sla_initial: mCalc.slaInitial,
+        sla_revision: mCalc.slaRevision,
+        sla_dummy: mCalc.slaDummy,
+        items: mCalc.items,
+        variants: (m.variants || []).map((v) => ({ ukuran: v.ukuran, oplah: v.oplah })),
+      });
+    }
+  } else {
+    // Fallback pengajuan lama yang belum memiliki relasi manuscript
+    const jenisNaskahList = [
+      ...(Array.isArray(reg.foreign_metadata?.jenis_naskah) ? reg.foreign_metadata.jenis_naskah : []),
+      ...(Array.isArray(reg.mushaf_details?.jenis_naskah) ? reg.mushaf_details.jenis_naskah : []),
+    ];
+    const itemCodes = normalizeLegacyToItemCodes(jenisNaskahList, { ...reg, ...reg.foreign_metadata });
+    const legacyCalc = calculateItemTarifAndSla(itemCodes, { isExtensionOrTambahOplah: isExt });
+    totalBaseFee = legacyCalc.fee;
+    maxInitial = legacyCalc.sla_initial;
+    maxRevision = legacyCalc.sla_revision;
+    maxDummy = legacyCalc.sla_dummy;
+  }
+
+  const baseFee = totalBaseFee > 0 ? totalBaseFee : Number(reg.service_type?.base_fee || 0);
   const addonsTotal = reg.addons.reduce((sum, item) => {
     const feeSnapshot = Number(item.fee_snapshot || 0);
     const quantity = Number(item.quantity || 1);
@@ -863,17 +1232,24 @@ export const submitRegistration = async (id, user, req) => {
 
   const feeSlaSnapshot = {
     submitted_at: new Date().toISOString(),
-    service_name: reg.service_type?.name || itemCalc.service_type_name,
-    service_kind: reg.service_type?.service_kind || itemCalc.service_kind,
-    layanan_display: itemCalc.layanan_display,
-    base_service_code: itemCalc.dasar_code,
+    service_name: reg.service_type?.name,
+    service_kind: reg.service_type?.service_kind,
+    layanan_display: manuscriptSnapshots.length === 1
+      ? (manuscriptSnapshots[0].items?.filter(i => i.role === 'TAMBAHAN' && !i.is_covered).length > 0
+          ? `${manuscriptSnapshots[0].items.find(i => i.role === 'DASAR')?.name || reg.service_type?.name} (+ ${manuscriptSnapshots[0].items.filter(i => i.role === 'TAMBAHAN' && !i.is_covered).map(i => i.name).join(', ')})`
+          : (manuscriptSnapshots[0].items?.find(i => i.role === 'DASAR')?.name || reg.service_type?.name))
+      : (manuscriptSnapshots.length > 1
+          ? `${manuscriptSnapshots.length} Naskah: ${manuscriptSnapshots.map((m) => m.title).join(', ')}`
+          : reg.service_type?.name),
+    base_service_code: manuscriptSnapshots[0]?.items?.find(i => i.role === 'DASAR')?.code || 'JUZ30',
     base_fee: baseFee,
     addons_fee: addonsTotal,
     total_fee: totalFee,
-    sla_initial_days: itemCalc.sla_initial > 0 ? itemCalc.sla_initial : (reg.service_type?.duration_initial || 15),
-    sla_revision_days: itemCalc.sla_revision > 0 ? itemCalc.sla_revision : (reg.service_type?.duration_revision || 7),
-    sla_dummy_days: itemCalc.sla_dummy > 0 ? itemCalc.sla_dummy : (reg.service_type?.duration_dummy || 3),
-    items: itemCalc.items,
+    sla_initial_days: maxInitial > 0 ? maxInitial : (reg.service_type?.duration_initial || 15),
+    sla_revision_days: maxRevision > 0 ? maxRevision : (reg.service_type?.duration_revision || 7),
+    sla_dummy_days: maxDummy > 0 ? maxDummy : (reg.service_type?.duration_dummy || 3),
+    items: manuscriptSnapshots.length === 1 ? manuscriptSnapshots[0].items : [],
+    manuscripts: manuscriptSnapshots,
   };
 
   const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
@@ -1307,6 +1683,20 @@ export const getDetail = async (id, user) => {
       service_type: { include: { category: true } },
       addons: { include: { addon: true } },
       manuscript_files: true,
+      manuscripts: {
+        include: {
+          items: {
+            include: {
+              item: true,
+            },
+          },
+          variants: {
+            orderBy: { id: 'asc' },
+          },
+          files: true,
+        },
+        orderBy: { seq_number: 'asc' },
+      },
       status_histories: {
         include: { actor: { select: { id: true, name: true } } },
         orderBy: { changed_at: 'asc' },
@@ -1464,15 +1854,16 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     const manuscriptType = data.type === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : data.type;
     const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: manuscriptType }, orderBy: { version: 'desc' } });
     const created = await tx.manuscriptFile.create({
-    data: {
-      registration_id: registrationId,
-      type: manuscriptType,
-      file_id: data.file_id,
-      version: (last?.version || 0) + 1,
-      checksum: file.checksum,
-      file_size: file.file_size,
-      mime_type: file.mime_type,
-    },
+      data: {
+        registration_id: registrationId,
+        manuscript_id: data.manuscript_id || null,
+        type: manuscriptType,
+        file_id: data.file_id,
+        version: (last?.version || 0) + 1,
+        checksum: file.checksum,
+        file_size: file.file_size,
+        mime_type: file.mime_type,
+      },
     });
     await audit(tx, user, 'ADD_MANUSCRIPT_FILE', 'ManuscriptFile', created.id, created);
     return created;
@@ -1585,6 +1976,13 @@ export const generateReceiptPdf = async (id, user) => {
     include: {
       publisher: true,
       service_type: true,
+      manuscripts: {
+        include: {
+          items: { include: { item: true } },
+          variants: true,
+        },
+        orderBy: { seq_number: 'asc' },
+      },
     },
   });
 
@@ -1655,4 +2053,8 @@ export default {
   generateReceiptPdf,
   generateShippingLabelPdf,
   TRANSITION_POLICY,
+  SLA_INITIAL_CAP_DAYS,
+  calculateManuscriptTarifAndSla,
+  calculateRegistrationTarifAndSla,
+  sanitizeManuscriptMetadata,
 };

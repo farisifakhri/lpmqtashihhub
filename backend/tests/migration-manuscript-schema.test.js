@@ -296,10 +296,14 @@ test('B-01 Sesi 1: Migrasi Skema, Master Item, dan Varian pada Database Sementar
   } finally {
     if (testClient) await testClient.$disconnect();
     if (dbCreated) {
-      await rootClient.$executeRawUnsafe(`DROP DATABASE \`${testDbName}\``);
-      console.log(`[TEST-DB] Dropped temporary database: ${testDbName}`);
+      try {
+        await rootClient.$executeRawUnsafe(`DROP DATABASE IF EXISTS \`${testDbName}\``);
+        console.log(`[TEST-DB] Dropped temporary database: ${testDbName}`);
+      } catch (e) {
+        console.warn(`[TEST-DB] Warning during cleanup: ${e.message}`);
+      }
     }
-    await rootClient.$disconnect();
+    try { await rootClient.$disconnect(); } catch {}
   }
 });
 

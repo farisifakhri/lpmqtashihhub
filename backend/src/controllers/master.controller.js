@@ -217,6 +217,19 @@ export const listDistributionTeams = async (req, res, next) => {
   }
 };
 
+
+export const listJenisNaskahItems = async (req, res, next) => {
+  try {
+    const items = await masterService.listJenisNaskahItems();
+    res.status(200).json({
+      success: true,
+      data: items,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   listCategories,
   getCategory,
@@ -234,4 +247,5 @@ export default {
   updateAddon,
   deleteAddon,
   listDistributionTeams,
+  listJenisNaskahItems,
 };
