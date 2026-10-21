@@ -872,7 +872,7 @@ export const LandingPage = () => {
                 aria-hidden="true"
                 className="h-7 w-7 shrink-0 object-contain"
               />
-              <p className="text-left text-sm font-bold leading-tight text-white">
+              <p className="text-right text-sm font-bold leading-tight text-white">
                 Banyak Pilihan
                 <br />
                 Fitur
