@@ -1,639 +1,709 @@
-import React from 'react';
-import { useAuth } from '@/features/auth/AuthContext';
-import { NavLink, Link, useLocation } from 'react-router-dom';
+import React from "react";
+import { useAuth } from "@/features/auth/AuthContext";
+import { NavLink, Link, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  FilePlus,
-  FileText,
-  CreditCard,
-  Award,
-  Users,
-  Building2,
-  CheckSquare,
-  UserCheck,
-  BookOpen,
-  FolderCheck,
-  Settings,
-  ShieldCheck,
-  CheckCircle2,
-  PackageCheck,
-  Send,
-  HelpCircle,
-  User,
-  Calendar,
-  FileSearch,
-  PenTool,
-  Clock,
-  X,
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import kemenagLogo from '@/assets/kemenag.png';
-import lpmqLogo from '@/assets/lpmq.png';
+    LayoutDashboard,
+    FilePlus,
+    FileText,
+    CreditCard,
+    Award,
+    Users,
+    Building2,
+    CheckSquare,
+    UserCheck,
+    BookOpen,
+    FolderCheck,
+    Settings,
+    ShieldCheck,
+    CheckCircle2,
+    PackageCheck,
+    Send,
+    HelpCircle,
+    User,
+    Calendar,
+    FileSearch,
+    PenTool,
+    Clock,
+    X,
+} from "lucide-react";
+import { clsx } from "clsx";
+import kemenagLogo from "@/assets/kemenag.png";
+import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
-  const { currentUser } = useAuth();
-  const location = useLocation();
-  const role = currentUser?.role || '';
-  const roles = currentUser?.roles || [];
+    const { currentUser } = useAuth();
+    const location = useLocation();
+    const role = currentUser?.role || "";
+    const roles = currentUser?.roles || [];
 
-  const isPublisher =
-    role === 'PENERBIT' ||
-    role === 'PUBLISHER' ||
-    roles.includes('PENERBIT');
+    const isPublisher =
+        role === "PENERBIT" ||
+        role === "PUBLISHER" ||
+        roles.includes("PENERBIT");
 
-  const isSuperAdmin =
-    role === 'SUPERADMIN' ||
-    roles.includes('SUPERADMIN');
+    const isSuperAdmin = role === "SUPERADMIN" || roles.includes("SUPERADMIN");
 
-  const isAdmin =
-    role === 'ADMIN_INTERNAL' ||
-    roles.includes('ADMIN_INTERNAL');
+    const isAdmin =
+        role === "ADMIN_INTERNAL" || roles.includes("ADMIN_INTERNAL");
 
-  const isVerifikator =
-    role === 'VERIFIKATOR' ||
-    role === 'VERIFICATOR' ||
-    roles.includes('VERIFIKATOR');
+    const isVerifikator =
+        role === "VERIFIKATOR" ||
+        role === "VERIFICATOR" ||
+        roles.includes("VERIFIKATOR");
 
-  const isDistributor =
-    role === 'DISTRIBUTOR' ||
-    roles.includes('DISTRIBUTOR');
+    const isDistributor =
+        role === "DISTRIBUTOR" || roles.includes("DISTRIBUTOR");
 
-  const isPentashih =
-    role === 'PENTASHIH' ||
-    role === 'TASHIH_MEMBER' ||
-    roles.includes('PENTASHIH');
+    const isPentashih =
+        role === "PENTASHIH" ||
+        role === "TASHIH_MEMBER" ||
+        roles.includes("PENTASHIH");
 
-  const isDokumentator =
-    role === 'DOKUMENTATOR' ||
-    role === 'DOCUMENTATOR' ||
-    roles.includes('DOKUMENTATOR');
+    const isDokumentator =
+        role === "DOKUMENTATOR" ||
+        role === "DOCUMENTATOR" ||
+        roles.includes("DOKUMENTATOR");
 
-  const isKepala =
-    role === 'KEPALA_LPMQ' ||
-    role === 'HEAD_OF_LPMQ' ||
-    roles.includes('KEPALA_LPMQ');
+    const isKepala =
+        role === "KEPALA_LPMQ" ||
+        role === "HEAD_OF_LPMQ" ||
+        roles.includes("KEPALA_LPMQ");
 
-  const getRoleBadge = (userRole) => {
-    switch (userRole) {
-      case 'SUPERADMIN':
-        return { label: 'Superadmin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
-      case 'ADMIN_INTERNAL':
-        return { label: 'Helper Admin', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
-      case 'VERIFIKATOR':
-      case 'VERIFICATOR':
-        return { label: 'Verifikator', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
-      case 'DISTRIBUTOR':
-        return { label: 'Distributor', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
-      case 'PENTASHIH':
-      case 'TASHIH_MEMBER':
-        return { label: 'Pentashih', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
-      case 'DOKUMENTATOR':
-      case 'DOCUMENTATOR':
-        return { label: 'Dokumentator', badgeClass: 'bg-brand-50 text-brand-800 border-brand-100' };
-      case 'KEPALA_LPMQ':
-      case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', badgeClass: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
-      case 'PENERBIT':
-      case 'PUBLISHER':
-        return { label: 'Penerbit', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
-      default:
-        return { label: userRole || 'Pengguna', badgeClass: 'bg-surface-subtle text-ink border-line-strong' };
-    }
-  };
+    const getRoleBadge = (userRole) => {
+        switch (userRole) {
+            case "SUPERADMIN":
+                return {
+                    label: "Superadmin",
+                    badgeClass: "bg-surface-subtle text-ink border-line-strong",
+                };
+            case "ADMIN_INTERNAL":
+                return {
+                    label: "Helper Admin",
+                    badgeClass: "bg-surface-subtle text-ink border-line-strong",
+                };
+            case "VERIFIKATOR":
+            case "VERIFICATOR":
+                return {
+                    label: "Verifikator",
+                    badgeClass: "bg-brand-50 text-brand-800 border-brand-100",
+                };
+            case "DISTRIBUTOR":
+                return {
+                    label: "Distributor",
+                    badgeClass: "bg-brand-50 text-brand-800 border-brand-100",
+                };
+            case "PENTASHIH":
+            case "TASHIH_MEMBER":
+                return {
+                    label: "Pentashih",
+                    badgeClass: "bg-brand-50 text-brand-800 border-brand-100",
+                };
+            case "DOKUMENTATOR":
+            case "DOCUMENTATOR":
+                return {
+                    label: "Dokumentator",
+                    badgeClass: "bg-brand-50 text-brand-800 border-brand-100",
+                };
+            case "KEPALA_LPMQ":
+            case "HEAD_OF_LPMQ":
+                return {
+                    label: "Kepala LPMQ",
+                    badgeClass:
+                        "bg-civic-warningSoft text-civic-warning border-civic-warningLine",
+                };
+            case "PENERBIT":
+            case "PUBLISHER":
+                return {
+                    label: "Penerbit",
+                    badgeClass: "bg-surface-subtle text-ink border-line-strong",
+                };
+            default:
+                return {
+                    label: userRole || "Pengguna",
+                    badgeClass: "bg-surface-subtle text-ink border-line-strong",
+                };
+        }
+    };
 
-  const roleBadge = getRoleBadge(role);
+    const roleBadge = getRoleBadge(role);
 
-  // Navigasi Berbasis Peran sesuai Dokumen Bab 6
-  const getNavSections = () => {
-    if (isPublisher) {
-      return [
-        {
-          title: 'PORTAL PENERBIT',
-          items: [
-            {
-              label: 'Beranda',
-              path: '/publisher',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
-            },
-            {
-              label: 'Permohonan Saya',
-              path: '/publisher/registrations',
-              icon: <FileText className="w-4 h-4 shrink-0" />,
-              description: 'Portofolio naskah & riwayat',
-            },
-            {
-              label: 'Permohonan Tanda Tashih Baru',
-              path: '/publisher/new-registration',
-              icon: <FilePlus className="w-4 h-4 shrink-0" />,
-              description: 'Pendaftaran naskah baru',
-            },
-            {
-              label: 'Tagihan',
-              path: '/publisher/billing',
-              icon: <CreditCard className="w-4 h-4 shrink-0" />,
-              description: 'Billing SIMPONI & bukti bayar',
-            },
-            {
-              label: 'Arsip Dokumen',
-              path: '/publisher/documents',
-              icon: <Award className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi dokumen',
-            },
-          ],
-        },
-      ];
-    }
+    // Navigasi Berbasis Peran sesuai Dokumen Bab 6
+    const getNavSections = () => {
+        if (isPublisher) {
+            return [
+                {
+                    title: "PORTAL PENERBIT",
+                    items: [
+                        {
+                            label: "Beranda",
+                            path: "/publisher",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Permohonan Saya",
+                            path: "/publisher/registrations",
+                            icon: <FileText className="w-4 h-4 shrink-0" />,
+                            description: "Portofolio naskah & riwayat",
+                        },
+                        {
+                            label: "Permohonan Tanda Tashih Baru",
+                            path: "/publisher/new-registration",
+                            icon: <FilePlus className="w-4 h-4 shrink-0" />,
+                            description: "Pendaftaran naskah baru",
+                        },
+                        {
+                            label: "Tagihan",
+                            path: "/publisher/billing",
+                            icon: <CreditCard className="w-4 h-4 shrink-0" />,
+                            description: "Billing SIMPONI & bukti bayar",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/publisher/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi dokumen",
+                        },
+                    ],
+                },
+            ];
+        }
 
-    // Role Internal: Admin
-    if (isAdmin && !isSuperAdmin) {
-      return [
-        {
-          title: 'ADMINISTRASI LOKET',
-          items: [
-            {
-              label: 'Kendali Operasional',
-              path: '/internal',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
-            },
-            {
-              label: 'Penerimaan Master',
-              path: '/internal/master-intake',
-              icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-              description: 'Intake naskah fisik A4',
-            },
-            {
-              label: 'Arsip Dokumen',
-              path: '/internal/archive',
-              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi untuk Posdok-Q',
-            },
-            {
-              label: 'Perlu Penugasan',
-              path: '/internal/verifications?tab=NEED_ASSIGNMENT',
-              icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-              description: 'Helper Admin menugaskan verifikator',
-            },
-            {
-              label: 'Verifikasi Pembayaran',
-              path: '/internal/payments',
-              icon: <CreditCard className="w-4 h-4 shrink-0" />,
-              description: 'Setoran PNBP SIMPONI',
-            },
-          ],
-        },
-      ];
-    }
+        // Role Internal: Admin
+        if (isAdmin && !isSuperAdmin) {
+            return [
+                {
+                    title: "ADMINISTRASI LOKET",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Penerimaan Master",
+                            path: "/internal/master-intake",
+                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                            description: "Intake naskah fisik A4",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                        {
+                            label: "Perlu Penugasan",
+                            path: "/internal/verifications?tab=NEED_ASSIGNMENT",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Helper Admin menugaskan verifikator",
+                        },
+                        {
+                            label: "Verifikasi Pembayaran",
+                            path: "/internal/payments",
+                            icon: <CreditCard className="w-4 h-4 shrink-0" />,
+                            description: "Setoran PNBP SIMPONI",
+                        },
+                    ],
+                },
+            ];
+        }
 
-    // Role Internal: Kepala LPMQ
-    if (isKepala && !isSuperAdmin) {
-      return [
-        {
-          title: 'MANAJEMEN & PENGESAHAN',
-          items: [
-            {
-              label: 'Kendali Operasional',
-              path: '/internal',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
-            },
-            {
-              label: 'Persetujuan Verifikasi',
-              path: '/internal/verifications?tab=WAITING_APPROVAL',
-              icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-              description: 'Telaah draf hasil verifikasi',
-            },
-            {
-              label: 'Tanda Tangan',
-              path: '/internal/signatures',
-              icon: <PenTool className="w-4 h-4 shrink-0" />,
-              description: 'Tanda tangan digital resmi',
-            },
-            {
-              label: 'Penetapan STT',
-              path: '/internal/documents',
-              icon: <Award className="w-4 h-4 shrink-0" />,
-              description: 'Penetapan Surat Tanda Tashih',
-            },
-            {
-              label: 'Arsip Dokumen',
-              path: '/internal/archive',
-              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi untuk Posdok-Q',
-            },
-          ],
-        },
-      ];
-    }
+        // Role Internal: Kepala LPMQ
+        if (isKepala && !isSuperAdmin) {
+            return [
+                {
+                    title: "MANAJEMEN & PENGESAHAN",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Persetujuan Verifikasi",
+                            path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Telaah draf hasil verifikasi",
+                        },
+                        {
+                            label: "Tanda Tangan",
+                            path: "/internal/signatures",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Tanda tangan digital resmi",
+                        },
+                        {
+                            label: "Penetapan STT",
+                            path: "/internal/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Penetapan Surat Tanda Tashih",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
 
-    // Role Internal: Verifikator
-    if (isVerifikator && !isSuperAdmin) {
-      return [
-        {
-          title: 'VERIFIKASI BERKAS & RASM',
-          items: [
-            {
-              label: 'Kendali Operasional',
-              path: '/internal',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
-            },
-            {
-              label: 'Tugas Verifikasi',
-              path: '/internal/verifications',
-              icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-              description: 'Pemeriksaan naskah & draf',
-            },
-            {
-              label: 'Verifikasi Penerbit',
-              path: '/internal/publishers',
-              icon: <Building2 className="w-4 h-4 shrink-0" />,
-              description: 'Periksa dan setujui profil penerbit',
-            },
-            {
-              label: 'Tanda Tangan Saya',
-              path: '/internal/signatures',
-              icon: <PenTool className="w-4 h-4 shrink-0" />,
-              description: 'Berita acara pemeriksaan',
-            },
-            {
-              label: 'Siap Dikirim',
-              path: '/internal/verifications?tab=READY_TO_SEND',
-              icon: <Send className="w-4 h-4 shrink-0" />,
-              description: 'Kirim surat hasil verifikasi',
-            },
-            {
-              label: 'Verifikasi Pembayaran',
-              path: '/internal/payments',
-              icon: <CreditCard className="w-4 h-4 shrink-0" />,
-              description: 'Validasi setoran SIMPONI',
-            },
-            {
-              label: 'Siap Serah Terima',
-              path: '/internal/verifications?tab=BAST_READY',
-              icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-              description: 'Pembayaran sah, terbitkan BAST',
-            },
-            {
-              label: 'Arsip Dokumen',
-              path: '/internal/archive',
-              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi untuk Posdok-Q',
-            },
-          ],
-        },
-      ];
-    }
+        // Role Internal: Verifikator
+        if (isVerifikator && !isSuperAdmin) {
+            return [
+                {
+                    title: "VERIFIKASI BERKAS & RASM",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Tugas Verifikasi",
+                            path: "/internal/verifications",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Pemeriksaan naskah & draf",
+                        },
+                        {
+                            label: "Verifikasi Penerbit",
+                            path: "/internal/publishers",
+                            icon: <Building2 className="w-4 h-4 shrink-0" />,
+                            description: "Periksa dan setujui profil penerbit",
+                        },
+                        {
+                            label: "Tanda Tangan Saya",
+                            path: "/internal/signatures",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Berita acara pemeriksaan",
+                        },
+                        {
+                            label: "Siap Dikirim",
+                            path: "/internal/verifications?tab=READY_TO_SEND",
+                            icon: <Send className="w-4 h-4 shrink-0" />,
+                            description: "Kirim surat hasil verifikasi",
+                        },
+                        {
+                            label: "Verifikasi Pembayaran",
+                            path: "/internal/payments",
+                            icon: <CreditCard className="w-4 h-4 shrink-0" />,
+                            description: "Validasi setoran SIMPONI",
+                        },
+                        {
+                            label: "Siap Serah Terima",
+                            path: "/internal/verifications?tab=BAST_READY",
+                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                            description: "Pembayaran sah, terbitkan BAST",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
 
-    // Role Internal: Distributor
-    if (isDistributor && !isSuperAdmin) {
-      return [
-        {
-          title: 'DISTRIBUSI SIDANG',
-          items: [
-            {
-              label: 'Kendali Operasional',
-              path: '/internal',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
-            },
-            {
-              label: 'Master Menunggu Diterima',
-              path: '/internal/distributions?stage=HANDOVER',
-              icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-              description: 'Konfirmasi fisik master',
-            },
-            {
-              label: 'Distribusi Tim',
-              path: '/internal/distributions?stage=ASSIGNMENT',
-              icon: <Users className="w-4 h-4 shrink-0" />,
-              description: 'Bagi tugas anggota sidang',
-            },
-            {
-              label: 'Arsip Dokumen',
-              path: '/internal/archive',
-              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi untuk Posdok-Q',
-            },
-          ],
-        },
-      ];
-    }
+        // Role Internal: Distributor
+        if (isDistributor && !isSuperAdmin) {
+            return [
+                {
+                    title: "DISTRIBUSI SIDANG",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Master Menunggu Diterima",
+                            path: "/internal/distributions?stage=HANDOVER",
+                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                            description: "Konfirmasi fisik master",
+                        },
+                        {
+                            label: "Distribusi Tim",
+                            path: "/internal/distributions?stage=ASSIGNMENT",
+                            icon: <Users className="w-4 h-4 shrink-0" />,
+                            description: "Bagi tugas anggota sidang",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
 
-    // Role Internal: Pentashih
-    if (isPentashih && !isSuperAdmin) {
-      return [
-        {
-          title: 'SIDANG PENTASHIHAN',
-          items: [
+        // Role Internal: Pentashih
+        if (isPentashih && !isSuperAdmin) {
+            return [
+                {
+                    title: "SIDANG PENTASHIHAN",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Tugas Saya",
+                            path: "/internal/tashih",
+                            icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                            description: "Koreksi lafaz & tanda baca",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
+
+        if (isDokumentator && !isSuperAdmin) {
+            return [
+                {
+                    title: "DOKUMENTASI",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: (
+                                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                            ),
+                            end: true,
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                        {
+                            label: "Dokumen Tashih",
+                            path: "/internal/documents",
+                            icon: <FileText className="w-4 h-4 shrink-0" />,
+                        },
+                    ],
+                },
+            ];
+        }
+
+        // Role: Superadmin (Akses Penuh & Navigasi Operasional Komprehensif)
+        return [
             {
-              label: 'Kendali Operasional',
-              path: '/internal',
-              icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-              end: true,
+                title: "KENDALI UTAMA",
+                items: [
+                    {
+                        label: "Kendali Operasional",
+                        path: "/internal",
+                        icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                        end: true,
+                    },
+                ],
             },
             {
-              label: 'Tugas Saya',
-              path: '/internal/tashih',
-              icon: <BookOpen className="w-4 h-4 shrink-0" />,
-              description: 'Koreksi lafaz & tanda baca',
+                title: "PROSES PENTASHIHAN",
+                items: [
+                    {
+                        label: "Penugasan Verifikator",
+                        path: "/internal/verifications?tab=NEED_ASSIGNMENT",
+                        icon: <UserCheck className="w-4 h-4 shrink-0" />,
+                        description: "Superadmin dapat menugaskan verifikator",
+                    },
+                    {
+                        label: "1. Verifikasi Berkas",
+                        path: "/internal/verifications",
+                        icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                        description: "Pemeriksaan kelengkapan & rasm",
+                    },
+                    {
+                        label: "Intake Master Fisik",
+                        path: "/internal/master-intake",
+                        icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                        description: "Print-out master A4",
+                    },
+                    {
+                        label: "Verifikasi Pembayaran",
+                        path: "/internal/payments",
+                        icon: <CreditCard className="w-4 h-4 shrink-0" />,
+                        description: "Setoran PNBP SIMPONI",
+                    },
+                    {
+                        label: "2. Distribusi Sidang",
+                        path: "/internal/distributions",
+                        icon: <Users className="w-4 h-4 shrink-0" />,
+                        description: "Serah-terima fisik & SK tim",
+                    },
+                    {
+                        label: "3. Sidang Pentashihan",
+                        path: "/internal/tashih",
+                        icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                        description: "Telaah lafazh & harakat",
+                    },
+                    {
+                        label: "4. Pengesahan & STT",
+                        path: "/internal/documents",
+                        icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                        description: "Berita acara & STT resmi",
+                    },
+                ],
             },
             {
-              label: 'Arsip Dokumen',
-              path: '/internal/archive',
-              icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-              description: 'Semua versi untuk Posdok-Q',
+                title: "TATA KELOLA SISTEM",
+                items: [
+                    {
+                        label: "5. Data Induk dan Parameter",
+                        path: "/internal/settings",
+                        icon: <Settings className="w-4 h-4 shrink-0" />,
+                        description: "Kategori, tarif, dan SLA",
+                    },
+                    {
+                        label: "Identitas dan Akses",
+                        path: "/internal/users",
+                        icon: <Users className="w-4 h-4 shrink-0" />,
+                        description: "Akun, peran, dan wewenang",
+                    },
+                    {
+                        label: "Verifikasi Penerbit",
+                        path: "/internal/publishers",
+                        icon: <Building2 className="w-4 h-4 shrink-0" />,
+                        description: "Periksa dan setujui profil penerbit",
+                    },
+                    {
+                        label: "Arsip Dokumen",
+                        path: "/internal/archive",
+                        icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                        description: "Semua versi untuk Posdok-Q",
+                    },
+                    {
+                        label: "Rotasi Tim Inti",
+                        path: "/internal/core-teams",
+                        icon: <Users className="w-4 h-4 shrink-0" />,
+                        description:
+                            "Roster sembilan tim dan giliran berikutnya",
+                    },
+                ],
             },
-          ],
-        },
-      ];
-    }
+            {
+                title: "PORTAL PENERBIT (SIMULASI)",
+                items: [
+                    {
+                        label: "Dashboard Penerbit",
+                        path: "/publisher",
+                        icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                        description: "Perspektif pemohon naskah",
+                    },
+                ],
+            },
+        ];
+    };
 
-    if (isDokumentator && !isSuperAdmin) {
-      return [{ title: 'DOKUMENTASI', items: [
-        { label: 'Kendali Operasional', path: '/internal', icon: <LayoutDashboard className="w-4 h-4 shrink-0" />, end: true },
-        { label: 'Arsip Dokumen', path: '/internal/archive', icon: <FolderCheck className="w-4 h-4 shrink-0" />, description: 'Semua versi untuk Posdok-Q' },
-        { label: 'Dokumen Tashih', path: '/internal/documents', icon: <FileText className="w-4 h-4 shrink-0" /> },
-      ] }];
-    }
+    const navSections = getNavSections();
+    const isCurrentItem = (item, isActive) => {
+        if (!isActive || !item.path.startsWith("/internal/distributions?"))
+            return isActive;
+        const targetStage = new URLSearchParams(item.path.split("?")[1]).get(
+            "stage",
+        );
+        const currentStage =
+            new URLSearchParams(location.search).get("stage") || "HANDOVER";
+        return targetStage === currentStage;
+    };
 
-    // Role: Superadmin (Akses Penuh & Navigasi Operasional Komprehensif)
-    return [
-      {
-        title: 'KENDALI UTAMA',
-        items: [
-          {
-            label: 'Kendali Operasional',
-            path: '/internal',
-            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-            end: true,
-          },
-        ],
-      },
-      {
-        title: 'PROSES PENTASHIHAN',
-        items: [
-          {
-            label: 'Penugasan Verifikator',
-            path: '/internal/verifications?tab=NEED_ASSIGNMENT',
-            icon: <UserCheck className="w-4 h-4 shrink-0" />,
-            description: 'Superadmin dapat menugaskan verifikator',
-          },
-          {
-            label: '1. Verifikasi Berkas',
-            path: '/internal/verifications',
-            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-            description: 'Pemeriksaan kelengkapan & rasm',
-          },
-          {
-            label: 'Intake Master Fisik',
-            path: '/internal/master-intake',
-            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-            description: 'Print-out master A4',
-          },
-          {
-            label: 'Verifikasi Pembayaran',
-            path: '/internal/payments',
-            icon: <CreditCard className="w-4 h-4 shrink-0" />,
-            description: 'Setoran PNBP SIMPONI',
-          },
-          {
-            label: '2. Distribusi Sidang',
-            path: '/internal/distributions',
-            icon: <Users className="w-4 h-4 shrink-0" />,
-            description: 'Serah-terima fisik & SK tim',
-          },
-          {
-            label: '3. Sidang Pentashihan',
-            path: '/internal/tashih',
-            icon: <BookOpen className="w-4 h-4 shrink-0" />,
-            description: 'Telaah lafazh & harakat',
-          },
-          {
-            label: '4. Pengesahan & STT',
-            path: '/internal/documents',
-            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-            description: 'Berita acara & STT resmi',
-          },
-        ],
-      },
-      {
-        title: 'TATA KELOLA SISTEM',
-        items: [
-          {
-            label: '5. Data Induk dan Parameter',
-            path: '/internal/settings',
-            icon: <Settings className="w-4 h-4 shrink-0" />,
-            description: 'Kategori, tarif, dan SLA',
-          },
-          {
-            label: 'Identitas dan Akses',
-            path: '/internal/users',
-            icon: <Users className="w-4 h-4 shrink-0" />,
-            description: 'Akun, peran, dan wewenang',
-          },
-          {
-            label: 'Verifikasi Penerbit',
-            path: '/internal/publishers',
-            icon: <Building2 className="w-4 h-4 shrink-0" />,
-            description: 'Periksa dan setujui profil penerbit',
-          },
-          {
-            label: 'Arsip Dokumen',
-            path: '/internal/archive',
-            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-            description: 'Semua versi untuk Posdok-Q',
-          },
-          {
-            label: 'Rotasi Tim Inti',
-            path: '/internal/core-teams',
-            icon: <Users className="w-4 h-4 shrink-0" />,
-            description: 'Roster sembilan tim dan giliran berikutnya',
-          },
-        ],
-      },
-      {
-        title: 'PORTAL PENERBIT (SIMULASI)',
-        items: [
-          {
-            label: 'Dashboard Penerbit',
-            path: '/publisher',
-            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-            description: 'Perspektif pemohon naskah',
-          },
-        ],
-      },
-    ];
-  };
+    return (
+        <>
+            {/* Mobile Backdrop Overlay */}
+            <div
+                className={clsx(
+                    "fixed inset-0 bg-ink/40 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200 ease-out",
+                    isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
+                )}
+                onClick={onClose}
+                aria-hidden="true"
+            />
 
-  const navSections = getNavSections();
-  const isCurrentItem = (item, isActive) => {
-    if (!isActive || !item.path.startsWith('/internal/distributions?')) return isActive;
-    const targetStage = new URLSearchParams(item.path.split('?')[1]).get('stage');
-    const currentStage = new URLSearchParams(location.search).get('stage') || 'HANDOVER';
-    return targetStage === currentStage;
-  };
-
-  return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      <div
-        className={clsx(
-          'fixed inset-0 bg-ink/40 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-200 ease-out',
-          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Sidebar Container (260px, modern civic workspace) */}
-      <aside
-        className={clsx(
-          'fixed lg:static inset-y-0 left-0 z-50 lg:z-0',
-          'w-[264px] shrink-0 overflow-hidden lpmq-sidebar border-r lpmq-sidebar-border-r flex flex-col justify-between',
-          'transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none',
-          isOpen ? 'translate-x-0 lg:w-[264px]' : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'
-        )}
-      >
-        <div className="flex h-full w-[264px] min-w-[264px] flex-col overflow-hidden">
-          {/* Header Brand */}
-          <div className="px-4 py-3.5 border-b lpmq-sidebar-header flex items-center justify-between">
-            <Link
-              to={isPublisher ? '/publisher' : '/internal'}
-              className="flex items-center gap-2.5 hover:opacity-95 transition-opacity"
-              onClick={() => {
-                if (window.innerWidth < 1024 && onClose) onClose();
-              }}
+            {/* Sidebar Container (260px, modern civic workspace) */}
+            <aside
+                className={clsx(
+                    "fixed lg:static inset-y-0 left-0 z-50 lg:z-0",
+                    "w-[264px] shrink-0 overflow-hidden lpmq-sidebar border-r lpmq-sidebar-border-r flex flex-col justify-between",
+                    "transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none",
+                    isOpen
+                        ? "translate-x-0 lg:w-[264px]"
+                        : "-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0",
+                )}
             >
-              <div className="flex items-center gap-1.5 shrink-0">
-                <div className="w-9 h-9 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-1">
-                  <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain" />
-                </div>
-                <div className="w-8 h-8 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-0.5">
-                  <img src={lpmqLogo} alt="Logo LPMQ" className="h-full w-auto object-contain rounded" />
-                </div>
-              </div>
-              <div className="min-w-0">
-                <span className="text-xs font-extrabold tracking-wider uppercase lpmq-sidebar-text block leading-tight">
-                  Kemenag RI
-                </span>
-                <span className="text-xs font-black lpmq-sidebar-text block leading-tight truncate">
-                  Sistem Pentashihan
-                </span>
-              </div>
-            </Link>
+                <div className="flex h-full w-[264px] min-w-[264px] flex-col overflow-hidden">
+                    {/* Header Brand */}
+                    <div className="px-4 py-3.5 border-b lpmq-sidebar-header flex items-center justify-between">
+                        <Link
+                            to={isPublisher ? "/publisher" : "/internal"}
+                            className="flex items-center gap-2.5 hover:opacity-95 transition-opacity"
+                            onClick={() => {
+                                if (window.innerWidth < 1024 && onClose)
+                                    onClose();
+                            }}
+                        >
+                            <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="w-9 h-9 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-1">
+                                    <img
+                                        src={kemenagLogo}
+                                        alt="Logo Kemenag"
+                                        className="h-full w-auto object-contain"
+                                    />
+                                </div>
+                                <div className="w-8 h-8 rounded-lg lpmq-sidebar-logo-box border shadow-2xs flex items-center justify-center p-0.5">
+                                    <img
+                                        src={lpmqLogo}
+                                        alt="Logo LPMQ"
+                                        className="h-full w-auto object-contain rounded"
+                                    />
+                                </div>
+                            </div>
+                            <div className="min-w-0">
+                                <span className="text-xs font-extrabold tracking-wider uppercase lpmq-sidebar-text block leading-tight">
+                                    Kemenag RI
+                                </span>
+                                <span className="text-xs font-black lpmq-sidebar-text block leading-tight truncate">
+                                    Sistem Pentashihan
+                                </span>
+                            </div>
+                        </Link>
 
-            {/* Close Button on Mobile */}
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-lg lpmq-sidebar-close-btn lg:hidden"
-              aria-label="Tutup Menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+                        {/* Close Button on Mobile */}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="p-1.5 rounded-lg lpmq-sidebar-close-btn lg:hidden"
+                            aria-label="Tutup Menu"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
 
-          {/* User Mini Profile Card */}
-          {currentUser && (
-            <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl border lpmq-sidebar-card shadow-2xs">
-              <div className="flex items-center gap-2.5">
-                <div className="relative shrink-0">
-                  <div className="w-8 h-8 rounded-lg lpmq-sidebar-avatar font-bold flex items-center justify-center text-xs shadow-2xs">
-                    {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 lpmq-sidebar-online-dot rounded-full border-2"
-                    title="Online"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold lpmq-sidebar-text truncate leading-tight">
-                    {currentUser.name}
-                  </h4>
-                  <div className="mt-1">
-                    <span
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded border leading-none lpmq-sidebar-badge"
-                    >
-                      <ShieldCheck className="w-3 h-3" />
-                      <span>{roleBadge.label}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+                    {/* Navigation Sections */}
+                    <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
+                        {navSections.map((section, idx) => (
+                            <div
+                                key={idx}
+                                className="space-y-1 pt-3 border-t lpmq-sidebar-section-border first:border-t-0 first:pt-0"
+                            >
+                                <div className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider lpmq-sidebar-section-title">
+                                    {section.title}
+                                </div>
+                                <nav className="space-y-0.5">
+                                    {section.items.map((item) => (
+                                        <NavLink
+                                            key={item.path + item.label}
+                                            to={item.path}
+                                            end={item.end}
+                                            title={
+                                                item.description || item.label
+                                            }
+                                            onClick={() => {
+                                                if (
+                                                    window.innerWidth < 1024 &&
+                                                    onClose
+                                                )
+                                                    onClose();
+                                            }}
+                                            className={({ isActive }) =>
+                                                clsx(
+                                                    "flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out group hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none",
+                                                    isCurrentItem(
+                                                        item,
+                                                        isActive,
+                                                    )
+                                                        ? "lpmq-sidebar-nav-active font-bold shadow-2xs"
+                                                        : "lpmq-sidebar-nav-inactive",
+                                                )
+                                            }
+                                        >
+                                            {({ isActive }) => (
+                                                <>
+                                                    <div
+                                                        className={clsx(
+                                                            "shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:transform-none",
+                                                            isCurrentItem(
+                                                                item,
+                                                                isActive,
+                                                            )
+                                                                ? "lpmq-sidebar-nav-icon-active"
+                                                                : "lpmq-sidebar-nav-icon-inactive",
+                                                        )}
+                                                    >
+                                                        {item.icon}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className="block leading-tight truncate">
+                                                            {item.label}
+                                                        </span>
+                                                        {item.description &&
+                                                            !isCurrentItem(
+                                                                item,
+                                                                isActive,
+                                                            ) && (
+                                                                <span className="hidden group-hover:block text-[11px] lpmq-sidebar-muted truncate mt-0.5 animate-fadeIn">
+                                                                    {
+                                                                        item.description
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </NavLink>
+                                    ))}
+                                </nav>
+                            </div>
+                        ))}
+                    </div>
 
-          {/* Navigation Sections */}
-          <div className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4">
-            {navSections.map((section, idx) => (
-              <div key={idx} className="space-y-1 pt-3 border-t lpmq-sidebar-section-border first:border-t-0 first:pt-0">
-                <div className="px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider lpmq-sidebar-section-title">
-                  {section.title}
+                    {/* Institutional Compliance Footer */}
+                    <div className="p-2.5 border-t lpmq-sidebar-footer">
+                        <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card">
+                            <div className="flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 lpmq-sidebar-online-icon shrink-0" />
+                                <span className="text-xs font-bold lpmq-sidebar-text">
+                                    Standar Pentashihan
+                                </span>
+                            </div>
+                            <p className="text-[11px] lpmq-sidebar-muted mt-0.5 leading-tight">
+                                Mushaf Standar Usmani Kemenag RI
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                <nav className="space-y-0.5">
-                  {section.items.map((item) => (
-                    <NavLink
-                      key={item.path + item.label}
-                      to={item.path}
-                      end={item.end}
-                      title={item.description || item.label}
-                      onClick={() => {
-                        if (window.innerWidth < 1024 && onClose) onClose();
-                      }}
-                      className={({ isActive }) =>
-                        clsx(
-                          'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-[color,background-color,border-color,box-shadow,transform] duration-200 ease-out group hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:transform-none',
-                          isCurrentItem(item, isActive)
-                            ? 'lpmq-sidebar-nav-active font-bold shadow-2xs'
-                            : 'lpmq-sidebar-nav-inactive'
-                        )
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <div
-                            className={clsx(
-                              'shrink-0 transition-transform duration-200 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:transform-none',
-                              isCurrentItem(item, isActive) ? 'lpmq-sidebar-nav-icon-active' : 'lpmq-sidebar-nav-icon-inactive'
-                            )}
-                          >
-                            {item.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <span className="block leading-tight truncate">{item.label}</span>
-                            {item.description && !isCurrentItem(item, isActive) && (
-                              <span className="hidden group-hover:block text-[11px] lpmq-sidebar-muted truncate mt-0.5 animate-fadeIn">
-                                {item.description}
-                              </span>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </NavLink>
-                  ))}
-                </nav>
-              </div>
-            ))}
-          </div>
-
-          {/* Institutional Compliance Footer */}
-          <div className="p-2.5 border-t lpmq-sidebar-footer">
-            <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 lpmq-sidebar-online-icon shrink-0" />
-                <span className="text-xs font-bold lpmq-sidebar-text">Standar Pentashihan</span>
-              </div>
-              <p className="text-[11px] lpmq-sidebar-muted mt-0.5 leading-tight">
-                Mushaf Standar Usmani Kemenag RI
-              </p>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </>
-  );
+            </aside>
+        </>
+    );
 };
 
 export default Sidebar;
