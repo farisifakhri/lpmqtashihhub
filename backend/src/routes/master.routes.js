@@ -47,4 +47,8 @@ router.delete('/addons/:id', authenticate, authorize('SUPERADMIN'), validate(idP
 // -------------------------------------------------------------
 router.get('/distribution-teams', authenticate, masterController.listDistributionTeams);
 
+
+// 5. MASTER ITEM JENIS NASKAH (B-01 §4)
+router.get('/jenis-naskah-items', masterController.listJenisNaskahItems);
+
 export default router;

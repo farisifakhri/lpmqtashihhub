@@ -318,9 +318,13 @@ export function calculateItemTarifAndSla(itemCodesOrObjects = [], options = {}) 
     layananDisplay: layananDisplay,
     fee: totalFee,
     sla_initial: effectiveInitialSla,
+    slaInitial: effectiveInitialSla,
     raw_sla_initial: rawInitialSla,
+    rawSlaInitial: rawInitialSla,
     sla_revision: slaRevision,
+    slaRevision: slaRevision,
     sla_dummy: slaDummy,
+    slaDummy: slaDummy,
     items: itemDetails,
   };
 }

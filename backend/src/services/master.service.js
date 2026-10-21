@@ -398,6 +398,14 @@ export const getDistributionTeams = async () => {
   });
 };
 
+
+export const listJenisNaskahItems = async () => {
+  return await prisma.jenisNaskahItem.findMany({
+    where: { status: 'ACTIVE' },
+    orderBy: [{ group_number: 'asc' }, { id: 'asc' }],
+  });
+};
+
 export default {
   getCategories,
   getCategoryById,
@@ -415,4 +423,5 @@ export default {
   updateAddon,
   deleteAddon,
   getDistributionTeams,
+  listJenisNaskahItems,
 };
