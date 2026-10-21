@@ -129,7 +129,7 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
     ['2', 'Tanggal & Waktu Penerimaan', dateFormatted],
     ['3', 'Nama Pemohon / Penerbit', reg.publisher?.legal_name || 'Penerbit Terdaftar'],
     ['4', 'Nama Produk / Judul Naskah', reg.title || '-'],
-    ['5', 'Jenis Layanan Pentashihan', reg.service_type?.name || 'Pentashihan Mushaf'],
+    ['5', 'Jenis Layanan Pentashihan', reg.fee_sla_snapshot?.layanan_display || reg.service_type?.name || 'Pentashihan Mushaf'],
     ['6', 'Jumlah Master Fisik', `${intake.volume_count ?? '-'} jilid`],
     ['7', 'Format & Penjilidan', `${intake.format || 'A4'} / ${intake.binding_method || 'Per Juz'}`],
     ['8', 'Kondisi Naskah saat Diterima', intake.condition || 'Baik dan Lengkap'],

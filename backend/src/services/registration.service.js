@@ -10,6 +10,14 @@ import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
 import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
+import {
+  calculateItemTarifAndSla,
+  calculateRegistrationSummary,
+  normalizeLegacyToItemCodes,
+  ITEM_DASAR_MAP,
+  ITEM_TAMBAHAN_MAP,
+  SLA_INITIAL_CAP_DAYS,
+} from '../utils/item-calculator.js';
 
 // Canonical enum untuk jenis materi / naskah mushaf agar penentuan tarif dan jenis layanan
 // tidak bergantung pada pencocokan teks bebas (label string matching) yang rentan berubah.
@@ -337,48 +345,37 @@ export const createDraft = async (data, user, req) => {
     throw error;
   }
 
+  const jenisNaskahList = [
+    ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
+    ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
+    ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
+  ];
+
+  const registrationType = data.registration_type || 'NEW';
+  const isExtensionReg = registrationType === 'EXTENSION';
+  const metadataForNormalization = {
+    ...data,
+    ...(data.foreign_metadata || {}),
+    ...(data.mushaf_details || {}),
+  };
+  const normalizedItemCodes = normalizeLegacyToItemCodes(jenisNaskahList, metadataForNormalization);
+  const itemCalc = calculateItemTarifAndSla(normalizedItemCodes, { isExtensionOrTambahOplah: isExtensionReg });
+
   let serviceTypeId = data.service_type_id;
   if (!serviceTypeId) {
-    const jenisNaskah = [
-      ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
-      ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
-      ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
-    ];
-    const jenisMushaf = data.foreign_metadata?.jenis_mushaf || data.mushaf_details?.jenis_mushaf || data.jenis_mushaf;
-
     let matched = null;
-    const detectedEnums = jenisNaskah.map(resolveNaskahEnum).filter(Boolean);
-
-    if (jenisMushaf === 'Mushaf Standar Braille' || detectedEnums.includes(NASKAH_CONTENT_ENUM.BRAILLE)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'BRAILLE' } });
-    } else if (data.registration_type === 'FOREIGN_MANUSCRIPT' || detectedEnums.includes(NASKAH_CONTENT_ENUM.FOREIGN)) {
+    if (data.registration_type === 'FOREIGN_MANUSCRIPT') {
       matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Luar Negeri' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.AUDIO_VISUAL)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'AUDIO_VISUAL' } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAFSIR)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tafsir' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLATION) || detectedEnums.includes(NASKAH_CONTENT_ENUM.WORD_BY_WORD_TRANSLITERATION)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Perkata' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLITERATION)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Transliterasi' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TRANSLATION)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Terjemah' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_WARNA) || detectedEnums.includes(NASKAH_CONTENT_ENUM.TAJWID_KODE)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Tajwid' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.WAQAF_IBTIDA)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Waqaf' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.METODE_BACA_TULIS)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Metode' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.YASIN_TAHLIL)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Yasin' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.JUZ_AMMA)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Juz' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.MAJMU_SYARIF)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Majmu' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.KALIGRAFI)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', name: { contains: 'Kaligrafi' } } });
-    } else if (detectedEnums.includes(NASKAH_CONTENT_ENUM.DIGITAL)) {
-      matched = await prisma.serviceType.findFirst({ where: { status: 'ACTIVE', service_kind: 'DIGITAL' } });
+    } else {
+      matched = await prisma.serviceType.findFirst({
+        where: { status: 'ACTIVE', name: itemCalc.service_type_name },
+      });
+    }
+
+    if (!matched) {
+      matched = await prisma.serviceType.findFirst({
+        where: { status: 'ACTIVE', service_kind: itemCalc.service_kind },
+      });
     }
 
     if (!matched) {
@@ -393,18 +390,29 @@ export const createDraft = async (data, user, req) => {
   }
 
   // Verifikasi service type aktif
-  const serviceType = await prisma.serviceType.findUnique({
+  let serviceType = await prisma.serviceType.findUnique({
     where: { id: serviceTypeId },
     include: { category: true },
   });
+
+  // Koreksi U-01: jika frontend lama mengirim service_type_id yang keliru (mis. Juz 'Amma)
+  // sementara naskah sebenarnya adalah 30 Juz
+  if (serviceType && itemCalc.dasar_code === 'JUZ30' && serviceType.name?.includes("Juz 'Amma")) {
+    const corrected = await prisma.serviceType.findFirst({
+      where: { status: 'ACTIVE', name: itemCalc.service_type_name },
+      include: { category: true },
+    });
+    if (corrected) {
+      serviceType = corrected;
+      serviceTypeId = corrected.id;
+    }
+  }
 
   if (!serviceType || serviceType.status !== 'ACTIVE') {
     const error = new Error('Jenis layanan tidak ditemukan atau sedang tidak aktif.');
     error.statusCode = 400;
     throw error;
   }
-
-  const registrationType = data.registration_type || 'NEW';
 
   // Validasi Pengajuan Perpanjangan (EXTENSION)
   if (registrationType === 'EXTENSION') {
@@ -473,11 +481,6 @@ export const createDraft = async (data, user, req) => {
 
   // Otomatis tambahkan addon ADD-MATERI (+Rp 500.000 per unit) jika pada jenis_naskah dipilih konten tambahan (Group 3: Transliterasi, Terjemah, Tajwid, Waqaf, Tafsir, dll.)
   // Catatan: Checklist materi tambahan pada mushaf (Bagian II: Asbabun Nuzul, Hadis, Do'a) TIDAK menambah biaya sama sekali (Rp 0).
-  const jenisNaskahList = [
-    ...(Array.isArray(data.foreign_metadata?.jenis_naskah) ? data.foreign_metadata.jenis_naskah : []),
-    ...(Array.isArray(data.mushaf_details?.jenis_naskah) ? data.mushaf_details.jenis_naskah : []),
-    ...(Array.isArray(data.jenis_naskah) ? data.jenis_naskah : []),
-  ];
   const addonMateriUnits = calculateAddonMateriUnits(jenisNaskahList);
 
   let addMateriRecord = null;
@@ -591,6 +594,27 @@ export const createDraft = async (data, user, req) => {
             ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
           };
 
+          let totalAddonsFee = 0;
+          for (const add of activeAddons) {
+            const isAddMateri = add.code === 'ADD-MATERI' || (addMateriRecord && add.id === addMateriRecord.id);
+            const quantity = isAddMateri ? Math.max(1, addonMateriUnits) : 1;
+            totalAddonsFee += Number(add.fee) * quantity;
+          }
+
+          const initialFeeSlaSnapshot = {
+            service_name: serviceType.name,
+            service_kind: serviceType.service_kind,
+            layanan_display: itemCalc.layanan_display,
+            base_service_code: itemCalc.dasar_code,
+            base_fee: itemCalc.fee,
+            addons_fee: totalAddonsFee,
+            total_fee: itemCalc.fee + totalAddonsFee,
+            sla_initial_days: itemCalc.sla_initial,
+            sla_revision_days: itemCalc.sla_revision,
+            sla_dummy_days: itemCalc.sla_dummy,
+            items: itemCalc.items,
+          };
+
           const created = await tx.registration.create({
             data: {
               registration_no: regNo,
@@ -605,6 +629,7 @@ export const createDraft = async (data, user, req) => {
               previous_registration_id: registrationType === 'EXTENSION' && data.previous_registration_id ? data.previous_registration_id : null,
               status: 'DRAFT',
               apk_url: data.apk_url || null,
+              fee_sla_snapshot: initialFeeSlaSnapshot,
             },
           });
 
@@ -815,8 +840,16 @@ export const submitRegistration = async (id, user, req) => {
     throw error;
   }
 
-  // Hitung snapshot tarif dan SLA (BR-04 & BR-05)
-  const baseFee = Number(reg.service_type.base_fee);
+  // Hitung snapshot tarif dan SLA berbasis item (B-01 §4.3 & Sesi 0b)
+  const jenisNaskahList = [
+    ...(Array.isArray(reg.foreign_metadata?.jenis_naskah) ? reg.foreign_metadata.jenis_naskah : []),
+    ...(Array.isArray(reg.mushaf_details?.jenis_naskah) ? reg.mushaf_details.jenis_naskah : []),
+  ];
+  const itemCodes = normalizeLegacyToItemCodes(jenisNaskahList, { ...reg, ...reg.foreign_metadata });
+  const isExt = reg.registration_type === 'EXTENSION';
+  const itemCalc = calculateItemTarifAndSla(itemCodes, { isExtensionOrTambahOplah: isExt });
+
+  const baseFee = itemCalc.fee > 0 ? itemCalc.fee : Number(reg.service_type?.base_fee || 0);
   const addonsTotal = reg.addons.reduce((sum, item) => {
     const feeSnapshot = Number(item.fee_snapshot || 0);
     const quantity = Number(item.quantity || 1);
@@ -830,14 +863,17 @@ export const submitRegistration = async (id, user, req) => {
 
   const feeSlaSnapshot = {
     submitted_at: new Date().toISOString(),
-    service_name: reg.service_type.name,
-    service_kind: reg.service_type.service_kind,
+    service_name: reg.service_type?.name || itemCalc.service_type_name,
+    service_kind: reg.service_type?.service_kind || itemCalc.service_kind,
+    layanan_display: itemCalc.layanan_display,
+    base_service_code: itemCalc.dasar_code,
     base_fee: baseFee,
     addons_fee: addonsTotal,
     total_fee: totalFee,
-    sla_initial_days: reg.service_type.duration_initial,
-    sla_revision_days: reg.service_type.duration_revision,
-    sla_dummy_days: reg.service_type.duration_dummy,
+    sla_initial_days: itemCalc.sla_initial > 0 ? itemCalc.sla_initial : (reg.service_type?.duration_initial || 15),
+    sla_revision_days: itemCalc.sla_revision > 0 ? itemCalc.sla_revision : (reg.service_type?.duration_revision || 7),
+    sla_dummy_days: itemCalc.sla_dummy > 0 ? itemCalc.sla_dummy : (reg.service_type?.duration_dummy || 3),
+    items: itemCalc.items,
   };
 
   const hasVerifiedPayment = reg.status === 'REVISION_REQUIRED' && await prisma.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } });
@@ -862,7 +898,7 @@ export const submitRegistration = async (id, user, req) => {
       data: {
         status: submitStatus,
         stage_entered_at: new Date(),
-        fee_sla_snapshot: reg.fee_sla_snapshot || feeSlaSnapshot,
+        fee_sla_snapshot: hasVerifiedPayment ? (reg.fee_sla_snapshot || feeSlaSnapshot) : feeSlaSnapshot,
       },
     });
 
@@ -1388,6 +1424,13 @@ export const getDetail = async (id, user) => {
     operational_state = 'VERIFICATION_ASSIGNED';
   }
   reg.operational_state = operational_state;
+
+  const displayLayanan =
+    reg.fee_sla_snapshot?.layanan_display ||
+    reg.fee_sla_snapshot?.service_name ||
+    reg.service_type?.name ||
+    "Mushaf Al-Qur'an Standar Usmani";
+  reg.layanan_display = displayLayanan;
 
   return reg;
 };

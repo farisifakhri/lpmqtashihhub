@@ -603,7 +603,7 @@ export async function renderShippingLabelPdf(reg) {
   const pjNama = meta.penanggung_jawab_produk || meta.nama_pj || meta.contact_person || publisher.legal_name || 'Penanggung Jawab Produk';
   const pjWa = meta.penanggung_jawab_wa || meta.no_telp || meta.no_wa || meta.telepon || publisher.phone || publisher.contact_phone || '-';
   const volumeCount = reg.physical_master_intake?.volume_count || reg.physical_volume_count || (reg.physical_master?.volume_count) || 30;
-  const jenisMushaf = reg.service_type?.name || meta.jenis_mushaf || "Mushaf Al-Qur'an Standar Usmani";
+  const jenisMushaf = reg.fee_sla_snapshot?.layanan_display || reg.service_type?.name || meta.jenis_mushaf || "Mushaf Al-Qur'an Standar Usmani";
   const kategori = reg.service_type?.category?.name || meta.kategori_pendaftaran || reg.registration_category || 'Tanda Tashih Baru';
 
   const col1W = 100;
