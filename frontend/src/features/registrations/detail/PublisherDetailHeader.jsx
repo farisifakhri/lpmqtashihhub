@@ -296,7 +296,7 @@ export function PublisherDetailHeader({
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted pt-0.5">
           <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-subtle text-ink font-semibold border border-line text-xs">
-            Layanan: <strong className="ml-1 text-ink">{data.service_type?.name}</strong>
+            Layanan: <strong className="ml-1 text-ink">{data.fee_sla_snapshot?.layanan_display || data.service_type?.name}</strong>
           </span>
 
           {data.foreign_metadata?.nama_mushaf && (
@@ -326,6 +326,55 @@ export function PublisherDetailHeader({
             </span>
           )}
         </div>
+
+        
+        {/* Multi-Naskah & Varian Overview (B-01) */}
+        {Array.isArray(data.manuscripts) && data.manuscripts.length > 0 && (
+          <div className="pt-2">
+            <details className="group rounded-xl border border-line bg-canvas/60 p-3 text-xs transition-all">
+              <summary className="flex items-center justify-between font-bold text-ink cursor-pointer list-none">
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-brand-700" />
+                  <span>Daftar Naskah & Varian Terdaftar ({data.manuscripts.length} Naskah)</span>
+                </div>
+                <span className="text-2xs text-brand-800 font-semibold group-open:hidden">
+                  Lihat Rincian ▼
+                </span>
+                <span className="text-2xs text-brand-800 font-semibold hidden group-open:inline">
+                  Tutup ▲
+                </span>
+              </summary>
+              <div className="pt-3 space-y-3">
+                {data.manuscripts.map((m, mIdx) => (
+                  <div key={m.id || mIdx} className="p-3 rounded-lg bg-white border border-line space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <span className="font-bold text-ink">
+                        {m.seq_number || mIdx + 1}. {m.title}
+                      </span>
+                      {Array.isArray(m.items) && m.items.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {m.items.map((it, itIdx) => (
+                            <span key={it.id || itIdx} className="px-1.5 py-0.5 rounded text-3xs font-semibold bg-brand-50 text-brand-900 border border-brand-200">
+                              {it.item?.name || it.name || it.code}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Varian Ukuran & Oplah */}
+                    {Array.isArray(m.variants) && m.variants.length > 0 && (
+                      <div className="text-2xs text-ink-muted">
+                        <span className="font-semibold text-ink">Varian Ukuran & Oplah: </span>
+                        {m.variants.map((v) => `${v.ukuran} (${Number(v.oplah || 0).toLocaleString('id-ID')} eksemplar)`).join(' • ')}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
+          </div>
+        )}
 
         {(data.foreign_metadata?.negara_asal_mushaf || data.foreign_metadata?.country_of_origin) && (
           <div className="pt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-muted">

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Plus, Trash2, BookOpen, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, BookOpen, AlertCircle, Layers } from 'lucide-react';
+import { ITEM_DASAR_MAP, ITEM_TAMBAHAN_MAP } from '@/lib/item-calculator';
 import { normalizeWhatsApp } from './registration-validation';
 
 export const Step1MushafData = ({
@@ -23,6 +24,14 @@ export const Step1MushafData = ({
   setNamaPercetakan,
   deskripsiMushaf,
   setDeskripsiMushaf,
+  // Multi-Naskah (B-01)
+  additionalManuscripts = [],
+  handleAddAdditionalManuscript,
+  handleRemoveAdditionalManuscript,
+  handleUpdateAdditionalManuscript,
+  handleAddVariantToManuscript,
+  handleRemoveVariantFromManuscript,
+  handleVariantChangeInManuscript,
   // Perpanjangan
   noPendaftaranLama,
   setNoPendaftaranLama,
@@ -529,6 +538,208 @@ export const Step1MushafData = ({
             placeholder="Tulis deskripsi mushaf..."
             className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink bg-white"
           />
+        </div>
+        {/* Multi-Naskah Section (B-01: 1 s.d. 20 Naskah dalam Satu Pengajuan & Satu STT) */}
+        <div className="pt-6 border-t border-line space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <span className="block text-xs font-bold text-ink flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-brand-700" />
+                <span>Naskah Tambahan dalam Pengajuan Ini (B-01 Multi-Naskah)</span>
+              </span>
+              <p className="text-xs text-ink-muted">
+                Daftarkan naskah mushaf lain yang diajukan bersamaan dalam satu nomor permohonan dan satu STT (maksimal 20 naskah).
+              </p>
+            </div>
+            {handleAddAdditionalManuscript && additionalManuscripts.length < 19 && (
+              <button
+                type="button"
+                onClick={handleAddAdditionalManuscript}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-900 font-bold text-xs transition-colors shadow-2xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5 text-brand-700" />
+                <span>Tambah Naskah Lain</span>
+              </button>
+            )}
+          </div>
+
+          {additionalManuscripts.length === 0 ? (
+            <div className="p-4 rounded-xl border border-dashed border-line bg-canvas/40 text-center space-y-1">
+              <p className="text-xs font-medium text-ink-muted">
+                Saat ini pengajuan memuat 1 naskah utama di atas.
+              </p>
+              {handleAddAdditionalManuscript && (
+                <button
+                  type="button"
+                  onClick={handleAddAdditionalManuscript}
+                  className="text-xs font-bold text-brand-800 hover:text-brand-900 underline cursor-pointer"
+                >
+                  + Tambah Naskah Lain ke Permohonan Ini
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {additionalManuscripts.map((m, mIdx) => (
+                <div
+                  key={m.id || mIdx}
+                  className="rounded-xl border border-line bg-canvas p-4 sm:p-5 space-y-4 shadow-2xs"
+                >
+                  {/* Header Naskah Tambahan */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
+                    <div className="flex items-center gap-2 flex-1">
+                      <span className="w-6 h-6 rounded-full bg-brand-700 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {mIdx + 2}
+                      </span>
+                      <div className="flex-1 space-y-1">
+                        <label className="block text-2xs font-bold uppercase tracking-wider text-ink-muted">
+                          Judul Naskah ke-{mIdx + 2} <span className="text-civic-danger">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={m.title}
+                          onChange={(e) =>
+                            handleUpdateAdditionalManuscript?.(mIdx, 'title', e.target.value)
+                          }
+                          placeholder={`Contoh: Mushaf Seri ${mIdx + 2} atau Juz 'Amma Khusus`}
+                          className="w-full text-xs font-semibold px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAdditionalManuscript?.(mIdx)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-civic-danger hover:bg-civic-dangerSoft rounded-lg transition-colors cursor-pointer self-start sm:self-center"
+                      title="Hapus naskah ini"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Hapus Naskah</span>
+                    </button>
+                  </div>
+
+                  {/* Pemilih Item Dasar */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-ink">
+                      Item Dasar Naskah <span className="text-civic-danger">*</span>
+                    </label>
+                    <select
+                      value={m.itemDasar || 'JUZ30'}
+                      onChange={(e) =>
+                        handleUpdateAdditionalManuscript?.(mIdx, 'itemDasar', e.target.value)
+                      }
+                      className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink cursor-pointer"
+                    >
+                      {Object.values(ITEM_DASAR_MAP).map((it) => (
+                        <option key={it.code} value={it.code}>
+                          {it.name} ({it.service_kind === 'CETAK' ? 'Cetak' : 'Non-Cetak'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pemilih Item Tambahan */}
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-ink">
+                      Materi Tambahan Naskah (Kelompok 3):
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      {Object.values(ITEM_TAMBAHAN_MAP).map((tamb) => {
+                        const isChecked = (m.itemsTambahan || []).includes(tamb.code);
+                        return (
+                          <label
+                            key={tamb.code}
+                            className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition-all ${
+                              isChecked
+                                ? 'border-brand-700 bg-brand-50/60 font-bold text-brand-950'
+                                : 'border-line bg-white hover:bg-surface text-ink'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                const current = m.itemsTambahan || [];
+                                const updated = isChecked
+                                  ? current.filter((c) => c !== tamb.code)
+                                  : [...current, tamb.code];
+                                handleUpdateAdditionalManuscript?.(mIdx, 'itemsTambahan', updated);
+                              }}
+                              className="rounded border-line text-brand-700 focus:ring-brand-700 cursor-pointer"
+                            />
+                            <span className="truncate">{tamb.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Varian Ukuran & Oplah Per Naskah */}
+                  <div className="space-y-2 pt-2 border-t border-line">
+                    <div className="flex items-center justify-between">
+                      <span className="block text-xs font-bold text-ink">
+                        Varian Ukuran (cm) & Oplah Naskah ke-{mIdx + 2} <span className="text-civic-danger">*</span>
+                      </span>
+                      {(m.variants || []).length < 10 && handleAddVariantToManuscript && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddVariantToManuscript(mIdx)}
+                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-800 hover:text-brand-900 bg-white border border-line px-2 py-1 rounded-md transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>+ Tambah Varian</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      {(m.variants || [{ ukuran: '', oplah: '' }]).map((v, vIdx) => (
+                        <div
+                          key={vIdx}
+                          className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-lg border border-line"
+                        >
+                          <div className="sm:col-span-6 space-y-0.5">
+                            <input
+                              type="text"
+                              value={v.ukuran}
+                              onChange={(e) =>
+                                handleVariantChangeInManuscript?.(mIdx, vIdx, 'ukuran', e.target.value)
+                              }
+                              placeholder="Ukuran (cth: 21 x 29,7)"
+                              className="w-full text-xs px-2.5 py-1.5 rounded border border-line bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink"
+                            />
+                          </div>
+                          <div className="sm:col-span-5 space-y-0.5">
+                            <input
+                              type="number"
+                              value={v.oplah}
+                              onChange={(e) =>
+                                handleVariantChangeInManuscript?.(mIdx, vIdx, 'oplah', e.target.value)
+                              }
+                              placeholder="Oplah (cth: 5000)"
+                              className="w-full text-xs px-2.5 py-1.5 rounded border border-line bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink"
+                            />
+                          </div>
+                          <div className="sm:col-span-1 text-right">
+                            {(m.variants || []).length > 1 && handleRemoveVariantFromManuscript && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveVariantFromManuscript(mIdx, vIdx)}
+                                className="p-1 text-civic-danger hover:bg-civic-dangerSoft rounded transition-colors"
+                                title="Hapus varian ini"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -83,17 +83,54 @@ export async function renderRegistrationReceiptPdf(reg) {
   const publisherName = reg.publisher?.legal_name || reg.publisher?.name || 'PT. CORDOBA INTERNASIONAL INDONESIA';
   const publisherId = reg.publisher?.id ? String(reg.publisher.id).slice(0, 8) : '2019116';
   const regNo = reg.registration_no || '122/2026';
-  const title = reg.title || "Al-Qur'an Tajwid Praktis";
   const pjNama = meta.penanggung_jawab_produk || reg.publisher?.name || 'Usman el-Qurthuby';
-  const sizes = meta.sizes || [];
-  const sizeStr = sizes.length > 0 ? (sizes[0].ukuran || '21,0 x 29,7') : (meta.ukuran || '21,0 x 29,7');
-  const oplahNum = sizes.length > 0 ? (sizes[0].oplah || 10000) : (meta.oplah || 10000);
-  const oplahStr = Number(oplahNum).toLocaleString('id-ID');
 
-  const jenisNaskahRaw = meta.jenis_naskah;
-  const jenisNaskahStr = Array.isArray(jenisNaskahRaw)
-    ? jenisNaskahRaw.map((j, i) => `${i + 1}. ${j}`).join(', ')
-    : (jenisNaskahRaw || "1. Al-Qur'an 30 Juz, 2. Audio/Visual, 3. Kode Tajwid, 3. Tajwid Warna, 3. Waqaf Ibtida'");
+  const manuscripts = Array.isArray(reg.manuscripts) ? reg.manuscripts : [];
+  let title = reg.title || "Al-Qur'an Tajwid Praktis";
+  let sizeStr = '';
+  let oplahStr = '';
+  let jenisNaskahStr = '';
+
+  if (manuscripts.length > 0) {
+    if (manuscripts.length === 1) {
+      title = manuscripts[0].title || title;
+    } else {
+      title = `${title} (${manuscripts.length} naskah)`;
+    }
+
+    const allVariants = manuscripts.flatMap((m) => m.variants || []);
+    if (allVariants.length > 0) {
+      sizeStr = [...new Set(allVariants.map((v) => v.ukuran))].join(', ');
+      const totalOplah = allVariants.reduce((sum, v) => sum + Number(v.oplah || 0), 0);
+      oplahStr = Number(totalOplah).toLocaleString('id-ID');
+    }
+
+    const allItemNames = [
+      ...new Set(
+        manuscripts.flatMap((m) => (m.items || []).map((mi) => mi.item?.name || mi.item_id).filter(Boolean))
+      ),
+    ];
+    if (allItemNames.length > 0) {
+      jenisNaskahStr = allItemNames.map((name, i) => `${i + 1}. ${name}`).join(', ');
+    }
+  }
+
+  // Fallbacks untuk registrasi lama / parsial
+  if (!sizeStr) {
+    const sizes = meta.sizes || [];
+    sizeStr = sizes.length > 0 ? (sizes[0].ukuran || '21,0 x 29,7') : (meta.ukuran || '21,0 x 29,7');
+  }
+  if (!oplahStr) {
+    const sizes = meta.sizes || [];
+    const oplahNum = sizes.length > 0 ? (sizes[0].oplah || 10000) : (meta.oplah || 10000);
+    oplahStr = Number(oplahNum).toLocaleString('id-ID');
+  }
+  if (!jenisNaskahStr) {
+    const jenisNaskahRaw = meta.jenis_naskah;
+    jenisNaskahStr = Array.isArray(jenisNaskahRaw)
+      ? jenisNaskahRaw.map((j, i) => `${i + 1}. ${j}`).join(', ')
+      : (jenisNaskahRaw || "1. Al-Qur'an 30 Juz, 2. Audio/Visual, 3. Kode Tajwid, 3. Tajwid Warna, 3. Waqaf Ibtida'");
+  }
 
   const jenisMushaf = meta.jenis_mushaf || 'Mushaf Standar Usmani';
   const percetakan = meta.nama_percetakan || 'PT. Gramedia Printing';
@@ -203,6 +240,13 @@ export async function renderRegistrationReceiptPdf(reg) {
   y = drawColonRow(page1, y, 'Jenis Mushaf', jenisMushaf, 190);
   y = drawColonRow(page1, y, 'Nama Percetakan', percetakan, 190);
   y = drawColonRow(page1, y, 'Deskripsi Mushaf', deskripsi, 190);
+  if (manuscripts.length > 1) {
+    for (const m of manuscripts) {
+      const itemNames = (m.items || []).map((mi) => mi.item?.name).filter(Boolean).join(', ') || '-';
+      const varStr = (m.variants || []).map((v) => `${v.ukuran} (${Number(v.oplah).toLocaleString('id-ID')} eks)`).join(', ') || '-';
+      y = drawColonRow(page1, y, `Naskah #${m.seq_number}`, `${m.title} | ${itemNames} | ${varStr}`, 190);
+    }
+  }
   y -= 8;
 
   // II. Informasi Data Materi Tambahan pada Mushaf
@@ -603,7 +647,7 @@ export async function renderShippingLabelPdf(reg) {
   const pjNama = meta.penanggung_jawab_produk || meta.nama_pj || meta.contact_person || publisher.legal_name || 'Penanggung Jawab Produk';
   const pjWa = meta.penanggung_jawab_wa || meta.no_telp || meta.no_wa || meta.telepon || publisher.phone || publisher.contact_phone || '-';
   const volumeCount = reg.physical_master_intake?.volume_count || reg.physical_volume_count || (reg.physical_master?.volume_count) || 30;
-  const jenisMushaf = reg.service_type?.name || meta.jenis_mushaf || "Mushaf Al-Qur'an Standar Usmani";
+  const jenisMushaf = reg.fee_sla_snapshot?.layanan_display || reg.service_type?.name || meta.jenis_mushaf || "Mushaf Al-Qur'an Standar Usmani";
   const kategori = reg.service_type?.category?.name || meta.kategori_pendaftaran || reg.registration_category || 'Tanda Tashih Baru';
 
   const col1W = 100;

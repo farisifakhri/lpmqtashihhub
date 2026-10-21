@@ -14,6 +14,7 @@ import { Step1MushafData } from './steps/Step1MushafData';
 import { Step2JenisMateri } from './steps/Step2JenisMateri';
 import { Step3Berkas } from './steps/Step3Berkas';
 import { Step4ReviewSubmit } from './steps/Step4ReviewSubmit';
+import { normalizeLegacyToItemCodes } from '@/lib/item-calculator';
 import {
   validateWhatsApp,
   validateEmail,
@@ -182,6 +183,7 @@ export const NewRegistrationPage = () => {
   const [penanggungJawabWa, setPenanggungJawabWa] = useState('');
   const [penanggungJawabEmail, setPenanggungJawabEmail] = useState('');
   const [sizes, setSizes] = useState([{ ukuran: '', oplah: '' }]);
+  const [additionalManuscripts, setAdditionalManuscripts] = useState([]);
   const [jenisStandarMushaf, setJenisStandarMushaf] = useState('Mushaf Standar Usmani');
   const [deskripsiMushaf, setDeskripsiMushaf] = useState('');
 
@@ -457,6 +459,76 @@ export const NewRegistrationPage = () => {
       return next;
     });
   };
+
+  // Multi-Naskah (B-01) handlers
+  const handleAddAdditionalManuscript = () => {
+    if (additionalManuscripts.length >= 19) return;
+    setAdditionalManuscripts((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        title: '',
+        itemDasar: 'JUZ30',
+        itemsTambahan: [],
+        variants: [{ ukuran: '', oplah: '' }],
+      },
+    ]);
+    isDirtyRef.current = true;
+  };
+
+  const handleRemoveAdditionalManuscript = (index) => {
+    setAdditionalManuscripts((prev) => prev.filter((_, idx) => idx !== index));
+    isDirtyRef.current = true;
+  };
+
+  const handleUpdateAdditionalManuscript = (index, field, value) => {
+    setAdditionalManuscripts((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+    isDirtyRef.current = true;
+  };
+
+  const handleAddVariantToManuscript = (mIndex) => {
+    setAdditionalManuscripts((prev) => {
+      const next = [...prev];
+      const curVars = next[mIndex]?.variants || [];
+      if (curVars.length >= 10) return prev;
+      next[mIndex] = {
+        ...next[mIndex],
+        variants: [...curVars, { ukuran: '', oplah: '' }],
+      };
+      return next;
+    });
+    isDirtyRef.current = true;
+  };
+
+  const handleRemoveVariantFromManuscript = (mIndex, vIndex) => {
+    setAdditionalManuscripts((prev) => {
+      const next = [...prev];
+      const curVars = next[mIndex]?.variants || [];
+      if (curVars.length <= 1) return prev;
+      next[mIndex] = {
+        ...next[mIndex],
+        variants: curVars.filter((_, idx) => idx !== vIndex),
+      };
+      return next;
+    });
+    isDirtyRef.current = true;
+  };
+
+  const handleVariantChangeInManuscript = (mIndex, vIndex, field, value) => {
+    setAdditionalManuscripts((prev) => {
+      const next = [...prev];
+      const curVars = [...(next[mIndex]?.variants || [])];
+      curVars[vIndex] = { ...curVars[vIndex], [field]: value };
+      next[mIndex] = { ...next[mIndex], variants: curVars };
+      return next;
+    });
+    isDirtyRef.current = true;
+  };
+
 
   // Toggle Checkbox Jenis Naskah
   const toggleJenisNaskah = (item) => {
@@ -777,6 +849,46 @@ export const NewRegistrationPage = () => {
           : {}),
       };
 
+      const primaryItems = normalizeLegacyToItemCodes(selectedJenisNaskah, {
+        jenis_mushaf: jenisStandarMushaf,
+        kategori_pendaftaran: kategoriPendaftaran,
+      });
+
+      const validVariantsPrimary = sizes
+        .filter((s) => s.ukuran?.trim() || s.oplah)
+        .map((s) => ({
+          ukuran: s.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
+          oplah: Number(s.oplah) || 1000,
+        }));
+
+      const allManuscripts = [
+        {
+          seq_number: 1,
+          title: namaMushaf.trim(),
+          items: primaryItems.length > 0 ? primaryItems : ['JUZ30'],
+          variants: validVariantsPrimary.length > 0 ? validVariantsPrimary : [{ ukuran: 'A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+          metadata: mushafDetails,
+          sample_file_id: uploadedContohHalamanId || null,
+        },
+        ...additionalManuscripts.map((m, idx) => {
+          const mItems = [m.itemDasar || 'JUZ30', ...(m.itemsTambahan || [])];
+          const mVariants = (m.variants || [])
+            .filter((v) => v.ukuran?.trim() || v.oplah)
+            .map((v) => ({
+              ukuran: v.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
+              oplah: Number(v.oplah) || 1000,
+            }));
+          return {
+            seq_number: idx + 2,
+            title: (m.title || `Naskah ${idx + 2}`).trim(),
+            items: mItems,
+            variants: mVariants.length > 0 ? mVariants : [{ ukuran: 'A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+            metadata: {},
+            sample_file_id: null,
+          };
+        }),
+      ];
+
       const payload = {
         title: namaMushaf.trim(),
         registration_type: regType,
@@ -789,6 +901,7 @@ export const NewRegistrationPage = () => {
         statement_accepted: true,
         foreign_metadata: mushafDetails,
         mushaf_details: mushafDetails,
+        manuscripts: allManuscripts,
         cover_file_id: uploadedCoverId,
         surat_permohonan_file_id: uploadedPermohonanId,
         contoh_halaman_file_id: uploadedContohHalamanId,
@@ -1002,6 +1115,13 @@ export const NewRegistrationPage = () => {
             setLembagaPentashihAsal={setLembagaPentashihAsal}
             fieldErrors={fieldErrors}
             clearFieldError={clearFieldError}
+            additionalManuscripts={additionalManuscripts}
+            handleAddAdditionalManuscript={handleAddAdditionalManuscript}
+            handleRemoveAdditionalManuscript={handleRemoveAdditionalManuscript}
+            handleUpdateAdditionalManuscript={handleUpdateAdditionalManuscript}
+            handleAddVariantToManuscript={handleAddVariantToManuscript}
+            handleRemoveVariantFromManuscript={handleRemoveVariantFromManuscript}
+            handleVariantChangeInManuscript={handleVariantChangeInManuscript}
           />
 
           <div className="flex items-center justify-end gap-3 pt-2">
