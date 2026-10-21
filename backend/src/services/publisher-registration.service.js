@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database.js';
 import { fail, audit } from './workflow-utils.js';
 import { emailProvider } from './email-provider.service.js';
+import { renderPublisherCertificatePdf } from './publisher-certificate-pdf.service.js';
+import { getNextDocumentNumber } from './document-number.service.js';
 import {
   saveSecurePublisherDocument,
   readSecurePublisherDocument,
@@ -663,7 +665,11 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
           data: { status: 'ACTIVE' },
         });
 
-        // 2. Buat profil Publisher
+        // 2. Tentukan Nomor Induk Penerbit (NIP) resmi (U-06)
+        const nipNumber = reg.nomor_induk_penerbit || await getNextDocumentNumber(tx, 'SERTIFIKAT_PENERBIT', new Date());
+        updateData.nomor_induk_penerbit = nipNumber;
+
+        // 3. Buat profil Publisher
         const entityType = reg.publisher_type === 'PERUSAHAAN' ? 'PT' : (reg.publisher_type === 'YAYASAN' ? 'YAYASAN' : 'LEMBAGA_PEMERINTAH');
         const pub = await tx.publisher.create({
           data: {
@@ -673,6 +679,9 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
             verification_status: 'VERIFIED',
             address: reg.address,
             phone: reg.pic_phone,
+            nomor_induk_penerbit: nipNumber,
+            npwp: reg.npwp,
+            nib: reg.nib,
           },
         });
 
@@ -743,5 +752,58 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
     status: result.status,
     versi: result.version,
     decided_at: result.decided_at,
+  };
+}
+
+/**
+ * Mengambil dan merender PDF Sertifikat Penerbit Al-Qur'an (U-06)
+ * @param {string} idOrCode ID pendaftaran atau kode registrasi
+ * @param {object|null} user User yang mengakses
+ * @returns {Promise<{ filename: string, content: Buffer, mime_type: string }>}
+ */
+export async function getPublisherCertificatePdf(idOrCode, user = null) {
+  let reg = await prisma.publisherRegistration.findUnique({
+    where: { id: idOrCode },
+    include: { publisher: true },
+  });
+
+  if (!reg) {
+    reg = await prisma.publisherRegistration.findUnique({
+      where: { registration_code: idOrCode },
+      include: { publisher: true },
+    });
+  }
+
+  if (!reg) {
+    const error = new Error('Pendaftaran penerbit tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (reg.status !== 'DISETUJUI') {
+    const error = new Error('Sertifikat Penerbit hanya dapat diunduh untuk pendaftaran yang berstatus DISETUJUI.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const nipNumber = reg.nomor_induk_penerbit || reg.publisher?.nomor_induk_penerbit || '31.74.26.10.19.001';
+
+  const pdfBytes = await renderPublisherCertificatePdf({
+    name: reg.name,
+    address: reg.address,
+    pic_phone: reg.pic_phone,
+    email: reg.email,
+    pic_name: reg.pic_name,
+    npwp: reg.npwp,
+    nib: reg.nib,
+    nomor_induk_penerbit: nipNumber,
+    decided_at: reg.decided_at || reg.updated_at,
+  });
+
+  const safeName = (reg.name || 'Penerbit').replace(/[^a-zA-Z0-9.-]/g, '_');
+  return {
+    filename: `Sertifikat-Penerbit-${safeName}.pdf`,
+    content: Buffer.from(pdfBytes),
+    mime_type: 'application/pdf',
   };
 }

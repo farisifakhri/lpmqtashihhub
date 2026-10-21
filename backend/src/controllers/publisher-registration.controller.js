@@ -116,3 +116,17 @@ export async function decideRegistration(req, res, next) {
     next(error);
   }
 }
+
+export async function getCertificate(req, res, next) {
+  try {
+    const { id } = req.params;
+    const file = await publisherRegistrationService.getPublisherCertificatePdf(id, req.user);
+
+    const safeFilename = encodeURIComponent(file.filename);
+    res.setHeader('Content-Type', file.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    return res.send(file.content);
+  } catch (error) {
+    next(error);
+  }
+}
