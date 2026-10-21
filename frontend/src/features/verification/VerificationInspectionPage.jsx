@@ -496,7 +496,14 @@ export const VerificationInspectionPage = () => {
     const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
       headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
-    if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
+    if (!response.ok) {
+      let msg = 'PDF dokumen belum dapat dibuka.';
+      try {
+        const errData = await response.json();
+        if (errData?.message) msg = errData.message;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     return URL.createObjectURL(await response.blob());
   };
 

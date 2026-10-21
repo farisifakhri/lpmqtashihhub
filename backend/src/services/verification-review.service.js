@@ -1238,18 +1238,19 @@ export const getVerificationDocument = async (documentId, user) => {
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
   const isVerifier = user.roles.includes('VERIFIKATOR');
+  const isStaffReader = user.roles.some(r => ['DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(r));
   const isOwnerPublisher = user.roles.includes('PENERBIT') && user.publisherId === doc.registration.publisher_id;
 
   if (isOwnerPublisher) {
     if (doc.status !== 'SENT') {
       fail(403, 'Surat hasil verifikasi belum dikirimkan kepada Anda.');
     }
-  } else if (isVerifier && !isHead && !isAdmin) {
+  } else if (isVerifier && !isHead && !isAdmin && !isStaffReader) {
     const isAssigned = doc.assignment?.verifier_id === user.id || doc.created_by_id === user.id;
     if (!isAssigned) {
       fail(403, 'Anda tidak memiliki hak akses untuk memeriksa dokumen penugasan verifikator lain.');
     }
-  } else if (!isHead && !isAdmin) {
+  } else if (!isHead && !isAdmin && !isStaffReader) {
     fail(403, 'Anda tidak memiliki hak akses untuk membaca dokumen ini.');
   }
 

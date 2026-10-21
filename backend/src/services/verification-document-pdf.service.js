@@ -22,16 +22,23 @@ export const verificationUrl = token => `${ENV.PUBLIC_APP_URL?.replace(/\/$/, ''
 
 function safeText(value, font) {
   const text = String(value ?? '')
-    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2018\u2019\u02BC\u02BB]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/\u2026/g, '...')
-    .replace(/\u00A0/g, ' ');
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u2022\u25CF\u25AA]/g, '-')
+    .replace(/[\u2713\u2714]/g, '[v]');
+  let result = '';
   for (const character of text) {
-    try { font.encodeText(character); }
-    catch { fail(422, 'PDF belum dapat dibuat karena ada karakter yang belum didukung oleh font dokumen. Hubungi administrator untuk dukungan font tersebut.'); }
+    try {
+      font.encodeText(character);
+      result += character;
+    } catch {
+      result += '?';
+    }
   }
-  return text;
+  return result;
 }
 
 export async function renderVerificationPdf(document, { draft = false, approver = null, approvedAt = null } = {}) {
@@ -116,14 +123,26 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     };
 
     for (const word of words) {
+      if (face.widthOfTextAtSize(word, size) > maxW) {
+        if (row) flush();
+        let chunk = '';
+        for (const char of word) {
+          if (face.widthOfTextAtSize(chunk + char, size) > maxW) {
+            row = chunk;
+            flush();
+            chunk = char;
+          } else {
+            chunk += char;
+          }
+        }
+        row = chunk;
+        continue;
+      }
       const candidate = row ? `${row} ${word}` : word;
       if (face.widthOfTextAtSize(candidate, size) > maxW && row) flush();
       row = row ? `${row} ${word}` : word;
-      if (face.widthOfTextAtSize(row, size) > maxW) {
-        fail(422, 'PDF belum dapat dibuat karena ada kata terlalu panjang untuk ukuran halaman.');
-      }
     }
-    flush();
+    if (row) flush();
   };
 
   const content = document.content_snapshot || {};

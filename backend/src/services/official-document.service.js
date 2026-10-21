@@ -57,7 +57,23 @@ export async function getDocument(id, user) {
 }
 
 export async function renderDraft(document) {
-  if (!document.content_snapshot || document.status !== 'DRAFT') fail(409, 'PDF draf belum tersedia untuk dokumen ini.');
+  let initialSnap = document.content_snapshot;
+  if (!initialSnap) {
+    if (document.registration_id) {
+      const reg = await prisma.registration.findUnique({
+        where: { id: document.registration_id },
+        include: { publisher: { select: { legal_name: true } } },
+      });
+      initialSnap = {
+        title: reg?.title || 'Dokumen Resmi',
+        registration_no: reg?.registration_no || '-',
+        publisher: reg?.publisher?.legal_name || 'Penerbit Terdaftar',
+      };
+      document.content_snapshot = initialSnap;
+    } else {
+      fail(409, 'PDF draf belum tersedia untuk dokumen ini.');
+    }
+  }
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -206,16 +222,47 @@ export async function renderDraft(document) {
 
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
-export async function documentPdf(document) {
+export async function documentPdf(document, user = null) {
   if (document.status === 'DRAFT' || document.document_type === 'REVISION_RETURN_LETTER') return renderDraft(document);
-  if (document.status !== 'ISSUED' || (document.valid_until && document.valid_until < new Date())) fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
-  if (!document.file_id) return renderDraft(document);
+
+  const isPublisher = user && user.roles.includes('PENERBIT') && !user.roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(r));
+
+  if (document.status !== 'ISSUED') {
+    if (isPublisher) {
+      fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
+    }
+    return renderDraft(document);
+  }
+
+  if (document.valid_until && document.valid_until < new Date()) {
+    fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
+  }
+
+  if (!document.file_id) {
+    if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+    return renderDraft(document);
+  }
+
   const file = await prisma.storedFile.findUnique({ where: { id: document.file_id } });
-  if (!file || file.mime_type !== 'application/pdf') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+  if (!file || file.mime_type !== 'application/pdf') {
+    if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+    return renderDraft(document);
+  }
+
   let bytes;
-  try { bytes = await readStoredFile(file.id); }
-  catch (error) { if (error.code === 'ENOENT') fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.'); throw error; }
-  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) fail(409, 'Integritas berkas tidak dapat diverifikasi. Hubungi pengelola layanan.');
+  try {
+    bytes = await readStoredFile(file.id);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      if (isPublisher) fail(409, 'Berkas PDF resmi belum tersedia. Hubungi pengelola layanan.');
+      return renderDraft(document);
+    }
+    throw error;
+  }
+
+  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) {
+    fail(409, 'Integritas berkas tidak dapat diverifikasi. Hubungi pengelola layanan.');
+  }
   return bytes;
 }
 

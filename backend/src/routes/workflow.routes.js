@@ -54,8 +54,8 @@ router.post('/registrations/:id/documentation', authenticate, authorize('DOKUMEN
 router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
-    const bytes = await documents.documentPdf(document);
-    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.document_no}.pdf"`, 'Cache-Control': 'private, no-store' });
+    const bytes = await documents.documentPdf(document, req.user);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.document_no || document.document_type}.pdf"`, 'Cache-Control': 'private, no-store' });
     res.send(bytes);
   } catch (error) { next(error); }
 });
