@@ -208,9 +208,9 @@ export async function renderPublisherCertificatePdf(publisherData) {
   });
   signY -= 12;
 
-  // QR Code Keaslian Dokumen
+  // QR Code Keaslian Dokumen & Alamat URL
+  const qrPayload = 'https://tashih.kemenag.go.id/verifikasi/sertifikat/' + encodeURIComponent(nomorInduk);
   try {
-    const qrPayload = `https://tashih.kemenag.go.id/verifikasi/sertifikat/${encodeURIComponent(nomorInduk)}`;
     const qrDataUrl = await QRCode.toDataURL(qrPayload, {
       margin: 1,
       width: 120,
@@ -249,6 +249,15 @@ export async function renderPublisherCertificatePdf(publisherData) {
     color: rgb(0.3, 0.3, 0.3),
   });
 
+  // Teks Alamat URL QR Sertifikat
+  page.drawText('Alamat Verifikasi Dokumen: ' + qrPayload, {
+    x: margin,
+    y: 39,
+    font,
+    size: 6.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
+
   // Footer Kemenag
   page.drawText('Dokumen ini sah dan diterbitkan secara elektronik oleh Sistem Informasi Layanan Pentashihan Mushaf Al-Qur\'an.', {
     x: margin,
@@ -260,3 +269,4 @@ export async function renderPublisherCertificatePdf(publisherData) {
 
   return pdf.save();
 }
+

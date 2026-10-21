@@ -41,6 +41,8 @@ const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/setting
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const DokumentatorArchivePage = withSuspense(lazy(() => import('@/features/internal/DokumentatorArchivePage').then(m => ({ default: m.DokumentatorArchivePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
+const PublicCertificateVerification = withSuspense(lazy(() => import('@/features/verification/PublicCertificateVerification').then(m => ({ default: m.PublicCertificateVerification }))));
+const ForbiddenPage = withSuspense(lazy(() => import('@/features/errors/ForbiddenPage').then(m => ({ default: m.ForbiddenPage }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 
 const router = createBrowserRouter([
@@ -234,6 +236,14 @@ const router = createBrowserRouter([
   {
     path: '/verify-documents/:token',
     element: <PublicDocumentVerification />,
+  },
+  {
+    path: '/verifikasi/sertifikat/:nomorInduk',
+    element: <PublicCertificateVerification />,
+  },
+  {
+    path: '/403',
+    element: <ForbiddenPage />,
   },
   {
     path: '/verify-internal/:token',

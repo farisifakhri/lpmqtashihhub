@@ -56,3 +56,4 @@ test('B-03 / U-04: getNextDocumentNumber menghasilkan nomor berurutan secara tra
   assert.equal(docNo1, 'B-0001/LPMQ.01/TL.01/X/2026');
   assert.equal(docNo2, 'B-0002/LPMQ.01/TL.01/X/2026');
 });
+

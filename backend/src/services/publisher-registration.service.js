@@ -807,3 +807,68 @@ export async function getPublisherCertificatePdf(idOrCode, user = null) {
     mime_type: 'application/pdf',
   };
 }
+
+/**
+ * Verifikasi keaslian sertifikat penerbit berdasarkan nomor_induk_penerbit
+ * Digunakan oleh endpoint publik QR Code sertifikat penerbit
+ * @param {string} nomorInduk - Format: 31.74.YY.MM.DD.SEQ (contoh: 31.74.26.10.19.001)
+ * @returns {Promise<{ valid: boolean, status: 'SAH'|'TIDAK_TERDAFTAR'|'TIDAK_VALID', data?: object }>}
+ */
+export async function verifyPublisherCertificate(nomorInduk) {
+  // Validasi format dasar: harus ada segmen angka dipisahkan titik (minimal 4 segmen)
+  const formatRegex = /^\d{2,}\.\d{2,}\.\d{2,}\.\d{2,}(\.\d{2,})*(\.\d{3,})?$/;
+  const cleanNomor = (nomorInduk || '').trim();
+
+  if (!cleanNomor || !formatRegex.test(cleanNomor)) {
+    return { valid: false, status: 'TIDAK_VALID' };
+  }
+
+  // 1. Cari di PublisherRegistration berdasarkan nomor_induk_penerbit
+  const reg = await prisma.publisherRegistration.findFirst({
+    where: { nomor_induk_penerbit: cleanNomor },
+    include: {
+      publisher: true,
+    },
+  });
+
+  if (reg) {
+    return {
+      valid: true,
+      status: 'SAH',
+      data: {
+        nomor_induk_penerbit: cleanNomor,
+        legal_name: reg.publisher?.legal_name || reg.name || 'Penerbit Al-Qur\'an',
+        address: reg.publisher?.address || reg.address || '-',
+        npwp: reg.publisher?.npwp || reg.npwp || null,
+        nib: reg.publisher?.nib || reg.nib || null,
+        decided_at: reg.decided_at || reg.updated_at || null,
+        verification_status: reg.status === 'DISETUJUI' ? 'VERIFIED' : reg.status,
+      },
+    };
+  }
+
+  // 2. Fallback: Cari di tabel Publisher langsung
+  const publisher = await prisma.publisher.findFirst({
+    where: { nomor_induk_penerbit: cleanNomor },
+  });
+
+  if (publisher) {
+    return {
+      valid: true,
+      status: 'SAH',
+      data: {
+        nomor_induk_penerbit: cleanNomor,
+        legal_name: publisher.legal_name || 'Penerbit Al-Qur\'an',
+        address: publisher.address || '-',
+        npwp: publisher.npwp || null,
+        nib: publisher.nib || null,
+        decided_at: publisher.created_at || null,
+        verification_status: publisher.verification_status || 'VERIFIED',
+      },
+    };
+  }
+
+  // Jika format valid tapi tidak tercatat di basis data
+  return { valid: false, status: 'TIDAK_TERDAFTAR' };
+}
+

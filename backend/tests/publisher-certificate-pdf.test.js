@@ -55,3 +55,4 @@ test('U-06: renderPublisherCertificatePdf menangani nilai NPWP dan NIB kosong se
   const pdf = await PDFDocument.load(pdfBytes);
   assert.equal(pdf.getPageCount(), 1);
 });
+
