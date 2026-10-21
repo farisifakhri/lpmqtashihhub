@@ -878,31 +878,15 @@ export const LandingPage = () => {
                 Fitur
               </p>
             </div>
-            <div className="rounded-xl bg-white p-3 text-center shadow-md border border-line text-ink">
-              <Link
-                to="/verifikasi/sertifikat/31.74.26.10.19.001"
-                className="group block"
-                title="Klik untuk membuka verifikasi sertifikat penerbit LPMQ"
-              >
-                <p className="mb-2 rounded border border-brand-300 bg-brand-800 px-2.5 py-1 text-xs font-semibold text-white group-hover:bg-brand-900 transition-colors">
-                  Sertifikat Penerbit (QR)
-                </p>
-                <div className="relative mx-auto flex items-center justify-center p-1 bg-surface-subtle rounded-lg">
-                  <img
-                    src={qrcodeapk}
-                    alt="QR code untuk mengunduh aplikasi dan verifikasi sertifikat penerbit"
-                    className="h-32 w-32 object-contain sm:h-36 sm:w-36 group-hover:scale-105 transition-transform"
-                  />
-                </div>
-                <div className="mt-2 text-left space-y-0.5 px-0.5 border-t border-line pt-1.5">
-                  <span className="block text-[10px] font-bold text-ink uppercase tracking-wider">
-                    Alamat QR Verifikasi:
-                  </span>
-                  <span className="block font-mono text-[9px] text-brand-fg font-semibold break-all leading-tight">
-                    tashih.kemenag.go.id/verifikasi/sertifikat/31.74.26.10.19.001
-                  </span>
-                </div>
-              </Link>
+            <div className="rounded-lg bg-white p-2 text-center">
+              <p className="mb-2 rounded border border-brand-300 bg-brand-800 px-2 py-1 text-xs font-semibold text-white">
+                Scan untuk Download
+              </p>
+              <img
+                src={qrcodeapk}
+                alt="QR code untuk mengunduh aplikasi Qur’an Kemenag"
+                className="h-32 w-32 object-contain sm:h-36 sm:w-36"
+              />
             </div>
           </div>
 

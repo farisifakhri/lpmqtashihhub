@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   FileText,
   Eye,
@@ -34,6 +34,19 @@ export function PublisherDigitalFilesTab({
   setPreviewFile,
   handleTabChange,
 }) {
+  // Filter hanya versi terkini untuk setiap tipe naskah agar tidak muncul berkas ganda (U-08)
+  const displayManuscripts = useMemo(() => {
+    if (!Array.isArray(data?.manuscript_files)) return [];
+    const map = new Map();
+    data.manuscript_files.forEach((item) => {
+      const existing = map.get(item.type);
+      if (!existing || Number(item.version || 0) >= Number(existing.version || 0)) {
+        map.set(item.type, item);
+      }
+    });
+    return Array.from(map.values());
+  }, [data?.manuscript_files]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-start">
       {/* Kolom Kiri: Berkas Digital yang Tersimpan */}
@@ -49,9 +62,9 @@ export function PublisherDigitalFilesTab({
             </p>
           </div>
 
-          {data.manuscript_files?.length ? (
+          {displayManuscripts.length ? (
             <ul className="space-y-2.5">
-              {data.manuscript_files.map((item) => (
+              {displayManuscripts.map((item) => (
                 <li
                   key={item.id}
                   className="flex justify-between items-center gap-3 rounded-xl bg-canvas border border-line p-3 text-xs text-ink hover:border-brand-200 transition-colors"
@@ -100,11 +113,11 @@ export function PublisherDigitalFilesTab({
             </div>
           )}
 
-          {/* Form Unggah Tambahan (Saat Draf atau Perlu Perbaikan) */}
-          {editable ? (
+          {/* Form Unggah Tambahan: Hanya muncul saat permohonan dalam tahap perbaikan / revisi (U-07 & U-08) */}
+          {revision ? (
             <form onSubmit={upload} className="space-y-3.5 border-t border-line pt-4">
               <p className="text-xs font-bold text-ink">
-                {revision ? 'Unggah Berkas Perbaikan' : 'Unggah Berkas Naskah'}
+                Unggah Berkas Perbaikan
               </p>
 
               <div>
@@ -122,10 +135,6 @@ export function PublisherDigitalFilesTab({
                   className="w-full rounded-lg border border-line-strong p-2 text-xs bg-canvas font-medium focus:bg-surface focus:ring-2 focus:ring-brand-700/20"
                 >
                   {Object.entries(FILE_TYPES)
-                    .filter(
-                      ([key]) =>
-                        revision || ['COVER', 'SAMPLE_PAGE_1_5'].includes(key)
-                    )
                     .map(([key, label]) => (
                       <option key={key} value={key}>
                         {label}
@@ -158,7 +167,7 @@ export function PublisherDigitalFilesTab({
             </form>
           ) : (
             <p className="text-xs text-ink-muted italic pt-1">
-              Berkas digital naskah terkunci selama proses verifikasi berlangsung.
+              Berkas digital naskah telah tersimpan resmi dan terkunci selama proses verifikasi berlangsung.
             </p>
           )}
         </section>
@@ -166,16 +175,14 @@ export function PublisherDigitalFilesTab({
 
       {/* Kolom Kanan: Panduan Berkas & Langkah Tindak Lanjut */}
       <div className="space-y-6">
-        {editable ? (
+        {revision ? (
           <section className="rounded-2xl border border-line bg-surface p-5 space-y-3.5 shadow-2xs">
             <h2 className="font-bold text-ink text-sm flex items-center gap-2">
               <Send className="w-4 h-4 text-brand-800" />
-              {revision ? 'Ajukan Ulang Perbaikan' : 'Kirim permohonan'}
+              Ajukan Ulang Perbaikan
             </h2>
             <p className="text-xs text-ink-muted leading-relaxed">
-              {revision
-                ? 'Setelah berkas perbaikan diunggah, klik tombol di bawah untuk mengajukan kembali ke tim verifikator LPMQ.'
-                : 'Periksa kelengkapan berkas digital sebelum mengirim permohonan ke LPMQ.'}
+              Setelah berkas perbaikan diunggah, klik tombol di bawah untuk mengajukan kembali ke tim verifikator LPMQ.
             </p>
             {!requiredFiles && (
               <p className="text-xs text-civic-warning font-semibold bg-civic-warningSoft p-2.5 rounded-lg border border-civic-warningLine">
@@ -188,17 +195,17 @@ export function PublisherDigitalFilesTab({
               className="text-xs w-full sm:w-auto font-bold"
             >
               <Send className="h-3.5 w-3.5 mr-1.5" />
-              {revision ? 'Ajukan ulang perbaikan' : 'Kirim permohonan'}
+              Ajukan ulang perbaikan
             </Button>
           </section>
         ) : (
           <section className="rounded-2xl border border-brand-200 bg-brand-50/50 p-5 space-y-3.5 shadow-2xs">
             <div className="flex items-center gap-2 text-brand-900 font-bold text-sm">
               <CheckCircle2 className="w-4 h-4 text-brand-700" />
-              <span>Berkas Digital Berhasil Terdaftar</span>
+              <span>Permohonan Terdaftar Resmi</span>
             </div>
             <p className="text-xs text-ink-muted leading-relaxed">
-              Seluruh berkas naskah digital awal telah diterima sistem LPMQ. Langkah berikutnya adalah menyerahkan master fisik naskah (30 jilid A4).
+              Seluruh berkas naskah digital awal telah diterima sistem LPMQ. Langkah berikutnya adalah menyerahkan master fisik naskah (30 jilid A4) ke loket LPMQ TMII.
             </p>
             <div className="pt-1">
               <Button
@@ -221,4 +228,3 @@ export function PublisherDigitalFilesTab({
     </div>
   );
 }
-
