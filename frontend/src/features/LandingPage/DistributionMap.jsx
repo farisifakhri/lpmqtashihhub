@@ -18,7 +18,7 @@ const publisherMarkerIcon = new Icon({
 export const DistributionMap = ({ publishers = simulatedPublishers }) => (
   <section
     id="peta-persebaran-penerbit"
-    className="rounded-2xl border border-line bg-surface p-6 sm:p-8 space-y-5"
+    className="relative isolate z-0 space-y-5 rounded-2xl border border-line bg-surface p-6 sm:p-8"
     aria-labelledby="distribution-map-title"
   >
     <div className="border-b border-line pb-4">
@@ -40,13 +40,13 @@ export const DistributionMap = ({ publishers = simulatedPublishers }) => (
       Data simulasi untuk demonstrasi. Nama dan lokasi di peta bukan data penerbit resmi LPMQ.
     </p>
 
-    <div className="distribution-map h-80 overflow-hidden rounded-xl border border-line sm:h-96">
+    <div className="distribution-map relative isolate z-0 h-80 w-full min-w-0 overflow-hidden rounded-xl border border-line sm:h-96">
       <MapContainer
         center={[-2.5, 118]}
         zoom={4}
         minZoom={3}
         scrollWheelZoom
-        className="h-full w-full"
+        className="relative z-0 h-full w-full"
         aria-label="Peta simulasi persebaran penerbit di Indonesia"
       >
         <TileLayer

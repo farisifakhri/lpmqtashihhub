@@ -23,12 +23,18 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import heroImage from '@/assets/berandaaku.webp';
+import heroImageFirst from '@/assets/berandaaku.webp';
+import heroImageSecond from '@/assets/berandakii.webp';
 import logoTashih from '@/assets/logo-lpmq1.webp';
 import logoyt from '@/assets/logoyt.webp';
 import logox from '@/assets/logox.webp';
 import logoig from '@/assets/logoig.webp';
 import logofb from '@/assets/logofb.webp';
+import qrcodeapk from '@/assets/qrcodeapk.webp';
+import mockup from '@/assets/mockup.webp';
+import playstore from '@/assets/playstore.webp';
+import appstore from '@/assets/appstore.webp';
+import pilihanfitur from '@/assets/pilihanfitur.webp';
 
 const DistributionMap = lazy(() => import('./DistributionMap'));
 
@@ -178,6 +184,11 @@ const quickAccessItems = [
   },
 ];
 
+const heroSlides = [
+  { src: heroImageFirst, alt: 'Gambar pertama slideshow beranda LPMQ' },
+  { src: heroImageSecond, alt: 'Gambar kedua slideshow beranda LPMQ' },
+];
+
 const StatCounter = ({ target, isVisible, duration = 1600 }) => {
   const numericTarget = typeof target === 'number' ? target : parseInt(target, 10) || 0;
   const [count, setCount] = useState(() => {
@@ -237,12 +248,26 @@ export const LandingPage = () => {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchMessage, setSearchMessage] = useState('');
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileDropdown, setMobileDropdown] = useState(null);
   const statsRef = useRef(null);
   const [statsVisible, setStatsVisible] = useState(false);
+
+  useEffect(() => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) return undefined;
+
+    const intervalId = window.setInterval(() => {
+      setActiveHeroSlide((currentSlide) => (currentSlide + 1) % heroSlides.length);
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
@@ -293,28 +318,6 @@ export const LandingPage = () => {
     setTimeout(() => {
       navigate(path);
     }, 280);
-  };
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) {
-      setSearchMessage('');
-      return;
-    }
-
-    const matchingSection = Array.from(document.querySelectorAll('main > section')).find(
-      (section) => section.id !== 'beranda' && section.textContent.toLowerCase().includes(query)
-    );
-
-    if (!matchingSection) {
-      setSearchMessage('Tidak ditemukan informasi yang sesuai.');
-      return;
-    }
-
-    const heading = matchingSection.querySelector('h2')?.textContent?.trim();
-    setSearchMessage(heading ? `Bagian "${heading}" ditemukan.` : 'Bagian terkait ditemukan.');
-    matchingSection.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
@@ -431,7 +434,10 @@ export const LandingPage = () => {
 
           <div className="hidden items-center gap-3 lg:flex">
             <a
-              href="tel:+622187798807"
+              href="https://wa.me/628111997125"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"
               className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-fill px-6 text-[12px] font-medium text-white transition hover:bg-brand-fill-hover"
             >
               <Phone className="h-3.5 w-3.5" />
@@ -538,7 +544,10 @@ export const LandingPage = () => {
               })}
               <div className="mt-2 flex gap-2">
                 <a
-                  href="tel:+622187798807"
+                  href="https://wa.me/628111997125"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"
                   className="flex flex-1 items-center justify-center gap-2 rounded-full bg-brand-fill px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-fill-hover"
                 >
                   <Phone className="h-4 w-4" />
@@ -561,69 +570,26 @@ export const LandingPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-[1400px] px-5 py-3 sm:px-8 lg:px-12 lg:py-4 space-y-12">
+      <main className="w-full px-0 py-3 lg:py-0 space-y-12">
         {/* Section 1: Hero */}
         <section
           id="beranda"
-          className="relative isolate flex min-h-[500px] items-center justify-center overflow-hidden rounded-[28px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
-          aria-labelledby="hero-title"
+          className="relative isolate min-h-[500px] overflow-hidden rounded-[0px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
+          aria-label="Slideshow gambar beranda"
+          role="region"
         >
-          <img
-            src={heroImage}
-            alt="Al-Qur'an"
-            className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/35 via-black/25 to-brand-fill/95" />
-          <div className="absolute inset-x-0 bottom-0 -z-10 h-1/2 bg-gradient-to-t from-brand-fill-hover/95 to-transparent" />
-
-          <div className="w-full max-w-4xl px-5 text-center text-white sm:px-8">
-            <span className="inline-block px-3.5 py-1.5 mb-4 text-xs font-semibold rounded-full bg-white/10 text-white border border-white/20 backdrop-blur">
-              Kementerian Agama Republik Indonesia
-            </span>
-            <h1
-              id="hero-title"
-              className="mx-auto max-w-3xl text-4xl font-black leading-[1.12] tracking-tight text-white drop-shadow-sm sm:text-5xl lg:text-[54px]"
-            >
-              Layanan Surat Tanda Tashih
-              <br />
-              Al-Qur’an
-            </h1>
-            <p className="mt-4 text-sm sm:text-base text-white/80 max-w-xl mx-auto">
-              Layanan resmi penerbitan Surat Tanda Tashih (STT) untuk mushaf cetak, mushaf digital, dan rekaman audio/visual.
-            </p>
-
-            <form
-              className="mx-auto mt-8 flex h-[58px] max-w-[520px] items-center rounded-full bg-surface p-1.5 shadow-lg sm:mt-9"
-              onSubmit={handleSearchSubmit}
-            >
-              <Search className="ml-4 h-5 w-5 shrink-0 text-ink-muted" />
-
-              <input
-                type="search"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setSearchMessage('');
-                }}
-                placeholder="Cari informasi layanan yang tersedia..."
-                aria-label="Cari informasi"
-                className="min-w-0 flex-1 appearance-none border-0 bg-transparent px-3 text-sm text-ink outline-none shadow-none ring-0 focus:border-0 focus:outline-none focus:shadow-none focus:ring-0 focus-visible:outline-none active:outline-none placeholder:text-ink-muted"
-              />
-
-              <button
-                type="submit"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand-fill text-white transition hover:bg-brand-fill-hover"
-                aria-label="Cari"
-              >
-                <ArrowRight className="h-5 w-5" />
-              </button>
-            </form>
-            {searchMessage && (
-              <p className="mt-2 text-xs text-white" role="status">
-                {searchMessage}
-              </p>
-            )}
-          </div>
+          {heroSlides.map((slide, index) => (
+            <img
+              key={slide.src}
+              src={slide.src}
+              alt={slide.alt}
+              aria-hidden={activeHeroSlide !== index}
+              loading="eager"
+              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 motion-reduce:transition-none ${
+                activeHeroSlide === index ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ))}
         </section>
 
         {/* Quick Links Section: Akses Menu Cepat */}
@@ -698,8 +664,8 @@ export const LandingPage = () => {
           className="rounded-2xl sm:rounded-3xl bg-surface p-6 sm:p-8 lg:p-10 border border-line shadow-xs"
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
-            {/* Kolom Kiri: Maklumat Pelayanan, Media Sosial, Statistik & Tanggal */}
-            <div className="lg:col-span-7 flex flex-col justify-between space-y-6 sm:space-y-8">
+            {/* Kolom Kiri: Maklumat Pelayanan, Statistik & Tanggal */}
+            <div className="lg:col-span-7 flex flex-col space-y-6 sm:space-y-8">
               <div className="space-y-3">
                 <h2
                   className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-700 tracking-tight"
@@ -711,26 +677,6 @@ export const LandingPage = () => {
                 <p className="text-xs sm:text-sm text-ink leading-relaxed">
                   Dengan ini kami menyatakan sanggup menyelenggarakan pelayanan sesuai standar pelayanan yang telah ditetapkan. Apabila terdapat janji layanan (memberikan pelayanan secara profesional dan sepenuh hati) tegurlah dan laporkan ke unit pengaduan.
                 </p>
-              </div>
-
-              {/* Ikon Media Sosial */}
-              <div className="flex items-center gap-3 sm:gap-4">
-                {socialMediaLinks.map((social) => (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={social.ariaLabel}
-                    className="inline-flex items-center justify-center transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-md"
-                  >
-                    <img
-                      src={social.icon}
-                      alt={social.name}
-                      className="h-5 sm:h-6 w-auto object-contain"
-                    />
-                  </a>
-                ))}
               </div>
 
               {/* Tiga Kartu Statistik / Tracker dengan Animasi Berhitung saat Terlihat */}
@@ -868,26 +814,176 @@ export const LandingPage = () => {
         >
           <DistributionMap />
         </Suspense>
-
       </main>
 
-      {/* Footer */}
-      <footer className="mt-12 border-t border-line bg-surface py-8">
-        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-ink-muted">
-          <p>
-            Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
-          </p>
-          <div className="flex items-center gap-4">
-            <a href="#informasi-pelayanan" className="hover:text-brand-fg">Regulasi</a>
-            <a href="#beranda" className="hover:text-brand-fg">Pengaduan</a>
-            <a href="#beranda" className="hover:text-brand-fg">FAQ</a>
-            <Link
-              to="/login"
-              onClick={(e) => handleNavigate('/login', e)}
-              className="font-semibold text-brand-fg hover:underline"
+      <div className="lpmq-app-footer-gradient text-white">
+        <section
+          id="aplikasi-quran-kemenag"
+          aria-labelledby="quran-app-title"
+          className="mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-8 overflow-hidden px-5 py-10 sm:px-8 sm:py-12 md:grid-cols-[minmax(0,1.25fr)_minmax(170px,0.65fr)] lg:grid-cols-[minmax(0,1.2fr)_180px_minmax(280px,0.85fr)] lg:gap-10 lg:px-12 lg:py-14"
+        >
+          <div className="space-y-4">
+            <h2
+              id="quran-app-title"
+              className="text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl"
             >
-              Portal Penerbit
-            </Link>
+              Yuk Download Aplikasi
+              <br />
+              Qur’an Kemenag Sekarang!
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-white/90 sm:text-base">
+              Dapatkan kenyamanan dan kemudahan membaca kitab suci Al-Qur’an kapan dan di mana saja. Dengan aplikasi Qur’an Kemenag, siapapun dapat mengecek Surat Tanda Tashih pada mushaf yang beredar di Indonesia.
+            </p>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <a
+                href="https://play.google.com/store/apps/details?id=com.quran.kemenag&hl=id&gl=US&pli=1"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download Qur’an Kemenag di Google Play"
+                className="inline-flex rounded-md focus-visible:ring-offset-brand-900"
+              >
+                <img
+                  src={playstore}
+                  alt="Get it on Google Play"
+                  className="h-11 w-auto object-contain"
+                />
+              </a>
+              <a
+                href="https://apps.apple.com/us/app/quran-kemenag/id1626953037"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download Qur’an Kemenag di App Store"
+                className="inline-flex rounded-md focus-visible:ring-offset-brand-900"
+              >
+                <img
+                  src={appstore}
+                  alt="Download on the App Store"
+                  className="h-11 w-auto object-contain"
+                />
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-3 md:justify-self-end lg:justify-self-center">
+            <div className="flex items-center justify-center gap-3">
+              <img
+                src={pilihanfitur}
+                alt=""
+                aria-hidden="true"
+                className="h-7 w-7 shrink-0 object-contain"
+              />
+              <p className="text-left text-sm font-bold leading-tight text-white">
+                Banyak Pilihan
+                <br />
+                Fitur
+              </p>
+            </div>
+            <div className="rounded-lg bg-white p-2 text-center">
+              <p className="mb-2 rounded border border-brand-300 bg-brand-800 px-2 py-1 text-xs font-semibold text-white">
+                Scan untuk Download
+              </p>
+              <img
+                src={qrcodeapk}
+                alt="QR code untuk mengunduh aplikasi Qur’an Kemenag"
+                className="h-32 w-32 object-contain sm:h-36 sm:w-36"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-center md:col-span-2 lg:col-span-1">
+            <img
+              src={mockup}
+              alt="Tampilan aplikasi Qur’an Kemenag pada ponsel"
+              className="h-72 w-full max-w-xs object-contain sm:h-80 md:h-96 md:max-w-sm lg:h-[440px] lg:max-w-none"
+            />
+          </div>
+        </section>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-brand-950 text-white">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-10 px-5 py-10 sm:px-8 md:grid-cols-2 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.7fr)] lg:gap-8 lg:px-12 lg:py-12">
+          <div className="space-y-4">
+            <img
+              src={logoTashih}
+              alt="Logo Tashih LPMQ"
+              className="w-32 max-w-full object-contain"
+            />
+            <address className="space-y-1 text-xs not-italic leading-relaxed text-white/85">
+              <p>Gedung Bayt Al-Qur'an &amp; Museum Istiqlal</p>
+              <p>Jalan Raya TMII Pintu I Jakarta Timur 13560</p>
+              <p>Telp: (021) 8416468 - 8416466</p>
+              <p>Faks: (021) 8416468</p>
+              <p>Narahubung Layanan Pentashihan: +628111997125</p>
+            </address>
+            <div className="flex items-center gap-3 sm:gap-4">
+              {socialMediaLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.ariaLabel}
+                  className="inline-flex items-center justify-center rounded-md transition-opacity hover:opacity-80 focus-visible:ring-white"
+                >
+                  <img
+                    src={social.icon}
+                    alt={social.name}
+                    className="h-5 w-auto object-contain sm:h-6"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center md:justify-self-center lg:justify-self-stretch">
+            <div className="w-full max-w-[340px] overflow-hidden rounded-xl border border-white/15">
+              <iframe
+                title="Peta lokasi Lajnah Pentashihan Mushaf Al-Qur'an di Gedung Bayt Al-Qur'an, TMII"
+                src="https://maps.google.com/maps?q=Bayt%20Al-Qur%27an%20%26%20Museum%20Istiqlal%2C%20TMII%2C%20Jakarta%20Timur&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                className="h-44 w-full border-0 sm:h-48"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
+            </div>
+          </div>
+
+          <section aria-labelledby="about-us-title" className="space-y-4 md:col-span-2 lg:col-span-1">
+            <h2 id="about-us-title" className="text-lg font-bold text-brand-300">
+              TENTANG KAMI
+            </h2>
+            <div className="space-y-3 text-xs leading-relaxed text-white/85 sm:text-sm">
+              <p>
+                Ini adalah website Layanan Tashih Online Lajnah Pentashihan Mushaf Al-Qur'an Badan Litbang dan Diklat Kementerian Agama Republik Indonesia.
+              </p>
+              <p>
+                Melalui website ini, perusahaan penerbit, Lembaga Pemerintah, dan Yayasan dapat mengajukan permohonan Surat Tanda Tashih dan/atau Surat Izin Edar untuk mushaf Al-Qur'an yang akan diedarkan di Indonesia.
+              </p>
+              <p>
+                Melalui website ini, masyarakat dapat melaporkan aduan seputar mushaf Al-Qur'an dan mengecek Surat Tanda Tashih mushaf Al-Qur'an.
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <div className="border-t border-white/20">
+          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-5 py-6 text-center text-xs text-white/80 sm:flex-row sm:px-8 sm:text-left lg:px-12">
+            <p>
+              Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
+              <a href="#informasi-pelayanan" className="hover:text-white">Regulasi</a>
+              <a href="#beranda" className="hover:text-white">Pengaduan</a>
+              <a href="#beranda" className="hover:text-white">FAQ</a>
+              <Link
+                to="/login"
+                onClick={(e) => handleNavigate('/login', e)}
+                className="font-semibold text-white hover:underline"
+              >
+                Portal Penerbit
+              </Link>
+            </div>
           </div>
         </div>
       </footer>
