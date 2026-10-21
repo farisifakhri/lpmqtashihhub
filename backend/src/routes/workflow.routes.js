@@ -12,7 +12,7 @@ import * as notifications from '../services/notification.service.js';
 import { upload, MAX_UPLOAD_BYTES, MAX_DOC_BYTES, MAX_APK_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
 import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
-import { documentationArchiveSchema } from '../validators/workflow.validator.js';
+import { documentationArchiveSchema, printingReportSchema } from '../validators/workflow.validator.js';
 
 const router = Router();
 const action = (fn, status = 200) => async (req, res, next) => {
@@ -51,6 +51,10 @@ router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ
 // Halaman Dokumentator & Pengarsipan Fisik (5 Eksemplar & Lokasi Arsip)
 router.get('/registrations/:id/documentation', authenticate, authorize('DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => documentation.getDocumentationDetail(req.params.id, req.user)));
 router.post('/registrations/:id/documentation', authenticate, authorize('DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(documentationArchiveSchema), action(req => documentation.recordDocumentationArchive(req.params.id, req.body, req.user, req)));
+
+// Laporan Realisasi Pencetakan Al-Qur'an oleh Penerbit (U-16 / B-10)
+router.get('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => documentation.getPrintingReports(req.params.id, req.user)));
+router.post('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(printingReportSchema), action(req => documentation.createPrintingReport(req.params.id, req.body, req.user, req), 201));
 router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);

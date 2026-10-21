@@ -1,3 +1,4 @@
+import * as documentationService from '../services/documentation.service.js';
 import registrationService from '../services/registration.service.js';
 
 export const createDraft = async (req, res, next) => {
@@ -161,6 +162,25 @@ export const downloadShippingLabelPdf = async (req, res, next) => {
   }
 };
 
+
+export const getPrintingReports = async (req, res, next) => {
+  try {
+    const data = await documentationService.getPrintingReports(req.params.id, req.user);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createPrintingReport = async (req, res, next) => {
+  try {
+    const data = await documentationService.createPrintingReport(req.params.id, req.body, req.user, req);
+    res.status(201).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
@@ -173,5 +193,7 @@ export default {
   deleteRegistration,
   downloadReceiptPdf,
   downloadShippingLabelPdf,
+  getPrintingReports,
+  createPrintingReport,
 };
 
