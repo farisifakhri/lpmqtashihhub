@@ -274,10 +274,10 @@ export const PublicCertificateVerification = () => {
 
         {/* Status: TIDAK TERDAFTAR */}
         {!loading && !fetchError && result?.valid === false && result?.status === 'TIDAK_TERDAFTAR' && (
-          <div className="bg-white rounded-xl shadow-lg border-2 border-amber-400 p-8 sm:p-10 space-y-5">
+          <div className="bg-surface rounded-xl shadow-lg border-2 border-civic-warningLine p-8 sm:p-10 space-y-5">
             {/* Kop Lembaga */}
             <div className="text-center pb-5 border-b-2 border-ink">
-              <div className="w-14 h-14 mx-auto mb-2 text-amber-500">
+              <div className="w-14 h-14 mx-auto mb-2 text-civic-warning">
                 <ShieldAlert className="w-full h-full" />
               </div>
               <p className="text-xs tracking-widest uppercase font-bold text-ink-muted">
@@ -289,11 +289,11 @@ export const PublicCertificateVerification = () => {
             </div>
 
             {/* Status Banner */}
-            <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-3">
-              <AlertTriangle className="w-6 h-6 text-amber-600 flex-shrink-0" />
+            <div className="p-4 rounded-lg bg-civic-warningSoft border border-civic-warningLine flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-civic-warning flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-bold text-amber-900">SERTIFIKAT TIDAK TERDAFTAR</h2>
-                <p className="text-xs text-amber-700 mt-0.5">
+                <h2 className="text-sm font-bold text-civic-warning">SERTIFIKAT TIDAK TERDAFTAR</h2>
+                <p className="text-xs text-civic-warning mt-0.5">
                   Nomor induk penerbit ini tidak ditemukan dalam pangkalan data resmi LPMQ
                   Kementerian Agama RI.
                 </p>
@@ -304,7 +304,7 @@ export const PublicCertificateVerification = () => {
               <p className="text-sm text-ink-muted">
                 Nomor induk yang Anda pindai:
               </p>
-              <p className="font-mono text-base font-bold text-ink bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 inline-block">
+              <p className="font-mono text-base font-bold text-ink bg-civic-warningSoft border border-civic-warningLine rounded-lg px-4 py-2 inline-block">
                 {formattedNomor || '(tidak tersedia)'}
               </p>
             </div>
@@ -323,7 +323,7 @@ export const PublicCertificateVerification = () => {
             {/* Tautan URL Verifikasi QR */}
             <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
-              <span className="font-mono text-amber-800 font-semibold break-all text-[11px]">
+              <span className="font-mono text-civic-warning font-semibold break-all text-[11px]">
                 https://tashih.kemenag.go.id/verifikasi/sertifikat/{encodeURIComponent(formattedNomor)}
               </span>
             </div>
@@ -342,10 +342,10 @@ export const PublicCertificateVerification = () => {
 
         {/* Status: TIDAK VALID / PALSU */}
         {!loading && !fetchError && result?.valid === false && result?.status !== 'TIDAK_TERDAFTAR' && (
-          <div className="bg-white rounded-xl shadow-lg border-2 border-red-400 p-8 sm:p-10 space-y-5">
+          <div className="bg-surface rounded-xl shadow-lg border-2 border-civic-dangerLine p-8 sm:p-10 space-y-5">
             {/* Kop Lembaga */}
             <div className="text-center pb-5 border-b-2 border-ink">
-              <div className="w-14 h-14 mx-auto mb-2 text-red-500">
+              <div className="w-14 h-14 mx-auto mb-2 text-civic-danger">
                 <ShieldX className="w-full h-full" />
               </div>
               <p className="text-xs tracking-widest uppercase font-bold text-ink-muted">
@@ -357,13 +357,13 @@ export const PublicCertificateVerification = () => {
             </div>
 
             {/* Status Banner PALSU */}
-            <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-center gap-3">
-              <XCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <div className="p-4 rounded-lg bg-civic-dangerSoft border border-civic-dangerLine flex items-center gap-3">
+              <XCircle className="w-6 h-6 text-civic-danger flex-shrink-0" />
               <div>
-                <h2 className="text-sm font-bold text-red-900">
+                <h2 className="text-sm font-bold text-civic-danger">
                   SERTIFIKAT TERINDIKASI TIDAK SAH / PALSU
                 </h2>
-                <p className="text-xs text-red-700 mt-0.5">
+                <p className="text-xs text-civic-danger mt-0.5">
                   Format atau isi nomor induk ini tidak sesuai dengan standar penerbitan
                   LPMQ Kementerian Agama RI.
                 </p>
@@ -374,16 +374,16 @@ export const PublicCertificateVerification = () => {
               <p className="text-sm text-ink-muted">
                 Nomor induk yang dipindai:
               </p>
-              <p className="font-mono text-base font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2 inline-block">
+              <p className="font-mono text-base font-bold text-civic-danger bg-civic-dangerSoft border border-civic-dangerLine rounded-lg px-4 py-2 inline-block">
                 {formattedNomor || '(tidak dapat dibaca)'}
               </p>
             </div>
 
-            <div className="bg-red-50 rounded-lg p-4 border border-red-200 text-sm space-y-2">
-              <p className="font-bold text-red-800 text-xs uppercase tracking-wider">
+            <div className="bg-civic-dangerSoft rounded-lg p-4 border border-civic-dangerLine text-sm space-y-2">
+              <p className="font-bold text-civic-danger text-xs uppercase tracking-wider">
                 ⚠ Peringatan Keamanan
               </p>
-              <p className="text-xs text-red-700 leading-relaxed">
+              <p className="text-xs text-civic-danger leading-relaxed">
                 Dokumen dengan sertifikat yang tidak terverifikasi oleh sistem LPMQ berpotensi
                 merupakan pemalsuan. Jangan gunakan atau distribusikan Al-Qur'an yang tidak
                 memiliki sertifikat tashih resmi.
@@ -393,7 +393,7 @@ export const PublicCertificateVerification = () => {
             {/* Tautan URL Verifikasi QR */}
             <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
-              <span className="font-mono text-red-700 font-semibold break-all text-[11px]">
+              <span className="font-mono text-civic-danger font-semibold break-all text-[11px]">
                 https://tashih.kemenag.go.id/verifikasi/sertifikat/{encodeURIComponent(formattedNomor)}
               </span>
             </div>
@@ -401,7 +401,7 @@ export const PublicCertificateVerification = () => {
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
               <a
                 href="mailto:lajnah@kemenag.go.id?subject=Laporan%20Sertifikat%20Penerbit%20Diduga%20Palsu"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-civic-danger text-white font-semibold text-sm hover:opacity-90 transition-opacity"
               >
                 <FileText className="w-4 h-4" />
                 Laporkan ke LPMQ

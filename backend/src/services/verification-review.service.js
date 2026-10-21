@@ -845,9 +845,11 @@ try { return await prisma.$transaction(async tx => {
     }
     const suppliedNumber = req?.body?.document_numbers?.[rDoc.document_type];
     let documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
-    // B-03 / U-04: Nomor surat resmi dibuat otomatis jika tidak diisi manual
+    // B-03 / U-04: Nomor surat resmi dibuat otomatis jika diminta via auto_number atau tidak diisi manual
     if (!documentNo || documentNo.length < 3) {
-      documentNo = await getNextDocumentNumber(tx, rDoc.document_type, now);
+      if (req?.body?.auto_number === true || req?.body?.auto_generate === true) {
+        documentNo = await getNextDocumentNumber(tx, rDoc.document_type, now);
+      }
     }
     if (documentNo.length < 3 || documentNo.length > 191) {
       fail(400, `Nomor resmi ${rDoc.document_type} wajib diisi (3–191 karakter) sebelum persetujuan.`);

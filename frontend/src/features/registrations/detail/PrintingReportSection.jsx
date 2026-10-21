@@ -150,46 +150,46 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
       </div>
 
       {successMsg && (
-        <div role="status" className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div role="status" className="p-3 bg-civic-successSoft border border-civic-successLine text-civic-success rounded-lg text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {error && (
-        <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger rounded-lg text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-civic-danger shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Banner Status Kewajiban 5 Eksemplar */}
       {summary.exemplar_received_by_lpmq ? (
-        <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-start gap-3">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-emerald-900 space-y-0.5">
+        <div className="p-4 bg-civic-successSoft border border-civic-successLine rounded-xl flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-civic-success shrink-0 mt-0.5" />
+          <div className="text-xs text-civic-success space-y-0.5">
             <p className="font-bold">5 Eksemplar Terbitan Fisik Telah Diterima & Diarsipkan LPMQ</p>
-            <p className="text-emerald-700">
+            <p className="text-civic-success">
               Dokumentator LPMQ telah memverifikasi fisik naskah mushaf Al-Qur'an dan mengarsipkannya pada dokumentasi resmi. Kewajiban eksemplar Anda dinyatakan terpenuhi.
             </p>
           </div>
         </div>
       ) : summary.has_delivered_exemplars ? (
-        <div className="p-4 bg-sky-50/70 border border-sky-200 rounded-xl flex items-start gap-3">
-          <Truck className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-sky-900 space-y-0.5">
+        <div className="p-4 bg-civic-infoSoft border border-civic-infoLine rounded-xl flex items-start gap-3">
+          <Truck className="w-5 h-5 text-civic-info shrink-0 mt-0.5" />
+          <div className="text-xs text-civic-info space-y-0.5">
             <p className="font-bold">5 Eksemplar Fisik Dilaporkan Telah Dikirimkan / Diserahkan</p>
-            <p className="text-sky-700">
+            <p className="text-civic-info">
               Laporan pengiriman 5 eksemplar terbitan perdana telah dicatat. Saat ini sedang menunggu verifikasi fisik oleh tim Dokumentator di Bayt Al-Qur'an & Museum Istiqlal TMII Jakarta.
             </p>
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="text-xs text-amber-900 space-y-0.5">
+        <div className="p-4 bg-civic-warningSoft border border-civic-warningLine rounded-xl flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-civic-warning shrink-0 mt-0.5" />
+          <div className="text-xs text-civic-warning space-y-0.5">
             <p className="font-bold">Perhatian: Kewajiban 5 Eksemplar Terbitan Final (Cetakan Pertama)</p>
-            <p className="text-amber-800">
+            <p className="text-civic-warning">
               Sesuai ketentuan Surat Tanda Tashih (STT), penerbit <strong>wajib menyerahkan 5 (lima) eksemplar</strong> hasil cetak perdana kepada LPMQ paling lambat <strong>1 (satu) bulan kalender</strong> setelah pelaksanaan pencetakan selesai.
             </p>
           </div>
@@ -212,22 +212,22 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
 
         <div className="p-3 bg-canvas rounded-xl border border-line">
           <span className="text-xs text-ink-muted flex items-center gap-1.5">
-            <Printer className="w-3.5 h-3.5 text-sky-700" />
+            <Printer className="w-3.5 h-3.5 text-civic-info" />
             Realisasi Dicetak
           </span>
-          <p className="text-base font-bold text-sky-900 mt-1">
+          <p className="text-base font-bold text-ink mt-1">
             {Number(summary.total_oplah_printed || 0).toLocaleString('id-ID')}
             <span className="text-xs font-normal text-ink-muted ml-1">Eks</span>
           </p>
-          <span className="text-[11px] text-sky-700 font-medium">{summary.percentage_printed || 0}% kuota</span>
+          <span className="text-[11px] text-civic-info font-medium">{summary.percentage_printed || 0}% kuota</span>
         </div>
 
         <div className="p-3 bg-canvas rounded-xl border border-line">
           <span className="text-xs text-ink-muted flex items-center gap-1.5">
-            <FileCheck className="w-3.5 h-3.5 text-emerald-700" />
+            <FileCheck className="w-3.5 h-3.5 text-civic-success" />
             Sisa Kuota Oplah
           </span>
-          <p className={`text-base font-bold mt-1 ${summary.is_quota_exceeded ? 'text-rose-600' : 'text-emerald-700'}`}>
+          <p className={`text-base font-bold mt-1 ${summary.is_quota_exceeded ? 'text-civic-danger' : 'text-civic-success'}`}>
             {Number(summary.remaining_oplah || 0).toLocaleString('id-ID')}
             <span className="text-xs font-normal text-ink-muted ml-1">Eks</span>
           </p>
@@ -238,16 +238,16 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
 
         <div className="p-3 bg-canvas rounded-xl border border-line">
           <span className="text-xs text-ink-muted flex items-center gap-1.5">
-            <Truck className="w-3.5 h-3.5 text-amber-700" />
+            <Truck className="w-3.5 h-3.5 text-civic-warning" />
             5 Eksemplar Fisik
           </span>
           <p className="text-sm font-bold text-ink mt-1">
             {summary.exemplar_received_by_lpmq ? (
-              <span className="text-emerald-700">Diterima (5/5)</span>
+              <span className="text-civic-success">Diterima (5/5)</span>
             ) : summary.has_delivered_exemplars ? (
-              <span className="text-sky-700">Terkirim</span>
+              <span className="text-civic-info">Terkirim</span>
             ) : (
-              <span className="text-amber-700">Belum Terpenuhi</span>
+              <span className="text-civic-warning">Belum Terpenuhi</span>
             )}
           </p>
           <span className="text-[11px] text-ink-muted">Target: 5 Eksemplar</span>
@@ -302,7 +302,7 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
                     <td className="py-2.5 px-3 whitespace-nowrap">
                       {rep.exemplar_sent ? (
                         <div className="space-y-0.5">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-100 text-sky-800">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-civic-infoSoft text-civic-info">
                             <Truck className="w-2.5 h-2.5" />
                             Diserahkan / Dikirim
                           </span>
@@ -351,8 +351,8 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
             </div>
 
             {formError && (
-              <div role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger rounded-lg text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-civic-danger shrink-0" />
                 <span>{formError}</span>
               </div>
             )}

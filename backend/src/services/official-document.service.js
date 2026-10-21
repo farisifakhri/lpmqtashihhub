@@ -471,12 +471,19 @@ export async function renderDraft(document) {
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
 export async function documentPdf(document, user = null) {
-  if (document.status === 'DRAFT' || document.document_type === 'REVISION_RETURN_LETTER') return renderDraft(document);
-
   const isPublisher = user && user.roles.includes('PENERBIT') && !user.roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(r));
 
+  if (document.document_type === 'REVISION_RETURN_LETTER' && !document.file_id) {
+    return renderDraft(document);
+  }
+
+  // Untuk dokumen yang belum berstatus ISSUED
   if (document.status !== 'ISSUED') {
     if (isPublisher) {
+      // Penerbit hanya boleh mengunduh draf Berita Acara Sidang Tashih (B-06 / workflow review)
+      if (document.document_type === 'BERITA_ACARA_TASHIH' && document.status === 'DRAFT') {
+        return renderDraft(document);
+      }
       fail(409, 'Dokumen belum diterbitkan atau sudah tidak berlaku. Hubungi pengelola layanan.');
     }
     return renderDraft(document);

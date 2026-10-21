@@ -20,13 +20,13 @@ export const ForbiddenPage = () => {
     <div className="min-h-screen bg-surface-subtle flex items-center justify-center p-6">
       <div className="max-w-lg w-full bg-white rounded-2xl border border-line shadow-lg p-8 sm:p-10 text-center space-y-6">
         {/* Shield Danger Icon */}
-        <div className="mx-auto w-20 h-20 rounded-full bg-red-50 border-2 border-red-200 flex items-center justify-center text-red-600">
+        <div className="mx-auto w-20 h-20 rounded-full bg-civic-dangerSoft border-2 border-civic-dangerLine flex items-center justify-center text-civic-danger">
           <ShieldX className="w-10 h-10" />
         </div>
 
         {/* Kop Singkat */}
         <div className="space-y-1">
-          <p className="text-xs font-bold text-red-600 uppercase tracking-widest">
+          <p className="text-xs font-bold text-civic-danger uppercase tracking-widest">
             Error 403 — Akses Ditolak
           </p>
           <h1 className="text-2xl sm:text-3xl font-black text-ink">
