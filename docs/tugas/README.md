@@ -3,23 +3,42 @@
 Dokumen ini adalah pintu masuk. Setiap paket pekerjaan punya file sendiri dan **satu branch sendiri**.
 
 - Disusun: 19 Okt 2026
+- Status bukti implementasi ditinjau: 21 Okt 2026
 - Sumber: notulensi rapat laporan magang (15 Okt 2026), jawaban klarifikasi, dan dokumen label pengembalian naskah
 - Pemilik: Fakhri (backend, koordinasi, review) dan Faisal (frontend pendaftaran penerbit)
+
+## Status bukti implementasi per 21 Oktober 2026
+
+Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/merge tidak dicantumkan kecuali dapat dibuktikan dari checkout; status ini bukan pengganti review penerimaan.
+
+| Paket | Status | Bukti dan batas yang diketahui |
+|---|---|---|
+| T-F01, T-F02, T-F04–T-F07 | **Selesai menurut checklist tugas** | Checklist detail ditandai selesai; implementasi terkait ada di `backend/src/routes/publisher-registration.routes.js`, layanan pendaftaran, dan test backend. Status merge PR tidak diverifikasi terpisah. |
+| T-F03 | **Parsial / lingkungan belum diverifikasi** | Hasil pembersihan lokal dicatat; dokumen hanya menyatakan skrip server disiapkan, bukan bukti eksekusi di setiap lingkungan. |
+| T-S01 | **Parsial** | `frontend/src/features/auth/RegisterPublisherPage.jsx` masih menyediakan jenis `PERORANGAN`, bertentangan dengan kontrak penerbit yang disetujui. Jangan anggap formulir lama memenuhi T-S01. |
+| T-S02 | **Parsial** | API pendaftaran/status/perbaikan ada di backend, tetapi tidak ditemukan halaman frontend untuk cek status/perbaikan maupun penanganan login `PUBLISHER_NOT_APPROVED`. |
+| T-S03 | **Parsial** | `frontend/src/features/internal/publishers/PublisherVerificationPage.jsx` menyediakan daftar dan aksi verifikasi dasar, tetapi kriteria perlu perbaikan/penolakan dan peninjauan detail dokumen belum terpenuhi oleh halaman tersebut. |
+| B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait tersedia. B-03 juga mencatat B-01 telah di-merge ke `main`; nomor PR tidak diklaim di sini. |
+| B-02 | **Belum dimulai** | Register UAT menyebut bug “tidak setuju” belum direproduksi (`docs/UAT_FINDINGS.txt`). |
+| B-03 | **Parsial** | Sequence, migrasi, dan generator backend ada. Integrasi frontend tidak mengirim `auto_number` atau `auto_generate`; tanpa flag itu backend masih meminta nomor manual. Lihat rincian di file B-03. |
+| B-04–B-13 | **Belum diverifikasi** | Fitur terkait atau fondasinya ada di repository, tetapi bukti yang ditinjau belum cukup untuk menyatakan setiap kriteria paket ini selesai atau belum dimulai. |
+
+**Definisi status:** *Selesai* = bukti checkout/checklist mendukung kriteria yang dinyatakan; *Parsial* = sebagian alur ada tetapi ada gap yang disebutkan; *Belum diverifikasi* = bukti belum cukup; *Belum dimulai* = sumber tugas saat ini menyatakan belum ada reproduksi/pekerjaan yang dapat dinilai. Jangan menafsirkan “tidak diverifikasi” sebagai “tidak ada kode”.
 
 ## 1. Isi folder
 
 | File / Paket | Pemilik (PIC) | Branch | Keterangan |
 |---|---|---|---|
 | **Fase 1 (Pendaftaran Penerbit)** | | | |
-| `fakhri/T-F01` s.d. `T-F07` | Fakhri | `feat/api-pendaftaran-penerbit` | Selesai & Di-push (Backend & Security) |
-| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Tugas Utama**: Form Pendaftaran |
-| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Tugas Utama**: Cek Status & Perbaikan |
-| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Tugas Utama**: Antrean Verifikasi Admin |
+| `fakhri/T-F01` s.d. `T-F07` | Fakhri | `feat/api-pendaftaran-penerbit` | Checklist selesai; merge PR belum diverifikasi terpisah |
+| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Parsial**: formulir lama masih menerima perorangan |
+| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Parsial**: API ada; alur UI belum ditemukan |
+| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Parsial**: verifikasi dasar tersedia; alur keputusan belum lengkap |
 | **Fase Lanjutan** | | | |
-| `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Pengajuan naskah varian, nomor surat, billing |
-| `B-05` s.d. `B-08` | *(Menunggu arahan)* | `feat/distribusi-kelompok-juz` dkk. | Distribusi juz, rekap pentashih, siklus revisi |
-| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Surat hasil/STT, 5 eksemplar, UX dokumentator |
-| `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Glosarium istilah & Dashboard penerbit |
+| `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Status per paket dan bukti: [backlog fase lanjutan](BACKLOG-FASE-LANJUTAN.md) |
+| `B-05` s.d. `B-08` | *(Menunggu arahan)* | `feat/distribusi-kelompok-juz` dkk. | Status per paket: belum diverifikasi |
+| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status per paket: belum diverifikasi |
+| `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Status per paket: belum diverifikasi |
 
 ## 2. Urutan dan dependensi (Fase 1: pendaftaran penerbit)
 
@@ -27,7 +46,7 @@ Dokumen ini adalah pintu masuk. Setiap paket pekerjaan punya file sendiri dan **
 T-F01 kontrak API ──┬─► T-S01 form ───────────┐
                     ├─► T-S02 cek status ──────┤
                     │                          ├─► integrasi dengan API nyata
-T-F02 RBAC ADMIN ───┤                          │
+T-F02 RBAC ADMIN_INTERNAL ───┤                          │
 T-F03 bersihkan ────┴─► T-F04 skema ─► T-F05 upload aman ─► T-F06 API ─► T-S03 admin
 T-F07 hardening: paralel, kapan saja setelah BASE ditetapkan
 ```
@@ -45,7 +64,7 @@ Semua branch fitur dibuat dari **satu** `<BASE>` yang sama. Jangan dari `fronten
 - [x] Push commit lokal `2180f43` (branch `verifikasi` sudah digabung ke `main` via PR #9).
 - [x] Putuskan `<BASE>`: `main` (semua patch production PR #33 dan fitur verifikasi sudah menyatu di `main`).
 - [x] Tulis pilihan di sini: `<BASE> = main`
-- [ ] Beri tahu Faisal nama `<BASE>` sebelum ia membuat branch pertama.
+- [ ] Konfirmasi apakah nama `<BASE>` sudah disampaikan; status komunikasi awal tidak dapat diverifikasi dari repository ini.
 
 ## 4. Aturan branch dan PR
 
@@ -53,7 +72,7 @@ Semua branch fitur dibuat dari **satu** `<BASE>` yang sama. Jangan dari `fronten
 - Buat dari `<BASE>` terbaru. Rebase ke `<BASE>` sebelum membuka PR. Commit kecil dan jelas.
 - Migrasi Prisma: skema pendaftaran penerbit hanya diubah lewat T-F04 (satu migrasi, satu pemilik) agar tidak ada dua migrasi paralel. Migrasi yang sudah diterapkan **tidak boleh diedit**.
 - Jika Faisal memerlukan perubahan skema atau backend: buka PR terpisah ke Fakhri (bukan langsung ke `<BASE>`), lengkap dengan file migrasi, lalu direview dengan daftar di bagian 5.
-- Kode peran harus sama dengan backend: `SUPERADMIN`, `ADMIN`, `ADMIN_PENERBIT`, `VERIFIKATOR`, `DISTRIBUTOR`, `PENTASHIH`, `DOKUMENTATOR`, `KEPALA_LPMQ`. Nama peran lama di cabang frontend (`PUBLISHER`, `TASHIH_MEMBER`, dan seterusnya) tidak dipakai.
+- Kode peran harus sama dengan backend: `SUPERADMIN`, `ADMIN_INTERNAL`, `PENERBIT`, `VERIFIKATOR`, `DISTRIBUTOR`, `PENTASHIH`, `DOKUMENTATOR`, `KEPALA_LPMQ`, dan `PENANDATANGAN` (lihat `backend/prisma/schema.prisma`). Nama peran lama di cabang frontend (`PUBLISHER`, `TASHIH_MEMBER`, dan seterusnya) tidak dipakai.
 - Tidak ada data tiruan di aplikasi yang dikirim. Data contoh hanya di test, dan tidak memuat data pribadi sungguhan (nama, telepon, KTP).
 - Tidak ada rahasia (kata sandi, kunci, token) di repositori.
 
@@ -71,7 +90,7 @@ Semua branch fitur dibuat dari **satu** `<BASE>` yang sama. Jangan dari `fronten
 ## 6. Keputusan yang sudah dikunci
 
 Pendaftaran & Akun Penerbit:
-- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Data perorangan yang ada adalah data uji dan telah dibersihkan.
+- Hanya PT/CV, Yayasan, Lembaga Pemerintah. Tidak ada perorangan. Pembersihan data uji telah dicatat untuk lokal; status pembersihan tiap server masih perlu diverifikasi sesuai T-F03.
 - Dokumen per jenis mengikuti `KONTRAK_PENDAFTARAN_PENERBIT.md`. NIB cukup (SIUP/TDP tidak diwajibkan).
 - Penerbit wajib mengajukan pendaftaran dan diverifikasi oleh salah satu: `SUPERADMIN` atau `ADMIN_INTERNAL` sebelum dapat login atau mengakses dashboard.
 - Penerbit belum terverifikasi **mutlak tidak boleh login** (diberi respons 403 `PUBLISHER_NOT_APPROVED`) dan **tidak boleh menembus dashboard**. Pengecekan status pendaftaran disediakan di halaman publik mandiri (`/cek-status`).
