@@ -333,6 +333,15 @@ const generateRegistrationNo = async (tx) => {
 };
 
 
+export function stripHtmlAndScripts(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<[^>]*>?/gm, '')
+    .trim();
+}
+
 export const ALLOWED_METADATA_KEYS = new Set([
   'penulis_nama',
   'penerjemah_nama',
@@ -353,17 +362,25 @@ export const ALLOWED_METADATA_KEYS = new Set([
   'penanggung_jawab_materi',
   'deskripsi_mushaf',
   'catatan',
+  'documentation_archive',
 ]);
 
 export const sanitizeManuscriptMetadata = (raw = {}) => {
   if (!raw || typeof raw !== 'object') return {};
   const cleaned = {};
   for (const [key, val] of Object.entries(raw)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     if (!ALLOWED_METADATA_KEYS.has(key)) continue;
     if (typeof val === 'string') {
-      cleaned[key] = val.replace(/<[^>]*>?/gm, '').trim();
-    } else if (typeof val === 'number' || typeof val === 'boolean' || Array.isArray(val) || val === null) {
+      cleaned[key] = stripHtmlAndScripts(val);
+    } else if (typeof val === 'number' || typeof val === 'boolean' || val === null) {
       cleaned[key] = val;
+    } else if (Array.isArray(val)) {
+      cleaned[key] = val.map((item) => {
+        if (typeof item === 'string') return stripHtmlAndScripts(item);
+        if (typeof item === 'object' && item !== null) return sanitizeManuscriptMetadata(item);
+        return item;
+      });
     }
   }
   return cleaned;
@@ -658,7 +675,7 @@ export const createDraft = async (data, user, req) => {
 
     for (let i = 0; i < rawManuscriptList.length; i++) {
       const m = rawManuscriptList[i];
-      const mTitle = (m.title || data.title || '').trim();
+      const mTitle = stripHtmlAndScripts(m.title || data.title || "");
       if (!mTitle || mTitle.length < 3) {
         const error = new Error(`Judul naskah ke-${i + 1} minimal 3 karakter.`);
         error.statusCode = 400;
@@ -696,7 +713,11 @@ export const createDraft = async (data, user, req) => {
 
       // Validasi varian untuk media CETAK (B-01: tanpa fallback default untuk pengajuan baru)
       const isCetak = itemRecords.some((it) => it.service_kind === 'CETAK');
-      const variants = Array.isArray(m.variants) ? m.variants : [];
+      const rawVariants = Array.isArray(m.variants) ? m.variants : [];
+      const variants = rawVariants.map((v) => ({
+        ukuran: stripHtmlAndScripts(v.ukuran),
+        oplah: Number(v.oplah),
+      }));
       if (isCetak && variants.length === 0) {
         const error = new Error(`Naskah cetak "${mTitle}" wajib memiliki minimal satu varian ukuran dan oplah.`);
         error.statusCode = 400;
@@ -716,7 +737,7 @@ export const createDraft = async (data, user, req) => {
         title: mTitle,
         resolvedItems: itemRecords,
         variants,
-        metadata: m.metadata || {},
+        metadata: sanitizeManuscriptMetadata(m.metadata || {}),
         sample_file_id: m.sample_file_id || null,
         calc: mCalc,
       });
@@ -827,8 +848,8 @@ export const createDraft = async (data, user, req) => {
         const regNo = await generateRegistrationNo(tx);
 
         const combinedMetadata = {
-          ...(data.foreign_metadata || {}),
-          ...(data.mushaf_details || {}),
+          ...sanitizeManuscriptMetadata(data.foreign_metadata || {}),
+          ...sanitizeManuscriptMetadata(data.mushaf_details || {}),
           ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
           ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
           ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
@@ -839,7 +860,7 @@ export const createDraft = async (data, user, req) => {
           ...(data.surat_rekomendasi_file_id ? { surat_rekomendasi_file_id: data.surat_rekomendasi_file_id } : {}),
         };
 
-        const regTitle = data.title || validatedManuscripts[0].title;
+        const regTitle = stripHtmlAndScripts(data.title || validatedManuscripts[0].title);
 
         let totalAddonsFee = 0;
         for (const add of activeAddons) {
@@ -1851,6 +1872,19 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     const current = await lockRegistration(tx, registrationId);
     await assertManuscriptAccess(current, user, true, tx);
     const file = await ownedFile(tx, data.file_id, user);
+    if (data.manuscript_id) {
+      const manuscriptRecord = await tx.manuscript.findFirst({
+        where: {
+          id: data.manuscript_id,
+          registration_id: registrationId,
+        },
+      });
+      if (!manuscriptRecord) {
+        const error = new Error('Naskah tidak ditemukan pada pengajuan ini.');
+        error.statusCode = 404;
+        throw error;
+      }
+    }
     const manuscriptType = data.type === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : data.type;
     const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: manuscriptType }, orderBy: { version: 'desc' } });
     const created = await tx.manuscriptFile.create({
@@ -2057,4 +2091,5 @@ export default {
   calculateManuscriptTarifAndSla,
   calculateRegistrationTarifAndSla,
   sanitizeManuscriptMetadata,
+  stripHtmlAndScripts,
 };

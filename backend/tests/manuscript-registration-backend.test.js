@@ -251,7 +251,7 @@ test('B-01 T3: Sanitasi metadata naskah dan penolakan properti di luar whitelist
     unknown_field: 'ignored',
   });
   assert.equal(sanitized.penulis_nama, 'Ahmad Dahlan');
-  assert.equal(sanitized.deskripsi, 'alert("xss")Deskripsi mushaf.');
+  assert.equal(sanitized.deskripsi, 'Deskripsi mushaf.');
   assert.equal(sanitized.unknown_field, undefined);
 });
 

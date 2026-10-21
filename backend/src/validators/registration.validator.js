@@ -32,6 +32,23 @@ export const manuscriptInputSchema = z.object({
   sample_file_id: z.string().uuid('ID berkas contoh naskah tidak valid').optional().nullable(),
 });
 
+export const safeRecordSchema = z
+  .record(z.any())
+  .refine((obj) => !obj || Object.keys(obj).length <= 50, {
+    message: 'Jumlah properti metadata maksimal 50.',
+  })
+  .refine(
+    (obj) => {
+      if (!obj) return true;
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof k !== 'string' || k.length > 100) return false;
+        if (typeof v === 'string' && v.length > 5000) return false;
+      }
+      return true;
+    },
+    { message: 'Ukuran properti atau nilai metadata melebihi batas aman.' }
+  );
+
 export const createRegistrationSchema = {
   body: z
     .object({
@@ -41,8 +58,8 @@ export const createRegistrationSchema = {
       manuscripts: z.array(manuscriptInputSchema).max(20, 'Maksimal 20 naskah per pendaftaran').optional(),
       registration_type: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).default('NEW'),
       registration_category: z.enum(['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT']).optional(),
-      foreign_metadata: z.record(z.any()).optional().nullable(),
-      mushaf_details: z.record(z.any()).optional().nullable(),
+      foreign_metadata: safeRecordSchema.optional().nullable(),
+      mushaf_details: safeRecordSchema.optional().nullable(),
       cover_file_id: z.string().uuid().optional().nullable(),
       surat_permohonan_file_id: z.string().uuid().optional().nullable(),
       contoh_halaman_file_id: z.string().uuid().optional().nullable(),
