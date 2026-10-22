@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1",
-    "prisma": "7.10.0"
+    "prisma": "7.10.1"
   },
   "license": "UNLICENSED",
   "dependencies": {
