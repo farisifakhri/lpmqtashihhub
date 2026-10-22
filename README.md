@@ -4,8 +4,9 @@ Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan R
 
 ## Status implementasi
 
-Alur internal Sistem Pentashihan Mushaf Al-Qur'an (SOP v2.2 & Addendum SRS v3.1) telah selesai diimplementasikan secara end-to-end dan seluruh rangkaian test suite lulus 100%:
-- **Penerimaan Fisik & Intake Loket (`ADMIN_INTERNAL`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal (M. Zamroni Ahbab & Mustakim) diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
+Repository ini memuat fitur-fitur berikut. Daftar ini bukan klaim bahwa seluruh kriteria penerimaan atau temuan UAT telah selesai, dan tidak menyatakan hasil test terbaru. Status paket serta bukti implementasi yang sudah ditinjau dicatat di [peta tugas](docs/tugas/README.md) dan [backlog fase lanjutan](docs/tugas/BACKLOG-FASE-LANJUTAN.md).
+
+- **Penerimaan Fisik & Intake Loket (`ADMIN_INTERNAL`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
 - **Verifikasi Berkas & Naskah (`VERIFIKATOR`)**: Penugasan via Nota Dinas, checklist butir pemeriksaan selaras Berita Acara resmi Kemenag RI (T-06), tombol pengajuan "Ajukan Draft" (`RF-VER-04`), penandatanganan digital bertingkat, dan outbox pengiriman hasil verifikasi.
 - **Pembayaran PNBP & Serah-Terima Fisik**: Validasi pembayaran sah, penghitungan SLA H+1 pasca verifikasi bayar (`RF-CALC-05`), serah-terima fisik ke distributor, dan penanganan fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`).
 - **Distribusi & Pentashihan Rentang Juz (`RF-DIST-05`)**: 6 Kelompok Utama Pentashihan (SK LPMQ 2025), penugasan berbasis rentang juz tanpa tumpang tindih, dan workspace pentashih interaktif.
@@ -15,7 +16,7 @@ Alur internal Sistem Pentashihan Mushaf Al-Qur'an (SOP v2.2 & Addendum SRS v3.1)
 - **Template Surat Permohonan & Label Pengiriman**: Unduhan langsung template resmi `.docx` di portal pendaftaran (`RF-PBL-01`) dan cetak label pengiriman dengan logo Kemenag & LPMQ tajam dan terbaca jelas (`RF-REG-10`).
 - **Pusat Arsip Global**: Menu Arsip & Dokumen dipusatkan di Sidebar `/internal/archive` yang dapat diakses oleh seluruh peran internal (`RF-DOC-14`).
 
-Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md) dan catatan keputusan pada [docs/references/keputusan-2026-10-08.md](docs/references/keputusan-2026-10-08.md).
+Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md) dan catatan keputusan pada [keputusan 8 Oktober 2026](docs/references/keputusan-2026-10-08.md).
 
 ## Prasyarat
 
@@ -67,14 +68,14 @@ frontend/                React/Vite UI, API client, component tests
 backend/prisma/          Model dan migrasi MySQL
 backend/src/             Routes, controllers, services, middleware
 frontend/src/            Router, halaman, komponen, konteks autentikasi
-docs/                    Dokumentasi teknis, RBAC admin, dashboard, FIFO
+docs/                    Dokumentasi teknis, keputusan, dan sumber SOP
 docs/api/                Kontrak workflow dan siklus SOP
 .github/workflows/ci.yml Quality gate CI
 docs/api/workflow.md    Kontrak API alur layanan
 docs/architecture/design.md          Rancangan arsitektur dan domain
-docs/architecture/implementation.md  Rencana implementasi & status sprint
+docs/architecture/implementation.md  Baseline dan rencana implementasi
 docs/architecture/user-flows.md      Alur pengguna per peran
+docs/tugas/README.md                 Peta tugas dan status bukti implementasi
 ```
 
-SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Alur SOP Verifikasi v2.2 (penerimaan fisik oleh Admin, penugasan Kepala LPMQ dengan SLA 2 hari kerja kalender dan cut-off 16:00 WIB, penyusunan draf Surat Hasil & Berita Acara Verifikasi, tanda tangan digital internal multi-signatory, outbox email idempoten, verifikasi pembayaran internal, serta serah-terima fisik distributor dengan penanganan koreksi fisik cacat) telah selesai diimplementasikan secara end-to-end dan seluruh test suite saat ini lulus. Integrasi produksi tingkat lanjut (gateway SIMPONI, sertifikat digital BSrE, SMTP produksi, dan implementasi penuh UI Pentashihan/Dokumentasi) disiapkan sebagai tahapan implementasi berikutnya.
-
+SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Cakupan implementasi dan temuan yang belum terverifikasi perlu dibaca bersama peta tugas; integrasi produksi tingkat lanjut (gateway SIMPONI, sertifikat digital BSrE, dan SMTP produksi) tetap memerlukan konfigurasi serta verifikasi di lingkungan terkait.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, FileText, Image, Smartphone, Send, Save, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export const Step4ReviewSubmit = ({
@@ -40,6 +40,17 @@ export const Step4ReviewSubmit = ({
 }) => {
   const isPerpanjangan = kategoriPendaftaran === 'Perpanjangan Tanda Tashih';
   const isLuarNegeri = kategoriPendaftaran === 'Mushaf Luar Negeri';
+
+  // Buka file lokal (File object) di tab baru menggunakan object URL
+  const handlePreviewFile = (file) => {
+    const url = URL.createObjectURL(file);
+    const win = window.open(url, '_blank');
+    if (win) {
+      win.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+    } else {
+      URL.revokeObjectURL(url);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -177,77 +188,161 @@ export const Step4ReviewSubmit = ({
 
         {/* Status Berkas Digital */}
         <div className="p-4 rounded-xl bg-canvas border border-line space-y-3">
-          <h3 className="text-xs font-bold text-brand-900 uppercase tracking-wider border-b border-line pb-2">
-            Status Berkas Persyaratan Digital
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-              <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-              <div className="min-w-0">
-                <div className="font-semibold truncate">Surat Permohonan</div>
-                <div className="text-xs text-ink-muted truncate">
-                  {suratPermohonanFile ? suratPermohonanFile.name : (suratPermohonanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+          <div className="border-b border-line pb-2 flex items-center justify-between gap-2">
+            <h3 className="text-xs font-bold text-brand-900 uppercase tracking-wider">
+              Tinjau Berkas Persyaratan Digital
+            </h3>
+            <span className="text-xs text-ink-muted">Klik "Tinjau" untuk melihat isi berkas sebelum mengirim</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            {/* Surat Permohonan */}
+            <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${suratPermohonanFile || suratPermohonanFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className={`w-4 h-4 shrink-0 ${suratPermohonanFile || suratPermohonanFileId ? 'text-brand-700' : 'text-ink-muted'}`} />
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">Surat Permohonan</div>
+                  <div className="text-xs text-ink-muted truncate">
+                    {suratPermohonanFile ? suratPermohonanFile.name : (suratPermohonanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+                  </div>
                 </div>
               </div>
+              {suratPermohonanFile && (
+                <button
+                  type="button"
+                  onClick={() => handlePreviewFile(suratPermohonanFile)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                  title="Tinjau berkas"
+                >
+                  <Eye className="w-3 h-3" />
+                  Tinjau
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-              <Image className="w-4 h-4 text-brand-700 shrink-0" />
-              <div className="min-w-0">
-                <div className="font-semibold truncate">Cover Mushaf</div>
-                <div className="text-xs text-ink-muted truncate">
-                  {coverFile ? coverFile.name : (coverFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+            {/* Cover Mushaf */}
+            <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${coverFile || coverFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <Image className={`w-4 h-4 shrink-0 ${coverFile || coverFileId ? 'text-brand-700' : 'text-ink-muted'}`} />
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">Cover / Sampul Mushaf</div>
+                  <div className="text-xs text-ink-muted truncate">
+                    {coverFile ? coverFile.name : (coverFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+                  </div>
                 </div>
               </div>
+              {coverFile && (
+                <button
+                  type="button"
+                  onClick={() => handlePreviewFile(coverFile)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                  title="Tinjau berkas"
+                >
+                  <Eye className="w-3 h-3" />
+                  Tinjau
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-              <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-              <div className="min-w-0">
-                <div className="font-semibold truncate">Contoh Hal 1–3</div>
-                <div className="text-xs text-ink-muted truncate">
-                  {contohHalamanFile ? contohHalamanFile.name : (contohHalamanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+            {/* Contoh Halaman */}
+            <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${contohHalamanFile || contohHalamanFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className={`w-4 h-4 shrink-0 ${contohHalamanFile || contohHalamanFileId ? 'text-brand-700' : 'text-ink-muted'}`} />
+                <div className="min-w-0">
+                  <div className="font-semibold truncate">Sampel Halaman 1–3</div>
+                  <div className="text-xs text-ink-muted truncate">
+                    {contohHalamanFile ? contohHalamanFile.name : (contohHalamanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+                  </div>
                 </div>
               </div>
+              {contohHalamanFile && (
+                <button
+                  type="button"
+                  onClick={() => handlePreviewFile(contohHalamanFile)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                  title="Tinjau berkas"
+                >
+                  <Eye className="w-3 h-3" />
+                  Tinjau
+                </button>
+              )}
             </div>
 
+            {/* Aplikasi Digital (APK) */}
             {isDigital && (
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-                <Smartphone className="w-4 h-4 text-brand-fg shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">Aplikasi Digital</div>
-                  <div className="text-xs text-ink-muted truncate">
-                    {apkFile ? apkFile.name : (apkUrl ? (
-                      <a href={apkUrl} target="_blank" rel="noopener noreferrer" className="text-brand-fg underline hover:underline break-all">
-                        {apkUrl}
-                      </a>
-                    ) : (apkFileId ? 'Berkas tersimpan' : '⚠️ Belum disediakan'))}
+              <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${apkFile || apkUrl || apkFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Smartphone className={`w-4 h-4 shrink-0 ${apkFile || apkUrl || apkFileId ? 'text-brand-fg' : 'text-ink-muted'}`} />
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">Aplikasi Digital</div>
+                    <div className="text-xs text-ink-muted truncate">
+                      {apkFile ? apkFile.name : (apkUrl ? apkUrl : (apkFileId ? 'Berkas tersimpan' : '⚠️ Belum disediakan'))}
+                    </div>
                   </div>
                 </div>
+                {apkUrl && !apkFile && (
+                  <a
+                    href={apkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                    title="Buka tautan"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    Buka
+                  </a>
+                )}
               </div>
             )}
 
+            {/* Surat Pernyataan (Perpanjangan) */}
             {isPerpanjangan && (
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-                <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">Surat Pernyataan</div>
-                  <div className="text-xs text-ink-muted truncate">
-                    {suratPernyataanFile ? suratPernyataanFile.name : (suratPernyataanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+              <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${suratPernyataanFile || suratPernyataanFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className={`w-4 h-4 shrink-0 ${suratPernyataanFile || suratPernyataanFileId ? 'text-brand-700' : 'text-ink-muted'}`} />
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">Surat Pernyataan</div>
+                    <div className="text-xs text-ink-muted truncate">
+                      {suratPernyataanFile ? suratPernyataanFile.name : (suratPernyataanFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+                    </div>
                   </div>
                 </div>
+                {suratPernyataanFile && (
+                  <button
+                    type="button"
+                    onClick={() => handlePreviewFile(suratPernyataanFile)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                    title="Tinjau berkas"
+                  >
+                    <Eye className="w-3 h-3" />
+                    Tinjau
+                  </button>
+                )}
               </div>
             )}
 
+            {/* Bukti Tashih Asal (Luar Negeri) */}
             {isLuarNegeri && (
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-line">
-                <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">Bukti Tashih Asal</div>
-                  <div className="text-xs text-ink-muted truncate">
-                    {buktiTashihFile ? buktiTashihFile.name : (buktiTashihFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+              <div className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${buktiTashihFile || buktiTashihFileId ? 'bg-white border-brand-200' : 'bg-white border-line'}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className={`w-4 h-4 shrink-0 ${buktiTashihFile || buktiTashihFileId ? 'text-brand-700' : 'text-ink-muted'}`} />
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">Bukti Tashih Asal</div>
+                    <div className="text-xs text-ink-muted truncate">
+                      {buktiTashihFile ? buktiTashihFile.name : (buktiTashihFileId ? 'Berkas tersimpan' : '⚠️ Belum dipilih')}
+                    </div>
                   </div>
                 </div>
+                {buktiTashihFile && (
+                  <button
+                    type="button"
+                    onClick={() => handlePreviewFile(buktiTashihFile)}
+                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-xs border border-brand-200 shrink-0 transition-colors"
+                    title="Tinjau berkas"
+                  >
+                    <Eye className="w-3 h-3" />
+                    Tinjau
+                  </button>
+                )}
               </div>
             )}
           </div>

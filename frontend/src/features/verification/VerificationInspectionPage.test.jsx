@@ -343,6 +343,66 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     });
   });
 
+  it('U-04: Kepala LPMQ dapat mengesahkan surat hasil dan berita acara secara otomatis tanpa mengetik nomor manual', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'head-1',
+        name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.',
+        role: 'KEPALA_LPMQ',
+        roles: ['KEPALA_LPMQ'],
+      },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: {
+          id: 'assign-1',
+          status: 'WAITING_APPROVAL',
+          verifier: { id: 'verifier-1' },
+        },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: "Mushaf Al-Qur'an Standar Kemenag",
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED', content_snapshot: { decision: 'REVISION_REQUIRED' }, signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED', signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        result_documents: [],
+      },
+    });
+
+    const approveSpy = vi.spyOn(VerificationApiModule.verificationApi, 'approveDocument').mockResolvedValue({
+      success: true,
+      data: { id: 'doc-1', status: 'APPROVED' },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const approveButton = await screen.findByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i });
+    fireEvent.click(approveButton);
+
+    expect(await screen.findByRole('heading', { name: 'Sahkan Surat Hasil Verifikasi' })).toBeInTheDocument();
+    expect(screen.getByText(/Penomoran Resmi Diterbitkan Otomatis/i)).toBeInTheDocument();
+
+    // Langsung klik tombol sahkan tanpa mengisi nomor manual
+    fireEvent.click(screen.getByRole('button', { name: /Sahkan dan Terbitkan PDF/i }));
+
+    await waitFor(() => {
+      expect(approveSpy).toHaveBeenCalledWith('doc-1', {});
+    });
+  });
+
   it('menampilkan notifikasi prasyarat billing jika verifikator mengajukan draf lolos tanpa kode billing', async () => {
     render(
       <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>

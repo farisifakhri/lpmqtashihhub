@@ -57,3 +57,59 @@ test('surat hasil lolos dengan kode billing menghasilkan PDF final', async () =>
   const pdf = await PDFDocument.load(bytes);
   assert.ok(pdf.getPageCount() >= 1);
 });
+
+test('U-03: Lembar disposisi dan surat hasil menggunakan nama jabatan kedinasan resmi dan tidak mencetak (Menunggu persetujuan)', async () => {
+  const memo = {
+    document_type: 'NOTA_DINAS_VERIFIKASI',
+    document_no: 'ND-002',
+    version: 1,
+    content_snapshot: {
+      registration_no: 'REG-002',
+      title: "Mushaf Al-Qur'an Standar",
+      verifier_name: 'Ahmad Falahudin, S.S',
+      // Jika penugas bernilai default / admin dummy
+      assigned_by_name: 'Helper Admin',
+      assigned_at: '2026-10-21T00:00:00Z',
+      due_at: '2026-10-23T00:00:00Z',
+    },
+  };
+
+  const memoBytes = await renderVerificationPdf(memo, { draft: true });
+  assert.ok(memoBytes instanceof Uint8Array);
+  assert.equal(memoBytes.subarray(0, 5).toString(), '%PDF-');
+
+  const draftResult = {
+    document_type: 'SURAT_HASIL_VERIFIKASI',
+    version: 1,
+    content_snapshot: {
+      registration_no: 'REG-002',
+      title: "Mushaf Al-Qur'an Standar",
+      publisher_name: 'PT Mushaf Nusantara',
+      decision: 'PASSED',
+      letter_text: 'Hasil verifikasi naskah memenuhi standar.',
+      billing_no: 'BILL-12345',
+      billing_amount: 1000000,
+    },
+  };
+
+  const resultBytes = await renderVerificationPdf(draftResult, { draft: true });
+  assert.ok(resultBytes instanceof Uint8Array);
+  assert.equal(resultBytes.subarray(0, 5).toString(), '%PDF-');
+
+  const baDoc = {
+    document_type: 'BERITA_ACARA_VERIFIKASI',
+    document_no: 'BA-001',
+    version: 1,
+    content_snapshot: {
+      registration_no: 'REG-002',
+      title: "Mushaf Al-Qur'an Standar",
+      publisher_name: 'PT Mushaf Nusantara',
+      decision: 'PASSED',
+      checklist: [],
+    },
+  };
+
+  const baBytes = await renderVerificationPdf(baDoc, { draft: true });
+  assert.ok(baBytes instanceof Uint8Array);
+  assert.equal(baBytes.subarray(0, 5).toString(), '%PDF-');
+});

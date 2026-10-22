@@ -84,7 +84,17 @@ router.get('/verification-documents/:id', authenticate, validate(documentIdSchem
 router.get('/verification-documents/:id/pdf', authenticate, validate(documentIdSchema), async (req, res, next) => {
   try {
     const doc = await review.getVerificationDocument(req.params.id, req.user);
-    const bytes = doc.file_id ? await readVerifiedPdf(doc) : await renderVerificationPdf(doc, { draft: true });
+    let bytes;
+    if (doc.file_id) {
+      try {
+        bytes = await readVerifiedPdf(doc);
+      } catch (err) {
+        console.warn(`[Verification PDF Warning] Gagal membaca berkas tersimpan ${doc.file_id}: ${err.message}. Merender ulang...`);
+        bytes = await renderVerificationPdf(doc, { draft: !['SIGNED', 'SENT'].includes(doc.status) });
+      }
+    } else {
+      bytes = await renderVerificationPdf(doc, { draft: true });
+    }
     res.set('Content-Type', 'application/pdf');
     res.set('Content-Disposition', `inline; filename="verifikasi-${doc.id}.pdf"`);
     res.set('Cache-Control', 'private, no-store');

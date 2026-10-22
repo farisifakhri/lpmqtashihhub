@@ -5,6 +5,7 @@ import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { registrationRateLimiter } from '../middlewares/rateLimiter.middleware.js';
+import { printingReportSchema } from '../validators/workflow.validator.js';
 import {
   createRegistrationSchema,
   dispatchPhysicalSchema,
@@ -76,6 +77,11 @@ router.patch(
   validate(transitionStatusSchema),
   registrationController.transitionStatus
 );
+
+
+// Laporan Realisasi Pencetakan (U-16 / B-10)
+router.get('/:id/printing-reports', registrationController.getPrintingReports);
+router.post('/:id/printing-reports', authorize('PENERBIT', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(printingReportSchema), registrationController.createPrintingReport);
 
 router.post(
   '/:id/transition',
