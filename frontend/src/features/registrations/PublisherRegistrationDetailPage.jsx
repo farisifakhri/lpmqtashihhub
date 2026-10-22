@@ -577,7 +577,7 @@ export function PublisherRegistrationDetailPage() {
                                 </p>
                             </div>
 
-                            {/* Berkas Naskah Digital */}
+                            {/* 2Digital */}
                             {(subSection === "all" ||
                                 subSection === "digital") && (
                                 <PublisherDigitalFilesTab
