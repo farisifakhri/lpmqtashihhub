@@ -4,9 +4,9 @@
 |---|---|
 | **Proyek** | lpmqtashihhub (LPMQ Kemenag RI) |
 | **Sumber** | Tugas baru dari Pak Zamroni, 5 Okt 2026 (revisi notulasi 1 Okt: dokumen terpisah) |
-| **Status** | Diperbarui 14 Okt 2026 — Bagian E (brief perubahan berikutnya) ditambahkan; butir ⚠️ menunggu klarifikasi |
+| **Status** | Snapshot per 14 Okt 2026; bukan status implementasi terkini. Lihat [peta tugas](tugas/README.md), [backlog fase lanjutan](tugas/BACKLOG-FASE-LANJUTAN.md), dan [register UAT](UAT_FINDINGS.txt) untuk bukti/status terbaru yang ditinjau pada 21 Okt 2026. |
 
-> Dokumen ini memuat keputusan arsitektur dan tugas baru. Revisi notulasi 1 Okt 2026 dikerjakan di branch lain dan didokumentasikan terpisah di `REVISI_NOTULASI_STT_2026-10-01.md`.
+> Dokumen ini mempertahankan keputusan arsitektur dan rencana kerja sebagai snapshot historis. Referensi ke posisi kode, branch, dan dokumen revisi pada bagian-bagian di bawah mengikuti keadaan saat snapshot dibuat dan perlu diverifikasi sebelum digunakan kembali.
 
 **Isi**
 - **Bagian A** — Keputusan arsitektur
@@ -408,4 +408,3 @@ Ikuti rancangan **B2** di atas: surat dikirim → verifikasi Kepala → penugasa
 - [ ] Tidak ada rahasia, NIP, atau data pribadi baru di repo.
 - [ ] Dokumen ini diperbarui (paket dicentang, keputusan dicatat).
 - [ ] Peninjauan oleh satu orang selain penulis; PR keamanan ditinjau oleh pemilik modul auth.
-

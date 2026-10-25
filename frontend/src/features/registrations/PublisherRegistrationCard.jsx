@@ -80,6 +80,12 @@ export function PublisherRegistrationCard({ registration }) {
                 {registration.foreign_metadata.nama_mushaf}
               </span>
             )}
+            {isPhase2Active && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-900 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
+                <Clock className="w-3 h-3 text-brand-700" />
+                <span>SLA: {registration.fee_sla_snapshot?.sla_hari_kerja || 59} Hari Kerja</span>
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -94,7 +100,7 @@ export function PublisherRegistrationCard({ registration }) {
               : 'bg-surface-subtle border-line text-ink-muted'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="font-bold">1. Permohonan</span>
+              <span className="font-bold">1. Permohonan Terdaftar</span>
               {isPhase1Done ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
               ) : (
@@ -102,7 +108,7 @@ export function PublisherRegistrationCard({ registration }) {
               )}
             </div>
             <span className="text-xs text-ink-muted mt-0.5 truncate">
-              {isPhase1Done ? 'Terkirim' : 'Draf'}
+              {isPhase1Done ? 'Terdaftar' : 'Draf'}
             </span>
           </div>
 
@@ -115,7 +121,7 @@ export function PublisherRegistrationCard({ registration }) {
               : 'bg-surface-subtle border-line text-ink-muted'
           }`}>
             <div className="flex items-center justify-between">
-              <span className="font-bold">2. Verifikasi</span>
+              <span className="font-bold">2. Verifikasi Fisik</span>
               {isPhase2Done ? (
                 <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
               ) : isPhase2Active ? (
@@ -170,7 +176,7 @@ export function PublisherRegistrationCard({ registration }) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/60 pt-3">
         <span className="flex items-center gap-1.5 text-xs text-ink-muted">
           <Calendar className="h-3.5 w-3.5" />
-          {dateLabel(registration.created_at)}
+          Diajukan {dateLabel(registration.created_at)}
         </span>
 
         <div className="flex items-center gap-2">

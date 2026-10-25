@@ -49,7 +49,12 @@ export function DocumentArchive({ registrationId }) {
         headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' },
       });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
-        throw new Error('PDF dokumen belum dapat dibuka.');
+        let msg = 'PDF dokumen belum dapat dibuka.';
+        try {
+          const errData = await response.json();
+          if (errData?.message) msg = errData.message;
+        } catch (_) {}
+        throw new Error(msg);
       }
       setPdfUrl(URL.createObjectURL(await response.blob()));
     } catch (reason) {

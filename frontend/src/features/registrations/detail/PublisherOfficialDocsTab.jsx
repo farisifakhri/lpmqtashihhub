@@ -9,6 +9,7 @@ import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
 import { PublisherDocumentList } from '../PublisherDocumentList';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
+import { PrintingReportSection } from './PrintingReportSection';
 
 export function PublisherOfficialDocsTab({
   data,
@@ -186,6 +187,10 @@ export function PublisherOfficialDocsTab({
         <PublisherDocumentList documents={data.official_documents} />
         <DocumentArchive registrationId={data.id} />
       </section>
+      {/* Bagian 4: Laporan Realisasi Pencetakan & Penyerahan 5 Eksemplar (U-16 / B-10) */}
+      {(data.official_documents?.some(d => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED') || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status)) && (
+        <PrintingReportSection registrationId={data.id} isPublisher={true} />
+      )}
     </div>
   );
 }

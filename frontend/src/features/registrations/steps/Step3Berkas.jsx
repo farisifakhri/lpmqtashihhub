@@ -118,7 +118,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.suratPermohonan)}
             aria-describedby={fieldErrors.suratPermohonan ? 'file-surat-permohonan-error' : undefined}
-            className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${suratPermohonanFile ? ' hidden' : ''}`}
           />
 
           {suratPermohonanFile && (
@@ -187,7 +187,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.cover)}
             aria-describedby={fieldErrors.cover ? 'file-cover-error' : undefined}
-            className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${coverFile ? ' hidden' : ''}`}
           />
 
           {coverFile && (
@@ -256,7 +256,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.contohHalaman)}
             aria-describedby={fieldErrors.contohHalaman ? 'file-contoh-halaman-error' : undefined}
-            className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${contohHalamanFile ? ' hidden' : ''}`}
           />
 
           {contohHalamanFile && (
@@ -332,7 +332,7 @@ export const Step3Berkas = ({
                     'apk'
                   )
                 }
-                className="w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border border-line-strong bg-white"
+                className={`w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border border-line-strong bg-white${apkFile ? ' hidden' : ''}`}
               />
 
               {apkFile && (
@@ -426,7 +426,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.suratPernyataan)}
               aria-describedby={fieldErrors.suratPernyataan ? 'file-surat-pernyataan-error' : undefined}
-              className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${suratPernyataanFile ? ' hidden' : ''}`}
             />
 
             {suratPernyataanFile && (
@@ -494,7 +494,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.buktiTashih)}
               aria-describedby={fieldErrors.buktiTashih ? 'file-bukti-tashih-error' : undefined}
-              className="w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white"
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${buktiTashihFile ? ' hidden' : ''}`}
             />
 
             {buktiTashihFile && (

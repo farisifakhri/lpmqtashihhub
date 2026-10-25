@@ -107,3 +107,18 @@ export const myTasksQuerySchema = {
   }).strict(),
 };
 
+
+
+export const printingReportSchema = {
+  params,
+  body: z.object({
+    batch_no: z.coerce.number().int().min(1, 'Nomor batch cetak minimal 1').optional(),
+    print_date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal cetak harus YYYY-MM-DD'),
+    oplah_printed: z.coerce.number().int().min(1, 'Jumlah oplah dicetak minimal 1 eksemplar'),
+    printer_name: z.string().trim().min(2, 'Nama percetakan minimal 2 karakter').max(255),
+    printer_location: z.string().trim().min(2, 'Lokasi percetakan minimal 2 karakter').max(255),
+    exemplar_sent: z.boolean().optional().default(false),
+    exemplar_tracking_no: z.string().trim().max(100).optional().nullable(),
+    notes: z.string().trim().max(1000).optional().nullable(),
+  }).strict(),
+};

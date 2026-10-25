@@ -409,15 +409,11 @@ export const VerificationInspectionPage = () => {
     const resNo = resultDocumentNo.trim();
     const minNo = minutesDocumentNo.trim();
 
-    if (!resNo || resNo.length < 3) {
-      setApproveModalError('Nomor surat hasil wajib diisi (minimal 3 karakter).');
+    if (resNo && resNo.length > 191) {
+      setApproveModalError('Nomor dokumen tidak boleh melebihi 191 karakter.');
       return;
     }
-    if (targetBaDoc && (!minNo || minNo.length < 3)) {
-      setApproveModalError('Nomor berita acara wajib diisi (minimal 3 karakter).');
-      return;
-    }
-    if (resNo.length > 191 || (targetBaDoc && minNo.length > 191)) {
+    if (minNo && minNo.length > 191) {
       setApproveModalError('Nomor dokumen tidak boleh melebihi 191 karakter.');
       return;
     }
@@ -427,14 +423,15 @@ export const VerificationInspectionPage = () => {
     setError(null);
     setSuccessMessage(null);
     try {
+      const docNumbers = {};
+      if (resNo) docNumbers[targetDoc.document_type] = resNo;
+      if (targetBaDoc && minNo) docNumbers.BERITA_ACARA_VERIFIKASI = minNo;
+
       await verificationApi.approveDocument(targetDoc.id, {
-        document_numbers: {
-          [targetDoc.document_type]: resNo,
-          ...(targetBaDoc ? { BERITA_ACARA_VERIFIKASI: minNo } : {}),
-        },
+        ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : {}),
       });
       setApproveConfirmOpen(false);
-      setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Kode billing tercantum pada PDF surat hasil; verifikator dapat langsung mengirimkannya.');
+      setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Nomor resmi dan kode billing diterbitkan otomatis pada dokumen.');
       await fetchDetail();
     } catch (err) {
       setApproveModalError(err.message || 'Gagal menyetujui surat hasil verifikasi.');
@@ -496,7 +493,14 @@ export const VerificationInspectionPage = () => {
     const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
       headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
-    if (!response.ok) throw new Error('PDF dokumen belum dapat dibuka.');
+    if (!response.ok) {
+      let msg = 'PDF dokumen belum dapat dibuka.';
+      try {
+        const errData = await response.json();
+        if (errData?.message) msg = errData.message;
+      } catch (_) {}
+      throw new Error(msg);
+    }
     return URL.createObjectURL(await response.blob());
   };
 

@@ -200,7 +200,7 @@ export function MushafContentReviewTable({
               <tr className="bg-surface-subtle border-b border-line text-xs text-ink-muted font-bold">
                 <th className="py-2.5 px-3.5 w-1/4">Elemen Konten</th>
                 <th className="py-2.5 px-3.5 w-1/4">Klaim Penerbit</th>
-                <th className="py-2.5 px-3.5 w-1/4">Status Penelaahan</th>
+                <th className="py-2.5 px-3.5 w-[220px] min-w-[220px]">Status Penelaahan</th>
                 <th className="py-2.5 px-3.5 w-1/4">Hasil Verifikasi & Catatan</th>
               </tr>
             </thead>
@@ -256,7 +256,7 @@ export function MushafContentReviewTable({
                                 verified_value: item.claimed_value,
                               })
                             }
-                            className={`py-1 px-1.5 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
                               isSesuai
                                 ? 'bg-brand-800 text-white shadow-2xs font-bold'
                                 : 'bg-surface-subtle border border-line text-ink hover:bg-canvas'
@@ -269,7 +269,7 @@ export function MushafContentReviewTable({
                             type="button"
                             disabled={isReadOnly}
                             onClick={() => updateItem(item.id, { status: 'KURANG' })}
-                            className={`py-1 px-1.5 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
                               isKurang
                                 ? 'bg-civic-danger text-white shadow-2xs font-bold'
                                 : 'bg-surface-subtle border border-line text-ink hover:bg-canvas'
@@ -282,7 +282,7 @@ export function MushafContentReviewTable({
                             type="button"
                             disabled={isReadOnly}
                             onClick={() => updateItem(item.id, { status: 'KOREKSI' })}
-                            className={`py-1 px-1.5 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
                               isKoreksi
                                 ? 'bg-civic-warning text-white shadow-2xs font-bold'
                                 : 'bg-surface-subtle border border-line text-ink hover:bg-canvas'
@@ -295,7 +295,7 @@ export function MushafContentReviewTable({
                             type="button"
                             disabled={isReadOnly}
                             onClick={() => updateItem(item.id, { status: 'TAMBAH' })}
-                            className={`py-1 px-1.5 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer ${
+                            className={`py-1.5 px-2 rounded flex items-center justify-center gap-1 font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
                               isTambah
                                 ? 'bg-civic-info text-white shadow-2xs font-bold'
                                 : 'bg-surface-subtle border border-line text-ink hover:bg-canvas'

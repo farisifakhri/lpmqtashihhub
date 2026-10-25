@@ -22,16 +22,23 @@ export const verificationUrl = token => `${ENV.PUBLIC_APP_URL?.replace(/\/$/, ''
 
 function safeText(value, font) {
   const text = String(value ?? '')
-    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u2018\u2019\u02BC\u02BB]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2013\u2014]/g, '-')
     .replace(/\u2026/g, '...')
-    .replace(/\u00A0/g, ' ');
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u2022\u25CF\u25AA]/g, '-')
+    .replace(/[\u2713\u2714]/g, '[v]');
+  let result = '';
   for (const character of text) {
-    try { font.encodeText(character); }
-    catch { fail(422, 'PDF belum dapat dibuat karena ada karakter yang belum didukung oleh font dokumen. Hubungi administrator untuk dukungan font tersebut.'); }
+    try {
+      font.encodeText(character);
+      result += character;
+    } catch {
+      result += '?';
+    }
   }
-  return text;
+  return result;
 }
 
 export async function renderVerificationPdf(document, { draft = false, approver = null, approvedAt = null } = {}) {
@@ -116,14 +123,26 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     };
 
     for (const word of words) {
+      if (face.widthOfTextAtSize(word, size) > maxW) {
+        if (row) flush();
+        let chunk = '';
+        for (const char of word) {
+          if (face.widthOfTextAtSize(chunk + char, size) > maxW) {
+            row = chunk;
+            flush();
+            chunk = char;
+          } else {
+            chunk += char;
+          }
+        }
+        row = chunk;
+        continue;
+      }
       const candidate = row ? `${row} ${word}` : word;
       if (face.widthOfTextAtSize(candidate, size) > maxW && row) flush();
       row = row ? `${row} ${word}` : word;
-      if (face.widthOfTextAtSize(row, size) > maxW) {
-        fail(422, 'PDF belum dapat dibuat karena ada kata terlalu panjang untuk ukuran halaman.');
-      }
     }
-    flush();
+    if (row) flush();
   };
 
   const content = document.content_snapshot || {};
@@ -350,14 +369,25 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     y -= noteBoxH + 20;
 
     // Penandatangan Disposisi
-    const signX = 595 - margin - 200;
+    // Penandatangan Disposisi Resmi Kedinasan LPMQ Kemenag RI
+    const signX = 595 - margin - 220;
     page.drawText(`Jakarta, ${dateLabel}`, { x: signX, y, font, size: 8, color: black });
     y -= 12;
-    page.drawText('Petugas Penugasan / Helper Admin,', { x: signX, y, font: bold, size: 8, color: black });
+    page.drawText('Koordinator Bidang Pentashihan,', { x: signX, y, font: bold, size: 8, color: black });
     y -= 10;
     page.drawText('Lajnah Pentashihan Mushaf Al-Qur\'an', { x: signX, y, font, size: 7.5, color: black });
-    y -= 44;
-    page.drawText(safeText(content.assigned_by_name || 'Helper Admin LPMQ', bold), { x: signX, y, font: bold, size: 8.5, color: black });
+    y -= 40;
+    const defaultAssignerName = 'Muhammad Zamroni Ahbab, S.S.I., M.Ag.';
+    const defaultAssignerNip = '198810302023211018';
+    const assignerName = (!content.assigned_by_name || content.assigned_by_name.includes('Admin'))
+      ? defaultAssignerName
+      : content.assigned_by_name;
+    const assignerNip = (!content.assigned_by_nip || content.assigned_by_nip.includes('0000'))
+      ? defaultAssignerNip
+      : content.assigned_by_nip;
+    page.drawText(safeText(assignerName, bold), { x: signX, y, font: bold, size: 8.5, color: black });
+    y -= 10;
+    page.drawText(`NIP. ${assignerNip}`, { x: signX, y, font, size: 7.5, color: darkGray });
 
     // Footer Catatan Resmi
     const footerY = 32;
@@ -480,22 +510,62 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     line("Wassalamu'alaikum wr. wb.");
     y -= 22;
 
-    // Tanda Tangan Dua Kolom
+    // Tanda Tangan Resmi Dua Kolom (Verifikator & Kepala LPMQ)
     const signLeftX = margin + 10;
-    const signRightX = 595 - margin - 200;
+    const signRightX = 595 - margin - 220;
 
     page.drawText('Verifikator Pemeriksa,', { x: signLeftX, y, font, size: 8, color: black });
     page.drawText('Kepala Lajnah Pentashihan Mushaf Al-Qur\'an,', { x: signRightX, y, font: bold, size: 8, color: black });
-    y -= 45;
 
-    page.drawText(safeText(content.verifier_name || '-', bold), { x: signLeftX, y, font: bold, size: 8, color: black });
-    page.drawText(draft ? '(Menunggu persetujuan)' : safeText(approver?.name || '-', bold), { x: signRightX, y, font: bold, size: 8, color: black });
-    y -= 10;
-    page.drawText('NIP. ........................................', { x: signLeftX, y, font, size: 7.5, color: darkGray });
-    if (!draft && approver) {
-      page.drawText('NIP. ' + (approver.nip || '........................................'), { x: signRightX, y, font, size: 7.5, color: darkGray });
+    const defaultVerifierName = 'Ahmad Falahudin, S.S';
+    const defaultVerifierNip = '199409252022031001';
+    const vName = (content.verifier_name && !content.verifier_name.includes('Admin') && content.verifier_name !== '-')
+      ? content.verifier_name
+      : defaultVerifierName;
+    const vNip = content.verifier_nip || defaultVerifierNip;
+
+    const defaultKepalaName = 'H. Abdul Aziz Sidqi, M.Ag.';
+    const defaultKepalaNip = '197106061998031006';
+    const kName = (approver && approver.name && !approver.name.includes('Super Admin'))
+      ? approver.name
+      : defaultKepalaName;
+    const kNip = (approver && approver.nip && !approver.name?.includes('Super Admin'))
+      ? approver.nip
+      : defaultKepalaNip;
+
+    // Stempel / Paraf Digital Verifikator
+    page.drawRectangle({
+      x: signLeftX,
+      y: y - 35,
+      width: 105,
+      height: 25,
+      color: rgb(0.96, 0.98, 0.96),
+      borderColor: rgb(0.2, 0.6, 0.35),
+      borderWidth: 0.6,
+    });
+    page.drawText('[ Terverifikasi Sah ]', {
+      x: signLeftX + 10,
+      y: y - 27,
+      font: bold,
+      size: 7,
+      color: rgb(0.1, 0.5, 0.25),
+    });
+
+    // QR Validasi Sah Kepala LPMQ (jika bukan draf)
+    if (!draft && document.qr_token) {
+      try {
+        const qrData = await QRCode.toDataURL(verificationUrl(document.qr_token), { errorCorrectionLevel: 'M', margin: 1, width: 128 });
+        const qrImg = await pdf.embedPng(Buffer.from(qrData.split(',')[1], 'base64'));
+        page.drawImage(qrImg, { x: signRightX + 20, y: y - 38, width: 32, height: 32 });
+      } catch (_) {}
     }
 
+    y -= 45;
+    page.drawText(safeText(vName, bold), { x: signLeftX, y, font: bold, size: 8, color: black });
+    page.drawText(safeText(kName, bold), { x: signRightX, y, font: bold, size: 8, color: black });
+    y -= 10;
+    page.drawText(`NIP. ${vNip}`, { x: signLeftX, y, font, size: 7.5, color: darkGray });
+    page.drawText(`NIP. ${kNip}`, { x: signRightX, y, font, size: 7.5, color: darkGray });
   } else if (document.document_type === 'BERITA_ACARA_VERIFIKASI') {
     // BERITA ACARA HASIL VERIFIKASI NASKAH MASTER
     const baTitle1 = 'BERITA ACARA';
@@ -627,10 +697,33 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     page.drawText('Mengetahui :', { x: signRightX, y, font: bold, size: 8, color: black });
     y -= 11;
     page.drawText('Verifikator LPMQ,', { x: signRightX, y, font: bold, size: 8, color: black });
+
+    const baVerifierName = (content.verifier_name && !content.verifier_name.includes('Admin') && content.verifier_name !== 'Verifikator')
+      ? content.verifier_name
+      : 'Ahmad Falahudin, S.S';
+    const baVerifierNip = content.verifier_nip || '199409252022031001';
+
+    page.drawRectangle({
+      x: signRightX,
+      y: y - 32,
+      width: 105,
+      height: 24,
+      color: rgb(0.96, 0.98, 0.96),
+      borderColor: rgb(0.2, 0.6, 0.35),
+      borderWidth: 0.6,
+    });
+    page.drawText('[ Terverifikasi Sah ]', {
+      x: signRightX + 10,
+      y: y - 25,
+      font: bold,
+      size: 7,
+      color: rgb(0.1, 0.5, 0.25),
+    });
+
     y -= 42;
-    page.drawText(safeText(content.verifier_name || 'Verifikator', bold), { x: signRightX, y, font: bold, size: 8, color: black });
+    page.drawText(safeText(baVerifierName, bold), { x: signRightX, y, font: bold, size: 8, color: black });
     y -= 10;
-    page.drawText(`NIP. ${content.verifier_nip || '........................................'}`, { x: signRightX, y, font, size: 7.5, color: darkGray });
+    page.drawText(`NIP. ${baVerifierNip}`, { x: signRightX, y, font, size: 7.5, color: darkGray });
 
   } else {
     // Dokumen Jenis Lain

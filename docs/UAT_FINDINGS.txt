@@ -1,0 +1,152 @@
+Register UAT 20 Okt 2026
+Daftar temuan dari hasil UAT terbaru. Setiap butir punya ID U-xx agar mudah dirujuk di PR, commit, dan diskusi.
+* Versi: 1 (21 Okt 2026)
+* Sumber: dokumen revisi sistem (tangkapan layar beranotasi, 21 gambar), template surat penerbitan Surat Tanda Tashih, dan contoh Sertifikat Penerbit Al-Qur'an
+* Lingkungan UAT: tashihv2.lpmqkemenag.id
+1. Prinsip penanganan
+* Butir yang menyangkut kebenaran data dan dokumen resmi (P0) dikerjakan lebih dulu, sebelum B-01 sesi 1.
+* Butir perapian (P1) dikerjakan sebagai satu paket "UAT-1" dan boleh paralel.
+* Butir yang sudah punya paket B digabung ke paket itu, bukan dibuat ganda.
+2. Daftar temuan
+P0: kebenaran data dan dokumen resmi
+ID
+	Temuan
+	Sumber
+	Jenis
+	Paket
+	U-01
+	Layanan tampil "Juz 'Amma dan Terjemahnya" padahal pilihan penerbit 30 Juz + Waqaf + Terjemah + Perkata + Tajwid Warna. Muncul di detail, label pengiriman, dan intake admin. Dampak: tarif dan SLA salah (5 HK dan Rp 500.000, seharusnya 59 HK dan Rp 3.000.000)
+	Gambar 1, 7, 8, 11, 17
+	Bug data
+	B-01 sesi 0b dan sesi 2
+	U-02
+	Label pengiriman memuat baris "Jenis & Kategori" (ditandai X). Periksa juga baris "Jumlah: 30 Jilid"
+	Gambar 7
+	Bug data
+	UAT-1 (setelah U-01)
+	U-03
+	Dokumen disposisi dan surat hasil menampilkan "Super Admin LPMQ" dan "Petugas Penugasan / Helper Admin" sebagai pejabat (ditandai X). Gambar TTD verifikator belum ada. Draf menampilkan "(Menunggu persetujuan)"
+	Gambar 18, 19, 21
+	Dokumen resmi
+	Batch dokumen resmi
+	U-04
+	Nomor surat hasil dan nomor berita acara masih diketik manual di dialog "Sahkan Surat Hasil Verifikasi"
+	Gambar 20
+	Fitur
+	B-03 (dinaikkan prioritasnya)
+	U-05
+	"PDF dokumen belum dapat dibuka" pada Arsip Dokumen Resmi. Tangkapan layar tanpa keterangan. Ada juga teks uji "adssadas"
+	Gambar 14
+	Bug
+	Batch dokumen resmi (reproduksi dulu)
+	U-06
+	Sertifikat Penerbit: logo tidak muncul, NPWP dan NIB kosong, tanggal berbahasa Inggris ("19 October 2026"), tidak ada penandatangan. Fiturnya tidak ditemukan di main per 21 Okt
+	Sertifikat Penerbit (PDF)
+	Bug dokumen resmi
+	Batch dokumen resmi
+	
+
+P1: perapian (paket UAT-1)
+ID
+	Temuan
+	Sumber
+	Jenis
+	U-07
+	Hapus tombol "Kirim permohonan" dan status draf. Permohonan langsung terdaftar
+	Gambar 2, 5
+	Perubahan alur
+	U-08
+	Hapus kartu "Unggah Berkas Naskah". Hilangkan berkas ganda (versi lama dan baru tampil bersamaan). "Surat permohonan belum masuk" (maksud perlu dikonfirmasi)
+	Gambar 3, 4
+	UX dan perubahan alur
+	U-09
+	Tombol "Unduh Label Pengiriman" wajib diklik sebelum konfirmasi pengiriman. Harus dicatat server, bukan hanya di tombol
+	Gambar 8, 11
+	Perubahan alur
+	U-10
+	Perubahan istilah (lihat bagian 3). Tumpang tindih dengan B-12 (Choirul)
+	Gambar 5, 6, 9, 10, 12
+	Teks
+	U-11
+	Menu admin: Intake Master Fisik di paling atas. Angka notifikasi permohonan baru (admin) dan tugas verifikasi (verifikator)
+	Gambar 8, 13, 15
+	UX
+	U-12
+	Tampilkan informasi SLA saat status "sedang diverifikasi"
+	Gambar 11
+	Fitur kecil (berkaitan dengan B-01 dan B-08)
+	U-13
+	Tombol Sesuai / Kurang / Koreksi / Tambah tampil terpotong
+	Gambar 16, 17
+	UI
+	
+
+Digabung ke paket yang sudah ada
+ID
+	Temuan
+	Sumber
+	Paket
+	U-14
+	Tab kalkulator PNBP dan informasi waktu layanan di workbench verifikator (berdampingan dengan Checklist, Konten Mushaf, Hasil & Draf Surat)
+	Gambar 17
+	B-01 sesi 3 (kartu menjadi tab)
+	U-15
+	Template surat penerbitan STT dengan penanda ${nomor_naskah}, ${tanggal_naskah}, ${ttd_pengirim}, ${nama_pengirim}
+	Berkas template
+	B-09 dan B-03
+	U-16
+	Laporan pencetakan oleh penerbit (disebut di surat penerbitan STT)
+	Berkas template
+	B-10
+	
+
+3. Daftar perubahan istilah (U-10)
+Lokasi
+	Lama
+	Baru
+	Tahap 1 penerbit
+	Draf Belum Diajukan
+	Permohonan Terdaftar
+	Tahap 2, sebelum berkas fisik
+	Lengkapi data & sampel digital
+	Menunggu Pengiriman Berkas Fisik. Baca Petunjuk & Ketentuan Master Fisik!
+	Judul tahap 2, sebelum berkas fisik
+	Verifikasi & Fisik
+	Verifikasi Permohonan & Naskah Fisik
+	Judul tahap 2, setelah berkas fisik diterima
+	Verifikasi & Fisik
+	Verifikasi Naskah Fisik
+	Status di daftar permohonan penerbit
+	Siap ditugaskan
+	Diterima & Proses Verifikasi
+	Tahap 2 di daftar permohonan
+	Verifikasi Pemeriksaan
+	Verifikasi Naskah Fisik
+	Tombol dan judul bukti
+	Bukti Pendaftaran, Cetak Bukti Pendaftaran
+	Bukti Permohonan, Buka Bukti Permohonan
+	Tanggal
+	(tidak tampil)
+	Diajukan 20 Okt 2026
+	
+
+4. Temuan tambahan dari berkas
+* Surat penerbitan STT menyebut 5 eksemplar. Ini menegaskan keputusan tim (5 per naskah) dan menunjukkan angka "10" di halaman web lama sudah usang.
+* Surat yang sama mewajibkan "mengisi laporan pencetakan" dan menyebut fitur pengaduan serta pemeriksaan QR. Laporan pencetakan bisa menjadi sumber data realisasi cetak untuk menentukan kapan oplah pada STT "habis".
+* Sertifikat Penerbit memuat Nomor Induk Penerbit 31.74.26.10.19.001, yang tampak terdiri dari kode wilayah, tanggal, dan nomor urut. Perlu dipastikan formatnya sesuai ketentuan LPMQ dan alurnya penomorannya atomik.
+* Bug B-02 ("tidak setuju") tidak muncul di dokumen UAT ini, jadi B-02 masih menunggu langkah reproduksi.
+5. Pertanyaan klarifikasi
+1. U-08: "Surat permohonan belum masuk" berarti surat permohonan ke LPMQ harus muncul sebagai berkas digital, atau hal lain?
+2. U-03/U-04: "Dibuat auto" berarti nomor surat otomatis, atau tanda tangan Kepala berupa QR yang dibuat otomatis? (Anotasi "QR" di tangkapan layar membuat keduanya mungkin.)
+3. U-03: "Ganti kepala LPMQ": disposisi memang ditandatangani Kepala LPMQ, atau pejabatnya Ketua Pentashih (ADMIN_INTERNAL)?
+4. U-05: apa persisnya yang bermasalah selain pesan "PDF dokumen belum dapat dibuka"?
+5. U-10: dua label tahap 2 ("Verifikasi Permohonan & Naskah Fisik" dan "Verifikasi Naskah Fisik") berlaku menurut keadaan, atau satu saja?
+6. U-06: kode Sertifikat Penerbit ada di branch mana, dan siapa penandatangannya?
+7. U-15: surat penerbitan STT ini sama dengan "surat hasil", atau surat pengantar STT?
+8. U-07: setelah status draf dihapus, apakah pendaftaran harus lengkap sebelum permohonan dibuat? Ini memengaruhi mesin status, awal SLA, dan notifikasi.
+6. Urutan pengerjaan yang diusulkan
+1. U-01 (B-01 sesi 0b) dan U-04 (B-03)
+2. Batch dokumen resmi: U-03, U-05, U-06 (menunggu jawaban 3, 4, dan 6)
+3. UAT-1: U-02, U-07 sampai U-13 (U-07 menunggu jawaban 8), paralel
+4. B-01 sesi 1 sampai 4, dengan U-14 pada sesi 3
+5. U-15 dan U-16 mengikuti B-09 dan B-10

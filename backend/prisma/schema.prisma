@@ -136,6 +136,9 @@ model Publisher {
   verification_status PublisherVerificationStatus @default(UNVERIFIED) // UNVERIFIED, VERIFIED, REJECTED
   address             String?
   phone               String?
+  nomor_induk_penerbit String?             @db.VarChar(50)
+  npwp                String?             @db.VarChar(50)
+  nib                 String?             @db.VarChar(50)
   profile_edit_allowed Boolean             @default(false)
   profile_edit_granted_by String?
   profile_edit_granted_at DateTime?
@@ -203,6 +206,7 @@ model PublisherRegistration {
   nib               String?                     @db.VarChar(50)
   active_npwp       String?                     @unique(map: "pub_reg_active_npwp_key") @db.VarChar(50)
   active_nib        String?                     @unique(map: "pub_reg_active_nib_key") @db.VarChar(50)
+  nomor_induk_penerbit String?                     @db.VarChar(50)
   status            PublisherRegistrationStatus @default(DIAJUKAN)
   reason            String?                     @db.Text
   version           Int                         @default(1)
@@ -928,6 +932,7 @@ enum RoleCode {
   PENTASHIH
   DOKUMENTATOR
   KEPALA_LPMQ
+  PENANDATANGAN
 }
 
 enum UserStatus {
@@ -1095,4 +1100,16 @@ enum DocumentSignatureStatus {
   PENDING
   SIGNED
   FAILED
+}
+
+model DocumentNumberSequence {
+  id            String   @id @default(uuid())
+  sequence_key  String   @unique(map: "doc_num_seq_key") @db.VarChar(100)
+  document_type String   @db.VarChar(50)
+  year          Int
+  last_number   Int      @default(0)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@map("document_number_sequences")
 }

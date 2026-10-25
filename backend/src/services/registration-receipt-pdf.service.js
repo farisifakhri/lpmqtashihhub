@@ -749,10 +749,8 @@ export async function renderShippingLabelPdf(reg) {
   page.drawText(`No. Pendaftaran: ${safeText(regNo, bold)}`, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: black });
   textY -= 16;
   page.drawText(`Nama mushaf: ${safeText(namaMushaf, font)}`.slice(0, 65), { x: margin + col1W + 12, y: textY, font, size: 8, color: black });
-  textY -= 16;
-  page.drawText(`Jenis & Kategori: ${safeText(jenisMushaf, font)} (${safeText(kategori, font)})`.slice(0, 65), { x: margin + col1W + 12, y: textY, font, size: 8, color: black });
-  textY -= 16;
-  page.drawText(`Jumlah: ${volumeCount} Jilid (Master Naskah Fisik A4 per juz)`, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: rgb(0.08, 0.38, 0.28) });
+  textY -= 18;
+  page.drawText(`Jumlah: ${volumeCount} Jilid / Juz (Master Naskah Fisik A4 per juz)`, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: rgb(0.08, 0.38, 0.28) });
 
   // Footer inside box
   const boxFooterY = labelBottomY + 12;

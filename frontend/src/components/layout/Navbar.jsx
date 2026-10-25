@@ -320,11 +320,11 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                         )}
 
                         <Link
-                          to="/verify-documents/DEMO-QR-TOKEN-2026"
+                          to={currentUser?.publisher?.nomor_induk_penerbit ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}` : '/verifikasi/sertifikat/31.74.26.10.19.001'}
                           className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors"
                         >
-                          <ExternalLink className="w-3.5 h-3.5 text-ink-muted" />
-                          <span>Pratinjau Verifikasi QR</span>
+                          <QrCode className="w-3.5 h-3.5 text-brand-700" />
+                          <span>Verifikasi Sertifikat Penerbit (QR)</span>
                         </Link>
 
                         <button

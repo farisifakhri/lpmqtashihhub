@@ -268,7 +268,7 @@
 ---
 
 ### 5.5 `GET /api/v1/admin/publisher-registrations`
-* **Akses:** Internal (`SUPERADMIN`, `ADMIN`).
+* **Akses:** Internal (`SUPERADMIN`, `ADMIN_INTERNAL`).
 * **Query Parameters:**
   * `page` (default: 1)
   * `limit` (default: 10, max: 100)
@@ -306,7 +306,7 @@
 ---
 
 ### 5.6 `GET /api/v1/admin/publisher-registrations/:id`
-* **Akses:** Internal (`SUPERADMIN`, `ADMIN`).
+* **Akses:** Internal (`SUPERADMIN`, `ADMIN_INTERNAL`).
 * **Fungsi:** Mengambil data rincian lengkap pendaftaran penerbit beserta metadata berkas dan status penanda keamanan.
 
 #### Respons Berhasil (200 OK):
@@ -358,7 +358,7 @@
 ---
 
 ### 5.7 `GET /api/v1/admin/publisher-registrations/:id/documents/:documentId`
-* **Akses:** Internal (`SUPERADMIN`, `ADMIN`).
+* **Akses:** Internal (`SUPERADMIN`, `ADMIN_INTERNAL`).
 * **Fungsi:** Mengunduh atau melihat dokumen berkas.
 * **Ketentuan Keamanan:**
   * Akses melalui otorisasi JWT (bukan URL static publik).
@@ -369,7 +369,7 @@
 ---
 
 ### 5.8 `POST /api/v1/admin/publisher-registrations/:id/decision`
-* **Akses:** Internal (`SUPERADMIN`, `ADMIN`).
+* **Akses:** Internal (`SUPERADMIN`, `ADMIN_INTERNAL`).
 * **Fungsi:** Menetapkan persetujuan, permintaan perbaikan, atau penolakan.
 * **Konkurensi Optimistik:** Wajib menyertakan parameter `versi`. Jika `versi` di database sudah berubah (misal sudah diputuskan oleh admin lain), request ditolak dengan `VERSION_CONFLICT`.
 

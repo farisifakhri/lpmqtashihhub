@@ -202,11 +202,8 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                     <p>
                       Nama mushaf: <strong className="text-ink">{namaMushaf}</strong>
                     </p>
-                    <p className="text-ink-muted print:text-black text-xs">
-                      Jenis & Kategori: <span className="text-ink font-medium">{jenisMushaf}</span> ({kategori})
-                    </p>
                     <p className="font-medium text-ink pt-0.5">
-                      Jumlah: <strong className="text-brand-900">{volumeCount} Jilid</strong> (Master Naskah Fisik A4 per juz)
+                      Jumlah: <strong className="text-brand-900">{volumeCount} Jilid / Juz</strong> (Master Naskah Fisik A4 per juz)
                     </p>
                   </td>
                 </tr>

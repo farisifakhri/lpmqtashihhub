@@ -20,7 +20,7 @@ Disintesis dari Notulensi Rapat Laporan Kamis, 8 Oktober 2026, dokumen SRS v3.1 
 ---
 
 ## 3. Batas Peran Admin Internal Loket (T-03 / Opsi A)
-1. **Tugas Loket Fisik**: Admin Internal (`HELPER_ADMIN`) berfokus secara eksklusif pada penerimaan teknis loket (memastikan nomor resi pengiriman, tanda penerimaan paket fisik, bukti fisik paket, dan tanggal terima `received_at`).
+1. **Tugas Loket Fisik**: Admin Internal (`ADMIN_INTERNAL`) berfokus secara eksklusif pada penerimaan teknis loket (memastikan nomor resi pengiriman, tanda penerimaan paket fisik, bukti fisik paket, dan tanggal terima `received_at`).
 2. **Diagnosis Naskah**: Pemeriksaan kondisi detail naskah tidak lagi didiagnosis di loket intake awal, melainkan saat verifikasi berkas/master oleh Verifikator.
 3. **Personil Resmi**: Akun resmi Admin Internal diselaraskan menjadi:
    - Muhammad Zamroni Ahbab, S.S.I., M.Ag. (`admin.internal@lpmq.kemenag.go.id`)
@@ -54,4 +54,3 @@ Disintesis dari Notulensi Rapat Laporan Kamis, 8 Oktober 2026, dokumen SRS v3.1 
 ## 7. Template Surat Permohonan (`RF-PBL-01`) & Label Pengiriman (`RF-REG-10`)
 1. **Template Unduhan `.docx`**: Halaman pendaftaran dan landing page menyediakan unduhan berkas editable `template-surat-permohonan-tashih.docx` untuk memudahkan penerbit mengajukan permohonan sesuai format standar Kemenag RI.
 2. **Label Pengiriman Paket**: Format label pengiriman fisik diperbesar dengan logo Kemenag dan LPMQ yang tajam dan terbaca jelas oleh ekspedisi logistik.
-

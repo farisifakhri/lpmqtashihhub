@@ -6,6 +6,7 @@ import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigne
 import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt } from './sla.service.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
+import { getNextDocumentNumber } from './document-number.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -843,7 +844,13 @@ try { return await prisma.$transaction(async tx => {
       fail(409, 'Kepala LPMQ hanya dapat mengesahkan dokumen yang telah ditandatangani Verifikator dan belum berubah isinya.');
     }
     const suppliedNumber = req?.body?.document_numbers?.[rDoc.document_type];
-    const documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
+    let documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
+    // B-03 / U-04: Nomor surat resmi dibuat otomatis jika diminta via auto_number atau tidak diisi manual
+    if (!documentNo || documentNo.length < 3) {
+      if (req?.body?.auto_number === true || req?.body?.auto_generate === true) {
+        documentNo = await getNextDocumentNumber(tx, rDoc.document_type, now);
+      }
+    }
     if (documentNo.length < 3 || documentNo.length > 191) {
       fail(400, `Nomor resmi ${rDoc.document_type} wajib diisi (3–191 karakter) sebelum persetujuan.`);
     }
@@ -1238,18 +1245,19 @@ export const getVerificationDocument = async (documentId, user) => {
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
   const isVerifier = user.roles.includes('VERIFIKATOR');
+  const isStaffReader = user.roles.some(r => ['DOKUMENTATOR', 'DISTRIBUTOR', 'PENTASHIH'].includes(r));
   const isOwnerPublisher = user.roles.includes('PENERBIT') && user.publisherId === doc.registration.publisher_id;
 
   if (isOwnerPublisher) {
     if (doc.status !== 'SENT') {
       fail(403, 'Surat hasil verifikasi belum dikirimkan kepada Anda.');
     }
-  } else if (isVerifier && !isHead && !isAdmin) {
+  } else if (isVerifier && !isHead && !isAdmin && !isStaffReader) {
     const isAssigned = doc.assignment?.verifier_id === user.id || doc.created_by_id === user.id;
     if (!isAssigned) {
       fail(403, 'Anda tidak memiliki hak akses untuk memeriksa dokumen penugasan verifikator lain.');
     }
-  } else if (!isHead && !isAdmin) {
+  } else if (!isHead && !isAdmin && !isStaffReader) {
     fail(403, 'Anda tidak memiliki hak akses untuk membaca dokumen ini.');
   }
 
