@@ -121,7 +121,7 @@ describe('LandingPage sections and navigation', () => {
     });
   });
 
-  it('renders the image-only hero and WhatsApp contact links on desktop and mobile', () => {
+  it('renders the hero slideshow controls and WhatsApp contact links on desktop and mobile', () => {
     render(
       <MemoryRouter>
         <LandingPage />
@@ -130,13 +130,37 @@ describe('LandingPage sections and navigation', () => {
 
     const hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
     const heroImages = within(hero).getAllByRole('img', { hidden: true });
-    expect(heroImages).toHaveLength(2);
-    expect(heroImages[0]).toHaveAttribute('src', expect.stringContaining('berandaaku.webp'));
-    expect(heroImages[1]).toHaveAttribute('src', expect.stringContaining('berandakii.webp'));
-    expect(within(hero).queryByText(/Kementerian Agama Republik Indonesia/i)).not.toBeInTheDocument();
-    expect(within(hero).queryByRole('heading')).not.toBeInTheDocument();
-    expect(within(hero).queryByRole('searchbox')).not.toBeInTheDocument();
-    expect(within(hero).queryByRole('button')).not.toBeInTheDocument();
+    expect(heroImages).toHaveLength(4);
+    expect(heroImages[1]).toHaveAttribute('src', expect.stringContaining('berandaaku.webp'));
+    expect(heroImages[2]).toHaveAttribute('src', expect.stringContaining('berandakii.webp'));
+    expect(hero.closest('main')).toHaveClass('max-w-[1400px]', 'px-5', 'sm:px-8', 'lg:px-12');
+    const track = hero.querySelector('[data-hero-track]');
+    expect(track).toHaveClass('transition-transform', 'duration-[600ms]', 'ease-in-out');
+    expect(track.style.transform).toBe('translateX(-25%)');
+    expect(
+      within(hero).getByRole('heading', { name: 'Layanan Surat Tanda Tashih Al-Qur’an' })
+    ).toBeInTheDocument();
+    const ministryLabel = within(hero)
+      .getAllByText('Kementerian Agama Republik Indonesia')
+      .find((label) => label.closest('[aria-hidden="false"]'));
+    expect(ministryLabel).toHaveClass(
+      'backdrop-blur-md',
+      'bg-white/15',
+      'border-white/20',
+      'rounded-full'
+    );
+    const slideOneDescription = within(hero)
+      .getAllByText(/Layanan resmi penerbitan Surat Tanda Tashih/)
+      .find((description) => description.closest('[aria-hidden="false"]'));
+    expect(slideOneDescription).toBeInTheDocument();
+    expect(within(hero).getByRole('button', { name: 'Slide sebelumnya' })).toHaveAttribute(
+      'type',
+      'button'
+    );
+    expect(within(hero).getByRole('button', { name: 'Slide berikutnya' })).toHaveAttribute(
+      'type',
+      'button'
+    );
 
     let contactLinks = screen.getAllByRole('link', {
       name: 'Hubungi Layanan Tashih Online melalui WhatsApp',
@@ -152,6 +176,64 @@ describe('LandingPage sections and navigation', () => {
       expect(contactLink).toHaveAttribute('target', '_blank');
       expect(contactLink).toHaveAttribute('rel', 'noopener noreferrer');
     });
+  });
+
+  it('shows slide-one text only on the first slide and supports circular controls and 7-second autoplay', () => {
+    vi.useFakeTimers();
+
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    const hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const previousButton = within(hero).getByRole('button', { name: 'Slide sebelumnya' });
+    const nextButton = within(hero).getByRole('button', { name: 'Slide berikutnya' });
+    const track = hero.querySelector('[data-hero-track]');
+    const slideOneHeading = () =>
+      within(hero).queryByRole('heading', { name: 'Layanan Surat Tanda Tashih Al-Qur’an' });
+    const finishTransition = () => fireEvent.transitionEnd(track);
+
+    expect(slideOneHeading()).toBeInTheDocument();
+    fireEvent.click(nextButton);
+    expect(track.style.transform).toBe('translateX(-50%)');
+    expect(slideOneHeading()).not.toBeInTheDocument();
+
+    fireEvent.click(nextButton);
+    expect(track.style.transform).toBe('translateX(-50%)');
+    finishTransition();
+    expect(track.style.transform).toBe('translateX(-75%)');
+    finishTransition();
+    expect(track.style.transform).toBe('translateX(-25%)');
+    act(() => {
+      vi.advanceTimersByTime(32);
+    });
+    expect(slideOneHeading()).toBeInTheDocument();
+
+    fireEvent.click(previousButton);
+    expect(track.style.transform).toBe('translateX(-0%)');
+    finishTransition();
+    expect(track.style.transform).toBe('translateX(-50%)');
+    act(() => {
+      vi.advanceTimersByTime(32);
+    });
+    expect(slideOneHeading()).not.toBeInTheDocument();
+
+    fireEvent.click(nextButton);
+    expect(track.style.transform).toBe('translateX(-75%)');
+    finishTransition();
+    expect(track.style.transform).toBe('translateX(-25%)');
+    act(() => {
+      vi.advanceTimersByTime(32);
+    });
+    expect(slideOneHeading()).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(7000);
+    });
+    expect(track.style.transform).toBe('translateX(-50%)');
+    expect(slideOneHeading()).not.toBeInTheDocument();
   });
 
   it('adds the About Us information above the retained footer links', () => {
@@ -329,7 +411,7 @@ describe('LandingPage sections and navigation', () => {
     expect(infoSection.contains(fbLink)).toBe(false);
   });
 
-  it('crossfades the hero slides every five seconds and cycles back to the first image', () => {
+  it('slides the hero horizontally every seven seconds and cycles back to the first image', () => {
     vi.useFakeTimers();
     const { unmount } = render(
       <MemoryRouter>
@@ -337,22 +419,22 @@ describe('LandingPage sections and navigation', () => {
       </MemoryRouter>
     );
 
-    const firstSlide = screen.getByAltText('Gambar pertama slideshow beranda LPMQ');
-    const secondSlide = screen.getByAltText('Gambar kedua slideshow beranda LPMQ');
-    expect(firstSlide).toHaveClass('opacity-100');
-    expect(secondSlide).toHaveClass('opacity-0');
+    const hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const track = hero.querySelector('[data-hero-track]');
+    expect(track.style.transform).toBe('translateX(-25%)');
 
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(7000);
     });
-    expect(firstSlide).toHaveClass('opacity-0');
-    expect(secondSlide).toHaveClass('opacity-100');
+    expect(track.style.transform).toBe('translateX(-50%)');
 
+    fireEvent.transitionEnd(track);
     act(() => {
-      vi.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(7000);
     });
-    expect(firstSlide).toHaveClass('opacity-100');
-    expect(secondSlide).toHaveClass('opacity-0');
+    expect(track.style.transform).toBe('translateX(-75%)');
+    fireEvent.transitionEnd(track, { propertyName: 'transform' });
+    expect(track.style.transform).toBe('translateX(-25%)');
 
     unmount();
     expect(vi.getTimerCount()).toBe(0);
