@@ -110,11 +110,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     a.reviews?.some((r) => r.result === 'REVISION_REQUIRED')
   );
 
+  // B-06: Verifikasi dokumen rekap telaah internal
+  const hasTeamRecap = currentAssignments.some(
+    (a) => Boolean(a.recap_file_id || a.reviews?.[0]?.recap_file_id || a.reviews?.[0]?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i))
+  );
+
   const canPassSTT = allCompleted && !hasRevisionRequested;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!registration || !allCompleted) return;
+    if (!registration || !allCompleted || !hasTeamRecap) return;
 
     if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
@@ -293,6 +298,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
                   <div>
                     <strong>Sidang Belum Selesai Seluruhnya:</strong> Masih ada anggota tim pentashih yang belum menginputkan hasil telaah. Keputusan distributor baru dapat disimpan setelah semua anggota menyelesaikan telaah.
+                  </div>
+                </div>
+              )}
+
+              {/* Peringatan jika belum ada dokumen rekap internal (B-06) */}
+              {allCompleted && !hasTeamRecap && (
+                <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
+                  <div>
+                    <strong>Dokumen Rekapan Belum Diunggah:</strong> Seluruh pentashih telah menyelesaikan telaah namun dokumen rekap hasil telaah internal belum diunggah. Sesuai SOP, minimal 1 dokumen rekap kelompok/pentashih wajib diunggah sebelum keputusan distributor dapat disimpan.
                   </div>
                 </div>
               )}
@@ -498,7 +513,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={submitting || !allCompleted || !distributorNotes.trim()}
+                disabled={submitting || !allCompleted || !hasTeamRecap || !distributorNotes.trim()}
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >
