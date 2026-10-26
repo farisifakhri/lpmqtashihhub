@@ -55,7 +55,7 @@ router.post('/registrations/:id/documentation', authenticate, authorize('DOKUMEN
 // Laporan Realisasi Pencetakan Al-Qur'an oleh Penerbit (U-16 / B-10)
 router.get('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => documentation.getPrintingReports(req.params.id, req.user)));
 router.post('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(printingReportSchema), action(req => documentation.createPrintingReport(req.params.id, req.body, req.user, req), 201));
-router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
+router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'VERIFIKATOR'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
     const bytes = await documents.documentPdf(document, req.user);
@@ -64,7 +64,7 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'A
   } catch (error) { next(error); }
 });
 
-router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
+router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'),
   (req, res, next) => {
     const ctype = req.get('content-type')?.split(';')[0]?.toLowerCase();
     const clen = Number(req.get('content-length'));
