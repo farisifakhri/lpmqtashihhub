@@ -24,7 +24,10 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | B-04 | **Selesai menurut bukti kode** | Dokumen kode billing menggabungkan surat lolos verifikasi dengan lampiran berkas billing SIMPONI (PDF), dan tagihan/kode billing ditegakkan hanya untuk naskah yang lolos. |
 | B-05 | **Selesai menurut bukti kode** | Backend endpoint master pentashih candidates, alokasi fleksibel kelompok/individu, validasi lengkap 30 juz, alasan pergantian generik, antarmuka dialog dengan live indicator 30 juz dan pencarian pentashih, serta tes lulus 100%. |
 | B-06 | **Selesai menurut bukti kode** | Kewajiban dokumen rekap telaah internal pada pelaporan pentashih, kolom eksplisit recap_file_id, verifikasi kelengkapan rekap oleh distributor, pembatasan kerahasiaan rekap internal, dan tes lolos 100%. |
-| B-07–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. B-07 (siklus revisi & dumi) siap dikerjakan setelah B-06 selesai. |
+| B-07 | **Selesai menurut bukti kode** | Label pengiriman 2 varian resmi (Perbaikan & Dumi), kolom resi keluar distributor outgoing_courier/outgoing_tracking_no, pelacakan resi keluar di dashboard penerbit, form konfirmasi resi masuk naskah perbaikan, penerusan loket TMII, dan pembandingan catatan sidang ronde sebelumnya di modal telaah pentashih & distributor. |
+| B-08 | **Siap Dikerjakan (Unblocked)** | B-07 selesai; status menunggu penerbit, pengingat, dan indikator umur admin siap dibangun. |
+| B-09–B-11 | **Unblocked (Siap Dikerjakan Nabil)** | Dependensi B-07 selesai; alur penerbitan surat hasil & STT per pengajuan siap dikerjakan. |
+| B-12–B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
 
 **Definisi status:** *Selesai* = bukti checkout/checklist mendukung kriteria yang dinyatakan; *Parsial* = sebagian alur ada tetapi ada gap yang disebutkan; *Belum diverifikasi* = bukti belum cukup; *Belum dimulai* = sumber tugas saat ini menyatakan belum ada reproduksi/pekerjaan yang dapat dinilai. Jangan menafsirkan “tidak diverifikasi” sebagai “tidak ada kode”.
 
@@ -41,8 +44,9 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Status per paket dan bukti: [backlog fase lanjutan](BACKLOG-FASE-LANJUTAN.md) |
 | `B-05` | Fakhri | `feat/b05-distribusi-kelompok-juz` | **Selesai**: alokasi fleksibel kelompok/individu, live indicator 30 juz, dropdown pentashih |
 | `B-06` | Fakhri | `feat/b06-rekap-pentashih-internal` | **Selesai**: dokumen rekap internal wajib, verifikasi distributor |
-| `B-07` dan `B-08` | Fakhri *(Direkomendasikan)* | `feat/siklus-pengembalian-revisi-dumi` dkk. | Status per paket: siap dikerjakan (unblocked) |
-| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status per paket: belum diverifikasi (bergantung ke B-07) |
+| `B-07` | Fakhri | `feat/b07-siklus-pengembalian-revisi-dumi` | **Selesai**: label 2 varian, resi keluar distributor, resi masuk penerbit, pembandingan catatan |
+| `B-08` | Fakhri *(Direkomendasikan)* | `feat/status-menunggu-penerbit` | Status: siap dikerjakan (unblocked) |
+| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status: unblocked (dependensi B-07 terpenuhi) |
 | `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Status per paket: belum diverifikasi |
 
 ## 2. Urutan dan dependensi (Fase 1: pendaftaran penerbit)
