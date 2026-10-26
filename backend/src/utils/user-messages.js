@@ -37,6 +37,7 @@ const fields = {
   checklist: 'Checklist pemeriksaan', code: 'Butir checklist', letter_text: 'Isi draf surat',
   attachment_file_ids: 'Lampiran surat', documentId: 'Dokumen verifikasi', fileId: 'Berkas lampiran',
   tashih_due_at: 'Tenggat waktu pentashihan',
+  oplah: 'Rencana oplah', ukuran: 'Ukuran naskah', variants: 'Varian ukuran & oplah',
 };
 
 export function validationMessage(issue) {

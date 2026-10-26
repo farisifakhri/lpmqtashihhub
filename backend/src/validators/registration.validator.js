@@ -22,13 +22,7 @@ export const manuscriptMetadataSchema = z
     nama_percetakan: z.string().trim().max(255).optional().nullable(),
     jenis_mushaf: z.string().trim().max(100).optional().nullable(),
     kategori_pendaftaran: z.string().trim().max(100).optional().nullable(),
-    sizes: z.array(z.object({
-      ukuran: z.string().trim().max(50),
-      oplah: z.union([
-        z.number().int().min(0).max(10_000_000),
-        z.string().regex(/^\d{0,8}$/),
-      ]),
-    }).strict()).max(10).optional().nullable(),
+    sizes: z.array(z.any()).max(10).optional().nullable(),
     jenis_naskah: z.array(z.string().trim().max(255)).max(50).optional().nullable(),
     deskripsi_mushaf: z.string().trim().max(2000).optional().nullable(),
     materi_tambahan: z.array(z.string().trim().max(255)).max(50).optional().nullable(),
@@ -46,7 +40,7 @@ export const manuscriptMetadataSchema = z
 
 export const manuscriptVariantSchema = z.object({
   ukuran: z.string().trim().min(1, 'Ukuran varian wajib diisi').max(50, 'Ukuran varian maksimal 50 karakter'),
-  oplah: z.number().int('Oplah harus berupa bilangan bulat').min(1, 'Oplah minimal 1 eksemplar').max(10_000_000, 'Oplah maksimal 10.000.000'),
+  oplah: z.coerce.number().int('Oplah harus berupa bilangan bulat').min(1, 'Oplah minimal 1 eksemplar').max(10_000_000, 'Oplah maksimal 10.000.000'),
 });
 
 export const manuscriptInputSchema = z.object({

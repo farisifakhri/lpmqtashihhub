@@ -858,7 +858,7 @@ export const NewRegistrationPage = () => {
         .filter((s) => s.ukuran?.trim() || s.oplah)
         .map((s) => ({
           ukuran: s.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
-          oplah: Number(s.oplah) || 1000,
+          oplah: Number(String(s.oplah || '').replace(/\D/g, '')) || 1000,
         }));
 
       const allManuscripts = [
