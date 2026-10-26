@@ -45,7 +45,7 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | `B-05` | Fakhri | `feat/b05-distribusi-kelompok-juz` | **Selesai**: alokasi fleksibel kelompok/individu, live indicator 30 juz, dropdown pentashih |
 | `B-06` | Fakhri | `feat/b06-rekap-pentashih-internal` | **Selesai**: dokumen rekap internal wajib, verifikasi distributor |
 | `B-07` | Fakhri | `feat/b07-siklus-pengembalian-revisi-dumi` | **Selesai**: label 2 varian, resi keluar distributor, resi masuk penerbit, pembandingan catatan |
-| `B-08` | Fakhri *(Direkomendasikan)* | `feat/status-menunggu-penerbit` | Status: siap dikerjakan (unblocked) |
+| `B-08` | Fakhri | `feat/b08-status-menunggu-penerbit` | **Selesai**: status jeda SLA, kalkulasi umur antrean, pengingat berkala & batch |
 | `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status: unblocked (dependensi B-07 terpenuhi) |
 | `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Status per paket: belum diverifikasi |
 
