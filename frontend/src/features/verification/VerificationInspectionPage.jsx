@@ -428,7 +428,7 @@ export const VerificationInspectionPage = () => {
       if (targetBaDoc && minNo) docNumbers.BERITA_ACARA_VERIFIKASI = minNo;
 
       await verificationApi.approveDocument(targetDoc.id, {
-        ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : {}),
+        ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : { auto_number: true, auto_generate: true }),
       });
       setApproveConfirmOpen(false);
       setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Nomor resmi dan kode billing diterbitkan otomatis pada dokumen.');
