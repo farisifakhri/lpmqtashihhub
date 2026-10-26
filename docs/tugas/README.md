@@ -23,7 +23,8 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | B-03 | **Selesai menurut bukti kode** | Kode resmi `TL.01` disahkan. Sequence atomik backend aktif, terintegrasi ke dialog approval `VerificationInspectionPage.jsx` dengan flag `auto_number: true` saat nomor manual kosong. UAT U-04 terselesaikan. |
 | B-04 | **Selesai menurut bukti kode** | Dokumen kode billing menggabungkan surat lolos verifikasi dengan lampiran berkas billing SIMPONI (PDF), dan tagihan/kode billing ditegakkan hanya untuk naskah yang lolos. |
 | B-05 | **Selesai menurut bukti kode** | Backend endpoint master pentashih candidates, alokasi fleksibel kelompok/individu, validasi lengkap 30 juz, alasan pergantian generik, antarmuka dialog dengan live indicator 30 juz dan pencarian pentashih, serta tes lulus 100%. |
-| B-06–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. B-06 siap dibangun setelah eliminasi utang teknis recap_file_id. |
+| B-06 | **Selesai menurut bukti kode** | Kewajiban dokumen rekap telaah internal pada pelaporan pentashih, kolom eksplisit recap_file_id, verifikasi kelengkapan rekap oleh distributor, pembatasan kerahasiaan rekap internal, dan tes lolos 100%. |
+| B-07–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. B-07 (siklus revisi & dumi) siap dikerjakan setelah B-06 selesai. |
 
 **Definisi status:** *Selesai* = bukti checkout/checklist mendukung kriteria yang dinyatakan; *Parsial* = sebagian alur ada tetapi ada gap yang disebutkan; *Belum diverifikasi* = bukti belum cukup; *Belum dimulai* = sumber tugas saat ini menyatakan belum ada reproduksi/pekerjaan yang dapat dinilai. Jangan menafsirkan “tidak diverifikasi” sebagai “tidak ada kode”.
 
@@ -38,7 +39,9 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Selesai**: verifikasi admin, audit tautan, optimistic concurrency versi & konflik |
 | **Fase Lanjutan** | | | |
 | `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Status per paket dan bukti: [backlog fase lanjutan](BACKLOG-FASE-LANJUTAN.md) |
-| `B-05` s.d. `B-08` | Fakhri *(Direkomendasikan)* | `feat/distribusi-kelompok-juz` dkk. | Status per paket: belum diverifikasi / fondasi awal |
+| `B-05` | Fakhri | `feat/b05-distribusi-kelompok-juz` | **Selesai**: alokasi fleksibel kelompok/individu, live indicator 30 juz, dropdown pentashih |
+| `B-06` | Fakhri | `feat/b06-rekap-pentashih-internal` | **Selesai**: dokumen rekap internal wajib, verifikasi distributor |
+| `B-07` dan `B-08` | Fakhri *(Direkomendasikan)* | `feat/siklus-pengembalian-revisi-dumi` dkk. | Status per paket: siap dikerjakan (unblocked) |
 | `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status per paket: belum diverifikasi (bergantung ke B-07) |
 | `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Status per paket: belum diverifikasi |
 
