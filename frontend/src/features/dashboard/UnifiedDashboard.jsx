@@ -191,8 +191,8 @@ export const UnifiedDashboard = () => {
 
     const items = [
       {
-        title: 'Loket Intake Master Fisik',
-        desc: 'Penerimaan dan verifikasi master fisik A4 per juz',
+        title: 'Penerimaan Master Fisik',
+        desc: 'Penerimaan dan verifikasi master fisik naskah per juz',
         icon: PackageCheck,
         path: '/internal/master-intake',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -200,8 +200,8 @@ export const UnifiedDashboard = () => {
         allowed: isAdmin || isSuperAdmin || isKepala,
       },
       {
-        title: 'Penugasan Tim',
-        desc: 'Tetapkan tim pentashih pada naskah yang siap distribusi',
+        title: 'Penugasan Tim Pentashih',
+        desc: 'Penetapan tim pentashih pada naskah yang siap ditashih',
         icon: Users,
         path: '/internal#antrean-tim',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -210,7 +210,7 @@ export const UnifiedDashboard = () => {
       },
       {
         title: isKepala ? 'Persetujuan Verifikasi' : 'Verifikasi Berkas',
-        desc: isKepala ? 'Disposisi penugasan & persetujuan draf surat' : 'Pemeriksaan naskah & legalitas penerbit',
+        desc: isKepala ? 'Disposisi penugasan dan persetujuan draf surat' : 'Pemeriksaan naskah dan legalitas penerbit',
         icon: CheckSquare,
         path: '/internal/verifications',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -218,8 +218,8 @@ export const UnifiedDashboard = () => {
         allowed: isSuperAdmin || userRoles.includes('VERIFIKATOR') || isKepala,
       },
       {
-        title: 'Distribusi Sidang',
-        desc: 'Penugasan berkas ke SK Tim Pentashih & serah terima fisik',
+        title: 'Distribusi Pentashihan',
+        desc: 'Penyerahan naskah dan berkas kerja tim pentashih',
         icon: Send,
         path: '/internal/distributions',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -228,7 +228,7 @@ export const UnifiedDashboard = () => {
       },
       {
         title: 'Sidang Pentashihan',
-        desc: 'Pencatatan koreksi lafaz, rasm, & waqaf',
+        desc: 'Pencatatan hasil telaah lafaz, rasm, dan waqaf',
         icon: BookOpen,
         path: '/internal/tashih',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -237,7 +237,7 @@ export const UnifiedDashboard = () => {
       },
       {
         title: 'Penetapan STT',
-        desc: 'Berita acara sidang & pengesahan dokumen',
+        desc: 'Berita acara sidang dan pengesahan dokumen tanda tashih',
         icon: Award,
         path: '/internal/documents',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -245,8 +245,8 @@ export const UnifiedDashboard = () => {
         allowed: isSuperAdmin || userRoles.includes('DOKUMENTATOR') || userRoles.includes('KEPALA_LPMQ'),
       },
       {
-        title: 'Master Data Layanan',
-        desc: 'Kelola kategori, tarif, SLA, dan parameter layanan',
+        title: 'Pengaturan Layanan',
+        desc: 'Kelola kategori naskah, tarif PNBP, batas waktu, dan parameter',
         icon: Sliders,
         path: '/internal/settings',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -254,8 +254,8 @@ export const UnifiedDashboard = () => {
         allowed: isSuperAdmin,
       },
       {
-        title: 'Identitas dan Akses',
-        desc: 'Kelola akun, peran, dan matriks kewenangan',
+        title: 'Manajemen Pengguna',
+        desc: 'Kelola akun staf, hak akses peran, dan kewenangan',
         icon: Users,
         path: '/internal/users',
         iconBg: 'bg-brand-50 text-brand-fg border border-brand-100',
@@ -314,25 +314,25 @@ export const UnifiedDashboard = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {quickActions.map((action, idx) => {
             const Icon = action.icon;
             return (
               <Link
                 key={idx}
                 to={action.path}
-                className={`group p-3.5 rounded-xl border border-line/80 ${action.cardHover || 'hover:border-brand-700 hover:bg-brand-50/40'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between shadow-2xs hover:shadow-xs bg-surface`}
+                className={`group p-4 rounded-xl border border-line bg-surface hover:bg-white ${action.cardHover || 'hover:border-brand-700 hover:shadow-xs'} active:scale-[0.98] transition-all duration-200 flex flex-col justify-between`}
               >
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className={`w-9 h-9 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs flex-shrink-0 group-hover:scale-105 transition-transform`}>
-                    <Icon className="w-4.5 h-4.5" />
+                <div>
+                  <div className={`w-10 h-10 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs mb-3 group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-5 h-5" />
                   </div>
-                  <div className="text-xs font-bold text-ink group-hover:text-brand-800 line-clamp-1">
+                  <h4 className="text-sm font-bold text-ink group-hover:text-brand-800 leading-snug mb-1.5">
                     {action.title}
-                  </div>
-                </div>
-                <div className="text-xs text-ink-muted group-hover:text-ink line-clamp-2 leading-relaxed">
-                  {action.desc}
+                  </h4>
+                  <p className="text-xs text-ink-muted group-hover:text-ink leading-relaxed">
+                    {action.desc}
+                  </p>
                 </div>
               </Link>
             );
@@ -563,16 +563,16 @@ export const UnifiedDashboard = () => {
               </div>
               <div>
                 <h4 className="text-xs sm:text-sm font-bold tracking-wide uppercase text-ink">
-                  Kinerja Verifikasi & Kepatuhan SLA (SOP Pentashihan LPMQ)
+                  Kinerja Verifikasi & Standar Pelayanan Pentashihan LPMQ
                 </h4>
                 <p className="text-xs text-ink-muted">
-                  Parameter SLA: telaah berkas maksimal 48 jam • pembayaran PNBP maksimal 7 hari
+                  Standar Waktu Layanan: telaah berkas maksimal 48 jam • batas pembayaran PNBP 7 hari
                 </p>
               </div>
             </div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-50 text-brand-800 text-xs font-bold border border-brand-200 self-start sm:self-auto">
               <TrendingUp className="w-3.5 h-3.5 text-brand-fg" />
-              <span>SLA Kepatuhan: {performanceReport.summary?.compliance_rate_percent ?? 100}%</span>
+              <span>Kepatuhan Target Waktu: {performanceReport.summary?.compliance_rate_percent ?? 100}%</span>
             </div>
           </div>
 
@@ -583,7 +583,7 @@ export const UnifiedDashboard = () => {
                 {performanceReport.summary?.avg_duration_hours ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">jam</span>
               </div>
-              <div className="text-xs text-brand-fg font-semibold mt-0.5">SOP Max: 48 jam</div>
+              <div className="text-xs text-brand-fg font-semibold mt-0.5">Target Maksimal: 48 jam</div>
             </div>
 
             <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
@@ -597,7 +597,7 @@ export const UnifiedDashboard = () => {
             </div>
 
             <div className="bg-surface-subtle/80 rounded-xl p-3.5 border border-line">
-              <div className="text-ink-muted text-xs mb-1">Antrean Overdue SLA</div>
+              <div className="text-ink-muted text-xs mb-1">Melebihi Batas Waktu</div>
               <div className="text-xl font-black text-ink">
                 {performanceReport.summary?.total_overdue ?? 0}{' '}
                 <span className="text-xs font-normal text-ink-muted">berkas</span>
@@ -605,10 +605,10 @@ export const UnifiedDashboard = () => {
               <div className="text-xs mt-0.5">
                 {(performanceReport.summary?.total_overdue || 0) > 0 ? (
                   <span className="text-civic-danger font-semibold flex items-center gap-1">
-                    <AlertTriangle className="w-2.5 h-2.5" /> Perlu atensi
+                    <AlertTriangle className="w-2.5 h-2.5" /> Perlu tindak lanjut
                   </span>
                 ) : (
-                  <span className="text-brand-fg font-semibold">Semua sesuai jadwal</span>
+                  <span className="text-brand-fg font-semibold">Semua tepat waktu</span>
                 )}
               </div>
             </div>
