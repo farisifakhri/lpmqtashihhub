@@ -43,6 +43,12 @@ export const registrationApi = {
   addManuscript: async (id, payload) => apiClient(`/registrations/${id}/manuscripts`, { method: 'POST', body: payload }),
   declarePhysicalMaster: async (id, payload) => apiClient(`/registrations/${id}/physical-master`, { method: 'PUT', body: payload }),
   dispatchPhysical: async (id, payload) => apiClient(`/registrations/${id}/dispatch-physical`, { method: 'POST', body: payload }),
+  remindPublisher: async (id) => apiClient(`/registrations/${id}/remind-publisher`, { method: 'POST' }),
+  batchRemindPublishers: async (thresholdDays = 7) =>
+    apiClient('/registrations/batch-remind-publishers', {
+      method: 'POST',
+      body: { thresholdDays },
+    }),
   createAssignments: async (id, payload) => apiClient(`/registrations/${id}/assignments`, { method: 'POST', body: payload }),
   deleteRegistration: async (id) => apiClient(`/registrations/${id}`, { method: 'DELETE' }),
     getReceiptPdf: async (id) => {

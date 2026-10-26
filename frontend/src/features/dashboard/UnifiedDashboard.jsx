@@ -64,6 +64,8 @@ export const UnifiedDashboard = () => {
   const [assignmentId, setAssignmentId] = useState(null);
   const [assignmentSuccess, setAssignmentSuccess] = useState('');
   const [verificationAssignReg, setVerificationAssignReg] = useState(null);
+  const [remindingId, setRemindingId] = useState(null);
+  const [reminderMessage, setReminderMessage] = useState('');
   const canAssignTeam = isAdmin;
   const canAssignVerification = isAdmin;
 
@@ -73,6 +75,23 @@ export const UnifiedDashboard = () => {
   }, [searchQuery]);
 
   const changeStatusFilter = value => { setStatusFilter(value); setPage(1); };
+
+  const handleRemindPublisher = async (item) => {
+    if (!window.confirm(`Kirim notifikasi pengingat perbaikan naskah ke ${item.publisher?.legal_name || 'penerbit'}?`)) {
+      return;
+    }
+    setRemindingId(item.id);
+    setReminderMessage('');
+    try {
+      const res = await registrationApi.remindPublisher(item.id);
+      setReminderMessage(res.message || `Pengingat berhasil dikirim kepada ${item.publisher?.legal_name || 'penerbit'}.`);
+      fetchRegistrations();
+    } catch (err) {
+      setReminderMessage(`Gagal mengirim pengingat: ${err.message || 'Terjadi kesalahan'}`);
+    } finally {
+      setRemindingId(null);
+    }
+  };
 
   const fetchRegistrations = async () => {
     const request = ++requestId.current;
@@ -640,6 +659,12 @@ export const UnifiedDashboard = () => {
 
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
       {assignmentSuccess && <p role="status" className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-800">{assignmentSuccess}</p>}
+      {reminderMessage && (
+        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 flex items-center justify-between">
+          <span>{reminderMessage}</span>
+          <button type="button" onClick={() => setReminderMessage('')} className="text-amber-700 hover:text-amber-950 font-bold ml-2">✕</button>
+        </div>
+      )}
       <div id="antrean-tim" className="bg-white rounded-xl border border-line shadow-2xs overflow-hidden scroll-mt-6">
         {/* Header & Filter Controls */}
         <div className="p-5 sm:p-6 border-b border-line space-y-4">
@@ -803,6 +828,18 @@ export const UnifiedDashboard = () => {
                       <div className="mt-2"><QueueItemMeta item={item} /></div>
                     </td>
                     <td className="py-4 px-6 text-right">
+                      {isAdmin && item.status === 'REVISION_REQUIRED' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-xs mb-2 block ml-auto font-bold border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100"
+                          onClick={() => handleRemindPublisher(item)}
+                          disabled={remindingId === item.id}
+                        >
+                          <Send className="w-3.5 h-3.5 mr-1 inline" />
+                          {remindingId === item.id ? 'Mengirim...' : 'Kirim Pengingat'}
+                        </Button>
+                      )}
                       {canAssignTeam && item.status === 'WAITING_DISTRIBUTION' && (
                         <Button variant="primary" size="sm" className="text-xs mb-2 block ml-auto" onClick={() => setAssignmentId(item.id)}>
                           Tetapkan Tim

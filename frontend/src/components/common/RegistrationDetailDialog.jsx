@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, Clock, AlertCircle, UserCheck, ArrowRight } from 'lucide-react';
+import { X, Clock, AlertCircle, UserCheck, ArrowRight, Send } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { reportApi } from '@/api/report.api';
 import { useOptionalAuth } from '@/features/auth/AuthContext';
@@ -24,6 +24,23 @@ export function RegistrationDetailDialog({ id, onClose }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState('');
+
+  const handleRemindPublisher = async () => {
+    if (!data?.id) return;
+    setReminding(true);
+    setReminderMessage('');
+    try {
+      const res = await registrationApi.remindPublisher(data.id);
+      setReminderMessage(res.message || 'Pengingat berhasil dikirim ke penerbit.');
+      reloadData();
+    } catch (err) {
+      setReminderMessage(`Gagal: ${err.message || 'Tidak dapat mengirim pengingat.'}`);
+    } finally {
+      setReminding(false);
+    }
+  };
   const closeButton = useRef(null);
   const panel = useRef(null);
   const close = useRef(onClose);
@@ -109,6 +126,22 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 </p>
               )}
             </div>
+            {data.status === 'REVISION_REQUIRED' && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-amber-900 font-bold">
+                  <Clock className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>Naskah Sedang Dalam Tahap Perbaikan Penerbit (Di Luar SLA Internal)</span>
+                </div>
+                <p className="text-amber-800">
+                  Naskah menunggu perbaikan berkas atau naskah dumi dari pemohon. Perhitungan SLA internal LPMQ berada dalam status jeda.
+                </p>
+                {reminderMessage && (
+                  <p className="font-semibold text-amber-950 bg-amber-100/80 px-2.5 py-1 rounded border border-amber-300">
+                    {reminderMessage}
+                  </p>
+                )}
+              </div>
+            )}
             <WorkflowPhaseStatus registration={data} />
             <div><h4 className="text-sm font-bold text-ink mb-3">Riwayat proses</h4>
               {data.status_histories?.length ? <ol className="space-y-4 border-l-2 border-brand-100 pl-4">{data.status_histories.map(history => <li key={history.id} className="text-xs space-y-1"><StatusBadge status={history.to_status} /><p className="text-ink-muted">{new Date(history.changed_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p>{history.notes && <p className="text-ink break-words">{history.notes}</p>}</li>)}</ol> : <p className="text-xs text-ink-muted">Belum ada perubahan status tercatat.</p>}
@@ -171,6 +204,18 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 <span>Buka Pemeriksaan</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
+            )}
+            {data.status === 'REVISION_REQUIRED' && isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs font-bold border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100"
+                onClick={handleRemindPublisher}
+                disabled={reminding}
+              >
+                <Send className="w-3.5 h-3.5 mr-1" />
+                {reminding ? 'Mengirim Pengingat…' : 'Kirim Pengingat Penerbit'}
+              </Button>
             )}
             <Button variant="outline" size="sm" className="text-xs" onClick={onClose}>
               Tutup
