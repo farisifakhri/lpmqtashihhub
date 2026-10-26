@@ -126,14 +126,17 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
     });
   }
 
-  const finalNotes = data.recap_file_id
-    ? `${data.notes || ''}\n[RECAP_FILE:${data.recap_file_id}]`.trim()
-    : data.notes;
-
-  const review = await tx.tashihReview.create({ data: { assignment_id: id, result: data.result, notes: finalNotes } });
+  const review = await tx.tashihReview.create({
+    data: {
+      assignment_id: id,
+      result: data.result,
+      notes: data.notes || null,
+      recap_file_id: data.recap_file_id || null,
+    },
+  });
   await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
-  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, { ...review, recap_file_id: data.recap_file_id });
-  return { ...review, recap_file_id: data.recap_file_id || null };
+  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
+  return review;
 }, { isolationLevel: 'ReadCommitted' });
 
 export const recordJuzChecklist = (id, juzNumber, data, user) => prisma.$transaction(async tx => {

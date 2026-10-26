@@ -769,15 +769,17 @@ model AssignmentJuz {
 }
 
 model TashihReview {
-  id            String     @id @default(uuid())
+  id            String       @id @default(uuid())
   assignment_id String
-  result ReviewResult     // PASSED, REVISION_REQUIRED, REJECTED
+  result        ReviewResult // PASSED, REVISION_REQUIRED, REJECTED
   notes         String?
-  completed_at  DateTime   @default(now())
+  recap_file_id String?
+  completed_at  DateTime     @default(now())
 
   // Relations
-  assignment    Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  assignment    Assignment   @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
 
+  @@index([recap_file_id])
   @@map("tashih_reviews")
 }
 

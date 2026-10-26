@@ -386,7 +386,7 @@ test('recordReview completes all juz_items in assignment and records recap_file_
     assert.equal(res.id, 'rev-200');
     assert.equal(res.result, 'REVISION_REQUIRED');
     assert.equal(res.recap_file_id, 'file-recap-123');
-    assert.ok(createdReview.notes.includes('[RECAP_FILE:file-recap-123]'));
+    assert.equal(createdReview.recap_file_id, 'file-recap-123');
     assert.equal(updatedJuz.data.result, 'REVISION_REQUIRED');
   } finally {
     prisma.$transaction = originalTx;
