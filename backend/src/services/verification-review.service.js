@@ -847,7 +847,7 @@ try { return await prisma.$transaction(async tx => {
     let documentNo = rDoc.document_no || (typeof suppliedNumber === 'string' ? suppliedNumber.trim() : '');
     // B-03 / U-04: Nomor surat resmi dibuat otomatis jika diminta via auto_number atau tidak diisi manual
     if (!documentNo || documentNo.length < 3) {
-      if (req?.body?.auto_number === true || req?.body?.auto_generate === true || !req?.body?.document_numbers) {
+      if (req?.body?.auto_number === true || req?.body?.auto_generate === true) {
         documentNo = await getNextDocumentNumber(tx, rDoc.document_type, now);
       }
     }
