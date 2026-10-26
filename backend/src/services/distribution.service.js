@@ -461,3 +461,133 @@ export const recordOutgoingDispatch = async (registrationId, data, user, req) =>
     return updated;
   }, { isolationLevel: 'ReadCommitted' });
 };
+
+export const sendPublisherReminder = async (registrationId, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await tx.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        publisher: { include: { user: true } },
+      },
+    });
+
+    if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+
+    const isDistributor = user.roles.includes('DISTRIBUTOR') || reg.core_distributor_id === user.id;
+    const isAdmin = user.roles.some((r) => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    if (!isDistributor && !isAdmin) {
+      fail(403, 'Hanya petugas Distributor atau Admin Internal yang berwenang mengirimkan pengingat perbaikan ke penerbit.');
+    }
+
+    if (reg.status !== 'REVISION_REQUIRED') {
+      fail(409, `Pengingat perbaikan hanya dapat dikirimkan saat pengajuan berstatus "REVISION_REQUIRED". Status saat ini adalah "${reg.status}".`);
+    }
+
+    const enteredAt = reg.stage_entered_at || reg.updated_at || reg.created_at;
+    const waitingMs = Date.now() - new Date(enteredAt).getTime();
+    const waitingDays = Math.max(1, Math.floor(waitingMs / (1000 * 60 * 60 * 24)));
+
+    const existingMeta =
+      typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null
+        ? reg.foreign_metadata
+        : typeof reg.foreign_metadata === 'string'
+        ? JSON.parse(reg.foreign_metadata || '{}')
+        : {};
+
+    const lastLetter = await tx.officialDocument.findFirst({
+      where: { registration_id: registrationId, document_type: 'REVISION_RETURN_LETTER' },
+      orderBy: { created_at: 'desc' },
+    });
+    const revisionRound = lastLetter?.content_snapshot?.revision_round || reg.revision_round || 1;
+    const revisionKind = lastLetter?.content_snapshot?.revision_kind || reg.revision_kind || 'NASKAH_PERBAIKAN';
+    const kindLabel = revisionKind === 'NASKAH_DUMI' ? 'Naskah Dumi Final' : 'Naskah Perbaikan';
+
+    if (reg.publisher?.user_id) {
+      await tx.notification.create({
+        data: {
+          user_id: reg.publisher.user_id,
+          registration_id: registrationId,
+          type: 'REVISION_REMINDER',
+          title: `Pengingat: Segera Kirimkan ${kindLabel} (Ronde #${revisionRound})`,
+          payload: {
+            waiting_days: waitingDays,
+            revision_round: revisionRound,
+            revision_kind: revisionKind,
+            message: `Permohonan ${reg.registration_no} telah menunggu ${kindLabel} dari Anda selama ${waitingDays} hari. Mohon segera mengunggah berkas perbaikan dan mengirimkan naskah fisik ke LPMQ TMII.`,
+            link: `/publisher/registrations/${registrationId}?tab=fisik`,
+          },
+        },
+      });
+    }
+
+    const reminderCount = (existingMeta.reminder_count || 0) + 1;
+    const updatedMeta = {
+      ...existingMeta,
+      last_reminder_at: new Date().toISOString(),
+      reminder_count: reminderCount,
+    };
+
+    const updated = await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        foreign_metadata: updatedMeta,
+      },
+    });
+
+    await audit(tx, user, 'SEND_PUBLISHER_REMINDER', 'Registration', registrationId, {
+      waiting_days: waitingDays,
+      reminder_count: reminderCount,
+      revision_round: revisionRound,
+    }, req);
+
+    return {
+      success: true,
+      message: `Pengingat berhasil dikirimkan kepada ${reg.publisher?.legal_name || 'penerbit'}. Waktu tunggu: ${waitingDays} hari.`,
+      waiting_days: waitingDays,
+      reminder_count: reminderCount,
+      last_reminder_at: updatedMeta.last_reminder_at,
+    };
+  }, { isolationLevel: 'ReadCommitted' });
+};
+
+export const sendPeriodicReminders = async (user, options = {}) => {
+  const minWaitingDays = options.minWaitingDays || 7;
+  const now = new Date();
+  const thresholdDate = new Date(now.getTime() - minWaitingDays * 24 * 60 * 60 * 1000);
+
+  const pendingRegistrations = await prisma.registration.findMany({
+    where: {
+      status: 'REVISION_REQUIRED',
+      stage_entered_at: { lte: thresholdDate },
+    },
+    include: {
+      publisher: true,
+    },
+  });
+
+  const sent = [];
+  for (const reg of pendingRegistrations) {
+    const meta = typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null
+      ? reg.foreign_metadata
+      : {};
+    if (meta.last_reminder_at) {
+      const lastSent = new Date(meta.last_reminder_at).getTime();
+      if (now.getTime() - lastSent < 7 * 24 * 60 * 60 * 1000) {
+        continue;
+      }
+    }
+
+    try {
+      const res = await sendPublisherReminder(reg.id, user);
+      sent.push({ id: reg.id, registration_no: reg.registration_no, ...res });
+    } catch {
+      // Continue scan
+    }
+  }
+
+  return {
+    total_scanned: pendingRegistrations.length,
+    reminders_sent: sent.length,
+    details: sent,
+  };
+};

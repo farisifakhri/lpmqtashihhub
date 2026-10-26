@@ -39,6 +39,8 @@ router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), val
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(distributorReviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
 router.post('/registrations/:id/outgoing-dispatch', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(outgoingDispatchSchema), action(req => distribution.recordOutgoingDispatch(req.params.id, req.body, req.user, req)));
+router.post('/registrations/:id/remind-publisher', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPublisherReminder(req.params.id, req.user, req)));
+router.post('/registrations/batch-remind-publishers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPeriodicReminders(req.user, req.body)));
 
 // Alur Penerbitan STT & Dokumen Resmi
 router.post('/registrations/:id/official-documents', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
