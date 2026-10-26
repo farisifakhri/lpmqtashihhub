@@ -137,10 +137,15 @@ export const ReviewForm = ({
               {/* Berkas Rekapan Internal Pentashih (RF-DIST-18, RF-DIST-19) */}
               <div className="space-y-2 p-3.5 rounded-xl border border-line bg-surface">
                 <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-ink uppercase tracking-wider">
-                    Berkas Rekapan Koreksi Internal
-                  </label>
-                  <span className="text-xs text-ink-muted">1 berkas per rentang penugasan</span>
+                  <div className="flex items-center gap-2">
+                    <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                      Berkas Rekapan Hasil Telaah Internal
+                    </label>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-100 text-brand-900 border border-brand-200">
+                      Wajib Diunggah
+                    </span>
+                  </div>
+                  <span className="text-xs text-ink-muted">PDF / Word (maks. 25 MB)</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line-strong bg-white hover:bg-surface-subtle cursor-pointer text-xs font-semibold text-ink shadow-2xs">
@@ -150,7 +155,7 @@ export const ReviewForm = ({
                       type="file"
                       onChange={handleFileUpload}
                       disabled={uploadingRecap || selectedAssignment.status === 'COMPLETED'}
-                      className="sr-only"
+                      accept=".pdf,.doc,.docx" className="sr-only"
                     />
                   </label>
                   {recapFileName ? (
@@ -159,7 +164,7 @@ export const ReviewForm = ({
                       {recapFileName}
                     </span>
                   ) : (
-                    <span className="text-xs text-ink-muted italic">Belum ada berkas rekapan terpilih (opsional)</span>
+                    <span className="text-xs text-ink-muted italic">Belum ada berkas rekapan terpilih (wajib diunggah)</span>
                   )}
                 </div>
                 {uploadError && <p className="text-xs text-civic-danger">{uploadError}</p>}
@@ -270,7 +275,7 @@ export const ReviewForm = ({
                     type="submit"
                     variant="primary"
                     size="sm"
-                    disabled={submitting || !reviewNotes.trim()}
+                    disabled={submitting || !reviewNotes.trim() || !recapFileId}
                     className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                     icon={<Send className="w-3.5 h-3.5" />}
                   >
