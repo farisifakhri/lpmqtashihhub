@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from './AuthContext';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight, ArrowLeft, Sun, Moon } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, ShieldCheck, LockKeyhole, ArrowRight, ArrowLeft } from 'lucide-react';
 import kemenagLogo from '@/assets/kemenag1.png';
 import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
@@ -18,11 +18,12 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.error || '');
   const [showForgotModal, setShowForgotModal] = useState(false);
-
+  const [isPublisherNotApproved, setIsPublisherNotApproved] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setIsPublisherNotApproved(false);
 
     if (!email || !password) {
       setError('Harap masukkan email dan kata sandi.');
@@ -36,6 +37,9 @@ export const LoginPage = () => {
       const redirectTarget = location.state?.from?.pathname || defaultTarget;
       navigate(redirectTarget, { replace: true });
     } else {
+      if (res.code === 'PUBLISHER_NOT_APPROVED') {
+        setIsPublisherNotApproved(true);
+      }
       setError(res.error || 'Autentikasi gagal. Periksa email atau kata sandi Anda.');
     }
   };
@@ -136,13 +140,39 @@ export const LoginPage = () => {
                 </div>
               </div>
 
-              {/* Error Alert */}
-              {(error || authError) && (
+              {/* Alert: Penerbit Belum Disetujui atau Error Biasa */}
+              {isPublisherNotApproved ? (
+                <div data-testid="publisher-not-approved-banner" className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-ink text-xs space-y-2.5 animate-fadeIn">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-civic-warning flex-shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-ink">Pendaftaran Sedang Menunggu Verifikasi</p>
+                      <p className="text-xs text-ink-muted leading-relaxed">
+                        Akun penerbit Anda belum disetujui atau masih dalam proses peninjauan petugas LPMQ. Silakan pantau perkembangan permohonan Anda secara berkala.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-1 flex flex-wrap items-center gap-2">
+                    <Link
+                      to="/cek-status"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
+                    >
+                      Cek Status Pendaftaran
+                    </Link>
+                    <a
+                      href="mailto:lpmq@kemenag.go.id"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink bg-surface border border-line hover:bg-surface-subtle transition-colors"
+                    >
+                      Bantuan Loket
+                    </a>
+                  </div>
+                </div>
+              ) : (error || authError) ? (
                 <div className="p-3 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2 animate-fadeIn">
                   <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                   <span>{error || authError}</span>
                 </div>
-              )}
+              ) : null}
 
               {/* Form Input Clean Minimalis */}
               <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -218,6 +248,15 @@ export const LoginPage = () => {
                     </>
                   )}
                 </button>
+
+                <div className="pt-2 text-center">
+                  <Link
+                    to="/cek-status"
+                    className="text-xs font-semibold text-brand-fg hover:text-brand-fill-hover hover:underline transition-colors"
+                  >
+                    Pantau status pendaftaran penerbit &rarr;
+                  </Link>
+                </div>
               </form>
             </div>
 

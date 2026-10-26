@@ -44,6 +44,8 @@ const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/ve
 const PublicCertificateVerification = withSuspense(lazy(() => import('@/features/verification/PublicCertificateVerification').then(m => ({ default: m.PublicCertificateVerification }))));
 const ForbiddenPage = withSuspense(lazy(() => import('@/features/errors/ForbiddenPage').then(m => ({ default: m.ForbiddenPage }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
+const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/public/CheckRegistrationStatusPage').then(m => ({ default: m.CheckRegistrationStatusPage }))));
+const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
 
 const router = createBrowserRouter([
   // Rute Publik (Landing Page)
@@ -63,6 +65,26 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterPublisherPage />,
+  },
+  {
+    path: '/cek-status',
+    element: <CheckRegistrationStatusPage />,
+  },
+  {
+    path: '/pendaftaran-penerbit/cek-status',
+    element: <CheckRegistrationStatusPage />,
+  },
+  {
+    path: '/pendaftaran-penerbit/perbaikan',
+    element: <PublisherRevisionPage />,
+  },
+  {
+    path: '/pendaftaran-penerbit/perbaikan/:token',
+    element: <PublisherRevisionPage />,
+  },
+  {
+    path: '/perbaikan/:token',
+    element: <PublisherRevisionPage />,
   },
   {
     element: <AppLayout />,

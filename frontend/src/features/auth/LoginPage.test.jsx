@@ -8,28 +8,7 @@ import * as AuthContextModule from './AuthContext';
 describe('LoginPage Protected Area Verification', () => {
   const mockLogin = vi.fn();
 
-  // beforeEach(() => {
-  //   vi.clearAllMocks();
-  //   localStorage.removeItem('lpmq-login-theme');
-  //   vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
-  //     login: mockLogin,
-  //     isLoading: false,
-  //     authError: '',
-  //   });
-  // });
-
-  // it('toggles the login theme without changing the global document theme', () => {
-  //   const { container } = render(<MemoryRouter><LoginPage /></MemoryRouter>);
-  //   const page = container.firstElementChild;
-  //   expect(page).not.toHaveClass('login-dark');
-  //   fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode gelap' }));
-  //   expect(page).toHaveClass('login-dark');
-  //   expect(localStorage.getItem('lpmq-login-theme')).toBe('dark');
-  //   expect(document.documentElement).not.toHaveClass('dark');
-  //   fireEvent.click(screen.getByRole('button', { name: 'Aktifkan mode terang' }));
-  //   expect(page).not.toHaveClass('login-dark');
-  // });
-    beforeEach(() => {
+  beforeEach(() => {
     vi.clearAllMocks();
 
     localStorage.removeItem('lpmq-theme');
@@ -148,5 +127,29 @@ describe('LoginPage Protected Area Verification', () => {
 
     fireEvent.click(forgotBtn);
     expect(screen.getByText('Pemulihan Kata Sandi Akun')).toBeInTheDocument();
+  });
+
+  it('renders publisher not approved banner when login fails with PUBLISHER_NOT_APPROVED', async () => {
+    mockLogin.mockResolvedValue({
+      success: false,
+      error: 'Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas.',
+      code: 'PUBLISHER_NOT_APPROVED',
+    });
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText(/Alamat email/i), { target: { value: 'pending@publisher.com' } });
+    fireEvent.change(screen.getByLabelText(/^kata sandi$/i), { target: { value: 'Secret123' } });
+    fireEvent.click(screen.getByRole('button', { name: /Masuk ke Sistem/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('publisher-not-approved-banner')).toBeInTheDocument();
+      expect(screen.getByText(/Pendaftaran Sedang Menunggu Verifikasi/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Cek Status Pendaftaran/i })).toHaveAttribute('href', '/cek-status');
+    });
   });
 });
