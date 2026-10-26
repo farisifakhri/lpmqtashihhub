@@ -9,6 +9,12 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
   const printRef = useRef(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
+  const defaultVariant = registration?.revision_kind === 'NASKAH_DUMI'
+    ? 'dumi'
+    : (registration?.status === 'REVISION_REQUIRED' || registration?.revision_source === 'TASHIH_REVISION' || (registration?.revision_round && registration.revision_round > 0)
+      ? 'perbaikan'
+      : 'perdana');
+  const [selectedVariant, setSelectedVariant] = useState(defaultVariant);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -44,7 +50,16 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
     setError(null);
     try {
       const safeRegNo = (registration.registration_no || registration.id).replace(/[^a-zA-Z0-9_-]/g, '-');
-      await registrationApi.downloadShippingLabelPdf(registration.id, `Label-Pengiriman-${safeRegNo}.pdf`);
+      const roundSuffix = (selectedVariant === 'dumi' || selectedVariant === 'perbaikan') && registration.revision_round ? `-R${registration.revision_round}` : '';
+      const prefix = selectedVariant === 'dumi'
+        ? 'Label-Pengiriman-Dumi'
+        : (selectedVariant === 'perbaikan' ? 'Label-Pengiriman-Perbaikan' : 'Label-Pengiriman');
+      const filename = `${prefix}-${safeRegNo}${roundSuffix}.pdf`;
+      if (selectedVariant && selectedVariant !== 'perdana') {
+        await registrationApi.downloadShippingLabelPdf(registration.id, filename, selectedVariant);
+      } else {
+        await registrationApi.downloadShippingLabelPdf(registration.id, filename);
+      }
     } catch (err) {
       setError(err.message || 'Gagal mengunduh label pengiriman PDF.');
     } finally {
@@ -107,6 +122,46 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
           </div>
         </div>
 
+        {/* Variant Selector Tabs (Hidden during print) */}
+        <div className="px-5 py-2.5 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-2 text-xs print:hidden">
+          <span className="font-semibold text-ink-muted">Pilih Varian Label:</span>
+          <div className="inline-flex rounded-lg border border-line bg-white p-0.5 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setSelectedVariant('perdana')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                selectedVariant === 'perdana'
+                  ? 'bg-brand-800 text-white font-bold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Master Fisik Pendaftaran
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedVariant('perbaikan')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                selectedVariant === 'perbaikan'
+                  ? 'bg-amber-600 text-white font-bold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Naskah Perbaikan (Koreksi)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedVariant('dumi')}
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                selectedVariant === 'dumi'
+                  ? 'bg-blue-700 text-white font-bold'
+                  : 'text-ink-muted hover:text-ink'
+              }`}
+            >
+              Naskah Dumi Final
+            </button>
+          </div>
+        </div>
+
         {error && (
           <div className="px-5 py-2.5 bg-civic-dangerSoft border-b border-civic-dangerLine text-civic-danger text-xs flex items-center gap-2 print:hidden">
             <AlertCircle className="w-4 h-4 shrink-0" />
@@ -140,7 +195,11 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                 </p>
                 <div className="pt-1">
                   <span className="inline-block px-3 py-1 bg-black text-white text-xs sm:text-sm font-bold tracking-wider uppercase rounded">
-                    Label Pengiriman Master Fisik Naskah A4
+                    {selectedVariant === 'dumi'
+                      ? 'Pengiriman Naskah Fisik Dumi (Mock-up Cetak Akhir)'
+                      : (selectedVariant === 'perbaikan'
+                        ? `Pengiriman Naskah Fisik Perbaikan (Ronde #${registration?.revision_round || 1})`
+                        : 'Label Pengiriman Master Fisik Naskah A4')}
                   </span>
                 </div>
               </div>
@@ -195,15 +254,26 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
                     Detail barang
                   </td>
                   <td className="p-3 sm:p-4 leading-relaxed space-y-1">
-                    <p className="font-bold text-ink">Mushaf Al-Qur’an</p>
+                    <p className="font-bold text-ink">
+                      {selectedVariant === 'dumi'
+                        ? 'Naskah Dumi Cetak Akhir (Model / Mock-up Mushaf)'
+                        : (selectedVariant === 'perbaikan'
+                          ? 'Naskah Fisik Perbaikan (Koreksi Lafazh, Rasm & Tanda Baca)'
+                          : 'Mushaf Al-Qur’an')}
+                    </p>
                     <p>
                       No. Pendaftaran: <strong className="font-mono text-brand-800">{regNo}</strong>
+                      {selectedVariant !== 'perdana' && (
+                        <span className="ml-2 font-sans font-bold text-brand-900">
+                          • Ronde Ke-{registration?.revision_round || 1}
+                        </span>
+                      )}
                     </p>
                     <p>
                       Nama mushaf: <strong className="text-ink">{namaMushaf}</strong>
                     </p>
                     <p className="font-medium text-ink pt-0.5">
-                      Jumlah: <strong className="text-brand-900">{volumeCount} Jilid / Juz</strong> (Master Naskah Fisik A4 per juz)
+                      Jumlah: <strong className="text-brand-900">{selectedVariant === 'dumi' ? `${volumeCount || 1} Eksemplar Dumi Lengkap` : `${volumeCount} Jilid / Juz`}</strong> {selectedVariant === 'dumi' ? '(Sesuai Ketentuan Sidang)' : selectedVariant === 'perbaikan' ? '(Naskah Perbaikan Dilengkapi Koreksi)' : '(Master Naskah Fisik A4 per juz)'}
                     </p>
                   </td>
                 </tr>

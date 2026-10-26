@@ -96,6 +96,53 @@ export function PublisherPhysicalMasterTab({
         </div>
       </section>
 
+      {/* Resi Keluar Distributor: Informasi Naskah Fisik Dikirim Kembali ke Penerbit (B-07) */}
+      {data.outgoing_tracking_no && (
+        <section className="rounded-xl border border-civic-infoLine bg-civic-infoSoft/70 p-5 space-y-3 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-civic-infoLine pb-3">
+            <div className="flex items-center gap-2.5">
+              <Truck className="w-5 h-5 text-civic-info shrink-0" />
+              <div>
+                <h2 className="font-bold text-ink text-sm">
+                  Pengembalian Naskah Fisik oleh LPMQ (Resi Keluar)
+                </h2>
+                <p className="text-xs text-ink-muted">
+                  Tim Distributor telah mengirimkan naskah fisik beserta risalah catatan hasil tashih ke alamat Anda.
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-md bg-white border border-civic-infoLine text-civic-info">
+              Dalam Pengiriman Kembali
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3.5 rounded-lg border border-civic-infoLine/70 text-xs">
+            <div>
+              <span className="text-ink-muted block text-[11px]">Kurir / Ekspedisi:</span>
+              <strong className="text-ink font-semibold">{data.outgoing_courier || 'Ekspedisi LPMQ'}</strong>
+            </div>
+            <div>
+              <span className="text-ink-muted block text-[11px]">Nomor Resi:</span>
+              <strong className="text-brand-800 font-mono font-bold">{data.outgoing_tracking_no}</strong>
+            </div>
+            <div>
+              <span className="text-ink-muted block text-[11px]">Tanggal Kirim:</span>
+              <span className="text-ink font-medium">
+                {data.outgoing_dispatch_date
+                  ? new Date(data.outgoing_dispatch_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+                  : 'Tercatat di Sistem'}
+              </span>
+            </div>
+          </div>
+
+          {data.outgoing_notes && (
+            <div className="p-3 bg-white rounded-lg border border-civic-infoLine/60 text-xs text-ink-muted">
+              <span className="font-bold text-ink">Catatan Petugas: </span>
+              <span>{data.outgoing_notes}</span>
+            </div>
+          )}
+        </section>
+      )}
       <div className="grid lg:grid-cols-2 gap-6 items-stretch">
         {/* Form 1: Pernyataan Jumlah Jilid Master Fisik */}
         <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs h-full flex flex-col justify-between">
@@ -168,7 +215,7 @@ export function PublisherPhysicalMasterTab({
             <div className="border-b border-line pb-3">
               <h3 className="font-bold text-ink text-sm flex items-center gap-2">
                 <Truck className="w-4 h-4 text-brand-800" />
-                Konfirmasi Pengiriman Berkas Fisik
+                {data?.status === 'REVISION_REQUIRED' || data?.revision_source === 'TASHIH_REVISION' ? `Konfirmasi Pengiriman Naskah ${data?.revision_kind === 'NASKAH_DUMI' ? 'Dumi Final' : 'Perbaikan'} (Resi Masuk)` : 'Konfirmasi Pengiriman Berkas Fisik'}
               </h3>
               <p className="text-xs text-ink-muted mt-0.5">
                 Catat kurir dan nomor resi pengiriman untuk memudahkan pelacakan berkas.
