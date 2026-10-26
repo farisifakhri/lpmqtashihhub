@@ -27,7 +27,7 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | Paket | Status | Bukti / batas |
 |---|---|---|
 | B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait ada di checkout. |
-| B-02 | **Belum dimulai** | Bug “tidak setuju” pada UI pengesahan / approval flow. |
+| B-02 | **Selesai menurut bukti kode** | Pemisahan tegas alur pengembalian draf internal Kepala LPMQ ke Verifikator vs penerbitan surat naskah tidak lolos ke Penerbit. |
 | B-03 | **Selesai menurut bukti kode** | Kode resmi `TL.01` disahkan. Sequence atomik backend aktif, terintegrasi ke dialog approval `VerificationInspectionPage.jsx` dengan flag `auto_number: true` saat nomor manual kosong. UAT U-04 terselesaikan. |
 | B-04–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. Jangan anggap kategori ini berarti belum ada kode. |
 
