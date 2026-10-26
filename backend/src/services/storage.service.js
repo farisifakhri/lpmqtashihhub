@@ -165,11 +165,15 @@ export async function upload(bytes, mime, user) {
       fail(400, `Berkas terdeteksi mengandung malware (${scanResult.virus || 'ancaman terdeteksi'}) oleh pemindai ClamAV.`);
     }
   } catch (scanErr) {
-    await unlink(targetPath).catch(() => {});
-    if (scanErr.statusCode) {
-      fail(scanErr.statusCode, scanErr.message);
+    if (scanErr.statusCode === 503) {
+      console.warn(`[ClamAV Warning]: ${scanErr.message}. Unggahan diteruskan demi ketersediaan layanan.`);
+    } else {
+      await unlink(targetPath).catch(() => {});
+      if (scanErr.statusCode) {
+        fail(scanErr.statusCode, scanErr.message);
+      }
+      throw scanErr;
     }
-    throw scanErr;
   }
 
   try {

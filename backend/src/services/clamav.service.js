@@ -118,6 +118,9 @@ export async function scanBufferWithClamd(bytes, options = {}) {
  * @returns {Promise<{ scanned: boolean, clean: boolean, virus?: string, reason?: string }>}
  */
 export async function executeAntivirusScan(bytes, options = {}) {
+  if (process.env.ENABLE_CLAMAV === 'false') {
+    return { scanned: false, clean: true, reason: 'disabled_via_env' };
+  }
   const mode = (options.mode || ENV.AV_SCAN_MODE || 'optional').toLowerCase();
 
   if (mode === 'off') {

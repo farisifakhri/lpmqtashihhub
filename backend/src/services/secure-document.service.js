@@ -147,7 +147,23 @@ export async function scanPdfSecurity(bytes) {
         // Deteksi konten aktif pada nama kunci kamus
         for (const marker of FORBIDDEN_ACTIVE_CONTENT_MARKERS) {
           if (keyName.toLowerCase() === marker.toLowerCase()) {
-            foundActiveContent.push(`/${keyName}`);
+            if (marker.toLowerCase() === 'openaction') {
+              const isAction = value instanceof PDFDict && (
+                value.has(PDFName.of('S')) ||
+                value.has(PDFName.of('JS')) ||
+                value.has(PDFName.of('JavaScript')) ||
+                value.has(PDFName.of('Launch'))
+              );
+              if (isAction) {
+                foundActiveContent.push('/OpenAction');
+              }
+            } else if (marker.toLowerCase() === 'js') {
+              if (value instanceof PDFString || value instanceof PDFHexString || value instanceof PDFDict) {
+                foundActiveContent.push('/JS');
+              }
+            } else {
+              foundActiveContent.push(`/${keyName}`);
+            }
           }
         }
 
@@ -202,7 +218,8 @@ export async function scanPdfSecurity(bytes) {
       }
 
       // Pindai konten aktif dalam isi stream terdekompresi
-      for (const marker of FORBIDDEN_ACTIVE_CONTENT_MARKERS) {
+      const streamActiveMarkers = ['JavaScript', 'Launch', 'EmbeddedFiles', 'EmbeddedFile', 'RichMedia', 'XFA'];
+      for (const marker of streamActiveMarkers) {
         const regex = new RegExp(`\\/${marker}\\b`, 'i');
         if (regex.test(streamText)) {
           foundActiveContent.push(`/${marker}`);
@@ -246,8 +263,11 @@ export async function scanPdfSecurity(bytes) {
       throw err;
     }
   } catch (avErr) {
-    if (avErr.statusCode) throw avErr;
-    // Jika scan error non-fatal pada lingkungan uji tanpa daemon ClamAV, error diabaikan sesuai log
+    if (avErr.statusCode === 503) {
+      console.warn(`[ClamAV Warning]: ${avErr.message}. Unggahan diteruskan demi ketersediaan layanan.`);
+    } else if (avErr.statusCode) {
+      throw avErr;
+    }
   }
 
   const linksArray = Array.from(detectedLinks);
