@@ -173,6 +173,15 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
   if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
 
+  // Validasi berkas rekapan internal (B-06)
+  if (!data.recap_file_id) {
+    fail(400, 'Dokumen rekap hasil telaah internal wajib diunggah.');
+  }
+  const recapFile = await tx.storedFile.findUnique({ where: { id: data.recap_file_id } });
+  if (!recapFile) {
+    fail(404, 'Berkas rekapan yang diunggah tidak ditemukan pada sistem.');
+  }
+
   if (assignment.juz_items?.length && tx.assignmentJuz?.updateMany) {
     await tx.assignmentJuz.updateMany({
       where: { assignment_id: id },
@@ -271,6 +280,13 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (assignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
   if (data.result === 'PASSED' && assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
+
+  // B-06: Verifikasi dokumen rekap internal (Kelompok: satu rekap cukup setelah dicek distributor)
+  const hasRecap = assignments.some(item => item.reviews.some(r => r.recap_file_id));
+  if (!hasRecap) {
+    fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
+  }
+
   const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
   await move(tx, reg, status, user, data.notes);
 

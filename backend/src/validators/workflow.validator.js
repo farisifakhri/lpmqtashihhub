@@ -78,8 +78,13 @@ export const juzChecklistSchema = {
 };
 export const reviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
-  notes: z.string().trim().min(1).max(10000),
-  recap_file_id: z.string().trim().max(191).optional(),
+  notes: z.string().trim().min(1, 'Catatan hasil telaah wajib diisi.').max(10000),
+  recap_file_id: z.string().uuid('ID berkas rekap wajib berupa UUID valid.'),
+}).strict() };
+
+export const distributorReviewSchema = { params, body: z.object({
+  result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
+  notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
 }).strict() };
 export const documentSchema = { params, body: z.object({
