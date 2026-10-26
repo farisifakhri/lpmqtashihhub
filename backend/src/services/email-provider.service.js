@@ -39,6 +39,24 @@ export class MockEmailProvider {
       sentAt: new Date(),
     };
     this.sentMessages.push(record);
+
+    if (process.env.NODE_ENV !== 'test') {
+      const recipient = toName ? `${toName} <${to}>` : to;
+      console.log('\n┌────────────────────────────────────────────────────────────────────────┐');
+      console.log('│ [INTERNAL EMAIL DRIVER] Simulated Email Outbox                          │');
+      console.log('├────────────────────────────────────────────────────────────────────────┤');
+      console.log(`│ Kepada   : ${recipient}`);
+      console.log(`│ Subjek   : ${subject}`);
+      console.log(`│ Template : ${template || '-'}`);
+      if (payload?.action_url || payload?.reset_url || payload?.revision_url) {
+        console.log(`│ Tautan   : ${payload.action_url || payload.reset_url || payload.revision_url}`);
+      }
+      if (payload?.token) {
+        console.log(`│ Token    : ${payload.token}`);
+      }
+      console.log(`│ MessageId: ${messageId}`);
+      console.log('└────────────────────────────────────────────────────────────────────────┘\n');
+    }
     return { success: true, messageId };
   }
 }

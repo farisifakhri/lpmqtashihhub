@@ -15,9 +15,9 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 |---|---|---|
 | T-F01, T-F02, T-F04–T-F07 | **Selesai menurut checklist tugas** | Checklist detail ditandai selesai; implementasi terkait ada di `backend/src/routes/publisher-registration.routes.js`, layanan pendaftaran, dan test backend. Status merge PR tidak diverifikasi terpisah. |
 | T-F03 | **Parsial / lingkungan belum diverifikasi** | Hasil pembersihan lokal dicatat; dokumen hanya menyatakan skrip server disiapkan, bukan bukti eksekusi di setiap lingkungan. |
-| T-S01 | **Parsial** | `frontend/src/features/auth/RegisterPublisherPage.jsx` masih menyediakan jenis `PERORANGAN`, bertentangan dengan kontrak penerbit yang disetujui. Jangan anggap formulir lama memenuhi T-S01. |
-| T-S02 | **Parsial** | API pendaftaran/status/perbaikan ada di backend, tetapi tidak ditemukan halaman frontend untuk cek status/perbaikan maupun penanganan login `PUBLISHER_NOT_APPROVED`. |
-| T-S03 | **Parsial** | `frontend/src/features/internal/publishers/PublisherVerificationPage.jsx` menyediakan daftar dan aksi verifikasi dasar, tetapi kriteria perlu perbaikan/penolakan dan peninjauan detail dokumen belum terpenuhi oleh halaman tersebut. |
+| T-S01 | **Selesai menurut bukti kode** | `frontend/src/features/auth/RegisterPublisherPage.jsx` telah sepenuhnya dibangun ulang sesuai kontrak pendaftaran resmi LPMQ: opsi `PERORANGAN` dibuang mutlak (hanya PT/CV, Yayasan, Lembaga Pemerintah), matriks dokumen dinamis, validasi PDF/ukuran di klien dan server, panel panduan dokumen interaktif, dan 6 unit test lolos 100%. |
+| T-S02 | **Selesai menurut bukti kode** | Halaman publik cek status di `/cek-status` (`CheckRegistrationStatusPage.jsx`) dengan perlindungan privasi anti-kebocoran PII, halaman perbaikan dokumen token 14 hari di `/pendaftaran-penerbit/perbaikan/:token` (`PublisherRevisionPage.jsx`), dan banner penolakan `PUBLISHER_NOT_APPROVED` di `/login` (`LoginPage.jsx`) telah diimplementasikan dengan test lolos 100%. |
+| T-S03 | **Selesai menurut bukti kode** | Halaman verifikasi admin (`PublisherVerificationPage.jsx`) untuk `SUPERADMIN` dan `ADMIN_INTERNAL` telah terintegrasi dengan `publisherRegistrationApi`: filter status, paginasi dan pencarian server, penanda keamanan `tautan_terdeteksi`, pratinjau dokumen terotorisasi via `PrivateFileViewer`, putusan (Setujui, Perlu Perbaikan, Tolak) dengan `versi` dan penanganan `VERSION_CONFLICT` lolos test 100%. |
 | B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait tersedia. B-03 juga mencatat B-01 telah di-merge ke `main`; nomor PR tidak diklaim di sini. |
 | B-02 | **Belum dimulai** | Register UAT menyebut bug “tidak setuju” belum direproduksi (`docs/UAT_FINDINGS.txt`). |
 | B-03 | **Parsial** | Sequence, migrasi, dan generator backend ada. Integrasi frontend tidak mengirim `auto_number` atau `auto_generate`; tanpa flag itu backend masih meminta nomor manual. Lihat rincian di file B-03. |
@@ -31,9 +31,9 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 |---|---|---|---|
 | **Fase 1 (Pendaftaran Penerbit)** | | | |
 | `fakhri/T-F01` s.d. `T-F07` | Fakhri | `feat/api-pendaftaran-penerbit` | Checklist selesai; merge PR belum diverifikasi terpisah |
-| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Parsial**: formulir lama masih menerima perorangan |
-| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Parsial**: API ada; alur UI belum ditemukan |
-| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Parsial**: verifikasi dasar tersedia; alur keputusan belum lengkap |
+| `faisal/T-S01-form-pendaftaran-penerbit.md` | Faisal | `feat/fe-form-pendaftaran-penerbit` | **Selesai**: formulir legalitas resmi tanpa perorangan, upload dinamis, lolos test & build |
+| `faisal/T-S02-cek-status-dan-perbaikan.md` | Faisal | `feat/fe-cek-status-dan-perbaikan` | **Selesai**: cek status mandiri, revisi token 14 hari, handling PUBLISHER_NOT_APPROVED |
+| `faisal/T-S03-verifikasi-penerbit-admin.md` | Faisal | `feat/fe-verifikasi-penerbit-admin` | **Selesai**: verifikasi admin, audit tautan, optimistic concurrency versi & konflik |
 | **Fase Lanjutan** | | | |
 | `B-01` s.d. `B-04` | Fakhri | `feat/pengajuan-banyak-naskah-varian` dkk. | Status per paket dan bukti: [backlog fase lanjutan](BACKLOG-FASE-LANJUTAN.md) |
 | `B-05` s.d. `B-08` | *(Menunggu arahan)* | `feat/distribusi-kelompok-juz` dkk. | Status per paket: belum diverifikasi |

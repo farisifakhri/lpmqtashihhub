@@ -141,7 +141,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error(response.message || 'Login gagal');
     } catch (err) {
       setAuthError(err.message || 'Gagal login ke server');
-      return { success: false, error: err.message };
+      return { success: false, error: err.message, code: err.data?.code || err.code, data: err.data };
     } finally {
       setIsLoading(false);
     }
