@@ -42,3 +42,4 @@ Pada alur verifikasi berkas dan naskah sebelumnya, terdapat ambiguitas istilah *
 
 1. Tidak ada kebingungan antara pengembalian draf internal dengan penolakan permohonan penerbit.
 2. Seluruh unit test terkait alur persetujuan dan pengembalian draf verifikasi lulus 100%.
+

@@ -58,3 +58,4 @@ Pada modul pembuatan dokumen resmi `renderVerificationPdf`:
    - Lolos pengujian: `B-04: merender tombol unduh Surat Lolos & Billing (PDF) jika dokumen verifikasi tersedia`.
 4. **Build Frontend:**
    - `npm --prefix frontend run build` berhasil 100% tanpa galat.
+
