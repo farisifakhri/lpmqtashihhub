@@ -301,6 +301,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     revisionRound = previousLetters + 1;
 
     // Reset physical dispatch status and mark revision source (RF-DIST-00)
+    const outgoingDate = data.outgoing_tracking_no ? (data.outgoing_dispatch_date ? new Date(data.outgoing_dispatch_date) : new Date()) : null;
     await tx.registration.update({
       where: { id },
       data: {
@@ -309,6 +310,10 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
         dispatch_tracking_no: null,
         dispatch_date: null,
         revision_source: 'TASHIH_REVISION',
+        outgoing_courier: data.outgoing_courier || null,
+        outgoing_tracking_no: data.outgoing_tracking_no || null,
+        outgoing_dispatch_date: outgoingDate,
+        outgoing_notes: data.outgoing_notes || null,
       },
     });
 
@@ -391,3 +396,64 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
 
   return tx.registration.findUnique({ where: { id } });
 }, { isolationLevel: 'ReadCommitted' });
+
+
+export const recordOutgoingDispatch = async (registrationId, data, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await tx.registration.findUnique({
+      where: { id: registrationId },
+      include: { publisher: true },
+    });
+    if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+
+    const isDistributor = user.roles.includes('DISTRIBUTOR') || reg.core_distributor_id === user.id;
+    const isAdmin = user.roles.some((r) => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    if (!isDistributor && !isAdmin) {
+      fail(403, 'Hanya petugas Distributor atau Admin Internal yang berwenang mencatat resi pengiriman keluar.');
+    }
+
+    const dispatchDate = data.outgoing_dispatch_date ? new Date(data.outgoing_dispatch_date) : new Date();
+
+    const updated = await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        outgoing_courier: data.outgoing_courier,
+        outgoing_tracking_no: data.outgoing_tracking_no,
+        outgoing_dispatch_date: dispatchDate,
+        outgoing_notes: data.outgoing_notes || null,
+      },
+    });
+
+    await audit(tx, user, 'DISTRIBUTOR_OUTGOING_DISPATCH', 'Registration', registrationId, {
+      outgoing_courier: data.outgoing_courier,
+      outgoing_tracking_no: data.outgoing_tracking_no,
+      outgoing_dispatch_date: dispatchDate,
+      outgoing_notes: data.outgoing_notes,
+    }, req);
+
+    if (reg.publisher_id) {
+      const publisher = await tx.publisher.findUnique({
+        where: { id: reg.publisher_id },
+        select: { user_id: true },
+      });
+      if (publisher?.user_id) {
+        await tx.notification.create({
+          data: {
+            user_id: publisher.user_id,
+            registration_id: registrationId,
+            type: 'OUTGOING_DISPATCH_RECORDED',
+            title: 'Naskah Fisik Dikirim Kembali oleh Distributor',
+            payload: {
+              courier: data.outgoing_courier,
+              tracking_no: data.outgoing_tracking_no,
+              message: `Naskah fisik hasil sidang pentashihan telah dikirim kembali via ${data.outgoing_courier} dengan nomor resi ${data.outgoing_tracking_no}.`,
+              link: `/publisher/registrations/${registrationId}?tab=fisik`,
+            },
+          },
+        });
+      }
+    }
+
+    return updated;
+  }, { isolationLevel: 'ReadCommitted' });
+};

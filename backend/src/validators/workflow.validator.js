@@ -86,6 +86,17 @@ export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
   notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
+  outgoing_courier: z.string().trim().max(100).optional(),
+  outgoing_tracking_no: z.string().trim().max(100).optional(),
+  outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
+  outgoing_notes: z.string().trim().max(1000).optional(),
+}).strict() };
+
+export const outgoingDispatchSchema = { params, body: z.object({
+  outgoing_courier: z.string().trim().min(1, 'Kurir atau metode pengiriman keluar wajib diisi.').max(100),
+  outgoing_tracking_no: z.string().trim().min(1, 'Nomor resi pengiriman keluar wajib diisi.').max(100),
+  outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
+  outgoing_notes: z.string().trim().max(1000).optional(),
 }).strict() };
 export const documentSchema = { params, body: z.object({
   document_type: z.enum(['BERITA_ACARA_TASHIH', 'SURAT_TANDA_TASHIH', 'REVISION_RETURN_LETTER']),
