@@ -46,6 +46,7 @@ router.delete('/addons/:id', authenticate, authorize('SUPERADMIN'), validate(idP
 // 4. TIM DISTRIBUSI (DISTRIBUTION TEAMS)
 // -------------------------------------------------------------
 router.get('/distribution-teams', authenticate, masterController.listDistributionTeams);
+router.get('/pentashih-candidates', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'SUPERADMIN'), masterController.listPentashihCandidates);
 
 
 // 5. MASTER ITEM JENIS NASKAH (B-01 §4)

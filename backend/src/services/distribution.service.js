@@ -30,11 +30,19 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
   }
   const now = new Date();
-  const team = await tx.distributionTeam.findUnique({ where: { id: data.team_id }, include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } } });
-  if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) fail(409, 'Tim yang dipilih tidak tersedia atau masa berlaku SK-nya belum dimulai/sudah berakhir. Pilih tim dengan SK aktif atau minta administrator memperbarui data tim.');
-  
-  const entries = data.juz_assignments || data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] }));
-  
+  let team = null;
+  if (data.team_id) {
+    team = await tx.distributionTeam.findUnique({
+      where: { id: data.team_id },
+      include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } },
+    });
+    if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) {
+      fail(409, 'Kelompok kerja yang dipilih tidak tersedia atau masa aktifnya belum dimulai/sudah berakhir. Pilih kelompok kerja aktif atau minta administrator memperbarui data tim.');
+    }
+  }
+
+  const entries = data.juz_assignments || (data.assignee_ids ? data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] })) : []);
+
   // Clean duplicate juz per assignee to protect @@unique([assignment_id, juz_number])
   for (const entry of entries) {
     if (entry.juz_numbers && entry.juz_numbers.length) {
@@ -42,9 +50,42 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     }
   }
 
-  for (const { assignee_id: id } of entries) {
-    const member = team.members.find(member => member.user_id === id);
-    if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
+  // Validasi anggota pentashih (fleksibel: kelompok maupun individu)
+  for (const { assignee_id: pentashihId } of entries) {
+    let isValidPentashih = false;
+    if (team) {
+      const member = team.members.find(m => m.user_id === pentashihId);
+      if (member && member.status === 'ACTIVE' && member.user?.status === 'ACTIVE' && member.user?.roles?.some(item => item.role?.code === 'PENTASHIH')) {
+        isValidPentashih = true;
+      }
+    }
+    if (!isValidPentashih) {
+      const directUser = await tx.user.findFirst({
+        where: {
+          id: pentashihId,
+          status: 'ACTIVE',
+          roles: { some: { role: { code: 'PENTASHIH' } } },
+        },
+      });
+      if (directUser) isValidPentashih = true;
+    }
+    if (!isValidPentashih) {
+      fail(400, 'Ada pentashih yang bukan anggota aktif atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
+    }
+  }
+
+  // Validasi matematis cakupan rentang 30 juz (B-05)
+  const hasJuzAssignments = entries.some(e => e.juz_numbers && e.juz_numbers.length > 0);
+  const is30JuzMushaf = reg.service_type?.name?.toLowerCase().includes('30') || data.enforce_full_coverage;
+  if (hasJuzAssignments && (is30JuzMushaf || data.enforce_full_coverage) && reg.status !== 'TASHIH_IN_PROGRESS') {
+    const assignedJuzSet = new Set(entries.flatMap(e => e.juz_numbers || []));
+    const missingJuz = [];
+    for (let j = 1; j <= 30; j++) {
+      if (!assignedJuzSet.has(j)) missingJuz.push(j);
+    }
+    if (missingJuz.length > 0) {
+      fail(400, `Penjatahan juz belum lengkap. Juz berikut belum teralokasi: ${missingJuz.join(', ')}. Pastikan seluruh 30 juz terbagi.`);
+    }
   }
   const verifiedPayment = await tx.paymentRecord.findFirst({
     where: { registration_id: id, status: 'VERIFIED' },
@@ -81,9 +122,22 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
+    let resolvedTeamId = team ? team.id : null;
+    if (!resolvedTeamId) {
+      const memberMembership = await tx.teamMember.findFirst({
+        where: { user_id: assignee_id, status: 'ACTIVE', team: { status: 'ACTIVE' } },
+        select: { team_id: true },
+      });
+      resolvedTeamId = memberMembership?.team_id || null;
+    }
+
     const assignment = await tx.assignment.create({ data: {
-      registration_id: id, team_id: team.id, assignee_id, stage: currentStage,
-      iteration, due_at,
+      registration_id: id,
+      team_id: resolvedTeamId,
+      assignee_id,
+      stage: currentStage,
+      iteration,
+      due_at,
       ...(juz_numbers && juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
     } });
     assignments.push(assignment);
@@ -91,9 +145,13 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
   }
   if (reg.status !== 'TASHIH_IN_PROGRESS') {
-    await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Tim dan pentashih ditetapkan');
+    await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Kelompok dan pentashih ditetapkan');
   } else {
-    await audit(tx, user, 'ADD_PENTASHIH_ASSIGNMENT', 'Registration', reg.id, { added_count: assignments.length, note: 'Penambahan pentashih / pentashihan ulang' });
+    await audit(tx, user, 'ADD_PENTASHIH_ASSIGNMENT', 'Registration', reg.id, {
+      added_count: assignments.length,
+      reassignment_reason: data.reassignment_reason || 'ROTASI_TUGAS',
+      reassignment_notes: data.reassignment_notes || 'Penyesuaian penugasan pentashihan',
+    });
   }
   return assignments;
 }, { isolationLevel: 'ReadCommitted' });
