@@ -9,7 +9,19 @@ export const SlaIndicator = ({
   className,
   showProgress = true,
   totalTargetHours = 48,
+  isPaused = false,
+  pauseReason = 'Di luar hitungan SLA internal',
 }) => {
+  if (isPaused) {
+    return (
+      <div className={clsx('space-y-1', className)} aria-label="SLA: Jeda (Di luar hitungan SLA)">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />
+          <span>Jeda SLA · Menunggu Penerbit</span>
+        </span>
+      </div>
+    );
+  }
   if (!dueAt) return null;
 
   const now = new Date();

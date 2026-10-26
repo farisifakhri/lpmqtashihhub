@@ -30,15 +30,42 @@ export function QueueOverview({ total, oldest, fifo = true, loading = false }) {
 }
 
 export function QueueItemMeta({ item }) {
-  if (!item.queue_position) return null;
-  return <span className="inline-flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-    <span className="rounded-md bg-surface-subtle px-2 py-1 font-semibold text-ink">Urutan #{item.queue_position}</span>
-    {item.queue_entered_at && (
-      <span className="text-ink-muted">
-        Masuk: {new Date(item.queue_entered_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-      </span>
-    )}
-  </span>;
+  const isRevision = item?.status === 'REVISION_REQUIRED';
+  const enteredAt = item?.stage_entered_at || item?.updated_at;
+  const waitingDays = enteredAt ? Math.max(0, Math.floor((Date.now() - new Date(enteredAt).getTime()) / 86400000)) : 0;
+  const severity = waitingDays >= 14 ? 'danger' : (waitingDays >= 7 ? 'warning' : 'normal');
+
+  if (!item?.queue_position && !isRevision) return null;
+
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+      {item?.queue_position && (
+        <span className="rounded-md bg-surface-subtle px-2 py-1 font-semibold text-ink">Urutan #{item.queue_position}</span>
+      )}
+      {item?.queue_entered_at && (
+        <span className="text-ink-muted">
+          Masuk: {new Date(item.queue_entered_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </span>
+      )}
+      {isRevision && (
+        <span
+          className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold border ${
+            severity === 'danger'
+              ? 'bg-red-50 text-red-700 border-red-200'
+              : severity === 'warning'
+              ? 'bg-amber-50 text-amber-800 border-amber-200'
+              : 'bg-canvas text-ink border-line'
+          }`}
+          title="Naskah di luar hitungan SLA internal LPMQ (menunggu pemohon)"
+        >
+          <Clock className="w-3 h-3 shrink-0" />
+          <span>Menunggu {waitingDays} hari</span>
+          {severity === 'danger' && <span className="text-[10px] uppercase font-extrabold text-red-600">(Terlambat)</span>}
+          {severity === 'warning' && <span className="text-[10px] uppercase font-extrabold text-amber-600">(Perlu Pengingat)</span>}
+        </span>
+      )}
+    </span>
+  );
 }
 
 export function QueuePagination({ pagination, loading, onPageChange, label = 'Navigasi halaman antrean' }) {

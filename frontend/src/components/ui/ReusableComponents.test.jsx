@@ -79,6 +79,11 @@ describe('Redesign UI/UX Reusable Components', () => {
     expect(screen.getByText(/Terlambat/i)).toBeInTheDocument();
   });
 
+  it('SlaIndicator merender status jeda ketika isPaused bernilai true', () => {
+    render(<SlaIndicator isPaused={true} />);
+    expect(screen.getByText(/Jeda SLA · Menunggu Penerbit/i)).toBeInTheDocument();
+  });
+
   it('WorkflowTimeline merender 8 fase proses resmi LPMQ', () => {
     render(<WorkflowTimeline currentStatus="IN_VERIFICATION" />);
 
