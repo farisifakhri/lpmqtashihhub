@@ -54,7 +54,7 @@ export const ResultLetterPanel = ({
                 <div className="text-xs">
                   <strong className="font-bold text-ink flex items-center gap-1.5">
                     <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
-                    Lolos Verifikasi (PASSED)
+                    Lolos Verifikasi
                   </strong>
                   <p className="text-ink-muted text-xs mt-0.5 leading-relaxed">
                     Seluruh butir terpenuhi. Rekomendasikan penerbitan billing PNBP.
@@ -85,7 +85,7 @@ export const ResultLetterPanel = ({
                 <div className="text-xs">
                   <strong className="font-bold text-ink flex items-center gap-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
-                    Perlu Perbaikan Penerbit (REVISION_REQUIRED)
+                    Perlu Perbaikan Penerbit
                   </strong>
                   <p className="text-ink-muted text-xs mt-0.5 leading-relaxed">
                     Terdapat butir tidak sesuai yang wajib diperbaiki pemohon.
