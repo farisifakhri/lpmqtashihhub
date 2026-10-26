@@ -259,6 +259,10 @@ export async function listMyAssignments(user, query = {}) {
           publisher: { select: { id: true, legal_name: true } },
           service_type: { select: { id: true, name: true } },
           manuscript_files: true,
+          official_documents: {
+            where: { document_type: 'REVISION_RETURN_LETTER' },
+            orderBy: { created_at: 'desc' },
+          },
         },
       },
       team: { select: { id: true, name: true, decree_no: true } },

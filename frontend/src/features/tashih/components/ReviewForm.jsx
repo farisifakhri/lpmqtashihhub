@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, X, AlertCircle, FileText, Download, Info, Send, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
@@ -31,6 +31,10 @@ export const ReviewForm = ({
       setUploadingRecap(false);
     }
   };
+
+  const previousRevLetters = (selectedAssignment?.registration?.official_documents || [])
+    .filter((doc) => doc.document_type === 'REVISION_RETURN_LETTER')
+    .sort((a, b) => (b.version || 0) - (a.version || 0));
 
   const juzRangeText = selectedAssignment?.juz_from && selectedAssignment?.juz_to
     ? `Juz ${selectedAssignment.juz_from} s.d. ${selectedAssignment.juz_to}`
@@ -80,6 +84,24 @@ export const ReviewForm = ({
                 <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
                   <div>{modalError}</div>
+                </div>
+              )}
+
+              {/* Catatan Sidang Ronde Sebelumnya (B-07) */}
+              {previousRevLetters.length > 0 && (
+                <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-amber-900">
+                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-amber-200 text-ink leading-relaxed">
+                    <p className="font-semibold text-ink-muted text-[11px] mb-1">
+                      Ronde #{previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1} • Oleh: {previousRevLetters[0].content_snapshot?.distributor_name || 'Distributor'}
+                    </p>
+                    <p className="whitespace-pre-line text-xs font-mono bg-canvas p-2 rounded border border-line">
+                      {previousRevLetters[0].content_snapshot?.notes || '-'}
+                    </p>
+                  </div>
                 </div>
               )}
 
