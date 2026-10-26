@@ -27,9 +27,10 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | Paket | Status | Bukti / batas |
 |---|---|---|
 | B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait ada di checkout. |
-| B-02 | **Belum dimulai** | Bug “tidak setuju” pada UI pengesahan / approval flow. |
+| B-02 | **Selesai menurut bukti kode** | Pemisahan tegas alur pengembalian draf internal Kepala LPMQ ke Verifikator vs penerbitan surat naskah tidak lolos ke Penerbit. |
 | B-03 | **Selesai menurut bukti kode** | Kode resmi `TL.01` disahkan. Sequence atomik backend aktif, terintegrasi ke dialog approval `VerificationInspectionPage.jsx` dengan flag `auto_number: true` saat nomor manual kosong. UAT U-04 terselesaikan. |
-| B-04–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. Jangan anggap kategori ini berarti belum ada kode. |
+| B-04 | **Selesai menurut bukti kode** | Dokumen kode billing menggabungkan surat lolos verifikasi dengan lampiran berkas billing SIMPONI (PDF), dan tagihan/kode billing ditegakkan hanya untuk naskah yang lolos. |
+| B-05–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. Jangan anggap kategori ini berarti belum ada kode. |
 
 **Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, `frontend/src/features/verification/VerificationInspectionPage.jsx`, dan `frontend/src/features/verification/VerificationInspectionPage.test.jsx`.
 

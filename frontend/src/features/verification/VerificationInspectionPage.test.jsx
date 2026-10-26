@@ -261,7 +261,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Setujui & Sahkan Surat Hasil/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Kembalikan Draf/i })).toBeInTheDocument();
     });
   });
@@ -312,7 +312,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
       </MemoryRouter>
     );
 
-    const approveButton = await screen.findByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i });
+    const approveButton = await screen.findByRole('button', { name: /Setujui & Sahkan Surat Hasil/i });
     expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Surat hasil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Lihat / Cetak PDF Berita acara' })).toBeInTheDocument();
     fireEvent.click(approveButton);
@@ -389,7 +389,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
       </MemoryRouter>
     );
 
-    const approveButton = await screen.findByRole('button', { name: /Setujui Surat Bertanda Tangan Verifikator/i });
+    const approveButton = await screen.findByRole('button', { name: /Setujui & Sahkan Surat Hasil/i });
     fireEvent.click(approveButton);
 
     expect(await screen.findByRole('heading', { name: 'Sahkan Surat Hasil Verifikasi' })).toBeInTheDocument();

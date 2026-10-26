@@ -17,7 +17,7 @@ export const InspectionDialogs = ({
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div className="flex items-center gap-2 text-civic-danger font-bold text-sm">
                 <AlertTriangle className="w-5 h-5 text-civic-danger" />
-                Kembalikan Draf ke Verifikator
+                Kembalikan Draf Surat ke Verifikator (Revisi Internal)
               </div>
               <button
                 onClick={() => setReturnModalOpen(false)}
@@ -28,7 +28,7 @@ export const InspectionDialogs = ({
             </div>
 
             <p className="text-xs text-ink-muted leading-relaxed">
-              Berikan arahan perbaikan secara spesifik. Draf surat akan dikembalikan ke status pemeriksaan aktif verifikator.
+              Berikan arahan perbaikan secara spesifik. Tindakan ini hanya mengembalikan draf ke meja kerja Verifikator untuk diperbaiki (bukan penolakan naskah ke Penerbit).
             </p>
 
             <form onSubmit={handleReturnDocument} className="space-y-4">
