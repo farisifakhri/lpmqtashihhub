@@ -388,6 +388,10 @@ model Registration {
   dispatch_tracking_no     String?
   dispatch_courier         String?
   dispatch_date            DateTime?
+  outgoing_courier         String?
+  outgoing_tracking_no     String?
+  outgoing_dispatch_date   DateTime?
+  outgoing_notes           String?                  @db.Text
   external_sync_status     String                   @default("PENDING") // PENDING, SYNCED, FAILED
   external_sync_id         String?
   external_synced_at       DateTime?
