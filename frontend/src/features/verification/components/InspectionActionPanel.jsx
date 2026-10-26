@@ -91,7 +91,7 @@ export const InspectionActionPanel = ({
                 className="text-xs text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft"
               >
                 <AlertTriangle className="w-3.5 h-3.5 mr-1 text-civic-danger" />
-                Kembalikan Draf
+                Kembalikan Draf ke Verifikator
               </Button>
             )}
           </>
@@ -126,7 +126,7 @@ export const InspectionActionPanel = ({
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui Surat Bertanda Tangan Verifikator'}
+              {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat Hasil'}
             </Button>
           ) : canVerifierSend ? (
             <div className="flex items-center gap-2">
