@@ -78,4 +78,40 @@ describe('PublisherBillingPage Component', () => {
     expect(screen.getByText('Konfirmasi Pembayaran PNBP')).toBeInTheDocument();
     expect(screen.getAllByText(/Nomor Transaksi Penerimaan Negara/i).length).toBeGreaterThan(0);
   });
+
+  it("B-04: merender tombol unduh Surat Lolos & Billing (PDF) jika dokumen verifikasi tersedia", async () => {
+    vi.spyOn(PaymentApiModule.paymentApi, "listPayments").mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            ...mockPayments[0],
+            registration: {
+              ...mockPayments[0].registration,
+              verification_documents: [
+                {
+                  id: "doc-ver-1",
+                  document_no: "B-04/LPMQ.01/TL.01/10/2026",
+                  document_type: "SURAT_HASIL_VERIFIKASI",
+                  status: "SENT",
+                },
+              ],
+            },
+          },
+        ],
+        pagination: { total: 1, page: 1, limit: 20, total_pages: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <PublisherBillingPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("Unduh Surat Lolos & Billing (PDF)")).toBeInTheDocument();
+    });
+  });
+
 });

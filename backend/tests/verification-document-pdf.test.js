@@ -113,3 +113,44 @@ test('U-03: Lembar disposisi dan surat hasil menggunakan nama jabatan kedinasan 
   assert.ok(baBytes instanceof Uint8Array);
   assert.equal(baBytes.subarray(0, 5).toString(), '%PDF-');
 });
+
+test("B-04: Dokumen kode billing menggabungkan surat lolos verifikasi dan berkas billing SIMPONI", async () => {
+  const billingDoc = await PDFDocument.create();
+  const page1 = billingDoc.addPage([595, 842]);
+  page1.drawText("BUKTI PEMBUATAN TAGIHAN KODE BILLING SIMPONI", { x: 50, y: 800 });
+  const billingBytes = Buffer.from(await billingDoc.save());
+
+  const storageRoot = new URL("../storage/private/", import.meta.url);
+  const { writeFile, unlink, mkdir } = await import("node:fs/promises");
+  const { randomUUID } = await import("node:crypto");
+  const fileId = randomUUID();
+  const filePath = new URL(fileId, storageRoot);
+  await mkdir(storageRoot, { recursive: true });
+  await writeFile(filePath, billingBytes);
+
+  try {
+    const passedDoc = {
+      document_type: "SURAT_HASIL_VERIFIKASI",
+      document_no: "B-04/LPMQ.01/TL.01/10/2026",
+      version: 1,
+      content_snapshot: {
+        decision: "PASSED",
+        registration_no: "REG-B04-001",
+        title: "Mushaf Al-Qur'an Standar B-04",
+        publisher_name: "PT Mushaf Nusantara",
+        letter_text: "Naskah lolos verifikasi dan diterbitkan kode billing.",
+        billing_no: "820261026001",
+        billing_file_id: fileId,
+      },
+    };
+
+    const combinedBytes = await renderVerificationPdf(passedDoc, { draft: true });
+    assert.equal(combinedBytes.subarray(0, 5).toString(), "%PDF-");
+    const mergedPdf = await PDFDocument.load(combinedBytes);
+
+    // Halaman harus mencakup surat hasil dan lampiran berkas billing
+    assert.ok(mergedPdf.getPageCount() >= 2, "Dokumen harus memuat surat lolos dan lampiran berkas billing");
+  } finally {
+    await unlink(filePath).catch(() => {});
+  }
+});
