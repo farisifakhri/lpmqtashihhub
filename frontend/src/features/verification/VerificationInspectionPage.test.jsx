@@ -399,7 +399,10 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     fireEvent.click(screen.getByRole('button', { name: /Sahkan dan Terbitkan PDF/i }));
 
     await waitFor(() => {
-      expect(approveSpy).toHaveBeenCalledWith('doc-1', {});
+      expect(approveSpy).toHaveBeenCalledWith('doc-1', {
+        auto_number: true,
+        auto_generate: true,
+      });
     });
   });
 
