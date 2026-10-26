@@ -160,6 +160,22 @@ export const getPaymentDetail = async (id, user) => {
             orderBy: { created_at: 'desc' },
             take: 1,
           },
+          verification_documents: {
+            where: {
+              document_type: { in: ["SURAT_HASIL_VERIFIKASI", "SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI"] },
+              status: { in: ["SENT", "SIGNED"] },
+            },
+            select: {
+              id: true,
+              document_no: true,
+              document_type: true,
+              file_id: true,
+              status: true,
+              created_at: true,
+            },
+            orderBy: { version: "desc" },
+            take: 1,
+          },
         },
       },
     },
@@ -291,6 +307,21 @@ export const listPayments = async (query, user) => {
             physical_handovers: {
               select: { id: true, status: true, receipt_no: true },
               orderBy: { created_at: 'desc' },
+              take: 1,
+            },
+            verification_documents: {
+              where: {
+                document_type: { in: ["SURAT_HASIL_VERIFIKASI", "SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI"] },
+                status: isOwnerPublisher ? { in: ["SENT"] } : { in: ["SENT", "SIGNED", "SUBMITTED"] },
+              },
+              select: {
+                id: true,
+                document_no: true,
+                document_type: true,
+                file_id: true,
+                status: true,
+              },
+              orderBy: { version: "desc" },
               take: 1,
             },
           },
