@@ -104,9 +104,9 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({ data: [{ id: 'r1', title: 'Siap ditugaskan', status: 'WAITING_DISTRIBUTION', created_at: new Date().toISOString() }] });
     render(<MemoryRouter><UnifiedDashboard /></MemoryRouter>);
     await screen.findByText('Siap ditugaskan');
-    expect(screen.getByText('Penugasan Tim')).toBeInTheDocument();
+    expect(screen.getByText('Penugasan Tim Pentashih')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tetapkan Tim' })).toBeInTheDocument();
-    for (const title of ['Master Data Layanan', 'Identitas dan Akses', 'Verifikasi Berkas', 'Penetapan STT', 'Sidang Pentashihan']) expect(screen.queryByRole('link', { name: new RegExp(title) })).not.toBeInTheDocument();
+    for (const title of ['Pengaturan Layanan', 'Manajemen Pengguna', 'Verifikasi Berkas', 'Penetapan STT', 'Sidang Pentashihan']) expect(screen.queryByRole('link', { name: new RegExp(title) })).not.toBeInTheDocument();
   });
   it('DISTRIBUTOR cannot see the manual team assignment controls', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({ currentUser: { id: 'distributor', roles: ['DISTRIBUTOR'], role: 'DISTRIBUTOR' } });
@@ -168,7 +168,7 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     );
 
     await screen.findByText('Mushaf Menunggu Master Fisik');
-    expect(screen.getByRole('link', { name: /Loket Intake Master Fisik/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Penerimaan Master Fisik/i })).toBeInTheDocument();
     const intakeLink = screen.getByRole('link', { name: /^Intake Master Fisik$/i });
     expect(intakeLink).toBeInTheDocument();
     expect(intakeLink.getAttribute('href')).toContain('/internal/master-intake?search=REG-2026-888');

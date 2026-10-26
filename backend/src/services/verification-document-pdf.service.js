@@ -772,6 +772,22 @@ export async function renderVerificationPdf(document, { draft = false, approver 
     page.drawText('Dokumen diterbitkan secara elektronik oleh Sistem Informasi Layanan Pentashihan Mushaf Al-Qur\'an.', { x: margin + 80, y: y - 40, font: italic, size: 7, color: darkGray });
   }
 
+  // Paket B-04: Dokumen kode billing berisi surat lolos verifikasi dan berkas billing SIMPONI
+  if (['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(document.document_type) && content.decision === 'PASSED' && content.billing_file_id) {
+    try {
+      const billingBytes = await readStoredFile(content.billing_file_id);
+      if (billingBytes && billingBytes.length > 0) {
+        const billingPdf = await PDFDocument.load(billingBytes);
+        const copiedPages = await pdf.copyPages(billingPdf, billingPdf.getPageIndices());
+        for (const copiedPage of copiedPages) {
+          pdf.addPage(copiedPage);
+        }
+      }
+    } catch (err) {
+      console.warn('[B-04] Gagal melampirkan berkas billing ke PDF surat hasil verifikasi:', err?.message || err);
+    }
+  }
+
   return Buffer.from(await pdf.save());
 }
 

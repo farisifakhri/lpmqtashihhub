@@ -1,7 +1,9 @@
-import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
   Menu,
   Phone,
   Search,
@@ -189,6 +191,12 @@ const heroSlides = [
   { src: heroImageSecond, alt: 'Gambar kedua slideshow beranda LPMQ' },
 ];
 
+const extendedHeroSlides = [
+  { ...heroSlides[heroSlides.length - 1], slideIndex: heroSlides.length - 1, isClone: true },
+  ...heroSlides.map((slide, slideIndex) => ({ ...slide, slideIndex, isClone: false })),
+  { ...heroSlides[0], slideIndex: 0, isClone: true },
+];
+
 const StatCounter = ({ target, isVisible, duration = 1600 }) => {
   const numericTarget = typeof target === 'number' ? target : parseInt(target, 10) || 0;
   const [count, setCount] = useState(() => {
@@ -248,11 +256,40 @@ export const LandingPage = () => {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
+  const [heroTrackIndex, setHeroTrackIndex] = useState(1);
+  const [isHeroTrackTransitionEnabled, setIsHeroTrackTransitionEnabled] = useState(true);
+  const isHeroTrackTransitioningRef = useRef(false);
+  const pendingHeroDirectionsRef = useRef([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [mobileDropdown, setMobileDropdown] = useState(null);
   const statsRef = useRef(null);
   const [statsVisible, setStatsVisible] = useState(false);
+  const activeHeroSlide = (heroTrackIndex - 1 + heroSlides.length) % heroSlides.length;
+
+  const navigateHeroSlide = useCallback((direction) => {
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setHeroTrackIndex((currentIndex) => {
+        const nextIndex = currentIndex + direction;
+        if (nextIndex === 0) return heroSlides.length;
+        if (nextIndex === heroSlides.length + 1) return 1;
+        return nextIndex;
+      });
+      return;
+    }
+
+    if (isHeroTrackTransitioningRef.current) {
+      pendingHeroDirectionsRef.current.push(direction);
+      return;
+    }
+
+    isHeroTrackTransitioningRef.current = true;
+    setHeroTrackIndex((currentIndex) => currentIndex + direction);
+  }, []);
 
   useEffect(() => {
     const prefersReducedMotion =
@@ -263,11 +300,50 @@ export const LandingPage = () => {
     if (prefersReducedMotion) return undefined;
 
     const intervalId = window.setInterval(() => {
-      setActiveHeroSlide((currentSlide) => (currentSlide + 1) % heroSlides.length);
-    }, 5000);
+      navigateHeroSlide(1);
+    }, 7000);
 
     return () => window.clearInterval(intervalId);
-  }, []);
+  }, [navigateHeroSlide]);
+
+  useEffect(() => {
+    if (isHeroTrackTransitionEnabled) return undefined;
+
+    let secondFrameId;
+    const firstFrameId = window.requestAnimationFrame(() => {
+      secondFrameId = window.requestAnimationFrame(() => {
+        setIsHeroTrackTransitionEnabled(true);
+        const nextDirection = pendingHeroDirectionsRef.current.shift();
+        if (nextDirection === undefined) {
+          isHeroTrackTransitioningRef.current = false;
+        } else {
+          setHeroTrackIndex((currentIndex) => currentIndex + nextDirection);
+        }
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrameId);
+      if (secondFrameId) window.cancelAnimationFrame(secondFrameId);
+    };
+  }, [isHeroTrackTransitionEnabled]);
+
+  const handleHeroTrackTransitionEnd = (event) => {
+    if (event.target !== event.currentTarget) return;
+
+    if (heroTrackIndex === 0 || heroTrackIndex === heroSlides.length + 1) {
+      setIsHeroTrackTransitionEnabled(false);
+      setHeroTrackIndex(heroTrackIndex === 0 ? heroSlides.length : 1);
+      return;
+    }
+
+    const nextDirection = pendingHeroDirectionsRef.current.shift();
+    if (nextDirection === undefined) {
+      isHeroTrackTransitioningRef.current = false;
+    } else {
+      setHeroTrackIndex((currentIndex) => currentIndex + nextDirection);
+    }
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
@@ -570,26 +646,84 @@ export const LandingPage = () => {
       </header>
 
       {/* Main Content */}
-      <main className="w-full px-0 py-3 lg:py-0 space-y-12">
+      <main className="mx-auto max-w-[1400px] px-5 py-3 sm:px-8 lg:px-12 lg:py-4 space-y-12">
         {/* Section 1: Hero */}
         <section
           id="beranda"
-          className="relative isolate min-h-[500px] overflow-hidden rounded-[0px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
+          className="relative isolate min-h-[500px] overflow-hidden rounded-[20px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
           aria-label="Slideshow gambar beranda"
           role="region"
         >
-          {heroSlides.map((slide, index) => (
-            <img
-              key={slide.src}
-              src={slide.src}
-              alt={slide.alt}
-              aria-hidden={activeHeroSlide !== index}
-              loading="eager"
-              className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 motion-reduce:transition-none ${
-                activeHeroSlide === index ? 'opacity-100' : 'opacity-0'
-              }`}
-            />
-          ))}
+          <div
+            data-hero-track
+            className={`absolute inset-0 flex ${
+              isHeroTrackTransitionEnabled
+                ? 'transition-transform duration-[600ms] ease-in-out motion-reduce:transition-none'
+                : 'transition-none'
+            }`}
+            style={{
+              width: `${extendedHeroSlides.length * 100}%`,
+              transform: `translateX(-${(heroTrackIndex * 100) / extendedHeroSlides.length}%)`,
+            }}
+            onTransitionEnd={handleHeroTrackTransitionEnd}
+          >
+            {extendedHeroSlides.map((slide, index) => (
+              <div
+                key={`${slide.src}-${index}`}
+                aria-hidden={slide.isClone || activeHeroSlide !== slide.slideIndex}
+                className="relative h-full shrink-0"
+                style={{ flex: `0 0 ${100 / extendedHeroSlides.length}%` }}
+              >
+                <img
+                  src={slide.src}
+                  alt={slide.alt}
+                  loading="eager"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-10"
+                  style={{
+                    background:
+                      'linear-gradient(to right, #143001 0%, rgba(20, 48, 1, 0.85) 30%, rgba(20, 48, 1, 0.4) 60%, transparent 100%)',
+                  }}
+                />
+                {slide.slideIndex === 0 && (
+                  <div className="absolute inset-0 z-20 flex items-center justify-start px-16 py-10 text-left sm:px-20 lg:px-24">
+                    <div className="w-full max-w-2xl">
+                      <span className="inline-flex max-w-full rounded-full border border-white/20 bg-white/15 px-4 py-2 text-xs font-medium text-white backdrop-blur-md sm:text-sm">
+                        Kementerian Agama Republik Indonesia
+                      </span>
+                      <h1 className="mt-4 text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
+                        Layanan Surat Tanda Tashih Al-Qur’an
+                      </h1>
+                      <p className="mt-4 text-base leading-relaxed text-white sm:mt-5 sm:text-lg lg:text-xl">
+                        Layanan resmi penerbitan Surat Tanda Tashih (STT) untuk mushaf cetak,
+                        mushaf digital, dan rekaman audio/visual.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Slide sebelumnya"
+            onClick={() => navigateHeroSlide(-1)}
+            className="absolute left-3 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-5"
+          >
+            <ChevronLeft aria-hidden="true" className="h-6 w-6" />
+          </button>
+          <button
+            type="button"
+            aria-label="Slide berikutnya"
+            onClick={() => navigateHeroSlide(1)}
+            className="absolute right-3 top-1/2 z-30 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/35 text-white transition-colors hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5"
+          >
+            <ChevronRight aria-hidden="true" className="h-6 w-6" />
+          </button>
         </section>
 
         {/* Quick Links Section: Akses Menu Cepat */}

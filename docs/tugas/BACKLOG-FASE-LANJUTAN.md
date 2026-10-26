@@ -1,4 +1,4 @@
-# Backlog Fase Lanjutan ver 0.2 — status bukti 21 Okt 2026
+# Backlog Fase Lanjutan ver 0.3 — status bukti 26 Okt 2026
 
 Tiap paket dibuat sebagai file detail dan branch sendiri **saat akan dikerjakan**, mengikuti pola paket Fase 1. Pemilik awal adalah Fakhri; bagian antarmuka dapat dibagi ke Faisal setelah Fase 1 selesai.
 
@@ -10,7 +10,7 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 |-|-|-|-|-|
 |B-01|`feat/pengajuan-banyak-naskah-varian`|Pengajuan → naskah → varian (ukuran, oplah). STT per pengajuan, surat hasil per naskah × ukuran × oplah|**Fakhri**|Fase 1 (Selesai/Merged)|
 |B-02|`fix/verifikasi-tidak-setuju`|Perbaiki bug frontend saat memilih "tidak setuju". Pisahkan naskah tidak lolos (kembali ke penerbit) dari draf surat ditolak Kepala (kembali ke verifikator)|**Fakhri**|tidak ada|
-|B-03|`feat/nomor-surat-otomatis`|Nomor surat hasil verifikasi otomatis, atomik, tidak dipakai ulang, format default lewat konfigurasi (UAT U-04)|**Fakhri**|B-01|
+|B-03|`feat/nomor-surat-otomatis`|Nomor surat hasil verifikasi otomatis, atomik, tidak dipakai ulang, format default lewat konfigurasi (UAT U-04, Disahkan: TL.01)|**Fakhri**|B-01 (Selesai)|
 |B-04|`feat/surat-lolos-dokumen-billing`|Dokumen kode billing berisi surat lolos verifikasi. Billing hanya untuk naskah yang lolos|**Fakhri**|B-03|
 |B-05|`feat/distribusi-kelompok-juz`|Dropdown pentashih yang bisa dicari. Distributor berhak memilih lebih dari satu kelompok, per individu, atau kombinasi kelompok-individu dengan penjatahan rentang juz fleksibel (misal 20-10 juz). Distributor boleh menambah atau mengganti pentashih dan kelompok (alasan generik, tanpa data kesehatan). Bahasa tanpa istilah SK|*(Belum Ditentukan)*|T-F02|
 |B-06|`feat/rekap-pentashih-internal`|Pentashih lapor hasil keseluruhan juz yang di tashih (tidak perjuz laporanya) plus dokumen rekap (wajib). Kelompok: satu rekap cukup setelah dicek distributor. Rekap hanya terlihat pentashih dan distributor|*(Belum Ditentukan)*|B-05|
@@ -22,20 +22,19 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 |B-12|`chore/glosarium-narasi`|Samakan istilah (penerbit, permohonan) di UI, template surat, dan label pengiriman. Teks label mengikuti nama menu aplikasi baru|**Choirul**|tidak ada|
 |B-13|`feat/dashboard-penerbit`|Dashboard penerbit: tracking status, unggah dokumen tambahan, bayar PNBP, respon Berita Acara|**Choirul**|T-F02, Fase 1|
 
-## Status implementasi per 21 Oktober 2026
+## Status implementasi per 26 Oktober 2026
 
 | Paket | Status | Bukti / batas |
 |---|---|---|
-| B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait ada di checkout. Rancangan paket menyatakan B-01 telah di-merge ke `main`; nomor PR tidak diverifikasi. |
-| B-02 | **Belum dimulai** | `docs/UAT_FINDINGS.txt` menyebut bug “tidak setuju” belum direproduksi. |
-| B-03 | **Parsial** | Generator dan sequence backend ada; approval memerlukan `auto_number`/`auto_generate`, tetapi UI belum mengirim flag tersebut. Pola nomor juga hardcoded dan format resmi belum dikonfirmasi. Lihat [rincian B-03](fakhri/B-03-nomor-surat-otomatis.md). |
-| B-04–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. Jangan anggap kategori ini berarti belum ada kode. |
+| B-01 | **Selesai menurut bukti kode** | Model pengajuan/naskah/varian, alur pendaftaran, kalkulasi item, dan test terkait ada di checkout. |
+| B-02 | **Selesai menurut bukti kode** | Pemisahan tegas alur pengembalian draf internal Kepala LPMQ ke Verifikator vs penerbitan surat naskah tidak lolos ke Penerbit. |
+| B-03 | **Selesai menurut bukti kode** | Kode resmi `TL.01` disahkan. Sequence atomik backend aktif, terintegrasi ke dialog approval `VerificationInspectionPage.jsx` dengan flag `auto_number: true` saat nomor manual kosong. UAT U-04 terselesaikan. |
+| B-04 | **Selesai menurut bukti kode** | Dokumen kode billing menggabungkan surat lolos verifikasi dengan lampiran berkas billing SIMPONI (PDF), dan tagihan/kode billing ditegakkan hanya untuk naskah yang lolos. |
+| B-05–B-13 | **Belum diverifikasi** | Belum dilakukan pencocokan bukti terhadap semua kriteria masing-masing paket. Jangan anggap kategori ini berarti belum ada kode. |
 
-**Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, dan `frontend/src/features/verification/VerificationInspectionPage.jsx`. Test konkurensi database dan status merge PR tidak diklaim.
+**Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, `frontend/src/features/verification/VerificationInspectionPage.jsx`, dan `frontend/src/features/verification/VerificationInspectionPage.test.jsx`.
 
-## Pertanyaan yang tetap perlu dijawab sebelum paket terkait dikerjakan
+## Catatan Keputusan & Status Pertanyaan
 
-* Format nomor surat resmi (B-03).
-* Pola di rancangan B-03 (`TL.00`) berbeda dari pola yang diuji di kode (`TL.01`); minta konfirmasi format resmi sebelum mengubahnya.
-* Maksud "halaman login: peringatan menghapus" (T-S02).
-* Penyedia email dan, kelak, WhatsApp untuk notifikasi (T-F06, B-08, B-10).
+* **Format nomor dinas resmi (B-03 / U-04):** Telah dikonfirmasi resmi menggunakan **`TL.01`** (`B-{seq}/LPMQ.01/TL.01/{roman_month}/{year}`).
+* **Email & Notifikasi:** Driver internal (`MockEmailProvider` / terminal log & outbox) telah disiapkan untuk pengembangan lokal tanpa memblokir alur kerja pendaftaran penerbit.

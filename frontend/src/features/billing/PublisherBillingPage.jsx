@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
+import { getAuthToken } from '@/api/client';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import {
@@ -43,6 +44,38 @@ export const PublisherBillingPage = () => {
   const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNPAID' | 'PAID' | 'VERIFIED'
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBilling, setCopiedBilling] = useState(null);
+  const [downloadingDocId, setDownloadingDocId] = useState(null);
+
+  const handleDownloadPdf = async (docId, regNo) => {
+    setDownloadingDocId(docId);
+    try {
+      const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || "/api/v1";
+      const response = await fetch(`${base}/verification-documents/${docId}/pdf`, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+      });
+      if (!response.ok) {
+        let msg = "Dokumen belum dapat diunduh.";
+        try {
+          const errData = await response.json();
+          if (errData?.message) msg = errData.message;
+        } catch (_) {}
+        throw new Error(msg);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Surat-Lolos-Billing-${regNo || docId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message || "Gagal mengunduh dokumen billing.");
+    } finally {
+      setDownloadingDocId(null);
+    }
+  };
 
   // Modal Konfirmasi Pembayaran
   const [selectedPayment, setSelectedPayment] = useState(null);
@@ -483,6 +516,7 @@ export const PublisherBillingPage = () => {
         <div className="space-y-4">
           {payments.map((item) => {
             const reg = item.registration || {};
+                const verDoc = reg.verification_documents?.[0];
             const sla = getSlaDisplay(item);
             const isUnpaid = item.status === 'UNPAID';
             const isPaid = item.status === 'PAID';
@@ -594,6 +628,19 @@ export const PublisherBillingPage = () => {
                   </div>
 
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    {verDoc && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleDownloadPdf(verDoc.id, reg.registration_no)}
+                        disabled={downloadingDocId === verDoc.id}
+                        className="w-full sm:w-auto text-xs font-semibold px-3 py-2 inline-flex items-center justify-center gap-1.5 border-line text-ink hover:bg-canvas"
+                        title="Unduh Dokumen Surat Lolos Verifikasi & Berkas Billing SIMPONI"
+                      >
+                        <FileText className="w-4 h-4 text-brand-700" />
+                        {downloadingDocId === verDoc.id ? "Mengunduh..." : "Unduh Surat Lolos & Billing (PDF)"}
+                      </Button>
+                    )}
+
                     {isUnpaid && (
                       <Button
                         variant="primary"
