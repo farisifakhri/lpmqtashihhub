@@ -352,15 +352,30 @@ export const ALLOWED_METADATA_KEYS = new Set([
   'font_arab',
   'deskripsi',
   'penanggung_jawab_produk',
+  'nama_produk',
+  'nama_mushaf',
+  'penanggung_jawab_wa',
   'penanggung_jawab_email',
   'nomor_pendaftaran_lama',
+  'nomor_kode_ukuran_lama',
+  'surat_pernyataan_file_id',
+  'bukti_tashih_file_id',
   'nama_percetakan',
   'jenis_mushaf',
+  'kategori_pendaftaran',
   'sizes',
   'jenis_naskah',
   'materi_tambahan',
   'penanggung_jawab_materi',
+  'penanggung_jawab_materi_tambahan',
   'deskripsi_mushaf',
+  'apk_url',
+  'country_of_origin',
+  'negara_asal_mushaf',
+  'foreign_publisher_name',
+  'penerbit_asal_mushaf',
+  'foreign_tashih_institution',
+  'lembaga_pentashih_asal_mushaf',
   'catatan',
   'documentation_archive',
 ]);
@@ -376,11 +391,31 @@ export const sanitizeManuscriptMetadata = (raw = {}) => {
     } else if (typeof val === 'number' || typeof val === 'boolean' || val === null) {
       cleaned[key] = val;
     } else if (Array.isArray(val)) {
-      cleaned[key] = val.map((item) => {
-        if (typeof item === 'string') return stripHtmlAndScripts(item);
-        if (typeof item === 'object' && item !== null) return sanitizeManuscriptMetadata(item);
-        return item;
-      });
+      if (key === 'sizes') {
+        cleaned[key] = val
+          .map((item) => {
+            if (typeof item === 'string') return stripHtmlAndScripts(item);
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+            const size = {};
+            if (typeof item.ukuran === 'string' && item.ukuran.length <= 50) {
+              size.ukuran = stripHtmlAndScripts(item.ukuran);
+            }
+            if (
+              (typeof item.oplah === 'number' && Number.isInteger(item.oplah) && item.oplah >= 0 && item.oplah <= 10_000_000) ||
+              (typeof item.oplah === 'string' && /^\d{0,8}$/.test(item.oplah) && Number(item.oplah) <= 10_000_000)
+            ) {
+              size.oplah = item.oplah;
+            }
+            return size;
+          })
+          .filter((size) => size !== null && (typeof size === 'string' || Object.keys(size).length > 0));
+      } else {
+        cleaned[key] = val.map((item) => {
+          if (typeof item === 'string') return stripHtmlAndScripts(item);
+          if (typeof item === 'object' && item !== null) return sanitizeManuscriptMetadata(item);
+          return item;
+        });
+      }
     }
   }
   return cleaned;

@@ -236,6 +236,63 @@ test('B-01 T3: Sanitasi metadata naskah dan penolakan properti di luar whitelist
   };
   assert.equal(manuscriptMetadataSchema.safeParse(validMeta).success, true);
 
+  const registrationFormMeta = {
+    nama_produk: 'Kumpulan Surat dan Tajwid As-Syamil',
+    nama_mushaf: 'Kumpulan Surat dan Tajwid As-Syamil',
+    penanggung_jawab_produk: 'Hadi',
+    penanggung_jawab_wa: '+6282344577784',
+    penanggung_jawab_email: 'hadi@gmail.com',
+    sizes: [
+      { ukuran: '40 x 30', oplah: '100' },
+      { ukuran: '20 x 10', oplah: '100' },
+    ],
+    jenis_naskah: ['1. Juz-juz pilihan', '3. Tajwid Warna'],
+    jenis_mushaf: 'Mushaf Standar Usmani',
+    kategori_pendaftaran: 'Mushaf Baru',
+    nama_percetakan: 'Jayatama Press',
+    deskripsi_mushaf: '',
+    materi_tambahan: ['Mutiara Hikmah'],
+    penanggung_jawab_materi_tambahan: 'Yanto',
+  };
+  assert.equal(manuscriptMetadataSchema.safeParse(registrationFormMeta).success, true);
+  const registrationPayload = createRegistrationSchema.body.safeParse({
+    title: registrationFormMeta.nama_mushaf,
+    registration_type: 'NEW',
+    registration_category: 'NEW',
+    service_type_id: '5e820283-0fcc-4220-b408-2e8d1ebffd05',
+    addon_ids: ['7b865e38-6837-431d-bc60-cdac08f78243'],
+    statement_accepted: true,
+    foreign_metadata: registrationFormMeta,
+    mushaf_details: registrationFormMeta,
+    manuscripts: [{
+      seq_number: 1,
+      title: registrationFormMeta.nama_mushaf,
+      items: ['MAJMU', 'TAJWID'],
+      variants: registrationFormMeta.sizes.map((size) => ({
+        ukuran: size.ukuran,
+        oplah: Number(size.oplah),
+      })),
+      metadata: registrationFormMeta,
+      sample_file_id: '9533cabb-e15c-4509-8cca-8bd96664a9ef',
+    }],
+    cover_file_id: '3765e537-8f9a-4540-923e-46b418d6de44',
+    surat_permohonan_file_id: 'acf8bc25-961e-448b-8574-108303707c32',
+    contoh_halaman_file_id: '9533cabb-e15c-4509-8cca-8bd96664a9ef',
+    surat_pernyataan_perubahan_file_id: null,
+    apk_file_id: null,
+    bukti_tashih_file_id: null,
+  });
+  assert.equal(registrationPayload.success, true, JSON.stringify(registrationPayload.error?.issues));
+
+  const sanitizedFormMeta = sanitizeManuscriptMetadata(registrationFormMeta);
+  assert.deepEqual(sanitizedFormMeta.sizes, registrationFormMeta.sizes);
+  assert.equal(sanitizedFormMeta.nama_mushaf, registrationFormMeta.nama_mushaf);
+  assert.equal(sanitizedFormMeta.penanggung_jawab_materi_tambahan, 'Yanto');
+  assert.deepEqual(
+    sanitizeManuscriptMetadata({ sizes: [{ ukuran: '<b>A4</b>', oplah: '<script>1</script>' }] }).sizes,
+    [{ ukuran: 'A4' }]
+  );
+
   // Properti asing/berbahaya ditolak oleh Zod .strict()
   const invalidMeta = {
     ...validMeta,
@@ -573,4 +630,3 @@ test('B-01 T11: Edge cases kalkulasi tarif dan SLA jika items kosong atau null',
   assert.equal(regEmpty.totalFee, 0);
   assert.equal(regEmpty.slaInitial, 0);
 });
-

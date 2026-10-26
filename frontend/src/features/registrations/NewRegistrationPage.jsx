@@ -1275,7 +1275,7 @@ export const NewRegistrationPage = () => {
             isSubmitting={isSubmitting}
             uploadingFiles={uploadingFiles}
             onSaveDraft={() => executeSubmit(false)}
-            onSubmitRegistration={handleInitiateSubmit}
+            onInitiateSubmit={handleInitiateSubmit}
             onPreviousStep={() => setCurrentStep(3)}
           />
         </div>

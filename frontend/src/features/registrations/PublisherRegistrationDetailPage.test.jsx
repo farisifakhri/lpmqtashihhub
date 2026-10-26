@@ -35,6 +35,22 @@ describe('Publisher detail and revision', () => {
     fireEvent.click(submit);
     await waitFor(() => expect(registrationApi.submitRegistration).toHaveBeenCalledWith('r1'));
   }, 15000);
+  it('renders manuscript and variant details', async () => {
+    registrationApi.getDetail.mockResolvedValue({ data: {
+      ...data,
+      manuscripts: [{
+        id: 'm1',
+        seq_number: 1,
+        title: 'Mushaf Contoh',
+        items: [{ id: 'i1', name: 'Juz pilihan' }],
+        variants: [{ ukuran: 'A4', oplah: 100 }],
+      }],
+    } });
+    show();
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.getByText('Daftar Naskah & Varian Terdaftar (1 Naskah)')).toBeInTheDocument();
+    expect(screen.getByText('1. Mushaf Contoh')).toBeInTheDocument();
+  });
   it('blocks unsupported files without sending an upload', async () => {
     show(); await screen.findByRole('heading', { name: 'Naskah perbaikan' });
     fireEvent.change(screen.getByLabelText('Pilih berkas naskah'), { target: { files: [new File(['bad'], 'script.exe', { type: 'application/octet-stream' })] } });

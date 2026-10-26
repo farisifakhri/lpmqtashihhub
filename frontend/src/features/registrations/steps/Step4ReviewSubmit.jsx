@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink } from 'lucide-react';
+import { CheckCircle2, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export const Step4ReviewSubmit = ({
@@ -69,16 +69,6 @@ export const Step4ReviewSubmit = ({
           </div>
         </div>
 
-        {/* Peringatan Integritas Data (REV-07) */}
-        <div className="p-4 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-xs text-civic-warning font-semibold flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-civic-warning" />
-          <div>
-            <p className="font-bold">Peringatan Ketelitian Pengisian (REV-07)</p>
-            <p className="mt-0.5 leading-relaxed">
-              Seluruh rincian naskah dan berkas digital harus lengkap dan sesuai ketentuan sebelum diajukan. Data yang dikirimkan akan diproses langsung oleh tim verifikator LPMQ.
-            </p>
-          </div>
-        </div>
 
         {/* Ringkasan Isian */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
