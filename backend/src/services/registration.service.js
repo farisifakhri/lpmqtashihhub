@@ -393,8 +393,9 @@ export const sanitizeManuscriptMetadata = (raw = {}) => {
     } else if (Array.isArray(val)) {
       if (key === 'sizes') {
         cleaned[key] = val
-          .filter((item) => item && typeof item === 'object' && !Array.isArray(item))
           .map((item) => {
+            if (typeof item === 'string') return stripHtmlAndScripts(item);
+            if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
             const size = {};
             if (typeof item.ukuran === 'string' && item.ukuran.length <= 50) {
               size.ukuran = stripHtmlAndScripts(item.ukuran);
@@ -407,7 +408,7 @@ export const sanitizeManuscriptMetadata = (raw = {}) => {
             }
             return size;
           })
-          .filter((size) => Object.keys(size).length > 0);
+          .filter((size) => size !== null && (typeof size === 'string' || Object.keys(size).length > 0));
       } else {
         cleaned[key] = val.map((item) => {
           if (typeof item === 'string') return stripHtmlAndScripts(item);
