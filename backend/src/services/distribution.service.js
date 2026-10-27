@@ -51,15 +51,15 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   }
 
   // Validasi anggota pentashih (fleksibel: kelompok maupun individu)
-  for (const { assignee_id: pentashihId } of entries) {
-    let isValidPentashih = false;
-    if (team) {
+  if (team) {
+    for (const { assignee_id: pentashihId } of entries) {
       const member = team.members.find(m => m.user_id === pentashihId);
-      if (member && member.status === 'ACTIVE' && member.user?.status === 'ACTIVE' && member.user?.roles?.some(item => item.role?.code === 'PENTASHIH')) {
-        isValidPentashih = true;
+      if (!member || member.status !== 'ACTIVE' || member.user?.status !== 'ACTIVE' || !member.user?.roles?.some(item => item.role?.code === 'PENTASHIH')) {
+        fail(400, 'Ada pentashih yang bukan anggota aktif kelompok terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
       }
     }
-    if (!isValidPentashih) {
+  } else {
+    for (const { assignee_id: pentashihId } of entries) {
       const directUser = await tx.user.findFirst({
         where: {
           id: pentashihId,
@@ -67,10 +67,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
           roles: { some: { role: { code: 'PENTASHIH' } } },
         },
       });
-      if (directUser) isValidPentashih = true;
-    }
-    if (!isValidPentashih) {
-      fail(400, 'Ada pentashih yang bukan anggota aktif atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
+      if (!directUser) {
+        fail(400, 'Ada pentashih yang bukan pentashih aktif atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
+      }
     }
   }
 
