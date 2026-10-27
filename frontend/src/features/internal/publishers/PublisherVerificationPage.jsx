@@ -651,101 +651,104 @@ export const PublisherVerificationPage = () => {
                                             {detailData.dokumen?.map((doc) => {
                                                 const label = DOC_TYPE_LABELS[doc.tipe] || doc.tipe;
                                                 const isKtp = doc.tipe === "KTP_PENANGGUNG_JAWAB";
+                                                const isPreviewActive = previewDoc?.id === doc.id;
 
                                                 return (
                                                     <div
                                                         key={doc.id}
-                                                        className="p-3.5 rounded-xl border border-line bg-surface hover:bg-surface-subtle/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                                                        className="space-y-2.5"
                                                     >
-                                                        <div className="space-y-1 min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <FileText className="w-4 h-4 text-brand-800 shrink-0" />
-                                                                <span className="text-xs font-bold text-ink">
-                                                                    {label}
-                                                                </span>
-                                                                {isKtp && (
-                                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-surface-subtle border border-line text-ink-muted">
-                                                                        Audit Terpantau
+                                                        <div className="p-3.5 rounded-xl border border-line bg-surface hover:bg-surface-subtle/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                            <div className="space-y-1 min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <FileText className="w-4 h-4 text-brand-800 shrink-0" />
+                                                                    <span className="text-xs font-bold text-ink">
+                                                                        {label}
                                                                     </span>
-                                                                )}
-                                                            </div>
-                                                            <p className="text-[11px] text-ink-muted truncate">
-                                                                Nama file: {doc.nama_asli} ·{" "}
-                                                                {Math.round((doc.ukuran_bytes || 0) / 1024)} KB
-                                                            </p>
-
-                                                            {/* Indikator Peringatan Tautan Terdeteksi */}
-                                                            {doc.tautan_terdeteksi && (
-                                                                <div className="p-2 rounded-lg bg-civic-warningSoft border border-civic-warningLine text-[11px] text-civic-warning space-y-1">
-                                                                    <div className="flex items-center gap-1.5 font-bold">
-                                                                        <AlertTriangle className="w-3.5 h-3.5" />
-                                                                        <span>Peringatan Keamanan: Terdeteksi Tautan URL di Dokumen</span>
-                                                                    </div>
-                                                                    {doc.daftar_tautan?.length > 0 && (
-                                                                        <ul className="list-disc pl-4 text-ink-muted">
-                                                                            {doc.daftar_tautan.map((url, idx) => (
-                                                                                <li key={idx} className="break-all font-mono text-[10px]">
-                                                                                    {url}
-                                                                                </li>
-                                                                            ))}
-                                                                        </ul>
+                                                                    {isKtp && (
+                                                                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-surface-subtle border border-line text-ink-muted">
+                                                                            Audit Terpantau
+                                                                        </span>
                                                                     )}
                                                                 </div>
-                                                            )}
+                                                                <p className="text-[11px] text-ink-muted truncate">
+                                                                    Nama file: {doc.nama_asli} ·{" "}
+                                                                    {Math.round((doc.ukuran_bytes || 0) / 1024)} KB
+                                                                </p>
+
+                                                                {/* Indikator Peringatan Tautan Terdeteksi */}
+                                                                {doc.tautan_terdeteksi && (
+                                                                    <div className="p-2 rounded-lg bg-civic-warningSoft border border-civic-warningLine text-[11px] text-civic-warning space-y-1">
+                                                                        <div className="flex items-center gap-1.5 font-bold">
+                                                                            <AlertTriangle className="w-3.5 h-3.5" />
+                                                                            <span>Peringatan Keamanan: Terdeteksi Tautan URL di Dokumen</span>
+                                                                        </div>
+                                                                        {doc.daftar_tautan?.length > 0 && (
+                                                                            <ul className="list-disc pl-4 text-ink-muted">
+                                                                                {doc.daftar_tautan.map((url, idx) => (
+                                                                                    <li key={idx} className="break-all font-mono text-[10px]">
+                                                                                        {url}
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Aksi Berkas */}
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setPreviewDoc(doc)}
+                                                                    className="text-xs cursor-pointer"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5 mr-1" />
+                                                                    <span>Pratinjau</span>
+                                                                </Button>
+
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleDownloadDoc(doc)}
+                                                                    className="text-xs cursor-pointer"
+                                                                    title="Unduh berkas ke komputer"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5 mr-1" />
+                                                                    <span>Unduh</span>
+                                                                </Button>
+                                                            </div>
                                                         </div>
 
-                                                        {/* Aksi Berkas */}
-                                                        <div className="flex items-center gap-2 shrink-0">
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => setPreviewDoc(doc)}
-                                                                className="text-xs cursor-pointer"
-                                                            >
-                                                                <Eye className="w-3.5 h-3.5 mr-1" />
-                                                                <span>Pratinjau</span>
-                                                            </Button>
-
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => handleDownloadDoc(doc)}
-                                                                className="text-xs cursor-pointer"
-                                                                title="Unduh berkas ke komputer"
-                                                            >
-                                                                <Download className="w-3.5 h-3.5 mr-1" />
-                                                                <span>Unduh</span>
-                                                            </Button>
-                                                        </div>
+                                                        {isPreviewActive && (
+                                                            <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50/30 p-3">
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-xs font-bold text-ink">
+                                                                        Pratinjau Dokumen Aman: {label}
+                                                                    </span>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPreviewDoc(null)}
+                                                                        className="text-xs text-ink-muted hover:text-ink cursor-pointer"
+                                                                    >
+                                                                        Tutup Pratinjau
+                                                                    </button>
+                                                                </div>
+                                                                <PrivateFileViewer
+                                                                    fileId={doc.id}
+                                                                    endpoint={`/admin/publisher-registrations/${encodeURIComponent(detailData.id)}/documents/${encodeURIComponent(doc.id)}`}
+                                                                    fileName={doc.nama_asli}
+                                                                    mimeType={doc.mime_type}
+                                                                    height="420px"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     </div>
-
-                                    {/* PRATINJAU DOKUMEN (JIKA DIPILIH) */}
-                                    {previewDoc && (
-                                        <div className="space-y-2 pt-2 border-t border-line">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-xs font-bold text-ink">
-                                                    Pratinjau Dokumen Aman: {DOC_TYPE_LABELS[previewDoc.tipe] || previewDoc.tipe}
-                                                </span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPreviewDoc(null)}
-                                                    className="text-xs text-ink-muted hover:text-ink cursor-pointer"
-                                                >
-                                                    Tutup Pratinjau
-                                                </button>
-                                            </div>
-                                            <PrivateFileViewer
-                                                fileId={previewDoc.id}
-                                                endpoint={`/admin/publisher-registrations/${encodeURIComponent(detailData.id)}/documents/${encodeURIComponent(previewDoc.id)}`}
-                                                fileName={previewDoc.nama_asli}
-                                                height="420px"
-                                            />
-                                        </div>
-                                    )}
 
                                     {/* 3. FORM PENGAMBILAN KEPUTUSAN VERIFIKASI */}
                                     <div className="space-y-4 pt-4 border-t border-line">
