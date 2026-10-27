@@ -858,7 +858,7 @@ export const NewRegistrationPage = () => {
         .filter((s) => s.ukuran?.trim() || s.oplah)
         .map((s) => ({
           ukuran: s.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
-          oplah: Number(s.oplah) || 1000,
+          oplah: Number(String(s.oplah || '').replace(/\D/g, '')) || 1000,
         }));
 
       const allManuscripts = [
@@ -867,7 +867,14 @@ export const NewRegistrationPage = () => {
           title: namaMushaf.trim(),
           items: primaryItems.length > 0 ? primaryItems : ['JUZ30'],
           variants: validVariantsPrimary.length > 0 ? validVariantsPrimary : [{ ukuran: 'A4 (21,0 x 29,7 cm)', oplah: 1000 }],
-          metadata: mushafDetails,
+          metadata: {
+            ...(penanggungJawabProduk.trim() ? { penanggung_jawab_produk: penanggungJawabProduk.trim() } : {}),
+            ...(penanggungJawabEmail.trim() ? { penanggung_jawab_email: penanggungJawabEmail.trim().toLowerCase() } : {}),
+            ...(jenisStandarMushaf ? { jenis_mushaf: jenisStandarMushaf } : {}),
+            ...(kategoriPendaftaran !== 'Mushaf Luar Negeri' && namaPercetakan.trim() ? { nama_percetakan: namaPercetakan.trim() } : {}),
+            ...(deskripsiMushaf.trim() ? { deskripsi: deskripsiMushaf.trim() } : {}),
+            ...(isPerpanjangan && noPendaftaranLama.trim() ? { nomor_pendaftaran_lama: noPendaftaranLama.trim() } : {}),
+          },
           sample_file_id: uploadedContohHalamanId || null,
         },
         ...additionalManuscripts.map((m, idx) => {

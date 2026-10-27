@@ -103,7 +103,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const myTasks = await expect('/assignments/my-tasks?status=ACTIVE&page=1&limit=20', pentashih);
     assert.ok(myTasks.some(item => item.id === assignments[0].id && item.registration.publisher.legal_name));
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Belum ada hasil' }, 409);
-    await expect(`/assignments/${assignments[0].id}/review`, distributor, 'POST', { result: 'PASSED', notes: 'Tidak berwenang' }, 403);
+    await expect(`/assignments/${assignments[0].id}/review`, distributor, 'POST', { result: 'PASSED', notes: 'Tidak berwenang', recap_file_id: file.id }, 403);
     const overdueDate = new Date(Date.now() - 86400000);
     await prisma.assignment.update({ where: { id: assignments[0].id }, data: { due_at: overdueDate } });
     await markOverdue();
@@ -111,8 +111,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const load = await expect(`/distribution-teams/${team.id}/workload`, distributor);
     assert.ok(load.some(item => item.assignee_id === assignee.id && item.status === 'OVERDUE'));
     await expect(`/registrations/${reg.id}/manuscripts`, pentashih);
-    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah' }, 201);
-    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat' }, 409);
+    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: file.id }, 201);
+    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: file.id }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Hasil belum lulus' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaikan oleh penerbit' });
   });
@@ -144,7 +144,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
-    await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai' }, 201);
+    await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai', recap_file_id: file.id }, 201);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Rekomendasi STT disetujui' });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'READY_FOR_STT');
   });

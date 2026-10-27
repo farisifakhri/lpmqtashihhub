@@ -88,7 +88,7 @@ describe('LandingPage sections and navigation', () => {
     );
     expect(within(footer).getByRole('link', { name: 'Regulasi' })).toHaveAttribute(
       'href',
-      '#informasi-pelayanan'
+      '/informasi/regulasi-penerbit-mushaf'
     );
     expect(within(footer).getByRole('link', { name: 'Pengaduan' })).toHaveAttribute(
       'href',
@@ -296,7 +296,7 @@ describe('LandingPage sections and navigation', () => {
     );
     expect(within(footer).getByRole('link', { name: 'Regulasi' })).toHaveAttribute(
       'href',
-      '#informasi-pelayanan'
+      '/informasi/regulasi-penerbit-mushaf'
     );
     expect(within(footer).getByRole('link', { name: 'Pengaduan' })).toHaveAttribute(
       'href',

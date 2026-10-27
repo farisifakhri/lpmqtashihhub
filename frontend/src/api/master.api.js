@@ -65,6 +65,12 @@ export const masterApi = {
     return apiClient(`/master/jenis-naskah-items${query ? `?${query}` : ''}`);
   },
 
+  // Pentashih Candidates (B-05)
+  getPentashihCandidates: async (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return apiClient(`/master/pentashih-candidates${query ? `?${query}` : ''}`);
+  },
+
   // Distribution Teams
   getDistributionTeams: async () => {
     return apiClient('/master/distribution-teams');

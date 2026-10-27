@@ -583,6 +583,7 @@ export async function getAdminPublisherRegistrationDetail(id) {
       tipe: d.document_type,
       nama_asli: d.original_filename,
       ukuran_bytes: d.file_size,
+      mime_type: d.mime_type,
       tautan_terdeteksi: d.has_links,
       daftar_tautan: Array.isArray(d.detected_links) ? d.detected_links : [],
       created_at: d.created_at,
@@ -871,4 +872,3 @@ export async function verifyPublisherCertificate(nomorInduk) {
   // Jika format valid tapi tidak tercatat di basis data
   return { valid: false, status: 'TIDAK_TERDAFTAR' };
 }
-

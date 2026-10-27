@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
+import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, distributorReviewSchema, outgoingDispatchSchema, documentSchema, calendarSchema } from '../validators/workflow.validator.js';
 import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
 import * as documentation from '../services/documentation.service.js';
@@ -37,7 +37,10 @@ router.get('/assignments/my-tasks', authenticate, authorize('PENTASHIH', 'SUPERA
 router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
-router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(reviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
+router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR'), validate(distributorReviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
+router.post('/registrations/:id/outgoing-dispatch', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(outgoingDispatchSchema), action(req => distribution.recordOutgoingDispatch(req.params.id, req.body, req.user, req)));
+router.post('/registrations/:id/remind-publisher', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPublisherReminder(req.params.id, req.user, req)));
+router.post('/registrations/batch-remind-publishers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPeriodicReminders(req.user, req.body)));
 
 // Alur Penerbitan STT & Dokumen Resmi
 router.post('/registrations/:id/official-documents', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
@@ -55,7 +58,7 @@ router.post('/registrations/:id/documentation', authenticate, authorize('DOKUMEN
 // Laporan Realisasi Pencetakan Al-Qur'an oleh Penerbit (U-16 / B-10)
 router.get('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => documentation.getPrintingReports(req.params.id, req.user)));
 router.post('/registrations/:id/printing-reports', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(printingReportSchema), action(req => documentation.createPrintingReport(req.params.id, req.body, req.user, req), 201));
-router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ'), async (req, res, next) => {
+router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'VERIFIKATOR'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
     const bytes = await documents.documentPdf(document, req.user);
@@ -64,7 +67,7 @@ router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'A
   } catch (error) { next(error); }
 });
 
-router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR'),
+router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'DOKUMENTATOR', 'PENTASHIH', 'DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'),
   (req, res, next) => {
     const ctype = req.get('content-type')?.split(';')[0]?.toLowerCase();
     const clen = Number(req.get('content-length'));

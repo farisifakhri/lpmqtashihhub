@@ -107,6 +107,11 @@ export const PentashihWorkspacePage = () => {
       return;
     }
 
+    if (!recapFileId) {
+      setModalError('Berkas rekapan hasil telaah internal wajib diunggah sebelum menyimpan hasil sidang.');
+      return;
+    }
+
     setSubmitting(true);
     setModalError(null);
 

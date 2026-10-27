@@ -49,11 +49,27 @@ export function DocumentArchive({ registrationId }) {
         headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' },
       });
       if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
-        let msg = 'PDF dokumen belum dapat dibuka.';
+        let msg = '';
         try {
-          const errData = await response.json();
-          if (errData?.message) msg = errData.message;
+          if (typeof response.text === 'function') {
+            const text = await response.text();
+            try {
+              const errData = JSON.parse(text);
+              if (errData?.message) msg = errData.message;
+            } catch {
+              if (text && text.length < 200 && !text.startsWith('<')) msg = text;
+            }
+          } else if (typeof response.json === 'function') {
+            const errData = await response.json();
+            if (errData?.message) msg = errData.message;
+          }
         } catch (_) {}
+        if (!msg) {
+          if (response.status === 403) msg = 'Akses ditolak: Anda tidak memiliki wewenang untuk membuka berkas dokumen resmi ini.';
+          else if (response.status === 404) msg = 'Berkas PDF belum tersedia atau belum diterbitkan.';
+          else if (response.status === 409) msg = 'Dokumen masih dalam proses pengesahan internal dan belum diterbitkan resmi.';
+          else msg = `Gagal membuka dokumen PDF (Status: ${response.status}).`;
+        }
         throw new Error(msg);
       }
       setPdfUrl(URL.createObjectURL(await response.blob()));

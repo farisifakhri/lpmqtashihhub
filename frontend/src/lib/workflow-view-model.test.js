@@ -133,4 +133,18 @@ describe('Centralized Workflow View Model', () => {
     expect(tashihVm.operationalState).toBe('TASHIH_REVISION_REQUIRED');
     expect(tashihVm.operationalNextAction).toBe('Unggah perbaikan naskah & kirim naskah fisik');
   });
+
+  it('evaluates B-08 paused SLA and waiting age for REVISION_REQUIRED status', () => {
+    const tenDaysAgo = new Date(Date.now() - 10 * 86400000).toISOString();
+    const reg = {
+      id: 'reg-rev-b08',
+      status: 'REVISION_REQUIRED',
+      stage_entered_at: tenDaysAgo,
+    };
+    const vm = getWorkflowViewModel(reg, { role: 'VERIFIKATOR' });
+    expect(vm.isSlaPaused).toBe(true);
+    expect(vm.slaPauseReason).toContain('Di luar hitungan SLA internal');
+    expect(vm.waitingDays).toBe(10);
+    expect(vm.waitingAgeSeverity).toBe('warning');
+  });
 });
