@@ -37,3 +37,4 @@ export const AvatarProvider = ({ children }) => {
 };
 
 export const useAvatar = () => useContext(AvatarContext);
+

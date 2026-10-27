@@ -184,11 +184,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role Internal: Admin
+        // Role Internal: Admin (Helper Admin - Alur Penuh Tanpa Akses Penerbit & TTE Kepala)
         if (isAdmin && !isSuperAdmin) {
             return [
                 {
-                    title: "ADMINISTRASI LOKET",
+                    title: "KENDALI UTAMA",
                     items: [
                         {
                             label: "Kendali Operasional",
@@ -198,30 +198,65 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             ),
                             end: true,
                         },
+                    ],
+                },
+                {
+                    title: "ALUR PENTASHIHAN",
+                    items: [
                         {
-                            label: "Intake Master Fisik",
+                            label: "1. Pendaftaran Penerbit",
+                            path: "/internal/publishers",
+                            icon: <Building2 className="w-4 h-4 shrink-0" />,
+                            description: "Verifikasi profil & NIP penerbit",
+                        },
+                        {
+                            label: "2. Intake Master Fisik",
                             path: "/internal/master-intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                            description: "Intake naskah fisik A4",
-                            badge: "Baru",
+                            description: "Penerimaan master fisik naskah A4",
+                            badge: "Loket",
                         },
                         {
-                            label: "Perlu Penugasan",
+                            label: "3. Penugasan Verifikator",
                             path: "/internal/verifications?tab=NEED_ASSIGNMENT",
-                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                            description: "Helper Admin menugaskan verifikator",
+                            icon: <UserCheck className="w-4 h-4 shrink-0" />,
+                            description: "Disposisi tim verifikator berkas",
                         },
                         {
-                            label: "Verifikasi Pembayaran",
+                            label: "4. Verifikasi Berkas",
+                            path: "/internal/verifications",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Pemeriksaan rasm, waqaf & kelengkapan",
+                        },
+                        {
+                            label: "5. Pembayaran PNBP",
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Setoran PNBP SIMPONI",
+                            description: "Billing SIMPONI & validasi bayar",
                         },
                         {
-                            label: "Arsip Dokumen",
+                            label: "6. Distribusi Sidang",
+                            path: "/internal/distributions",
+                            icon: <Users className="w-4 h-4 shrink-0" />,
+                            description: "Pembagian tim & serah-terima naskah",
+                        },
+                        {
+                            label: "7. Sidang Pentashihan",
+                            path: "/internal/tashih",
+                            icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                            description: "Koreksi lafazh & harakat Juz 1-30",
+                        },
+                        {
+                            label: "8. Pengesahan & STT",
+                            path: "/internal/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Berita acara & Surat Tanda Tashih",
+                        },
+                        {
+                            label: "9. Pengarsipan Naskah",
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
+                            description: "Arsip fisik Posdok-Q & digital",
                         },
                     ],
                 },
@@ -429,7 +464,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role: Superadmin (Akses Penuh & Navigasi Operasional Komprehensif)
+        // Role: Superadmin (Akses Penuh & Alur Operasional Panjang 1-11)
         return [
             {
                 title: "KENDALI UTAMA",
@@ -443,50 +478,74 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 ],
             },
             {
-                title: "PROSES PENTASHIHAN",
+                title: "ALUR PENTASHIHAN",
                 items: [
                     {
-                        label: "Intake Master Fisik",
+                        label: "1. Pendaftaran Penerbit",
+                        path: "/internal/publishers",
+                        icon: <Building2 className="w-4 h-4 shrink-0" />,
+                        description: "Verifikasi profil & NIP penerbit",
+                    },
+                    {
+                        label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                        description: "Print-out master A4",
-                        badge: "Baru",
+                        description: "Penerimaan master fisik naskah A4",
+                        badge: "Loket",
                     },
                     {
-                        label: "Penugasan Verifikator",
+                        label: "3. Penugasan Verifikator",
                         path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                         icon: <UserCheck className="w-4 h-4 shrink-0" />,
-                        description: "Superadmin dapat menugaskan verifikator",
+                        description: "Disposisi tim verifikator berkas",
                     },
                     {
-                        label: "1. Verifikasi Berkas",
+                        label: "4. Verifikasi Berkas",
                         path: "/internal/verifications",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                        description: "Pemeriksaan kelengkapan & rasm",
+                        description: "Pemeriksaan kelengkapan, rasm & waqaf",
                     },
                     {
-                        label: "Verifikasi Pembayaran",
+                        label: "5. Hasil Verifikasi",
+                        path: "/internal/verifications?tab=WAITING_APPROVAL",
+                        icon: <FileSearch className="w-4 h-4 shrink-0" />,
+                        description: "Telaah draf berita acara & penetapan",
+                    },
+                    {
+                        label: "6. Pembayaran PNBP",
                         path: "/internal/payments",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                        description: "Setoran PNBP SIMPONI",
+                        description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
-                        label: "2. Distribusi Sidang",
+                        label: "7. Distribusi Sidang",
                         path: "/internal/distributions",
                         icon: <Users className="w-4 h-4 shrink-0" />,
-                        description: "Serah-terima fisik & SK tim",
+                        description: "Pembagian tim & serah-terima naskah",
                     },
                     {
-                        label: "3. Sidang Pentashihan",
+                        label: "8. Sidang Pentashihan (Awal)",
                         path: "/internal/tashih",
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
-                        description: "Telaah lafazh & harakat",
+                        description: "Koreksi lafazh & harakat Juz 1-30",
                     },
                     {
-                        label: "4. Pengesahan & STT",
+                        label: "9. Tashih Revisi & Dumi",
+                        path: "/internal/tashih?tab=REVISION",
+                        icon: <PenTool className="w-4 h-4 shrink-0" />,
+                        description: "Telaah perbaikan & contoh cetak dumi",
+                    },
+                    {
+                        label: "10. Pengesahan & Terbit STT",
                         path: "/internal/documents",
+                        icon: <Award className="w-4 h-4 shrink-0" />,
+                        description: "Berita acara final & Surat Tanda Tashih",
+                    },
+                    {
+                        label: "11. Pengarsipan Naskah",
+                        path: "/internal/archive",
                         icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                        description: "Berita acara & STT resmi",
+                        description: "Semua versi fisik & digital Posdok-Q",
                     },
                 ],
             },
@@ -494,35 +553,22 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 title: "TATA KELOLA SISTEM",
                 items: [
                     {
-                        label: "5. Data Induk dan Parameter",
-                        path: "/internal/settings",
-                        icon: <Settings className="w-4 h-4 shrink-0" />,
-                        description: "Kategori, tarif, dan SLA",
-                    },
-                    {
                         label: "Identitas dan Akses",
                         path: "/internal/users",
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Akun, peran, dan wewenang",
                     },
                     {
-                        label: "Verifikasi Penerbit",
-                        path: "/internal/publishers",
-                        icon: <Building2 className="w-4 h-4 shrink-0" />,
-                        description: "Periksa dan setujui profil penerbit",
-                    },
-                    {
-                        label: "Arsip Dokumen",
-                        path: "/internal/archive",
-                        icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                        description: "Semua versi untuk Posdok-Q",
+                        label: "Data Induk dan Parameter",
+                        path: "/internal/settings",
+                        icon: <Settings className="w-4 h-4 shrink-0" />,
+                        description: "Kategori, tarif, dan SLA",
                     },
                     {
                         label: "Rotasi Tim Inti",
                         path: "/internal/core-teams",
                         icon: <Users className="w-4 h-4 shrink-0" />,
-                        description:
-                            "Roster sembilan tim dan giliran berikutnya",
+                        description: "Roster sembilan tim dan giliran berikutnya",
                     },
                 ],
             },
@@ -542,14 +588,29 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     const navSections = getNavSections();
     const isCurrentItem = (item, isActive) => {
-        if (!isActive || !item.path.startsWith("/internal/distributions?"))
+        if (!item.path.includes("?")) {
+            if (isActive && location.search) {
+                const searchParams = new URLSearchParams(location.search);
+                if (item.path === "/internal/verifications" && (searchParams.get("tab") === "NEED_ASSIGNMENT" || searchParams.get("tab") === "WAITING_APPROVAL")) {
+                    return false;
+                }
+                if (item.path === "/internal/tashih" && searchParams.get("tab") === "REVISION") {
+                    return false;
+                }
+            }
             return isActive;
-        const targetStage = new URLSearchParams(item.path.split("?")[1]).get(
-            "stage",
-        );
-        const currentStage =
-            new URLSearchParams(location.search).get("stage") || "HANDOVER";
-        return targetStage === currentStage;
+        }
+
+        const [itemBase, itemQuery] = item.path.split("?");
+        if (location.pathname !== itemBase) return false;
+
+        const targetParams = new URLSearchParams(itemQuery);
+        const currentParams = new URLSearchParams(location.search);
+
+        for (const [key, val] of targetParams.entries()) {
+            if (currentParams.get(key) !== val) return false;
+        }
+        return true;
     };
 
     return (

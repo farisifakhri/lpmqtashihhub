@@ -54,3 +54,4 @@ describe('UserAvatar Component', () => {
     expect(dot).toBeTruthy();
   });
 });
+
