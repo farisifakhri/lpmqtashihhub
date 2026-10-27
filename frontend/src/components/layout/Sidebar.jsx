@@ -1,6 +1,9 @@
 import React from "react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { useAvatar } from "@/context/AvatarContext";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { AvatarPickerModal } from "@/components/ui/AvatarPickerModal";
 import {
     LayoutDashboard,
     FilePlus,
@@ -25,14 +28,24 @@ import {
     PenTool,
     Clock,
     X,
+    Sparkles,
+    LogOut,
 } from "lucide-react";
 import { clsx } from "clsx";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, logout } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
+    const { avatarId, setAvatarId } = useAvatar();
+    const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
     const role = currentUser?.role || "";
     const roles = currentUser?.roles || [];
 
@@ -693,20 +706,53 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         ))}
                     </div>
 
-                    {/* Institutional Compliance Footer */}
+                    {/* User Profile Card */}
                     <div className="p-2.5 border-t lpmq-sidebar-footer">
-                        <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card">
-                            <div className="flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 lpmq-sidebar-online-icon shrink-0" />
-                                <span className="text-xs font-bold lpmq-sidebar-text">
-                                    Standar Pentashihan
-                                </span>
-                            </div>
-                            <p className="text-[11px] lpmq-sidebar-muted mt-0.5 leading-tight">
-                                Mushaf Standar Usmani Kemenag RI
-                            </p>
+                        <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card flex items-center justify-between gap-2.5 shadow-2xs">
+                            <button
+                                type="button"
+                                onClick={() => setAvatarPickerOpen(true)}
+                                className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group flex-1"
+                                title="Klik untuk mengganti avatar profil"
+                            >
+                                <UserAvatar
+                                    avatarId={avatarId}
+                                    name={currentUser?.name}
+                                    role={role}
+                                    size="md"
+                                    showRoleBadge
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-xs font-bold lpmq-sidebar-text truncate group-hover:text-brand-900 dark:group-hover:text-brand-300 transition-colors">
+                                        {currentUser?.name || "Pengguna"}
+                                    </div>
+                                    <div className="text-[10px] lpmq-sidebar-muted truncate leading-tight flex items-center gap-1">
+                                        <span>{roleBadge.label}</span>
+                                        <Sparkles className="w-2.5 h-2.5 text-brand-700 opacity-60 group-hover:opacity-100" />
+                                    </div>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="p-1.5 rounded-lg text-ink-muted hover:text-civic-danger hover:bg-civic-dangerSoft transition-colors shrink-0 cursor-pointer"
+                                title="Akhiri Sesi / Keluar"
+                                aria-label="Keluar"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
+
+                    {/* Avatar Picker Modal for Sidebar */}
+                    <AvatarPickerModal
+                        isOpen={avatarPickerOpen}
+                        onClose={() => setAvatarPickerOpen(false)}
+                        currentAvatarId={avatarId}
+                        onSelectAvatar={setAvatarId}
+                        userName={currentUser?.name}
+                        userRole={role}
+                    />
                 </div>
             </aside>
         </>

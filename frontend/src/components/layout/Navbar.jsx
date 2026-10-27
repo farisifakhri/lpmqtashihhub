@@ -18,6 +18,10 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDensity } from '@/context/DensityContext';
+import { useAvatar } from '@/context/AvatarContext';
+import { UserAvatar } from '@/components/ui/UserAvatar';
+import { AvatarPickerModal } from '@/components/ui/AvatarPickerModal';
+import { Sparkles } from 'lucide-react';
 import { CommandSearchDialog } from './CommandSearchDialog';
 import { NotificationCenter } from './NotificationCenter';
 import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
@@ -33,6 +37,8 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const { avatarId, setAvatarId } = useAvatar();
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [commandSearchOpen, setCommandSearchOpen] = useState(false);
   const [changePasswordModalOpen, setChangePasswordModalOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -264,12 +270,13 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
                   >
-                    <div className="relative shrink-0">
-                      <div className="w-8 h-8 rounded-md bg-brand-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
-                        {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}
-                      </div>
-                      <span className="absolute bottom-0 right-0 w-2 h-2 bg-brand-700 rounded-full border-2 border-white" />
-                    </div>
+                    <UserAvatar
+                      avatarId={avatarId}
+                      name={currentUser.name}
+                      role={role}
+                      size="sm"
+                      showRoleBadge
+                    />
 
                     <div className="hidden lg:block leading-tight">
                       <div className="text-xs font-bold text-ink truncate max-w-[130px]">
@@ -305,6 +312,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       </div>
 
                       <div className="p-1 space-y-0.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setAvatarPickerOpen(true);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-brand-700" />
+                          <span>Pilih Avatar Profil Islami</span>
+                        </button>
                         {currentUser.publisherId && (
                           <button
                             type="button"
@@ -361,6 +379,16 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       <CommandSearchDialog
         isOpen={commandSearchOpen}
         onClose={() => setCommandSearchOpen(false)}
+      />
+
+      {/* Avatar Picker Modal */}
+      <AvatarPickerModal
+        isOpen={avatarPickerOpen}
+        onClose={() => setAvatarPickerOpen(false)}
+        currentAvatarId={avatarId}
+        onSelectAvatar={setAvatarId}
+        userName={currentUser?.name}
+        userRole={role}
       />
 
       {/* Publisher Profile Modal */}
