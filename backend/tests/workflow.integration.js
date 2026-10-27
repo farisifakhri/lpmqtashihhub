@@ -103,7 +103,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const myTasks = await expect('/assignments/my-tasks?status=ACTIVE&page=1&limit=20', pentashih);
     assert.ok(myTasks.some(item => item.id === assignments[0].id && item.registration.publisher.legal_name));
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Belum ada hasil' }, 409);
-    await expect(`/assignments/${assignments[0].id}/review`, distributor, 'POST', { result: 'PASSED', notes: 'Tidak berwenang' }, 403);
+    await expect(`/assignments/${assignments[0].id}/review`, distributor, 'POST', { result: 'PASSED', notes: 'Tidak berwenang', recap_file_id: file.id }, 403);
     const overdueDate = new Date(Date.now() - 86400000);
     await prisma.assignment.update({ where: { id: assignments[0].id }, data: { due_at: overdueDate } });
     await markOverdue();
