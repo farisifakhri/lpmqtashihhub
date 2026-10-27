@@ -181,7 +181,7 @@
     border-bottom-color: var(--sidebar-border);
   }
   .lpmq-sidebar-logo-box {
-    background-color: #ffffff;
+    background-color: var(--surface);
     border-color: var(--sidebar-border);
   }
   .lpmq-sidebar-text {
