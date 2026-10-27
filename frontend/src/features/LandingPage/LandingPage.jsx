@@ -49,6 +49,7 @@ const navItems = [
       { label: 'Informasi Layanan Pentashihan', href: '#' },
       { label: 'Alur & Regulasi STT', href: '#' },
       { label: 'Persyaratan Berkas Naskah', href: '#' },
+      { label: "Regulasi Penerbit Mushaf Al-Qur'an", href: '/informasi/regulasi-penerbit-mushaf' },
     ],
   },
   { label: 'Permohonan Master', href: '#beranda' },
@@ -462,6 +463,12 @@ export const LandingPage = () => {
                               key={cIdx}
                               href={child.href}
                               onClick={(e) => {
+                                if (child.href && child.href.startsWith('/')) {
+                                  setMenuOpen(false);
+                                  setMobileDropdown(null);
+                                  handleNavigate(child.href, e);
+                                  return;
+                                }
                                 if (!child.href || child.href === '#') {
                                   e.preventDefault();
                                 }
@@ -589,6 +596,12 @@ export const LandingPage = () => {
                               key={cIdx}
                               href={child.href}
                               onClick={(e) => {
+                                if (child.href && child.href.startsWith('/')) {
+                                  setMenuOpen(false);
+                                  setMobileDropdown(null);
+                                  handleNavigate(child.href, e);
+                                  return;
+                                }
                                 if (!child.href || child.href === '#') {
                                   e.preventDefault();
                                 }
@@ -1107,7 +1120,13 @@ export const LandingPage = () => {
               Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
-              <a href="#informasi-pelayanan" className="hover:text-white">Regulasi</a>
+              <Link
+                to="/informasi/regulasi-penerbit-mushaf"
+                onClick={(e) => handleNavigate('/informasi/regulasi-penerbit-mushaf', e)}
+                className="hover:text-white"
+              >
+                Regulasi
+              </Link>
               <a href="#beranda" className="hover:text-white">Pengaduan</a>
               <a href="#beranda" className="hover:text-white">FAQ</a>
               <Link

@@ -24,6 +24,7 @@ import {
     FileSearch,
     PenTool,
     Clock,
+    PanelsTopLeft,
     X,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -209,6 +210,17 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
                             description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+                {
+                    title: "TATA KELOLA SISTEM",
+                    items: [
+                        {
+                            label: "Kelola Landing Page",
+                            path: "/internal/landing-page",
+                            icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
+                            description: "Konten dan regulasi landing page",
                         },
                     ],
                 },
@@ -510,6 +522,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description:
                             "Roster sembilan tim dan giliran berikutnya",
+                    },
+                    {
+                        label: "Kelola Landing Page",
+                        path: "/internal/landing-page",
+                        icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
+                        description: "Konten dan regulasi landing page",
                     },
                 ],
             },
