@@ -10,18 +10,17 @@ import {
   LogOut,
   ShieldCheck,
   Search,
-  ExternalLink,
   Building2,
   KeyRound,
   Maximize2,
   Minimize2,
+  Sparkles,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDensity } from '@/context/DensityContext';
 import { useAvatar } from '@/context/AvatarContext';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AvatarPickerModal } from '@/components/ui/AvatarPickerModal';
-import { Sparkles } from 'lucide-react';
 import { CommandSearchDialog } from './CommandSearchDialog';
 import { NotificationCenter } from './NotificationCenter';
 import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
@@ -32,7 +31,7 @@ import lpmqLogo from '@/assets/lpmq.png';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const { currentUser, logout } = useAuth();
-  const { density, toggleDensity, isCompact } = useDensity();
+  const { toggleDensity, isCompact } = useDensity();
   const navigate = useNavigate();
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -85,28 +84,28 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const getRoleConfig = (userRole) => {
     switch (userRole) {
       case 'SUPERADMIN':
-        return { label: 'Administrator Sistem', color: 'bg-surface-subtle text-ink border-line-strong' };
+        return { label: 'Administrator Sistem', color: 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' };
       case 'ADMIN_INTERNAL':
-        return { label: 'Helper Admin', color: 'bg-surface-subtle text-ink border-line-strong' };
+        return { label: 'Helper Admin', color: 'bg-teal-50 text-teal-900 border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800' };
       case 'VERIFIKATOR':
       case 'VERIFICATOR':
-        return { label: 'Verifikator Dokumen', color: 'bg-brand-50 text-brand-fg border-brand-100' };
+        return { label: 'Verifikator Dokumen', color: 'bg-brand-50 text-brand-fg border-brand-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' };
       case 'DISTRIBUTOR':
-        return { label: 'Koordinator Distribusi', color: 'bg-brand-50 text-brand-fg border-brand-100' };
+        return { label: 'Koordinator Distribusi', color: 'bg-sky-50 text-sky-900 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800' };
       case 'PENTASHIH':
       case 'TASHIH_MEMBER':
-        return { label: 'Pentashih Naskah', color: 'bg-brand-50 text-brand-fg border-brand-100' };
+        return { label: 'Pentashih Naskah', color: 'bg-indigo-50 text-indigo-900 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800' };
       case 'DOKUMENTATOR':
       case 'DOCUMENTATOR':
-        return { label: 'Administrator Dokumen', color: 'bg-brand-50 text-brand-fg border-brand-100' };
+        return { label: 'Administrator Dokumen', color: 'bg-purple-50 text-purple-900 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800' };
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
-        return { label: 'Kepala LPMQ', color: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
+        return { label: 'Kepala LPMQ', color: 'bg-amber-50 text-amber-900 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800' };
       case 'PENERBIT':
       case 'PUBLISHER':
-        return { label: 'Penerbit Terverifikasi', color: 'bg-surface-subtle text-ink border-line-strong' };
+        return { label: 'Penerbit Terverifikasi', color: 'bg-emerald-50 text-emerald-900 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800' };
       default:
-        return { label: userRole || 'Petugas', color: 'bg-surface-subtle text-ink border-line-strong' };
+        return { label: userRole || 'Petugas', color: 'bg-surface-subtle text-ink border-line-strong dark:bg-surface-subtle dark:text-ink' };
     }
   };
 
@@ -132,11 +131,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname === '/internal' || pathname === '/internal/') {
       return { parent: null, name: 'Pusat Kendali Operasional' };
     }
+    if (pathname.startsWith('/internal/publishers')) {
+      return { parent: 'Penerbit', name: 'Verifikasi Akun Penerbit' };
+    }
+    if (pathname.startsWith('/internal/master-intake')) {
+      return { parent: 'Loket', name: 'Intake Master Fisik' };
+    }
     if (pathname.startsWith('/internal/verifications')) {
       return { parent: 'Verifikasi', name: 'Verifikasi Berkas Naskah' };
     }
     if (pathname.startsWith('/internal/payments')) {
-      return { parent: 'Keuangan', name: 'Verifikasi Pembayaran' };
+      return { parent: 'Keuangan', name: 'Verifikasi Pembayaran PNBP' };
     }
     if (pathname.startsWith('/internal/distributions')) {
       return { parent: 'Distribusi', name: 'Distribusi Sidang & SK Tim' };
@@ -150,11 +155,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname.startsWith('/internal/signatures')) {
       return { parent: 'Pengesahan', name: 'Pusat Tanda Tangan' };
     }
-    if (pathname.startsWith('/internal/master-intake')) {
-      return { parent: 'Loket', name: 'Intake Master Fisik' };
+    if (pathname.startsWith('/internal/archive')) {
+      return { parent: 'Dokumentasi', name: 'Arsip Dokumen & Naskah' };
+    }
+    if (pathname.startsWith('/internal/core-teams')) {
+      return { parent: 'Pentashihan', name: 'Tim Pentashih & Formatur' };
+    }
+    if (pathname.startsWith('/internal/settings/content')) {
+      return { parent: 'Konfigurasi', name: 'Kelola Informasi Landing Page' };
     }
     if (pathname.startsWith('/internal/settings')) {
-      return { parent: 'Konfigurasi', name: 'Master Data Sistem' };
+      return { parent: 'Konfigurasi', name: 'Master Data & Tata Kelola' };
     }
     if (pathname.startsWith('/internal/users')) {
       return { parent: 'Akses', name: 'Manajemen Pengguna' };
@@ -171,27 +182,30 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
   return (
     <>
-      <header className="bg-surface border-b border-line sticky top-0 z-40 h-16 shadow-2xs">
-        <div className="w-full px-4 sm:px-6 lg:px-8 h-full">
+      <header className="relative bg-surface/95 dark:bg-[#0c1813]/95 backdrop-blur-md border-b border-line dark:border-[#1e3d2e] sticky top-0 z-40 h-16 shadow-2xs transition-colors duration-200">
+        {/* Subtle Top Accent Bar: Hijau Kemenag & Gold Aksen */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600 via-brand-600 to-amber-500/80" />
+
+        <div className="w-full px-3 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full">
             {/* Left Side: Sidebar Toggler & Breadcrumbs */}
-            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 type="button"
                 onClick={onToggleSidebar}
-                className="p-2 rounded-lg text-ink-muted hover:text-brand-fg hover:bg-brand-50 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+                className="h-9 w-9 rounded-lg flex items-center justify-center text-ink-muted hover:text-brand-fg dark:hover:text-emerald-400 bg-surface-subtle/80 dark:bg-[#13261d] hover:bg-surface-strong/60 dark:hover:bg-[#1a3528] border border-line dark:border-[#1e3d2e] hover:border-brand-500/40 transition-all focus:outline-none focus:ring-2 focus:ring-brand-700/20 shadow-2xs active:scale-95 cursor-pointer"
                 aria-label={sidebarOpen ? 'Tutup navigasi utama' : 'Buka navigasi utama'}
                 title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
               >
-                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               </button>
 
               {/* Official Logos (Shown on mobile/tablet when sidebar is hidden) */}
               <div className="flex lg:hidden items-center gap-1.5 shrink-0">
-                <div className="h-9 w-9 rounded-lg bg-surface border border-line shadow-2xs flex items-center justify-center p-1">
+                <div className="h-9 w-9 rounded-lg bg-surface dark:bg-[#13261d] border border-line dark:border-[#1e3d2e] shadow-2xs flex items-center justify-center p-1">
                   <img src={kemenagLogo} alt="Logo Kemenag" className="h-full w-auto object-contain" />
                 </div>
-                <div className="h-8 w-8 rounded-lg bg-surface border border-line shadow-2xs items-center justify-center p-0.5 hidden sm:flex">
+                <div className="h-8 w-8 rounded-lg bg-surface dark:bg-[#13261d] border border-line dark:border-[#1e3d2e] shadow-2xs items-center justify-center p-0.5 hidden sm:flex">
                   <img src={lpmqLogo} alt="Logo LPMQ" className="h-full w-auto object-contain rounded" />
                 </div>
               </div>
@@ -202,21 +216,23 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <li className="flex items-center">
                     <Link
                       to={homePath}
-                      className="p-1 rounded text-ink-muted hover:text-brand-fg hover:bg-brand-50 transition-colors"
+                      className="h-8 w-8 rounded-lg flex items-center justify-center bg-surface-subtle/80 dark:bg-[#13261d] border border-line/70 dark:border-[#1e3d2e] text-ink-muted hover:text-brand-fg dark:hover:text-emerald-400 hover:border-brand-400/50 transition-all shadow-2xs"
                       title="Beranda"
                     >
-                      <Home className="w-4 h-4 text-brand-fg" />
+                      <Home className="w-3.5 h-3.5 text-brand-fg dark:text-emerald-400" />
                     </Link>
                   </li>
                   {breadcrumb.parent && (
                     <li className="flex items-center gap-1.5">
-                      <ChevronRight className="w-3.5 h-3.5 text-line-strong shrink-0" />
-                      <span className="text-ink-muted whitespace-nowrap">{breadcrumb.parent}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-ink-muted/50 dark:text-gray-500 shrink-0" />
+                      <span className="px-2 py-0.5 rounded-md bg-surface-subtle/60 dark:bg-[#13261d]/60 border border-line/40 dark:border-[#1e3d2e]/50 text-ink-muted dark:text-gray-300 whitespace-nowrap text-xs font-medium">
+                        {breadcrumb.parent}
+                      </span>
                     </li>
                   )}
                   <li className="flex items-center gap-1.5 min-w-0">
-                    <ChevronRight className="w-3.5 h-3.5 text-line-strong shrink-0" />
-                    <span className="font-semibold text-ink truncate max-w-[220px] md:max-w-xs">
+                    <ChevronRight className="w-3.5 h-3.5 text-ink-muted/50 dark:text-gray-500 shrink-0" />
+                    <span className="px-2.5 py-1 rounded-md bg-brand-50/80 dark:bg-brand-950/60 border border-brand-200/70 dark:border-brand-800/50 text-brand-900 dark:text-emerald-300 font-semibold text-xs truncate max-w-[220px] md:max-w-xs shadow-2xs">
                       {breadcrumb.name}
                     </span>
                   </li>
@@ -224,19 +240,19 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               </nav>
             </div>
 
-            {/* Right Side: Command Search, Notifications, QR Link, and Profile */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            {/* Right Side: Command Search, Notifications, Density, Theme, and Profile */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Command Search Trigger Button */}
               <button
                 type="button"
                 onClick={() => setCommandSearchOpen(true)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-strong/70 border border-line text-xs text-ink-muted hover:text-ink transition-colors"
+                className="h-9 flex items-center gap-2 px-3 rounded-lg bg-surface-subtle/80 dark:bg-[#13261d] hover:bg-surface-strong/60 dark:hover:bg-[#1a3528] border border-line dark:border-[#1e3d2e] hover:border-brand-500/50 dark:hover:border-emerald-600/50 text-xs text-ink-muted hover:text-ink dark:text-gray-300 dark:hover:text-white transition-all shadow-2xs group cursor-pointer"
                 aria-label="Pencarian cepat perintah (Ctrl+K)"
-                title="Pencarian Cepat"
+                title="Pencarian Cepat (Ctrl+K atau /)"
               >
-                <Search className="w-4 h-4 text-ink-muted" />
+                <Search className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-fg dark:group-hover:text-emerald-400 transition-colors" />
                 <span className="hidden md:inline font-medium">Cari perintah...</span>
-                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-ink-muted bg-surface border border-line rounded">
+                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold text-ink-muted dark:text-gray-300 bg-surface dark:bg-[#0c1813] border border-line dark:border-[#1e3d2e] rounded shadow-2xs group-hover:border-brand-300 dark:group-hover:border-emerald-700 transition-colors">
                   Ctrl+K
                 </kbd>
               </button>
@@ -248,11 +264,15 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={toggleDensity}
-                className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-subtle hover:bg-surface-strong/70 border border-line text-xs font-semibold text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-surface-subtle/80 dark:bg-[#13261d] hover:bg-surface-strong/60 dark:hover:bg-[#1a3528] border border-line dark:border-[#1e3d2e] hover:border-brand-500/50 dark:hover:border-emerald-600/50 text-xs font-semibold text-ink-muted hover:text-ink dark:text-gray-300 dark:hover:text-white transition-all shadow-2xs cursor-pointer group"
                 title={`Kepadatan Tampilan: ${isCompact ? 'Ringkas (Klik untuk beralih ke Nyaman)' : 'Nyaman (Klik untuk beralih ke Ringkas)'}`}
                 aria-label="Ganti mode kepadatan tampilan"
               >
-                {isCompact ? <Minimize2 className="w-3.5 h-3.5 text-brand-fg" /> : <Maximize2 className="w-3.5 h-3.5 text-brand-fg" />}
+                {isCompact ? (
+                  <Minimize2 className="w-3.5 h-3.5 text-brand-fg dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <Maximize2 className="w-3.5 h-3.5 text-brand-fg dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+                )}
                 <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
               </button>
 
@@ -265,7 +285,11 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-2 p-1.5 sm:px-2 sm:py-1 rounded-lg hover:bg-surface-subtle border border-transparent hover:border-line transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-600 cursor-pointer"
+                    className={`flex items-center gap-2 h-10 pl-1.5 pr-2.5 rounded-xl transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-600/30 cursor-pointer shadow-2xs ${
+                      profileDropdownOpen
+                        ? 'bg-surface-subtle dark:bg-[#1a3528] border-brand-500/60 dark:border-emerald-600/60 ring-2 ring-brand-500/10'
+                        : 'bg-surface-subtle/70 dark:bg-[#13261d]/80 hover:bg-surface-subtle dark:hover:bg-[#1a3528] border border-line/80 dark:border-[#1e3d2e] hover:border-brand-400/50'
+                    }`}
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
@@ -279,50 +303,67 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                     />
 
                     <div className="hidden lg:block leading-tight">
-                      <div className="text-xs font-bold text-ink truncate max-w-[130px]">
+                      <div className="text-xs font-bold text-ink dark:text-gray-100 truncate max-w-[130px]">
                         {currentUser.name}
                       </div>
-                      <div className="text-xs text-ink-muted truncate max-w-[130px]">
+                      <div className="text-[11px] text-ink-muted dark:text-emerald-400/80 truncate max-w-[130px] font-medium">
                         {roleConfig.label}
                       </div>
                     </div>
 
-                    <ChevronDown className={`w-3.5 h-3.5 text-ink-muted transition-transform ${profileDropdownOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-ink-muted transition-transform duration-200 ${
+                        profileDropdownOpen ? 'rotate-180 text-brand-fg dark:text-emerald-400' : ''
+                      }`}
+                    />
                   </button>
 
                   {/* Dropdown Menu */}
                   {profileDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-surface rounded-xl shadow-xl border border-line py-1.5 z-50 animate-slideUp">
-                      <div className="px-3.5 py-2.5 border-b border-line">
-                        <p className="text-xs text-ink-muted font-bold uppercase tracking-wider">Sesi Aktif</p>
-                        <p className="text-xs font-bold text-ink truncate mt-0.5">{currentUser.name}</p>
-                        <p className="text-xs text-ink-muted truncate mt-0.5">
-                          {currentUser.publisherName || currentUser.email}
-                        </p>
-                        <div className="mt-2">
-                          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded border ${roleConfig.color}`}>
-                            <ShieldCheck className="w-3 h-3" />
-                            <span>{roleConfig.label}</span>
-                          </span>
+                    <div className="absolute right-0 mt-2 w-72 bg-surface dark:bg-[#0f2017] rounded-xl shadow-xl border border-line dark:border-[#1e3d2e] py-1.5 z-50 animate-slideUp">
+                      <div className="px-4 py-3 border-b border-line dark:border-[#1e3d2e] bg-surface-subtle/40 dark:bg-[#14281e]/40">
+                        <p className="text-[10px] text-ink-muted dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Sesi Aktif</p>
+                        <div className="flex items-center gap-3">
+                          <UserAvatar
+                            avatarId={avatarId}
+                            name={currentUser.name}
+                            role={role}
+                            size="md"
+                            showRoleBadge
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-ink dark:text-gray-100 truncate">{currentUser.name}</p>
+                            <p className="text-[11px] text-ink-muted dark:text-gray-400 truncate">
+                              {currentUser.publisherName || currentUser.email}
+                            </p>
+                            <div className="mt-1">
+                              <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border ${roleConfig.color}`}>
+                                <ShieldCheck className="w-3 h-3" />
+                                <span>{roleConfig.label}</span>
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="px-3.5 py-2 bg-surface-subtle/70 border-b border-line text-xs text-ink-muted">
-                        Kontrol proses mengacu pada SOP Pentashihan LPMQ
+                      <div className="px-3.5 py-1.5 bg-surface-subtle/30 dark:bg-[#12231b] border-b border-line/60 dark:border-[#1e3d2e] text-[11px] text-ink-muted dark:text-gray-400 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span>Kontrol proses mengacu pada SOP Pentashihan LPMQ</span>
                       </div>
 
-                      <div className="p-1 space-y-0.5">
+                      <div className="p-1.5 space-y-0.5">
                         <button
                           type="button"
                           onClick={() => {
                             setProfileDropdownOpen(false);
                             setAvatarPickerOpen(true);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink dark:text-gray-200 hover:bg-brand-50/80 dark:hover:bg-[#173022] hover:text-brand-900 dark:hover:text-emerald-300 rounded-lg transition-colors text-left cursor-pointer group"
                         >
-                          <Sparkles className="w-3.5 h-3.5 text-brand-700" />
+                          <Sparkles className="w-4 h-4 text-brand-700 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
                           <span>Pilih Avatar Profil Islami</span>
                         </button>
+
                         {currentUser.publisherId && (
                           <button
                             type="button"
@@ -330,18 +371,19 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                               setProfileDropdownOpen(false);
                               setProfileModalOpen(true);
                             }}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink dark:text-gray-200 hover:bg-brand-50/80 dark:hover:bg-[#173022] rounded-lg transition-colors text-left cursor-pointer"
                           >
-                            <Building2 className="w-3.5 h-3.5 text-ink-muted" />
+                            <Building2 className="w-4 h-4 text-ink-muted dark:text-gray-400" />
                             <span>Profil Penerbit (Terkunci)</span>
                           </button>
                         )}
 
                         <Link
                           to={currentUser?.publisher?.nomor_induk_penerbit ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}` : '/verifikasi/sertifikat/31.74.26.10.19.001'}
-                          className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors"
+                          onClick={() => setProfileDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink dark:text-gray-200 hover:bg-brand-50/80 dark:hover:bg-[#173022] hover:text-brand-900 dark:hover:text-emerald-300 rounded-lg transition-colors"
                         >
-                          <QrCode className="w-3.5 h-3.5 text-brand-700" />
+                          <QrCode className="w-4 h-4 text-brand-700 dark:text-emerald-400" />
                           <span>Verifikasi Sertifikat Penerbit (QR)</span>
                         </Link>
 
@@ -351,20 +393,22 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                             setProfileDropdownOpen(false);
                             setChangePasswordModalOpen(true);
                           }}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-ink hover:bg-surface-subtle rounded-lg transition-colors text-left cursor-pointer"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink dark:text-gray-200 hover:bg-brand-50/80 dark:hover:bg-[#173022] rounded-lg transition-colors text-left cursor-pointer"
                         >
-                          <KeyRound className="w-3.5 h-3.5 text-ink-muted" />
+                          <KeyRound className="w-4 h-4 text-ink-muted dark:text-gray-400" />
                           <span>Ganti Kata Sandi</span>
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-civic-danger hover:bg-civic-dangerSoft rounded-lg transition-colors text-left cursor-pointer"
-                        >
-                          <LogOut className="w-3.5 h-3.5" />
-                          <span>Akhiri Sesi</span>
-                        </button>
+                        <div className="pt-1 mt-1 border-t border-line/60 dark:border-[#1e3d2e]">
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-civic-danger dark:text-rose-400 hover:bg-civic-dangerSoft/80 dark:hover:bg-rose-950/40 rounded-lg transition-colors text-left cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Akhiri Sesi</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
