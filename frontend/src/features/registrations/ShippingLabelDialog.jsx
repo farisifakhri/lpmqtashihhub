@@ -142,7 +142,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
               onClick={() => setSelectedVariant('perbaikan')}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 selectedVariant === 'perbaikan'
-                  ? 'bg-amber-600 text-white font-bold'
+                  ? 'bg-civic-warning text-white font-bold'
                   : 'text-ink-muted hover:text-ink'
               }`}
             >
@@ -153,7 +153,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
               onClick={() => setSelectedVariant('dumi')}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
                 selectedVariant === 'dumi'
-                  ? 'bg-blue-700 text-white font-bold'
+                  ? 'bg-brand-700 text-white font-bold'
                   : 'text-ink-muted hover:text-ink'
               }`}
             >

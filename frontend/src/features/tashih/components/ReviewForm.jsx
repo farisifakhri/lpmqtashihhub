@@ -89,12 +89,12 @@ export const ReviewForm = ({
 
               {/* Catatan Sidang Ronde Sebelumnya (B-07) */}
               {previousRevLetters.length > 0 && (
-                <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/70 space-y-2 text-xs">
-                  <div className="flex items-center gap-2 font-bold text-amber-900">
-                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2 text-xs">
+                  <div className="flex items-center gap-2 font-bold text-ink">
+                    <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
                     <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-amber-200 text-ink leading-relaxed">
+                  <div className="bg-white p-3 rounded-lg border border-civic-warningLine text-ink leading-relaxed">
                     <p className="font-semibold text-ink-muted text-[11px] mb-1">
                       Ronde #{previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1} • Oleh: {previousRevLetters[0].content_snapshot?.distributor_name || 'Distributor'}
                     </p>
