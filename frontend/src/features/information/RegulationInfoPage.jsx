@@ -395,7 +395,7 @@ export const RegulationInfoPage = () => {
                   return (
                     <div key={item.label} className="rounded-xl overflow-hidden">
                       <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle">
-                        <span className="flex-1 font-semibold text-brand-700">{item.label}</span>
+                        <span className="flex-1 font-semibold text-brand-fg">{item.label}</span>
                         <button
                           type="button"
                           onClick={() => setMobileDropdown((prev) => (prev === item.label ? null : item.label))}
@@ -467,7 +467,7 @@ export const RegulationInfoPage = () => {
             <span className="text-line-strong">/</span>
             <span className="text-ink-muted">Informasi</span>
             <span className="text-line-strong">/</span>
-            <span className="font-semibold text-brand-700">Regulasi Penerbit Mushaf Al-Qur’an</span>
+            <span className="font-semibold text-brand-fg">Regulasi Penerbit Mushaf Al-Qur’an</span>
           </nav>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
