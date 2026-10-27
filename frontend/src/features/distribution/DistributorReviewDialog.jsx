@@ -327,17 +327,17 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
               {/* Pembandingan Catatan Sidang Ronde Sebelumnya (B-07) */}
               {previousRevLetters.length > 0 && (
-                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/50 space-y-3">
+                <div className="p-4 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5 text-amber-700" />
+                    <span className="font-bold text-xs text-ink uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
                       Catatan & Hasil Sidang Ronde Sebelumnya ({previousRevLetters.length} Ronde)
                     </span>
-                    <span className="text-[11px] text-amber-800 font-medium">Bahan Komparasi Perbaikan</span>
+                    <span className="text-[11px] text-civic-warning font-medium">Bahan Komparasi Perbaikan</span>
                   </div>
                   <div className="space-y-2">
                     {previousRevLetters.map((doc) => (
-                      <div key={doc.id} className="p-3 bg-white rounded-lg border border-amber-200 text-xs space-y-1.5">
+                      <div key={doc.id} className="p-3 bg-white rounded-lg border border-civic-warningLine text-xs space-y-1.5">
                         <div className="flex items-center justify-between font-semibold text-ink">
                           <span>Ronde #{doc.content_snapshot?.revision_round || doc.version} • {doc.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'}</span>
                           <span className="text-[11px] text-ink-muted">{doc.content_snapshot?.distributor_name || 'Distributor'}</span>
