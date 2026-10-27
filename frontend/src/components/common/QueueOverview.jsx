@@ -51,17 +51,17 @@ export function QueueItemMeta({ item }) {
         <span
           className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold border ${
             severity === 'danger'
-              ? 'bg-red-50 text-red-700 border-red-200'
+              ? 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine'
               : severity === 'warning'
-              ? 'bg-amber-50 text-amber-800 border-amber-200'
+              ? 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
               : 'bg-canvas text-ink border-line'
           }`}
           title="Naskah di luar hitungan SLA internal LPMQ (menunggu pemohon)"
         >
           <Clock className="w-3 h-3 shrink-0" />
           <span>Menunggu {waitingDays} hari</span>
-          {severity === 'danger' && <span className="text-[10px] uppercase font-extrabold text-red-600">(Terlambat)</span>}
-          {severity === 'warning' && <span className="text-[10px] uppercase font-extrabold text-amber-600">(Perlu Pengingat)</span>}
+          {severity === 'danger' && <span className="text-[10px] uppercase font-extrabold text-civic-danger">(Terlambat)</span>}
+          {severity === 'warning' && <span className="text-[10px] uppercase font-extrabold text-civic-warning">(Perlu Pengingat)</span>}
         </span>
       )}
     </span>

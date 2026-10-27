@@ -660,9 +660,9 @@ export const UnifiedDashboard = () => {
       {/* 5. Tabel Antrean & Riwayat Pengajuan Naskah */}
       {assignmentSuccess && <p role="status" className="rounded-xl border border-brand-100 bg-brand-50 p-4 text-sm text-brand-800">{assignmentSuccess}</p>}
       {reminderMessage && (
-        <div role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 flex items-center justify-between">
+        <div role="status" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-sm font-semibold text-civic-warning flex items-center justify-between">
           <span>{reminderMessage}</span>
-          <button type="button" onClick={() => setReminderMessage('')} className="text-amber-700 hover:text-amber-950 font-bold ml-2">✕</button>
+          <button type="button" onClick={() => setReminderMessage('')} className="text-civic-warning hover:text-ink font-bold ml-2">✕</button>
         </div>
       )}
       <div id="antrean-tim" className="bg-white rounded-xl border border-line shadow-2xs overflow-hidden scroll-mt-6">
@@ -832,7 +832,7 @@ export const UnifiedDashboard = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="text-xs mb-2 block ml-auto font-bold border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100"
+                          className="text-xs mb-2 block ml-auto font-bold border-civic-warningLine text-civic-warning bg-civic-warningSoft hover:bg-civic-warningSoft/80"
                           onClick={() => handleRemindPublisher(item)}
                           disabled={remindingId === item.id}
                         >

@@ -51,12 +51,17 @@ export function DocumentArchive({ registrationId }) {
       if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) {
         let msg = '';
         try {
-          const text = await response.text();
-          try {
-            const errData = JSON.parse(text);
+          if (typeof response.text === 'function') {
+            const text = await response.text();
+            try {
+              const errData = JSON.parse(text);
+              if (errData?.message) msg = errData.message;
+            } catch {
+              if (text && text.length < 200 && !text.startsWith('<')) msg = text;
+            }
+          } else if (typeof response.json === 'function') {
+            const errData = await response.json();
             if (errData?.message) msg = errData.message;
-          } catch {
-            if (text && text.length < 200 && !text.startsWith('<')) msg = text;
           }
         } catch (_) {}
         if (!msg) {

@@ -15,8 +15,8 @@ export const SlaIndicator = ({
   if (isPaused) {
     return (
       <div className={clsx('space-y-1', className)} aria-label="SLA: Jeda (Di luar hitungan SLA)">
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" aria-hidden="true" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine shadow-2xs">
+          <span className="w-2 h-2 rounded-full bg-civic-warning animate-pulse" aria-hidden="true" />
           <span>Jeda SLA · Menunggu Penerbit</span>
         </span>
       </div>

@@ -127,16 +127,16 @@ export function RegistrationDetailDialog({ id, onClose }) {
               )}
             </div>
             {data.status === 'REVISION_REQUIRED' && (
-              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 space-y-2 text-xs">
-                <div className="flex items-center gap-2 text-amber-900 font-bold">
-                  <Clock className="w-4 h-4 shrink-0 text-amber-600" />
+              <div className="rounded-xl bg-civic-warningSoft border border-civic-warningLine p-4 space-y-2 text-xs">
+                <div className="flex items-center gap-2 text-ink font-bold">
+                  <Clock className="w-4 h-4 shrink-0 text-civic-warning" />
                   <span>Naskah Sedang Dalam Tahap Perbaikan Penerbit (Di Luar SLA Internal)</span>
                 </div>
-                <p className="text-amber-800">
+                <p className="text-ink-muted">
                   Naskah menunggu perbaikan berkas atau naskah dumi dari pemohon. Perhitungan SLA internal LPMQ berada dalam status jeda.
                 </p>
                 {reminderMessage && (
-                  <p className="font-semibold text-amber-950 bg-amber-100/80 px-2.5 py-1 rounded border border-amber-300">
+                  <p className="font-semibold text-ink bg-civic-warningSoft px-2.5 py-1 rounded border border-civic-warningLine">
                     {reminderMessage}
                   </p>
                 )}
@@ -209,7 +209,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs font-bold border-amber-300 text-amber-900 bg-amber-50 hover:bg-amber-100"
+                className="text-xs font-bold border-civic-warningLine text-civic-warning bg-civic-warningSoft hover:bg-civic-warningSoft/80"
                 onClick={handleRemindPublisher}
                 disabled={reminding}
               >
