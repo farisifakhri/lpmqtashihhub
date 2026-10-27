@@ -81,4 +81,40 @@ describe('ShippingLabelDialog', () => {
 
     expect(handleClose).toHaveBeenCalled();
   });
+  it('switches variant to perbaikan and updates label copy and download params', async () => {
+    render(<ShippingLabelDialog isOpen={true} onClose={vi.fn()} registration={{ ...mockRegistration, revision_round: 2 }} />);
+
+    const perbaikanTab = screen.getByRole('button', { name: /Naskah Perbaikan/i });
+    fireEvent.click(perbaikanTab);
+
+    expect(screen.getByText(/Naskah Fisik Perbaikan \(Koreksi Lafazh, Rasm & Tanda Baca\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ronde Ke-2/i)).toBeInTheDocument();
+
+    const downloadBtn = screen.getAllByRole('button', { name: /Unduh Label PDF/i })[0];
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(registrationApi.downloadShippingLabelPdf).toHaveBeenCalledWith(
+        'reg-123',
+        'Label-Pengiriman-Perbaikan-REG-2026-0099-R2.pdf',
+        'perbaikan'
+      );
+    });
+  });
+
+  it('auto-selects dumi variant when registration.revision_kind is NASKAH_DUMI', async () => {
+    render(<ShippingLabelDialog isOpen={true} onClose={vi.fn()} registration={{ ...mockRegistration, revision_kind: 'NASKAH_DUMI', revision_round: 1 }} />);
+
+    expect(screen.getByText(/Naskah Dumi Cetak Akhir/i)).toBeInTheDocument();
+    const downloadBtn = screen.getAllByRole('button', { name: /Unduh Label PDF/i })[0];
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(registrationApi.downloadShippingLabelPdf).toHaveBeenCalledWith(
+        'reg-123',
+        'Label-Pengiriman-Dumi-REG-2026-0099-R1.pdf',
+        'dumi'
+      );
+    });
+  });
 });

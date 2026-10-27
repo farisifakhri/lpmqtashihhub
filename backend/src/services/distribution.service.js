@@ -30,11 +30,19 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
   }
   const now = new Date();
-  const team = await tx.distributionTeam.findUnique({ where: { id: data.team_id }, include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } } });
-  if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) fail(409, 'Tim yang dipilih tidak tersedia atau masa berlaku SK-nya belum dimulai/sudah berakhir. Pilih tim dengan SK aktif atau minta administrator memperbarui data tim.');
-  
-  const entries = data.juz_assignments || data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] }));
-  
+  let team = null;
+  if (data.team_id) {
+    team = await tx.distributionTeam.findUnique({
+      where: { id: data.team_id },
+      include: { members: { include: { user: { include: { roles: { include: { role: true } } } } } } },
+    });
+    if (!team || team.status !== 'ACTIVE' || team.active_from > now || (team.active_to && team.active_to < now)) {
+      fail(409, 'Kelompok kerja yang dipilih tidak tersedia atau masa aktifnya belum dimulai/sudah berakhir. Pilih kelompok kerja aktif atau minta administrator memperbarui data tim.');
+    }
+  }
+
+  const entries = data.juz_assignments || (data.assignee_ids ? data.assignee_ids.map(assignee_id => ({ assignee_id, juz_numbers: [] })) : []);
+
   // Clean duplicate juz per assignee to protect @@unique([assignment_id, juz_number])
   for (const entry of entries) {
     if (entry.juz_numbers && entry.juz_numbers.length) {
@@ -42,9 +50,41 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     }
   }
 
-  for (const { assignee_id: id } of entries) {
-    const member = team.members.find(member => member.user_id === id);
-    if (!member || member.status !== 'ACTIVE' || member.user.status !== 'ACTIVE' || !member.user.roles.some(item => item.role.code === 'PENTASHIH')) fail(400, 'Ada pentashih yang bukan anggota aktif tim terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pilih pentashih yang terdaftar pada SK tim tersebut.');
+  // Validasi anggota pentashih (fleksibel: kelompok maupun individu)
+  if (team) {
+    for (const { assignee_id: pentashihId } of entries) {
+      const member = team.members.find(m => m.user_id === pentashihId);
+      if (!member || member.status !== 'ACTIVE' || member.user?.status !== 'ACTIVE' || !member.user?.roles?.some(item => item.role?.code === 'PENTASHIH')) {
+        fail(400, 'Ada pentashih yang bukan anggota aktif kelompok terpilih atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
+      }
+    }
+  } else {
+    for (const { assignee_id: pentashihId } of entries) {
+      const directUser = await tx.user.findFirst({
+        where: {
+          id: pentashihId,
+          status: 'ACTIVE',
+          roles: { some: { role: { code: 'PENTASHIH' } } },
+        },
+      });
+      if (!directUser) {
+        fail(400, 'Ada pentashih yang bukan pentashih aktif atau akunnya tidak aktif. Periksa daftar anggota dan pastikan seluruh pentashih memiliki peran PENTASHIH aktif.');
+      }
+    }
+  }
+
+  // Validasi matematis cakupan rentang 30 juz (B-05)
+  const hasJuzAssignments = entries.some(e => e.juz_numbers && e.juz_numbers.length > 0);
+  const is30JuzMushaf = reg.service_type?.name?.toLowerCase().includes('30') || data.enforce_full_coverage;
+  if (hasJuzAssignments && (is30JuzMushaf || data.enforce_full_coverage) && reg.status !== 'TASHIH_IN_PROGRESS') {
+    const assignedJuzSet = new Set(entries.flatMap(e => e.juz_numbers || []));
+    const missingJuz = [];
+    for (let j = 1; j <= 30; j++) {
+      if (!assignedJuzSet.has(j)) missingJuz.push(j);
+    }
+    if (missingJuz.length > 0) {
+      fail(400, `Penjatahan juz belum lengkap. Juz berikut belum teralokasi: ${missingJuz.join(', ')}. Pastikan seluruh 30 juz terbagi.`);
+    }
   }
   const verifiedPayment = await tx.paymentRecord.findFirst({
     where: { registration_id: id, status: 'VERIFIED' },
@@ -81,9 +121,22 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
+    let resolvedTeamId = team ? team.id : null;
+    if (!resolvedTeamId) {
+      const memberMembership = await tx.teamMember.findFirst({
+        where: { user_id: assignee_id, status: 'ACTIVE', team: { status: 'ACTIVE' } },
+        select: { team_id: true },
+      });
+      resolvedTeamId = memberMembership?.team_id || null;
+    }
+
     const assignment = await tx.assignment.create({ data: {
-      registration_id: id, team_id: team.id, assignee_id, stage: currentStage,
-      iteration, due_at,
+      registration_id: id,
+      team_id: resolvedTeamId,
+      assignee_id,
+      stage: currentStage,
+      iteration,
+      due_at,
       ...(juz_numbers && juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
     } });
     assignments.push(assignment);
@@ -91,9 +144,13 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
   }
   if (reg.status !== 'TASHIH_IN_PROGRESS') {
-    await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Tim dan pentashih ditetapkan');
+    await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Kelompok dan pentashih ditetapkan');
   } else {
-    await audit(tx, user, 'ADD_PENTASHIH_ASSIGNMENT', 'Registration', reg.id, { added_count: assignments.length, note: 'Penambahan pentashih / pentashihan ulang' });
+    await audit(tx, user, 'ADD_PENTASHIH_ASSIGNMENT', 'Registration', reg.id, {
+      added_count: assignments.length,
+      reassignment_reason: data.reassignment_reason || 'ROTASI_TUGAS',
+      reassignment_notes: data.reassignment_notes || 'Penyesuaian penugasan pentashihan',
+    });
   }
   return assignments;
 }, { isolationLevel: 'ReadCommitted' });
@@ -115,6 +172,15 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
   if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
 
+  // Validasi berkas rekapan internal (B-06)
+  if (!data.recap_file_id) {
+    fail(400, 'Dokumen rekap hasil telaah internal wajib diunggah.');
+  }
+  const recapFile = await tx.storedFile.findUnique({ where: { id: data.recap_file_id } });
+  if (!recapFile) {
+    fail(404, 'Berkas rekapan yang diunggah tidak ditemukan pada sistem.');
+  }
+
   if (assignment.juz_items?.length && tx.assignmentJuz?.updateMany) {
     await tx.assignmentJuz.updateMany({
       where: { assignment_id: id },
@@ -126,14 +192,17 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
     });
   }
 
-  const finalNotes = data.recap_file_id
-    ? `${data.notes || ''}\n[RECAP_FILE:${data.recap_file_id}]`.trim()
-    : data.notes;
-
-  const review = await tx.tashihReview.create({ data: { assignment_id: id, result: data.result, notes: finalNotes } });
+  const review = await tx.tashihReview.create({
+    data: {
+      assignment_id: id,
+      result: data.result,
+      notes: data.notes || null,
+      recap_file_id: data.recap_file_id || null,
+    },
+  });
   await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
-  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, { ...review, recap_file_id: data.recap_file_id });
-  return { ...review, recap_file_id: data.recap_file_id || null };
+  await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
+  return review;
 }, { isolationLevel: 'ReadCommitted' });
 
 export const recordJuzChecklist = (id, juzNumber, data, user) => prisma.$transaction(async tx => {
@@ -189,6 +258,10 @@ export async function listMyAssignments(user, query = {}) {
           publisher: { select: { id: true, legal_name: true } },
           service_type: { select: { id: true, name: true } },
           manuscript_files: true,
+          official_documents: {
+            where: { document_type: 'REVISION_RETURN_LETTER' },
+            orderBy: { created_at: 'desc' },
+          },
         },
       },
       team: { select: { id: true, name: true, decree_no: true } },
@@ -210,6 +283,13 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (assignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
   if (data.result === 'PASSED' && assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
+
+  // B-06: Verifikasi dokumen rekap internal (Kelompok: satu rekap cukup setelah dicek distributor)
+  const hasRecap = assignments.some(item => item.reviews.some(r => r.recap_file_id));
+  if (!hasRecap) {
+    fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
+  }
+
   const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
   await move(tx, reg, status, user, data.notes);
 
@@ -224,6 +304,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     revisionRound = previousLetters + 1;
 
     // Reset physical dispatch status and mark revision source (RF-DIST-00)
+    const outgoingDate = data.outgoing_tracking_no ? (data.outgoing_dispatch_date ? new Date(data.outgoing_dispatch_date) : new Date()) : null;
     await tx.registration.update({
       where: { id },
       data: {
@@ -232,6 +313,10 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
         dispatch_tracking_no: null,
         dispatch_date: null,
         revision_source: 'TASHIH_REVISION',
+        outgoing_courier: data.outgoing_courier || null,
+        outgoing_tracking_no: data.outgoing_tracking_no || null,
+        outgoing_dispatch_date: outgoingDate,
+        outgoing_notes: data.outgoing_notes || null,
       },
     });
 
@@ -314,3 +399,194 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
 
   return tx.registration.findUnique({ where: { id } });
 }, { isolationLevel: 'ReadCommitted' });
+
+
+export const recordOutgoingDispatch = async (registrationId, data, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await tx.registration.findUnique({
+      where: { id: registrationId },
+      include: { publisher: true },
+    });
+    if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+
+    const isDistributor = user.roles.includes('DISTRIBUTOR') || reg.core_distributor_id === user.id;
+    const isAdmin = user.roles.some((r) => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    if (!isDistributor && !isAdmin) {
+      fail(403, 'Hanya petugas Distributor atau Admin Internal yang berwenang mencatat resi pengiriman keluar.');
+    }
+
+    const dispatchDate = data.outgoing_dispatch_date ? new Date(data.outgoing_dispatch_date) : new Date();
+
+    const updated = await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        outgoing_courier: data.outgoing_courier,
+        outgoing_tracking_no: data.outgoing_tracking_no,
+        outgoing_dispatch_date: dispatchDate,
+        outgoing_notes: data.outgoing_notes || null,
+      },
+    });
+
+    await audit(tx, user, 'DISTRIBUTOR_OUTGOING_DISPATCH', 'Registration', registrationId, {
+      outgoing_courier: data.outgoing_courier,
+      outgoing_tracking_no: data.outgoing_tracking_no,
+      outgoing_dispatch_date: dispatchDate,
+      outgoing_notes: data.outgoing_notes,
+    }, req);
+
+    if (reg.publisher_id) {
+      const publisher = await tx.publisher.findUnique({
+        where: { id: reg.publisher_id },
+        select: { user_id: true },
+      });
+      if (publisher?.user_id) {
+        await tx.notification.create({
+          data: {
+            user_id: publisher.user_id,
+            registration_id: registrationId,
+            type: 'OUTGOING_DISPATCH_RECORDED',
+            title: 'Naskah Fisik Dikirim Kembali oleh Distributor',
+            payload: {
+              courier: data.outgoing_courier,
+              tracking_no: data.outgoing_tracking_no,
+              message: `Naskah fisik hasil sidang pentashihan telah dikirim kembali via ${data.outgoing_courier} dengan nomor resi ${data.outgoing_tracking_no}.`,
+              link: `/publisher/registrations/${registrationId}?tab=fisik`,
+            },
+          },
+        });
+      }
+    }
+
+    return updated;
+  }, { isolationLevel: 'ReadCommitted' });
+};
+
+export const sendPublisherReminder = async (registrationId, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await tx.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        publisher: { include: { user: true } },
+      },
+    });
+
+    if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+
+    const isDistributor = user.roles.includes('DISTRIBUTOR') || reg.core_distributor_id === user.id;
+    const isAdmin = user.roles.some((r) => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    if (!isDistributor && !isAdmin) {
+      fail(403, 'Hanya petugas Distributor atau Admin Internal yang berwenang mengirimkan pengingat perbaikan ke penerbit.');
+    }
+
+    if (reg.status !== 'REVISION_REQUIRED') {
+      fail(409, `Pengingat perbaikan hanya dapat dikirimkan saat pengajuan berstatus "REVISION_REQUIRED". Status saat ini adalah "${reg.status}".`);
+    }
+
+    const enteredAt = reg.stage_entered_at || reg.updated_at || reg.created_at;
+    const waitingMs = Date.now() - new Date(enteredAt).getTime();
+    const waitingDays = Math.max(1, Math.floor(waitingMs / (1000 * 60 * 60 * 24)));
+
+    const existingMeta =
+      typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null
+        ? reg.foreign_metadata
+        : typeof reg.foreign_metadata === 'string'
+        ? JSON.parse(reg.foreign_metadata || '{}')
+        : {};
+
+    const lastLetter = await tx.officialDocument.findFirst({
+      where: { registration_id: registrationId, document_type: 'REVISION_RETURN_LETTER' },
+      orderBy: { created_at: 'desc' },
+    });
+    const revisionRound = lastLetter?.content_snapshot?.revision_round || reg.revision_round || 1;
+    const revisionKind = lastLetter?.content_snapshot?.revision_kind || reg.revision_kind || 'NASKAH_PERBAIKAN';
+    const kindLabel = revisionKind === 'NASKAH_DUMI' ? 'Naskah Dumi Final' : 'Naskah Perbaikan';
+
+    if (reg.publisher?.user_id) {
+      await tx.notification.create({
+        data: {
+          user_id: reg.publisher.user_id,
+          registration_id: registrationId,
+          type: 'REVISION_REMINDER',
+          title: `Pengingat: Segera Kirimkan ${kindLabel} (Ronde #${revisionRound})`,
+          payload: {
+            waiting_days: waitingDays,
+            revision_round: revisionRound,
+            revision_kind: revisionKind,
+            message: `Permohonan ${reg.registration_no} telah menunggu ${kindLabel} dari Anda selama ${waitingDays} hari. Mohon segera mengunggah berkas perbaikan dan mengirimkan naskah fisik ke LPMQ TMII.`,
+            link: `/publisher/registrations/${registrationId}?tab=fisik`,
+          },
+        },
+      });
+    }
+
+    const reminderCount = (existingMeta.reminder_count || 0) + 1;
+    const updatedMeta = {
+      ...existingMeta,
+      last_reminder_at: new Date().toISOString(),
+      reminder_count: reminderCount,
+    };
+
+    const updated = await tx.registration.update({
+      where: { id: registrationId },
+      data: {
+        foreign_metadata: updatedMeta,
+      },
+    });
+
+    await audit(tx, user, 'SEND_PUBLISHER_REMINDER', 'Registration', registrationId, {
+      waiting_days: waitingDays,
+      reminder_count: reminderCount,
+      revision_round: revisionRound,
+    }, req);
+
+    return {
+      success: true,
+      message: `Pengingat berhasil dikirimkan kepada ${reg.publisher?.legal_name || 'penerbit'}. Waktu tunggu: ${waitingDays} hari.`,
+      waiting_days: waitingDays,
+      reminder_count: reminderCount,
+      last_reminder_at: updatedMeta.last_reminder_at,
+    };
+  }, { isolationLevel: 'ReadCommitted' });
+};
+
+export const sendPeriodicReminders = async (user, options = {}) => {
+  const minWaitingDays = options.minWaitingDays || 7;
+  const now = new Date();
+  const thresholdDate = new Date(now.getTime() - minWaitingDays * 24 * 60 * 60 * 1000);
+
+  const pendingRegistrations = await prisma.registration.findMany({
+    where: {
+      status: 'REVISION_REQUIRED',
+      stage_entered_at: { lte: thresholdDate },
+    },
+    include: {
+      publisher: true,
+    },
+  });
+
+  const sent = [];
+  for (const reg of pendingRegistrations) {
+    const meta = typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null
+      ? reg.foreign_metadata
+      : {};
+    if (meta.last_reminder_at) {
+      const lastSent = new Date(meta.last_reminder_at).getTime();
+      if (now.getTime() - lastSent < 7 * 24 * 60 * 60 * 1000) {
+        continue;
+      }
+    }
+
+    try {
+      const res = await sendPublisherReminder(reg.id, user);
+      sent.push({ id: reg.id, registration_no: reg.registration_no, ...res });
+    } catch {
+      // Continue scan
+    }
+  }
+
+  return {
+    total_scanned: pendingRegistrations.length,
+    reminders_sent: sent.length,
+    details: sent,
+  };
+};

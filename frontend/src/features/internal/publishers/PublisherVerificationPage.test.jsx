@@ -124,6 +124,42 @@ describe('PublisherVerificationPage (T-S03 Verifikasi Penerbit Admin)', () => {
     });
   });
 
+  it('opens a secure document preview from the publisher registration detail', async () => {
+    vi.spyOn(publisherRegistrationApi, 'listAdmin').mockResolvedValue({
+      success: true,
+      data: mockRegistrations,
+      pagination: { page: 1, limit: 10, total_records: 2, total_pages: 1 },
+    });
+    vi.spyOn(publisherRegistrationApi, 'getAdminDetail').mockResolvedValue({
+      success: true,
+      data: mockDetail,
+    });
+
+    render(
+      <MemoryRouter>
+        <PublisherVerificationPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /Periksa & Putuskan/i })[0]).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /Periksa & Putuskan/i })[0]);
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: 'Pratinjau' })).toHaveLength(2);
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Pratinjau' })[0]);
+
+    expect(screen.getByText(/Pratinjau Dokumen Aman: Surat Permohonan Pendaftaran/i)).toBeInTheDocument();
+    expect(screen.getByText(/Memuat pratinjau dokumen terenkripsi/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Pratinjau' })[1]);
+
+    expect(screen.queryByText(/Pratinjau Dokumen Aman: Surat Permohonan Pendaftaran/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Pratinjau Dokumen Aman: Profil Instansi/i)).toBeInTheDocument();
+  });
+
   it('submits decision SETUJUI with current versi', async () => {
     vi.spyOn(publisherRegistrationApi, 'listAdmin').mockResolvedValue({
       success: true,

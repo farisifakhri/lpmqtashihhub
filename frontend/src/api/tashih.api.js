@@ -46,6 +46,13 @@ export const tashihApi = {
    * Mengambil beban kerja (workload) tim pentashihan
    * @param {string} teamId - UUID Tim Distribusi
    */
+  recordOutgoingDispatch: async (registrationId, payload) => {
+    return apiClient(`/registrations/${registrationId}/outgoing-dispatch`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
   getTeamWorkload: async (teamId) => {
     return apiClient(`/distribution-teams/${teamId}/workload`);
   },

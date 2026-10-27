@@ -6,7 +6,8 @@ export const confirmPaymentSchema = { params, body: z.object({
   receipt_file_id: z.string().uuid(), external_ref: z.string().trim().min(1).max(191).optional(),
 }).strict() };
 export const assignmentSchema = { params, body: z.object({
-  team_id: z.string().min(1).max(191),
+  team_id: z.string().min(1).max(191).optional(),
+  team_ids: z.array(z.string().min(1).max(191)).max(10).optional(),
   assignee_ids: z.array(z.string().uuid()).min(1).max(50).optional(),
   juz_assignments: z.array(z.object({
     assignee_id: z.string().uuid(),
@@ -14,9 +15,16 @@ export const assignmentSchema = { params, body: z.object({
   }).strict()).min(1).max(50).optional(),
   stage: z.enum(['INITIAL', 'REVISION', 'DUMMY']),
   allow_overlap: z.boolean().optional(),
+  enforce_full_coverage: z.boolean().optional(),
+  reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
+  reassignment_notes: z.string().trim().max(500).optional(),
 }).strict().superRefine((data, ctx) => {
-  if (Boolean(data.assignee_ids) === Boolean(data.juz_assignments)) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Pilih penugasan per juz atau format lama.' });
+  if (!data.assignee_ids && !data.juz_assignments) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });
+    return;
+  }
+  if (data.assignee_ids && data.juz_assignments) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Pilih penugasan per juz atau format daftar pentashih.' });
     return;
   }
   const assignees = data.assignee_ids || data.juz_assignments.map(item => item.assignee_id);
@@ -70,9 +78,25 @@ export const juzChecklistSchema = {
 };
 export const reviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
-  notes: z.string().trim().min(1).max(10000),
-  recap_file_id: z.string().trim().max(191).optional(),
+  notes: z.string().trim().min(1, 'Catatan hasil telaah wajib diisi.').max(10000),
+  recap_file_id: z.string().uuid('ID berkas rekap wajib berupa UUID valid.'),
+}).strict() };
+
+export const distributorReviewSchema = { params, body: z.object({
+  result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
+  notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
+  outgoing_courier: z.string().trim().max(100).optional(),
+  outgoing_tracking_no: z.string().trim().max(100).optional(),
+  outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
+  outgoing_notes: z.string().trim().max(1000).optional(),
+}).strict() };
+
+export const outgoingDispatchSchema = { params, body: z.object({
+  outgoing_courier: z.string().trim().min(1, 'Kurir atau metode pengiriman keluar wajib diisi.').max(100),
+  outgoing_tracking_no: z.string().trim().min(1, 'Nomor resi pengiriman keluar wajib diisi.').max(100),
+  outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
+  outgoing_notes: z.string().trim().max(1000).optional(),
 }).strict() };
 export const documentSchema = { params, body: z.object({
   document_type: z.enum(['BERITA_ACARA_TASHIH', 'SURAT_TANDA_TASHIH', 'REVISION_RETURN_LETTER']),

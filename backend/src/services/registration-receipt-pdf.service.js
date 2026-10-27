@@ -554,7 +554,7 @@ export async function renderRegistrationReceiptPdf(reg) {
 /**
  * Menggambar Label Pengiriman Master Fisik Naskah ke LPMQ (Sesuai Halaman 4 Dokumen Resmi)
  */
-export async function renderShippingLabelPdf(reg) {
+export async function renderShippingLabelPdf(reg, options = {}) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -604,7 +604,20 @@ export async function renderShippingLabelPdf(reg) {
 
   const h1 = 'SISTEM INFORMASI LAYANAN TASHIH';
   const h2 = 'KEMENTERIAN AGAMA REPUBLIK INDONESIA';
-  const h3 = "Pengiriman Berkas Pendaftaran Mushaf Al-Qur'an";
+  const rawVariant = (options.variant || reg.revision_kind || (reg.status === 'REVISION_REQUIRED' || reg.revision_source === 'TASHIH_REVISION' || (reg.revision_round && reg.revision_round > 0) ? 'perbaikan' : 'perdana')).toString().toLowerCase();
+  const isDummy = rawVariant === 'dumi' || rawVariant === 'dummy' || rawVariant === 'naskah_dumi';
+  const isRevision = rawVariant === 'perbaikan' || rawVariant === 'revision' || rawVariant === 'naskah_perbaikan' || (!isDummy && rawVariant !== 'perdana' && (reg.status === 'REVISION_REQUIRED' || (reg.revision_round && reg.revision_round > 0)));
+  const revisionRound = options.revisionRound || reg.revision_round || (isRevision || isDummy ? 1 : 0);
+
+  let h3 = "Pengiriman Berkas Pendaftaran Mushaf Al-Qur'an";
+  let h3Color = rgb(0.08, 0.38, 0.28);
+  if (isDummy) {
+    h3 = `Pengiriman Naskah Dumi (Pemeriksaan Cetak Akhir) - Ronde #${revisionRound}`;
+    h3Color = rgb(0.08, 0.22, 0.55);
+  } else if (isRevision) {
+    h3 = `Pengiriman Naskah Perbaikan (Koreksi Sidang) - Ronde #${revisionRound}`;
+    h3Color = rgb(0.65, 0.25, 0.05);
+  }
 
   page.drawText(h1, {
     x: (pageWidth - bold.widthOfTextAtSize(h1, 11)) / 2,
@@ -625,7 +638,7 @@ export async function renderShippingLabelPdf(reg) {
     y: labelTopY - 54,
     font: bold,
     size: 10,
-    color: rgb(0.08, 0.38, 0.28),
+    color: h3Color,
   });
 
   // Garis bawah header label
@@ -743,18 +756,35 @@ export async function renderShippingLabelPdf(reg) {
   });
   page.drawText('Detail barang', { x: margin + 12, y: curY - 20, font: bold, size: 9, color: black });
 
+  let itemTitle = "Mushaf Al-Qur'an";
+  let itemSubTitle = `No. Pendaftaran: ${safeText(regNo, bold)}`;
+  let volumeDesc = `Jumlah: ${volumeCount} Jilid / Juz (Master Naskah Fisik A4 per juz)`;
+  let footerNotice = '* Tempelkan label ini secara jelas pada bagian luar kardus atau paket pengiriman fisik naskah.';
+
+  if (isDummy) {
+    itemTitle = "Naskah Dumi Cetak Akhir (Model / Mock-up Mushaf)";
+    itemSubTitle = `No. Pendaftaran: ${safeText(regNo, bold)}  |  Tahap: Dumi Final (Ronde #${revisionRound})`;
+    volumeDesc = `Jumlah: ${volumeCount || 1} Eksemplar Dumi Lengkap (Sesuai Ketentuan Sidang Tashih)`;
+    footerNotice = '* Tempelkan label ini pada paket naskah dumi. Pastikan model mockup lengkap sesuai spesifikasi cetak akhir.';
+  } else if (isRevision) {
+    itemTitle = "Naskah Fisik Perbaikan (Koreksi Lafazh, Rasm & Tanda Baca)";
+    itemSubTitle = `No. Pendaftaran: ${safeText(regNo, bold)}  |  Perbaikan Ke-${revisionRound}`;
+    volumeDesc = `Jumlah: ${volumeCount} Jilid / Juz (Naskah Perbaikan Dilengkapi Lembar Koreksi)`;
+    footerNotice = '* Tempelkan label ini pada paket naskah perbaikan. Pastikan koreksi telah ditandai dengan jelas.';
+  }
+
   textY = curY - 18;
-  page.drawText("Mushaf Al-Qur'an", { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: black });
+  page.drawText(itemTitle, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: black });
   textY -= 16;
-  page.drawText(`No. Pendaftaran: ${safeText(regNo, bold)}`, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: black });
+  page.drawText(itemSubTitle, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: black });
   textY -= 16;
   page.drawText(`Nama mushaf: ${safeText(namaMushaf, font)}`.slice(0, 65), { x: margin + col1W + 12, y: textY, font, size: 8, color: black });
   textY -= 18;
-  page.drawText(`Jumlah: ${volumeCount} Jilid / Juz (Master Naskah Fisik A4 per juz)`, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: rgb(0.08, 0.38, 0.28) });
+  page.drawText(volumeDesc, { x: margin + col1W + 12, y: textY, font: bold, size: 8.5, color: h3Color });
 
   // Footer inside box
   const boxFooterY = labelBottomY + 12;
-  page.drawText('* Tempelkan label ini secara jelas pada bagian luar kardus atau paket pengiriman fisik naskah.', {
+  page.drawText(footerNotice, {
     x: margin + 12,
     y: boxFooterY,
     font: italic,

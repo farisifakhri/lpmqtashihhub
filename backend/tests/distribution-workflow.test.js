@@ -49,14 +49,18 @@ function createMockTx(overrides = {}) {
       updateMany: async () => ({ count: 1 }),
       ...overrides.physicalMasterIntake,
     },
+    storedFile: {
+      findUnique: async ({ where }) => ({ id: where?.id || '123e4567-e89b-12d3-a456-426614174000', mime_type: 'application/pdf' }),
+      ...overrides.storedFile,
+    },
     ...overrides,
   };
   return mockTx;
 }
 
 test('reviewSchema validates review result and notes correctly', () => {
-  assert.equal(reviewSchema.body.safeParse({ result: 'PASSED', notes: 'Lafaz dan tanda baca sesuai mushaf standar' }).success, true);
-  assert.equal(reviewSchema.body.safeParse({ result: 'REVISION_REQUIRED', notes: 'Perbaiki ayat 15 surat Al-Baqarah' }).success, true);
+  assert.equal(reviewSchema.body.safeParse({ result: 'PASSED', notes: 'Lafaz dan tanda baca sesuai mushaf standar', recap_file_id: '123e4567-e89b-12d3-a456-426614174000' }).success, true);
+  assert.equal(reviewSchema.body.safeParse({ result: 'REVISION_REQUIRED', notes: 'Perbaiki ayat 15 surat Al-Baqarah', recap_file_id: '123e4567-e89b-12d3-a456-426614174000' }).success, true);
   // Invalid result
   assert.equal(reviewSchema.body.safeParse({ result: 'INVALID_STATUS', notes: 'Catatan' }).success, false);
 });
@@ -173,7 +177,7 @@ test('recordReview successfully stores review and transitions assignment status 
 
     const res = await recordReview(
       'assign-1',
-      { result: 'PASSED', notes: 'Semua rasm usmani telah sesuai kriteria.' },
+      { result: 'PASSED', notes: 'Semua rasm usmani telah sesuai kriteria.', recap_file_id: '123e4567-e89b-12d3-a456-426614174000' },
       { id: 'pentashih-1', roles: ['PENTASHIH'] }
     );
 
@@ -210,7 +214,7 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
         assignment: {
           findFirst: async () => ({ iteration: 1 }),
           findMany: async () => [
-            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED' }] },
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
             { id: 'a2', status: 'ASSIGNED', reviews: [] }, // Still ongoing
           ],
         },
@@ -228,7 +232,7 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
         assignment: {
           findFirst: async () => ({ iteration: 1 }),
           findMany: async () => [
-            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED' }] },
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
             { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'REVISION_REQUIRED' }] },
           ],
         },
@@ -255,8 +259,8 @@ test('approveDistribution transitions to READY_FOR_STT on PASSED and notifies si
         assignment: {
           findFirst: async () => ({ iteration: 1 }),
           findMany: async () => [
-            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED' }] },
-            { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'PASSED' }] },
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
+            { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'PASSED', recap_file_id: 'file-2' }] },
           ],
         },
         statusHistory: {
@@ -305,7 +309,7 @@ test('approveDistribution transitions to REVISION_REQUIRED and notifies publishe
         assignment: {
           findFirst: async () => ({ iteration: 1 }),
           findMany: async () => [
-            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'REVISION_REQUIRED' }] },
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'REVISION_REQUIRED', recap_file_id: '123e4567-e89b-12d3-a456-426614174000' }] },
           ],
         },
         statusHistory: {
@@ -379,14 +383,14 @@ test('recordReview completes all juz_items in assignment and records recap_file_
 
     const res = await recordReview(
       'assign-range',
-      { result: 'REVISION_REQUIRED', notes: 'Ada koreksi rasm', recap_file_id: 'file-recap-123' },
+      { result: 'REVISION_REQUIRED', notes: 'Ada koreksi rasm', recap_file_id: '123e4567-e89b-12d3-a456-426614174000' },
       { id: 'pentashih-1', roles: ['PENTASHIH'] }
     );
 
     assert.equal(res.id, 'rev-200');
     assert.equal(res.result, 'REVISION_REQUIRED');
-    assert.equal(res.recap_file_id, 'file-recap-123');
-    assert.ok(createdReview.notes.includes('[RECAP_FILE:file-recap-123]'));
+    assert.equal(res.recap_file_id, '123e4567-e89b-12d3-a456-426614174000');
+    assert.equal(createdReview.recap_file_id, '123e4567-e89b-12d3-a456-426614174000');
     assert.equal(updatedJuz.data.result, 'REVISION_REQUIRED');
   } finally {
     prisma.$transaction = originalTx;
@@ -403,7 +407,7 @@ test('approveDistribution creates official REVISION_RETURN_LETTER with round and
         assignment: {
           findFirst: async () => ({ iteration: 1 }),
           findMany: async () => [
-            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'REVISION_REQUIRED' }] },
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'REVISION_REQUIRED', recap_file_id: 'file-1' }] },
           ],
         },
         officialDocument: {

@@ -7,7 +7,7 @@ import * as Auth from '@/features/auth/AuthContext';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
 
-describe('B-01 Sesi 3: Multi-Manuscript & Variants Form (Frontend)', () => {
+describe.skip('B-01 Sesi 3: Multi-Manuscript & Variants Form (Frontend) - Dihapus sesuai arahan Pak Zam', () => {
   beforeEach(() => {
     global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/mock-receipt');
     global.URL.revokeObjectURL = vi.fn();

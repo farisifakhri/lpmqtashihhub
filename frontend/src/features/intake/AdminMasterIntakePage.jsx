@@ -1030,7 +1030,7 @@ export const AdminMasterIntakePage = () => {
                             </span>
                           ) : item.status === 'REVISION_REQUIRED' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
-                              Perbaikan Fisik (Ronde #{item.revision_round || 1})
+                              {item.revision_kind === 'NASKAH_DUMI' ? `Naskah Dumi (Ronde #${item.revision_round || 1})` : `Perbaikan Fisik (Ronde #${item.revision_round || 1})`}
                             </span>
                           ) : item.physical_master_intake?.status === 'RETURNED' ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">

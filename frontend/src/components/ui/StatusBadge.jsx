@@ -63,6 +63,10 @@ export const StatusBadge = ({
       bgClass = 'bg-civic-dangerSoft';
       textClass = 'text-civic-danger';
       borderClass = 'border-civic-dangerLine';
+    } else if (status === 'REVISION_REQUIRED' || vm?.isSlaPaused) {
+      bgClass = 'bg-civic-warningSoft';
+      textClass = 'text-civic-warning font-bold';
+      borderClass = 'border-civic-warningLine';
     } else if (vm.operationalState === 'READY_FOR_PHYSICAL_HANDOVER') {
       bgClass = 'bg-civic-successSoft';
       textClass = 'text-civic-success';
@@ -145,6 +149,11 @@ export const StatusBadge = ({
     >
       {showIcon && renderIcon()}
       <span>{label}</span>
+      {vm?.isSlaPaused && (
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-civic-warningSoft text-civic-warning border border-civic-warningLine ml-1">
+          Di luar SLA
+        </span>
+      )}
     </span>
   );
 };

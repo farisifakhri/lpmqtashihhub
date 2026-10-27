@@ -173,4 +173,38 @@ describe('UnifiedDashboard Component (Role-Based & Harmonized Colors)', () => {
     expect(intakeLink).toBeInTheDocument();
     expect(intakeLink.getAttribute('href')).toContain('/internal/master-intake?search=REG-2026-888');
   });
+
+  it('ADMIN_INTERNAL sees Kirim Pengingat button on REVISION_REQUIRED rows and triggers remindPublisher', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'admin-remind', roles: ['ADMIN_INTERNAL'], role: 'ADMIN_INTERNAL' },
+    });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const remindSpy = vi.spyOn(RegistrationApiModule.registrationApi, 'remindPublisher').mockResolvedValue({
+      message: 'Pengingat berhasil dikirim kepada PT Penerbit Al-Huda.',
+    });
+    RegistrationApiModule.registrationApi.listRegistrations.mockResolvedValue({
+      data: [
+        {
+          id: 'reg-rev-test',
+          registration_no: 'REG-2026-999',
+          title: 'Mushaf Butuh Perbaikan',
+          status: 'REVISION_REQUIRED',
+          created_at: new Date().toISOString(),
+          publisher: { legal_name: 'PT Penerbit Al-Huda' },
+        },
+      ],
+    });
+
+    render(
+      <MemoryRouter>
+        <UnifiedDashboard />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Mushaf Butuh Perbaikan');
+    const remindBtn = screen.getByRole('button', { name: /Kirim Pengingat/i });
+    expect(remindBtn).toBeInTheDocument();
+    fireEvent.click(remindBtn);
+    expect(remindSpy).toHaveBeenCalledWith('reg-rev-test');
+  });
 });
