@@ -112,7 +112,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.ok(load.some(item => item.assignee_id === assignee.id && item.status === 'OVERDUE'));
     await expect(`/registrations/${reg.id}/manuscripts`, pentashih);
     await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: file.id }, 201);
-    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat' }, 409);
+    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: file.id }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Hasil belum lulus' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaikan oleh penerbit' });
   });
