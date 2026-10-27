@@ -27,6 +27,7 @@ import {
     FileSearch,
     PenTool,
     Clock,
+    PanelsTopLeft,
     X,
     Sparkles,
     LogOut,
@@ -257,6 +258,17 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
                             description: "Arsip fisik Posdok-Q & digital",
+                        },
+                    ],
+                },
+                {
+                    title: "TATA KELOLA SISTEM",
+                    items: [
+                        {
+                            label: "Kelola Landing Page",
+                            path: "/internal/landing-page",
+                            icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
+                            description: "Konten dan regulasi landing page",
                         },
                     ],
                 },
@@ -569,6 +581,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/core-teams",
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Roster sembilan tim dan giliran berikutnya",
+                    },
+                    {
+                        label: "Kelola Landing Page",
+                        path: "/internal/landing-page",
+                        icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
+                        description: "Konten dan regulasi landing page",
                     },
                 ],
             },

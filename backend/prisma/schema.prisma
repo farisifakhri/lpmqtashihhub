@@ -52,6 +52,8 @@ model User {
   core_roster_documenter   CoreTeamRoster[] @relation("CoreRosterDocumenter")
   decided_publisher_registrations PublisherRegistration[] @relation("RegistrationDecidedBy")
   publisher_registration   PublisherRegistration?   @relation("RegistrationUserAccount")
+  regulations_created      RegulationDocument[]     @relation("RegulationCreatedBy")
+  regulations_updated      RegulationDocument[]     @relation("RegulationUpdatedBy")
 
   @@map("users")
 }
@@ -1118,4 +1120,28 @@ model DocumentNumberSequence {
   updated_at    DateTime @updatedAt
 
   @@map("document_number_sequences")
+}
+
+model RegulationDocument {
+  id              String   @id @default(uuid())
+  title           String   @db.VarChar(255)
+  category        String   @db.VarChar(100)
+  document_number String   @db.VarChar(100)
+  file_name       String   @db.VarChar(255)
+  storage_path    String   @db.VarChar(500)
+  file_size       Int
+  mime_type       String   @db.VarChar(100)
+  is_published    Boolean  @default(true)
+  created_by_id   String?
+  created_by      User?    @relation("RegulationCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by_id   String?
+  updated_by      User?    @relation("RegulationUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@index([document_number])
+  @@map("regulation_documents")
 }
