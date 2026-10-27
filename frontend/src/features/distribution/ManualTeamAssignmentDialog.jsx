@@ -320,24 +320,24 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
             {selected.length > 0 && (
               <div className="space-y-1.5">
                 {isFull30Juz ? (
-                  <div className="rounded-xl bg-emerald-50 border border-emerald-300 p-3 text-xs text-emerald-900 flex items-center justify-between">
+                  <div className="rounded-xl bg-civic-successSoft border border-civic-successLine p-3 text-xs text-civic-success flex items-center justify-between">
                     <span className="flex items-center gap-1.5 font-bold">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+                      <CheckCircle2 className="h-4 w-4 text-civic-success" />
                       Cakupan Penuh: Seluruh 30 Juz Lengkap Teralokasikan
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-200 text-emerald-950 font-bold">
+                    <span className="px-2.5 py-0.5 rounded-full bg-civic-successSoft text-civic-success font-bold border border-civic-successLine">
                       30/30 Juz
                     </span>
                   </div>
                 ) : (
-                  <div className="rounded-xl bg-amber-50 border border-amber-300 p-3 text-xs text-amber-900 space-y-1">
+                  <div className="rounded-xl bg-civic-warningSoft border border-civic-warningLine p-3 text-xs text-civic-warning space-y-1">
                     <div className="flex items-center justify-between font-bold">
                       <span>Cakupan Juz Belum Lengkap ({uniqueAssignedJuz.length}/30 Juz Terbagi)</span>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-bold">
+                      <span className="px-2 py-0.5 rounded-full bg-civic-warningSoft text-civic-warning font-bold border border-civic-warningLine">
                         {missingJuz.length} Juz Belum Teralokasi
                       </span>
                     </div>
-                    <p className="text-[11px] text-amber-800">
+                    <p className="text-[11px] text-civic-warning">
                       Juz yang belum dipilih: <strong>{missingJuz.join(', ')}</strong>
                     </p>
                   </div>
