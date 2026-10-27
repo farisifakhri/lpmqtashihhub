@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   BookOpen,
+  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
@@ -259,6 +260,23 @@ export function PublisherStatusAlerts({
               Unduh Surat Hasil Tashih
             </button>
           </div>
+          {data.outgoing_tracking_no && (
+            <div className="p-3 bg-white/90 rounded-lg border border-civic-warningLine flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <Truck className="w-4 h-4 text-brand-800 shrink-0" />
+                <span>
+                  Resi Pengembalian Fisik dari LPMQ: <strong className="font-mono text-brand-900">{data.outgoing_tracking_no}</strong> ({data.outgoing_courier || 'Ekspedisi'})
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTabChange('fisik')}
+                className="text-brand-800 hover:underline font-bold text-xs cursor-pointer"
+              >
+                Lihat Detail Pengiriman &rarr;
+              </button>
+            </div>
+          )}
           <div className="p-3 bg-white rounded-lg border border-civic-warningLine/70 text-xs space-y-1">
             <p className="font-semibold text-civic-warning">
               Tenggat Waktu Perbaikan: Mengikuti tanggal yang tercantum pada Surat Pengembalian dan Catatan Hasil Tashih.

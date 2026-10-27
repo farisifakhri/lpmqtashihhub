@@ -43,6 +43,12 @@ export const registrationApi = {
   addManuscript: async (id, payload) => apiClient(`/registrations/${id}/manuscripts`, { method: 'POST', body: payload }),
   declarePhysicalMaster: async (id, payload) => apiClient(`/registrations/${id}/physical-master`, { method: 'PUT', body: payload }),
   dispatchPhysical: async (id, payload) => apiClient(`/registrations/${id}/dispatch-physical`, { method: 'POST', body: payload }),
+  remindPublisher: async (id) => apiClient(`/registrations/${id}/remind-publisher`, { method: 'POST' }),
+  batchRemindPublishers: async (thresholdDays = 7) =>
+    apiClient('/registrations/batch-remind-publishers', {
+      method: 'POST',
+      body: { thresholdDays },
+    }),
   createAssignments: async (id, payload) => apiClient(`/registrations/${id}/assignments`, { method: 'POST', body: payload }),
   deleteRegistration: async (id) => apiClient(`/registrations/${id}`, { method: 'DELETE' }),
     getReceiptPdf: async (id) => {
@@ -66,9 +72,10 @@ export const registrationApi = {
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
-  getShippingLabelPdf: async (id) => {
+  getShippingLabelPdf: async (id, variant) => {
     const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
-    const response = await fetch(`${base}/registrations/${encodeURIComponent(id)}/shipping-label-pdf`, {
+    const qs = variant ? `?variant=${encodeURIComponent(variant)}` : '';
+    const response = await fetch(`${base}/registrations/${encodeURIComponent(id)}/shipping-label-pdf${qs}`, {
       headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!response.ok) {
@@ -76,8 +83,8 @@ export const registrationApi = {
     }
     return response.blob();
   },
-  downloadShippingLabelPdf: async (id, filename = 'Label-Pengiriman.pdf') => {
-    const blob = await registrationApi.getShippingLabelPdf(id);
+  downloadShippingLabelPdf: async (id, filename = 'Label-Pengiriman.pdf', variant) => {
+    const blob = await registrationApi.getShippingLabelPdf(id, variant);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

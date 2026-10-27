@@ -218,6 +218,19 @@ export const listDistributionTeams = async (req, res, next) => {
 };
 
 
+export const listPentashihCandidates = async (req, res, next) => {
+  try {
+    const { search, team_id } = req.query;
+    const candidates = await masterService.getPentashihCandidates({ search, team_id });
+    res.status(200).json({
+      success: true,
+      data: candidates,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const listJenisNaskahItems = async (req, res, next) => {
   try {
     const items = await masterService.listJenisNaskahItems();
@@ -247,5 +260,6 @@ export default {
   updateAddon,
   deleteAddon,
   listDistributionTeams,
+  listPentashihCandidates,
   listJenisNaskahItems,
 };

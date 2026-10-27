@@ -320,6 +320,14 @@ export function getWorkflowViewModel(registration, currentUser) {
     nextActionPath = `/internal/verifications/${assignmentId}?handover=1`;
   }
 
+  const isRevisionWaiting = status === 'REVISION_REQUIRED';
+  const enteredAt = registration.stage_entered_at || registration.updated_at || registration.created_at;
+  const waitingMs = enteredAt ? Date.now() - new Date(enteredAt).getTime() : 0;
+  const waitingDays = Math.max(0, Math.floor(waitingMs / (1000 * 60 * 60 * 24)));
+  const waitingAgeSeverity = waitingDays >= 14 ? 'danger' : (waitingDays >= 7 ? 'warning' : 'normal');
+  const isSlaPaused = isRevisionWaiting;
+  const slaPauseReason = isRevisionWaiting ? 'Di luar hitungan SLA internal LPMQ (menunggu pemohon penerbit)' : null;
+
   const isTashihRev = operationalState === 'TASHIH_REVISION_REQUIRED';
   const effectivePhase = isTashihRev ? 'TASHIH' : def.phase;
   const effectiveStatusLabel = isTashihRev ? 'Perlu Perbaikan Naskah Sidang' : def.statusLabel;
@@ -343,6 +351,10 @@ export function getWorkflowViewModel(registration, currentUser) {
     nextActionLabel: operationalNextAction || def.nextActionLabel,
     nextActionPath,
     dueAt,
+    isSlaPaused,
+    slaPauseReason,
+    waitingDays,
+    waitingAgeSeverity,
     isOverdue,
     blockedReason,
     canUserAct,

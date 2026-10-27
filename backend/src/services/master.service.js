@@ -399,6 +399,82 @@ export const getDistributionTeams = async () => {
 };
 
 
+
+export const getPentashihCandidates = async ({ search, team_id } = {}) => {
+  const where = {
+    status: 'ACTIVE',
+    roles: {
+      some: {
+        role: { code: 'PENTASHIH' },
+      },
+    },
+  };
+
+  if (search && search.trim()) {
+    const q = search.trim();
+    where.OR = [
+      { name: { contains: q } },
+      { nip: { contains: q } },
+      { email: { contains: q } },
+    ];
+  }
+
+  if (team_id) {
+    where.team_memberships = {
+      some: {
+        team_id,
+        status: 'ACTIVE',
+      },
+    };
+  }
+
+  const users = await prisma.user.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      nip: true,
+      email: true,
+      status: true,
+      team_memberships: {
+        where: { status: 'ACTIVE' },
+        select: {
+          role_in_team: true,
+          team: {
+            select: {
+              id: true,
+              name: true,
+              decree_no: true,
+            },
+          },
+        },
+      },
+      assignments: {
+        where: {
+          status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] },
+        },
+        select: { id: true },
+      },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  return users.map(u => ({
+    id: u.id,
+    name: u.name,
+    nip: u.nip,
+    email: u.email,
+    status: u.status,
+    active_assignments_count: u.assignments ? u.assignments.length : 0,
+    teams: (u.team_memberships || []).map(tm => ({
+      id: tm.team.id,
+      name: tm.team.name,
+      decree_no: tm.team.decree_no,
+      role_in_team: tm.role_in_team,
+    })),
+  }));
+};
+
 export const listJenisNaskahItems = async () => {
   return await prisma.jenisNaskahItem.findMany({
     where: { status: 'ACTIVE' },
@@ -423,5 +499,6 @@ export default {
   updateAddon,
   deleteAddon,
   getDistributionTeams,
+  getPentashihCandidates,
   listJenisNaskahItems,
 };

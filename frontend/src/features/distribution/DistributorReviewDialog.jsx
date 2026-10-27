@@ -4,6 +4,7 @@ import { tashihApi } from '@/api/tashih.api';
 import { Button } from '@/components/ui/Button';
 import {
   CheckCircle2,
+  Truck,
   AlertTriangle,
   AlertCircle,
   X,
@@ -35,6 +36,9 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [distributorNotes, setDistributorNotes] = useState('');
   const [revisionKind, setRevisionKind] = useState('NASKAH_PERBAIKAN'); // 'NASKAH_PERBAIKAN' | 'NASKAH_DUMI'
+  const [outgoingCourier, setOutgoingCourier] = useState('');
+  const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
+  const [outgoingNotes, setOutgoingNotes] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -96,6 +100,12 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   }, [registrationId]);
 
   // Evaluasi kelayakan submit
+  const previousRevLetters = React.useMemo(() => {
+    return (registration?.official_documents || [])
+      .filter((doc) => doc.document_type === 'REVISION_RETURN_LETTER')
+      .sort((a, b) => (b.version || 0) - (a.version || 0));
+  }, [registration]);
+
   const currentAssignments = React.useMemo(() => {
     if (!registration?.assignments) return [];
     const maxIter = registration.assignments.reduce((max, a) => Math.max(max, a.iteration || 1), 1);
@@ -110,11 +120,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     a.reviews?.some((r) => r.result === 'REVISION_REQUIRED')
   );
 
+  // B-06: Verifikasi dokumen rekap telaah internal
+  const hasTeamRecap = currentAssignments.some(
+    (a) => Boolean(a.recap_file_id || a.reviews?.[0]?.recap_file_id || a.reviews?.[0]?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i))
+  );
+
   const canPassSTT = allCompleted && !hasRevisionRequested;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!registration || !allCompleted) return;
+    if (!registration || !allCompleted || !hasTeamRecap) return;
 
     if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
@@ -129,6 +144,9 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
         result: decision,
         notes: distributorNotes.trim(),
         revision_kind: decision === 'REVISION_REQUIRED' ? revisionKind : undefined,
+        outgoing_courier: decision === 'REVISION_REQUIRED' && outgoingCourier.trim() ? outgoingCourier.trim() : undefined,
+        outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
+        outgoing_notes: decision === 'REVISION_REQUIRED' && outgoingNotes.trim() ? outgoingNotes.trim() : undefined,
       });
 
       onSuccess?.();
@@ -297,6 +315,42 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 </div>
               )}
 
+              {/* Peringatan jika belum ada dokumen rekap internal (B-06) */}
+              {allCompleted && !hasTeamRecap && (
+                <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
+                  <div>
+                    <strong>Dokumen Rekapan Belum Diunggah:</strong> Seluruh pentashih telah menyelesaikan telaah namun dokumen rekap hasil telaah internal belum diunggah. Sesuai SOP, minimal 1 dokumen rekap kelompok/pentashih wajib diunggah sebelum keputusan distributor dapat disimpan.
+                  </div>
+                </div>
+              )}
+
+              {/* Pembandingan Catatan Sidang Ronde Sebelumnya (B-07) */}
+              {previousRevLetters.length > 0 && (
+                <div className="p-4 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-ink uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
+                      Catatan & Hasil Sidang Ronde Sebelumnya ({previousRevLetters.length} Ronde)
+                    </span>
+                    <span className="text-[11px] text-civic-warning font-medium">Bahan Komparasi Perbaikan</span>
+                  </div>
+                  <div className="space-y-2">
+                    {previousRevLetters.map((doc) => (
+                      <div key={doc.id} className="p-3 bg-white rounded-lg border border-civic-warningLine text-xs space-y-1.5">
+                        <div className="flex items-center justify-between font-semibold text-ink">
+                          <span>Ronde #{doc.content_snapshot?.revision_round || doc.version} • {doc.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'}</span>
+                          <span className="text-[11px] text-ink-muted">{doc.content_snapshot?.distributor_name || 'Distributor'}</span>
+                        </div>
+                        <p className="text-ink font-mono text-[11px] bg-canvas p-2 rounded border border-line whitespace-pre-line">
+                          {doc.content_snapshot?.notes || '-'}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Keputusan Distributor */}
               {allCompleted && (
                 canDecide ? (
@@ -438,6 +492,39 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                               Naskah Dumi dipilih setelah naskah bersih dari kesalahan pada tashih tahap awal atau tahap revisi. Di tahap dumi tetap dilakukan pemeriksaan terakhir. Apabila masih ditemukan kesalahan minor di akhir, naskah tidak perlu dikembalikan dalam siklus baru ke penerbit, melainkan diterbitkan notice catatan kesalahan.
                             </p>
                           </div>
+
+                          {/* Resi Keluar Pengembalian Naskah ke Penerbit (B-07) */}
+                          <div className="p-3.5 rounded-lg bg-white border border-civic-warningLine/70 space-y-2.5">
+                            <div className="flex items-center gap-1.5 font-bold text-xs text-ink">
+                              <Truck className="w-3.5 h-3.5 text-brand-800" />
+                              <span>Pencatatan Resi Keluar ke Penerbit (Opsional)</span>
+                            </div>
+                            <p className="text-[11px] text-ink-muted">
+                              Catat kurir dan nomor resi pengiriman naskah fisik kembali ke penerbit.
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <label className="block text-[11px] font-semibold text-ink mb-1">Kurir / Ekspedisi</label>
+                                <input
+                                  type="text"
+                                  value={outgoingCourier}
+                                  onChange={(e) => setOutgoingCourier(e.target.value)}
+                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Loket"
+                                  className="w-full rounded-lg border border-line p-2 text-xs bg-canvas"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[11px] font-semibold text-ink mb-1">Nomor Resi Keluar</label>
+                                <input
+                                  type="text"
+                                  value={outgoingTrackingNo}
+                                  onChange={(e) => setOutgoingTrackingNo(e.target.value)}
+                                  placeholder="Nomor resi bukti kirim"
+                                  className="w-full rounded-lg border border-line p-2 text-xs bg-canvas font-mono"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -498,7 +585,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={submitting || !allCompleted || !distributorNotes.trim()}
+                disabled={submitting || !allCompleted || !hasTeamRecap || !distributorNotes.trim()}
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >

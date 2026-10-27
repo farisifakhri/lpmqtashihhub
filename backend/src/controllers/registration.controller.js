@@ -152,7 +152,8 @@ export const downloadReceiptPdf = async (req, res, next) => {
 export const downloadShippingLabelPdf = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { buffer, filename } = await registrationService.generateShippingLabelPdf(id, req.user);
+    const { variant } = req.query;
+    const { buffer, filename } = await registrationService.generateShippingLabelPdf(id, req.user, { variant });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', buffer.length);

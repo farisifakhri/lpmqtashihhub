@@ -45,6 +45,7 @@ describe('PentashihWorkspacePage Component', () => {
         name: 'Tim Pentashih Al-Fatihah',
         decree_no: 'SK-2026-01',
       },
+      recap_file_id: 'recap-uuid-1',
       reviews: [],
     },
     {

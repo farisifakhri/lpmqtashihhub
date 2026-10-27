@@ -388,6 +388,10 @@ model Registration {
   dispatch_tracking_no     String?
   dispatch_courier         String?
   dispatch_date            DateTime?
+  outgoing_courier         String?
+  outgoing_tracking_no     String?
+  outgoing_dispatch_date   DateTime?
+  outgoing_notes           String?                  @db.Text
   external_sync_status     String                   @default("PENDING") // PENDING, SYNCED, FAILED
   external_sync_id         String?
   external_synced_at       DateTime?
@@ -769,15 +773,17 @@ model AssignmentJuz {
 }
 
 model TashihReview {
-  id            String     @id @default(uuid())
+  id            String       @id @default(uuid())
   assignment_id String
-  result ReviewResult     // PASSED, REVISION_REQUIRED, REJECTED
+  result        ReviewResult // PASSED, REVISION_REQUIRED, REJECTED
   notes         String?
-  completed_at  DateTime   @default(now())
+  recap_file_id String?
+  completed_at  DateTime     @default(now())
 
   // Relations
-  assignment    Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
+  assignment    Assignment   @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
 
+  @@index([recap_file_id])
   @@map("tashih_reviews")
 }
 

@@ -2077,7 +2077,7 @@ export const generateReceiptPdf = async (id, user) => {
   return { buffer, filename };
 };
 
-export const generateShippingLabelPdf = async (id, user) => {
+export const generateShippingLabelPdf = async (id, user, options = {}) => {
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: {
@@ -2126,9 +2126,19 @@ export const generateShippingLabelPdf = async (id, user) => {
     // Non-blocking metadata recording
   }
 
-  const buffer = await renderShippingLabelPdf(reg);
+  const lastRevLetter = await prisma.officialDocument.findFirst({
+    where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
+    orderBy: { created_at: 'desc' },
+  });
+  const revisionKind = lastRevLetter?.content_snapshot?.revision_kind || reg.revision_kind;
+  const revisionRound = lastRevLetter?.content_snapshot?.revision_round || reg.revision_round || (lastRevLetter ? 1 : 0);
+  const detectedVariant = (options.variant || (revisionKind === 'NASKAH_DUMI' ? 'dumi' : (reg.status === 'REVISION_REQUIRED' || lastRevLetter ? 'perbaikan' : 'perdana'))).toString().toLowerCase();
+
+  const buffer = await renderShippingLabelPdf(reg, { ...options, variant: detectedVariant, revisionRound, revisionKind });
   const safeRegNo = (reg.registration_no || id).replace(/[^a-zA-Z0-9_-]/g, '-');
-  const filename = `Label-Pengiriman-${safeRegNo}.pdf`;
+  const variantPrefix = detectedVariant === 'dumi' ? 'Label-Pengiriman-Dumi' : (detectedVariant === 'perbaikan' ? 'Label-Pengiriman-Perbaikan' : 'Label-Pengiriman');
+  const roundSuffix = (detectedVariant === 'dumi' || detectedVariant === 'perbaikan') && revisionRound ? `-R${revisionRound}` : '';
+  const filename = `${variantPrefix}-${safeRegNo}${roundSuffix}.pdf`;
 
   return { buffer, filename };
 };
