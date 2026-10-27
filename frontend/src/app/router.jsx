@@ -46,6 +46,8 @@ const ForbiddenPage = withSuspense(lazy(() => import('@/features/errors/Forbidde
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/public/CheckRegistrationStatusPage').then(m => ({ default: m.CheckRegistrationStatusPage }))));
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
+const RegulationInfoPage = withSuspense(lazy(() => import('@/features/information/RegulationInfoPage').then(m => ({ default: m.RegulationInfoPage }))));
+const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 
 const router = createBrowserRouter([
   // Rute Publik (Landing Page)
@@ -56,6 +58,10 @@ const router = createBrowserRouter([
   {
     path: '/landing',
     element: <LandingPage />,
+  },
+  {
+    path: '/informasi/regulasi-penerbit-mushaf',
+    element: <RegulationInfoPage />,
   },
   // Rute Autentikasi Mandiri
   {
@@ -249,6 +255,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
             <ContentConfiguration />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/landing-page',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
+            <LandingPageManagementPage />
           </ProtectedRoute>
         ),
       },

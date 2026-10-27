@@ -13,6 +13,7 @@ import userRoutes from './user.routes.js';
 import coreTeamRoutes from './core-team.routes.js';
 import lpmqQuranRoutes from './lpmq-quran.routes.js';
 import publisherRegistrationRoutes from './publisher-registration.routes.js';
+import regulationRoutes from './regulation.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -77,6 +78,7 @@ router.use('/users', userRoutes);
 router.use('/core-teams', coreTeamRoutes);
 router.use(lpmqQuranRoutes);
 router.use(publisherRegistrationRoutes);
+router.use(regulationRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 
