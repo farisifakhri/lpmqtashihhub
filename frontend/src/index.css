@@ -350,3 +350,205 @@ form:focus-within {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* ==========================================================================
+   Comprehensive Dark Mode Palette Support (LPMQ Deep Forest Theme)
+   ========================================================================== */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: var(--canvas) !important;
+  color: var(--ink) !important;
+}
+
+/* Transformasi kartu, panel, dan dropdown yang memiliki kelas hardcoded bg-white */
+html.dark .bg-white,
+html.dark .bg-white\/95,
+html.dark .bg-white\/90,
+html.dark .bg-white\/80,
+html.dark .bg-white\/70,
+html.dark [role="dialog"],
+html.dark .fixed > div.bg-white {
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
+}
+
+html.dark .hover\:bg-white:hover {
+  background-color: var(--surface-strong) !important;
+}
+
+html.dark .focus\:bg-white:focus {
+  background-color: var(--surface) !important;
+}
+
+/* Transformasi latar belakang abu-abu dan pastel terang */
+html.dark .bg-gray-50,
+html.dark .bg-slate-50,
+html.dark .bg-stone-50,
+html.dark .bg-zinc-50,
+html.dark .bg-neutral-50,
+html.dark .bg-emerald-50,
+html.dark .bg-teal-50,
+html.dark .bg-green-50,
+html.dark .bg-sky-50,
+html.dark .bg-blue-50,
+html.dark .bg-amber-50,
+html.dark .bg-yellow-50,
+html.dark .bg-red-50,
+html.dark .bg-rose-50,
+html.dark .bg-indigo-50,
+html.dark .bg-purple-50 {
+  background-color: var(--surface-subtle) !important;
+}
+
+html.dark .bg-gray-100,
+html.dark .bg-slate-100,
+html.dark .bg-zinc-100,
+html.dark .bg-stone-100,
+html.dark .bg-neutral-100,
+html.dark .bg-emerald-100,
+html.dark .bg-teal-100,
+html.dark .bg-green-100,
+html.dark .bg-sky-100,
+html.dark .bg-blue-100,
+html.dark .bg-amber-100,
+html.dark .bg-yellow-100,
+html.dark .bg-red-100,
+html.dark .bg-indigo-100,
+html.dark .bg-purple-100 {
+  background-color: var(--surface-strong) !important;
+}
+
+/* Badge brand 50 & 100 di mode gelap */
+html.dark .bg-brand-50 {
+  background-color: #142a1b !important;
+  color: #d5e693 !important;
+  border-color: #244630 !important;
+}
+
+html.dark .bg-brand-100 {
+  background-color: #1e3f2b !important;
+  color: #ECF39E !important;
+  border-color: #2e593d !important;
+}
+
+html.dark .text-brand-900,
+html.dark .text-brand-800,
+html.dark .text-brand-950 {
+  color: #d5e693 !important;
+}
+
+html.dark .border-brand-100,
+html.dark .border-brand-200 {
+  border-color: #2e4a40 !important;
+}
+
+/* Semantic Soft Badges & Alerts di Mode Gelap */
+html.dark .bg-civic-infoSoft {
+  background-color: rgba(30, 64, 120, 0.35) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+html.dark .bg-civic-warningSoft {
+  background-color: rgba(120, 75, 15, 0.35) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+html.dark .bg-civic-dangerSoft {
+  background-color: rgba(125, 35, 45, 0.35) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(251, 113, 133, 0.3) !important;
+}
+
+html.dark .bg-civic-successSoft {
+  background-color: rgba(22, 84, 62, 0.35) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+/* Teks badge terang pada mode gelap agar kontras WCAG terpenuhi */
+html.dark .text-emerald-900, html.dark .text-emerald-800 { color: #6ee7b7 !important; }
+html.dark .text-teal-900, html.dark .text-teal-800 { color: #5eead4 !important; }
+html.dark .text-sky-900, html.dark .text-sky-800 { color: #7dd3fc !important; }
+html.dark .text-blue-900, html.dark .text-blue-800 { color: #93c5fd !important; }
+html.dark .text-amber-900, html.dark .text-amber-800 { color: #fcd34d !important; }
+html.dark .text-yellow-900, html.dark .text-yellow-800 { color: #fde047 !important; }
+html.dark .text-indigo-900, html.dark .text-indigo-800 { color: #a5b4fc !important; }
+html.dark .text-purple-900, html.dark .text-purple-800 { color: #d8b4fe !important; }
+html.dark .text-red-900, html.dark .text-red-800, html.dark .text-rose-900 { color: #fca5a5 !important; }
+html.dark .text-gray-900, html.dark .text-slate-900, html.dark .text-zinc-900 { color: var(--ink) !important; }
+
+/* Garis pembatas (border) */
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-zinc-100,
+html.dark .border-zinc-200,
+html.dark .border-line,
+html.dark .border-line\/60,
+html.dark .border-line\/70,
+html.dark .border-line\/80,
+html.dark .border-line\/90 {
+  border-color: var(--line) !important;
+}
+
+/* Formulir: Input, Select, Textarea */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="submit"]):not([type="button"]),
+html.dark select,
+html.dark textarea {
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--ink-muted) !important;
+}
+
+/* Tabel dan Rekap Data */
+html.dark table {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+html.dark thead,
+html.dark thead tr {
+  background-color: var(--surface-subtle) !important;
+}
+
+html.dark thead th {
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+html.dark tbody tr {
+  border-color: var(--line) !important;
+}
+
+html.dark tbody tr:hover,
+html.dark tbody tr.hover\:bg-canvas:hover,
+html.dark tbody tr.hover\:bg-surface-subtle:hover,
+html.dark tbody tr.hover\:bg-brand-50\/40:hover {
+  background-color: var(--surface-subtle) !important;
+}
+
+/* Tab / Segmented Control aktif yang menggunakan bg-white */
+html.dark .bg-white.text-brand-900,
+html.dark .bg-white.text-brand-800,
+html.dark .shadow-2xs.bg-white,
+html.dark .shadow-xs.bg-white,
+html.dark .bg-surface-subtle button.bg-white,
+html.dark .bg-surface-subtle a.bg-white,
+html.dark div[class*="bg-surface-subtle"] button[class*="bg-white"],
+html.dark div[class*="bg-surface-subtle"] a[class*="bg-white"] {
+  background-color: var(--surface-strong) !important;
+  color: #ECF39E !important;
+}

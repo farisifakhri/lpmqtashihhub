@@ -168,13 +168,15 @@ export const VerifikatorInboxPage = () => {
   };
 
   useEffect(() => {
-    const tabFromUrl = normalizeTab(searchParams.get('tab'));
-    if (tabFromUrl && tabFromUrl !== activeTab) {
-      setActiveTab(tabFromUrl);
+    const rawTab = searchParams.get('tab');
+    const tabFromUrl = normalizeTab(rawTab);
+    const targetTab = tabFromUrl || defaultTab;
+    if (targetTab && targetTab !== activeTab) {
+      setActiveTab(targetTab);
       setPagination((p) => ({ ...p, page: 1 }));
       setSelectedId(null);
     }
-  }, [searchParams]);
+  }, [searchParams, defaultTab]);
 
   useEffect(() => {
     fetchAssignments();
@@ -308,20 +310,72 @@ export const VerifikatorInboxPage = () => {
     };
   }, [selectedAssignment, isAssignmentAdmin, activeTab]);
 
+  const getHeaderInfo = () => {
+    if (activeTab === 'NEED_ASSIGNMENT') {
+      return {
+        label: 'Penugasan Verifikator',
+        title: 'Penugasan Verifikator Berkas',
+        subtitle: 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima di loket.',
+      };
+    }
+    if (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS') {
+      return {
+        label: 'Pemeriksaan Berkas',
+        title: isAssignmentAdmin ? 'Antrean Verifikasi Berkas (Pemeriksaan Rasm)' : 'Antrean Verifikasi Berkas',
+        subtitle: isAssignmentAdmin
+          ? 'Pemeriksaan administratif kelengkapan, rasm Usmani standar, tanda waqaf, dan pedoman Kementerian Agama.'
+          : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.',
+      };
+    }
+    if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
+      return {
+        label: isHead ? 'Persetujuan Verifikasi' : 'Hasil Verifikasi',
+        title: isHead ? 'Persetujuan Hasil Verifikasi oleh Kepala LPMQ' : 'Penelaahan Hasil Verifikasi Berkas',
+        subtitle: isHead ? 'Telaah dan pengesahan surat hasil verifikasi berkas oleh Kepala LPMQ.' : 'Daftar draf berita acara pemeriksaan berkas untuk ditelaah dan diteruskan pengesahannya.',
+      };
+    }
+    if (activeTab === 'WAITING_SIGNATURE') {
+      return {
+        label: 'Konfirmasi Internal',
+        title: 'Konfirmasi Penandatanganan Dokumen',
+        subtitle: 'Draf telah disetujui, konfirmasi Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
+      };
+    }
+    if (activeTab === 'READY_TO_SEND') {
+      return {
+        label: 'Siap Kirim',
+        title: 'Dokumen Siap Dikirim ke Penerbit',
+        subtitle: 'Seluruh konfirmasi internal lengkap dan surat hasil siap dikirimkan kepada pemohon penerbit.',
+      };
+    }
+    if (activeTab === 'BAST_READY') {
+      return {
+        label: 'Siap Serah Terima',
+        title: 'Siap Serah Terima Fisik Master (BAST)',
+        subtitle: 'Pembayaran PNBP telah sah, terbitkan Berita Acara Serah Terima master fisik naskah mushaf.',
+      };
+    }
+    return {
+      label: isAssignmentAdmin ? 'Penugasan Verifikator' : (isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi'),
+      title: isAssignmentAdmin ? 'Penugasan Verifikator oleh Helper Admin' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas'),
+      subtitle: isAssignmentAdmin
+        ? 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima.'
+        : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.',
+    };
+  };
+
+  const headerInfo = getHeaderInfo();
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Formal Institutional Header */}
       <PageHeader
         breadcrumbs={[
           { label: 'Aplikasi Internal', path: '/internal' },
-          { label: isAssignmentAdmin ? 'Penugasan Verifikator' : (isHead ? 'Persetujuan Verifikasi' : 'Antrean Verifikasi') },
+          { label: headerInfo.label },
         ]}
-        title={isAssignmentAdmin ? 'Penugasan Verifikator oleh Helper Admin' : (isHead ? 'Persetujuan Hasil Verifikasi' : 'Antrean Verifikasi Berkas')}
-        subtitle={
-          isAssignmentAdmin
-            ? 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima.'
-            : isHead ? 'Telaah dan pengesahan surat hasil verifikasi oleh Kepala LPMQ.' : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.'
-        }
+        title={headerInfo.title}
+        subtitle={headerInfo.subtitle}
         actions={
           <Button
             variant="outline"
@@ -410,6 +464,18 @@ export const VerifikatorInboxPage = () => {
                           Perlu Penugasan
                         </button>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => handleTabChange('ASSIGNED')}
+                          className={clsx(
+                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
+                            (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS')
+                              ? 'bg-white text-brand-900 shadow-2xs'
+                              : 'text-ink-muted hover:text-ink'
+                          )}
+                        >
+                          Pemeriksaan Berkas
+                        </button>
                         <button
                           type="button"
                           onClick={() => handleTabChange('WAITING_APPROVAL')}

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { tashihApi } from '@/api/tashih.api';
 import { ReviewForm } from './components/ReviewForm';
@@ -15,9 +16,29 @@ import {
 
 export const PentashihWorkspacePage = () => {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab] = useState('ACTIVE'); // 'ACTIVE' | 'COMPLETED'
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawUrlTab = searchParams.get('tab');
+  const initialTab = rawUrlTab === 'REVISION' ? 'REVISION' : (rawUrlTab === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE');
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [page, setPage] = useState(1);
-  const { assignments, hasMore, loading, error, fetchAssignments } = useAssignments(activeTab, page);
+
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl === 'REVISION' && activeTab !== 'REVISION') {
+      setActiveTab('REVISION');
+      setPage(1);
+    } else if (tabFromUrl === 'COMPLETED' && activeTab !== 'COMPLETED') {
+      setActiveTab('COMPLETED');
+      setPage(1);
+    } else if (!tabFromUrl && activeTab !== 'ACTIVE') {
+      setActiveTab('ACTIVE');
+      setPage(1);
+    }
+  }, [searchParams]);
+
+  // Request ACTIVE assignments from backend if tab is ACTIVE or REVISION, otherwise COMPLETED
+  const backendStatus = activeTab === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE';
+  const { assignments, hasMore, loading, error, fetchAssignments } = useAssignments(backendStatus, page);
   const [searchQuery, setSearchQuery] = useState('');
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -30,33 +51,71 @@ export const PentashihWorkspacePage = () => {
   const [modalError, setModalError] = useState(null);
   const [recapFileId, setRecapFileId] = useState(null);
 
+  const isRevisionItem = (item) => {
+    const regStage = item.registration?.stage || '';
+    const itemStage = item.stage || '';
+    const itemStatus = item.status || '';
+    const hasRevisionDocs = Array.isArray(item.registration?.official_documents) && item.registration.official_documents.length > 0;
+    return (
+      itemStage === 'REVISION' ||
+      itemStage === 'DUMMY' ||
+      itemStatus === 'REVISION' ||
+      regStage.includes('REVISION') ||
+      regStage.includes('DUMMY') ||
+      hasRevisionDocs
+    );
+  };
+
+  const initialActiveAssignments = useMemo(() => {
+    return assignments.filter((a) => {
+      const isDone = a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0);
+      return !isDone && !isRevisionItem(a);
+    });
+  }, [assignments]);
+
+  const revisionAssignments = useMemo(() => {
+    return assignments.filter((a) => {
+      const isDone = a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0);
+      return !isDone && isRevisionItem(a);
+    });
+  }, [assignments]);
+
+  const completedAssignments = useMemo(() => {
+    return assignments.filter((a) => a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0));
+  }, [assignments]);
+
   const filteredAssignments = useMemo(() => {
-    return assignments.filter((item) => {
-      const isDone = item.status === 'COMPLETED' || (item.reviews && item.reviews.length > 0);
-      const matchesTab = activeTab === 'ACTIVE' ? !isDone : isDone;
+    let source = initialActiveAssignments;
+    if (activeTab === 'REVISION') {
+      source = revisionAssignments;
+    } else if (activeTab === 'COMPLETED') {
+      source = completedAssignments;
+    }
 
-      if (!matchesTab) return false;
-
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
+    if (!searchQuery.trim()) return source;
+    const q = searchQuery.toLowerCase();
+    return source.filter((item) => {
       const regNo = item.registration?.registration_no?.toLowerCase() || '';
       const title = item.registration?.title?.toLowerCase() || '';
       const publisher = item.registration?.publisher?.legal_name?.toLowerCase() || '';
       return regNo.includes(q) || title.includes(q) || publisher.includes(q);
     });
-  }, [assignments, activeTab, searchQuery]);
+  }, [initialActiveAssignments, revisionAssignments, completedAssignments, activeTab, searchQuery]);
 
-  const activeCount = useMemo(() => {
-    return assignments.filter(
-      (a) => a.status !== 'COMPLETED' && (!a.reviews || a.reviews.length === 0)
-    ).length;
-  }, [assignments]);
+  const initialCount = initialActiveAssignments.length;
+  const revisionCount = revisionAssignments.length;
+  const activeCount = initialCount + revisionCount;
+  const completedCount = completedAssignments.length;
 
-  const completedCount = useMemo(() => {
-    return assignments.filter(
-      (a) => a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0)
-    ).length;
-  }, [assignments]);
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setPage(1);
+    if (tab === 'ACTIVE') {
+      setSearchParams({});
+    } else {
+      setSearchParams({ tab });
+    }
+  };
 
   const handleJuzSaved = updated => {
     setSelectedAssignment(previous => {
@@ -162,8 +221,16 @@ export const PentashihWorkspacePage = () => {
     <div className="space-y-6">
       {/* 1. Header Halaman */}
       <PageHeader
-        title="Ruang Sidang Pentashihan Mushaf"
-        subtitle="Checklist hasil tashih per juz untuk naskah yang ditugaskan Distributor"
+        title={
+          activeTab === 'REVISION'
+            ? 'Ruang Sidang Pentashihan Mushaf (Revisi & Dumi)'
+            : (activeTab === 'COMPLETED' ? 'Ruang Sidang Pentashihan Mushaf (Riwayat Selesai)' : 'Ruang Sidang Pentashihan Mushaf (Awal)')
+        }
+        subtitle={
+          activeTab === 'REVISION'
+            ? 'Pemeriksaan perbaikan naskah sesuai catatan sidang dan telaah contoh cetak (dumi) dari penerbit'
+            : (activeTab === 'COMPLETED' ? 'Daftar penugasan sidang pentashihan mushaf yang telah selesai diputuskan' : 'Checklist koreksi lafazh dan harakat per juz untuk naskah yang ditugaskan Distributor')
+        }
         icon={<BookOpen className="w-6 h-6 text-brand-700" />}
         action={
           <Button
@@ -196,11 +263,14 @@ export const PentashihWorkspacePage = () => {
 
       <AssignmentListPanel
         activeCount={activeCount}
+        initialCount={initialCount}
+        revisionCount={revisionCount}
         completedCount={completedCount}
         currentUser={currentUser}
         page={page}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        onTabChange={handleTabChange}
         setPage={setPage}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}

@@ -225,36 +225,48 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "4. Verifikasi Berkas",
-                            path: "/internal/verifications",
+                            path: "/internal/verifications?tab=ASSIGNED",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan rasm, waqaf & kelengkapan",
                         },
                         {
-                            label: "5. Pembayaran PNBP",
+                            label: "5. Hasil Verifikasi",
+                            path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            icon: <FileSearch className="w-4 h-4 shrink-0" />,
+                            description: "Telaah draf berita acara & penetapan",
+                        },
+                        {
+                            label: "6. Pembayaran PNBP",
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & validasi bayar",
                         },
                         {
-                            label: "6. Distribusi Sidang",
+                            label: "7. Distribusi Sidang",
                             path: "/internal/distributions",
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Pembagian tim & serah-terima naskah",
                         },
                         {
-                            label: "7. Sidang Pentashihan",
-                            path: "/internal/tashih",
+                            label: "8. Sidang Pentashihan (Awal)",
+                            path: "/internal/tashih?tab=ACTIVE",
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh & harakat Juz 1-30",
                         },
                         {
-                            label: "8. Pengesahan & STT",
+                            label: "9. Tashih Revisi & Dumi",
+                            path: "/internal/tashih?tab=REVISION",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Telaah perbaikan & contoh cetak dumi",
+                        },
+                        {
+                            label: "10. Pengesahan & STT",
                             path: "/internal/documents",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Berita acara & Surat Tanda Tashih",
                         },
                         {
-                            label: "9. Pengarsipan Naskah",
+                            label: "11. Pengarsipan Naskah",
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
                             description: "Arsip fisik Posdok-Q & digital",
@@ -513,7 +525,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     },
                     {
                         label: "4. Verifikasi Berkas",
-                        path: "/internal/verifications",
+                        path: "/internal/verifications?tab=ASSIGNED",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Pemeriksaan kelengkapan, rasm & waqaf",
                     },
@@ -537,7 +549,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     },
                     {
                         label: "8. Sidang Pentashihan (Awal)",
-                        path: "/internal/tashih",
+                        path: "/internal/tashih?tab=ACTIVE",
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
                         description: "Koreksi lafazh & harakat Juz 1-30",
                     },
@@ -606,29 +618,42 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     const navSections = getNavSections();
     const isCurrentItem = (item, isActive) => {
-        if (!item.path.includes("?")) {
-            if (isActive && location.search) {
-                const searchParams = new URLSearchParams(location.search);
-                if (item.path === "/internal/verifications" && (searchParams.get("tab") === "NEED_ASSIGNMENT" || searchParams.get("tab") === "WAITING_APPROVAL")) {
-                    return false;
-                }
-                if (item.path === "/internal/tashih" && searchParams.get("tab") === "REVISION") {
-                    return false;
-                }
-            }
-            return isActive;
-        }
-
         const [itemBase, itemQuery] = item.path.split("?");
         if (location.pathname !== itemBase) return false;
 
-        const targetParams = new URLSearchParams(itemQuery);
         const currentParams = new URLSearchParams(location.search);
 
-        for (const [key, val] of targetParams.entries()) {
-            if (currentParams.get(key) !== val) return false;
+        // Kasus khusus untuk modul Verifikasi
+        if (itemBase === "/internal/verifications") {
+            const currentTab = currentParams.get("tab") || "NEED_ASSIGNMENT";
+            const targetParams = new URLSearchParams(itemQuery || "");
+            const targetTab = targetParams.get("tab") || "NEED_ASSIGNMENT";
+            return currentTab === targetTab;
         }
-        return true;
+
+        // Kasus khusus untuk modul Sidang Pentashihan
+        if (itemBase === "/internal/tashih") {
+            const currentTab = currentParams.get("tab") || "ACTIVE";
+            const targetParams = new URLSearchParams(itemQuery || "");
+            const targetTab = targetParams.get("tab") || "ACTIVE";
+            return currentTab === targetTab;
+        }
+
+        // Kasus umum jika item memiliki query param
+        if (itemQuery) {
+            const targetParams = new URLSearchParams(itemQuery);
+            for (const [key, val] of targetParams.entries()) {
+                if (currentParams.get(key) !== val) return false;
+            }
+            return true;
+        }
+
+        // Jika item tidak memiliki query param tapi halaman saat ini memiliki query param
+        if (location.search) {
+            return false;
+        }
+
+        return isActive;
     };
 
     return (
