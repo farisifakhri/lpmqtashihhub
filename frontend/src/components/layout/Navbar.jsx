@@ -37,6 +37,8 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { avatarId, setAvatarId } = useAvatar();
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
@@ -65,6 +67,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setProfileDropdownOpen(false);
       }
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
+        setRoleDropdownOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -73,6 +78,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   // Close dropdown on route change
   useEffect(() => {
     setProfileDropdownOpen(false);
+    setRoleDropdownOpen(false);
   }, [location.pathname]);
 
   const role = currentUser?.role || '';
@@ -280,6 +286,71 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
               {/* Mode Tema Gelap / Terang */}
               <Switcher />
+
+              {/* Quick Role Switcher Dropdown (Multi-Role Support) */}
+              {currentUser?.roles && currentUser.roles.length > 1 && (
+                <div className="relative" ref={roleDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setRoleDropdownOpen((prev) => !prev)}
+                    className="flex items-center gap-1.5 h-10 px-3 rounded-xl border border-brand-200 dark:border-[#1e3d2e] bg-brand-50/80 hover:bg-brand-100/90 dark:bg-[#152e20] dark:hover:bg-[#1a3827] text-brand-900 dark:text-emerald-300 text-xs font-bold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+                    aria-expanded={roleDropdownOpen}
+                    aria-haspopup="true"
+                    aria-label="Pilih Peran Pengguna Aktif"
+                    title="Klik untuk berpindah peran aktif"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-brand-700 dark:text-emerald-400 shrink-0" />
+                    <span className="hidden sm:inline truncate max-w-[130px]">{roleConfig.label}</span>
+                    <span className="sm:hidden text-[11px] font-extrabold">{currentUser.roles.length} Peran</span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 text-brand-700 dark:text-emerald-400 transition-transform duration-200 ${
+                        roleDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {roleDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-surface dark:bg-[#0f2017] rounded-xl shadow-xl border border-line dark:border-[#1e3d2e] py-1.5 z-50 animate-slideUp">
+                      <div className="px-3.5 py-2 border-b border-line dark:border-[#1e3d2e] text-[10px] font-extrabold uppercase tracking-wider text-ink-muted dark:text-emerald-400">
+                        Pilih Peran Aktif ({currentUser.roles.length} Peran)
+                      </div>
+                      <div className="p-1.5 space-y-1">
+                        {currentUser.roles.map((rCode) => {
+                          const config = getRoleConfig(rCode);
+                          const isActive = rCode === role;
+                          return (
+                            <button
+                              key={rCode}
+                              type="button"
+                              onClick={() => {
+                                switchActiveRole(rCode);
+                                setRoleDropdownOpen(false);
+                                if (rCode === 'PENERBIT' && !location.pathname.startsWith('/publisher')) {
+                                  navigate('/publisher');
+                                } else if (rCode !== 'PENERBIT' && location.pathname.startsWith('/publisher')) {
+                                  navigate('/internal');
+                                }
+                              }}
+                              className={clsx(
+                                "w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                                isActive
+                                  ? "bg-brand-700 text-white shadow-2xs font-bold"
+                                  : "text-ink dark:text-gray-200 hover:bg-brand-50/70 dark:hover:bg-[#1a3827]"
+                              )}
+                            >
+                              <div className="flex items-center gap-2 truncate">
+                                <ShieldCheck className={clsx("w-3.5 h-3.5 shrink-0", isActive ? "text-white" : "text-brand-700 dark:text-emerald-400")} />
+                                <span className="truncate">{config.label}</span>
+                              </div>
+                              {isActive && <Check className="w-3.5 h-3.5 shrink-0 ml-1" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Profile Menu Dropdown */}
               {currentUser && (

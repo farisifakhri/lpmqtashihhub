@@ -123,10 +123,12 @@ export const PentashihWorkspacePage = () => {
       const newItems = previous.juz_items?.map(item => item.id === updated.id ? updated : item) || [];
       const allDone = newItems.length > 0 && newItems.every(i => i.result);
       if (allDone) {
-        setSuccessMessage(`Seluruh ${newItems.length} juz penugasan selesai diperiksa dan hasil sidang berhasil dicatat.`);
-        setReviewModalOpen(false);
+        setSuccessMessage(`Seluruh ${newItems.length} juz penugasan selesai diperiksa. Harap unggah berkas rekapan telaah dan kirim hasil telaah untuk menyelesaikan tugas.`);
         fetchAssignments();
-        return null;
+        setTimeout(() => {
+          openReviewModal({ ...previous, juz_items: newItems });
+        }, 100);
+        return { ...previous, juz_items: newItems };
       }
       return { ...previous, juz_items: newItems };
     });

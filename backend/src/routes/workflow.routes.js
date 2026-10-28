@@ -108,7 +108,7 @@ router.get('/uploads/:id', authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'P
     const { file, bytes } = await readPrivateFile(req.params.id, req.user);
     res.set({
       'Content-Type': file.mime_type,
-      'Content-Disposition': `attachment; filename="${file.id}"`,
+      'Content-Disposition': `inline; filename="${file.id}"`,
       'X-Content-Type-Options': 'nosniff',
       'Cache-Control': 'private, no-store',
     });

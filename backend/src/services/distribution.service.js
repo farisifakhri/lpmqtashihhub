@@ -121,8 +121,8 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
 
   const assignments = [];
   for (const { assignee_id, juz_numbers } of entries) {
-    let resolvedTeamId = team ? team.id : null;
-    if (!resolvedTeamId) {
+    let resolvedTeamId = data.is_individual ? null : (team ? team.id : null);
+    if (!data.is_individual && !resolvedTeamId) {
       const memberMembership = await tx.teamMember.findFirst({
         where: { user_id: assignee_id, status: 'ACTIVE', team: { status: 'ACTIVE' } },
         select: { team_id: true },
@@ -167,14 +167,13 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   const initial = await tx.assignment.findUnique({ where: { id } });
   if (!initial) fail(404, 'Penugasan tidak ditemukan.');
   const reg = await registration(tx, initial.registration_id);
-  requireStatus(reg, ['TASHIH_IN_PROGRESS']);
+  requireStatus(reg, ['TASHIH_IN_PROGRESS', 'REVISION_REQUIRED']);
   const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true, juz_items: true } });
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
-  if (assignment.status === 'COMPLETED' || assignment.reviews.length) fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
 
-  // Validasi berkas rekapan internal (B-06)
+  // Validasi berkas rekapan internal wajib diunggah (B-06 / Item 8)
   if (!data.recap_file_id) {
-    fail(400, 'Dokumen rekap hasil telaah internal wajib diunggah.');
+    fail(400, 'Dokumen rekap hasil telaah internal wajib diunggah sebelum menyelesaikan tugas.');
   }
   const recapFile = await tx.storedFile.findUnique({ where: { id: data.recap_file_id } });
   if (!recapFile) {
@@ -190,6 +189,22 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
         completed_at: new Date(),
       },
     });
+  }
+
+  if (assignment.reviews.length > 0) {
+    // Perbarui review yang sudah ada (dukung upload berkas telaah setelah naskah dikembalikan - Item 10)
+    const existingReview = assignment.reviews[0];
+    const updatedReview = await tx.tashihReview.update({
+      where: { id: existingReview.id },
+      data: {
+        result: data.result || existingReview.result,
+        notes: data.notes !== undefined ? data.notes : existingReview.notes,
+        recap_file_id: data.recap_file_id || existingReview.recap_file_id,
+      },
+    });
+    await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
+    await audit(tx, user, 'UPDATE_TASHIH_REVIEW', 'TashihReview', updatedReview.id, updatedReview);
+    return updatedReview;
   }
 
   const review = await tx.tashihReview.create({
@@ -222,14 +237,7 @@ export const recordJuzChecklist = (id, juzNumber, data, user) => prisma.$transac
   } });
   await audit(tx, user, 'TASHIH_JUZ_CHECKLIST', 'AssignmentJuz', item.id, updated);
   const all = assignment.juz_items.map(row => row.id === item.id ? updated : row);
-  if (all.every(row => row.result)) {
-    const result = all.some(row => row.result === 'REVISION_REQUIRED') ? 'REVISION_REQUIRED' : 'PASSED';
-    const flagged = all.filter(row => row.result === 'REVISION_REQUIRED').map(row => row.juz_number);
-    const notes = flagged.length ? `Perlu perbaikan pada juz ${flagged.join(', ')}. Lihat checklist per juz.` : `Seluruh ${all.length} juz yang ditugaskan selesai ditashih.`;
-    const review = await tx.tashihReview.create({ data: { assignment_id: id, result, notes } });
-    await tx.assignment.update({ where: { id }, data: { status: 'COMPLETED' } });
-    await audit(tx, user, 'TASHIH_REVIEW', 'TashihReview', review.id, review);
-  } else if (assignment.status === 'ASSIGNED') {
+  if (assignment.status === 'ASSIGNED') {
     await tx.assignment.update({ where: { id }, data: { status: 'IN_PROGRESS' } });
   }
   return updated;
@@ -280,14 +288,16 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   const last = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true } });
-  if (assignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
-  if (data.result === 'PASSED' && assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+  if (data.result === 'PASSED' && assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) {
+    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+  }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
 
-  // B-06: Verifikasi dokumen rekap internal (Kelompok: satu rekap cukup setelah dicek distributor)
-  const hasRecap = assignments.some(item => item.reviews.some(r => r.recap_file_id));
-  if (!hasRecap) {
-    fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
+  // Finalisasi status assignment pada iterasi ini saat distributor menyimpan keputusan (Item 6)
+  for (const item of assignments) {
+    if (item.status !== 'COMPLETED') {
+      await tx.assignment.update({ where: { id: item.id }, data: { status: 'COMPLETED' } });
+    }
   }
 
   const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';

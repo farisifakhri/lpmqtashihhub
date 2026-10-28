@@ -198,12 +198,26 @@ export async function ownedFile(db, id, user) {
 }
 
 export async function readStoredFile(id) {
-  if (!/^[0-9a-f-]{36}$/i.test(id)) fail(404, 'Berkas tidak ditemukan.');
+  const cleanIdMatch = String(id).match(/^[0-9a-f-]{36}/i);
+  if (!cleanIdMatch) fail(404, 'Berkas tidak ditemukan.');
+  const cleanId = cleanIdMatch[0];
+
+  const exactPath = path.join(root, id);
   try {
-    return await readFile(path.join(root, id));
+    return await readFile(exactPath);
   } catch (err) {
-    if (err.code === 'ENOENT') fail(404, 'Fisik berkas tidak ditemukan di penyimpanan server.');
+    if (err.code === 'ENOENT') {
+      const fallbacks = [cleanId, cleanId + '.pdf', cleanId + '.png', cleanId + '.jpg', cleanId + '.jpeg', cleanId + '.apk'];
+      for (const candidate of fallbacks) {
+        if (candidate === id) continue;
+        try {
+          return await readFile(path.join(root, candidate));
+        } catch {}
+      }
+      fail(404, 'Fisik berkas tidak ditemukan di penyimpanan server.');
+    }
     throw err;
   }
 }
+
 

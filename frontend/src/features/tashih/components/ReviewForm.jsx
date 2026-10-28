@@ -176,7 +176,7 @@ export const ReviewForm = ({
                     <input
                       type="file"
                       onChange={handleFileUpload}
-                      disabled={uploadingRecap || selectedAssignment.status === 'COMPLETED'}
+                      disabled={uploadingRecap}
                       accept=".pdf,.doc,.docx" className="sr-only"
                     />
                   </label>
@@ -218,7 +218,7 @@ export const ReviewForm = ({
                       value="PASSED"
                       checked={reviewResult === 'PASSED'}
                       onChange={(e) => setReviewResult(e.target.value)}
-                      disabled={selectedAssignment.status === 'COMPLETED'}
+                      
                       className="mt-0.5 text-brand-700 focus:ring-brand-700"
                     />
                     <div>
@@ -243,7 +243,7 @@ export const ReviewForm = ({
                       value="REVISION_REQUIRED"
                       checked={reviewResult === 'REVISION_REQUIRED'}
                       onChange={(e) => setReviewResult(e.target.value)}
-                      disabled={selectedAssignment.status === 'COMPLETED'}
+                      
                       className="mt-0.5 text-civic-warning focus:ring-civic-warning"
                     />
                     <div>
@@ -269,7 +269,7 @@ export const ReviewForm = ({
                   value={reviewNotes}
                   maxLength={10000}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  disabled={selectedAssignment.status === 'COMPLETED'}
+                  
                   placeholder="Contoh format telaah:&#10;[Juz 1, Hal 15, QS. Al-Baqarah: 25] - Lafazh '...' kurang harakat fathah.&#10;[Juz 2, Hal 32, QS. Al-Baqarah: 142] - Tanda waqaf lazim tertukar dengan waqaf jaiz.&#10;Jika bersih tanpa koreksi: Naskah telah ditashih dan sesuai standar Mushaf Indonesia."
                   className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                 />
@@ -290,20 +290,18 @@ export const ReviewForm = ({
                   onClick={closeReviewModal}
                   disabled={submitting}
                 >
-                  {selectedAssignment.status === 'COMPLETED' ? 'Tutup' : 'Batal'}
+                  Batal
                 </Button>
-                {selectedAssignment.status !== 'COMPLETED' && (
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={submitting || !reviewNotes.trim() || !recapFileId}
-                    className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
-                    icon={<Send className="w-3.5 h-3.5" />}
-                  >
-                    {submitting ? 'Menyimpan...' : 'Kirim Hasil Telaah'}
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={submitting || !reviewNotes.trim() || !recapFileId}
+                  className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                  icon={<Send className="w-3.5 h-3.5" />}
+                >
+                  {submitting ? 'Menyimpan...' : (selectedAssignment.status === 'COMPLETED' ? 'Simpan Pembaruan Telaah' : 'Kirim Hasil Telaah')}
+                </Button>
               </div>
             </form>
           </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Users, AlertCircle, Search, CheckCircle2 } from 'lucide-react';
+import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders } from 'lucide-react';
+import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
 
@@ -8,6 +9,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
   const [teamId, setTeamId] = useState('');
+  const [assignmentMode, setAssignmentMode] = useState('TEAM'); // 'TEAM' | 'INDIVIDUAL'
   const [allCandidates, setAllCandidates] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState([]);
@@ -18,6 +20,9 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [rangeInputs, setRangeInputs] = useState({});
+  const [groupRange, setGroupRange] = useState({ from: 1, to: 30 });
+  const [groupFrom, setGroupFrom] = useState(1);
+  const [groupTo, setGroupTo] = useState(30);
 
   useEffect(() => {
     let active = true;
@@ -57,15 +62,15 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
 
   const previous = registration?.assignments?.length > 0;
   const lastRevLetter = registration?.official_documents?.find(d => d.document_type === 'REVISION_RETURN_LETTER');
-  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' || registration?.revision_kind === 'NASKAH_DUMI';
+  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASHKAH_DUMI' || registration?.revision_kind === 'NASKAH_DUMI';
   const stage = isDummyRevision ? 'DUMMY' : previous ? 'REVISION' : registration?.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
 
   const team = teams.find(item => item.id === teamId);
 
-  // Pool pentashih yang tersedia: jika kelompok dipilih, ambil dari kelompok itu; jika tidak, ambil seluruh pentashih aktif
+  // Pool pentashih yang tersedia: jika kelompok dipilih, ambil dari kelompok itu; jika mode individu, ambil seluruh kandidat
   const availablePentashih = useMemo(() => {
     let pool = [];
-    if (team) {
+    if (assignmentMode === 'TEAM' && team) {
       pool = (team.members || [])
         .filter(member => member.status === 'ACTIVE' && member.user?.status === 'ACTIVE' && member.user.roles?.some(item => (item.role?.code || item) === 'PENTASHIH'))
         .map(member => ({
@@ -91,7 +96,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
       p.nip?.includes(q) ||
       p.email?.toLowerCase().includes(q)
     );
-  }, [team, allCandidates, searchQuery]);
+  }, [assignmentMode, team, allCandidates, searchQuery]);
 
   const ready = ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(registration?.status) &&
     registration.payment_records?.some(item => item.status === 'VERIFIED');
@@ -118,6 +123,57 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   }, [uniqueAssignedJuz]);
 
   const isFull30Juz = uniqueAssignedJuz.length === 30;
+
+  // Terapkan rentang ke seluruh anggota kelompok yang sedang tercentang (Item 4 & Item 5)
+  const applyRangeToAllMembers = (from, to) => {
+    const f = Math.min(Math.max(Number(from) || 1, 1), 30);
+    const t = Math.max(Math.min(Number(to) || 30, 30), f);
+    const range = Array.from({ length: t - f + 1 }, (_, i) => f + i);
+
+    setGroupRange({ from: f, to: t });
+    setGroupFrom(f);
+    setGroupTo(t);
+    setError('');
+
+    setJuzByAssignee(prev => {
+      const next = { ...prev };
+      selected.forEach(uid => {
+        next[uid] = range;
+      });
+      return next;
+    });
+  };
+
+  // Pilih Tim -> Otomatis centang seluruh anggota tim aktif (Item 3)
+  const handleTeamChange = (newTeamId) => {
+    setTeamId(newTeamId);
+    if (!newTeamId) {
+      setSelected([]);
+      setJuzByAssignee({});
+      return;
+    }
+
+    const selectedTeam = teams.find(item => item.id === newTeamId);
+    if (selectedTeam) {
+      const activeMemberIds = (selectedTeam.members || [])
+        .filter(member => member.status === 'ACTIVE' && member.user?.status === 'ACTIVE' && member.user.roles?.some(item => (item.role?.code || item) === 'PENTASHIH'))
+        .map(member => member.user_id);
+
+      setSelected(activeMemberIds);
+      // Default: seluruh anggota tim ditugaskan untuk rentang kelompok aktif (1..30)
+      const f = groupRange.from || 1;
+      const t = groupRange.to || 30;
+      const range = Array.from({ length: t - f + 1 }, (_, i) => f + i);
+      const nextJuz = {};
+      activeMemberIds.forEach(uid => {
+        nextJuz[uid] = range;
+      });
+      setJuzByAssignee(nextJuz);
+    } else {
+      setSelected([]);
+      setJuzByAssignee({});
+    }
+  };
 
   const setJuzRange = (userId, from, to) => {
     const f = Math.min(Math.max(Number(from) || 1, 1), 30);
@@ -147,7 +203,14 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
 
   const toggleMember = (userId, checked) => {
     setSelected(previousState => checked ? [...previousState, userId] : previousState.filter(item => item !== userId));
-    if (!checked) setJuzByAssignee(previousState => ({ ...previousState, [userId]: [] }));
+    if (checked) {
+      const f = groupRange.from || 1;
+      const t = groupRange.to || 30;
+      const range = Array.from({ length: t - f + 1 }, (_, i) => f + i);
+      setJuzByAssignee(previousState => ({ ...previousState, [userId]: range }));
+    } else {
+      setJuzByAssignee(previousState => ({ ...previousState, [userId]: [] }));
+    }
   };
 
   const submit = async event => {
@@ -160,7 +223,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
       const payload = {
         juz_assignments: selected.map(assignee_id => ({ assignee_id, juz_numbers: juzByAssignee[assignee_id] })),
         stage,
-        ...(teamId ? { team_id: teamId } : {}),
+        ...(assignmentMode === 'TEAM' && teamId ? { team_id: teamId } : { is_individual: true }),
         ...(hasOverlap ? { allow_overlap: true } : {}),
         ...(registration?.status === 'TASHIH_IN_PROGRESS' || previous ? {
           reassignment_reason: reassignmentReason,
@@ -176,6 +239,22 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
       setSaving(false);
     }
   };
+
+  const quickPresets = [
+    { label: 'Juz 1–30 (Penuh)', from: 1, to: 30 },
+    { label: 'Juz 1–20 (20 Juz)', from: 1, to: 20 },
+    { label: 'Juz 21–30 (10 Juz)', from: 21, to: 30 },
+    { label: 'Juz 1–15 (15 Juz)', from: 1, to: 15 },
+    { label: 'Juz 16–30 (15 Juz)', from: 1, to: 30 },
+    { label: 'Juz 1–10 (10 Juz)', from: 1, to: 10 },
+    { label: 'Juz 11–20 (10 Juz)', from: 1, to: 20 },
+    { label: 'Juz 1–5', from: 1, to: 5 },
+    { label: 'Juz 6–10', from: 6, to: 10 },
+    { label: 'Juz 11–15', from: 11, to: 15 },
+    { label: 'Juz 16–20', from: 16, to: 20 },
+    { label: 'Juz 21–25', from: 21, to: 25 },
+    { label: 'Juz 26–30', from: 26, to: 30 },
+  ];
 
   return (
     <dialog
@@ -234,34 +313,153 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
               </p>
             )}
 
-            {/* Pemilihan Kelompok Kerja */}
-            <div>
-              <label htmlFor="manual-team-select" className="block text-sm font-semibold text-ink mb-1.5">
-                Kelompok Kerja Pentashihan
+            {/* Pilihan Mode Penugasan: Tim Kelompok vs Pentashih Pribadi (Item 2) */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-ink">
+                Skema Penugasan Pentashih
               </label>
-              <select
-                id="manual-team-select"
-                aria-label="Kelompok Kerja Pentashihan"
-                disabled={!ready || saving}
-                value={teamId}
-                onChange={event => {
-                  setTeamId(event.target.value);
-                  setSelected([]);
-                  setJuzByAssignee({});
-                }}
-                className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm bg-surface"
-              >
-                <option value="">Semua Kelompok / Penugasan Fleksibel Lintas Tim</option>
-                {teams.map(item => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} · {item.decree_no}
-                  </option>
-                ))}
-              </select>
-              {!teams.length && (
-                <p className="text-xs text-civic-warning mt-1.5">Belum ada kelompok kerja aktif. Hubungi Super Admin.</p>
-              )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-surface-subtle rounded-xl border border-line text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssignmentMode('TEAM');
+                  }}
+                  className={clsx(
+                    "py-2.5 px-3 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer",
+                    assignmentMode === 'TEAM'
+                      ? "bg-white text-brand-900 shadow-2xs font-bold border border-line/60"
+                      : "text-ink-muted hover:text-ink"
+                  )}
+                >
+                  <Users className="w-4 h-4 text-brand-700" />
+                  <span>Tim Pentashih (Kelompok Sidang)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssignmentMode('INDIVIDUAL');
+                    setTeamId('');
+                  }}
+                  className={clsx(
+                    "py-2.5 px-3 rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer",
+                    assignmentMode === 'INDIVIDUAL'
+                      ? "bg-white text-brand-900 shadow-2xs font-bold border border-line/60"
+                      : "text-ink-muted hover:text-ink"
+                  )}
+                >
+                  <User className="w-4 h-4 text-brand-700" />
+                  <span>Pentashih Pribadi (Mandiri / Non-Tim)</span>
+                </button>
+              </div>
             </div>
+
+            {/* Pemilihan Kelompok Kerja jika mode TEAM */}
+            {assignmentMode === 'TEAM' && (
+              <div>
+                <label htmlFor="manual-team-select" className="block text-sm font-semibold text-ink mb-1.5">
+                  Kelompok Kerja Pentashihan
+                </label>
+                <select
+                  id="manual-team-select"
+                  aria-label="Kelompok Kerja Pentashihan"
+                  disabled={!ready || saving}
+                  value={teamId}
+                  onChange={event => handleTeamChange(event.target.value)}
+                  className="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm bg-surface"
+                >
+                  <option value="">-- Pilih Kelompok Kerja Pentashihan --</option>
+                  {teams.map(item => (
+                    <option key={item.id} value={item.id}>
+                      {item.name} · {item.decree_no}
+                    </option>
+                  ))}
+                </select>
+                {!teams.length && (
+                  <p className="text-xs text-civic-warning mt-1.5">Belum ada kelompok kerja aktif. Hubungi Super Admin.</p>
+                )}
+                {teamId && (
+                  <p className="text-xs text-brand-800 mt-1.5 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
+                    <span>Seluruh anggota kelompok otomatis tercentang. Hapus centang bila ada anggota yang berhalangan hadir.</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Pilihan Rentang Kelompok (Fitur Pilih Rentang untuk Satu Kelompok - Item 4 & 5) */}
+            {assignmentMode === 'TEAM' && selected.length > 0 && (
+              <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-3.5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-brand-800" />
+                    <span className="text-xs font-bold text-ink uppercase tracking-wider">
+                      Pilihan Rentang Juz Kelompok (Berlaku untuk Seluruh Anggota)
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-700 text-white shadow-2xs">
+                    {getRangeDescription(Array.from({ length: groupRange.to - groupRange.from + 1 }, (_, i) => groupRange.from + i))}
+                  </span>
+                </div>
+
+                {/* Preset Rentang Cepat Kelompok */}
+                <div>
+                  <span className="block text-[11px] font-semibold text-ink-muted mb-1.5">
+                    Preset Rentang Kelompok:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quickPresets.map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => applyRangeToAllMembers(preset.from, preset.to)}
+                        className={clsx(
+                          "px-2.5 py-1 text-xs rounded-lg border font-medium transition-all cursor-pointer shadow-2xs",
+                          groupRange.from === preset.from && groupRange.to === preset.to
+                            ? "bg-brand-700 text-white border-brand-700 font-bold"
+                            : "border-line bg-white hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300"
+                        )}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rentang Kustom Kelompok */}
+                <div className="flex flex-wrap items-center gap-2 text-xs pt-1 border-t border-brand-100">
+                  <span className="text-ink-muted font-medium">Rentang Kustom Kelompok:</span>
+                  <label className="flex items-center gap-1">
+                    <span>Dari Juz</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={groupFrom}
+                      onChange={e => setGroupFrom(Number(e.target.value))}
+                      className="w-14 px-2 py-1 border border-line-strong rounded text-center text-xs font-mono bg-white"
+                    />
+                  </label>
+                  <label className="flex items-center gap-1">
+                    <span>s.d.</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={groupTo}
+                      onChange={e => setGroupTo(Number(e.target.value))}
+                      className="w-14 px-2 py-1 border border-line-strong rounded text-center text-xs font-mono bg-white"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => applyRangeToAllMembers(groupFrom, groupTo)}
+                    className="px-3 py-1 rounded bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs shadow-2xs cursor-pointer"
+                  >
+                    Terapkan ke Seluruh Anggota
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Reassignment Reason (Bila Tahap Sedang Berjalan / Revisi) */}
             {(registration.status === 'TASHIH_IN_PROGRESS' || previous) && (
@@ -296,7 +494,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="search-pentashih" className="text-sm font-semibold text-ink">
-                  Cari Pentashih
+                  {assignmentMode === 'TEAM' ? 'Anggota Kelompok Sidang' : 'Cari Pentashih Pribadi'}
                 </label>
                 <span className="text-xs text-ink-muted">
                   {availablePentashih.length} pentashih tersedia · {selected.length} dipilih
@@ -348,15 +546,15 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
             {/* Mode Pentashihan Silang / Overlap */}
             {hasOverlap && (
               <div className="p-2.5 rounded-lg bg-brand-50 border border-brand-200 text-xs text-brand-900 flex items-center gap-2">
-                <span className="font-bold">Mode Pentashihan Ganda/Silang:</span>
-                <span>Nomor juz yang sama ditelaah secara bersama oleh beberapa pentashih terpilih.</span>
+                <span className="font-bold">Mode Pentashihan Ganda / Bersama:</span>
+                <span>Nomor juz ditelaah bersama oleh anggota kelompok sidang.</span>
               </div>
             )}
 
             {/* Daftar Pentashih & Penjatahan Juz */}
             <fieldset disabled={saving || !ready} className="space-y-3">
               <legend className="text-sm font-semibold text-ink mb-1">
-                Daftar Pentashih Aktif
+                {assignmentMode === 'TEAM' ? 'Daftar Anggota Kelompok Terpilih' : 'Daftar Pentashih Aktif'}
               </legend>
 
               {availablePentashih.length ? (
@@ -377,6 +575,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                         <label className="flex gap-3 items-center text-sm font-medium cursor-pointer">
                           <input
                             type="checkbox"
+                            aria-label={member.name}
                             checked={isChecked}
                             onChange={event => toggleMember(member.id, event.target.checked)}
                             className="h-4 w-4 accent-brand-700"
@@ -400,24 +599,10 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                           {/* Preset Rentang Cepat */}
                           <div>
                             <span className="block text-xs font-semibold text-ink-muted mb-1.5">
-                              Preset Pembagian Cepat:
+                              {assignmentMode === 'TEAM' ? 'Sesuaikan Khusus Anggota Ini (Opsional):' : 'Preset Pembagian Cepat:'}
                             </span>
                             <div className="flex flex-wrap gap-1.5">
-                              {[
-                                { label: 'Juz 1–20 (20 Juz)', from: 1, to: 20 },
-                                { label: 'Juz 21–30 (10 Juz)', from: 21, to: 30 },
-                                { label: 'Juz 1–15 (15 Juz)', from: 1, to: 15 },
-                                { label: 'Juz 16–30 (15 Juz)', from: 16, to: 30 },
-                                { label: 'Juz 1–10 (10 Juz)', from: 1, to: 10 },
-                                { label: 'Juz 11–20 (10 Juz)', from: 11, to: 20 },
-                                { label: 'Juz 1–5', from: 1, to: 5 },
-                                { label: 'Juz 6–10', from: 6, to: 10 },
-                                { label: 'Juz 11–15', from: 11, to: 15 },
-                                { label: 'Juz 16–20', from: 16, to: 20 },
-                                { label: 'Juz 21–25', from: 21, to: 25 },
-                                { label: 'Juz 26–30', from: 26, to: 30 },
-                                { label: 'Juz 1–30 (Penuh)', from: 1, to: 30 },
-                              ].map(preset => (
+                              {quickPresets.map(preset => (
                                 <button
                                   key={preset.label}
                                   type="button"
@@ -428,7 +613,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                                     }));
                                     setJuzRange(member.id, preset.from, preset.to);
                                   }}
-                                  className="px-2 py-1 text-xs rounded border border-line bg-surface-subtle hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300 font-medium transition-colors"
+                                  className="px-2 py-1 text-xs rounded border border-line bg-surface-subtle hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300 font-medium transition-colors cursor-pointer"
                                 >
                                   {preset.label}
                                 </button>
@@ -470,7 +655,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                             <button
                               type="button"
                               onClick={() => setJuzRange(member.id, currentFrom, currentTo)}
-                              className="px-2.5 py-1 rounded bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs"
+                              className="px-2.5 py-1 rounded bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs cursor-pointer"
                             >
                               Terapkan
                             </button>
@@ -479,22 +664,20 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                           {/* Grid 30 Juz Checklist */}
                           <div className="mt-2 grid grid-cols-6 sm:grid-cols-10 gap-1.5" aria-label={`Juz untuk ${member.name}`}>
                             {Array.from({ length: 30 }, (_, index) => index + 1).map(juzNumber => {
-                              const owner = selected.find(uid => uid !== member.id && (juzByAssignee[uid] || []).includes(juzNumber));
                               const checked = userJuz.includes(juzNumber);
                               return (
                                 <label
                                   key={juzNumber}
                                   className={`rounded-md border p-1 text-center text-xs ${
                                     checked ? 'bg-brand-700 text-white border-brand-700 font-bold' : 'border-line text-ink'
-                                  } ${owner ? 'opacity-40 bg-surface-subtle cursor-not-allowed' : 'cursor-pointer'}`}
-                                  title={owner ? 'Sudah dialokasikan ke pentashih lain' : `Juz ${juzNumber}`}
+                                  } cursor-pointer`}
+                                  title={`Juz ${juzNumber}`}
                                 >
                                   <input
                                     type="checkbox"
                                     className="sr-only"
                                     aria-label={`Juz ${juzNumber} untuk ${member.name}`}
                                     checked={checked}
-                                    disabled={Boolean(owner)}
                                     onChange={() => toggleJuz(member.id, juzNumber)}
                                   />
                                   {juzNumber}
@@ -525,14 +708,14 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
             type="button"
             onClick={onClose}
             disabled={saving}
-            className="rounded-lg border border-line-strong px-4 py-2 text-sm disabled:opacity-40"
+            className="rounded-lg border border-line-strong px-4 py-2 text-sm disabled:opacity-40 cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={loading || saving || !ready || !allSelectedHaveJuz}
-            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-bold text-white hover:bg-brand-800 disabled:opacity-40"
+            className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-bold text-white hover:bg-brand-800 disabled:opacity-40 cursor-pointer"
           >
             {saving ? 'Menyimpan…' : 'Tetapkan penugasan'}
           </button>
