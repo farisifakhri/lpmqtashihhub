@@ -1224,6 +1224,12 @@ export const NewRegistrationPage = () => {
             isDigital={isDigital}
             fieldErrors={fieldErrors}
             clearFieldError={clearFieldError}
+            namaMushaf={namaMushaf}
+            penanggungJawabProduk={penanggungJawabProduk}
+            selectedMateriTambahan={selectedMateriTambahan}
+            sizes={sizes}
+            namaPercetakan={namaPercetakan}
+            currentUser={currentUser}
           />
 
           <div className="flex items-center justify-between gap-3 pt-2">
