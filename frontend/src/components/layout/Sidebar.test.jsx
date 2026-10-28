@@ -38,3 +38,15 @@ describe('Distributor navigation', () => {
     expect(screen.getByRole('link', { name: /Distribusi Tim/ })).toHaveAttribute('href', '/internal/distributions?stage=ASSIGNMENT');
   });
 });
+describe('Verifikator navigation', () => {
+  it('menyembunyikan menu Verifikasi Penerbit dan menampilkan badge notifikasi (Bug 13 & 25)', () => {
+    show('VERIFIKATOR');
+    // Verifikator tidak memiliki menu Verifikasi Penerbit (Langkah 1 khusus Admin)
+    expect(document.querySelector('a[href="/internal/publishers"]')).toBeNull();
+
+    // Verifikator memiliki menu Tugas Verifikasi dengan badge notifikasi
+    const tugasLink = screen.getByRole('link', { name: /Tugas Verifikasi/ });
+    expect(tugasLink).toBeInTheDocument();
+    expect(tugasLink.textContent).toContain('1');
+  });
+});

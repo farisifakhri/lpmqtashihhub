@@ -269,4 +269,30 @@ describe('AssignVerificationDialog Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i }));
     await waitFor(() => expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ id: 'assign-new-2' })));
   });
+  it('tetap mengizinkan admin memilih verifikator lain meskipun naskah memiliki rekomendasi tim inti (Bug 10 fix)', async () => {
+    const registrationWithCore = {
+      ...mockRegistration,
+      core_verifier_id: 'v-1',
+      core_team_number: 3,
+    };
+    render(
+      <AssignVerificationDialog
+        registration={registrationWithCore}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByText(/Rekomendasi Tim Inti 3/i)).toBeInTheDocument();
+    });
+
+    const select = screen.getByRole('combobox');
+    expect(select).toHaveValue('v-1');
+
+    // Admin dapat mengganti verifikator ke v-2
+    fireEvent.change(select, { target: { value: 'v-2' } });
+    expect(select).toHaveValue('v-2');
+  });
 });

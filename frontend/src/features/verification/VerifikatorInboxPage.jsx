@@ -5,9 +5,6 @@ import { verificationApi } from '@/api/verification.api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { SlaIndicator } from '@/components/ui/SlaIndicator';
-import { StatusSummary } from '@/components/ui/StatusSummary';
-import { PrimaryTaskCard } from '@/components/ui/PrimaryTaskCard';
-import { MasterDetailLayout } from '@/components/layout/MasterDetailLayout';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +31,8 @@ import {
   ChevronRight,
   UserCheck,
   X,
+  FileSearch,
+  Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -78,6 +77,7 @@ export const VerifikatorInboxPage = () => {
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [targetRegistrationForAssign, setTargetRegistrationForAssign] = useState(null);
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [reassignDialogOpen, setReassignDialogOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -115,7 +115,7 @@ export const VerifikatorInboxPage = () => {
             setPagination(res.data.pagination);
           }
           if (normalized.length > 0) {
-            setSelectedId((prev) => (prev && normalized.some(n => n.id === prev) ? prev : normalized[0].id));
+            setSelectedId((prev) => (prev && normalized.some((n) => n.id === prev) ? prev : normalized[0].id));
           } else {
             setSelectedId(null);
           }
@@ -147,7 +147,7 @@ export const VerifikatorInboxPage = () => {
           setPagination(res.data.pagination);
         }
         if (items.length > 0) {
-          setSelectedId((prev) => (prev && items.some(n => n.id === prev) ? prev : items[0].id));
+          setSelectedId((prev) => (prev && items.some((n) => n.id === prev) ? prev : items[0].id));
         } else {
           setSelectedId(null);
         }
@@ -205,110 +205,6 @@ export const VerifikatorInboxPage = () => {
   const selectedAssignment = useMemo(() => {
     return assignments.find((a) => a.id === selectedId) || assignments[0] || null;
   }, [assignments, selectedId]);
-
-  const taskCardInfo = useMemo(() => {
-    if (!selectedAssignment) return null;
-    const status = selectedAssignment.status;
-    const returnReason = selectedAssignment.return_reason;
-
-    if (selectedAssignment.isUnassigned) {
-      if (!isAssignmentAdmin) return null;
-      return {
-        title: 'Naskah Siap Ditugaskan ke Verifikator',
-        description: 'Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).',
-        actionLabel: 'Tugaskan Verifikator',
-        actionIcon: <UserCheck className="w-4 h-4" />,
-        isAssign: true,
-      };
-    }
-
-    if (activeTab === 'BAST_READY') {
-      return {
-        title: 'Pembayaran Sah — Siap Serah Terima',
-        description: 'Bukti bayar sudah diperiksa. Terbitkan BAST dan serahkan master fisik kepada distributor tim inti pengajuan ini.',
-        actionLabel: 'Buat BAST & Serahkan',
-        actionIcon: <PackageCheck className="w-4 h-4" />,
-        isHandover: true,
-      };
-    }
-
-    if (status === 'ASSIGNED') {
-      const isAssignedToUser = !selectedAssignment.verifier_id || selectedAssignment.verifier_id === currentUser?.id || selectedAssignment.verifier?.id === currentUser?.id;
-      if (!isVerifier || !isAssignedToUser) {
-        return {
-          title: 'Menunggu Verifikator Memulai Pemeriksaan',
-          description: 'Disposisi telah diterbitkan. Menunggu verifikator yang ditugaskan untuk memulai pemeriksaan lembar kerja.',
-          actionLabel: 'Lihat Detail Penugasan',
-          actionIcon: <FileText className="w-4 h-4" />,
-          isStart: false,
-        };
-      }
-      return {
-        title: 'Pemeriksaan Berkas & Master Fisik Siap Dimulai',
-        description: 'Disposisi telah diterbitkan. Lakukan telaah 4 butir checklist: data registrasi, berkas digital, master fisik A4 per juz, dan format rasm naskah.',
-        actionLabel: 'Mulai Pemeriksaan',
-        actionIcon: <Play className="w-4 h-4 fill-white" />,
-        isStart: true,
-      };
-    }
-
-    if (status === 'IN_PROGRESS') {
-      if (returnReason) {
-        return {
-          title: 'Draf Dikembalikan oleh Kepala LPMQ',
-          description: `Catatan perbaikan: "${returnReason}". Silakan periksa kembali berkas/catatan dan ajukan draf revisi.`,
-          actionLabel: 'Revisi Pemeriksaan',
-          actionIcon: <RefreshCw className="w-4 h-4" />,
-          isStart: false,
-        };
-      }
-      return {
-        title: 'Lanjutkan Lembar Kerja Pemeriksaan Verifikator',
-        description: 'Lengkapi lembar catatan koreksi dan susun draf Surat Hasil Telaah serta Berita Acara untuk diajukan ke Kepala LPMQ.',
-        actionLabel: 'Lanjutkan Pemeriksaan',
-        actionIcon: <Play className="w-4 h-4 fill-white" />,
-        isStart: false,
-      };
-    }
-
-    if (status === 'WAITING_APPROVAL') {
-      return {
-        title: 'Draft Sedang Diperiksa Kepala LPMQ',
-        description: 'Draf hasil verifikasi telah diajukan. Saat ini sedang dalam proses penelaahan oleh Kepala LPMQ. Tidak ada tindakan yang diperlukan dari Verifikator saat ini.',
-        actionLabel: 'Lihat Detail Draf',
-        actionIcon: <FileText className="w-4 h-4" />,
-        isStart: false,
-      };
-    }
-
-    if (status === 'WAITING_SIGNATURE') {
-      return {
-        title: 'Menunggu Penandatanganan Dokumen',
-        description: 'Draf telah disetujui Kepala LPMQ. Konfirmasi internal Berita Acara dan Surat Pemberitahuan sedang berlangsung.',
-        actionLabel: 'Buka Lembar Penandatanganan',
-        actionIcon: <ShieldCheck className="w-4 h-4" />,
-        isStart: false,
-      };
-    }
-
-    if (status === 'READY_TO_SEND') {
-      return {
-        title: 'Dokumen Siap Dikirim kepada Penerbit',
-        description: 'Seluruh konfirmasi internal telah lengkap. Dokumen siap dikirimkan kepada pemohon penerbit via email resmi.',
-        actionLabel: 'Kirim Dokumen ke Penerbit',
-        actionIcon: <ArrowRight className="w-4 h-4" />,
-        isStart: false,
-      };
-    }
-
-    return {
-      title: 'Verifikasi Selesai & Surat Telah Dikirimkan',
-      description: 'Pemeriksaan naskah telah selesai dan surat hasil verifikasi telah diterbitkan ke pemohon.',
-      actionLabel: 'Lihat Arsip Verifikasi',
-      actionIcon: <FileText className="w-4 h-4" />,
-      isStart: false,
-    };
-  }, [selectedAssignment, isAssignmentAdmin, activeTab]);
 
   const getHeaderInfo = () => {
     if (activeTab === 'NEED_ASSIGNMENT') {
@@ -419,7 +315,7 @@ export const VerifikatorInboxPage = () => {
               <button
                 type="button"
                 onClick={() => setSuccessMessage(null)}
-                className="text-brand-fg hover:text-brand-900 p-1 rounded-md"
+                className="text-brand-fg hover:text-brand-900 p-1 rounded-md cursor-pointer"
                 aria-label="Tutup pesan sukses"
               >
                 <X className="w-3.5 h-3.5" />
@@ -427,6 +323,153 @@ export const VerifikatorInboxPage = () => {
             </div>
           )}
 
+          {/* Navigation Tab Bar (Segmented Controls) */}
+          <div className="bg-white rounded-2xl border border-line p-3 shadow-2xs space-y-3">
+            <div className="flex items-center gap-1.5 p-1 bg-surface-subtle rounded-xl text-xs font-semibold overflow-x-auto">
+              {(isHead || isAssignmentAdmin) ? (
+                <>
+                  {isAssignmentAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => handleTabChange('NEED_ASSIGNMENT')}
+                      className={clsx(
+                        'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5',
+                        activeTab === 'NEED_ASSIGNMENT'
+                          ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                          : 'text-ink-muted hover:text-ink'
+                      )}
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      Perlu Penugasan
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('ASSIGNED')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5',
+                      (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS')
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5" />
+                    Pemeriksaan Berkas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('WAITING_APPROVAL')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5',
+                      activeTab === 'WAITING_APPROVAL'
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <FileSearch className="w-3.5 h-3.5" />
+                    Menunggu Persetujuan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('WAITING_SIGNATURE')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5',
+                      activeTab === 'WAITING_SIGNATURE'
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Konfirmasi Internal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('COMPLETED')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5',
+                      activeTab === 'COMPLETED'
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    Riwayat
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('ASSIGNED')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'ASSIGNED' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Tugas Baru
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('IN_PROGRESS')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'IN_PROGRESS' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Sedang Diperiksa
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('WAITING_APPROVAL')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'WAITING_APPROVAL' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Menunggu Persetujuan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('READY_TO_SEND')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'READY_TO_SEND' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Siap Dikirim
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('BAST_READY')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'BAST_READY' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Siap BAST
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Search Form */}
+            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  aria-label="Cari penugasan verifikasi"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari reg no, judul, penerbit..."
+                  className="w-full text-xs pl-8 pr-3 py-2 rounded-xl border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 bg-white dark:bg-canvas"
+                />
+              </div>
+              <Button type="submit" variant="outline" size="sm" className="text-xs px-4">
+                Cari
+              </Button>
+            </form>
+          </div>
 
           {/* FIFO and Volume Queue Metadata Bar */}
           <QueueOverview
@@ -436,482 +479,320 @@ export const VerifikatorInboxPage = () => {
             loading={loading}
           />
 
-          {/* Master Detail Workspace */}
-          <MasterDetailLayout
-            hasSelection={Boolean(selectedAssignment)}
-            onClearSelection={() => setSelectedId(null)}
-            masterWidth="lg:w-5/12"
-            detailWidth="lg:w-7/12"
-            masterContent={
-              <div className="space-y-3">
-                {/* Controlled Filter & Search Box */}
-                <div className="bg-white rounded-xl border border-line p-3.5 shadow-2xs space-y-3">
-                  {/* Segmented Control */}
-                  <div className="flex items-center gap-1 p-1 bg-surface-subtle rounded-lg text-xs font-semibold overflow-x-auto">
-                    {(isHead || isAssignmentAdmin) ? (
-                      <>
-                        {isAssignmentAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('NEED_ASSIGNMENT')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'NEED_ASSIGNMENT'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Perlu Penugasan
-                        </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('ASSIGNED')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS')
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Pemeriksaan Berkas
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('WAITING_APPROVAL')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Menunggu Persetujuan
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('WAITING_SIGNATURE')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'WAITING_SIGNATURE'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Konfirmasi Internal
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('COMPLETED')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'COMPLETED'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Riwayat
-                        </button>
-                      </>
-                    ) : isAdmin ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('WAITING_APPROVAL')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Menunggu Persetujuan
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('WAITING_SIGNATURE')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'WAITING_SIGNATURE'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Konfirmasi Internal
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('COMPLETED')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'COMPLETED'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Riwayat
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('ASSIGNED')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'ASSIGNED'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Tugas Baru
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('IN_PROGRESS')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'IN_PROGRESS'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Sedang Diperiksa
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('WAITING_APPROVAL')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'WAITING_APPROVAL'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Menunggu Pihak Lain
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('READY_TO_SEND')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'READY_TO_SEND'
-                              ? 'bg-white text-brand-900 shadow-2xs'
-                              : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Siap Dikirim
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleTabChange('BAST_READY')}
-                          className={clsx(
-                            'flex-1 py-1.5 px-2 rounded-md transition-colors text-center font-bold text-xs whitespace-nowrap',
-                            activeTab === 'BAST_READY' ? 'bg-white text-brand-900 shadow-2xs' : 'text-ink-muted hover:text-ink'
-                          )}
-                        >
-                          Siap BAST
-                        </button>
-                      </>
-                    )}
-                  </div>
+          {/* Content Area - Konsep 2 Dedicated Workspace */}
+          {loading ? (
+            <div className="py-16 text-center space-y-3 bg-white dark:bg-canvas rounded-2xl border border-line p-8 shadow-2xs">
+              <RefreshCw className="w-7 h-7 animate-spin text-brand-800 mx-auto" />
+              <p className="text-xs text-ink-muted font-medium">Memuat antrean tugas...</p>
+            </div>
+          ) : assignments.length === 0 ? (
+            <EmptyState
+              title="Tidak Ada Penugasan Ditemukan"
+              description="Tidak ada berkas yang memerlukan pemeriksaan pada tab filter ini."
+            />
+          ) : activeTab === 'NEED_ASSIGNMENT' ? (
+            /* ============================================================== */
+            /* 1. TAMPILAN FOKUS TUNGGAL: PENUGASAN VERIFIKATOR (LANGKAH 3)   */
+            /* ============================================================== */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {assignments.map((item) => {
+                  const reg = item.registration || {};
+                  const pub = reg.publisher || {};
+                  const physicalMaster = reg.physical_master || reg.physical_master_intake || {};
+                  const isCurrent = selectedId === item.id;
 
-                  {/* Search Form */}
-                  <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Search className="w-3.5 h-3.5 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      <input
-                        type="text"
-                        aria-label="Cari penugasan verifikasi"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Cari reg no, judul, penerbit..."
-                        className="w-full text-xs pl-8 pr-3 py-2 rounded-lg border border-line focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
-                      />
-                    </div>
-                    <Button type="submit" variant="outline" size="sm" className="text-xs px-3">
-                      Cari
-                    </Button>
-                  </form>
-                </div>
-
-                {/* Queue List Cards */}
-                {loading ? (
-                  <div className="py-12 text-center space-y-2 bg-white rounded-xl border border-line p-6">
-                    <RefreshCw className="w-6 h-6 animate-spin text-brand-800 mx-auto" />
-                    <p className="text-xs text-ink-muted font-medium">Memuat antrean tugas...</p>
-                  </div>
-                ) : assignments.length === 0 ? (
-                  <EmptyState
-                    title="Tidak Ada Penugasan Ditemukan"
-                    description="Tidak ada berkas yang memerlukan pemeriksaan pada tab filter ini."
-                  />
-                ) : (
-                  <div className="space-y-2">
-                    {assignments.map((item) => {
-                      const reg = item.registration || {};
-                      const isSelected = selectedAssignment?.id === item.id;
-                      const pub = reg.publisher || {};
-
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => setSelectedId(item.id)}
-                          className={clsx(
-                            'p-4 rounded-xl border cursor-pointer transition-all duration-150 text-xs space-y-2',
-                            isSelected
-                              ? 'border-brand-700 bg-brand-50/40 shadow-xs ring-1 ring-brand-700'
-                              : 'border-line bg-white hover:border-line-strong hover:bg-canvas/50 shadow-2xs'
-                          )}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
-                              {reg.registration_no || '-'}
-                            </span>
-                            {item.isUnassigned ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-800 border border-brand-100">
-                                Siap ditugaskan
-                              </span>
-                            ) : (
-                              <StatusBadge status={reg.status || item.status} size="sm" />
-                            )}
-                          </div>
-
-                          <div>
-                            <h4 className="font-bold text-ink text-sm line-clamp-1">
-                              {reg.title || 'Naskah Mushaf'}
-                            </h4>
-                            <p className="text-ink-muted line-clamp-1">{pub.legal_name || '-'}</p>
-                          </div>
-
-                          {item.isUnassigned ? (
-                            <div className="bg-canvas p-2 rounded-lg border border-line/60 text-xs space-y-1 text-ink-muted">
-                              <div className="flex items-center justify-between">
-                                <span className="font-mono text-ink">
-                                  TT: <strong>{reg.physical_master?.receipt_no || reg.physical_master_intake?.receipt_no || '-'}</strong>
-                                </span>
-                                <span>{(reg.physical_master?.volume_count ?? reg.physical_master_intake?.volume_count ?? 30)} jilid</span>
-                              </div>
-                              <div className="flex items-center justify-between text-ink-muted text-xs">
-                                <span>
-                                  Diterima: {(reg.physical_master?.received_at || reg.physical_master_intake?.received_at) ? new Date(reg.physical_master?.received_at || reg.physical_master_intake?.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
-                                </span>
-                                <span>
-                                  Menunggu: {formatWaitingTime(reg.physical_master?.received_at || reg.physical_master_intake?.received_at || item.assigned_at)}
-                                </span>
-                              </div>
-                            </div>
-                          ) : null}
-
-                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-line text-xs text-ink-muted">
-                            {item.due_at ? (
-                              <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
-                            ) : item.isUnassigned ? (
-                              <span className="text-brand-fg font-semibold flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                Siap Ditugaskan
-                              </span>
-                            ) : null}
-                            <ChevronRight className={clsx('w-3.5 h-3.5 text-ink-muted transition-transform', isSelected && 'rotate-90 text-brand-800')} />
-                          </div>
+                  return (
+                    <div
+                      key={item.id}
+                      className={clsx(
+                        'bg-white dark:bg-canvas rounded-2xl border p-5 shadow-2xs space-y-4 flex flex-col justify-between transition-all duration-200',
+                        isCurrent
+                          ? 'border-brand-700 ring-2 ring-brand-700/20 bg-brand-50/20'
+                          : 'border-line hover:border-line-strong hover:shadow-md'
+                      )}
+                    >
+                      {/* Top Badges */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
+                            {reg.registration_no || '-'}
+                          </span>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
+                            Siap ditugaskan
+                          </span>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            }
-            detailContent={
-              selectedAssignment ? (
-                <div className="space-y-4">
-                  {/* Task Action Card */}
-                  <PrimaryTaskCard
-                    title={taskCardInfo?.title || 'Tugas Verifikasi'}
-                    description={taskCardInfo?.description || 'Rincian tugas verifikasi naskah.'}
-                    objectRef={selectedAssignment.registration?.registration_no ? `No. Registrasi: ${selectedAssignment.registration.registration_no}` : undefined}
-                    ownerLabel={selectedAssignment.isUnassigned ? 'Belum Ditugaskan' : (selectedAssignment.verifier?.name || currentUser?.name)}
-                    actionLabel={taskCardInfo?.actionLabel || 'Buka Pemeriksaan'}
-                    onAction={() => {
-                      if (taskCardInfo?.isAssign) {
-                        setAssignDialogOpen(true);
-                      } else if (taskCardInfo?.isHandover) {
-                        navigate(`/internal/verifications/${selectedAssignment.id}?handover=1`);
-                      } else if (taskCardInfo?.isStart) {
-                        handleStartVerification(selectedAssignment.id);
-                      } else {
-                        navigate(`/internal/verifications/${selectedAssignment.id}`);
-                      }
-                    }}
-                    actionIcon={taskCardInfo?.actionIcon || <Play className="w-4 h-4 fill-white" />}
-                    slaText={selectedAssignment.due_at ? 'SLA Verifikasi: 2 Hari Kerja' : (selectedAssignment.isUnassigned ? 'Perlu Penugasan' : null)}
-                  />
 
-                  {/* Status & Consequence Summary */}
-                  <StatusSummary
-                    status={selectedAssignment.registration?.status || selectedAssignment.status}
-                    slaText={selectedAssignment.due_at ? 'Target SLA 48 Jam' : null}
-                  />
-
-                  {/* Key Metadata Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Publisher & Registration Info */}
-                    <div className="rounded-xl border border-line bg-white p-4 space-y-2 text-xs shadow-2xs">
-                      <h4 className="font-bold text-ink border-b border-line pb-1.5 flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4 text-brand-800" />
-                        Identitas Pemohon
-                      </h4>
-                      <div className="space-y-1 text-ink-muted">
-                        <p><strong>Pemohon:</strong> {selectedAssignment.registration?.publisher?.legal_name ? `${selectedAssignment.registration.publisher.legal_name} (Terdaftar)` : '-'}</p>
-                        <p><strong>Naskah:</strong> “{selectedAssignment.registration?.title || '-'}”</p>
-                        <p><strong>Tanggal Masuk:</strong> {new Date(selectedAssignment.assigned_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                      </div>
-                    </div>
-
-                    {/* Master Physical Intake Status */}
-                    <div className="rounded-xl border border-line bg-white p-4 space-y-2 text-xs shadow-2xs">
-                      <h4 className="font-bold text-ink border-b border-line pb-1.5 flex items-center gap-1.5">
-                        <PackageCheck className="w-4 h-4 text-brand-800" />
-                        Penerimaan Master Fisik Loket
-                      </h4>
-                      <div className="space-y-1 text-ink-muted">
-                        <p>
-                          <strong>Status:</strong>{' '}
-                          {selectedAssignment.registration?.physical_master_intake?.status === 'RECEIVED' ? (
-                            <span className="text-brand-800 font-bold">Sudah Diterima Loket</span>
-                          ) : (
-                            <span className="text-civic-warning font-bold">Menunggu Penerimaan Loket</span>
-                          )}
-                        </p>
-                        {selectedAssignment.registration?.physical_master_intake?.receipt_no && (
-                          <p>
-                            <strong>No. Tanda Terima:</strong>{' '}
-                            <span className="font-mono bg-surface-subtle px-1.5 py-0.5 rounded border border-line">
-                              {selectedAssignment.registration?.physical_master_intake?.receipt_no}
-                            </span>
+                        {/* Title & Publisher */}
+                        <div>
+                          <h3 className="font-extrabold text-ink text-base line-clamp-2 leading-snug">
+                            {reg.title || 'Naskah Mushaf Al-Qur\'an'}
+                          </h3>
+                          <p className="text-xs text-ink-muted flex items-center gap-1.5 mt-1">
+                            <Building2 className="w-3.5 h-3.5 text-brand-800 shrink-0" />
+                            <span className="truncate">{pub.legal_name || '-'}</span>
                           </p>
-                        )}
-                        {selectedAssignment.isUnassigned && (
-                          <p>
-                            <strong>Status Penugasan:</strong>{' '}
-                            <span className="text-ink-muted italic">
-                              Belum Ada (Menunggu Disposisi)
-                            </span>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Informasi Penugasan & SLA Panel */}
-                  {!selectedAssignment.isUnassigned && (() => {
-                    const notaDoc = selectedAssignment.documents?.find?.((d) => d.document_type === 'NOTA_DINAS_VERIFIKASI') || selectedAssignment.documents?.[0];
-                    const isRevoked = selectedAssignment.status === 'REVOKED';
-                    const canReassignOrRevoke = isAssignmentAdmin && !selectedAssignment.registration?.core_team_number && ['ASSIGNED', 'IN_PROGRESS'].includes(selectedAssignment.status);
-
-                    return (
-                      <div className="rounded-xl border border-line bg-white p-4 space-y-3 text-xs shadow-2xs">
-                        <div className="flex items-center justify-between border-b border-line pb-2">
-                          <h4 className="font-bold text-ink flex items-center gap-1.5">
-                            <ShieldCheck className="w-4 h-4 text-brand-800" />
-                            Informasi Penugasan & SLA Verifikasi
-                          </h4>
-                          {isRevoked ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
-                              Penugasan Dicabut (Revoked)
-                            </span>
-                          ) : null}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-ink-muted">
-                          <div>
-                            <span className="text-ink-muted block text-xs">Verifikator Ditugaskan:</span>
-                            <span className="font-semibold text-ink">{selectedAssignment.verifier?.name || currentUser?.name || '-'}</span>
+                        {/* Physical Master Context */}
+                        <div className="bg-canvas dark:bg-surface-subtle p-3 rounded-xl border border-line/60 text-xs space-y-1.5 text-ink-muted">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-ink">
+                              TT: <strong>{physicalMaster.receipt_no || '-'}</strong>
+                            </span>
+                            <span className="font-semibold text-ink">
+                              {physicalMaster.volume_count ?? 30} jilid
+                            </span>
                           </div>
-                          <div>
-                            <span className="text-ink-muted block text-xs">Nomor Disposisi:</span>
-                            <span className="font-mono font-semibold text-ink">{notaDoc?.document_no || '-'}</span>
-                          </div>
-                          <div>
-                            <span className="text-ink-muted block text-xs">Waktu Penugasan:</span>
-                            <span>{selectedAssignment.assigned_at ? new Date(selectedAssignment.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</span>
-                          </div>
-                          <div>
-                            <span className="text-ink-muted block text-xs">Target Selesai (SLA):</span>
-                            <span>{selectedAssignment.due_at ? new Date(selectedAssignment.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '2 Hari Kerja'}</span>
-                          </div>
-                        </div>
-
-                        {isRevoked && selectedAssignment.revocation_reason && (
-                          <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs">
-                            <strong>Alasan Pencabutan:</strong> {selectedAssignment.revocation_reason}
-                          </div>
-                        )}
-
-                        {['WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'].includes(selectedAssignment.status) && (
-                          <div className="p-2.5 bg-brand-50 border border-brand-100 rounded-lg text-brand-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center justify-between text-ink-muted text-[11px] border-t border-line/50 pt-1.5">
                             <span>
-                              Pemeriksaan verifikator telah diajukan. Tanggung jawab saat ini:{' '}
-                              <strong>
-                                {selectedAssignment.status === 'WAITING_APPROVAL' ? 'Kepala LPMQ (Persetujuan Draf)' : (selectedAssignment.status === 'WAITING_SIGNATURE' ? 'Tim Penandatangan' : 'Pengiriman Resmi')}
-                              </strong>
+                              Diterima: {physicalMaster.received_at ? new Date(physicalMaster.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
                             </span>
-                            <span className="font-bold text-brand-800 bg-white px-2 py-0.5 rounded border border-brand-100 self-start sm:self-auto">
-                              SLA Verifikator Selesai
+                            <span className="flex items-center gap-1 text-brand-800 font-medium">
+                              <Clock className="w-3 h-3" />
+                              Menunggu: {formatWaitingTime(physicalMaster.received_at || item.assigned_at)}
                             </span>
                           </div>
-                        )}
+                        </div>
 
-                        {canReassignOrRevoke && (
-                          <div className="pt-2 border-t border-line flex items-center justify-end gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setReassignDialogOpen(true)}
-                              className="text-civic-info border-civic-infoLine hover:bg-civic-infoSoft text-xs"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
-                              Tugaskan Ulang (Reassign)
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setRevokeDialogOpen(true)}
-                              className="text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft text-xs"
-                            >
-                              <X className="w-3.5 h-3.5 mr-1" />
-                              Cabut Penugasan (Revoke)
-                            </Button>
-                          </div>
-                        )}
+                        {/* Assignment Prompt Box */}
+                        <div className="p-3 bg-surface-subtle dark:bg-canvas rounded-xl border border-line space-y-1">
+                          <h4 className="font-bold text-xs text-ink flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-brand-800" />
+                            Naskah Siap Ditugaskan ke Verifikator
+                          </h4>
+                          <p className="text-[11px] text-ink-muted leading-relaxed">
+                            Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).
+                          </p>
+                        </div>
                       </div>
-                    );
-                  })()}
-                </div>
-              ) : null
-            }
-          />
+
+                      {/* Action Button */}
+                      <div className="pt-2 border-t border-line">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="w-full justify-center text-xs font-bold py-2 shadow-2xs"
+                          onClick={() => {
+                            setSelectedId(item.id);
+                            setTargetRegistrationForAssign(reg);
+                            setAssignDialogOpen(true);
+                          }}
+                        >
+                          <UserCheck className="w-4 h-4 mr-1.5" />
+                          Tugaskan Verifikator
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* ============================================================== */
+            /* 2. TAMPILAN FOKUS TUNGGAL: VERIFIKASI & PERSETUJUAN (CARD GRID) */
+            /* Memenuhi Nabil Feedback #8: Card masuk ke detail saat diklik   */
+            /* ============================================================== */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {assignments.map((item) => {
+                const reg = item.registration || {};
+                const pub = reg.publisher || {};
+                const notaDoc = item.documents?.find?.((d) => d.document_type === 'NOTA_DINAS_VERIFIKASI') || item.documents?.[0];
+                const status = item.status;
+                const isReturned = status === 'IN_PROGRESS' && Boolean(item.return_reason);
+                const isAssigned = status === 'ASSIGNED';
+                const isWaitingApproval = status === 'WAITING_APPROVAL';
+                const isReadyToSend = status === 'READY_TO_SEND';
+
+                const handleCardAction = () => {
+                  if (isAssigned) {
+                    handleStartVerification(item.id);
+                  } else {
+                    navigate(`/internal/verifications/${item.id}`);
+                  }
+                };
+
+                return (
+                  <div
+                    key={item.id}
+                    onClick={handleCardAction}
+                    className="bg-white dark:bg-canvas rounded-2xl border border-line p-5 shadow-2xs space-y-4 flex flex-col justify-between hover:border-brand-700/60 hover:shadow-md transition-all duration-200 cursor-pointer group"
+                  >
+                    <div className="space-y-3">
+                      {/* Top Badges */}
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
+                          {reg.registration_no || '-'}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <StatusBadge status={reg.status || item.status} size="sm" />
+                          {item.due_at && (
+                            <SlaIndicator dueAt={item.due_at} targetDuration="2 hari" showProgress={false} />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Title & Publisher */}
+                      <div>
+                        <h3 className="font-extrabold text-ink text-base line-clamp-2 leading-snug group-hover:text-brand-900 transition-colors">
+                          {reg.title || 'Naskah Mushaf'}
+                        </h3>
+                        <p className="text-xs text-ink-muted flex items-center gap-1.5 mt-1">
+                          <Building2 className="w-3.5 h-3.5 text-brand-800 shrink-0" />
+                          <span className="truncate">{pub.legal_name || '-'}</span>
+                        </p>
+                      </div>
+
+                      {/* Disposisi Document Info */}
+                      {notaDoc?.document_no && (
+                        <div className="flex items-center justify-between text-xs bg-canvas dark:bg-surface-subtle p-2.5 rounded-xl border border-line/60">
+                          <span className="text-ink-muted">Disposisi:</span>
+                          <span className="font-mono font-bold text-ink">
+                            {notaDoc.document_no}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* State Specific Alert Banners */}
+                      {isReturned && (
+                        <div className="p-3 bg-civic-warningSoft border border-civic-warningLine rounded-xl text-xs space-y-1">
+                          <div className="font-bold text-civic-warning flex items-center gap-1.5">
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
+                            Draf Dikembalikan oleh Kepala LPMQ
+                          </div>
+                          <p className="text-ink-muted text-[11px] italic">
+                            {item.return_reason || 'Perbaiki catatan checklist lembar 3.'}
+                          </p>
+                        </div>
+                      )}
+
+                      {isWaitingApproval && (
+                        <div className="p-3 bg-surface-subtle dark:bg-canvas rounded-xl border border-line text-xs space-y-1">
+                          <div className="font-bold text-ink flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-brand-800" />
+                            Draft Sedang Diperiksa Kepala LPMQ
+                          </div>
+                          <p className="text-[11px] text-ink-muted">
+                            Tidak ada tindakan yang diperlukan dari Verifikator saat ini. Draf sedang dalam proses penelaahan oleh Kepala LPMQ.
+                          </p>
+                        </div>
+                      )}
+
+                      {isReadyToSend && (
+                        <div className="p-3 bg-brand-50 border border-brand-100 rounded-xl text-xs space-y-1 text-brand-900">
+                          <div className="font-bold flex items-center gap-1.5">
+                            <CheckCircle2 className="w-4 h-4 text-brand-700" />
+                            Dokumen Siap Dikirim kepada Penerbit
+                          </div>
+                          <p className="text-[11px] text-brand-800">
+                            Seluruh konfirmasi internal lengkap. Surat hasil telaah siap dikirimkan kepada pemohon penerbit.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer Action Button */}
+                    <div className="pt-2 border-t border-line">
+                      {isAssigned ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          disabled={startingId === item.id}
+                          className="w-full justify-center text-xs font-bold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartVerification(item.id);
+                          }}
+                        >
+                          <Play className="w-3.5 h-3.5 fill-white mr-1.5" />
+                          Mulai Pemeriksaan
+                        </Button>
+                      ) : isReturned ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-center text-xs font-bold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/internal/verifications/${item.id}`);
+                          }}
+                        >
+                          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                          Revisi Pemeriksaan
+                        </Button>
+                      ) : isWaitingApproval ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-center text-xs font-medium"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/internal/verifications/${item.id}`);
+                          }}
+                        >
+                          <FileText className="w-3.5 h-3.5 mr-1.5" />
+                          Lihat Detail Draf
+                        </Button>
+                      ) : isReadyToSend ? (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          className="w-full justify-center text-xs font-bold"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/internal/verifications/${item.id}`);
+                          }}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
+                          Kirim Dokumen ke Penerbit
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-center text-xs font-bold group-hover:bg-brand-50 group-hover:text-brand-900 group-hover:border-brand-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/internal/verifications/${item.id}`);
+                          }}
+                        >
+                          <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
+                          Lanjutkan Pemeriksaan
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 
       {/* Penugasan Verifikator oleh Helper Admin */}
-      {isAssignmentAdmin && assignDialogOpen && selectedAssignment && (
+      {isAssignmentAdmin && assignDialogOpen && (targetRegistrationForAssign || selectedAssignment) && (
         <AssignVerificationDialog
-          registration={selectedAssignment.registration || selectedAssignment}
-          onClose={() => setAssignDialogOpen(false)}
+          registration={targetRegistrationForAssign || selectedAssignment?.registration || selectedAssignment}
+          onClose={() => {
+            setAssignDialogOpen(false);
+            setTargetRegistrationForAssign(null);
+          }}
           onConflict={() => {
             fetchAssignments();
           }}
           onSuccess={(newAssignment) => {
             setAssignDialogOpen(false);
+            const assignedRegId = targetRegistrationForAssign?.id || selectedAssignment?.id;
+            setTargetRegistrationForAssign(null);
             const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
             const createdAssignmentId = newAssignment?.assignment?.id || newAssignment?.id;
             setSuccessMessage({
               text: `Berhasil menugaskan Verifikator${docNo ? ` dengan Disposisi ${docNo}` : ''}.`,
               assignmentId: createdAssignmentId,
             });
-            setAssignments((prev) => prev.filter((a) => a.id !== selectedAssignment.id));
+            if (assignedRegId) {
+              setAssignments((prev) => prev.filter((a) => a.id !== assignedRegId));
+            }
             fetchAssignments();
           }}
         />

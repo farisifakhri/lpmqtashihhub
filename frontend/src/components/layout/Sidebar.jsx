@@ -222,6 +222,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                             icon: <UserCheck className="w-4 h-4 shrink-0" />,
                             description: "Disposisi tim verifikator berkas",
+                            badge: 1,
                         },
                         {
                             label: "4. Verifikasi Berkas",
@@ -349,12 +350,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan naskah & draf",
-                        },
-                        {
-                            label: "Verifikasi Penerbit",
-                            path: "/internal/publishers",
-                            icon: <Building2 className="w-4 h-4 shrink-0" />,
-                            description: "Periksa dan setujui profil penerbit",
+                            badge: 1,
                         },
                         {
                             label: "Tanda Tangan Saya",
@@ -797,7 +793,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             )}
                                                     </div>
                                                     {item.badge && (
-                                                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-brand-700 text-white shadow-2xs">
+                                                        <span
+                                                            className={clsx(
+                                                                "shrink-0 font-extrabold shadow-2xs flex items-center justify-center transition-all",
+                                                                item.badgeVariant === "danger" || !isNaN(Number(item.badge))
+                                                                    ? "bg-civic-danger text-white rounded-full min-w-[20px] h-5 px-1.5 text-[11px]"
+                                                                    : "px-2 py-0.5 text-[10px] uppercase rounded-full bg-brand-700 text-white"
+                                                            )}
+                                                        >
                                                             {item.badge}
                                                         </span>
                                                     )}
