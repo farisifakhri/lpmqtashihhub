@@ -667,7 +667,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             {/* Sidebar Container (260px, modern civic workspace) */}
             <aside
                 className={clsx(
-                    "fixed lg:static inset-y-0 left-0 z-50 lg:z-0",
+                    "fixed lg:static inset-y-0 left-0 z-50 lg:relative lg:z-10",
                     "w-[264px] shrink-0 overflow-hidden lpmq-sidebar border-r lpmq-sidebar-border-r flex flex-col justify-between",
                     "transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none",
                     isOpen

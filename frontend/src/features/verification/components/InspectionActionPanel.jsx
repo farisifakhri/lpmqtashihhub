@@ -1,4 +1,5 @@
 import React from 'react';
+import { clsx } from 'clsx';
 import { StickyActionBar } from '@/components/layout/StickyActionBar';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { Button } from '@/components/ui/Button';
@@ -10,13 +11,14 @@ export const InspectionActionPanel = ({
   setReturnModalOpen, handleOpenSubmitConfirm, setApproveConfirmOpen,
   canVerifierSend, handleSendDocument, isAllFullySigned,
   submitConfirmOpen, setSubmitConfirmOpen, handleConfirmSubmitToHead,
-  registration, tidakSesuaiCount, decision, approveConfirmOpen, handleConfirmApprove,
+  registration, tidakSesuaiCount = 0, decision, approveConfirmOpen, handleConfirmApprove,
   resultDocumentNo, setResultDocumentNo,
   minutesDocumentNo, setMinutesDocumentNo,
   latestResultDoc, beritaAcaraDoc,
   approveModalError, setApproveModalError,
   showDocumentPdf,
   billingNo, billingFileId,
+  totalChecklistCount = 8,
 }) => (
   <>
       {/* STICKY ACTION BAR FOR WORKSPACE */}
@@ -24,8 +26,13 @@ export const InspectionActionPanel = ({
         statusMessage={
           isInProgress ? (
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-ink">
-                Checklist: {sesuaiCount + tidakBerlakuCount}/4 Butir Selesai
+              <span className="font-semibold text-ink flex items-center gap-1.5">
+                <span>Checklist: {sesuaiCount + tidakBerlakuCount}/{totalChecklistCount} Selesai</span>
+                {tidakSesuaiCount > 0 && (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+                    {tidakSesuaiCount} Tidak Sesuai (Ditolak)
+                  </span>
+                )}
               </span>
               <span>·</span>
               <span className="text-ink-muted font-mono text-xs">
@@ -105,14 +112,27 @@ export const InspectionActionPanel = ({
                   <span>Kode Billing & Berkas PDF Belum Lengkap</span>
                 </span>
               )}
+              {decision === 'REVISION_REQUIRED' && (
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-civic-danger bg-civic-dangerSoft border border-civic-dangerLine shadow-2xs">
+                  <AlertTriangle className="w-3.5 h-3.5 text-civic-danger shrink-0" />
+                  <span>Draf Ditolak (Pengembalian Naskah)</span>
+                </span>
+              )}
               <Button
-                variant="primary"
+                variant={decision === 'REVISION_REQUIRED' ? 'outline' : 'primary'}
                 onClick={handleOpenSubmitConfirm}
                 disabled={actionLoading}
-                className="text-xs"
+                className={clsx(
+                  "text-xs",
+                  decision === 'REVISION_REQUIRED' && "border-civic-dangerLine text-civic-danger hover:bg-civic-dangerSoft font-bold"
+                )}
               >
                 <Send className="w-3.5 h-3.5 mr-1.5" />
-                {actionLoading ? 'Mengajukan...' : 'Ajukan Draf ke Kepala LPMQ'}
+                {actionLoading
+                  ? 'Mengajukan...'
+                  : decision === 'REVISION_REQUIRED'
+                  ? 'Ajukan Pengembalian Naskah ke Kepala LPMQ'
+                  : 'Ajukan Draf ke Kepala LPMQ'}
               </Button>
             </div>
           ) : canHeadApprove ? (
@@ -150,8 +170,10 @@ export const InspectionActionPanel = ({
         isOpen={submitConfirmOpen}
         onClose={() => setSubmitConfirmOpen(false)}
         onConfirm={handleConfirmSubmitToHead}
-        title="Ajukan Draf Hasil Verifikasi"
-        description="Periksa ringkasan hasil evaluasi berkas dan naskah sebelum diajukan secara resmi kepada Kepala LPMQ."
+        title={decision === 'PASSED' ? "Ajukan Draf Hasil Verifikasi" : "Ajukan Draf Pengembalian Naskah"}
+        description={decision === 'PASSED'
+          ? "Periksa ringkasan hasil evaluasi berkas dan naskah sebelum diajukan secara resmi kepada Kepala LPMQ."
+          : "Periksa catatan kekurangan naskah sebelum diajukan ke Kepala LPMQ untuk pengesahan surat pengembalian ke penerbit."}
         objectName={`Naskah: ${registration.title || '-'}`}
         nextActor="Kepala LPMQ"
         statusChange="IN_PROGRESS -> WAITING_APPROVAL"
@@ -162,7 +184,7 @@ export const InspectionActionPanel = ({
           { label: 'Hasil Checklist', value: `${sesuaiCount} Sesuai, ${tidakSesuaiCount} Tidak Sesuai` },
           {
             label: 'Keputusan Verifikator',
-            value: decision === 'PASSED' ? 'Lolos Verifikasi' : 'Perlu Perbaikan Penerbit',
+            value: decision === 'PASSED' ? 'Lolos Verifikasi' : 'Perlu Perbaikan Penerbit (Ditolak / Dikembalikan)',
           },
           ...(decision === 'PASSED'
             ? [
@@ -174,9 +196,9 @@ export const InspectionActionPanel = ({
         impactMessage={
           decision === 'PASSED'
             ? 'Kode billing wajib terbit dan dicantumkan. Saat diajukan, Verifikator menandatangani isi draf secara internal sebelum Kepala LPMQ menyetujui.'
-            : 'Surat catatan kekurangan akan dikirim ke Kepala LPMQ untuk pengesahan sebelum diteruskan kepada penerbit untuk perbaikan berkas.'
+            : 'Surat resmi pengembalian naskah dan catatan kekurangan akan dikirim ke Kepala LPMQ untuk pengesahan sebelum diteruskan kepada penerbit untuk revisi.'
         }
-        confirmLabel={decision === 'PASSED' ? 'Ajukan Draft' : 'Ajukan Perbaikan'}
+        confirmLabel={decision === 'PASSED' ? 'Ajukan Draf Lolos' : 'Ajukan Pengembalian Naskah'}
         confirmVariant={decision === 'PASSED' ? 'primary' : 'gold'}
         loading={actionLoading}
       />
@@ -274,3 +296,5 @@ export const InspectionActionPanel = ({
 
   </>
 );
+
+export default InspectionActionPanel;

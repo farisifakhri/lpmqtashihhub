@@ -257,3 +257,4 @@ consolidateDuplicateStaff()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
