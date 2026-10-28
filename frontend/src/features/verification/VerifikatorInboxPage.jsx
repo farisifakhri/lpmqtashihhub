@@ -73,6 +73,7 @@ export const VerifikatorInboxPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [assignmentSubView, setAssignmentSubView] = useState('UNASSIGNED');
   const [searchQuery, setSearchQuery] = useState('');
   const [startingId, setStartingId] = useState(null);
   const [submittedSearch, setSubmittedSearch] = useState('');
@@ -89,38 +90,64 @@ export const VerifikatorInboxPage = () => {
     setError(null);
     try {
       if (activeTab === 'NEED_ASSIGNMENT') {
-        const params = {
-          page: pagination.page,
-          limit: pagination.limit,
-        };
-        if (submittedSearch) {
-          params.search = submittedSearch;
-        }
+        if (assignmentSubView === 'UNASSIGNED') {
+          const params = {
+            page: pagination.page,
+            limit: pagination.limit,
+          };
+          if (submittedSearch) {
+            params.search = submittedSearch;
+          }
 
-        const res = await verificationApi.listUnassignedRegistrations(params);
-        if (request !== requestId.current) return;
-        if (res?.data) {
-          const items = res.data.items || [];
-          const normalized = items.map((reg) => ({
-            id: reg.id,
-            isUnassigned: true,
-            registration: reg,
-            status: 'READY_FOR_VERIFICATION',
-            assigned_at: reg.stage_entered_at || reg.created_at,
-            due_at: null,
-            documents: [],
-          }));
-          setAssignments(normalized);
-          if (res.data.pagination) {
-            setPagination(res.data.pagination);
+          const res = await verificationApi.listUnassignedRegistrations(params);
+          if (request !== requestId.current) return;
+          if (res?.data) {
+            const items = res.data.items || [];
+            const normalized = items.map((reg) => ({
+              id: reg.id,
+              isUnassigned: true,
+              registration: reg,
+              status: 'READY_FOR_VERIFICATION',
+              assigned_at: reg.stage_entered_at || reg.created_at,
+              due_at: null,
+              documents: [],
+            }));
+            setAssignments(normalized);
+            if (res.data.pagination) {
+              setPagination(res.data.pagination);
+            }
+            if (normalized.length > 0) {
+              setSelectedId((prev) => (prev && normalized.some((n) => n.id === prev) ? prev : normalized[0].id));
+            } else {
+              setSelectedId(null);
+            }
           }
-          if (normalized.length > 0) {
-            setSelectedId((prev) => (prev && normalized.some((n) => n.id === prev) ? prev : normalized[0].id));
-          } else {
-            setSelectedId(null);
+          return;
+        } else {
+          // assignmentSubView === 'ASSIGNED': Tampilkan penugasan yang sudah dibuat admin
+          const assignParams = {
+            page: pagination.page,
+            limit: pagination.limit,
+          };
+          if (submittedSearch) {
+            assignParams.search = submittedSearch;
           }
+          const res = await verificationApi.listAssignments(assignParams);
+          if (request !== requestId.current) return;
+          if (res?.data) {
+            const items = res.data.items || [];
+            setAssignments(items);
+            if (res.data.pagination) {
+              setPagination(res.data.pagination);
+            }
+            if (items.length > 0) {
+              setSelectedId((prev) => (prev && items.some((n) => n.id === prev) ? prev : items[0].id));
+            } else {
+              setSelectedId(null);
+            }
+          }
+          return;
         }
-        return;
       }
 
       const params = {
@@ -181,7 +208,7 @@ export const VerifikatorInboxPage = () => {
   useEffect(() => {
     fetchAssignments();
     return () => { requestId.current += 1; };
-  }, [activeTab, pagination.page, submittedSearch]);
+  }, [activeTab, pagination.page, submittedSearch, assignmentSubView]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -485,7 +512,7 @@ export const VerifikatorInboxPage = () => {
               <RefreshCw className="w-7 h-7 animate-spin text-brand-800 mx-auto" />
               <p className="text-xs text-ink-muted font-medium">Memuat antrean tugas...</p>
             </div>
-          ) : assignments.length === 0 ? (
+          ) : assignments.length === 0 && activeTab !== 'NEED_ASSIGNMENT' ? (
             <EmptyState
               title="Tidak Ada Penugasan Ditemukan"
               description="Tidak ada berkas yang memerlukan pemeriksaan pada tab filter ini."
@@ -494,99 +521,317 @@ export const VerifikatorInboxPage = () => {
             /* ============================================================== */
             /* 1. TAMPILAN FOKUS TUNGGAL: PENUGASAN VERIFIKATOR (LANGKAH 3)   */
             /* ============================================================== */
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {assignments.map((item) => {
-                  const reg = item.registration || {};
-                  const pub = reg.publisher || {};
-                  const physicalMaster = reg.physical_master || reg.physical_master_intake || {};
-                  const isCurrent = selectedId === item.id;
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={clsx(
-                        'bg-white dark:bg-canvas rounded-2xl border p-5 shadow-2xs space-y-4 flex flex-col justify-between transition-all duration-200',
-                        isCurrent
-                          ? 'border-brand-700 ring-2 ring-brand-700/20 bg-brand-50/20'
-                          : 'border-line hover:border-line-strong hover:shadow-md'
-                      )}
-                    >
-                      {/* Top Badges */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
-                            {reg.registration_no || '-'}
-                          </span>
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
-                            Siap ditugaskan
-                          </span>
-                        </div>
-
-                        {/* Title & Publisher */}
-                        <div>
-                          <h3 className="font-extrabold text-ink text-base line-clamp-2 leading-snug">
-                            {reg.title || 'Naskah Mushaf Al-Qur\'an'}
-                          </h3>
-                          <p className="text-xs text-ink-muted flex items-center gap-1.5 mt-1">
-                            <Building2 className="w-3.5 h-3.5 text-brand-800 shrink-0" />
-                            <span className="truncate">{pub.legal_name || '-'}</span>
-                          </p>
-                        </div>
-
-                        {/* Physical Master Context */}
-                        <div className="bg-canvas dark:bg-surface-subtle p-3 rounded-xl border border-line/60 text-xs space-y-1.5 text-ink-muted">
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-ink">
-                              TT: <strong>{physicalMaster.receipt_no || '-'}</strong>
-                            </span>
-                            <span className="font-semibold text-ink">
-                              {physicalMaster.volume_count ?? 30} jilid
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-ink-muted text-[11px] border-t border-line/50 pt-1.5">
-                            <span>
-                              Diterima: {physicalMaster.received_at ? new Date(physicalMaster.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
-                            </span>
-                            <span className="flex items-center gap-1 text-brand-800 font-medium">
-                              <Clock className="w-3 h-3" />
-                              Menunggu: {formatWaitingTime(physicalMaster.received_at || item.assigned_at)}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Assignment Prompt Box */}
-                        <div className="p-3 bg-surface-subtle dark:bg-canvas rounded-xl border border-line space-y-1">
-                          <h4 className="font-bold text-xs text-ink flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-brand-800" />
-                            Naskah Siap Ditugaskan ke Verifikator
-                          </h4>
-                          <p className="text-[11px] text-ink-muted leading-relaxed">
-                            Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Action Button */}
-                      <div className="pt-2 border-t border-line">
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="w-full justify-center text-xs font-bold py-2 shadow-2xs"
-                          onClick={() => {
-                            setSelectedId(item.id);
-                            setTargetRegistrationForAssign(reg);
-                            setAssignDialogOpen(true);
-                          }}
-                        >
-                          <UserCheck className="w-4 h-4 mr-1.5" />
-                          Tugaskan Verifikator
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="space-y-5">
+              {/* Sub-view toggle: Belum Ditugaskan vs Sudah Ditugaskan */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-canvas p-3 rounded-2xl border border-line shadow-2xs">
+                <div className="flex items-center gap-1.5 p-1 bg-surface-subtle rounded-xl text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignmentSubView('UNASSIGNED');
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                    className={clsx(
+                      'py-1.5 px-3.5 rounded-lg transition-all font-bold text-xs cursor-pointer flex items-center gap-1.5',
+                      assignmentSubView === 'UNASSIGNED'
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <Clock className="w-3.5 h-3.5 text-brand-700" />
+                    <span>Belum Ditugaskan</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignmentSubView('ASSIGNED');
+                      setPagination((p) => ({ ...p, page: 1 }));
+                    }}
+                    className={clsx(
+                      'py-1.5 px-3.5 rounded-lg transition-all font-bold text-xs cursor-pointer flex items-center gap-1.5',
+                      assignmentSubView === 'ASSIGNED'
+                        ? 'bg-white text-brand-900 shadow-2xs font-extrabold'
+                        : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
+                    <span>Sudah Ditugaskan / Riwayat Penugasan</span>
+                  </button>
+                </div>
+                <p className="text-xs text-ink-muted px-2">
+                  {assignmentSubView === 'UNASSIGNED'
+                    ? 'Naskah yang master fisiknya telah diterima di loket dan siap diterbitkan Disposisi.'
+                    : 'Naskah yang telah diterbitkan Disposisi dan ditugaskan ke Verifikator tim inti.'}
+                </p>
               </div>
+
+              {/* Tampilan 1: Belum Ditugaskan (Menunggu Disposisi) */}
+              {assignmentSubView === 'UNASSIGNED' ? (
+                assignments.length === 0 ? (
+                  <div className="py-12 px-6 text-center space-y-4 bg-white dark:bg-canvas rounded-2xl border border-line p-8 shadow-2xs max-w-xl mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-700 flex items-center justify-center mx-auto">
+                      <CheckCircle2 className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-ink">Semua Naskah Telah Ditugaskan</h3>
+                      <p className="text-xs text-ink-muted leading-relaxed">
+                        Seluruh naskah yang master fisiknya telah diterima di loket sudah selesai diterbitkan Disposisinya. Anda dapat memantau penugasan yang telah dibuat pada tab &ldquo;Sudah Ditugaskan&rdquo;.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          setAssignmentSubView('ASSIGNED');
+                          setPagination((p) => ({ ...p, page: 1 }));
+                        }}
+                        className="text-xs"
+                      >
+                        <UserCheck className="w-4 h-4 mr-1.5" />
+                        Lihat Naskah Sudah Ditugaskan
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleTabChange('ASSIGNED')}
+                        className="text-xs"
+                      >
+                        <ClipboardCheck className="w-4 h-4 mr-1.5" />
+                        Buka Pemeriksaan Berkas
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {assignments.map((item) => {
+                      const reg = item.registration || {};
+                      const pub = reg.publisher || {};
+                      const physicalMaster = reg.physical_master || reg.physical_master_intake || {};
+                      const isCurrent = selectedId === item.id;
+
+                      return (
+                        <div
+                          key={item.id}
+                          className={clsx(
+                            'bg-white dark:bg-canvas rounded-2xl border p-5 shadow-2xs space-y-4 flex flex-col justify-between transition-all duration-200',
+                            isCurrent
+                              ? 'border-brand-700 ring-2 ring-brand-700/20 bg-brand-50/20'
+                              : 'border-line hover:border-line-strong hover:shadow-md'
+                          )}
+                        >
+                          {/* Top Badges */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
+                                {reg.registration_no || '-'}
+                              </span>
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
+                                Siap ditugaskan
+                              </span>
+                            </div>
+
+                            {/* Title & Publisher */}
+                            <div>
+                              <h3 className="font-extrabold text-ink text-base line-clamp-2 leading-snug">
+                                {reg.title || 'Naskah Mushaf Al-Qur\'an'}
+                              </h3>
+                              <p className="text-xs text-ink-muted flex items-center gap-1.5 mt-1">
+                                <Building2 className="w-3.5 h-3.5 text-brand-800 shrink-0" />
+                                <span className="truncate">{pub.legal_name || '-'}</span>
+                              </p>
+                            </div>
+
+                            {/* Physical Master Context */}
+                            <div className="bg-canvas dark:bg-surface-subtle p-3 rounded-xl border border-line/60 text-xs space-y-1.5 text-ink-muted">
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-ink">
+                                  TT: <strong>{physicalMaster.receipt_no || '-'}</strong>
+                                </span>
+                                <span className="font-semibold text-ink">
+                                  {physicalMaster.volume_count ?? 30} jilid
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-ink-muted text-[11px] border-t border-line/50 pt-1.5">
+                                <span>
+                                  Diterima: {physicalMaster.received_at ? new Date(physicalMaster.received_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '-'}
+                                </span>
+                                <span className="flex items-center gap-1 text-brand-800 font-medium">
+                                  <Clock className="w-3 h-3" />
+                                  Menunggu: {formatWaitingTime(physicalMaster.received_at || item.assigned_at)}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Assignment Prompt Box */}
+                            <div className="p-3 bg-surface-subtle dark:bg-canvas rounded-xl border border-line space-y-1">
+                              <h4 className="font-bold text-xs text-ink flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-brand-800" />
+                                Naskah Siap Ditugaskan ke Verifikator
+                              </h4>
+                              <p className="text-[11px] text-ink-muted leading-relaxed">
+                                Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="pt-2 border-t border-line">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="w-full justify-center text-xs font-bold py-2 shadow-2xs"
+                              onClick={() => {
+                                setSelectedId(item.id);
+                                setTargetRegistrationForAssign(reg);
+                                setAssignDialogOpen(true);
+                              }}
+                            >
+                              <UserCheck className="w-4 h-4 mr-1.5" />
+                              Tugaskan Verifikator
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              ) : (
+                /* Tampilan 2: Sudah Ditugaskan / Riwayat Penugasan */
+                assignments.length === 0 ? (
+                  <div className="py-12 px-6 text-center space-y-3 bg-white dark:bg-canvas rounded-2xl border border-line p-8 shadow-2xs max-w-xl mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-surface-subtle text-ink-muted flex items-center justify-center mx-auto">
+                      <UserCheck className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-ink">Belum Ada Riwayat Penugasan</h3>
+                      <p className="text-xs text-ink-muted leading-relaxed">
+                        Belum ada penugasan verifikator yang diterbitkan. Pilih tab &ldquo;Belum Ditugaskan&rdquo; untuk menugaskan naskah yang siap diperiksa.
+                      </p>
+                    </div>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        setAssignmentSubView('UNASSIGNED');
+                        setPagination((p) => ({ ...p, page: 1 }));
+                      }}
+                      className="text-xs mt-2"
+                    >
+                      <Clock className="w-4 h-4 mr-1.5" />
+                      Buka Antrean Belum Ditugaskan
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {assignments.map((item) => {
+                      const reg = item.registration || {};
+                      const pub = reg.publisher || {};
+                      const verifier = item.verifier || {};
+                      const notaDoc = item.documents?.find?.((d) => d.document_type === 'NOTA_DINAS_VERIFIKASI') || item.documents?.[0];
+                      const status = item.status;
+
+                      return (
+                        <div
+                          key={item.id}
+                          className="bg-white dark:bg-canvas rounded-2xl border border-line p-5 shadow-2xs space-y-4 flex flex-col justify-between hover:border-line-strong hover:shadow-md transition-all duration-200"
+                        >
+                          <div className="space-y-3">
+                            {/* Badges */}
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
+                                {reg.registration_no || '-'}
+                              </span>
+                              <span className={clsx(
+                                'inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border',
+                                status === 'ASSIGNED'
+                                  ? 'bg-brand-50 text-brand-800 border-brand-200'
+                                  : status === 'IN_PROGRESS'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              )}>
+                                {status === 'ASSIGNED' ? 'Ditugaskan (Baru)' : status === 'IN_PROGRESS' ? 'Sedang Diperiksa' : status || 'Aktif'}
+                              </span>
+                            </div>
+
+                            {/* Title & Publisher */}
+                            <div>
+                              <h3 className="font-extrabold text-ink text-base line-clamp-2 leading-snug">
+                                {reg.title || 'Naskah Mushaf Al-Qur\'an'}
+                              </h3>
+                              <p className="text-xs text-ink-muted flex items-center gap-1.5 mt-1">
+                                <Building2 className="w-3.5 h-3.5 text-brand-800 shrink-0" />
+                                <span className="truncate">{pub.legal_name || '-'}</span>
+                              </p>
+                            </div>
+
+                            {/* Verifier Card */}
+                            <div className="bg-brand-50/40 dark:bg-surface-subtle p-3 rounded-xl border border-brand-100 text-xs space-y-1">
+                              <span className="text-[11px] text-ink-muted block">Petugas Verifikator Ditugaskan:</span>
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold text-ink flex items-center gap-1.5">
+                                  <UserCheck className="w-3.5 h-3.5 text-brand-700" />
+                                  {verifier.name || 'Verifikator Terpilih'}
+                                </span>
+                              </div>
+                              {verifier.nip && (
+                                <span className="text-[11px] text-ink-muted font-mono block">NIP: {verifier.nip}</span>
+                              )}
+                            </div>
+
+                            {/* Disposisi & Tanggal */}
+                            <div className="bg-canvas dark:bg-surface-subtle p-3 rounded-xl border border-line/60 text-xs space-y-1.5 text-ink-muted">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] text-ink-muted">Disposisi:</span>
+                                <span className="font-mono font-bold text-ink">
+                                  {notaDoc?.document_no || 'Tercatat'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-[11px] border-t border-line/50 pt-1.5">
+                                <span>
+                                  Ditugaskan: {item.assigned_at ? new Date(item.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
+                                </span>
+                                {item.due_at && (
+                                  <span className="text-brand-800 font-medium">
+                                    SLA: {new Date(item.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="pt-2 border-t border-line flex items-center gap-2">
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              className="flex-1 justify-center text-xs font-bold py-2 shadow-2xs"
+                              onClick={() => navigate(`/internal/verifications/${item.id}`)}
+                            >
+                              <ClipboardCheck className="w-4 h-4 mr-1.5" />
+                              Buka Pemeriksaan
+                            </Button>
+                            {isAssignmentAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs px-2.5"
+                                title="Ganti Verifikator"
+                                onClick={() => {
+                                  setReassigningAssignment(item);
+                                  setReassignDialogOpen(true);
+                                }}
+                              >
+                                Ganti
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
             </div>
           ) : (
             /* ============================================================== */

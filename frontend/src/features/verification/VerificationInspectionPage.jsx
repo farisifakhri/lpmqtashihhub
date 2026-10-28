@@ -248,12 +248,11 @@ export const VerificationInspectionPage = () => {
     const title = reg.title || 'NASKAH MUSHAF';
     const findings = currentChecklist
       .filter((item) => item.result === 'TIDAK_SESUAI')
-      .map(
-        (item, index) =>
-          (index + 1) + '. ' +
-          (CHECKLIST_DEFINITIONS.find((def) => def.code === item.code)?.title || item.code) +
-          ': ' + (item.notes || 'perlu diperbaiki')
-      )
+      .map((item, index) => {
+        const def = CHECKLIST_DEFINITIONS.find((d) => d.code === item.code);
+        const cleanTitle = def?.title ? def.title.replace(/^\d+\.\s*/, '') : item.code;
+        return (index + 1) + '. ' + cleanTitle + ': ' + (item.notes || 'perlu diperbaiki');
+      })
       .join('\n');
 
     if (dec === 'PASSED') {
@@ -285,36 +284,35 @@ export const VerificationInspectionPage = () => {
 
   const handleChecklistChange = (code, field, value) => {
     setIsDirty(true);
-    setChecklist((prev) => {
-      const nextChecklist = prev.map((item) =>
-        item.code === code ? { ...item, [field]: value } : item
-      );
 
-      const hasTidakSesuai = nextChecklist.some((item) => item.result === 'TIDAK_SESUAI');
-      const targetDecision = hasTidakSesuai ? 'REVISION_REQUIRED' : 'PASSED';
+    const nextChecklist = checklist.map((item) =>
+      item.code === code ? { ...item, [field]: value } : item
+    );
+    setChecklist(nextChecklist);
 
-      if (targetDecision !== decision || (hasTidakSesuai && field === 'notes')) {
-        setDecision(targetDecision);
-        loadOfficialTemplate(targetDecision, nextChecklist);
+    const hasTidakSesuai = nextChecklist.some((item) => item.result === 'TIDAK_SESUAI');
+    const targetDecision = hasTidakSesuai ? 'REVISION_REQUIRED' : 'PASSED';
 
-        if (hasTidakSesuai && (!notes || notes.startsWith('Terdapat ketidaksesuaian'))) {
-          const autoNotes = nextChecklist
-            .filter((i) => i.result === 'TIDAK_SESUAI')
-            .map((i) => {
-              const def = CHECKLIST_DEFINITIONS.find((d) => d.code === i.code);
-              return (def?.title || i.code) + ': ' + (i.notes || 'Perlu perbaikan');
-            })
-            .join('; ');
-          if (autoNotes) {
-            setNotes('Terdapat ketidaksesuaian naskah: ' + autoNotes);
-          }
-        } else if (!hasTidakSesuai && notes.startsWith('Terdapat ketidaksesuaian')) {
-          setNotes('');
+    if (targetDecision !== decision || (hasTidakSesuai && field === 'notes')) {
+      setDecision(targetDecision);
+      loadOfficialTemplate(targetDecision, nextChecklist);
+
+      if (hasTidakSesuai && (!notes || (typeof notes === 'string' && notes.startsWith('Terdapat ketidaksesuaian')))) {
+        const autoNotes = nextChecklist
+          .filter((i) => i.result === 'TIDAK_SESUAI')
+          .map((i) => {
+            const def = CHECKLIST_DEFINITIONS.find((d) => d.code === i.code);
+            const cleanTitle = def?.title ? def.title.replace(/^\d+\.\s*/, '') : i.code;
+            return cleanTitle + ': ' + (i.notes || 'Perlu perbaikan');
+          })
+          .join('; ');
+        if (autoNotes) {
+          setNotes('Terdapat ketidaksesuaian naskah: ' + autoNotes);
         }
+      } else if (!hasTidakSesuai && typeof notes === 'string' && notes.startsWith('Terdapat ketidaksesuaian')) {
+        setNotes('');
       }
-
-      return nextChecklist;
-    });
+    }
 
     setValidationErrors((prev) => {
       const copy = { ...prev };

@@ -24,10 +24,12 @@ const TIME_ZONES = {
 
 export const GreetingHeroCard = ({
   userName = 'Petugas LPMQ',
-  roleLabel = 'Petugas',
+  roleLabel,
+  role,
   subtext = 'Layanan Surat Tanda Tashih Mushaf Al-Quran Kementerian Agama RI',
   badgeExtra = null,
 }) => {
+  const effectiveRoleLabel = roleLabel || (role === 'publisher' ? 'Penerbit Mushaf Terdaftar' : 'Petugas');
   const [time, setTime] = useState(new Date());
   const [selectedZone, setSelectedZone] = useState('WIB');
 
@@ -105,7 +107,7 @@ export const GreetingHeroCard = ({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 text-xs font-semibold text-brand-100 border border-white/20 shadow-2xs">
               <ShieldCheck className="w-3.5 h-3.5 text-civicGold-500" />
-              <span>{roleLabel}</span>
+              <span>{effectiveRoleLabel}</span>
             </span>
             {badgeExtra && (
               <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-brand-950/70 text-xs font-mono text-civicGold-100 border border-white/20">

@@ -4,7 +4,11 @@ import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
 export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
-  const suggestedVerifierId = registration?.core_verifier_id || '';
+  const suggestedVerifierId =
+    registration?.core_verifier_id ||
+    registration?.core_team?.verifier?.id ||
+    registration?.core_team_verifier_id ||
+    '';
   const [verifiers, setVerifiers] = useState([]);
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState(suggestedVerifierId);
@@ -15,6 +19,27 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
   const [error, setError] = useState(null);
   const [notaError, setNotaError] = useState(false);
 
+  const loadVerifiers = () => {
+    setLoading(true);
+    setError(null);
+
+    verificationApi
+      .listActiveVerifiers({ status: 'ACTIVE' })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        setVerifiers(items);
+        if (suggestedVerifierId && items.some((item) => item.id === suggestedVerifierId)) {
+          setSelectedVerifierId((prev) => prev || suggestedVerifierId);
+        }
+      })
+      .catch((err) => {
+        setError(err.message || 'Gagal memuat direktori verifikator.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -24,9 +49,9 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
       .listActiveVerifiers({ status: 'ACTIVE' })
       .then((res) => {
         if (!isMounted) return;
-        const items = res?.data || [];
+        const items = Array.isArray(res) ? res : (res?.data || []);
         setVerifiers(items);
-        if (suggestedVerifierId) {
+        if (suggestedVerifierId && items.some((item) => item.id === suggestedVerifierId)) {
           setSelectedVerifierId((prev) => prev || suggestedVerifierId);
         }
       })
@@ -208,6 +233,17 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
             {loading ? (
               <p className="text-ink-muted italic py-2">Memuat daftar verifikator...</p>
+            ) : verifiers.length === 0 ? (
+              <div className="p-3 bg-civic-warningSoft border border-civic-warningLine rounded-xl text-xs text-civic-warning flex items-center justify-between">
+                <span>Belum ada data verifikator aktif ditemukan di sistem.</span>
+                <button
+                  type="button"
+                  onClick={loadVerifiers}
+                  className="font-bold underline ml-2 cursor-pointer"
+                >
+                  Muat Ulang
+                </button>
+              </div>
             ) : (
               <div className="space-y-1.5">
                 {verifiers.length > 3 && (

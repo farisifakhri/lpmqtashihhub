@@ -143,7 +143,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     // Navigasi Berbasis Peran sesuai Dokumen Bab 6
     const getNavSections = () => {
-        if (isPublisher) {
+        // 1. Portal Penerbit
+        if (role === "PENERBIT" || role === "PUBLISHER" || (isPublisher && !role)) {
             return [
                 {
                     title: "PORTAL PENERBIT",
@@ -185,8 +186,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
+        // Role Internal: Verifikator (Diutamakan jika peran aktif adalah Verifikator)
+        if (role === "VERIFIKATOR" || role === "VERIFICATOR") {
+            return getVerifikatorNav();
+        }
+
         // Role Internal: Admin (Helper Admin - Alur Penuh Tanpa Akses Penerbit & TTE Kepala)
-        if (isAdmin && !isSuperAdmin) {
+        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
             return [
                 {
                     title: "KENDALI UTAMA",
@@ -331,11 +337,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role Internal: Verifikator
-        if (isVerifikator && !isSuperAdmin) {
+        function getVerifikatorNav() {
             return [
-                {
-                    title: "VERIFIKASI BERKAS & RASM",
+            {
+                title: "VERIFIKASI BERKAS & RASM",
                     items: [
                         {
                             label: "Kendali Operasional",
@@ -385,6 +390,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     ],
                 },
             ];
+        };
+
+        if (isVerifikator && role === "VERIFIKATOR") {
+            return getVerifikatorNav();
         }
 
         // Role Internal: Distributor

@@ -176,8 +176,8 @@ export const InspectionChecklist = ({
                 )}
 
                 <div className="mt-2">
-                  <input
-                    type="text"
+                  <textarea
+                    rows={2}
                     value={currentItem.notes || ''}
                     maxLength={1000}
                     onChange={(e) => handleChecklistChange(def.code, 'notes', e.target.value)}
@@ -187,7 +187,7 @@ export const InspectionChecklist = ({
                         ? 'Tuliskan catatan rincian kekurangan butir ini (wajib)...'
                         : 'Catatan tambahan (opsional)...'
                     }
-                    className={`w-full px-3 py-1.5 text-xs rounded-lg border bg-white focus:outline-none focus:ring-2 ${
+                    className={`w-full px-3 py-2 text-xs rounded-lg border bg-white focus:outline-none focus:ring-2 resize-y ${
                       isItemRejected && !currentItem.notes?.trim()
                         ? 'border-civic-dangerLine bg-civic-dangerSoft/20 focus:ring-civic-danger/20'
                         : itemError
