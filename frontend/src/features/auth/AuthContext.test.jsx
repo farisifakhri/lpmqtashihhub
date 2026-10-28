@@ -36,4 +36,37 @@ describe('bootstrap autentikasi', () => {
     expect(screen.getByText('PENERBIT')).toBeInTheDocument();
     expect(localStorage.getItem('lpmq_user')).toBeNull();
   });
+  it('mendukung pergantian peran aktif (switchActiveRole) bagi pengguna dengan peran ganda (Item 21)', async () => {
+    localStorage.setItem('lpmq_token', 'token-test');
+    authApi.getMe.mockResolvedValue({
+      data: {
+        id: 'user-multi-1',
+        name: 'Ahmad Falahudin, S.S',
+        email: 'verifikator@lpmq.kemenag.go.id',
+        roles: ['VERIFIKATOR', 'PENTASHIH'],
+      },
+    });
+
+    const TestMultiRoleView = () => {
+      const { currentUser, switchActiveRole } = useAuth();
+      return (
+        <div>
+          <span data-testid="current-role">{currentUser?.role}</span>
+          <button onClick={() => switchActiveRole('PENTASHIH')}>Pindah ke Pentashih</button>
+        </div>
+      );
+    };
+
+    render(<AuthProvider><TestMultiRoleView /></AuthProvider>);
+    await act(async () => {});
+
+    expect(screen.getByTestId('current-role')).toHaveTextContent('VERIFIKATOR');
+
+    act(() => {
+      screen.getByText('Pindah ke Pentashih').click();
+    });
+
+    expect(screen.getByTestId('current-role')).toHaveTextContent('PENTASHIH');
+    expect(localStorage.getItem('lpmq_active_role')).toBe('PENTASHIH');
+  });
 });

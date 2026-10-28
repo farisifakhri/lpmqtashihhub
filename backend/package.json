@@ -22,7 +22,8 @@
     "db:backup": "node scripts/backup-db.js",
     "db:cleanup-preview": "node scripts/cleanup-test-data.js",
     "db:cleanup-perorangan-preview": "node scripts/cleanup-perorangan-publishers.js",
-    "db:cleanup-perorangan": "node scripts/cleanup-perorangan-publishers.js --execute"
+    "db:cleanup-perorangan": "node scripts/cleanup-perorangan-publishers.js --execute",
+    "db:consolidate-staff": "node scripts/consolidate-duplicate-staff.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

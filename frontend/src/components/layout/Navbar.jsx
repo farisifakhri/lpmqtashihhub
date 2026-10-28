@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
   Menu,
@@ -15,6 +16,7 @@ import {
   Maximize2,
   Minimize2,
   Sparkles,
+  Check,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDensity } from '@/context/DensityContext';
@@ -30,7 +32,7 @@ import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, switchActiveRole } = useAuth();
   const { toggleDensity, isCompact } = useDensity();
   const navigate = useNavigate();
   const location = useLocation();
@@ -350,6 +352,48 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
                         <span>Kontrol proses mengacu pada SOP Pentashihan LPMQ</span>
                       </div>
+
+                      {/* Ganti Peran Aktif jika memiliki peran ganda (Item 21) */}
+                      {currentUser?.roles && currentUser.roles.length > 1 && (
+                        <div className="p-2.5 mx-2 my-1.5 bg-brand-50/70 dark:bg-[#152e20]/80 rounded-xl border border-brand-200/80 dark:border-[#1e3d2e] space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-brand-900 dark:text-emerald-300">
+                            <span>Ganti Peran ({currentUser.roles.length} Peran Tersedia)</span>
+                          </div>
+                          <div className="space-y-1">
+                            {currentUser.roles.map((rCode) => {
+                              const config = getRoleConfig(rCode);
+                              const isActive = rCode === role;
+                              return (
+                                <button
+                                  key={rCode}
+                                  type="button"
+                                  onClick={() => {
+                                    switchActiveRole(rCode);
+                                    setProfileDropdownOpen(false);
+                                    if (rCode === 'PENERBIT' && !location.pathname.startsWith('/publisher')) {
+                                      navigate('/publisher');
+                                    } else if (rCode !== 'PENERBIT' && location.pathname.startsWith('/publisher')) {
+                                      navigate('/internal');
+                                    }
+                                  }}
+                                  className={clsx(
+                                    "w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                                    isActive
+                                      ? "bg-brand-700 text-white shadow-2xs font-bold"
+                                      : "text-ink dark:text-gray-200 hover:bg-white/80 dark:hover:bg-[#1a3827]"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    <ShieldCheck className={clsx("w-3.5 h-3.5 shrink-0", isActive ? "text-white" : "text-brand-700 dark:text-emerald-400")} />
+                                    <span className="truncate">{config.label}</span>
+                                  </div>
+                                  {isActive && <Check className="w-3.5 h-3.5 shrink-0 ml-1" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="p-1.5 space-y-0.5">
                         <button

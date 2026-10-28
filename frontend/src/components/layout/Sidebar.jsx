@@ -37,9 +37,9 @@ import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
-    const { currentUser, logout } = useAuth();
-    const location = useLocation();
+    const { currentUser, logout, switchActiveRole } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
     const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
 
@@ -833,8 +833,19 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                     <div className="text-xs font-bold lpmq-sidebar-text truncate group-hover:text-brand-900 dark:group-hover:text-brand-300 transition-colors">
                                         {currentUser?.name || "Pengguna"}
                                     </div>
-                                    <div className="text-[10px] lpmq-sidebar-muted truncate leading-tight flex items-center gap-1">
+                                    <div className="text-[10px] lpmq-sidebar-muted truncate leading-tight flex items-center gap-1.5 mt-0.5">
                                         <span>{roleBadge.label}</span>
+                                        {currentUser?.roles && currentUser.roles.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCycleRole}
+                                                className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-brand-100 dark:bg-brand-900/60 text-brand-900 dark:text-brand-200 border border-brand-200 dark:border-brand-800 hover:bg-brand-200 cursor-pointer flex items-center gap-0.5"
+                                                title="Klik untuk beralih ke peran berikutnya"
+                                            >
+                                                <span>Ganti ({currentUser.roles.length})</span>
+                                                <RefreshCw className="w-2 h-2" />
+                                            </button>
+                                        )}
                                         <Sparkles className="w-2.5 h-2.5 text-brand-700 opacity-60 group-hover:opacity-100" />
                                     </div>
                                 </div>
