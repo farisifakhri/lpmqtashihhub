@@ -128,37 +128,37 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
       role="dialog"
       aria-modal="true"
       aria-label="Pencarian Global dan Perintah Cepat"
-      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-ink/60 dark:bg-black/70 backdrop-blur-xs"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-24 p-4 bg-ink/60 backdrop-blur-xs"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-xl bg-surface dark:bg-[#0f2017] rounded-2xl shadow-2xl border border-line dark:border-[#1e3d2e] overflow-hidden animate-slideUp"
+        className="relative w-full max-w-xl bg-surface rounded-2xl shadow-2xl border border-line overflow-hidden animate-slideUp"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
       >
         {/* Search Input Bar */}
-        <div className="flex items-center px-4 py-3.5 border-b border-line dark:border-[#1e3d2e] bg-surface dark:bg-[#0f2017]">
-          <Search className="w-5 h-5 text-ink-muted dark:text-emerald-400 mr-3 shrink-0" aria-hidden="true" />
+        <div className="flex items-center px-4 py-3.5 border-b border-line bg-surface">
+          <Search className="w-5 h-5 text-brand-700 mr-3 shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Ketik perintah, nomor registrasi, atau nama modul..."
-            className="w-full bg-transparent text-sm text-ink dark:text-gray-100 placeholder:text-ink-muted/70 dark:placeholder:text-gray-400 outline-none"
+            className="w-full bg-transparent text-sm text-ink placeholder:text-ink-muted/70 outline-none"
             aria-label="Cari perintah atau halaman"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="p-1 text-ink-muted hover:text-ink dark:text-gray-400 dark:hover:text-white mr-2 cursor-pointer"
+              className="p-1 text-ink-muted hover:text-ink mr-2 cursor-pointer"
               aria-label="Hapus kata kunci"
             >
               <X className="w-4 h-4" />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-ink-muted dark:text-gray-300 bg-surface-subtle dark:bg-[#14281e] border border-line dark:border-[#1e3d2e] rounded">
+          <kbd className="hidden sm:inline-flex items-center px-2 py-0.5 text-xs font-mono text-ink-muted bg-surface-subtle border border-line rounded">
             ESC
           </kbd>
         </div>
@@ -166,7 +166,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         {/* Results List */}
         <div ref={listRef} className="max-h-80 overflow-y-auto p-2 space-y-1" role="listbox">
           {filteredCommands.length === 0 ? (
-            <div className="py-8 text-center text-xs text-ink-muted dark:text-gray-400">
+            <div className="py-8 text-center text-xs text-ink-muted">
               Tidak ada perintah atau halaman yang cocok dengan "{query}".
             </div>
           ) : (
@@ -183,8 +183,8 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                   className={clsx(
                     'flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors',
                     isSelected
-                      ? 'bg-brand-50 dark:bg-[#1a3528] border border-brand-100 dark:border-emerald-800 text-brand-950 dark:text-emerald-200'
-                      : 'hover:bg-surface-subtle dark:hover:bg-[#14281e] text-ink dark:text-gray-200 border border-transparent'
+                      ? 'bg-brand-50 border border-brand-200 text-brand-900'
+                      : 'hover:bg-surface-subtle text-ink border border-transparent'
                   )}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -192,8 +192,8 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                       className={clsx(
                         'w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border',
                         isSelected
-                          ? 'bg-brand-700 dark:bg-emerald-600 text-white border-brand-800 dark:border-emerald-500'
-                          : 'bg-surface-subtle dark:bg-[#14281e] text-ink-muted dark:text-emerald-400 border-line dark:border-[#1e3d2e]'
+                          ? 'bg-brand-700 text-white border-brand-800'
+                          : 'bg-surface-subtle text-ink-muted border-line'
                       )}
                     >
                       <Icon className="w-4 h-4" />
@@ -201,17 +201,17 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold truncate">{item.label}</span>
-                        <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle dark:bg-[#14281e] text-ink-muted dark:text-emerald-300 border border-line/60 dark:border-[#1e3d2e]">
+                        <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle text-ink-muted border border-line/60">
                           {item.category}
                         </span>
                       </div>
-                      <p className="text-xs text-ink-muted dark:text-gray-400 truncate mt-0.5">{item.desc}</p>
+                      <p className="text-xs text-ink-muted truncate mt-0.5">{item.desc}</p>
                     </div>
                   </div>
                   <ArrowRight
                     className={clsx(
                       'w-4 h-4 ml-2 shrink-0 transition-opacity',
-                      isSelected ? 'text-brand-700 dark:text-emerald-400 opacity-100' : 'opacity-0'
+                      isSelected ? 'text-brand-700 opacity-100' : 'opacity-0'
                     )}
                   />
                 </div>
@@ -221,7 +221,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         </div>
 
         {/* Footer shortcuts */}
-        <div className="px-4 py-2 border-t border-line dark:border-[#1e3d2e] bg-surface-subtle/60 dark:bg-[#12231b] text-xs text-ink-muted dark:text-gray-400 flex items-center justify-between">
+        <div className="px-4 py-2 border-t border-line bg-surface-subtle/60 text-xs text-ink-muted flex items-center justify-between">
           <span>Gunakan panah ↑↓ untuk navigasi, Enter untuk memilih</span>
           <span className="font-mono">Pencarian Cepat</span>
         </div>

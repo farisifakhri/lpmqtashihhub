@@ -383,44 +383,6 @@ html.dark .focus\:bg-white:focus {
   background-color: var(--surface) !important;
 }
 
-/* Transformasi latar belakang abu-abu dan pastel terang */
-html.dark .bg-gray-50,
-html.dark .bg-slate-50,
-html.dark .bg-stone-50,
-html.dark .bg-zinc-50,
-html.dark .bg-neutral-50,
-html.dark .bg-emerald-50,
-html.dark .bg-teal-50,
-html.dark .bg-green-50,
-html.dark .bg-sky-50,
-html.dark .bg-blue-50,
-html.dark .bg-amber-50,
-html.dark .bg-yellow-50,
-html.dark .bg-red-50,
-html.dark .bg-rose-50,
-html.dark .bg-indigo-50,
-html.dark .bg-purple-50 {
-  background-color: var(--surface-subtle) !important;
-}
-
-html.dark .bg-gray-100,
-html.dark .bg-slate-100,
-html.dark .bg-zinc-100,
-html.dark .bg-stone-100,
-html.dark .bg-neutral-100,
-html.dark .bg-emerald-100,
-html.dark .bg-teal-100,
-html.dark .bg-green-100,
-html.dark .bg-sky-100,
-html.dark .bg-blue-100,
-html.dark .bg-amber-100,
-html.dark .bg-yellow-100,
-html.dark .bg-red-100,
-html.dark .bg-indigo-100,
-html.dark .bg-purple-100 {
-  background-color: var(--surface-strong) !important;
-}
-
 /* Badge brand 50 & 100 di mode gelap */
 html.dark .bg-brand-50 {
   background-color: #142a1b !important;
@@ -470,27 +432,7 @@ html.dark .bg-civic-successSoft {
   border-color: rgba(52, 211, 153, 0.3) !important;
 }
 
-/* Teks badge terang pada mode gelap agar kontras WCAG terpenuhi */
-html.dark .text-emerald-900, html.dark .text-emerald-800 { color: #6ee7b7 !important; }
-html.dark .text-teal-900, html.dark .text-teal-800 { color: #5eead4 !important; }
-html.dark .text-sky-900, html.dark .text-sky-800 { color: #7dd3fc !important; }
-html.dark .text-blue-900, html.dark .text-blue-800 { color: #93c5fd !important; }
-html.dark .text-amber-900, html.dark .text-amber-800 { color: #fcd34d !important; }
-html.dark .text-yellow-900, html.dark .text-yellow-800 { color: #fde047 !important; }
-html.dark .text-indigo-900, html.dark .text-indigo-800 { color: #a5b4fc !important; }
-html.dark .text-purple-900, html.dark .text-purple-800 { color: #d8b4fe !important; }
-html.dark .text-red-900, html.dark .text-red-800, html.dark .text-rose-900 { color: #fca5a5 !important; }
-html.dark .text-gray-900, html.dark .text-slate-900, html.dark .text-zinc-900 { color: var(--ink) !important; }
-
 /* Garis pembatas (border) */
-html.dark .border-gray-100,
-html.dark .border-gray-200,
-html.dark .border-gray-300,
-html.dark .border-slate-100,
-html.dark .border-slate-200,
-html.dark .border-slate-300,
-html.dark .border-zinc-100,
-html.dark .border-zinc-200,
 html.dark .border-line,
 html.dark .border-line\/60,
 html.dark .border-line\/70,

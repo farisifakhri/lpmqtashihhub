@@ -219,8 +219,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
               {/* Peringatan Wewenang Distributor bila pentashih belum selesai centang (Item 6) */}
               {(!allCompleted || !hasTeamRecap) && (
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                <div className="p-3 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
                   <span>
                     Sebagian pentashih belum menyelesaikan centang checklist atau mengunggah rekap. Sebagai Koordinator Distributor, Anda tetap berhak menyimpan keputusan sidang.
                   </span>

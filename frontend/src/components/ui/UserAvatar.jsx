@@ -71,54 +71,54 @@ function getRoleBadgeConfig(role) {
       return {
         icon: Crown,
         title: 'Super Admin',
-        bg: 'bg-amber-500 text-white border-amber-300',
+        bg: 'bg-civicGold-500 text-brand-950 border-civicGold-700',
       };
     case 'ADMIN_INTERNAL':
       return {
         icon: Shield,
         title: 'Admin Internal',
-        bg: 'bg-emerald-600 text-white border-emerald-300',
+        bg: 'bg-brand-700 text-white border-brand-500',
       };
     case 'VERIFIKATOR':
     case 'VERIFICATOR':
       return {
         icon: CheckCircle,
         title: 'Verifikator',
-        bg: 'bg-teal-600 text-white border-teal-300',
+        bg: 'bg-brand-800 text-white border-brand-600',
       };
     case 'DISTRIBUTOR':
       return {
         icon: Package,
         title: 'Distributor',
-        bg: 'bg-sky-600 text-white border-sky-300',
+        bg: 'bg-brand-600 text-white border-brand-500',
       };
     case 'PENTASHIH':
     case 'TASHIH_MEMBER':
       return {
         icon: BookOpen,
         title: 'Pentashih Naskah',
-        bg: 'bg-emerald-700 text-amber-200 border-amber-400',
+        bg: 'bg-brand-900 text-civicGold-100 border-civicGold-500',
       };
     case 'DOKUMENTATOR':
     case 'DOCUMENTATOR':
       return {
         icon: FolderArchive,
         title: 'Dokumentator',
-        bg: 'bg-indigo-600 text-white border-indigo-300',
+        bg: 'bg-brand-700 text-white border-brand-500',
       };
     case 'KEPALA_LPMQ':
     case 'HEAD_OF_LPMQ':
       return {
         icon: PenTool,
         title: 'Kepala LPMQ',
-        bg: 'bg-amber-600 text-white border-amber-200',
+        bg: 'bg-civicGold-700 text-white border-civicGold-500',
       };
     case 'PENERBIT':
     case 'PUBLISHER':
       return {
         icon: Building2,
         title: 'Penerbit',
-        bg: 'bg-emerald-800 text-white border-emerald-400',
+        bg: 'bg-brand-800 text-white border-brand-600',
       };
     default:
       return null;
@@ -497,7 +497,7 @@ export function UserAvatar({
 
       {/* Online Status Dot (Jika Tidak Menampilkan Role Badge) */}
       {showOnline && !showRoleBadge && (
-        <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-[#13221d] ring-1 ring-emerald-600/30" />
+        <span data-testid="online-status-dot" className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-brand-600 rounded-full border-2 border-surface ring-1 ring-brand-700/30" />
       )}
     </div>
   );

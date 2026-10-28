@@ -15,7 +15,7 @@ export const StickyActionBar = ({
     <aside
       aria-label="Aksi Utama Halaman"
       className={clsx(
-        'sticky bottom-0 z-30 bg-surface/95 dark:bg-[#0c1813]/95 backdrop-blur-md border-t border-line dark:border-[#1e3d2e] shadow-[0_-4px_20px_rgba(0,0,0,0.06)] py-3.5 px-4 sm:px-8 transition-all -mx-3.5 sm:-mx-6 lg:-mx-8 -mb-4 sm:-mb-6 lg:-mb-7 mt-8',
+        'sticky bottom-0 z-30 bg-surface/95 backdrop-blur-md border-t border-line shadow-[0_-4px_20px_rgba(0,0,0,0.06)] py-3.5 px-4 sm:px-8 transition-all -mx-3.5 sm:-mx-6 lg:-mx-8 -mb-4 sm:-mb-6 lg:-mb-7 mt-8',
         className
       )}
     >

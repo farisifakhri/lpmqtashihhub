@@ -151,38 +151,38 @@ export const NotificationCenter = () => {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="h-9 w-9 rounded-lg bg-surface-subtle/80 dark:bg-[#13261d] hover:bg-surface-strong/60 dark:hover:bg-[#1a3528] border border-line dark:border-[#1e3d2e] hover:border-brand-500/50 dark:hover:border-emerald-600/50 flex items-center justify-center text-ink-muted hover:text-brand-fg dark:hover:text-emerald-400 transition-all shadow-2xs relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-700/20"
+        className="h-9 w-9 rounded-lg bg-surface-subtle/80 hover:bg-surface-strong/60 border border-line hover:border-brand-500/50 flex items-center justify-center text-ink-muted hover:text-brand-fg transition-all shadow-2xs relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-700/20"
         aria-label={`Pemberitahuan, ${unreadCount} perlu tindakan`}
         title="Pemberitahuan"
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-civicGold-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-civicGold-500" />
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface dark:bg-[#0f2017] rounded-xl shadow-xl border border-line dark:border-[#1e3d2e] py-2 z-50 animate-slideUp">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-surface rounded-xl shadow-xl border border-line py-2 z-50 animate-slideUp">
           {/* Header */}
-          <div className="px-4 py-2 border-b border-line dark:border-[#1e3d2e] flex items-center justify-between">
+          <div className="px-4 py-2 border-b border-line flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-bold text-ink dark:text-gray-100 uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-ink uppercase tracking-wider">
                 Pemberitahuan
               </h3>
-              {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-muted dark:text-gray-400" />}
+              {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-muted" />}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-brand-700 dark:text-emerald-300 bg-brand-50 dark:bg-[#1a3528] px-2 py-0.5 rounded border border-brand-100 dark:border-emerald-800">
+              <span className="text-xs font-semibold text-brand-900 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
                 {unreadCount} Perlu Tindakan
               </span>
               <button
                 type="button"
                 onClick={fetchNotifications}
                 disabled={loading}
-                className="p-1 text-ink-muted hover:text-brand-900 dark:hover:text-emerald-300 rounded transition-colors cursor-pointer"
+                className="p-1 text-ink-muted hover:text-brand-900 rounded transition-colors cursor-pointer"
                 title="Muat ulang pemberitahuan"
               >
                 <RefreshCw className={clsx('w-3 h-3', loading && 'animate-spin')} />
@@ -191,15 +191,15 @@ export const NotificationCenter = () => {
           </div>
 
           {/* Tab Selector */}
-          <div className="grid grid-cols-2 p-1.5 mx-2 my-1.5 bg-surface-subtle dark:bg-[#14281e] rounded-lg text-xs font-semibold">
+          <div className="grid grid-cols-2 p-1.5 mx-2 my-1.5 bg-surface-subtle rounded-lg text-xs font-semibold">
             <button
               type="button"
               onClick={() => setTab('ACTION_REQUIRED')}
               className={clsx(
                 'py-1.5 rounded-md transition-colors text-center cursor-pointer',
                 tab === 'ACTION_REQUIRED'
-                  ? 'bg-surface dark:bg-[#1a3528] text-ink dark:text-gray-100 shadow-2xs'
-                  : 'text-ink-muted hover:text-ink dark:hover:text-gray-200'
+                  ? 'bg-surface text-ink shadow-2xs'
+                  : 'text-ink-muted hover:text-ink'
               )}
             >
               Perlu Tindakan ({actionRequiredNotifications.length})
@@ -210,8 +210,8 @@ export const NotificationCenter = () => {
               className={clsx(
                 'py-1.5 rounded-md transition-colors text-center cursor-pointer',
                 tab === 'INFO'
-                  ? 'bg-surface dark:bg-[#1a3528] text-ink dark:text-gray-100 shadow-2xs'
-                  : 'text-ink-muted hover:text-ink dark:hover:text-gray-200'
+                  ? 'bg-surface text-ink shadow-2xs'
+                  : 'text-ink-muted hover:text-ink'
               )}
             >
               Informasi ({infoNotifications.length})
@@ -222,7 +222,7 @@ export const NotificationCenter = () => {
           <div className="max-h-72 overflow-y-auto px-2 py-1 space-y-1">
             {loading && notifications.length === 0 ? (
               <div className="py-8 text-center text-xs text-ink-muted flex flex-col items-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-brand-700 dark:text-emerald-400" />
+                <Loader2 className="w-5 h-5 animate-spin text-brand-700" />
                 <span>Memuat pemberitahuan...</span>
               </div>
             ) : error && notifications.length === 0 ? (
@@ -237,7 +237,7 @@ export const NotificationCenter = () => {
                 </button>
               </div>
             ) : currentItems.length === 0 ? (
-              <div className="py-6 text-center text-xs text-ink-muted dark:text-gray-400">
+              <div className="py-6 text-center text-xs text-ink-muted">
                 Tidak ada pemberitahuan pada kategori ini.
               </div>
             ) : (
@@ -253,18 +253,18 @@ export const NotificationCenter = () => {
                     className={clsx(
                       'p-3 rounded-lg border transition-colors text-xs space-y-1',
                       isUnread
-                        ? 'border-brand-200 dark:border-emerald-800/60 bg-brand-50/40 dark:bg-emerald-950/20 hover:bg-brand-50/70 dark:hover:bg-emerald-950/40'
-                        : 'border-line/60 dark:border-[#1e3d2e] hover:bg-surface-subtle dark:hover:bg-[#14281e]'
+                        ? 'border-brand-200 bg-brand-50/40 hover:bg-brand-50/70'
+                        : 'border-line/60 hover:bg-surface-subtle'
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-ink dark:text-gray-100 truncate">{item.title}</span>
-                      <span className="text-xs text-ink-muted dark:text-gray-400 shrink-0 flex items-center gap-1">
+                      <span className="font-bold text-ink truncate">{item.title}</span>
+                      <span className="text-xs text-ink-muted shrink-0 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {timeStr}
                       </span>
                     </div>
-                    <p className="text-xs text-ink-muted dark:text-gray-400 leading-relaxed">{desc}</p>
+                    <p className="text-xs text-ink-muted leading-relaxed">{desc}</p>
                     <div className="pt-1 flex items-center justify-between">
                       {link ? (
                         <Link
@@ -273,7 +273,7 @@ export const NotificationCenter = () => {
                             if (isUnread) handleMarkAsRead(e, item.id);
                             setIsOpen(false);
                           }}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 dark:text-emerald-400 hover:text-brand-800 dark:hover:text-emerald-300 hover:underline"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-brand-700 hover:text-brand-800 hover:underline"
                         >
                           <span>Buka Pekerjaan</span>
                           <ArrowRight className="w-3 h-3" />
@@ -285,7 +285,7 @@ export const NotificationCenter = () => {
                         <button
                           type="button"
                           onClick={(e) => handleMarkAsRead(e, item.id)}
-                          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 dark:hover:text-emerald-400 font-medium px-1.5 py-0.5 rounded hover:bg-surface dark:hover:bg-[#1a3528] border border-line/40 dark:border-[#1e3d2e] transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-medium px-1.5 py-0.5 rounded hover:bg-surface border border-line/40 transition-colors cursor-pointer"
                           title="Tandai sudah dibaca"
                         >
                           <Check className="w-3 h-3" />

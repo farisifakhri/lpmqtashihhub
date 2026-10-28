@@ -50,7 +50,7 @@ describe('UserAvatar Component', () => {
     const { container } = render(
       <UserAvatar name="User" showOnline={true} showRoleBadge={false} />
     );
-    const dot = container.querySelector('.bg-emerald-500');
+    const dot = container.querySelector('[data-testid="online-status-dot"]') || container.querySelector('.rounded-full.absolute');
     expect(dot).toBeTruthy();
   });
 });

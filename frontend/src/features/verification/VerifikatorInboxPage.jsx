@@ -747,8 +747,8 @@ export const VerifikatorInboxPage = () => {
                                 status === 'ASSIGNED'
                                   ? 'bg-brand-50 text-brand-800 border-brand-200'
                                   : status === 'IN_PROGRESS'
-                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
-                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  ? 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                                  : 'bg-brand-50 text-brand-800 border-brand-200'
                               )}>
                                 {status === 'ASSIGNED' ? 'Ditugaskan (Baru)' : status === 'IN_PROGRESS' ? 'Sedang Diperiksa' : status || 'Aktif'}
                               </span>
