@@ -4,7 +4,20 @@ import { fail } from './workflow-utils.js';
 export async function listDocumentArchive(registrationId, user, db = prisma) {
   const registration = await db.registration.findUnique({
     where: { id: registrationId },
-    select: { id: true, publisher_id: true },
+    select: {
+      id: true,
+      publisher_id: true,
+      registration_no: true,
+      title: true,
+      created_at: true,
+      foreign_metadata: true,
+      publisher: { select: { legal_name: true } },
+      manuscript_files: {
+        where: { type: 'SURAT_PERMOHONAN' },
+        orderBy: { version: 'desc' },
+        take: 1,
+      },
+    },
   });
   if (!registration) fail(404, 'Pengajuan tidak ditemukan.');
 
@@ -33,7 +46,25 @@ export async function listDocumentArchive(registrationId, user, db = prisma) {
       orderBy: [{ document_type: 'asc' }, { version: 'desc' }],
     }),
   ]);
+  const permohonanFileId = registration.manuscript_files?.[0]?.file_id || registration.foreign_metadata?.surat_permohonan_file_id;
+  const applicationDocs = permohonanFileId ? [{
+    id: `app-permohonan-${registration.id}`,
+    document_type: 'SURAT_PERMOHONAN',
+    document_no: `SP-${registration.registration_no || registration.id.slice(0, 8)}`,
+    version: 1,
+    status: 'ISSUED',
+    source: 'APPLICATION',
+    file_id: permohonanFileId,
+    created_at: registration.created_at,
+    content_snapshot: {
+      title: `Surat Permohonan Tanda Tashih — ${registration.title || ''}`,
+      publisher_name: registration.publisher?.legal_name || 'Penerbit',
+      notes: 'Surat permohonan resmi tanda tashih naskah mushaf yang diajukan penerbit saat pendaftaran.',
+    },
+  }] : [];
+
   return [
+    ...applicationDocs,
     ...verification.map(item => ({ ...item, source: 'VERIFICATION' })),
     ...official.map(item => ({ ...item, source: 'OFFICIAL' })),
   ];

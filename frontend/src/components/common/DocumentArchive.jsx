@@ -8,6 +8,7 @@ import { PrivateFileViewer } from './PrivateFileViewer';
 import { Button } from '@/components/ui/Button';
 
 const labels = {
+  SURAT_PERMOHONAN: 'Surat Permohonan Tanda Tashih',
   NOTA_DINAS_VERIFIKASI: 'Disposisi Verifikasi',
   SURAT_HASIL_VERIFIKASI: 'Surat Hasil Verifikasi',
   SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI: 'Surat Pemberitahuan Hasil Verifikasi',
@@ -44,6 +45,8 @@ export function DocumentArchive({ registrationId }) {
       const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
       const path = document.source === 'OFFICIAL'
         ? `/official-documents/${document.id}/pdf`
+        : document.source === 'APPLICATION'
+        ? `/uploads/${encodeURIComponent(document.file_id)}`
         : `/verification-documents/${document.id}/pdf`;
       const response = await fetch(`${base}${path}`, {
         headers: { Authorization: `Bearer ${getAuthToken()}`, Accept: 'application/pdf' },
@@ -211,16 +214,40 @@ export function DocumentArchive({ registrationId }) {
                 <Eye className="w-3.5 h-3.5 mr-1.5" />
                 {pdfLoading ? 'Membuka PDF…' : 'Lihat Dokumen PDF'}
               </Button>
+              {selected.source === 'APPLICATION' && selected.file_id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileApi.downloadPrivateFile(selected.file_id, `${selected.document_no || 'Surat-Permohonan'}.pdf`)}
+                  className="text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Unduh Surat Permohonan
+                </Button>
+              )}
+              {selected.source === 'VERIFICATION' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileApi.downloadVerificationDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`)}
+                  className="text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Unduh Dokumen
+                </Button>
+              )}
               {selected.source === 'OFFICIAL' && (
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`)}
-                  className="text-xs"
+                  className="text-xs font-semibold"
                 >
-                  <Download className="w-3.5 h-3.5 mr-1" />
-                  Unduh PDF
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Unduh Dokumen
                 </Button>
               )}
             </div>

@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { QueuePagination } from '@/components/common/QueueOverview';
 import { PublisherRegistrationCard } from './PublisherRegistrationCard';
-import { PublisherDocumentList } from './PublisherDocumentList';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
 
 const STATUS_FILTER_OPTIONS = [
@@ -271,10 +270,6 @@ export function PublisherRegistrationsPage({ documents = false }) {
                           {registration.registration_no}
                         </p>
                       </div>
-                      <PublisherDocumentList
-                        documents={registration.official_documents}
-                        registration={registration}
-                      />
                       <DocumentArchive registrationId={registration.id} />
                     </article>
                   ) : (

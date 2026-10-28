@@ -37,9 +37,27 @@ export function PublisherDigitalFilesTab({
 }) {
     // Filter hanya versi terkini untuk setiap tipe naskah agar tidak muncul berkas ganda (U-08)
     const displayManuscripts = useMemo(() => {
-        if (!Array.isArray(data?.manuscript_files)) return [];
+        const list = Array.isArray(data?.manuscript_files) ? [...data.manuscript_files] : [];
+        const permohonanId = data?.foreign_metadata?.surat_permohonan_file_id || data?.surat_permohonan_file_id;
+        if (permohonanId && !list.some((m) => m.type === 'SURAT_PERMOHONAN')) {
+            list.push({
+                id: 'surat-permohonan-entry',
+                type: 'SURAT_PERMOHONAN',
+                file_id: permohonanId,
+                version: 1,
+            });
+        }
+        const buktiTashihId = data?.foreign_metadata?.bukti_tashih_file_id || data?.bukti_tashih_file_id;
+        if (buktiTashihId && !list.some((m) => m.type === 'FOREIGN_TASHIH_CERTIFICATE')) {
+            list.push({
+                id: 'bukti-tashih-entry',
+                type: 'FOREIGN_TASHIH_CERTIFICATE',
+                file_id: buktiTashihId,
+                version: 1,
+            });
+        }
         const map = new Map();
-        data.manuscript_files.forEach((item) => {
+        list.forEach((item) => {
             const existing = map.get(item.type);
             if (
                 !existing ||
@@ -49,7 +67,7 @@ export function PublisherDigitalFilesTab({
             }
         });
         return Array.from(map.values());
-    }, [data?.manuscript_files]);
+    }, [data?.manuscript_files, data?.foreign_metadata, data?.surat_permohonan_file_id, data?.bukti_tashih_file_id]);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 items-start">
