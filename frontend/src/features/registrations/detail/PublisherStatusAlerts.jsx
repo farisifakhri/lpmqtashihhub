@@ -183,24 +183,33 @@ export function PublisherStatusAlerts({
       )}
 
       {/* 5. Awaiting Payment Callout */}
-      {['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION'].includes(data.status) && (
+      {['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'].includes(data.status) && (
         <section className="rounded-xl border border-brand-200 bg-brand-50/70 p-5 space-y-3 shadow-2xs">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-200/80 pb-3">
             <div className="flex items-center gap-2.5">
               <CreditCard className="w-5 h-5 text-brand-800 shrink-0" />
               <div>
-                <h2 className="font-bold text-ink text-sm">Verifikasi Disetujui: Menunggu Pembayaran PNBP</h2>
+                <h2 className="font-bold text-ink text-sm">
+                  {data.status === 'PAYMENT_VERIFICATION'
+                    ? 'Bukti Pembayaran Sedang Diverifikasi'
+                    : 'Verifikasi Disetujui: Menunggu Pembayaran PNBP'}
+                </h2>
                 <p className="text-xs text-ink-muted">
-                  Surat Ketetapan Tarif PNBP telah diterbitkan. Silakan selesaikan pembayaran agar naskah dapat dijadwalkan untuk sidang pentashihan.
+                  {data.status === 'PAYMENT_VERIFICATION'
+                    ? 'Bukti transfer pembayaran PNBP Anda telah dikirim dan sedang menunggu verifikasi oleh petugas keuangan LPMQ.'
+                    : 'Surat Ketetapan Tarif PNBP telah disetujui. Silakan selesaikan pembayaran agar naskah dapat dijadwalkan untuk sidang pentashihan.'}
                 </p>
               </div>
             </div>
-            <Link
-              to="/publisher/billing"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold transition-colors shadow-2xs"
-            >
-              Buka Tagihan PNBP
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to={`/publisher/billing?registration_id=${data.id}`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-800 hover:bg-brand-900 text-white text-xs font-bold transition-colors shadow-2xs"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                {data.status === 'PAYMENT_VERIFICATION' ? 'Lihat Status Tagihan' : 'Konfirmasi Pembayaran'}
+              </Link>
+            </div>
           </div>
         </section>
       )}

@@ -239,6 +239,11 @@ export const TRANSITION_POLICY = {
       domainAction: true,
       description: 'Verifikator mengirim surat hasil verifikasi (perlu perbaikan) kepada penerbit',
     },
+    PAYMENT_VERIFICATION: {
+      allowedRoles: ['PENERBIT', 'SUPERADMIN'],
+      ownershipGuard: true,
+      description: 'Penerbit melakukan konfirmasi / unggah bukti bayar PNBP setelah verifikasi disetujui',
+    },
   },
   AWAITING_PAYMENT: {
     PAYMENT_VERIFICATION: {

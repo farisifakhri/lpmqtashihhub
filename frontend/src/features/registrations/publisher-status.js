@@ -1,4 +1,4 @@
-export const ACTION_STATUSES = ['DRAFT', 'REVISION_REQUIRED', 'AWAITING_PAYMENT'];
+export const ACTION_STATUSES = ['DRAFT', 'REVISION_REQUIRED', 'AWAITING_PAYMENT', 'VERIFICATION_APPROVED'];
 export const publisherAction = registration => {
   if (registration.status === 'DRAFT') return { label: 'Lengkapi berkas', description: 'Periksa sampel naskah dan kelengkapan sebelum mengirim permohonan.', path: `/publisher/registrations/${registration.id}` };
   if (registration.status === 'REVISION_REQUIRED') {
@@ -8,7 +8,9 @@ export const publisherAction = registration => {
     }
     return { label: 'Unggah perbaikan & kirim fisik', description: 'Baca surat perbaikan, unggah naskah terbaru bila ada, kirimkan naskah fisik, lalu ajukan ulang.', path: `/publisher/registrations/${registration.id}` };
   }
-  if (registration.status === 'AWAITING_PAYMENT') return { label: 'Cek tagihan & bukti bayar', description: 'Periksa kode billing dan kirim bukti pembayaran jika tagihan tersedia.', path: `/publisher/billing?registration_id=${registration.id}` };
+  if (['AWAITING_PAYMENT', 'VERIFICATION_APPROVED'].includes(registration.status)) {
+    return { label: 'Cek tagihan & konfirmasi bayar', description: 'Periksa kode billing SIMPONI dan kirim bukti pembayaran.', path: `/publisher/billing?registration_id=${registration.id}` };
+  }
   return null;
 };
 export const dateLabel = value => value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Jakarta' }) : 'Belum tersedia';

@@ -114,4 +114,65 @@ describe('PublisherBillingPage Component', () => {
     });
   });
 
+  it('dapat membuka modal konfirmasi pembayaran saat registration status VERIFICATION_APPROVED', async () => {
+    vi.spyOn(PaymentApiModule.paymentApi, 'listPayments').mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            ...mockPayments[0],
+            registration: {
+              ...mockPayments[0].registration,
+              status: 'VERIFICATION_APPROVED',
+            },
+          },
+        ],
+        pagination: { total: 1, page: 1, limit: 20, total_pages: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <PublisherBillingPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Konfirmasi Pembayaran')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Konfirmasi Pembayaran'));
+
+    expect(screen.getByText('Konfirmasi Pembayaran PNBP')).toBeInTheDocument();
+  });
+
+  it('menampilkan badge menunggu pengesahan saat status masih dalam proses verifikasi', async () => {
+    vi.spyOn(PaymentApiModule.paymentApi, 'listPayments').mockResolvedValue({
+      success: true,
+      data: {
+        items: [
+          {
+            ...mockPayments[0],
+            registration: {
+              ...mockPayments[0].registration,
+              status: 'IN_VERIFICATION',
+            },
+          },
+        ],
+        pagination: { total: 1, page: 1, limit: 20, total_pages: 1 },
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <PublisherBillingPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Menunggu Pengesahan Verifikasi')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Konfirmasi Pembayaran')).not.toBeInTheDocument();
+  });
 });

@@ -125,7 +125,7 @@ export function PublisherDetailHeader({
       'COMPLETED',
     ].includes(s) || isTashihRevision;
 
-    const p3Active = ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION'].includes(s);
+    const p3Active = ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'].includes(s);
 
     let p3StatusText = 'Menunggu Verifikasi';
     let p3Desc = 'Billing SIMPONI Kemenag RI';
@@ -135,7 +135,7 @@ export function PublisherDetailHeader({
     } else if (s === 'PAYMENT_VERIFICATION') {
       p3StatusText = 'Validasi Pembayaran';
       p3Desc = 'Bukti bayar sedang diverifikasi tim';
-    } else if (s === 'AWAITING_PAYMENT') {
+    } else if (s === 'AWAITING_PAYMENT' || s === 'VERIFICATION_APPROVED') {
       p3StatusText = 'Menunggu Bayar';
       p3Desc = 'Kode billing SIMPONI aktif (7 hari)';
     }
