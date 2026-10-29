@@ -1,6 +1,9 @@
 import React from "react";
 import { useAuth } from "@/features/auth/AuthContext";
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
+import { useAvatar } from "@/context/AvatarContext";
+import { UserAvatar } from "@/components/ui/UserAvatar";
+import { AvatarPickerModal } from "@/components/ui/AvatarPickerModal";
 import {
     LayoutDashboard,
     FilePlus,
@@ -26,14 +29,24 @@ import {
     Clock,
     PanelsTopLeft,
     X,
+    Sparkles,
+    LogOut,
 } from "lucide-react";
 import { clsx } from "clsx";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, logout, switchActiveRole } = useAuth();
+    const navigate = useNavigate();
     const location = useLocation();
+    const { avatarId, setAvatarId } = useAvatar();
+    const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
+
+    const handleLogout = () => {
+        logout();
+        navigate("/login");
+    };
     const role = currentUser?.role || "";
     const roles = currentUser?.roles || [];
 
@@ -130,7 +143,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     // Navigasi Berbasis Peran sesuai Dokumen Bab 6
     const getNavSections = () => {
-        if (isPublisher) {
+        // 1. Portal Penerbit
+        if (role === "PENERBIT" || role === "PUBLISHER" || (isPublisher && !role)) {
             return [
                 {
                     title: "PORTAL PENERBIT",
@@ -172,11 +186,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role Internal: Admin
-        if (isAdmin && !isSuperAdmin) {
+        // Role Internal: Verifikator (Diutamakan jika peran aktif adalah Verifikator)
+        if (role === "VERIFIKATOR" || role === "VERIFICATOR") {
+            return getVerifikatorNav();
+        }
+
+        // Role Internal: Admin (Helper Admin - Alur Penuh Tanpa Akses Penerbit & TTE Kepala)
+        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
             return [
                 {
-                    title: "ADMINISTRASI LOKET",
+                    title: "KENDALI UTAMA",
                     items: [
                         {
                             label: "Kendali Operasional",
@@ -186,30 +205,78 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             ),
                             end: true,
                         },
+                    ],
+                },
+                {
+                    title: "ALUR PENTASHIHAN",
+                    items: [
                         {
-                            label: "Intake Master Fisik",
+                            label: "1. Pendaftaran Penerbit",
+                            path: "/internal/publishers",
+                            icon: <Building2 className="w-4 h-4 shrink-0" />,
+                            description: "Verifikasi profil & NIP penerbit",
+                        },
+                        {
+                            label: "2. Intake Master Fisik",
                             path: "/internal/master-intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                            description: "Intake naskah fisik A4",
-                            badge: "Baru",
+                            description: "Penerimaan master fisik naskah A4",
+                            badge: "Loket",
                         },
                         {
-                            label: "Perlu Penugasan",
+                            label: "3. Penugasan Verifikator",
                             path: "/internal/verifications?tab=NEED_ASSIGNMENT",
-                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                            description: "Helper Admin menugaskan verifikator",
+                            icon: <UserCheck className="w-4 h-4 shrink-0" />,
+                            description: "Disposisi tim verifikator berkas",
+                            badge: 1,
                         },
                         {
-                            label: "Verifikasi Pembayaran",
+                            label: "4. Verifikasi Berkas",
+                            path: "/internal/verifications?tab=ASSIGNED",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Pemeriksaan rasm, waqaf & kelengkapan",
+                        },
+                        {
+                            label: "5. Hasil Verifikasi",
+                            path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            icon: <FileSearch className="w-4 h-4 shrink-0" />,
+                            description: "Telaah draf berita acara & penetapan",
+                        },
+                        {
+                            label: "6. Pembayaran PNBP",
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Setoran PNBP SIMPONI",
+                            description: "Billing SIMPONI & validasi bayar",
                         },
                         {
-                            label: "Arsip Dokumen",
+                            label: "7. Distribusi Sidang",
+                            path: "/internal/distributions",
+                            icon: <Users className="w-4 h-4 shrink-0" />,
+                            description: "Pembagian tim & serah-terima naskah",
+                        },
+                        {
+                            label: "8. Sidang Pentashihan (Awal)",
+                            path: "/internal/tashih?tab=ACTIVE",
+                            icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                            description: "Koreksi lafazh & harakat Juz 1-30",
+                        },
+                        {
+                            label: "9. Tashih Revisi & Dumi",
+                            path: "/internal/tashih?tab=REVISION",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Telaah perbaikan & contoh cetak dumi",
+                        },
+                        {
+                            label: "10. Pengesahan & STT",
+                            path: "/internal/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Berita acara & Surat Tanda Tashih",
+                        },
+                        {
+                            label: "11. Pengarsipan Naskah",
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
+                            description: "Arsip fisik Posdok-Q & digital",
                         },
                     ],
                 },
@@ -270,11 +337,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role Internal: Verifikator
-        if (isVerifikator && !isSuperAdmin) {
+        function getVerifikatorNav() {
             return [
-                {
-                    title: "VERIFIKASI BERKAS & RASM",
+            {
+                title: "VERIFIKASI BERKAS & RASM",
                     items: [
                         {
                             label: "Kendali Operasional",
@@ -289,12 +355,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan naskah & draf",
-                        },
-                        {
-                            label: "Verifikasi Penerbit",
-                            path: "/internal/publishers",
-                            icon: <Building2 className="w-4 h-4 shrink-0" />,
-                            description: "Periksa dan setujui profil penerbit",
+                            badge: 1,
                         },
                         {
                             label: "Tanda Tangan Saya",
@@ -329,6 +390,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     ],
                 },
             ];
+        };
+
+        if (isVerifikator && role === "VERIFIKATOR") {
+            return getVerifikatorNav();
         }
 
         // Role Internal: Distributor
@@ -428,7 +493,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // Role: Superadmin (Akses Penuh & Navigasi Operasional Komprehensif)
+        // Role: Superadmin (Akses Penuh & Alur Operasional Panjang 1-11)
         return [
             {
                 title: "KENDALI UTAMA",
@@ -442,50 +507,74 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 ],
             },
             {
-                title: "PROSES PENTASHIHAN",
+                title: "ALUR PENTASHIHAN",
                 items: [
                     {
-                        label: "Intake Master Fisik",
+                        label: "1. Pendaftaran Penerbit",
+                        path: "/internal/publishers",
+                        icon: <Building2 className="w-4 h-4 shrink-0" />,
+                        description: "Verifikasi profil & NIP penerbit",
+                    },
+                    {
+                        label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                        description: "Print-out master A4",
-                        badge: "Baru",
+                        description: "Penerimaan master fisik naskah A4",
+                        badge: "Loket",
                     },
                     {
-                        label: "Penugasan Verifikator",
+                        label: "3. Penugasan Verifikator",
                         path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                         icon: <UserCheck className="w-4 h-4 shrink-0" />,
-                        description: "Superadmin dapat menugaskan verifikator",
+                        description: "Disposisi tim verifikator berkas",
                     },
                     {
-                        label: "1. Verifikasi Berkas",
-                        path: "/internal/verifications",
+                        label: "4. Verifikasi Berkas",
+                        path: "/internal/verifications?tab=ASSIGNED",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                        description: "Pemeriksaan kelengkapan & rasm",
+                        description: "Pemeriksaan kelengkapan, rasm & waqaf",
                     },
                     {
-                        label: "Verifikasi Pembayaran",
+                        label: "5. Hasil Verifikasi",
+                        path: "/internal/verifications?tab=WAITING_APPROVAL",
+                        icon: <FileSearch className="w-4 h-4 shrink-0" />,
+                        description: "Telaah draf berita acara & penetapan",
+                    },
+                    {
+                        label: "6. Pembayaran PNBP",
                         path: "/internal/payments",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                        description: "Setoran PNBP SIMPONI",
+                        description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
-                        label: "2. Distribusi Sidang",
+                        label: "7. Distribusi Sidang",
                         path: "/internal/distributions",
                         icon: <Users className="w-4 h-4 shrink-0" />,
-                        description: "Serah-terima fisik & SK tim",
+                        description: "Pembagian tim & serah-terima naskah",
                     },
                     {
-                        label: "3. Sidang Pentashihan",
-                        path: "/internal/tashih",
+                        label: "8. Sidang Pentashihan (Awal)",
+                        path: "/internal/tashih?tab=ACTIVE",
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
-                        description: "Telaah lafazh & harakat",
+                        description: "Koreksi lafazh & harakat Juz 1-30",
                     },
                     {
-                        label: "4. Pengesahan & STT",
+                        label: "9. Tashih Revisi & Dumi",
+                        path: "/internal/tashih?tab=REVISION",
+                        icon: <PenTool className="w-4 h-4 shrink-0" />,
+                        description: "Telaah perbaikan & contoh cetak dumi",
+                    },
+                    {
+                        label: "10. Pengesahan & Terbit STT",
                         path: "/internal/documents",
+                        icon: <Award className="w-4 h-4 shrink-0" />,
+                        description: "Berita acara final & Surat Tanda Tashih",
+                    },
+                    {
+                        label: "11. Pengarsipan Naskah",
+                        path: "/internal/archive",
                         icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                        description: "Berita acara & STT resmi",
+                        description: "Semua versi fisik & digital Posdok-Q",
                     },
                 ],
             },
@@ -493,35 +582,22 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                 title: "TATA KELOLA SISTEM",
                 items: [
                     {
-                        label: "5. Data Induk dan Parameter",
-                        path: "/internal/settings",
-                        icon: <Settings className="w-4 h-4 shrink-0" />,
-                        description: "Kategori, tarif, dan SLA",
-                    },
-                    {
                         label: "Identitas dan Akses",
                         path: "/internal/users",
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Akun, peran, dan wewenang",
                     },
                     {
-                        label: "Verifikasi Penerbit",
-                        path: "/internal/publishers",
-                        icon: <Building2 className="w-4 h-4 shrink-0" />,
-                        description: "Periksa dan setujui profil penerbit",
-                    },
-                    {
-                        label: "Arsip Dokumen",
-                        path: "/internal/archive",
-                        icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                        description: "Semua versi untuk Posdok-Q",
+                        label: "Data Induk dan Parameter",
+                        path: "/internal/settings",
+                        icon: <Settings className="w-4 h-4 shrink-0" />,
+                        description: "Kategori, tarif, dan SLA",
                     },
                     {
                         label: "Rotasi Tim Inti",
                         path: "/internal/core-teams",
                         icon: <Users className="w-4 h-4 shrink-0" />,
-                        description:
-                            "Roster sembilan tim dan giliran berikutnya",
+                        description: "Roster sembilan tim dan giliran berikutnya",
                     },
                     {
                         label: "Kelola Landing Page",
@@ -547,14 +623,42 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
 
     const navSections = getNavSections();
     const isCurrentItem = (item, isActive) => {
-        if (!isActive || !item.path.startsWith("/internal/distributions?"))
-            return isActive;
-        const targetStage = new URLSearchParams(item.path.split("?")[1]).get(
-            "stage",
-        );
-        const currentStage =
-            new URLSearchParams(location.search).get("stage") || "HANDOVER";
-        return targetStage === currentStage;
+        const [itemBase, itemQuery] = item.path.split("?");
+        if (location.pathname !== itemBase) return false;
+
+        const currentParams = new URLSearchParams(location.search);
+
+        // Kasus khusus untuk modul Verifikasi
+        if (itemBase === "/internal/verifications") {
+            const currentTab = currentParams.get("tab") || "NEED_ASSIGNMENT";
+            const targetParams = new URLSearchParams(itemQuery || "");
+            const targetTab = targetParams.get("tab") || "NEED_ASSIGNMENT";
+            return currentTab === targetTab;
+        }
+
+        // Kasus khusus untuk modul Sidang Pentashihan
+        if (itemBase === "/internal/tashih") {
+            const currentTab = currentParams.get("tab") || "ACTIVE";
+            const targetParams = new URLSearchParams(itemQuery || "");
+            const targetTab = targetParams.get("tab") || "ACTIVE";
+            return currentTab === targetTab;
+        }
+
+        // Kasus umum jika item memiliki query param
+        if (itemQuery) {
+            const targetParams = new URLSearchParams(itemQuery);
+            for (const [key, val] of targetParams.entries()) {
+                if (currentParams.get(key) !== val) return false;
+            }
+            return true;
+        }
+
+        // Jika item tidak memiliki query param tapi halaman saat ini memiliki query param
+        if (location.search) {
+            return false;
+        }
+
+        return isActive;
     };
 
     return (
@@ -572,7 +676,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             {/* Sidebar Container (260px, modern civic workspace) */}
             <aside
                 className={clsx(
-                    "fixed lg:static inset-y-0 left-0 z-50 lg:z-0",
+                    "fixed lg:static inset-y-0 left-0 z-50 lg:relative lg:z-10",
                     "w-[264px] shrink-0 overflow-hidden lpmq-sidebar border-r lpmq-sidebar-border-r flex flex-col justify-between",
                     "transition-[width,transform] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] shadow-lg lg:shadow-none",
                     isOpen
@@ -698,7 +802,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             )}
                                                     </div>
                                                     {item.badge && (
-                                                        <span className="shrink-0 px-2 py-0.5 text-[10px] font-extrabold uppercase rounded-full bg-brand-700 text-white shadow-2xs">
+                                                        <span
+                                                            className={clsx(
+                                                                "shrink-0 font-extrabold shadow-2xs flex items-center justify-center transition-all",
+                                                                item.badgeVariant === "danger" || !isNaN(Number(item.badge))
+                                                                    ? "bg-civic-danger text-white rounded-full min-w-[20px] h-5 px-1.5 text-[11px]"
+                                                                    : "px-2 py-0.5 text-[10px] uppercase rounded-full bg-brand-700 text-white"
+                                                            )}
+                                                        >
                                                             {item.badge}
                                                         </span>
                                                     )}
@@ -711,20 +822,64 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         ))}
                     </div>
 
-                    {/* Institutional Compliance Footer */}
+                    {/* User Profile Card */}
                     <div className="p-2.5 border-t lpmq-sidebar-footer">
-                        <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card">
-                            <div className="flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 lpmq-sidebar-online-icon shrink-0" />
-                                <span className="text-xs font-bold lpmq-sidebar-text">
-                                    Standar Pentashihan
-                                </span>
-                            </div>
-                            <p className="text-[11px] lpmq-sidebar-muted mt-0.5 leading-tight">
-                                Mushaf Standar Usmani Kemenag RI
-                            </p>
+                        <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card flex items-center justify-between gap-2.5 shadow-2xs">
+                            <button
+                                type="button"
+                                onClick={() => setAvatarPickerOpen(true)}
+                                className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group flex-1"
+                                title="Klik untuk mengganti avatar profil"
+                            >
+                                <UserAvatar
+                                    avatarId={avatarId}
+                                    name={currentUser?.name}
+                                    role={role}
+                                    size="md"
+                                    showRoleBadge
+                                />
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-xs font-bold lpmq-sidebar-text truncate group-hover:text-brand-900 dark:group-hover:text-brand-300 transition-colors">
+                                        {currentUser?.name || "Pengguna"}
+                                    </div>
+                                    <div className="text-[10px] lpmq-sidebar-muted truncate leading-tight flex items-center gap-1.5 mt-0.5">
+                                        <span>{roleBadge.label}</span>
+                                        {currentUser?.roles && currentUser.roles.length > 1 && (
+                                            <button
+                                                type="button"
+                                                onClick={handleCycleRole}
+                                                className="px-1.5 py-0.5 rounded-full text-[9px] font-extrabold bg-brand-100 dark:bg-brand-900/60 text-brand-900 dark:text-brand-200 border border-brand-200 dark:border-brand-800 hover:bg-brand-200 cursor-pointer flex items-center gap-0.5"
+                                                title="Klik untuk beralih ke peran berikutnya"
+                                            >
+                                                <span>Ganti ({currentUser.roles.length})</span>
+                                                <RefreshCw className="w-2 h-2" />
+                                            </button>
+                                        )}
+                                        <Sparkles className="w-2.5 h-2.5 text-brand-700 opacity-60 group-hover:opacity-100" />
+                                    </div>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLogout}
+                                className="p-1.5 rounded-lg text-ink-muted hover:text-civic-danger hover:bg-civic-dangerSoft transition-colors shrink-0 cursor-pointer"
+                                title="Akhiri Sesi / Keluar"
+                                aria-label="Keluar"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
+
+                    {/* Avatar Picker Modal for Sidebar */}
+                    <AvatarPickerModal
+                        isOpen={avatarPickerOpen}
+                        onClose={() => setAvatarPickerOpen(false)}
+                        currentAvatarId={avatarId}
+                        onSelectAvatar={setAvatarId}
+                        userName={currentUser?.name}
+                        userRole={role}
+                    />
                 </div>
             </aside>
         </>

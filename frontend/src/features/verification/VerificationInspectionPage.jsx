@@ -240,23 +240,30 @@ export const VerificationInspectionPage = () => {
     }
   }, [detail, decision]);
 
-  const loadOfficialTemplate = (dec) => {
+  const loadOfficialTemplate = (dec, currentChecklist = checklist) => {
     if (!detail?.registration) return;
     const reg = detail.registration;
     const regNo = reg.registration_no || 'NOMOR_REGISTRASI';
     const publisher = reg.publisher?.legal_name || 'PENERBIT';
     const title = reg.title || 'NASKAH MUSHAF';
-    const findings = checklist.filter(item => item.result === 'TIDAK_SESUAI')
-      .map((item, index) => `${index + 1}. ${CHECKLIST_DEFINITIONS.find(def => def.code === item.code)?.title || item.code}: ${item.notes || 'perlu diperbaiki'}`)
+    const findings = currentChecklist
+      .filter((item) => item.result === 'TIDAK_SESUAI')
+      .map((item, index) => {
+        const def = CHECKLIST_DEFINITIONS.find((d) => d.code === item.code);
+        const cleanTitle = def?.title ? def.title.replace(/^\d+\.\s*/, '') : item.code;
+        return (index + 1) + '. ' + cleanTitle + ': ' + (item.notes || 'perlu diperbaiki');
+      })
       .join('\n');
 
     if (dec === 'PASSED') {
       setLetterText(
-        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih menggunakan kode billing yang tercantum pada surat ini. Bukti pembayaran perlu diunggah pada portal layanan untuk diperiksa satu kali oleh petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima oleh LPMQ.`
+        'Sehubungan dengan permohonan tanda tashih naskah ' + title + ' dari ' + publisher + ' dengan nomor registrasi ' + regNo + ', kami sampaikan bahwa naskah tersebut dinyatakan lolos verifikasi administrasi dan pemeriksaan awal master fisik oleh LPMQ.\n\nSelanjutnya, penerbit dimohon menyelesaikan pembayaran PNBP pelayanan Surat Tanda Tashih menggunakan kode billing yang tercantum pada surat ini. Bukti pembayaran perlu diunggah pada portal layanan untuk diperiksa satu kali oleh petugas.\n\nProses pentashihan naskah dilanjutkan setelah pembayaran PNBP diterima oleh LPMQ.'
       );
     } else {
       setLetterText(
-        `Sehubungan dengan permohonan tanda tashih naskah ${title} dari ${publisher} dengan nomor registrasi ${regNo}, kami sampaikan bahwa naskah tersebut belum lolos verifikasi.\n\nAspek yang perlu diperbaiki:\n${findings || '1. Lengkapi rincian ketidaksesuaian pada catatan pemeriksaan.'}\n\nMaster mushaf dikembalikan kepada penerbit untuk diperbaiki. Setelah seluruh catatan dipenuhi, penerbit dapat mengajukan kembali naskah melalui portal layanan LPMQ.`
+        'Sehubungan dengan permohonan tanda tashih naskah ' + title + ' dari ' + publisher + ' dengan nomor registrasi ' + regNo + ', kami sampaikan bahwa naskah tersebut belum lolos verifikasi (dikembalikan untuk perbaikan).\n\nAspek yang perlu diperbaiki:\n' +
+        (findings || '1. Lengkapi rincian ketidaksesuaian pada catatan pemeriksaan.') +
+        '\n\nMaster mushaf dikembalikan kepada penerbit untuk diperbaiki. Setelah seluruh catatan dipenuhi, penerbit dapat mengajukan kembali naskah melalui portal layanan LPMQ.'
       );
     }
   };
@@ -277,12 +284,42 @@ export const VerificationInspectionPage = () => {
 
   const handleChecklistChange = (code, field, value) => {
     setIsDirty(true);
-    setChecklist((prev) =>
-      prev.map((item) => (item.code === code ? { ...item, [field]: value } : item))
+
+    const nextChecklist = checklist.map((item) =>
+      item.code === code ? { ...item, [field]: value } : item
     );
+    setChecklist(nextChecklist);
+
+    const hasTidakSesuai = nextChecklist.some((item) => item.result === 'TIDAK_SESUAI');
+    const targetDecision = hasTidakSesuai ? 'REVISION_REQUIRED' : 'PASSED';
+
+    if (targetDecision !== decision || (hasTidakSesuai && field === 'notes')) {
+      setDecision(targetDecision);
+      loadOfficialTemplate(targetDecision, nextChecklist);
+
+      if (hasTidakSesuai && (!notes || (typeof notes === 'string' && notes.startsWith('Terdapat ketidaksesuaian')))) {
+        const autoNotes = nextChecklist
+          .filter((i) => i.result === 'TIDAK_SESUAI')
+          .map((i) => {
+            const def = CHECKLIST_DEFINITIONS.find((d) => d.code === i.code);
+            const cleanTitle = def?.title ? def.title.replace(/^\d+\.\s*/, '') : i.code;
+            return cleanTitle + ': ' + (i.notes || 'Perlu perbaikan');
+          })
+          .join('; ');
+        if (autoNotes) {
+          setNotes('Terdapat ketidaksesuaian naskah: ' + autoNotes);
+        }
+      } else if (!hasTidakSesuai && typeof notes === 'string' && notes.startsWith('Terdapat ketidaksesuaian')) {
+        setNotes('');
+      }
+    }
+
     setValidationErrors((prev) => {
       const copy = { ...prev };
-      delete copy[`${code}_${field}`];
+      delete copy[code + '_' + field];
+      if (field === 'result' && value !== 'TIDAK_SESUAI') {
+        delete copy[code + '_notes'];
+      }
       return copy;
     });
   };
@@ -1041,9 +1078,9 @@ export const VerificationInspectionPage = () => {
                 }`}
               >
                 <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
-                <span>Checklist (4 Butir)</span>
+                <span>Checklist ({CHECKLIST_DEFINITIONS.length} Butir)</span>
                 <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                  {sesuaiCount + tidakBerlakuCount}/4
+                  {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS.length}
                 </span>
               </button>
 
@@ -1095,7 +1132,7 @@ export const VerificationInspectionPage = () => {
                     ? 'bg-brand-50 text-brand-800 border border-brand-200'
                     : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
                 }`}>
-                  {decision === 'PASSED' ? 'Lolos' : 'Perbaikan'}
+                  {decision === 'PASSED' ? 'Lolos' : 'Ditolak / Perbaikan'}
                 </span>
               </button>
             </div>
@@ -1106,6 +1143,7 @@ export const VerificationInspectionPage = () => {
             <InspectionChecklist
               activeMobileTab="checklist"
               sesuaiCount={sesuaiCount}
+              tidakSesuaiCount={tidakSesuaiCount}
               tidakBerlakuCount={tidakBerlakuCount}
               checklist={checklist}
               validationErrors={validationErrors}
@@ -1222,6 +1260,8 @@ export const VerificationInspectionPage = () => {
               registration={registration}
               publisher={publisher}
               showDocumentPdf={showDocumentPdf}
+              tidakSesuaiCount={tidakSesuaiCount}
+              checklist={checklist}
               className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
             />
           </div>
@@ -1264,6 +1304,7 @@ export const VerificationInspectionPage = () => {
         showDocumentPdf={showDocumentPdf}
         billingNo={billingNo}
         billingFileId={billingFileId}
+        totalChecklistCount={CHECKLIST_DEFINITIONS.length}
       />
       <InspectionDialogs
         returnModalOpen={returnModalOpen}

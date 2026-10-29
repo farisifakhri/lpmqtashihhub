@@ -13,6 +13,8 @@ import {
   CreditCard,
   Building2,
   CheckCircle2,
+  Compass,
+  PlusCircle,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
@@ -105,16 +107,81 @@ export const PublisherDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-7 pb-16 animate-fadeIn">
-      {/* Sapaan dan ayat rujukan */}
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-6 items-stretch">
-        <div className="min-w-0">
-          <GreetingHeroCard
-            role="publisher"
-            userName={currentUser?.publisherName || currentUser?.name}
-          />
+      {/* 1. Greeting Hero Card (Selaras dengan Internal LPMQ) */}
+      <GreetingHeroCard
+        userName={currentUser?.publisherName || currentUser?.name || 'Penerbit Mushaf'}
+        roleLabel="Penerbit Mushaf Terdaftar"
+        badgeExtra={currentUser?.publisherId ? `ID: ${currentUser.publisherId.slice(0, 8)}` : 'Terdaftar Kemenag'}
+        subtext="Layanan Mandiri Pendaftaran, Pemantauan Pentashihan, dan Pengunduhan Dokumen STT Resmi LPMQ Kemenag RI"
+      />
+
+      {/* 2. Daily Quran & Hadith Widget */}
+      <DailyQuranWidget />
+
+      {/* 3. Akses Layanan Utama (Selaras dengan Internal Dashboard LPMQ) */}
+      <div className="bg-white rounded-xl border border-line shadow-2xs p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-line">
+          <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-ink flex items-center gap-2">
+            <Compass className="w-4 h-4 text-brand-700" />
+            <span>Akses Layanan Utama</span>
+          </h3>
+          <span className="text-xs text-ink-muted font-medium">
+            Layanan mandiri penerbit mushaf Al-Qur'an
+          </span>
         </div>
-        <div className="min-w-0">
-          <DailyQuranWidget />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            {
+              title: 'Permohonan Baru',
+              desc: 'Daftarkan naskah mushaf baru untuk diproses pentashihan.',
+              path: '/publisher/new-registration',
+              icon: PlusCircle,
+              iconBg: 'bg-brand-50 text-brand-700',
+            },
+            {
+              title: 'Permohonan Saya',
+              desc: 'Pantau status antrean, catatan verifikasi, dan revisi naskah.',
+              path: '/publisher/registrations',
+              icon: BookOpen,
+              iconBg: 'bg-civic-infoSoft text-civic-info',
+            },
+            {
+              title: 'Billing & PNBP',
+              desc: 'Periksa kode billing SIMPONI dan unggah konfirmasi pembayaran.',
+              path: '/publisher/billing',
+              icon: CreditCard,
+              iconBg: 'bg-civic-warningSoft text-civic-warning',
+            },
+            {
+              title: 'Arsip Surat Tashih',
+              desc: 'Unduh Surat Tanda Tashih (STT) dan dokumen penetapan resmi.',
+              path: '/publisher/documents',
+              icon: FileText,
+              iconBg: 'bg-brand-100 text-brand-800',
+            },
+          ].map((action, idx) => {
+            const Icon = action.icon;
+            return (
+              <Link
+                key={idx}
+                to={action.path}
+                className="group p-4 rounded-xl border border-line bg-surface hover:bg-white hover:border-brand-700 hover:shadow-xs active:scale-[0.98] transition-all duration-200 flex flex-col justify-between"
+              >
+                <div>
+                  <div className={`w-10 h-10 rounded-xl ${action.iconBg} flex items-center justify-center shadow-xs mb-3 group-hover:scale-105 transition-transform`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h4 className="text-sm font-bold text-ink group-hover:text-brand-800 leading-snug mb-1.5">
+                    {action.title}
+                  </h4>
+                  <p className="text-xs text-ink-muted group-hover:text-ink leading-relaxed">
+                    {action.desc}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
 

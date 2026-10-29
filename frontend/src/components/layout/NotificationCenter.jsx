@@ -151,15 +151,15 @@ export const NotificationCenter = () => {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative p-2 rounded-lg text-ink-muted hover:text-brand-900 hover:bg-surface-subtle transition-colors focus:outline-none focus:ring-2 focus:ring-brand-700 cursor-pointer"
+        className="h-9 w-9 rounded-lg bg-surface-subtle/80 hover:bg-surface-strong/60 border border-line hover:border-brand-500/50 flex items-center justify-center text-ink-muted hover:text-brand-fg transition-all shadow-2xs relative cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-700/20"
         aria-label={`Pemberitahuan, ${unreadCount} perlu tindakan`}
         title="Pemberitahuan"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
           <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-civic-warningLine opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-civic-warning" />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-civicGold-500 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-civicGold-500" />
           </span>
         )}
       </button>
@@ -175,14 +175,14 @@ export const NotificationCenter = () => {
               {loading && <Loader2 className="w-3 h-3 animate-spin text-ink-muted" />}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-100">
+              <span className="text-xs font-semibold text-brand-900 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
                 {unreadCount} Perlu Tindakan
               </span>
               <button
                 type="button"
                 onClick={fetchNotifications}
                 disabled={loading}
-                className="p-1 text-ink-muted hover:text-brand-900 rounded transition-colors"
+                className="p-1 text-ink-muted hover:text-brand-900 rounded transition-colors cursor-pointer"
                 title="Muat ulang pemberitahuan"
               >
                 <RefreshCw className={clsx('w-3 h-3', loading && 'animate-spin')} />
@@ -196,7 +196,7 @@ export const NotificationCenter = () => {
               type="button"
               onClick={() => setTab('ACTION_REQUIRED')}
               className={clsx(
-                'py-1.5 rounded-md transition-colors text-center',
+                'py-1.5 rounded-md transition-colors text-center cursor-pointer',
                 tab === 'ACTION_REQUIRED'
                   ? 'bg-surface text-ink shadow-2xs'
                   : 'text-ink-muted hover:text-ink'
@@ -208,7 +208,7 @@ export const NotificationCenter = () => {
               type="button"
               onClick={() => setTab('INFO')}
               className={clsx(
-                'py-1.5 rounded-md transition-colors text-center',
+                'py-1.5 rounded-md transition-colors text-center cursor-pointer',
                 tab === 'INFO'
                   ? 'bg-surface text-ink shadow-2xs'
                   : 'text-ink-muted hover:text-ink'
@@ -253,7 +253,7 @@ export const NotificationCenter = () => {
                     className={clsx(
                       'p-3 rounded-lg border transition-colors text-xs space-y-1',
                       isUnread
-                        ? 'border-brand-200 bg-brand-50/30 hover:bg-brand-50/50'
+                        ? 'border-brand-200 bg-brand-50/40 hover:bg-brand-50/70'
                         : 'border-line/60 hover:bg-surface-subtle'
                     )}
                   >
@@ -285,7 +285,7 @@ export const NotificationCenter = () => {
                         <button
                           type="button"
                           onClick={(e) => handleMarkAsRead(e, item.id)}
-                          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-medium px-1.5 py-0.5 rounded hover:bg-surface border border-line/40 transition-colors"
+                          className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-brand-700 font-medium px-1.5 py-0.5 rounded hover:bg-surface border border-line/40 transition-colors cursor-pointer"
                           title="Tandai sudah dibaca"
                         >
                           <Check className="w-3 h-3" />

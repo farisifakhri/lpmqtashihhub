@@ -83,12 +83,15 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Sistem Pentashihan')).toBeDefined();
     expect(screen.getByText('Kemenag RI')).toBeDefined();
 
-    // Menu berurutan sesuai alur pentashihan (SOP v2.2)
-    expect(screen.getByText('1. Verifikasi Berkas')).toBeDefined();
-    expect(screen.getByText('2. Distribusi Sidang')).toBeDefined();
-    expect(screen.getByText('3. Sidang Pentashihan')).toBeDefined();
-    expect(screen.getByText('4. Pengesahan & STT')).toBeDefined();
-    expect(screen.getByText('5. Data Induk dan Parameter')).toBeDefined();
+    // Menu berurutan sesuai alur pentashihan 11-langkah
+    expect(screen.getByText('1. Pendaftaran Penerbit')).toBeDefined();
+    expect(screen.getByText('2. Intake Master Fisik')).toBeDefined();
+    expect(screen.getByText('3. Penugasan Verifikator')).toBeDefined();
+    expect(screen.getByText('4. Verifikasi Berkas')).toBeDefined();
+    expect(screen.getByText('6. Pembayaran PNBP')).toBeDefined();
+    expect(screen.getByText('7. Distribusi Sidang')).toBeDefined();
+    expect(screen.getByText('10. Pengesahan & Terbit STT')).toBeDefined();
+    expect(screen.getByText('Identitas dan Akses')).toBeDefined();
   });
 
   it('Sidebar merender alur pengajuan penerbit secara berurutan', () => {
@@ -132,5 +135,3 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getAllByText('Dokumen').length).toBeGreaterThan(0);
   });
 });
-
-

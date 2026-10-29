@@ -198,8 +198,9 @@ export const PublisherBillingPage = () => {
 
   const openConfirmModal = (payment) => {
     if (payment.status !== 'UNPAID') return;
-    if (payment.registration?.status && !['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION'].includes(payment.registration.status)) {
-      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus ${payment.registration.status}. Formulir konfirmasi pembayaran dikunci sampai verifikasi berkas disetujui.`);
+    const allowedStatuses = ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'];
+    if (payment.registration?.status && !allowedStatuses.includes(payment.registration.status)) {
+      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus "${payment.registration.status}". Formulir konfirmasi pembayaran dibuka setelah verifikasi berkas disetujui LPMQ.`);
       return;
     }
     setSelectedPayment(payment);
@@ -521,6 +522,7 @@ export const PublisherBillingPage = () => {
             const isUnpaid = item.status === 'UNPAID';
             const isPaid = item.status === 'PAID';
             const isVerified = item.status === 'VERIFIED';
+            const isPayable = isUnpaid && (!reg.status || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'].includes(reg.status));
 
             return (
               <div
@@ -641,15 +643,25 @@ export const PublisherBillingPage = () => {
                       </Button>
                     )}
 
-                    {isUnpaid && (
+                    {isPayable && (
                       <Button
                         variant="primary"
                         onClick={() => openConfirmModal(item)}
-                        className="w-full sm:w-auto text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-4 py-2 inline-flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-4 py-2 inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                       >
                         <UploadCloud className="w-4 h-4" />
                         Konfirmasi Pembayaran
                       </Button>
+                    )}
+
+                    {isUnpaid && !isPayable && (
+                      <div
+                        className="inline-flex items-center gap-1.5 text-ink-muted bg-canvas border border-line px-3.5 py-1.5 rounded-xl font-medium text-xs"
+                        title={`Status naskah: ${reg.status || 'Proses Verifikasi'}. Formulir konfirmasi pembayaran dibuka setelah verifikasi disetujui.`}
+                      >
+                        <Clock className="w-3.5 h-3.5 text-ink-muted" />
+                        Menunggu Pengesahan Verifikasi
+                      </div>
                     )}
 
                     {isPaid && (
@@ -738,7 +750,10 @@ export const PublisherBillingPage = () => {
                 <label className="block text-xs font-bold text-ink mb-1">
                   Unggah Bukti Setor / Transfer <span className="text-civic-danger">*</span>
                 </label>
-                <div className="border-2 border-dashed border-line-strong hover:border-brand-700 rounded-xl p-4 text-center cursor-pointer transition-colors bg-canvas/50">
+                <div
+                  onClick={() => document.getElementById('receipt-file-input')?.click()}
+                  className="border-2 border-dashed border-line-strong hover:border-brand-700 rounded-xl p-4 text-center cursor-pointer transition-colors bg-canvas/50 group"
+                >
                   <input
                     type="file"
                     id="receipt-file-input"
@@ -746,8 +761,8 @@ export const PublisherBillingPage = () => {
                     accept=".pdf,.png,.jpg,.jpeg"
                     className="hidden"
                   />
-                  <label htmlFor="receipt-file-input" className="cursor-pointer block space-y-2">
-                    <UploadCloud className="w-8 h-8 text-ink-muted mx-auto" />
+                  <label htmlFor="receipt-file-input" className="cursor-pointer block space-y-2" onClick={(e) => e.stopPropagation()}>
+                    <UploadCloud className="w-8 h-8 text-ink-muted group-hover:text-brand-700 mx-auto transition-colors" />
                     {receiptFile ? (
                       <div className="text-xs">
                         <p className="font-bold text-brand-fg">{receiptFile.name}</p>
@@ -757,7 +772,7 @@ export const PublisherBillingPage = () => {
                       </div>
                     ) : (
                       <div className="text-xs">
-                        <p className="font-semibold text-ink">Pilih berkas bukti transfer</p>
+                        <p className="font-semibold text-ink group-hover:text-brand-800 transition-colors">Pilih berkas bukti transfer</p>
                         <p className="text-ink-muted text-xs">Format PDF, PNG, atau JPG (Maks 5 MB)</p>
                       </div>
                     )}
@@ -788,9 +803,19 @@ export const PublisherBillingPage = () => {
                 <Button
                   type="submit"
                   disabled={actionLoading}
-                  className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-5 py-2"
+                  className="text-xs bg-brand-700 hover:bg-brand-800 text-white font-bold px-5 py-2 inline-flex items-center gap-1.5"
                 >
-                  {actionLoading ? 'Mengirimkan...' : 'Kirim Konfirmasi Pembayaran'}
+                  {actionLoading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Mengirimkan...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Kirim Konfirmasi Pembayaran
+                    </>
+                  )}
                 </Button>
               </div>
             </form>

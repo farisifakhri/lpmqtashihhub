@@ -60,7 +60,7 @@ describe('Manual team assignment (B-05)', () => {
     vi.spyOn(registrationApi, 'createAssignments').mockResolvedValue({ data: [] });
   });
 
-  it('requires explicit selection and validates juz assignment without SK wording', async () => {
+  it('automatically checks all active team members upon team selection and allows unchecking absent members', async () => {
     const assigned = vi.fn();
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
@@ -73,47 +73,70 @@ describe('Manual team assignment (B-05)', () => {
     expect(screen.queryByText('Petugas bukan pentashih')).not.toBeInTheDocument();
     expect(screen.queryByText('Pentashih nonaktif')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: /Pentashih satu/i }));
-    expect(screen.getByRole('button', { name: 'Tetapkan penugasan' })).toBeDisabled();
+    // Sesuai alur baru: Setelah memilih tim, semua anggota aktif otomatis tercentang
+    const checkSatu = screen.getByRole('checkbox', { name: 'Pentashih satu' });
+    const checkDua = screen.getByRole('checkbox', { name: 'Pentashih dua' });
+    expect(checkSatu).toBeChecked();
+    expect(checkDua).toBeChecked();
 
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Juz 1 untuk Pentashih satu' }));
+    // Hapus centang pentashih dua (karena tidak hadir)
+    fireEvent.click(checkDua);
+    expect(checkDua).not.toBeChecked();
+
+    // Tetapkan penugasan untuk pentashih satu yang hadir
     expect(screen.getByRole('button', { name: 'Tetapkan penugasan' })).toBeEnabled();
-
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+
     await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', {
       team_id: 't1',
-      juz_assignments: [{ assignee_id: 'u1', juz_numbers: [1] }],
+      juz_assignments: [{ assignee_id: 'u1', juz_numbers: Array.from({ length: 30 }, (_, i) => i + 1) }],
       stage: 'INITIAL',
     }));
     expect(assigned).toHaveBeenCalledOnce();
   });
 
-  it('supports assigning 20-10 juz range using quick preset buttons', async () => {
+  it('supports assigning group and individual juz range using quick preset buttons', async () => {
     const assigned = vi.fn();
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Pentashih satu/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Juz 1–20 (20 Juz)' }));
 
-    expect(screen.getByText('Juz 1 s.d. 20 (20 Juz)')).toBeInTheDocument();
+    // Preset grup Juz 1-20
+    const presetButtons = screen.getAllByRole('button', { name: 'Juz 1–20 (20 Juz)' });
+    fireEvent.click(presetButtons[0]);
 
-    // Pilih pentashih kedua untuk juz 21–30
-    fireEvent.click(screen.getByRole('checkbox', { name: /Pentashih dua/i }));
-    const presetButtons = screen.getAllByRole('button', { name: 'Juz 21–30 (10 Juz)' });
-    fireEvent.click(presetButtons[presetButtons.length - 1]);
-
-    expect(screen.getByText('Juz 21 s.d. 30 (10 Juz)')).toBeInTheDocument();
-    expect(await screen.findByText(/Cakupan Penuh: Seluruh 30 Juz Lengkap/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Juz 1 s.d. 20 \(20 Juz\)/i).length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', {
       team_id: 't1',
+      allow_overlap: true,
       juz_assignments: [
         { assignee_id: 'u1', juz_numbers: Array.from({ length: 20 }, (_, i) => i + 1) },
-        { assignee_id: 'u2', juz_numbers: Array.from({ length: 10 }, (_, i) => i + 21) },
+        { assignee_id: 'u2', juz_numbers: Array.from({ length: 20 }, (_, i) => i + 1) },
       ],
+      stage: 'INITIAL',
+    }));
+    expect(assigned).toHaveBeenCalledOnce();
+  });
+
+  it('supports assigning individual pentashih without team', async () => {
+    const assigned = vi.fn();
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
+    await screen.findByText('Naskah siap distribusi');
+
+    // Beralih ke skema Pentashih Pribadi (Mandiri)
+    fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
+
+    const checkSatu = screen.getByRole('checkbox', { name: 'Pentashih satu' });
+    fireEvent.click(checkSatu);
+    expect(checkSatu).toBeChecked();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', {
+      is_individual: true,
+      juz_assignments: [{ assignee_id: 'u1', juz_numbers: Array.from({ length: 30 }, (_, i) => i + 1) }],
       stage: 'INITIAL',
     }));
     expect(assigned).toHaveBeenCalledOnce();
@@ -147,8 +170,6 @@ describe('Manual team assignment (B-05)', () => {
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Naskah siap distribusi');
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
-    fireEvent.click(screen.getByRole('checkbox', { name: /Pentashih satu/i }));
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Juz 1 untuk Pentashih satu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Status pengajuan telah berubah');
   });

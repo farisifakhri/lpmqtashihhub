@@ -290,7 +290,9 @@ export const UnifiedDashboard = () => {
   const filteredRegistrations = registrations;
 
   // Label nama dan role pengguna untuk Greeting Card
-  const greetingUserName = currentUser?.publisherName || currentUser?.name || 'Pengguna Terdaftar';
+  const greetingUserName = isPublisher
+    ? (currentUser?.publisherName || currentUser?.name || 'Penerbit Mushaf')
+    : (currentUser?.name || 'Petugas LPMQ');
   const greetingRoleLabel = isPublisher
     ? 'Penerbit Mushaf Terdaftar'
     : isSuperAdmin

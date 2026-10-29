@@ -52,6 +52,28 @@ export const InternalPaymentQueuePage = () => {
 
   // Selected payment for detail workspace
   const [selectedPaymentId, setSelectedPaymentId] = useState(null);
+  const [paymentDetail, setPaymentDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedPaymentId) {
+      setPaymentDetail(null);
+      return;
+    }
+    let active = true;
+    setDetailLoading(true);
+    paymentApi.getPaymentDetail(selectedPaymentId)
+      .then((res) => {
+        if (active && res?.data) {
+          setPaymentDetail(res.data);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setDetailLoading(false);
+      });
+    return () => { active = false; };
+  }, [selectedPaymentId]);
 
   // Confirmation dialog for verifying payment
   const [verifyConfirmOpen, setVerifyConfirmOpen] = useState(false);
@@ -144,9 +166,20 @@ export const InternalPaymentQueuePage = () => {
     });
   };
 
-  const selectedPayment = useMemo(() => {
+  const rawSelectedPayment = useMemo(() => {
     return payments.find((p) => p.id === selectedPaymentId) || null;
   }, [payments, selectedPaymentId]);
+
+  const selectedPayment = useMemo(() => {
+    if (paymentDetail && paymentDetail.id === selectedPaymentId) {
+      return { ...rawSelectedPayment, ...paymentDetail };
+    }
+    return rawSelectedPayment;
+  }, [rawSelectedPayment, paymentDetail, selectedPaymentId]);
+
+  const receiptMime = selectedPayment?.receipt_file?.mime_type || '';
+  const receiptExt = receiptMime.includes('pdf') ? 'pdf' : (receiptMime.includes('png') ? 'png' : (receiptMime.includes('jpeg') || receiptMime.includes('jpg') ? 'jpg' : ''));
+  const receiptFileName = receiptExt ? `bukti_bayar_${selectedPayment?.billing_no}.${receiptExt}` : (selectedPayment ? `bukti_bayar_${selectedPayment.billing_no}` : 'bukti_bayar');
 
   const handleVerify = async () => {
     if (!selectedPayment) return;
@@ -434,7 +467,8 @@ export const InternalPaymentQueuePage = () => {
           {selectedPayment.receipt_file_id ? (
             <PrivateFileViewer
               fileId={selectedPayment.receipt_file_id}
-              fileName={`bukti_bayar_${selectedPayment.billing_no}.pdf`}
+              fileName={receiptFileName}
+              mimeType={receiptMime || undefined}
               height="480px"
               fallbackText="Bukti setor tersimpan dalam format berkas terenkripsi."
             />

@@ -138,7 +138,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
       >
         {/* Search Input Bar */}
         <div className="flex items-center px-4 py-3.5 border-b border-line bg-surface">
-          <Search className="w-5 h-5 text-ink-muted mr-3 shrink-0" aria-hidden="true" />
+          <Search className="w-5 h-5 text-brand-700 mr-3 shrink-0" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -152,7 +152,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
             <button
               type="button"
               onClick={() => setQuery('')}
-              className="p-1 text-ink-muted hover:text-ink mr-2"
+              className="p-1 text-ink-muted hover:text-ink mr-2 cursor-pointer"
               aria-label="Hapus kata kunci"
             >
               <X className="w-4 h-4" />
@@ -183,8 +183,8 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                   className={clsx(
                     'flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors',
                     isSelected
-                      ? 'bg-brand-50 border border-brand-100 text-brand-950'
-                      : 'hover:bg-surface-subtle text-ink'
+                      ? 'bg-brand-50 border border-brand-200 text-brand-900'
+                      : 'hover:bg-surface-subtle text-ink border border-transparent'
                   )}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -201,7 +201,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold truncate">{item.label}</span>
-                        <span className="text-xs uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle text-ink-muted border border-line/60">
+                        <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-subtle text-ink-muted border border-line/60">
                           {item.category}
                         </span>
                       </div>

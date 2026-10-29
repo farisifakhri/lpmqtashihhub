@@ -474,5 +474,29 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
       expect(screen.getAllByText(/Penetapan Hasil Verifikasi/i).length).toBeGreaterThanOrEqual(1);
     });
   });
+
+  it('secara otomatis mengubah keputusan ke Ditolak/Perbaikan ketika ada butir checklist Tidak Sesuai', async () => {
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Lembar Kerja Checklist Pemeriksaan')).toBeInTheDocument();
+    });
+
+    const radioTidakSesuai = screen.getAllByRole('radio', { name: /Tidak Sesuai/i })[0];
+    fireEvent.click(radioTidakSesuai);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Perhatian: Terdapat 1 butir checklist dinyatakan Tidak Sesuai/i)).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Naskah Ditolak \/ Perlu Perbaikan Penerbit \(Otomatis dari Checklist\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ditolak \/ Perbaikan/i)).toBeInTheDocument();
+  });
 });
 

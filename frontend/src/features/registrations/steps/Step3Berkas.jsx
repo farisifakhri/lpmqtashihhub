@@ -1,6 +1,7 @@
-import React from 'react';
-import { UploadCloud, FileText, Image, Smartphone, CheckCircle2, Trash2, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { UploadCloud, FileText, Image, Smartphone, CheckCircle2, Trash2, AlertCircle, Link as LinkIcon, Eye, Download } from 'lucide-react';
 import { formatFileSize, validateSelectedFile } from './registration-validation';
+import { SuratPermohonanTemplateModal, buildSuratPermohonanText, buildSuratPermohonanDocHtml, downloadWordDoc } from '../components/SuratPermohonanTemplateModal';
 
 export const Step3Berkas = ({
   suratPermohonanFile,
@@ -34,8 +35,31 @@ export const Step3Berkas = ({
   fieldErrors = {},
   setFieldError,
   clearFieldError,
+  namaMushaf = '',
+  penanggungJawabProduk = '',
+  selectedMateriTambahan = [],
+  sizes = [],
+  namaPercetakan = '',
+  currentUser = null,
 }) => {
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
   const isPerpanjangan = kategoriPendaftaran === 'Perpanjangan Tanda Tashih';
+
+  const templateData = {
+    namaPenerbit: currentUser?.publisherName || currentUser?.name || '........................................',
+    idPenerbit: currentUser?.publisherId ? currentUser.publisherId.slice(0, 8) : '....................',
+    namaMushaf: namaMushaf || '........................................',
+    penanggungJawab: penanggungJawabProduk || '........................................',
+    materi: Array.isArray(selectedMateriTambahan) && selectedMateriTambahan.length > 0 ? selectedMateriTambahan.join(', ') : '',
+    sizes: sizes || [],
+    namaPercetakan: namaPercetakan || '........................................',
+  };
+
+  const handleDownloadTemplate = () => {
+    const docHtml = buildSuratPermohonanDocHtml(templateData);
+    const filename = `Format-Surat-Permohonan-Tanda-Tashih-${(namaMushaf || 'Mushaf').replace(/[^a-zA-Z0-9_-]/g, '_')}.doc`;
+    downloadWordDoc(filename, docHtml);
+  };
   const isLuarNegeri = kategoriPendaftaran === 'Mushaf Luar Negeri';
 
   // Handler validasi instan saat berkas dipilih
@@ -82,7 +106,7 @@ export const Step3Berkas = ({
 
       <div className="space-y-6">
         {/* 1. Surat Permohonan */}
-        <div className="space-y-2 p-4 rounded-xl bg-canvas border border-line">
+        <div className="space-y-3 p-4 rounded-xl bg-canvas border border-line">
           <div className="flex items-start justify-between gap-2">
             <div>
               <label htmlFor="file-surat-permohonan" className="block text-xs font-bold text-ink">
@@ -95,6 +119,43 @@ export const Step3Berkas = ({
             <span className="text-xs font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200 shrink-0">
               Wajib (PDF)
             </span>
+          </div>
+
+          {/* Kotak Format Baku Surat Permohonan Resmi LPMQ */}
+          <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3.5 space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-brand-800 shrink-0" />
+                <span className="text-xs font-bold text-ink">
+                  Format Baku Surat Permohonan Tanda Tashih
+                </span>
+                <span className="text-[10px] font-semibold text-brand-800 bg-brand-100 px-1.5 py-0.5 rounded border border-brand-200">
+                  Resmi Kemenag
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateModal(true)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-brand-800 hover:text-brand-900 bg-white px-2.5 py-1.5 rounded-lg border border-brand-200 shadow-2xs hover:bg-brand-50 transition-colors cursor-pointer"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Lihat & Salin Format</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink bg-white px-2.5 py-1.5 rounded-lg border border-line shadow-2xs hover:bg-surface-subtle transition-colors cursor-pointer"
+                  title="Unduh draf format surat permohonan (.doc) Microsoft Word"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Unduh (.doc)</span>
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-ink-muted leading-relaxed">
+              Cetak format surat ini di atas <strong>kop resmi penerbit</strong>, bubuhkan <strong>tanda tangan pimpinan</strong> dan <strong>stempel basah</strong>, lalu scan PDF (maksimal 10 MB) untuk diunggah di bawah ini. Naskah master fisik mushaf dikirimkan ke loket LPMQ bersama bukti registrasi.
+            </p>
           </div>
 
           <input
@@ -524,6 +585,11 @@ export const Step3Berkas = ({
           </div>
         )}
       </div>
+      <SuratPermohonanTemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        data={templateData}
+      />
     </div>
   );
 };

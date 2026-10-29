@@ -222,6 +222,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
       }
       if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
+      const targetVerifierId = reg.core_verifier_id || data.verifier_id;
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -234,11 +235,17 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       });
       if (active) fail(409, 'Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
       const verifier = await tx.user.findUnique({
-        where: { id: reg.core_verifier_id || data.verifier_id },
+        where: { id: targetVerifierId },
         include: { roles: { include: { role: true } } },
       });
-      if (!verifier || verifier.status !== 'ACTIVE' || !verifier.roles.some(item => item.role.code === 'VERIFIKATOR')) {
+      if (!verifier || verifier.status !== 'ACTIVE' || !verifier.roles.some(item => ['VERIFIKATOR', 'VERIFICATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'].includes(item.role.code))) {
         fail(400, 'Pilih pengguna aktif dengan peran Verifikator.');
+      }
+      if (targetVerifierId !== reg.core_verifier_id) {
+        await tx.registration.update({
+          where: { id },
+          data: { core_verifier_id: targetVerifierId },
+        });
       }
       if (await tx.verificationDocument.findUnique({ where: { document_no: data.nota_no } })) {
         fail(409, 'Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
@@ -445,7 +452,13 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
 
   const where = {
     status: query.status || 'ACTIVE',
-    roles: { some: { role: { code: 'VERIFIKATOR' } } },
+    roles: {
+      some: {
+        role: {
+          code: { in: ['VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'] },
+        },
+      },
+    },
   };
 
   if (query.search) {

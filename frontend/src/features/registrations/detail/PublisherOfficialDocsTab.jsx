@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
-import { PublisherDocumentList } from '../PublisherDocumentList';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { PrintingReportSection } from './PrintingReportSection';
 
@@ -181,10 +180,8 @@ export function PublisherOfficialDocsTab({
         </div>
       </section>
 
-      {/* Bagian 3: Surat Tanda Tashih & Dokumen Resmi LPMQ */}
+      {/* Bagian 3: Surat Tanda Tashih & Arsip Penetapan LPMQ (Cukup satu tampilan arsip dokumen resmi) */}
       <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
-        <h2 className="font-bold text-ink text-sm">Surat Tanda Tashih & Arsip Penetapan LPMQ</h2>
-        <PublisherDocumentList documents={data.official_documents} />
         <DocumentArchive registrationId={data.id} />
       </section>
       {/* Bagian 4: Laporan Realisasi Pencetakan & Penyerahan 5 Eksemplar (U-16 / B-10) */}

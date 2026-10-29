@@ -4,16 +4,41 @@ import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
 export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
-  const fixedVerifierId = registration?.core_verifier_id;
+  const suggestedVerifierId =
+    registration?.core_verifier_id ||
+    registration?.core_team?.verifier?.id ||
+    registration?.core_team_verifier_id ||
+    '';
   const [verifiers, setVerifiers] = useState([]);
   const [verifierSearch, setVerifierSearch] = useState('');
-  const [selectedVerifierId, setSelectedVerifierId] = useState('');
+  const [selectedVerifierId, setSelectedVerifierId] = useState(suggestedVerifierId);
   const [notaNo, setNotaNo] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [notaError, setNotaError] = useState(false);
+
+  const loadVerifiers = () => {
+    setLoading(true);
+    setError(null);
+
+    verificationApi
+      .listActiveVerifiers({ status: 'ACTIVE' })
+      .then((res) => {
+        const items = Array.isArray(res) ? res : (res?.data || []);
+        setVerifiers(items);
+        if (suggestedVerifierId && items.some((item) => item.id === suggestedVerifierId)) {
+          setSelectedVerifierId((prev) => prev || suggestedVerifierId);
+        }
+      })
+      .catch((err) => {
+        setError(err.message || 'Gagal memuat direktori verifikator.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -24,8 +49,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
       .listActiveVerifiers({ status: 'ACTIVE' })
       .then((res) => {
         if (!isMounted) return;
-        const items = res?.data || [];
+        const items = Array.isArray(res) ? res : (res?.data || []);
         setVerifiers(items);
+        if (suggestedVerifierId && items.some((item) => item.id === suggestedVerifierId)) {
+          setSelectedVerifierId((prev) => prev || suggestedVerifierId);
+        }
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -49,13 +77,13 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     );
   });
 
-  const selectedVerifier = verifiers.find((v) => v.id === (fixedVerifierId || selectedVerifierId)) || null;
+  const selectedVerifier = verifiers.find((v) => v.id === selectedVerifierId) || null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!registration?.id) return;
 
-    if (!fixedVerifierId && !selectedVerifierId) {
+    if (!selectedVerifierId) {
       setError('Silakan pilih verifikator yang akan ditugaskan.');
       return;
     }
@@ -71,7 +99,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
     try {
       const payload = {
-        ...(fixedVerifierId ? {} : { verifier_id: selectedVerifierId }),
+        verifier_id: selectedVerifierId,
         nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
       };
@@ -176,8 +204,22 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Core team recommendation notice if available */}
+          {registration?.core_team_number && (
+            <div className="rounded-xl bg-brand-50 border border-brand-100 p-3 text-brand-900 flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-bold text-xs">Rekomendasi Tim Inti {registration.core_team_number}</p>
+                <p className="text-[11px] text-brand-800">
+                  {selectedVerifier?.name ? `Petugas terpilih otomatis: ${selectedVerifier.name}. ` : ''}
+                  Anda dapat mengganti verifikator dari daftar di bawah jika diperlukan.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Verifier Selection with Search */}
-          {fixedVerifierId ? <p className="rounded-lg bg-brand-50 p-3 text-brand-900">Tim inti {registration.core_team_number}: verifikator {selectedVerifier?.name || 'sesuai snapshot pengajuan'}.</p> : <div className="space-y-1.5">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label htmlFor="verifier-select" className="block font-bold text-ink">
                 Pilih Verifikator <span className="text-civic-danger">*</span>
@@ -191,6 +233,17 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
             {loading ? (
               <p className="text-ink-muted italic py-2">Memuat daftar verifikator...</p>
+            ) : verifiers.length === 0 ? (
+              <div className="p-3 bg-civic-warningSoft border border-civic-warningLine rounded-xl text-xs text-civic-warning flex items-center justify-between">
+                <span>Belum ada data verifikator aktif ditemukan di sistem.</span>
+                <button
+                  type="button"
+                  onClick={loadVerifiers}
+                  className="font-bold underline ml-2 cursor-pointer"
+                >
+                  Muat Ulang
+                </button>
+              </div>
             ) : (
               <div className="space-y-1.5">
                 {verifiers.length > 3 && (
@@ -229,7 +282,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
             <p className="text-xs text-ink-muted">
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
             </p>
-          </div>}
+          </div>
 
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">

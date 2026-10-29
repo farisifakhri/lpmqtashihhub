@@ -31,11 +31,8 @@ import kemenagLogo from "@/assets/kemenag1.png";
 import lpmqLogo from "@/assets/logo-lpmq1.png";
 import Switcher from "../darkmode/Switcher";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
-
-// Konfigurasi tautan unduh contoh surat pendaftaran
-const TEMPLATE_SURAT_URL =
-    import.meta.env.VITE_SURAT_PENDAFTARAN_TEMPLATE_URL ||
-    "https://tashih.kemenag.go.id/download-materi";
+import { SuratPendaftaranTemplateModal } from "./components/SuratPendaftaranTemplateModal";
+const TEMPLATE_SURAT_URL = "#";
 
 const MAX_SIZE_DEFAULT = 500 * 1024; // 500 KB
 const MAX_SIZE_AKTA = 2 * 1024 * 1024; // 2 MB
@@ -48,8 +45,8 @@ const PERSYARATAN_DOKUMEN = {
             {
                 nama: "Surat Pendaftaran Penerbit Mushaf Al-Qur'an",
                 format: "Format file pdf. Ukuran masimal 500kb.",
-                linkText: "Contoh surat dapat diunduh di sini",
-                linkUrl: "https://tashih.kemenag.go.id/download-materi",
+                linkText: "Contoh format resmi surat dapat dilihat di sini",
+                isTemplateModal: true,
             },
             {
                 nama: "Akta Notaris",
@@ -85,8 +82,8 @@ const PERSYARATAN_DOKUMEN = {
             {
                 nama: "Surat Pendaftaran Penerbit Mushaf Al-Qur'an",
                 format: "Format file pdf. Ukuran masimal 500kb.",
-                linkText: "Contoh surat dapat diunduh di sini",
-                linkUrl: "https://tashih.kemenag.go.id/download-materi",
+                linkText: "Contoh format resmi surat dapat dilihat di sini",
+                isTemplateModal: true,
             },
             {
                 nama: "Profil Lembaga",
@@ -109,8 +106,8 @@ const PERSYARATAN_DOKUMEN = {
             {
                 nama: "Surat Pendaftaran Penerbit Mushaf Al-Qur'an",
                 format: "Format file pdf. Ukuran masimal 500kb.",
-                linkText: "Contoh surat dapat diunduh di sini",
-                linkUrl: "https://tashih.kemenag.go.id/download-materi",
+                linkText: "Contoh format resmi surat dapat dilihat di sini",
+                isTemplateModal: true,
             },
             {
                 nama: "Akta Notaris",
@@ -184,6 +181,7 @@ export const RegisterPublisherPage = () => {
     const [error, setError] = useState("");
     const [successData, setSuccessData] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [showTemplateModal, setShowTemplateModal] = useState(false);
 
     // Sync active checklist tab when user clicks entity option
     const handleJenisChange = (id) => {
@@ -647,7 +645,15 @@ export const RegisterPublisherPage = () => {
                                                 <div className="min-w-0">
                                                     <span className="font-semibold text-ink">{item.nama}</span>.{" "}
                                                     <span>{item.format}</span>{" "}
-                                                    {item.linkUrl && (
+                                                    {item.isTemplateModal ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowTemplateModal(true)}
+                                                            className="text-brand-fg font-semibold underline inline-flex items-center gap-0.5 ml-1 cursor-pointer hover:text-brand-800"
+                                                        >
+                                                            [{item.linkText}]
+                                                        </button>
+                                                    ) : item.linkUrl ? (
                                                         <a
                                                             href={item.linkUrl}
                                                             target="_blank"
@@ -657,7 +663,7 @@ export const RegisterPublisherPage = () => {
                                                             [{item.linkText}]
                                                             <ExternalLink className="w-2.5 h-2.5 inline" />
                                                         </a>
-                                                    )}
+                                                    ) : null}
                                                     {item.catatan && (
                                                         <span className="block text-[11px] text-brand-900 font-medium mt-0.5">
                                                             {item.catatan}
@@ -675,15 +681,13 @@ export const RegisterPublisherPage = () => {
                                         <FileText className="w-4 h-4 text-brand-700 shrink-0" />
                                         <span>Format Surat Permohonan</span>
                                     </div>
-                                    <a
-                                        href={TEMPLATE_SURAT_URL}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[11px] font-bold text-brand-fg hover:underline inline-flex items-center gap-1"
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowTemplateModal(true)}
+                                        className="text-[11px] font-bold text-brand-fg hover:underline inline-flex items-center gap-1 cursor-pointer"
                                     >
-                                        <span>Unduh Berkas</span>
-                                        <ExternalLink className="w-3 h-3" />
-                                    </a>
+                                        <span>Lihat & Unduh Format</span>
+                                    </button>
                                 </div>
 
                                 {/* Keamanan & Ketentuan Hukum */}
@@ -950,16 +954,14 @@ export const RegisterPublisherPage = () => {
                                         <p className="text-xs font-bold uppercase tracking-wider text-brand-fg">
                                             3. Dokumen Legalitas (PDF Saja)
                                         </p>
-                                        <a
-                                            href={TEMPLATE_SURAT_URL}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-fg hover:underline"
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowTemplateModal(true)}
+                                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-fg hover:underline cursor-pointer"
                                         >
                                             <FileText className="w-3.5 h-3.5" />
-                                            <span>Unduh Format Surat Permohonan</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </a>
+                                            <span>Lihat Format Surat Pendaftaran</span>
+                                        </button>
                                     </div>
 
                                     {/* Callout Ringkasan Dokumen Berdasarkan Jenis */}
@@ -968,15 +970,13 @@ export const RegisterPublisherPage = () => {
                                             <span className="font-bold text-ink">
                                                 Dokumen yang harus diunggah ({PERSYARATAN_DOKUMEN[jenisPenerbit]?.label}):
                                             </span>
-                                            <a
-                                                href="https://tashih.kemenag.go.id/download-materi"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-[11px] text-brand-fg hover:underline inline-flex items-center gap-0.5 font-semibold"
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowTemplateModal(true)}
+                                                className="text-[11px] text-brand-fg hover:underline inline-flex items-center gap-0.5 font-semibold cursor-pointer"
                                             >
-                                                [Contoh surat dapat diunduh di sini]
-                                                <ExternalLink className="w-2.5 h-2.5 inline" />
-                                            </a>
+                                                [Format resmi surat dapat dilihat di sini]
+                                            </button>
                                         </div>
                                         <p className="text-[11px] text-ink-muted leading-relaxed">
                                             Format berkas wajib <strong>PDF</strong>. Batas ukuran maksimal dokumen adalah <strong>500 KB</strong> (kecuali Akta Notaris maksimal <strong>2 MB</strong>).
@@ -1294,18 +1294,36 @@ export const RegisterPublisherPage = () => {
                             Masuk
                         </Link>
                         <span>&bull;</span>
-                        <a
-                            href="https://tashih.kemenag.go.id/download-materi"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-ink transition-colors inline-flex items-center gap-0.5"
+                        <button
+                            type="button"
+                            onClick={() => setShowTemplateModal(true)}
+                            className="hover:text-ink transition-colors inline-flex items-center gap-1 cursor-pointer"
                         >
-                            <span>Unduh Materi</span>
-                            <ExternalLink className="w-3 h-3" />
-                        </a>
+                            <FileText className="w-3 h-3" />
+                            <span>Format Surat Pendaftaran</span>
+                        </button>
+                        <span>&bull;</span>
+                        <Link to="/informasi/regulasi-penerbit-mushaf" className="hover:text-ink transition-colors">
+                            Regulasi & Materi
+                        </Link>
                     </div>
                 </div>
             </footer>
+
+            <SuratPendaftaranTemplateModal
+                isOpen={showTemplateModal}
+                onClose={() => setShowTemplateModal(false)}
+                data={{
+                    namaPenerbit: formData.nama_penerbit,
+                    jenisBadanHukum: PERSYARATAN_DOKUMEN[jenisPenerbit]?.label || 'Badan Usaha / Lembaga',
+                    namaPimpinan: formData.nama_penanggung_jawab,
+                    alamatKantor: formData.alamat_lengkap,
+                    nomorTelepon: formData.telepon_penanggung_jawab,
+                    emailResmi: formData.email,
+                    npwp: formData.npwp,
+                    nib: formData.nib,
+                }}
+            />
         </div>
     );
 };

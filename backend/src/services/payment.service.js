@@ -35,7 +35,7 @@ export const confirmPayment = (id, data, user, req) => prisma.$transaction(async
   if (!initial) fail(404, 'Tagihan tidak ditemukan.');
   const reg = await registration(tx, initial.registration_id);
   requireOwner(reg, user);
-  requireStatus(reg, ['AWAITING_PAYMENT']);
+  requireStatus(reg, ['AWAITING_PAYMENT', 'VERIFICATION_APPROVED']);
   const payment = await tx.paymentRecord.findUnique({ where: { id } });
   if (payment.status !== 'UNPAID') fail(409, 'Bukti pembayaran untuk tagihan ini sudah dikirim atau telah diproses. Muat ulang detail tagihan untuk melihat status terbarunya.');
   await ownedFile(tx, data.receipt_file_id, user);

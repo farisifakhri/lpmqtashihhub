@@ -8,7 +8,20 @@ export const AssignmentListPanel = ({
   activeCount, completedCount, currentUser, page, activeTab, setActiveTab,
   setPage, searchQuery, setSearchQuery, loading, error, filteredAssignments,
   getStageLabel, openReviewModal, hasMore,
-}) => (
+  initialCount = activeCount,
+  revisionCount = 0,
+  onTabChange,
+}) => {
+  const handleTabClick = (tab) => {
+    if (onTabChange) {
+      onTabChange(tab);
+    } else {
+      setActiveTab(tab);
+      setPage(1);
+    }
+  };
+
+  return (
   <>
       {/* 2. Kartu Statistik Ringkas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -67,27 +80,42 @@ export const AssignmentListPanel = ({
         <div className="p-5 sm:p-6 border-b border-line space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             {/* Tabs */}
-            <div className="inline-flex items-center p-1 rounded-xl bg-surface-subtle border border-line text-xs font-semibold">
+            <div className="inline-flex items-center p-1 rounded-xl bg-surface-subtle border border-line text-xs font-semibold overflow-x-auto">
               <button
                 type="button"
-                onClick={() => { setActiveTab('ACTIVE'); setPage(1); }}
+                onClick={() => handleTabClick('ACTIVE')}
                 className={clsx(
-                  'px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer',
+                  'px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap',
                   activeTab === 'ACTIVE'
                     ? 'bg-white text-brand-900 font-bold shadow-xs'
                     : 'text-ink-muted hover:text-ink'
                 )}
               >
-                <span>Tugas Sidang Aktif</span>
+                <span>Tugas Sidang Awal</span>
                 <span className="px-1.5 py-0.2 rounded-full bg-civic-warningSoft text-civic-warning text-xs font-bold">
-                  {activeCount}
+                  {initialCount}
                 </span>
               </button>
               <button
                 type="button"
-                onClick={() => { setActiveTab('COMPLETED'); setPage(1); }}
+                onClick={() => handleTabClick('REVISION')}
                 className={clsx(
-                  'px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer',
+                  'px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap',
+                  activeTab === 'REVISION'
+                    ? 'bg-white text-brand-900 font-bold shadow-xs'
+                    : 'text-ink-muted hover:text-ink'
+                )}
+              >
+                <span>Tashih Revisi & Dumi</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 text-xs font-bold">
+                  {revisionCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabClick('COMPLETED')}
+                className={clsx(
+                  'px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap',
                   activeTab === 'COMPLETED'
                     ? 'bg-white text-brand-900 font-bold shadow-xs'
                     : 'text-ink-muted hover:text-ink'
@@ -298,3 +326,4 @@ export const AssignmentListPanel = ({
 
   </>
 );
+};

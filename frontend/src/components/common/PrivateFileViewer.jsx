@@ -76,18 +76,27 @@ export const PrivateFileViewer = ({
     };
   }, [fileId, endpoint]);
 
+  const isImage = detectedType
+    ? detectedType.startsWith('image/')
+    : /\.(png|jpe?g|webp|gif)$/i.test(fileName);
+  const isPdf = !isImage && (detectedType
+    ? detectedType.includes('pdf')
+    : fileName.toLowerCase().endsWith('.pdf'));
+
   const handleDownload = () => {
     if (!blobUrl) return;
+    let effectiveName = fileName;
+    if (isImage && effectiveName.toLowerCase().endsWith('.pdf')) {
+      const ext = detectedType.includes('png') ? '.png' : '.jpg';
+      effectiveName = effectiveName.replace(/\.pdf$/i, ext);
+    }
     const link = document.createElement('a');
     link.href = blobUrl;
-    link.download = fileName.replace(/[\\/:*?"<>|]/g, '-');
+    link.download = effectiveName.replace(/[\\/:*?"<>|]/g, '-');
     document.body.appendChild(link);
     link.click();
     link.remove();
   };
-
-  const isPdf = detectedType.includes('pdf') || fileName.toLowerCase().endsWith('.pdf');
-  const isImage = detectedType.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(fileName);
 
   if (loading) {
     return (

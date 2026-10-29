@@ -18,6 +18,7 @@ export const assignmentSchema = { params, body: z.object({
   enforce_full_coverage: z.boolean().optional(),
   reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
+  is_individual: z.boolean().optional(),
 }).strict().superRefine((data, ctx) => {
   if (!data.assignee_ids && !data.juz_assignments) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });

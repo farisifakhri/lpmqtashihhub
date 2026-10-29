@@ -922,6 +922,16 @@ export const NewRegistrationPage = () => {
       const created = res.data;
 
       // Attach manuscript records with explicit error reporting
+      if (uploadedPermohonanId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'SURAT_PERMOHONAN', file_id: uploadedPermohonanId });
+        } catch (mErr) {
+          console.warn('Surat permohonan attachment note:', mErr);
+          if (!created.surat_permohonan_file_id && !created.foreign_metadata?.surat_permohonan_file_id) {
+            setError('Peringatan: Berkas surat permohonan belum tersambung ke permohonan: ' + mErr.message);
+          }
+        }
+      }
       if (uploadedCoverId) {
         try {
           await registrationApi.addManuscript(created.id, { type: 'COVER', file_id: uploadedCoverId });
@@ -1214,6 +1224,12 @@ export const NewRegistrationPage = () => {
             isDigital={isDigital}
             fieldErrors={fieldErrors}
             clearFieldError={clearFieldError}
+            namaMushaf={namaMushaf}
+            penanggungJawabProduk={penanggungJawabProduk}
+            selectedMateriTambahan={selectedMateriTambahan}
+            sizes={sizes}
+            namaPercetakan={namaPercetakan}
+            currentUser={currentUser}
           />
 
           <div className="flex items-center justify-between gap-3 pt-2">

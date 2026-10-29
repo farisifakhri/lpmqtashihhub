@@ -233,7 +233,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/publishers',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL', 'VERIFIKATOR']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
             <PublisherVerificationPage />
           </ProtectedRoute>
         ),

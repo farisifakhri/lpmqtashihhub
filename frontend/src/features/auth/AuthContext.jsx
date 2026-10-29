@@ -79,13 +79,19 @@ export const AuthProvider = ({ children }) => {
         const res = await authApi.getMe();
         if (!cancelled && getAuthToken() === activeToken && res?.data) {
           const u = res.data;
+          const savedActiveRole = localStorage.getItem('lpmq_active_role');
+          const userRoles = u.roles || [];
+          const effectiveRole = (savedActiveRole && userRoles.includes(savedActiveRole))
+            ? savedActiveRole
+            : (userRoles[0] || 'PENERBIT');
+
           const userObj = {
             id: u.id,
             name: u.name,
             email: u.email,
             nip: u.nip,
-            roles: u.roles || [],
-            role: u.roles?.[0] || 'PENERBIT',
+            roles: userRoles,
+            role: effectiveRole,
             publisherId: u.publisher?.id,
             publisherName: u.publisher?.legal_name,
             publisher: u.publisher || null,
@@ -121,15 +127,21 @@ export const AuthProvider = ({ children }) => {
         setTokenState(receivedToken);
         setIsInitializing(false);
 
+        const savedActiveRole = localStorage.getItem('lpmq_active_role');
+        const userRoles = u.roles || [];
+        const effectiveRole = (savedActiveRole && userRoles.includes(savedActiveRole))
+          ? savedActiveRole
+          : (userRoles[0] || 'PENERBIT');
+
         const userObj = {
           id: u.id,
           name: u.name,
           email: u.email,
           nip: u.nip,
-          roles: u.roles || [],
-          role: u.roles?.[0] || 'PENERBIT',
-          publisherId: u.publisher?.id || (u.roles?.includes('PENERBIT') ? u.id : null),
-          publisherName: u.publisher?.legal_name || (u.roles?.includes('PENERBIT') ? u.name : null),
+          roles: userRoles,
+          role: effectiveRole,
+          publisherId: u.publisher?.id || (userRoles.includes('PENERBIT') ? u.id : null),
+          publisherName: u.publisher?.legal_name || (userRoles.includes('PENERBIT') ? u.name : null),
           publisher: u.publisher || null,
           verificationStatus: u.publisher?.verification_status || null,
         };
@@ -166,6 +178,7 @@ export const AuthProvider = ({ children }) => {
     setTokenState(null);
     setIsInitializing(false);
     localStorage.removeItem('lpmq_user');
+    localStorage.removeItem('lpmq_active_role');
     // Clear all registration autosave drafts (security: prevent cross-user data exposure)
     try {
       Object.keys(sessionStorage)
@@ -175,6 +188,20 @@ export const AuthProvider = ({ children }) => {
       // sessionStorage not available
     }
     setCurrentUser(null);
+  };
+
+  // Ganti peran aktif untuk pengguna yang memiliki multi-role (Item 21)
+  const switchActiveRole = (targetRole) => {
+    if (currentUser?.roles?.includes(targetRole)) {
+      const updatedUser = {
+        ...currentUser,
+        role: targetRole,
+      };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('lpmq_active_role', targetRole);
+      return true;
+    }
+    return false;
   };
 
   // Quick switch role (hanya untuk simulasi development lokal, tidak membuat user mock)
@@ -217,6 +244,7 @@ export const AuthProvider = ({ children }) => {
         registerPublisher,
         logout,
         setRole,
+        switchActiveRole,
         availableRoles,
         seedAccounts: import.meta.env.DEV ? SEED_ACCOUNTS : [],
       }}

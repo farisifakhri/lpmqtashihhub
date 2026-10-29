@@ -129,7 +129,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!registration || !allCompleted || !hasTeamRecap) return;
+    if (!registration) return;
 
     if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
@@ -216,6 +216,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                   Layanan: <strong>{registration.service_type?.name}</strong>
                 </div>
               </div>
+
+              {/* Peringatan Wewenang Distributor bila pentashih belum selesai centang (Item 6) */}
+              {(!allCompleted || !hasTeamRecap) && (
+                <div className="p-3 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
+                  <span>
+                    Sebagian pentashih belum menyelesaikan centang checklist atau mengunggah rekap. Sebagai Koordinator Distributor, Anda tetap berhak menyimpan keputusan sidang.
+                  </span>
+                </div>
+              )}
 
               {/* Matriks Hasil Telaah Tiap Pentashih */}
               <div>
@@ -585,7 +595,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={submitting || !allCompleted || !hasTeamRecap || !distributorNotes.trim()}
+                disabled={submitting || !distributorNotes.trim()}
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >
