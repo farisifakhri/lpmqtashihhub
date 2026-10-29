@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { regulationApi } from '@/api/regulation.api';
 import { useAuth } from '@/features/auth/AuthContext';
+import { InformationGuideManagement } from './InformationGuideManagement';
 
 const CATEGORIES = [
   'Ketentuan Pentashihan',
@@ -36,11 +37,63 @@ const CATEGORIES = [
   'Surat Edaran Kepala Lajnah Pentashihan Mushaf Al-Qur\'an',
 ];
 
+const MAIN_NAV_ITEMS = [
+  { id: 'informasi', label: 'Informasi' },
+  { id: 'permohonan-master', label: 'Permohonan Master' },
+  { id: 'pengaduan', label: 'Pengaduan' },
+  { id: 'faq', label: 'FAQ' },
+];
+
+const INFORMATION_SUBMENUS = [
+  {
+    id: 'regulasi',
+    label: "Regulasi Penerbit Mushaf Al-Qur'an",
+    description: 'Kelola dokumen regulasi resmi yang ditampilkan pada landing page publik.',
+  },
+  {
+    id: 'panduan',
+    label: 'Panduan Permohonan Surat Tanda Tashih/Izin Edar',
+    description: 'Panduan permohonan Surat Tanda Tashih/Izin Edar akan dikelola di bagian ini.',
+  },
+  {
+    id: 'sop',
+    label: 'SOP Pelayanan Surat Tanda Tashih Izin Edar',
+    description: 'SOP pelayanan Surat Tanda Tashih Izin Edar akan dikelola di bagian ini.',
+  },
+  {
+    id: 'direktori',
+    label: "Direktori Penerbit Mushaf Al-Qur'an",
+    description: 'Direktori penerbit Mushaf Al-Qur’an akan dikelola di bagian ini.',
+  },
+  {
+    id: 'survei',
+    label: 'Survei IKM dan IPAK Pelayananan Surat Tanda Tashih',
+    description: 'Informasi survei IKM dan IPAK pelayanan akan dikelola di bagian ini.',
+  },
+  {
+    id: 'siaran-pers',
+    label: 'Siaran Pers',
+    description: 'Siaran pers LPMQ akan dikelola di bagian ini.',
+  },
+  {
+    id: 'unduh-dokumen',
+    label: 'Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar',
+    description: 'Dokumen seputar pelayanan untuk diunduh akan dikelola di bagian ini.',
+  },
+];
+
+const COMPLAINT_SUBMENUS = [
+  { id: 'saluran-pengaduan', label: 'Saluran Pengaduan Masyarakat' },
+  { id: 'cek-status-laporan', label: 'Cek Status Laporan Naskah' },
+  { id: 'kontak-bantuan', label: 'Kontak Pusat Bantuan LPMQ' },
+];
+
 export const LandingPageManagementPage = () => {
   const { currentUser } = useAuth();
 
-  // Tab State: 'REGULASI' | 'LAYANAN' | 'ALUR' | 'PERSYARATAN'
-  const [activeTab, setActiveTab] = useState('REGULASI');
+  const [activeMainMenu, setActiveMainMenu] = useState('informasi');
+  const [activeInformationSubmenu, setActiveInformationSubmenu] = useState('regulasi');
+  const [activeComplaintSubmenu, setActiveComplaintSubmenu] = useState('saluran-pengaduan');
 
   // Data states
   const [regulations, setRegulations] = useState([]);
@@ -148,11 +201,11 @@ export const LandingPageManagementPage = () => {
   }, [page, limit, selectedCategory, activeSearch, selectedPublished]);
 
   useEffect(() => {
-    if (activeTab === 'REGULASI') {
+    if (activeMainMenu === 'informasi' && activeInformationSubmenu === 'regulasi') {
       fetchRegulations();
       fetchSummary();
     }
-  }, [activeTab, fetchRegulations, fetchSummary]);
+  }, [activeMainMenu, activeInformationSubmenu, fetchRegulations, fetchSummary]);
 
   // Handle Search Debounce
   useEffect(() => {
@@ -369,104 +422,100 @@ export const LandingPageManagementPage = () => {
             Manajemen konten publikasi landing page dan dokumen regulasi resmi LPMQ Tashih Hub
           </p>
         </div>
-
-        {activeTab === 'REGULASI' && (
-          <button
-            type="button"
-            onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 transition focus:outline-none shrink-0"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Tambah Dokumen</span>
-          </button>
-        )}
       </div>
 
-      {/* Navigation Submenu Tabs (Mengikuti Struktur Submenu Navbar Landing Page) */}
-      <div className="border-b border-line">
+      <nav aria-label="Navigasi menu landing page" className="border-b border-line">
         <div className="flex items-center gap-2 overflow-x-auto pb-px">
-          <button
-            type="button"
-            onClick={() => setActiveTab('REGULASI')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold border-b-2 transition whitespace-nowrap ${
-              activeTab === 'REGULASI'
-                ? 'border-brand-700 text-brand-700'
-                : 'border-transparent text-ink-muted hover:text-ink'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            <span>Regulasi Penerbit Mushaf Al-Qur’an</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('LAYANAN')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition whitespace-nowrap ${
-              activeTab === 'LAYANAN'
-                ? 'border-brand-700 text-brand-700'
-                : 'border-transparent text-ink-muted hover:text-ink'
-            }`}
-          >
-            <span>Informasi Layanan Pentashihan</span>
-            <span className="rounded bg-surface-subtle border border-line px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
-              Segera Hadir
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('ALUR')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition whitespace-nowrap ${
-              activeTab === 'ALUR'
-                ? 'border-brand-700 text-brand-700'
-                : 'border-transparent text-ink-muted hover:text-ink'
-            }`}
-          >
-            <span>Alur &amp; Regulasi STT</span>
-            <span className="rounded bg-surface-subtle border border-line px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
-              Segera Hadir
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('PERSYARATAN')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-xs font-medium border-b-2 transition whitespace-nowrap ${
-              activeTab === 'PERSYARATAN'
-                ? 'border-brand-700 text-brand-700'
-                : 'border-transparent text-ink-muted hover:text-ink'
-            }`}
-          >
-            <span>Persyaratan Berkas Naskah</span>
-            <span className="rounded bg-surface-subtle border border-line px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
-              Segera Hadir
-            </span>
-          </button>
+          {MAIN_NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveMainMenu(item.id)}
+              aria-current={activeMainMenu === item.id ? 'page' : undefined}
+              className={`px-4 py-3 text-xs font-bold border-b-2 transition whitespace-nowrap ${
+                activeMainMenu === item.id
+                  ? 'border-brand-700 text-brand-700'
+                  : 'border-transparent text-ink-muted hover:text-ink'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
-      </div>
+      </nav>
 
-      {/* Tab: Non-Regulasi Placeholder */}
-      {activeTab !== 'REGULASI' && (
-        <div className="rounded-2xl border border-line bg-surface p-12 text-center space-y-3">
+      {activeMainMenu === 'informasi' && (
+        <nav aria-label="Submenu Informasi" className="border-b border-line">
+          <div className="flex items-center gap-2 overflow-x-auto pb-px">
+            {INFORMATION_SUBMENUS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveInformationSubmenu(item.id)}
+                aria-current={activeInformationSubmenu === item.id ? 'page' : undefined}
+                className={`px-3 py-2.5 text-xs whitespace-nowrap border-b-2 transition ${
+                  activeInformationSubmenu === item.id
+                    ? 'border-brand-700 font-bold text-brand-700'
+                    : 'border-transparent font-medium text-ink-muted hover:text-ink'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      {activeMainMenu === 'pengaduan' && (
+        <nav aria-label="Submenu Pengaduan" className="border-b border-line">
+          <div className="flex items-center gap-2 overflow-x-auto pb-px">
+            {COMPLAINT_SUBMENUS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveComplaintSubmenu(item.id)}
+                aria-current={activeComplaintSubmenu === item.id ? 'page' : undefined}
+                className={`px-3 py-2.5 text-xs whitespace-nowrap border-b-2 transition ${
+                  activeComplaintSubmenu === item.id
+                    ? 'border-brand-700 font-bold text-brand-700'
+                    : 'border-transparent font-medium text-ink-muted hover:text-ink'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+
+      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan'].includes(activeInformationSubmenu) ? (
+        <div className="rounded-2xl border border-line bg-surface p-8 sm:p-12 text-center space-y-3">
           <div className="inline-flex p-3 rounded-full bg-surface-subtle text-ink-muted">
             <Sparkles className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-bold text-ink">Submenu Sedang Dipersiapkan</h3>
+          <span className="inline-flex rounded-md border border-line bg-surface-subtle px-2 py-1 text-[10px] font-semibold text-ink-muted">
+            Segera Hadir
+          </span>
+          <h2 className="text-base font-bold text-ink">
+            {activeMainMenu === 'informasi'
+              ? INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.label
+              : activeMainMenu === 'pengaduan'
+                ? COMPLAINT_SUBMENUS.find((item) => item.id === activeComplaintSubmenu)?.label
+                : MAIN_NAV_ITEMS.find((item) => item.id === activeMainMenu)?.label}
+          </h2>
           <p className="text-xs text-ink-muted max-w-md mx-auto">
-            Pengelolaan konten untuk bagian ini akan tersedia pada pembaruan rilis sistem berikutnya. Silakan kelola dokumen resmi pada tab Regulasi Penerbit Mushaf Al-Qur'an.
+            {activeMainMenu === 'informasi'
+              ? INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.description
+              : 'Pengelolaan konten untuk bagian ini akan tersedia pada pembaruan berikutnya.'}
           </p>
-          <button
-            type="button"
-            onClick={() => setActiveTab('REGULASI')}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-700 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-800 transition"
-          >
-            <span>Kembali ke Kelola Regulasi</span>
-          </button>
         </div>
+      ) : null}
+
+      {activeMainMenu === 'informasi' && activeInformationSubmenu === 'panduan' && (
+        <InformationGuideManagement />
       )}
 
-      {/* Tab: Regulasi Content */}
-      {activeTab === 'REGULASI' && (
+      {activeMainMenu === 'informasi' && activeInformationSubmenu === 'regulasi' && (
         <div className="space-y-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -526,10 +575,10 @@ export const LandingPageManagementPage = () => {
           </div>
 
           {/* Filter & Search Bar */}
-          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
               {/* Search */}
-              <div className="md:col-span-5 relative">
+              <div className="lg:col-span-4 relative">
                 <label htmlFor="admin-search-input" className="block text-xs font-semibold text-ink-muted mb-1">
                   Cari Dokumen
                 </label>
@@ -556,7 +605,7 @@ export const LandingPageManagementPage = () => {
               </div>
 
               {/* Kategori Filter */}
-              <div className="md:col-span-4 relative">
+              <div className="lg:col-span-3 relative">
                 <label htmlFor="admin-category-filter" className="block text-xs font-semibold text-ink-muted mb-1">
                   Filter Kategori
                 </label>
@@ -582,7 +631,7 @@ export const LandingPageManagementPage = () => {
               </div>
 
               {/* Status Publikasi */}
-              <div className="md:col-span-3 relative">
+              <div className="lg:col-span-2 relative">
                 <label htmlFor="admin-status-filter" className="block text-xs font-semibold text-ink-muted mb-1">
                   Status Publikasi
                 </label>
@@ -603,6 +652,15 @@ export const LandingPageManagementPage = () => {
                   <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-muted" />
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 transition focus:outline-none sm:w-auto sm:justify-self-end lg:col-span-3"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Tambah Dokumen</span>
+              </button>
             </div>
           </div>
 
@@ -695,14 +753,6 @@ export const LandingPageManagementPage = () => {
                           </td>
                           <td className="py-3.5 px-4">
                             <div className="font-semibold text-ink leading-relaxed">{doc.title}</div>
-                            <div className="text-[11px] text-ink-muted mt-0.5 flex items-center gap-1.5 font-mono">
-                              <span>{doc.file_name}</span>
-                              {doc.file_size && (
-                                <span className="text-ink-muted/70">
-                                  ({(doc.file_size / 1024).toFixed(0)} KB)
-                                </span>
-                              )}
-                            </div>
                           </td>
                           <td className="py-3.5 px-4">
                             <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-800">
@@ -710,7 +760,7 @@ export const LandingPageManagementPage = () => {
                             </span>
                           </td>
                           <td className="py-3.5 px-4">
-                            <span className="font-mono text-xs text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
+                            <span className="inline-flex max-w-full whitespace-normal break-words rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 font-mono text-[11px] font-semibold leading-relaxed text-brand-800">
                               {doc.document_number}
                             </span>
                           </td>
@@ -1305,4 +1355,3 @@ export const LandingPageManagementPage = () => {
 };
 
 export default LandingPageManagementPage;
-

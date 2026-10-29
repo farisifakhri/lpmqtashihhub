@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RegulationInfoPage } from './RegulationInfoPage';
 import { regulationApi } from '@/api/regulation.api';
@@ -70,6 +70,69 @@ describe('RegulationInfoPage Public Component', () => {
     expect(screen.getAllByRole('button', { name: /Unduh/i })).toHaveLength(2);
   });
 
+  it('uses the homepage public header and footer structure without duplicate layout regions', async () => {
+    render(
+      <MemoryRouter>
+        <RegulationInfoPage />
+      </MemoryRouter>
+    );
+    await screen.findByText(/KMA No. 44 Tahun 2024/i);
+
+    const header = screen.getByRole('banner');
+    expect(header).toHaveClass('sticky', 'top-0', 'z-50', 'border-b', 'border-line');
+    expect(header.querySelector('img[alt="Logo Tashih LPMQ"]')).toHaveClass('h-10', 'w-auto');
+    expect(within(header).getByRole('link', { name: 'LPMQ Kemenag RI' })).toHaveAttribute('href', '/');
+    expect(within(header).getByRole('link', { name: /Hubungi Layanan Tashih Online melalui WhatsApp/ })).toHaveAttribute(
+      'href',
+      'https://wa.me/628111997125'
+    );
+    expect(within(header).getByRole('link', { name: 'Masuk' })).toHaveAttribute('href', '/login');
+    expect(within(header).queryByText('Login Penerbit')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('banner')).toHaveLength(1);
+    expect(screen.getAllByRole('contentinfo')).toHaveLength(1);
+
+    const footer = screen.getByRole('contentinfo');
+    expect(footer).toHaveClass('bg-brand-950', 'text-white');
+    expect(within(footer).getByRole('region', { name: 'TENTANG KAMI' })).toBeInTheDocument();
+    expect(within(footer).getByTitle(/Peta lokasi Lajnah Pentashihan/i)).toHaveAttribute('loading', 'lazy');
+    expect(within(footer).getByText(/Gedung Bayt Al-Qur'an & Museum Istiqlal/i)).toBeInTheDocument();
+    expect(within(footer).getByRole('link', { name: 'Pengaduan' })).toHaveAttribute('href', '/');
+    expect(within(footer).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/');
+    expect(within(footer).queryByText('Layanan Terkait')).not.toBeInTheDocument();
+  });
+
+  it('shows only document titles and uses a complete category-style badge for document numbers', async () => {
+    const longDocumentNumber = 'Keputusan Kepala Badan Litbang dan Diklat Kementerian Agama RI Nomor 89 Tahun 2023';
+    const documentsWithLongNumber = [
+      { ...mockRegulations[0], document_number: longDocumentNumber },
+      mockRegulations[1],
+    ];
+    regulationApi.getPublicRegulations.mockResolvedValue({
+      success: true,
+      data: documentsWithLongNumber,
+      pagination: { page: 1, limit: 10, total: 2, totalPages: 1 },
+    });
+
+    render(
+      <MemoryRouter>
+        <RegulationInfoPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText(mockRegulations[0].title)).toBeInTheDocument();
+    expect(screen.queryByText(mockRegulations[0].file_name)).not.toBeInTheDocument();
+    expect(screen.queryByText(mockRegulations[1].file_name)).not.toBeInTheDocument();
+    expect(screen.queryByText('(100 KB)')).not.toBeInTheDocument();
+    expect(screen.queryByText('(50 KB)')).not.toBeInTheDocument();
+
+    const documentNumberBadge = screen.getByText(longDocumentNumber);
+    expect(documentNumberBadge).toHaveClass('inline-flex', 'rounded-lg', 'border-brand-200', 'bg-brand-50');
+    expect(documentNumberBadge.parentElement).toHaveTextContent(longDocumentNumber);
+    const categoryBadge = documentNumberBadge.closest('tr').querySelector('td:nth-child(3) span');
+    expect(categoryBadge).toHaveTextContent(mockRegulations[0].category);
+    expect(categoryBadge).toHaveClass('rounded-lg', 'border-brand-200', 'bg-brand-50');
+  });
+
   it('filters regulations when category is changed', async () => {
     render(
       <MemoryRouter>
@@ -137,4 +200,3 @@ describe('RegulationInfoPage Public Component', () => {
     });
   });
 });
-
