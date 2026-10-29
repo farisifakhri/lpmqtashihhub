@@ -50,3 +50,29 @@ describe('Verifikator navigation', () => {
     expect(tugasLink.textContent).toContain('1');
   });
 });
+
+describe('Multi-role cycling in Sidebar', () => {
+  it('renders role switch button and cycles roles when user has multi-roles', () => {
+    const switchActiveRole = vi.fn();
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: {
+        name: 'Ahmad Staff',
+        role: 'VERIFIKATOR',
+        roles: ['VERIFIKATOR', 'DISTRIBUTOR'],
+      },
+      switchActiveRole,
+      logout: vi.fn(),
+    });
+    render(
+      <MemoryRouter>
+        <Sidebar />
+      </MemoryRouter>
+    );
+
+    const switchBtn = screen.getByRole('button', { name: /Ganti \(2\)/i });
+    expect(switchBtn).toBeInTheDocument();
+
+    switchBtn.click();
+    expect(switchActiveRole).toHaveBeenCalledWith('DISTRIBUTOR');
+  });
+});

@@ -31,6 +31,7 @@ import {
     X,
     Sparkles,
     LogOut,
+    RefreshCw,
 } from "lucide-react";
 import { clsx } from "clsx";
 import kemenagLogo from "@/assets/kemenag.png";
@@ -42,6 +43,20 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
     const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
+
+    const handleCycleRole = (e) => {
+        e?.stopPropagation?.();
+        if (!currentUser?.roles || currentUser.roles.length <= 1) return;
+        const currentIdx = currentUser.roles.indexOf(currentUser.role);
+        const nextIdx = (currentIdx + 1) % currentUser.roles.length;
+        const nextRole = currentUser.roles[nextIdx];
+        switchActiveRole(nextRole);
+        if (nextRole === "PENERBIT" && !location.pathname.startsWith("/publisher")) {
+            navigate("/publisher");
+        } else if (nextRole !== "PENERBIT" && location.pathname.startsWith("/publisher")) {
+            navigate("/internal");
+        }
+    };
 
     const handleLogout = () => {
         logout();
@@ -825,23 +840,30 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {/* User Profile Card */}
                     <div className="p-2.5 border-t lpmq-sidebar-footer">
                         <div className="p-2.5 rounded-xl border lpmq-sidebar-footer-card flex items-center justify-between gap-2.5 shadow-2xs">
-                            <button
-                                type="button"
-                                onClick={() => setAvatarPickerOpen(true)}
-                                className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer group flex-1"
-                                title="Klik untuk mengganti avatar profil"
-                            >
-                                <UserAvatar
-                                    avatarId={avatarId}
-                                    name={currentUser?.name}
-                                    role={role}
-                                    size="md"
-                                    showRoleBadge
-                                />
+                            <div className="flex items-center gap-2.5 min-w-0 text-left flex-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setAvatarPickerOpen(true)}
+                                    className="cursor-pointer shrink-0"
+                                    title="Klik untuk mengganti avatar profil"
+                                >
+                                    <UserAvatar
+                                        avatarId={avatarId}
+                                        name={currentUser?.name}
+                                        role={role}
+                                        size="md"
+                                        showRoleBadge
+                                    />
+                                </button>
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-xs font-bold lpmq-sidebar-text truncate group-hover:text-brand-900 dark:group-hover:text-brand-300 transition-colors">
+                                    <button
+                                        type="button"
+                                        onClick={() => setAvatarPickerOpen(true)}
+                                        className="text-xs font-bold lpmq-sidebar-text truncate hover:text-brand-900 dark:hover:text-brand-300 transition-colors text-left block w-full cursor-pointer"
+                                        title="Klik untuk mengganti avatar profil"
+                                    >
                                         {currentUser?.name || "Pengguna"}
-                                    </div>
+                                    </button>
                                     <div className="text-[10px] lpmq-sidebar-muted truncate leading-tight flex items-center gap-1.5 mt-0.5">
                                         <span>{roleBadge.label}</span>
                                         {currentUser?.roles && currentUser.roles.length > 1 && (
@@ -855,10 +877,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                 <RefreshCw className="w-2 h-2" />
                                             </button>
                                         )}
-                                        <Sparkles className="w-2.5 h-2.5 text-brand-700 opacity-60 group-hover:opacity-100" />
+                                        <Sparkles className="w-2.5 h-2.5 text-brand-700 opacity-60" />
                                     </div>
                                 </div>
-                            </button>
+                            </div>
                             <button
                                 type="button"
                                 onClick={handleLogout}
