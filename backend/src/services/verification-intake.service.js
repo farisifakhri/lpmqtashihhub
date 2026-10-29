@@ -219,10 +219,12 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
       if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {
-        fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+        if (!data.override_reason) {
+          fail(400, 'Verifikator ditentukan oleh tim inti pengajuan. Untuk mengalihkan ke verifikator lain, sertakan alasan pengalihan resmi (minimal 5 karakter).');
+        }
       }
       if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
-      const targetVerifierId = reg.core_verifier_id || data.verifier_id;
+      const targetVerifierId = data.verifier_id || reg.core_verifier_id;
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -246,6 +248,12 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           where: { id },
           data: { core_verifier_id: targetVerifierId },
         });
+        await audit(tx, user, 'OVERRIDE_CORE_VERIFIER', 'Registration', id, {
+          previous_verifier_id: reg.core_verifier_id,
+          new_verifier_id: targetVerifierId,
+          override_reason: data.override_reason || null,
+          core_team_number: reg.core_team_number,
+        }, req);
       }
       if (await tx.verificationDocument.findUnique({ where: { document_no: data.nota_no } })) {
         fail(409, 'Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
@@ -288,7 +296,10 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           volume_count: intake.volume_count,
           assigned_at: assignedAt.toISOString(),
           due_at: dueAt.toISOString(),
-          notes: data.notes || null,
+          notes: data.override_reason
+            ? `[Pengalihan Tim Inti: ${data.override_reason}] ${data.notes || ''}`.trim()
+            : (data.notes || null),
+          override_reason: data.override_reason || null,
         },
       } });
       const fileId = await archiveVerificationPdf(tx, document, user, assignedAt, createdFiles);

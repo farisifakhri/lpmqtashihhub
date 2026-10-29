@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, FileText, CheckCircle2, AlertCircle, Clock, ShieldCheck, UserCheck } from 'lucide-react';
+import { X, FileText, CheckCircle2, AlertCircle, Clock, ShieldCheck, UserCheck, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
 
@@ -9,9 +9,12 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     registration?.core_team?.verifier?.id ||
     registration?.core_team_verifier_id ||
     '';
+  const isCoreTeam = Boolean(registration?.core_team_number);
+
   const [verifiers, setVerifiers] = useState([]);
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState(suggestedVerifierId);
+  const [overrideReason, setOverrideReason] = useState('');
   const [notaNo, setNotaNo] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
@@ -66,7 +69,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [suggestedVerifierId]);
 
   const filteredVerifiers = verifiers.filter((v) => {
     if (!verifierSearch.trim()) return true;
@@ -78,6 +81,8 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
   });
 
   const selectedVerifier = verifiers.find((v) => v.id === selectedVerifierId) || null;
+  const coreVerifier = verifiers.find((v) => v.id === suggestedVerifierId) || null;
+  const isOverridden = isCoreTeam && suggestedVerifierId && selectedVerifierId && selectedVerifierId !== suggestedVerifierId;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,6 +90,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
     if (!selectedVerifierId) {
       setError('Silakan pilih verifikator yang akan ditugaskan.');
+      return;
+    }
+
+    if (isOverridden && (!overrideReason.trim() || overrideReason.trim().length < 5)) {
+      setError('Alasan pengalihan verifikator Tim Inti wajib diisi (minimal 5 karakter).');
       return;
     }
 
@@ -102,6 +112,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         verifier_id: selectedVerifierId,
         nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
+        override_reason: isOverridden ? overrideReason.trim() : undefined,
       };
 
       const res = await verificationApi.createAssignment(registration.id, payload);
@@ -204,16 +215,58 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
 
         {/* Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Core team recommendation notice if available */}
-          {registration?.core_team_number && (
-            <div className="rounded-xl bg-brand-50 border border-brand-100 p-3 text-brand-900 flex items-start gap-2.5">
-              <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="font-bold text-xs">Rekomendasi Tim Inti {registration.core_team_number}</p>
-                <p className="text-[11px] text-brand-800">
-                  {selectedVerifier?.name ? `Petugas terpilih otomatis: ${selectedVerifier.name}. ` : ''}
-                  Anda dapat mengganti verifikator dari daftar di bawah jika diperlukan.
-                </p>
+          {/* Core team recommendation & override banner */}
+          {isCoreTeam && (
+            <div className={`rounded-xl p-3.5 border transition-all ${
+              isOverridden
+                ? 'bg-civic-warningSoft border-civic-warningLine text-civic-warning'
+                : 'bg-brand-50 border-brand-100 text-brand-900'
+            }`}>
+              <div className="flex items-start gap-2.5">
+                {isOverridden ? (
+                  <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
+                )}
+                <div className="space-y-1 flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-bold text-xs">
+                      Penetapan & Rekomendasi Tim Inti {registration.core_team_number}
+                    </p>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      isOverridden
+                        ? 'bg-civic-warning text-white font-bold'
+                        : 'bg-brand-200/80 text-brand-900'
+                    }`}>
+                      {isOverridden ? 'Mode Pengalihan' : 'Sesuai SOP Tim Inti'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed">
+                    Petugas standar tim inti: <strong>{coreVerifier?.name || 'Petugas Tim Inti'}</strong> {coreVerifier?.nip ? `(NIP: ${coreVerifier.nip})` : ''}.
+                    {isOverridden ? (
+                      <span className="block mt-0.5 font-medium text-civic-warning">
+                        Perhatian: Anda sedang mengalihkan penugasan dari verifikator tim inti ke <strong>{selectedVerifier?.name}</strong>. Wajib cantumkan alasan di kolom bawah.
+                      </span>
+                    ) : (
+                      <span className="block mt-0.5 text-brand-800">
+                        {selectedVerifier?.name ? `Petugas terpilih otomatis: ${selectedVerifier.name}. ` : ''}
+                        Anda dapat mengganti verifikator dari daftar di bawah jika diperlukan (dengan alasan resmi).
+                      </span>
+                    )}
+                  </p>
+                  {isOverridden && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedVerifierId(suggestedVerifierId);
+                        setOverrideReason('');
+                      }}
+                      className="text-[11px] font-bold text-civic-warning hover:underline cursor-pointer pt-1 block"
+                    >
+                      ← Batalkan Pengalihan (Gunakan Verifikator Tim Inti {coreVerifier?.name ? `: ${coreVerifier.name}` : ''})
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -262,7 +315,11 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                   value={selectedVerifierId}
                   onChange={(e) => setSelectedVerifierId(e.target.value)}
                   disabled={submitting}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 bg-white"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 bg-white ${
+                    isOverridden
+                      ? 'border-civic-warning focus:ring-civic-warning/20 focus:border-civic-warning'
+                      : 'border-line-strong focus:ring-brand-700/20 focus:border-brand-700'
+                  }`}
                 >
                   <option value="">-- Pilih Petugas Verifikator --</option>
                   {filteredVerifiers.map((v) => {
@@ -270,9 +327,10 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                     const dueInfo = v.oldest_active_due_at
                       ? ` · tenggat terdekat ${new Date(v.oldest_active_due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
                       : '';
+                    const isDefaultCore = isCoreTeam && v.id === suggestedVerifierId;
                     return (
                       <option key={v.id} value={v.id}>
-                        {v.name} {v.nip ? `(NIP: ${v.nip})` : ''} · {taskCount} tugas aktif{dueInfo}
+                        {v.name} {v.nip ? `(NIP: ${v.nip})` : ''} · {taskCount} tugas aktif{dueInfo} {isDefaultCore ? '★ [Tim Inti]' : ''}
                       </option>
                     );
                   })}
@@ -283,6 +341,27 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
             </p>
           </div>
+
+          {/* Override Reason Field (only shown if verifier differs from core team) */}
+          {isOverridden && (
+            <div className="space-y-1.5 p-3 rounded-xl bg-civic-warningSoft/70 border border-civic-warningLine animate-fadeIn">
+              <label htmlFor="override-reason-input" className="block font-bold text-civic-warning">
+                Alasan Pengalihan Verifikator Tim Inti <span className="text-civic-danger">*</span>
+              </label>
+              <input
+                id="override-reason-input"
+                type="text"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                disabled={submitting}
+                placeholder="Contoh: Petugas tim inti sedang cuti sakit / beban penugasan penuh"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-civic-warningLine bg-white focus:outline-none focus:ring-2 focus:ring-civic-warning/20 focus:border-civic-warning"
+              />
+              <p className="text-xs text-civic-warning">
+                Wajib diisi (minimal 5 karakter). Alasan ini akan dicatat ke lembar disposisi dan riwayat audit resmi.
+              </p>
+            </div>
+          )}
 
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">
@@ -339,13 +418,26 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               </div>
               <div>
                 <span className="text-ink-muted text-xs block">Verifikator:</span>
-                <span className="font-semibold text-ink">{selectedVerifier?.name || '(Belum dipilih)'}</span>
+                <span className="font-semibold text-ink flex items-center gap-1.5">
+                  {selectedVerifier?.name || '(Belum dipilih)'}
+                  {isOverridden && (
+                    <span className="text-[10px] text-civic-warning font-bold bg-civic-warningSoft px-1.5 py-0.5 rounded border border-civic-warningLine">
+                      Pengalihan
+                    </span>
+                  )}
+                </span>
               </div>
               <div>
                 <span className="text-ink-muted text-xs block">Nomor Disposisi:</span>
                 <span className="font-mono font-semibold text-ink">{notaNo.trim() || '(Belum diisi)'}</span>
               </div>
             </div>
+            {isOverridden && overrideReason.trim() && (
+              <div className="pt-2 border-t border-line/60 text-xs">
+                <span className="text-civic-warning block font-semibold">Alasan Pengalihan Tim Inti:</span>
+                <p className="text-ink italic mt-0.5 font-medium">{overrideReason.trim()}</p>
+              </div>
+            )}
             <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs text-brand-900">
               <span className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-brand-700 shrink-0" />
@@ -375,7 +467,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               disabled={submitting || loading}
               className="text-xs font-bold"
             >
-              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              <FileText className="w-4 h-4 mr-1.5" />
               {submitting ? 'Menerbitkan...' : 'Terbitkan Disposisi & Tugaskan'}
             </Button>
           </div>

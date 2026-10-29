@@ -40,6 +40,7 @@ export const createVerificationAssignmentSchema = {
     verifier_id: z.string().uuid('ID verifikator tidak valid.').optional(),
     nota_no: z.string().trim().min(3).max(191),
     notes: z.string().trim().max(191).optional(),
+    override_reason: z.string().trim().min(5, 'Alasan pengalihan verifikator tim inti minimal 5 karakter.').max(500).optional(),
   }).strict(),
 };
 

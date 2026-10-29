@@ -76,6 +76,18 @@ try {
     nota_no: `CORE-NOTA-${randomUUID()}`,
   }, adminActor);
   assert.equal(assigned.assignment.verifier_id, teams[firstTeam - 1].verifier_id);
+
+  // Controlled override with justification succeeds
+  await prisma.physicalMasterIntake.create({ data: {
+    registration_id: drafts[1].id, status: 'RECEIVED', receipt_no: `CORE-RECEIPT-${randomUUID()}`,
+  } });
+  const overridden = await createVerificationAssignment(drafts[1].id, {
+    nota_no: `CORE-NOTA-OVERRIDE-${randomUUID()}`,
+    verifier_id: teams[firstTeam % 9].verifier_id,
+    override_reason: 'Petugas tim inti sedang penugasan luar kota',
+  }, adminActor);
+  assert.equal(overridden.assignment.verifier_id, teams[firstTeam % 9].verifier_id);
+
   console.log('Core team rotation: concurrent 4/5, wrap 9/1, and retry passed.');
 } finally {
   await prisma.$disconnect();

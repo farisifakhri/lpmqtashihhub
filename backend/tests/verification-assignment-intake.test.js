@@ -80,6 +80,23 @@ test('Validator: createVerificationAssignmentSchema accepts roster assignment an
   });
   assert.equal(missingVerifier.success, true);
 
+  // Valid override_reason
+  const validOverride = createVerificationAssignmentSchema.body.safeParse({
+    verifier_id: validUuid,
+    nota_no: 'ND.01/LPMQ/2026',
+    override_reason: 'Petugas tim inti berhalangan dinas luar',
+  });
+  assert.equal(validOverride.success, true);
+  assert.equal(validOverride.data.override_reason, 'Petugas tim inti berhalangan dinas luar');
+
+  // Short override_reason (< 5 chars)
+  const shortOverride = createVerificationAssignmentSchema.body.safeParse({
+    verifier_id: validUuid,
+    nota_no: 'ND.01/LPMQ/2026',
+    override_reason: 'cuti',
+  });
+  assert.equal(shortOverride.success, false);
+
   // Short nota_no (< 3 chars)
   const shortNota = createVerificationAssignmentSchema.body.safeParse({
     verifier_id: validUuid,

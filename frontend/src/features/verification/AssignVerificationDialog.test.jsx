@@ -294,5 +294,92 @@ describe('AssignVerificationDialog Component', () => {
     // Admin dapat mengganti verifikator ke v-2
     fireEvent.change(select, { target: { value: 'v-2' } });
     expect(select).toHaveValue('v-2');
+
+    // Input alasan pengalihan tim inti muncul
+    expect(screen.getByLabelText(/Alasan Pengalihan Verifikator Tim Inti/i)).toBeInTheDocument();
+  });
+
+  it('mewajibkan alasan pengalihan saat admin meng-override verifikator tim inti', async () => {
+    const onSuccess = vi.fn();
+    const createSpy = vi.spyOn(VerificationApiModule.verificationApi, 'createAssignment').mockResolvedValue({
+      data: { id: 'assign-override-1' },
+    });
+
+    const registrationWithCore = {
+      ...mockRegistration,
+      core_verifier_id: 'v-1',
+      core_team_number: 3,
+    };
+
+    render(
+      <AssignVerificationDialog
+        registration={registrationWithCore}
+        onClose={vi.fn()}
+        onSuccess={onSuccess}
+      />
+    );
+
+    await screen.findByRole('combobox');
+    const select = screen.getByRole('combobox');
+    const notaInput = screen.getByLabelText(/Nomor Disposisi Penugasan/i);
+    fireEvent.change(notaInput, { target: { value: 'ND.01/LPMQ/2026' } });
+
+    // Ganti ke v-2
+    fireEvent.change(select, { target: { value: 'v-2' } });
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
+
+    // Submit tanpa alasan -> muncul validasi error
+    fireEvent.click(submitBtn);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Alasan pengalihan verifikator Tim Inti wajib diisi/i);
+    expect(createSpy).not.toHaveBeenCalled();
+
+    // Isi alasan valid (>= 5 karakter)
+    const reasonInput = screen.getByLabelText(/Alasan Pengalihan Verifikator Tim Inti/i);
+    fireEvent.change(reasonInput, { target: { value: 'Petugas tim inti sedang cuti sakit' } });
+
+    // Submit lagi -> berhasil mengirim payload override
+    fireEvent.click(submitBtn);
+    await waitFor(() => {
+      expect(createSpy).toHaveBeenCalledWith(
+        mockRegistration.id,
+        expect.objectContaining({
+          verifier_id: 'v-2',
+          override_reason: 'Petugas tim inti sedang cuti sakit',
+          nota_no: 'ND.01/LPMQ/2026',
+        })
+      );
+      expect(onSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('mengizinkan pembatalan pengalihan untuk kembali ke verifikator tim inti default', async () => {
+    const registrationWithCore = {
+      ...mockRegistration,
+      core_verifier_id: 'v-1',
+      core_team_number: 3,
+    };
+
+    render(
+      <AssignVerificationDialog
+        registration={registrationWithCore}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await screen.findByRole('combobox');
+    const select = screen.getByRole('combobox');
+
+    // Override ke v-2
+    fireEvent.change(select, { target: { value: 'v-2' } });
+    expect(screen.getByLabelText(/Alasan Pengalihan Verifikator Tim Inti/i)).toBeInTheDocument();
+
+    // Klik tombol batalkan pengalihan
+    const cancelOverrideBtn = screen.getByRole('button', { name: /Batalkan Pengalihan/i });
+    fireEvent.click(cancelOverrideBtn);
+
+    // Kembali ke v-1 dan kolom alasan tertutup
+    expect(select).toHaveValue('v-1');
+    expect(screen.queryByLabelText(/Alasan Pengalihan Verifikator Tim Inti/i)).not.toBeInTheDocument();
   });
 });
