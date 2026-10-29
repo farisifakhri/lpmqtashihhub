@@ -14,6 +14,7 @@ import coreTeamRoutes from './core-team.routes.js';
 import lpmqQuranRoutes from './lpmq-quran.routes.js';
 import publisherRegistrationRoutes from './publisher-registration.routes.js';
 import regulationRoutes from './regulation.routes.js';
+import informationGuideRoutes from './information-guide.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -55,6 +56,14 @@ router.get('/', (req, res) => {
         assignVerifier: 'POST /api/v1/registrations/:id/verification-assignments',
       },
       verificationAssignments: 'GET /api/v1/verification-assignments',
+      informationGuides: {
+        publicList: 'GET /api/v1/information-guides?page=1&limit=10&search=',
+        publicDetail: 'GET /api/v1/information-guides/:id',
+        adminList: 'GET /api/v1/admin/information-guides',
+        adminCreate: 'POST /api/v1/admin/information-guides',
+        adminUpdate: 'PUT /api/v1/admin/information-guides/:id',
+        adminDelete: 'DELETE /api/v1/admin/information-guides/:id',
+      },
       public: {
         verifyDocument: 'GET /api/v1/public/verify-document/:token',
       },
@@ -79,6 +88,7 @@ router.use('/core-teams', coreTeamRoutes);
 router.use(lpmqQuranRoutes);
 router.use(publisherRegistrationRoutes);
 router.use(regulationRoutes);
+router.use(informationGuideRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 

@@ -47,6 +47,7 @@ const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/
 const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/public/CheckRegistrationStatusPage').then(m => ({ default: m.CheckRegistrationStatusPage }))));
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
 const RegulationInfoPage = withSuspense(lazy(() => import('@/features/information/RegulationInfoPage').then(m => ({ default: m.RegulationInfoPage }))));
+const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 
 const router = createBrowserRouter([
@@ -62,6 +63,14 @@ const router = createBrowserRouter([
   {
     path: '/informasi/regulasi-penerbit-mushaf',
     element: <RegulationInfoPage />,
+  },
+  {
+    path: '/informasi/panduan-permohonan-surat-tanda-tashih',
+    element: <InformationGuidePage />,
+  },
+  {
+    path: '/informasi/panduan-permohonan-surat-tanda-tashih/:id',
+    element: <InformationGuidePage />,
   },
   // Rute Autentikasi Mandiri
   {
@@ -296,4 +305,3 @@ export function AppRouter() {
 }
 
 export default AppRouter;
-
