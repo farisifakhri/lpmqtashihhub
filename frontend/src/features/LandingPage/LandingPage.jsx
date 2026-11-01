@@ -4,17 +4,12 @@ import {
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
-  Menu,
-  Phone,
   Search,
-  X,
   BookOpen,
   FileCheck2,
   Clock,
   ShieldCheck,
   Building2,
-  Plus,
-  Minus,
   LogIn,
   UserPlus,
   Target,
@@ -25,13 +20,10 @@ import {
   Users,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PublicHeader } from '@/components/public/PublicHeader';
+import { PublicFooter } from '@/components/public/PublicFooter';
 import heroImageFirst from '@/assets/berandaaku.webp';
 import heroImageSecond from '@/assets/berandakii.webp';
-import logoTashih from '@/assets/logo-lpmq1.webp';
-import logoyt from '@/assets/logoyt.webp';
-import logox from '@/assets/logox.webp';
-import logoig from '@/assets/logoig.webp';
-import logofb from '@/assets/logofb.webp';
 import qrcodeapk from '@/assets/qrcodeapk.webp';
 import mockup from '@/assets/mockup.webp';
 import playstore from '@/assets/playstore.webp';
@@ -39,58 +31,6 @@ import appstore from '@/assets/appstore.webp';
 import pilihanfitur from '@/assets/pilihanfitur.webp';
 
 const DistributionMap = lazy(() => import('./DistributionMap'));
-
-const navItems = [
-  { label: 'Beranda', href: '#beranda' },
-  {
-    label: 'Informasi',
-    href: '#',
-    children: [
-      { label: 'Informasi Layanan Pentashihan', href: '#' },
-      { label: 'Alur & Regulasi STT', href: '#' },
-      { label: 'Persyaratan Berkas Naskah', href: '#' },
-      { label: "Regulasi Penerbit Mushaf Al-Qur'an", href: '/informasi/regulasi-penerbit-mushaf' },
-    ],
-  },
-  { label: 'Permohonan Master', href: '#beranda' },
-  {
-    label: 'Pengaduan',
-    href: '#',
-    children: [
-      { label: 'Saluran Pengaduan Masyarakat', href: '#' },
-      { label: 'Cek Status Laporan Naskah', href: '#' },
-      { label: 'Kontak Pusat Bantuan LPMQ', href: '#' },
-    ],
-  },
-  { label: 'FAQ', href: '#beranda' },
-];
-
-const socialMediaLinks = [
-  {
-    name: 'YouTube',
-    href: 'https://www.youtube.com/@LajnahKemenag',
-    icon: logoyt,
-    ariaLabel: 'Kanal YouTube Resmi LPMQ',
-  },
-  {
-    name: 'X',
-    href: 'https://x.com/LPMQKemenagRI',
-    icon: logox,
-    ariaLabel: 'Akun X Resmi LPMQ',
-  },
-  {
-    name: 'Instagram',
-    href: 'https://www.instagram.com/lpmq_kemenag_ri',
-    icon: logoig,
-    ariaLabel: 'Akun Instagram Resmi LPMQ',
-  },
-  {
-    name: 'Facebook',
-    href: 'https://www.facebook.com/LPMQKemenagRI/',
-    icon: logofb,
-    ariaLabel: 'Akun Facebook Resmi LPMQ',
-  },
-];
 
 const serviceStatistics = [
   {
@@ -256,13 +196,10 @@ const StatCounter = ({ target, isVisible, duration = 1600 }) => {
 export const LandingPage = () => {
   const navigate = useNavigate();
   const [isNavigating, setIsNavigating] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [heroTrackIndex, setHeroTrackIndex] = useState(1);
   const [isHeroTrackTransitionEnabled, setIsHeroTrackTransitionEnabled] = useState(true);
   const isHeroTrackTransitioningRef = useRef(false);
   const pendingHeroDirectionsRef = useRef([]);
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [mobileDropdown, setMobileDropdown] = useState(null);
   const statsRef = useRef(null);
   const [statsVisible, setStatsVisible] = useState(false);
   const activeHeroSlide = (heroTrackIndex - 1 + heroSlides.length) % heroSlides.length;
@@ -404,259 +341,7 @@ export const LandingPage = () => {
           isNavigating ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
       >
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-50 border-b border-line bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex h-[76px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigasi utama">
-            {navItems.map((item, index) => {
-              const hasChildren = item.children && item.children.length > 0;
-              const isOpen = activeDropdown === item.label;
-
-              if (hasChildren) {
-                return (
-                  <div
-                    key={item.label}
-                    className="relative py-2"
-                    onMouseEnter={() => setActiveDropdown(item.label)}
-                    onMouseLeave={() => setActiveDropdown(null)}
-                  >
-                    <a
-                      href={item.href}
-                      onClick={(e) => {
-                        if (!item.href || item.href === '#') {
-                          e.preventDefault();
-                        }
-                      }}
-                      className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
-                        isOpen
-                          ? 'text-brand-700 font-semibold'
-                          : 'text-ink-muted hover:text-brand-700'
-                      }`}
-                    >
-                      <span>{item.label}</span>
-                      <span
-                        className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded text-[11px] font-bold transition-transform duration-200 ${
-                          isOpen ? 'text-brand-700 rotate-180' : 'text-ink-muted'
-                        }`}
-                        aria-hidden="true"
-                      >
-                        {isOpen ? (
-                          <Minus className="h-3 w-3 stroke-[2.5]" />
-                        ) : (
-                          <Plus className="h-3 w-3 stroke-[2.5]" />
-                        )}
-                      </span>
-                    </a>
-
-                    {/* Dropdown Menu Desktop dengan Background Putih & Animasi Smooth */}
-                    <div
-                      className={`absolute left-0 top-full pt-2 w-64 z-50 transition-all duration-200 ease-out origin-top-left ${
-                        isOpen
-                          ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
-                          : 'opacity-0 scale-95 -translate-y-1.5 pointer-events-none'
-                      }`}
-                    >
-                      <div className="rounded-2xl border border-line bg-surface p-2 shadow-2xl">
-                        <div className="flex flex-col gap-1">
-                          {item.children.map((child, cIdx) => (
-                            <a
-                              key={cIdx}
-                              href={child.href}
-                              onClick={(e) => {
-                                if (child.href && child.href.startsWith('/')) {
-                                  setMenuOpen(false);
-                                  setMobileDropdown(null);
-                                  handleNavigate(child.href, e);
-                                  return;
-                                }
-                                if (!child.href || child.href === '#') {
-                                  e.preventDefault();
-                                }
-                                setActiveDropdown(null);
-                              }}
-                              className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-ink hover:bg-brand-50 hover:text-brand-700 transition-colors"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
-                              <span>{child.label}</span>
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={`text-[13px] font-medium transition-colors py-2 ${
-                    index === 0
-                      ? 'text-brand-700 font-semibold'
-                      : 'text-ink-muted hover:text-brand-700'
-                  }`}
-                >
-                  {item.label}
-                </a>
-              );
-            })}
-          </nav>
-
-          <a
-            href="#beranda"
-            className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2"
-            aria-label="LPMQ Kemenag RI"
-          >
-            <img
-              src={logoTashih}
-              alt="Logo Tashih LPMQ"
-              className="h-10 w-auto object-contain"
-            />
-          </a>
-
-          <div className="hidden items-center gap-3 lg:flex">
-            <a
-              href="https://wa.me/628111997125"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"
-              className="inline-flex h-10 items-center gap-2 rounded-full bg-brand-fill px-6 text-[12px] font-medium text-white transition hover:bg-brand-fill-hover"
-            >
-              <Phone className="h-3.5 w-3.5" />
-              Kontak Kami
-            </a>
-            <Link
-              to="/login"
-              onClick={(e) => handleNavigate('/login', e)}
-              className="inline-flex h-10 items-center justify-center rounded-full bg-civic-infoSoft px-6 text-[12px] font-medium text-civic-info transition hover:bg-civic-infoLine"
-            >
-              Masuk
-            </Link>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen((value) => !value)}
-            className="ml-auto rounded-xl p-2 text-brand-fg lg:hidden"
-            aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
-
-        {menuOpen && (
-          <div className="border-t border-line bg-surface px-5 py-4 lg:hidden">
-            <div className="flex flex-col gap-1">
-              {navItems.map((item) => {
-                const hasChildren = item.children && item.children.length > 0;
-                const isMobileOpen = mobileDropdown === item.label;
-
-                if (hasChildren) {
-                  return (
-                    <div key={item.label} className="rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle">
-                        <a
-                          href={item.href}
-                          onClick={(e) => {
-                            if (!item.href || item.href === '#') {
-                              e.preventDefault();
-                              setMobileDropdown((prev) => (prev === item.label ? null : item.label));
-                              return;
-                            }
-                            setMenuOpen(false);
-                          }}
-                          className="flex-1 hover:text-brand-fg"
-                        >
-                          {item.label}
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setMobileDropdown((prev) => (prev === item.label ? null : item.label))
-                          }
-                          className="p-1 rounded-md text-ink-muted hover:text-brand-fg focus:outline-none"
-                          aria-label={`Toggle submenu ${item.label}`}
-                          aria-expanded={isMobileOpen}
-                        >
-                          {isMobileOpen ? (
-                            <Minus className="h-4 w-4 stroke-[2.5]" />
-                          ) : (
-                            <Plus className="h-4 w-4 stroke-[2.5]" />
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Submenu Mobile Collapsible dengan Background Putih */}
-                      {isMobileOpen && (
-                        <div className="mx-2 mb-2 p-2 bg-surface rounded-xl border border-line shadow-sm flex flex-col gap-1">
-                          {item.children.map((child, cIdx) => (
-                            <a
-                              key={cIdx}
-                              href={child.href}
-                              onClick={(e) => {
-                                if (child.href && child.href.startsWith('/')) {
-                                  setMenuOpen(false);
-                                  setMobileDropdown(null);
-                                  handleNavigate(child.href, e);
-                                  return;
-                                }
-                                if (!child.href || child.href === '#') {
-                                  e.preventDefault();
-                                }
-                                setMenuOpen(false);
-                                setMobileDropdown(null);
-                              }}
-                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:text-brand-700 hover:bg-brand-50 transition-colors"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600/70 shrink-0" />
-                              <span>{child.label}</span>
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setMenuOpen(false)}
-                    className="rounded-xl px-3 py-3 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-brand-fg"
-                  >
-                    {item.label}
-                  </a>
-                );
-              })}
-              <div className="mt-2 flex gap-2">
-                <a
-                  href="https://wa.me/628111997125"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-brand-fill px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-fill-hover"
-                >
-                  <Phone className="h-4 w-4" />
-                  Kontak Kami
-                </a>
-                <Link
-                  to="/login"
-                  onClick={(e) => {
-                    setMenuOpen(false);
-                    handleNavigate('/login', e);
-                  }}
-                  className="flex flex-1 items-center justify-center rounded-full bg-civic-infoSoft px-4 py-3 text-sm font-medium text-civic-info transition hover:bg-civic-infoLine"
-                >
-                  Masuk
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
+      <PublicHeader handleNavigate={handleNavigate} />
 
       {/* Main Content */}
       <main className="mx-auto max-w-[1400px] px-5 py-3 sm:px-8 lg:px-12 lg:py-4 space-y-12">
@@ -1047,99 +732,7 @@ export const LandingPage = () => {
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-brand-950 text-white">
-        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-10 px-5 py-10 sm:px-8 md:grid-cols-2 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.7fr)] lg:gap-8 lg:px-12 lg:py-12">
-          <div className="space-y-4">
-            <img
-              src={logoTashih}
-              alt="Logo Tashih LPMQ"
-              className="w-32 max-w-full object-contain"
-            />
-            <address className="space-y-1 text-xs not-italic leading-relaxed text-white/85">
-              <p>Gedung Bayt Al-Qur'an &amp; Museum Istiqlal</p>
-              <p>Jalan Raya TMII Pintu I Jakarta Timur 13560</p>
-              <p>Telp: (021) 8416468 - 8416466</p>
-              <p>Faks: (021) 8416468</p>
-              <p>Narahubung Layanan Pentashihan: +628111997125</p>
-            </address>
-            <div className="flex items-center gap-3 sm:gap-4">
-              {socialMediaLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.ariaLabel}
-                  className="inline-flex items-center justify-center rounded-md transition-opacity hover:opacity-80 focus-visible:ring-white"
-                >
-                  <img
-                    src={social.icon}
-                    alt={social.name}
-                    className="h-5 w-auto object-contain sm:h-6"
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center md:justify-self-center lg:justify-self-stretch">
-            <div className="w-full max-w-[340px] overflow-hidden rounded-xl border border-white/15">
-              <iframe
-                title="Peta lokasi Lajnah Pentashihan Mushaf Al-Qur'an di Gedung Bayt Al-Qur'an, TMII"
-                src="https://maps.google.com/maps?q=Bayt%20Al-Qur%27an%20%26%20Museum%20Istiqlal%2C%20TMII%2C%20Jakarta%20Timur&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                className="h-44 w-full border-0 sm:h-48"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
-            </div>
-          </div>
-
-          <section aria-labelledby="about-us-title" className="space-y-4 md:col-span-2 lg:col-span-1">
-            <h2 id="about-us-title" className="text-lg font-bold text-brand-300">
-              TENTANG KAMI
-            </h2>
-            <div className="space-y-3 text-xs leading-relaxed text-white/85 sm:text-sm">
-              <p>
-                Ini adalah website Layanan Tashih Online Lajnah Pentashihan Mushaf Al-Qur'an Badan Litbang dan Diklat Kementerian Agama Republik Indonesia.
-              </p>
-              <p>
-                Melalui website ini, perusahaan penerbit, Lembaga Pemerintah, dan Yayasan dapat mengajukan permohonan Surat Tanda Tashih dan/atau Surat Izin Edar untuk mushaf Al-Qur'an yang akan diedarkan di Indonesia.
-              </p>
-              <p>
-                Melalui website ini, masyarakat dapat melaporkan aduan seputar mushaf Al-Qur'an dan mengecek Surat Tanda Tashih mushaf Al-Qur'an.
-              </p>
-            </div>
-          </section>
-        </div>
-
-        <div className="border-t border-white/20">
-          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-5 py-6 text-center text-xs text-white/80 sm:flex-row sm:px-8 sm:text-left lg:px-12">
-            <p>
-              Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
-              <Link
-                to="/informasi/regulasi-penerbit-mushaf"
-                onClick={(e) => handleNavigate('/informasi/regulasi-penerbit-mushaf', e)}
-                className="hover:text-white"
-              >
-                Regulasi
-              </Link>
-              <a href="#beranda" className="hover:text-white">Pengaduan</a>
-              <a href="#beranda" className="hover:text-white">FAQ</a>
-              <Link
-                to="/login"
-                onClick={(e) => handleNavigate('/login', e)}
-                className="font-semibold text-white hover:underline"
-              >
-                Portal Penerbit
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter handleNavigate={handleNavigate} />
     </div>
 
     {/* Loading Overlay Elegan saat Navigasi Berlangsung */}

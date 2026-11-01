@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS } from '@/components/public/PublicHeader';
+import { PublicFooter } from '@/components/public/PublicFooter';
 import {
   Search,
   Filter,
@@ -11,20 +13,9 @@ import {
   AlertCircle,
   RefreshCw,
   X,
-  Plus,
-  Minus,
-  Menu,
-  ExternalLink,
   ChevronDown,
   Layers,
-  ArrowLeft,
-  LogIn,
 } from 'lucide-react';
-import logoTashih from '@/assets/logo-lpmq1.webp';
-import logoyt from '@/assets/logoyt.webp';
-import logox from '@/assets/logox.webp';
-import logoig from '@/assets/logoig.webp';
-import logofb from '@/assets/logofb.webp';
 import qrcodeapk from '@/assets/qrcodeapk.webp';
 import mockup from '@/assets/mockup.webp';
 import playstore from '@/assets/playstore.webp';
@@ -43,43 +34,8 @@ const CATEGORIES = [
   'Surat Edaran Kepala Lajnah Pentashihan Mushaf Al-Qur\'an',
 ];
 
-const navItems = [
-  { label: 'Beranda', href: '/' },
-  {
-    label: 'Informasi',
-    href: '#',
-    children: [
-      { label: 'Informasi Layanan Pentashihan', href: '/' },
-      { label: 'Alur & Regulasi STT', href: '/' },
-      { label: 'Persyaratan Berkas Naskah', href: '/' },
-      { label: "Regulasi Penerbit Mushaf Al-Qur'an", href: '/informasi/regulasi-penerbit-mushaf' },
-    ],
-  },
-  { label: 'Permohonan Master', href: '/' },
-  {
-    label: 'Pengaduan',
-    href: '#',
-    children: [
-      { label: 'Saluran Pengaduan Masyarakat', href: '/' },
-      { label: 'Cek Status Laporan Naskah', href: '/' },
-      { label: 'Kontak Pusat Bantuan LPMQ', href: '/' },
-    ],
-  },
-  { label: 'FAQ', href: '/' },
-];
-
-const socialMediaLinks = [
-  { name: 'YouTube', href: 'https://www.youtube.com/@lajnahpentashihanmushafal-6842', icon: logoyt, ariaLabel: 'Kunjungi YouTube resmi LPMQ' },
-  { name: 'X', href: 'https://x.com/LPMQKemenagRI', icon: logox, ariaLabel: 'Kunjungi akun X (Twitter) resmi LPMQ' },
-  { name: 'Instagram', href: 'https://www.instagram.com/lpmqkemenag/', icon: logoig, ariaLabel: 'Kunjungi Instagram resmi LPMQ' },
-  { name: 'Facebook', href: 'https://www.facebook.com/lajnahkemenag15', icon: logofb, ariaLabel: 'Kunjungi Facebook resmi LPMQ' },
-];
-
 export const RegulationInfoPage = () => {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [mobileDropdown, setMobileDropdown] = useState(null);
 
   // Data states
   const [regulations, setRegulations] = useState([]);
@@ -209,9 +165,6 @@ export const RegulationInfoPage = () => {
       return;
     }
     if (e) e.preventDefault();
-    setMenuOpen(false);
-    setActiveDropdown(null);
-    setMobileDropdown(null);
     navigate(path);
   };
 
@@ -246,211 +199,13 @@ export const RegulationInfoPage = () => {
 
   return (
     <div className="min-h-screen bg-canvas font-sans text-ink">
-      {/* 1. Sticky Header / Navbar */}
-      <header className="sticky top-0 z-50 border-b border-line bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex h-[76px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-12">
-          {/* Desktop Nav */}
-          <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigasi utama">
-            {navItems.map((item) => {
-              const hasChildren = item.children && item.children.length > 0;
-              const isOpen = activeDropdown === item.label;
-
-              if (hasChildren) {
-                return (
-                  <div
-                    key={item.label}
-                    className="relative py-2"
-                    onMouseEnter={() => setActiveDropdown(item.label)}
-                    onMouseLeave={() => setActiveDropdown(null)}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setActiveDropdown(isOpen ? null : item.label)}
-                      className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
-                        item.label === 'Informasi'
-                          ? 'text-brand-700 font-semibold'
-                          : 'text-ink-muted hover:text-brand-700'
-                      }`}
-                    >
-                      <span>{item.label}</span>
-                      <span
-                        className={`inline-flex items-center justify-center w-3.5 h-3.5 rounded text-[11px] font-bold transition-transform duration-200 ${
-                          isOpen ? 'text-brand-700 rotate-180' : 'text-ink-muted'
-                        }`}
-                        aria-hidden="true"
-                      >
-                        {isOpen ? <Minus className="h-3 w-3 stroke-[2.5]" /> : <Plus className="h-3 w-3 stroke-[2.5]" />}
-                      </span>
-                    </button>
-
-                    {/* Dropdown desktop */}
-                    <div
-                      className={`absolute left-0 top-full pt-2 w-72 z-50 transition-all duration-200 ease-out origin-top-left ${
-                        isOpen
-                          ? 'opacity-100 scale-100 translate-y-0 pointer-events-auto'
-                          : 'opacity-0 scale-95 -translate-y-1.5 pointer-events-none'
-                      }`}
-                    >
-                      <div className="rounded-2xl border border-line bg-surface p-2 shadow-2xl">
-                        <div className="flex flex-col gap-1">
-                          {item.children.map((child, cIdx) => {
-                            const isCurrent = child.href === '/informasi/regulasi-penerbit-mushaf';
-                            return (
-                              <button
-                                key={cIdx}
-                                type="button"
-                                onClick={(e) => {
-                                  setActiveDropdown(null);
-                                  handleNavigate(child.href, e);
-                                }}
-                                className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-left transition-colors ${
-                                  isCurrent
-                                    ? 'bg-brand-50 text-brand-700'
-                                    : 'text-ink hover:bg-surface-subtle hover:text-brand-700'
-                                }`}
-                              >
-                                <span
-                                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                    isCurrent ? 'bg-brand-700' : 'bg-line-strong'
-                                  }`}
-                                />
-                                <span>{child.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={(e) => handleNavigate(item.href, e)}
-                  className="text-[13px] font-medium transition-colors py-2 text-ink-muted hover:text-brand-700"
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Logo Branding */}
-          <Link
-            to="/"
-            onClick={(e) => handleNavigate('/', e)}
-            className="group flex items-center gap-3 transition-opacity hover:opacity-95"
-            aria-label="Kembali ke Beranda LPMQ Tashih Hub"
-          >
-            <div className="flex flex-col items-end">
-              <span className="text-right text-xs font-bold leading-tight tracking-wider text-brand-800">
-                KEMENTERIAN AGAMA RI
-              </span>
-              <span className="text-right text-[11px] font-medium leading-tight text-ink-muted">
-                Lajnah Pentashihan Mushaf Al-Qur'an
-              </span>
-            </div>
-            <img
-              src={logoTashih}
-              alt="Logo Resmi LPMQ"
-              className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
-            />
-          </Link>
-
-          {/* Login Penerbit & Mobile Menu Button */}
-          <div className="flex items-center gap-3">
-            <Link
-              to="/login"
-              onClick={(e) => handleNavigate('/login', e)}
-              className="hidden sm:inline-flex items-center gap-2 rounded-xl bg-brand-700 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-brand-800 focus:outline-none"
-            >
-              <LogIn className="h-4 w-4" />
-              <span>Login Penerbit</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="rounded-xl p-2.5 text-ink-muted hover:bg-surface-subtle hover:text-ink lg:hidden focus:outline-none"
-              aria-label="Buka navigasi mobile"
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Dropdown Panel */}
-        {menuOpen && (
-          <div className="border-b border-line bg-surface p-4 shadow-xl lg:hidden">
-            <div className="flex flex-col gap-1.5">
-              {navItems.map((item) => {
-                const hasChildren = item.children && item.children.length > 0;
-                const isMobileOpen = mobileDropdown === item.label;
-
-                if (hasChildren) {
-                  return (
-                    <div key={item.label} className="rounded-xl overflow-hidden">
-                      <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle">
-                        <span className="flex-1 font-semibold text-brand-fg">{item.label}</span>
-                        <button
-                          type="button"
-                          onClick={() => setMobileDropdown((prev) => (prev === item.label ? null : item.label))}
-                          className="p-1 rounded-md text-ink-muted hover:text-brand-fg focus:outline-none"
-                          aria-label={`Toggle submenu ${item.label}`}
-                        >
-                          {isMobileOpen ? <Minus className="h-4 w-4 stroke-[2.5]" /> : <Plus className="h-4 w-4 stroke-[2.5]" />}
-                        </button>
-                      </div>
-
-                      {isMobileOpen && (
-                        <div className="mx-2 mb-2 p-2 bg-surface-subtle rounded-xl border border-line flex flex-col gap-1">
-                          {item.children.map((child, cIdx) => (
-                            <button
-                              key={cIdx}
-                              type="button"
-                              onClick={(e) => handleNavigate(child.href, e)}
-                              className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-ink hover:text-brand-700 text-left"
-                            >
-                              <span className="w-1.5 h-1.5 rounded-full bg-brand-600 shrink-0" />
-                              <span>{child.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={(e) => handleNavigate(item.href, e)}
-                    className="flex w-full items-center rounded-xl px-3 py-2.5 text-sm font-medium text-ink hover:bg-surface-subtle hover:text-brand-700 text-left"
-                  >
-                    {item.label}
-                  </button>
-                );
-              })}
-
-              <div className="pt-2 border-t border-line mt-1">
-                <Link
-                  to="/login"
-                  onClick={(e) => handleNavigate('/login', e)}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Login Penerbit</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-      </header>
+      <PublicHeader
+        activePage="Informasi"
+        activeHref="/informasi/regulasi-penerbit-mushaf"
+        handleNavigate={handleNavigate}
+        navItems={PUBLIC_INFORMATION_NAV_ITEMS}
+        logoHref="/"
+      />
 
       {/* 2. Breadcrumb & Section Header */}
       <section className="border-b border-line bg-surface">
@@ -717,16 +472,6 @@ export const RegulationInfoPage = () => {
                           <div className="font-semibold text-ink leading-relaxed group-hover:text-brand-800 transition-colors">
                             {doc.title}
                           </div>
-                          {doc.file_name && (
-                            <div className="text-[11px] text-ink-muted mt-0.5 flex items-center gap-1.5">
-                              <span className="font-mono text-ink-muted/80">{doc.file_name}</span>
-                              {doc.file_size && (
-                                <span className="text-ink-muted/60">
-                                  ({(doc.file_size / 1024).toFixed(0)} KB)
-                                </span>
-                              )}
-                            </div>
-                          )}
                         </td>
 
                         {/* Kategori */}
@@ -738,7 +483,7 @@ export const RegulationInfoPage = () => {
 
                         {/* Nomor Regulasi */}
                         <td className="py-4 px-4">
-                          <span className="font-mono text-xs font-medium text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line">
+                          <span className="inline-flex max-w-full whitespace-normal break-words rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 font-mono text-[11px] font-semibold leading-relaxed text-brand-800">
                             {doc.document_number}
                           </span>
                         </td>
@@ -1012,115 +757,12 @@ export const RegulationInfoPage = () => {
         </section>
       </div>
 
-      {/* 6. Footer (Persis Sesuai Desain Landing Page) */}
-      <footer className="bg-brand-950 text-white">
-        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-10 px-5 py-10 sm:px-8 md:grid-cols-2 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.7fr)] lg:gap-8 lg:px-12 lg:py-12">
-          <div className="space-y-4">
-            <img src={logoTashih} alt="Logo Tashih LPMQ" className="w-32 max-w-full object-contain" />
-            <address className="space-y-1 text-xs not-italic leading-relaxed text-white/85">
-              <p>Gedung Bayt Al-Qur'an &amp; Museum Istiqlal</p>
-              <p>Jalan Raya TMII Pintu I Jakarta Timur 13560</p>
-              <p>Telp: (021) 8416468 - 8416466</p>
-              <p>Faks: (021) 8416468</p>
-              <p>Narahubung Layanan Pentashihan: +628111997125</p>
-            </address>
-            <div className="flex items-center gap-3 sm:gap-4">
-              {socialMediaLinks.map((social) => (
-                <a
-                  key={social.name}
-                  href={social.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={social.ariaLabel}
-                  className="inline-flex items-center justify-center rounded-md transition-opacity hover:opacity-80 focus-visible:ring-white"
-                >
-                  <img src={social.icon} alt={social.name} className="h-5 w-auto object-contain sm:h-6" />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white">Layanan Terkait</h3>
-            <ul className="space-y-2 text-xs text-white/80">
-              <li>
-                <a
-                  href="https://lajnah.kemenag.go.id"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-white"
-                >
-                  <span>Portal Resmi LPMQ</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://quran.kemenag.go.id"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-white"
-                >
-                  <span>Qur'an Kemenag Web</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://kemenag.go.id"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-white"
-                >
-                  <span>Kementerian Agama RI</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold text-white">Jam Layanan Konsultasi &amp; Loket Fisik</h3>
-            <p className="text-xs text-white/80 leading-relaxed">
-              Senin - Kamis: 08.30 - 15.30 WIB (Istirahat: 12.00 - 13.00 WIB)
-              <br />
-              Jumat: 08.30 - 16.00 WIB (Istirahat: 11.30 - 13.30 WIB)
-              <br />
-              Sabtu, Minggu, dan Hari Libur Nasional: Tutup
-            </p>
-          </div>
-        </div>
-
-        <div className="border-t border-white/20">
-          <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-4 px-5 py-6 text-center text-xs text-white/80 sm:flex-row sm:px-8 sm:text-left lg:px-12">
-            <p>Lajnah Pentashihan Mushaf Al-Qur'an &copy; 2026 Kementerian Agama Republik Indonesia.</p>
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 sm:justify-start">
-              <Link
-                to="/informasi/regulasi-penerbit-mushaf"
-                className="font-semibold text-white hover:underline"
-              >
-                Regulasi
-              </Link>
-              <Link to="/" onClick={(e) => handleNavigate('/', e)} className="hover:text-white">
-                Pengaduan
-              </Link>
-              <Link to="/" onClick={(e) => handleNavigate('/', e)} className="hover:text-white">
-                FAQ
-              </Link>
-              <Link
-                to="/login"
-                onClick={(e) => handleNavigate('/login', e)}
-                className="font-semibold text-white hover:underline"
-              >
-                Portal Penerbit
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter
+        handleNavigate={handleNavigate}
+        linkTargets={{ complaint: '/', faq: '/' }}
+      />
     </div>
   );
 };
 
 export default RegulationInfoPage;
-
