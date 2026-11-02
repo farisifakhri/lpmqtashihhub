@@ -120,7 +120,7 @@ test("B-04: Dokumen kode billing menggabungkan surat lolos verifikasi dan berkas
   page1.drawText("BUKTI PEMBUATAN TAGIHAN KODE BILLING SIMPONI", { x: 50, y: 800 });
   const billingBytes = Buffer.from(await billingDoc.save());
 
-  const storageRoot = new URL("../storage/private/", import.meta.url);
+  const storageRoot = new URL("../../storage/private/", import.meta.url);
   const { writeFile, unlink, mkdir } = await import("node:fs/promises");
   const { randomUUID } = await import("node:crypto");
   const fileId = randomUUID();

@@ -103,6 +103,6 @@ try {
   console.log(`Publisher dashboard integration passed: ${checks} HTTP checks plus scoped totals, pagination, versioning and immutable PDF assertions.`);
 } finally {
   await new Promise(resolve => server.close(resolve));
-  for (const id of uploads) await unlink(new URL(`../storage/private/${id}`, import.meta.url));
+  for (const id of uploads) await unlink(new URL(`../../storage/private/${id}`, import.meta.url));
   await prisma.$disconnect();
 }
