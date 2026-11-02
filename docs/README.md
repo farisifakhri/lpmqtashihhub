@@ -69,3 +69,4 @@ docs/
 | **Desain UI & Palet Warna Peran** | [docs/architecture/design.md](architecture/design.md) |
 | **Status Penyelesaian Backlog** | [docs/tugas/README.md](tugas/README.md) & [docs/tugas/BACKLOG-FASE-LANJUTAN.md](tugas/BACKLOG-FASE-LANJUTAN.md) |
 | **SOP Resmi Kemenag RI** | Folder [docs/references/sop/](references/sop/) |
+
