@@ -15,6 +15,11 @@ Repository ini memuat fitur-fitur berikut. Daftar ini bukan klaim bahwa seluruh 
 - **Penanganan Naskah Dumi (T-04)**: Naskah Dumi dipilih setelah naskah bersih; temuan minor pada dumi diterbitkan notice koreksi tanpa siklus baru ke penerbit.
 - **Template Surat Permohonan & Label Pengiriman**: Unduhan langsung template resmi `.docx` di portal pendaftaran (`RF-PBL-01`) dan cetak label pengiriman dengan logo Kemenag & LPMQ tajam dan terbaca jelas (`RF-REG-10`).
 - **Pusat Arsip Global**: Menu Arsip & Dokumen dipusatkan di Sidebar `/internal/archive` yang dapat diakses oleh seluruh peran internal (`RF-DOC-14`).
+- **Pendaftaran & Sertifikasi Penerbit Resmi (`T-F01–T-F07`, `T-S01–T-S03`)**: Pendaftaran badan hukum terverifikasi (PT, CV, Yayasan, Lembaga, Koperasi), matriks dokumen dinamis (Akta, NIB, NPWP, Surat Tugas), verifikasi berkas oleh Admin Internal, serta penerbitan Sertifikat Tanda Terdaftar Penerbit resmi Kemenag RI dengan QR verifikasi publik.
+- **Pengajuan Multi-Naskah & Varian Ukuran/Oplah (`B-01`)**: Mendukung pengajuan hingga 20 naskah per registrasi, katalog 16 Jenis Naskah Master Items resmi LPMQ, penentuan varian ukuran & oplah, engine kalkulasi tarif PNBP deterministik (dengan aturan absorpsi Terjemah oleh Perkata/Tafsir), dan penentuan batas SLA maksimal 60 HK.
+- **Penerbitan STT Digital Resmi & Laporan Cetak (`B-09`, `B-10`)**: Penomoran surat kedinasan otomatis kode `TL.01`, penyatuan berkas billing PNBP SIMPONI (`B-04`), penerbitan Surat Tanda Tashih (STT) PDF digital resmi, serta modul pencatatan laporan realisasi pencetakan oplah dan pemenuhan 5 eksemplar.
+- **Kelola Landing Page, Dokumen Regulasi & Panduan Informasi**: Portal CMS publik untuk mengelola unduhan dokumen regulasi resmi (PDF) serta artikel panduan layanan kaya teks dengan sanitasi ketat anti-XSS.
+- **Multi-Role Switcher & Controlled Administrative Override**: Penggantian konteks kerja langsung melalui sidebar untuk personil multi-role dan override administratif penugasan verifikator tim inti.
 
 Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md) dan catatan keputusan pada [keputusan 8 Oktober 2026](docs/references/keputusan-2026-10-08.md).
 

@@ -43,9 +43,12 @@ file_id storage private, memeriksa tipe PDF, checksum, status, dan masa berlaku.
 Dokumen missing-file, revoked, expired, atau dari penerbit lain tidak diunduh.
 Pengunduhan berkas privat dan PDF resmi mewajibkan header `Authorization: Bearer <token>`
 dan mengirim header `Cache-Control: private, no-store` tanpa menyertakan query token di URL.
-Tidak ada implementasi penerbitan/tanda tangan STT baru: format resmi dan SOP
-penetapan existing masih menunggu stakeholder. Tidak ada dokumen resmi palsu
-yang dibuat demi mengisi dashboard.
+Penerbitan STT digital resmi (`B-09`) telah diimplementasikan penuh menggunakan engine
+`renderSttPdf` dengan placeholder dinamis, verifikasi QR code, dan penomoran resmi `TL.01`.
+Penerbit dapat mengunduh dokumen STT yang telah diterbitkan (status `STT_ISSUED`) serta
+mengisi laporan pencetakan oplah (`B-10`) secara mandiri melalui portal.
+
+
 
 ## Pengujian
 

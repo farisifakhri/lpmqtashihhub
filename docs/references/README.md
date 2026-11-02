@@ -1,5 +1,6 @@
 # Acuan rapat 24 September 2026
 
+- [Dokumen Standar Operasional Prosedur (SOP)](sop/): Berkas SOP resmi Kementerian Agama RI untuk alur Pendaftaran, Verifikasi, Distribusi, Pentashihan, dan Dokumentasi Master Mushaf Al-Qur'an.
 - [Daftar sembilan tim inti](roster-tim-inti-2026-09-24.jpeg): tiap baris terdiri dari verifikator, distributor, dan dokumentator. `DistributionTeam` dalam aplikasi adalah kelompok pentashih dan bukan daftar ini.
 - [Perkiraan HK untuk 17 jenis naskah](durasi-17-jenis-naskah-2026-09-24.jpeg): tiga kolom master awal, perbaikan, dan dumi/perpanjangan. Batas STT dua HK sesudah dumi cetak dinyatakan bersih adalah aturan terpisah.
 - [Peta Jalan & Backlog Fase Lanjutan](../tugas/README.md): rekapitulasi capaian, kontrak pendaftaran penerbit, dan pembagian tugas tim (Faisal, Fakhri, Nabil, Choirul) sesuai [Backlog Fase Lanjutan v0.2](../tugas/BACKLOG-FASE-LANJUTAN.md).
