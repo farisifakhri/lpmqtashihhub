@@ -25,8 +25,8 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | B-05 | **Selesai menurut bukti kode** | Backend endpoint master pentashih candidates, alokasi fleksibel kelompok/individu, validasi lengkap 30 juz, alasan pergantian generik, antarmuka dialog dengan live indicator 30 juz dan pencarian pentashih, serta tes lulus 100%. |
 | B-06 | **Selesai menurut bukti kode** | Kewajiban dokumen rekap telaah internal pada pelaporan pentashih, kolom eksplisit recap_file_id, verifikasi kelengkapan rekap oleh distributor, pembatasan kerahasiaan rekap internal, dan tes lolos 100%. |
 | B-07 | **Selesai menurut bukti kode** | Label pengiriman 2 varian resmi (Perbaikan & Dumi), kolom resi keluar distributor outgoing_courier/outgoing_tracking_no, pelacakan resi keluar di dashboard penerbit, form konfirmasi resi masuk naskah perbaikan, penerusan loket TMII, dan pembandingan catatan sidang ronde sebelumnya di modal telaah pentashih & distributor. |
-| B-08 | **Siap Dikerjakan (Unblocked)** | B-07 selesai; status menunggu penerbit, pengingat, dan indikator umur admin siap dibangun. |
-| B-09–B-11 | **Unblocked (Siap Dikerjakan Nabil)** | Dependensi B-07 selesai; alur penerbitan surat hasil & STT per pengajuan siap dikerjakan. |
+| B-08 | **Selesai menurut bukti kode** | Status jeda SLA terintegrasi di view model, SlaIndicator, dan StatusBadge; kalkulasi umur tunggu naskah (< 7 normal, 7-14 warning, > 14 danger); endpoint pengingat individual & batch periodic reminders dengan proteksi cooldown 24 jam; tombol aksi pengingat pada tabel dasbor admin dan dialog detail naskah; tes unit backend lulus 100%. |
+| B-09–B-10 | **Selesai menurut bukti kode** | Alur penerbitan STT PDF resmi ber-QR (`renderSttPdf`), placeholder dinamis, verifikasi tanda tangan, dan skema laporan cetak penerbit (`printingReportSchema`) telah diimplementasikan dengan test lulus 100%. B-11 dalam tahap penyesuaian UI. |
 | B-12–B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
 
 **Definisi status:** *Selesai* = bukti checkout/checklist mendukung kriteria yang dinyatakan; *Parsial* = sebagian alur ada tetapi ada gap yang disebutkan; *Belum diverifikasi* = bukti belum cukup; *Belum dimulai* = sumber tugas saat ini menyatakan belum ada reproduksi/pekerjaan yang dapat dinilai. Jangan menafsirkan “tidak diverifikasi” sebagai “tidak ada kode”.
@@ -46,7 +46,8 @@ Status berikut membedakan keberadaan kode dari selesainya semua kriteria. PR/mer
 | `B-06` | Fakhri | `feat/b06-rekap-pentashih-internal` | **Selesai**: dokumen rekap internal wajib, verifikasi distributor |
 | `B-07` | Fakhri | `feat/b07-siklus-pengembalian-revisi-dumi` | **Selesai**: label 2 varian, resi keluar distributor, resi masuk penerbit, pembandingan catatan |
 | `B-08` | Fakhri | `feat/b08-status-menunggu-penerbit` | **Selesai**: status jeda SLA, kalkulasi umur antrean, pengingat berkala & batch |
-| `B-09` s.d. `B-11` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | Status: unblocked (dependensi B-07 terpenuhi) |
+| `B-09` s.d. `B-10` | Nabil | `feat/penerbitan-surat-hasil-stt` dkk. | **Selesai**: STT PDF resmi ber-QR, laporan cetak oplah |
+| `B-11` | Nabil | `ux/dokumentator` | Status: penyesuaian UI workspace dokumentator |
 | `B-12` dan `B-13` | Choirul | `chore/glosarium-narasi`, `feat/dashboard-penerbit` | Status per paket: belum diverifikasi |
 
 ## 2. Urutan dan dependensi (Fase 1: pendaftaran penerbit)
