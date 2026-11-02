@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PrivateFileViewer } from "@/components/common/PrivateFileViewer";
 import { ConfirmationSummaryDialog } from "@/components/common/ConfirmationSummaryDialog";
+import { invalidateQueueCounts } from "@/api/queue.api";
 
 const STATUS_TABS = [
     { id: "SEMUA", label: "Semua Permohonan" },
@@ -191,6 +192,7 @@ export const PublisherVerificationPage = () => {
                 alasan: decisionReason.trim() || null,
                 versi: detailData.versi,
             });
+            invalidateQueueCounts();
 
             const decisionLabel =
                 decisionType === "SETUJUI"

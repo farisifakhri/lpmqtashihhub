@@ -22,7 +22,7 @@ app.use((req, res, next) => {
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   res.set('Surrogate-Control', 'no-store');
-  res.set('Vary', 'Authorization, Accept-Encoding');
+  res.set('Vary', 'Authorization, Accept-Encoding, X-Active-Role');
   next();
 });
 
@@ -37,7 +37,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Active-Role'],
 };
 
 app.use(cors(corsOptions));

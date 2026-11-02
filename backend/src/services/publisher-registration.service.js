@@ -13,6 +13,7 @@ import {
   computeActiveIdentifiers,
   createPublisherRegistrationSchema,
 } from '../validators/publisher-registration.validator.js';
+import { buildAdminPublisherRegistrationWhere } from './queue-filters.js';
 
 const STATUS_LABELS = {
   DIAJUKAN: 'Menunggu Verifikasi Petugas',
@@ -491,20 +492,7 @@ export async function listAdminPublisherRegistrations({ page = 1, limit = 10, st
   const p = Math.max(1, parseInt(page, 10) || 1);
   const l = Math.min(100, Math.max(1, parseInt(limit, 10) || 10));
   const skip = (p - 1) * l;
-
-  const where = {};
-  if (status) {
-    where.status = status;
-  }
-  if (search && search.trim()) {
-    const q = search.trim();
-    where.OR = [
-      { name: { contains: q } },
-      { registration_code: { contains: q } },
-      { email: { contains: q } },
-      { npwp: { contains: q } },
-    ];
-  }
+  const where = buildAdminPublisherRegistrationWhere({ status, search });
 
   const [totalRecords, records] = await Promise.all([
     prisma.publisherRegistration.count({ where }),

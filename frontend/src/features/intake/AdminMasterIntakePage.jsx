@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { QueuePagination } from '@/components/common/QueueOverview';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import {
   PackageCheck,
   Search,
@@ -53,6 +55,12 @@ export const AdminMasterIntakePage = () => {
   // Intake Queue Waiting List (naskah yang siap intake fisik)
   const [waitingList, setWaitingList] = useState([]);
   const [waitingLoading, setWaitingLoading] = useState(false);
+  const [waitingPagination, setWaitingPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  });
 
   // Intake Form State
   const [condition, setCondition] = useState('BAIK');
@@ -93,34 +101,27 @@ export const AdminMasterIntakePage = () => {
     return `TT-LPMQ-${year}-${rand}`;
   };
 
-  const fetchWaitingList = async () => {
+  const fetchWaitingList = async (page = waitingPagination.page) => {
     setWaitingLoading(true);
     try {
-      const [verifRes, revRes] = await Promise.all([
-        registrationApi.listRegistrations({
-          status: 'READY_FOR_VERIFICATION',
-          limit: 20,
-        }),
-        registrationApi.listRegistrations({
-          status: 'REVISION_REQUIRED',
-          limit: 20,
-        }),
-      ]);
-      const itemsVerif = Array.isArray(verifRes?.data) ? verifRes.data : (verifRes?.data?.items || []);
-      const itemsRev = Array.isArray(revRes?.data) ? revRes.data : (revRes?.data?.items || []);
-      const seenIds = new Set();
-      const allItems = [...itemsVerif, ...itemsRev].filter((item) => {
-        if (!item?.id || seenIds.has(item.id)) return false;
-        seenIds.add(item.id);
-        return true;
+      const response = await registrationApi.listRegistrations({
+        segment: 'MASTER_INTAKE',
+        page,
+        limit: waitingPagination.limit,
       });
-      const pendingItems = allItems.filter((item) => {
-        const intakeStatus = item.physical_master_intake?.status || item.physical_master?.status;
-        return intakeStatus !== 'RECEIVED';
-      });
-      setWaitingList(pendingItems);
-    } catch {
-      // Abaikan error background fetch agar tidak mengganggu UI utama
+      const items = Array.isArray(response?.data) ? response.data : (response?.data?.items || []);
+      setWaitingList(items);
+      const pagination = response?.pagination || response?.data?.pagination;
+      if (pagination) {
+        setWaitingPagination((current) => ({
+          ...current,
+          page: pagination.page || page,
+          total: pagination.total ?? pagination.total_records ?? 0,
+          totalPages: pagination.totalPages ?? pagination.total_pages ?? 1,
+        }));
+      }
+    } catch (err) {
+      setError(err.message || 'Gagal memuat antrean master fisik.');
     } finally {
       setWaitingLoading(false);
     }
@@ -239,6 +240,7 @@ export const AdminMasterIntakePage = () => {
       };
 
       await verificationApi.receivePhysicalMaster(selectedReg.id, payload);
+      invalidateQueueCounts();
       setSuccessMessage(
         `Master fisik mushaf berhasil diterima. Nomor Tanda Terima ${receiptNo} telah diterbitkan.`
       );
@@ -275,6 +277,7 @@ export const AdminMasterIntakePage = () => {
       };
 
       await verificationApi.receivePhysicalMaster(selectedReg.id, payload);
+      invalidateQueueCounts();
       setSuccessMessage(
         `Master fisik mushaf dikembalikan kepada penerbit dengan catatan perbaikan.`
       );
@@ -949,7 +952,7 @@ export const AdminMasterIntakePage = () => {
                 Antrean Naskah Menunggu Master Fisik
               </h3>
               <span className="text-xs bg-brand-100 text-brand-800 font-bold px-2.5 py-0.5 rounded-full">
-                {waitingList.length} Naskah
+                {waitingPagination.total} Naskah
               </span>
             </div>
             <Button
@@ -1062,6 +1065,11 @@ export const AdminMasterIntakePage = () => {
                   </tbody>
                 </table>
               </div>
+              <QueuePagination
+                pagination={waitingPagination}
+                loading={waitingLoading}
+                onPageChange={fetchWaitingList}
+              />
             </div>
           )}
         </div>
@@ -1176,6 +1184,7 @@ export const AdminMasterIntakePage = () => {
           registration={selectedReg}
           onSuccess={async () => {
             setAssignDialogOpen(false);
+            invalidateQueueCounts();
             setSuccessMessage(
               `Verifikator berhasil ditugaskan untuk naskah ${selectedReg.registration_no}. Disposisi telah diterbitkan.`
             );
@@ -1201,4 +1210,3 @@ export const AdminMasterIntakePage = () => {
 };
 
 export default AdminMasterIntakePage;
-

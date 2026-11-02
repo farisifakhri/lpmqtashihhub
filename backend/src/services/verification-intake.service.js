@@ -3,6 +3,7 @@ import { prisma } from '../config/database.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
+import { buildUnassignedVerificationWhere } from './queue-filters.js';
 import { calculateDueAt } from './sla.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
@@ -519,26 +520,7 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
 
-  const where = {
-    status: 'READY_FOR_VERIFICATION',
-    physical_master_intake: {
-      status: 'RECEIVED',
-      receipt_no: { not: null },
-    },
-    verification_assignments: {
-      none: {
-        status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
-      },
-    },
-  };
-
-  if (query.search) {
-    where.OR = [
-      { registration_no: { contains: query.search } },
-      { title: { contains: query.search } },
-      { publisher: { legal_name: { contains: query.search } } },
-    ];
-  }
+  const where = buildUnassignedVerificationWhere(query);
 
   const [total, items] = await Promise.all([
     prisma.registration.count({ where }),
@@ -587,5 +569,4 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
     },
   };
 };
-
 

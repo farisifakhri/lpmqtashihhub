@@ -34,11 +34,13 @@ import {
     RefreshCw,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useQueueCounts } from "@/features/queue/useQueueCounts";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
     const { currentUser, logout, switchActiveRole } = useAuth();
+    const { counts } = useQueueCounts();
     const navigate = useNavigate();
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
@@ -63,40 +65,31 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         navigate("/login");
     };
     const role = currentUser?.role || "";
-    const roles = currentUser?.roles || [];
-
     const isPublisher =
         role === "PENERBIT" ||
-        role === "PUBLISHER" ||
-        roles.includes("PENERBIT");
+        role === "PUBLISHER";
 
-    const isSuperAdmin = role === "SUPERADMIN" || roles.includes("SUPERADMIN");
+    const isSuperAdmin = role === "SUPERADMIN";
 
-    const isAdmin =
-        role === "ADMIN_INTERNAL" || roles.includes("ADMIN_INTERNAL");
+    const isAdmin = role === "ADMIN_INTERNAL";
 
     const isVerifikator =
         role === "VERIFIKATOR" ||
-        role === "VERIFICATOR" ||
-        roles.includes("VERIFIKATOR");
+        role === "VERIFICATOR";
 
-    const isDistributor =
-        role === "DISTRIBUTOR" || roles.includes("DISTRIBUTOR");
+    const isDistributor = role === "DISTRIBUTOR";
 
     const isPentashih =
         role === "PENTASHIH" ||
-        role === "TASHIH_MEMBER" ||
-        roles.includes("PENTASHIH");
+        role === "TASHIH_MEMBER";
 
     const isDokumentator =
         role === "DOKUMENTATOR" ||
-        role === "DOCUMENTATOR" ||
-        roles.includes("DOKUMENTATOR");
+        role === "DOCUMENTATOR";
 
     const isKepala =
         role === "KEPALA_LPMQ" ||
-        role === "HEAD_OF_LPMQ" ||
-        roles.includes("KEPALA_LPMQ");
+        role === "HEAD_OF_LPMQ";
 
     const getRoleBadge = (userRole) => {
         switch (userRole) {
@@ -207,7 +200,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // Role Internal: Admin (Helper Admin - Alur Penuh Tanpa Akses Penerbit & TTE Kepala)
-        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
+        if (isAdmin) {
             return [
                 {
                     title: "KENDALI UTAMA",
@@ -230,20 +223,21 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/publishers",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
+                            countKey: "publisher_registration_pending",
                         },
                         {
                             label: "2. Intake Master Fisik",
                             path: "/internal/master-intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
-                            badge: "Loket",
+                            countKey: "master_intake_pending",
                         },
                         {
                             label: "3. Penugasan Verifikator",
                             path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                             icon: <UserCheck className="w-4 h-4 shrink-0" />,
                             description: "Disposisi tim verifikator berkas",
-                            badge: 1,
+                            countKey: "verification_assignment_pending",
                         },
                         {
                             label: "4. Verifikasi Berkas",
@@ -310,7 +304,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // Role Internal: Kepala LPMQ
-        if (isKepala && !isSuperAdmin) {
+        if (isKepala) {
             return [
                 {
                     title: "MANAJEMEN & PENGESAHAN",
@@ -412,7 +406,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // Role Internal: Distributor
-        if (isDistributor && !isSuperAdmin) {
+        if (isDistributor) {
             return [
                 {
                     title: "DISTRIBUSI SIDANG",
@@ -449,7 +443,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // Role Internal: Pentashih
-        if (isPentashih && !isSuperAdmin) {
+        if (isPentashih) {
             return [
                 {
                     title: "SIDANG PENTASHIHAN",
@@ -479,7 +473,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        if (isDokumentator && !isSuperAdmin) {
+        if (isDokumentator) {
             return [
                 {
                     title: "DOKUMENTASI",
@@ -508,6 +502,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
+        if (!isSuperAdmin) return [];
+
         // Role: Superadmin (Akses Penuh & Alur Operasional Panjang 1-11)
         return [
             {
@@ -529,19 +525,21 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/publishers",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
+                        countKey: "publisher_registration_pending",
                     },
                     {
                         label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
-                        badge: "Loket",
+                        countKey: "master_intake_pending",
                     },
                     {
                         label: "3. Penugasan Verifikator",
                         path: "/internal/verifications?tab=NEED_ASSIGNMENT",
                         icon: <UserCheck className="w-4 h-4 shrink-0" />,
                         description: "Disposisi tim verifikator berkas",
+                        countKey: "verification_assignment_pending",
                     },
                     {
                         label: "4. Verifikasi Berkas",
@@ -828,6 +826,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             {item.badge}
                                                         </span>
                                                     )}
+                                                    {item.countKey &&
+                                                        Number.isInteger(counts[item.countKey]) &&
+                                                        counts[item.countKey] > 0 && (
+                                                            <span
+                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
+                                                                aria-label={`${counts[item.countKey]} entri antrean menunggu tindakan`}
+                                                            >
+                                                                {counts[item.countKey] > 99 ? "99+" : counts[item.countKey]}
+                                                            </span>
+                                                        )}
                                                 </>
                                             )}
                                         </NavLink>
