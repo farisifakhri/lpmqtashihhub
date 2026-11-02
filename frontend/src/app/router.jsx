@@ -6,7 +6,7 @@ import { LoginPage } from '@/features/auth/LoginPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { LandingPage } from '@/features/LandingPage/LandingPage';
+import { LandingPage } from '@/features/landing-page/LandingPage';
 import { TashihLoader } from '@/components/ui/TashihLoader';
 
 // Fallback spinner saat modul rute diunduh secara asynchronous (P2-02)
