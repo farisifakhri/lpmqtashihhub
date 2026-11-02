@@ -196,7 +196,7 @@ async function runTests() {
             title: 'Mushaf Cacat Validasi',
             mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'NEW',
-            previous_registration_id: 'a0000000-0000-0000-0000-000000000001',
+            previous_registration_id: 'a0000000-0000-4000-8000-000000000001',
           }),
         });
         assert.strictEqual(res.status, 400);
@@ -231,7 +231,7 @@ async function runTests() {
             title: 'Mushaf Addon Fiktif',
             mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
             registration_type: 'NEW',
-            addons: ['00000000-0000-0000-0000-000000000099'],
+            addons: ['00000000-0000-4000-8000-000000000099'],
           }),
         });
         assert.strictEqual(res.status, 400);

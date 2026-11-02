@@ -27,17 +27,17 @@ test('SEC-01: IDOR Protection - createDraft menolak sample_file_id milik penggun
 
   origPrisma.storedFile.findMany = async () => [
     // Berkas dimiliki oleh pengguna lain (usr-victim-99)
-    { id: '11111111-1111-1111-1111-111111111111', owner_id: 'usr-victim-99' },
+    { id: '11111111-1111-4111-8111-111111111111', owner_id: 'usr-victim-99' },
   ];
   origPrisma.serviceType.findUnique = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
     base_fee: 1000000,
   });
   origPrisma.serviceType.findFirst = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -60,7 +60,7 @@ test('SEC-01: IDOR Protection - createDraft menolak sample_file_id milik penggun
   ];
 
   const payload = {
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Pengajuan Naskah Percobaan IDOR',
     manuscripts: [
       {
@@ -68,7 +68,7 @@ test('SEC-01: IDOR Protection - createDraft menolak sample_file_id milik penggun
         title: "Mushaf 30 Juz",
         items: ['JUZ30'],
         variants: [{ ukuran: 'A4', oplah: 5000 }],
-        sample_file_id: '11111111-1111-1111-1111-111111111111',
+        sample_file_id: '11111111-1111-4111-8111-111111111111',
       },
     ],
   };
@@ -105,14 +105,14 @@ test('SEC-02: IDOR Protection - createDraft menolak sample_file_id yang tidak te
   origPrisma.auditLog.create = async () => ({ id: 'aud-root' });
   origPrisma.registration.findUnique = async () => null; // Berkas tidak ditemukan
   origPrisma.serviceType.findUnique = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
     base_fee: 1000000,
   });
   origPrisma.serviceType.findFirst = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -135,7 +135,7 @@ test('SEC-02: IDOR Protection - createDraft menolak sample_file_id yang tidak te
   ];
 
   const payload = {
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Pengajuan Naskah Berkas Hantu',
     manuscripts: [
       {
@@ -184,7 +184,7 @@ test('SEC-03: IDOR Protection - addManuscriptFile menolak penerbit lain dan manu
 
     await assert.rejects(
       async () => {
-        await addManuscriptFile('reg-publisher-a', { file_id: '11111111-1111-1111-1111-111111111111' }, attackerUser);
+        await addManuscriptFile('reg-publisher-a', { file_id: '11111111-1111-4111-8111-111111111111' }, attackerUser);
       },
       (err) => {
         assert.equal(err.statusCode, 403);
@@ -225,7 +225,7 @@ test('SEC-03: IDOR Protection - addManuscriptFile menolak penerbit lain dan manu
       async () => {
         await addManuscriptFile(
           'reg-publisher-a',
-          { file_id: '11111111-1111-1111-1111-111111111111', manuscript_id: '33333333-3333-3333-3333-333333333333' },
+          { file_id: '11111111-1111-4111-8111-111111111111', manuscript_id: '33333333-3333-3333-3333-333333333333' },
           legitAlphaUser
         );
       },
@@ -277,7 +277,7 @@ test('SEC-05: XSS Protection - createDraft membersihkan tag HTML pada judul nask
   origPrisma.auditLog.create = async () => ({ id: 'aud-root' });
   origPrisma.registration.findUnique = async () => null;
   origPrisma.serviceType.findUnique = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -285,7 +285,7 @@ test('SEC-05: XSS Protection - createDraft membersihkan tag HTML pada judul nask
     duration_initial: 15,
   });
   origPrisma.serviceType.findFirst = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -341,7 +341,7 @@ test('SEC-05: XSS Protection - createDraft membersihkan tag HTML pada judul nask
 
   const user = { id: 'usr-01', publisherId: 'pub-01', roles: ['PENERBIT'] };
   const payload = {
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: '<script>alert("xss")</script>Mushaf Al-Qur\'an Bersih',
     manuscripts: [
       {
@@ -382,7 +382,7 @@ test('SEC-06: DoS & Quota Protection - Menolak pendaftaran dengan > 20 naskah', 
   }
 
   const result = schema.safeParse({
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     manuscripts: excessiveManuscripts,
     mushaf_details: { penanggung_jawab_produk: 'Ahmad' },
   });
@@ -529,7 +529,7 @@ test('SEC-11: Fee & SLA Tampering - Server mengabaikan fee / sla buatan client d
   origPrisma.auditLog.create = async () => ({ id: 'aud-root' });
   origPrisma.registration.findUnique = async () => null;
   origPrisma.serviceType.findUnique = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -537,7 +537,7 @@ test('SEC-11: Fee & SLA Tampering - Server mengabaikan fee / sla buatan client d
     duration_initial: 15,
   });
   origPrisma.serviceType.findFirst = async () => ({
-    id: '00000000-0000-0000-0000-000000000001',
+    id: '00000000-0000-4000-8000-000000000001',
     name: "Mushaf Al-Qur'an 30 Juz",
     service_kind: 'CETAK',
     status: 'ACTIVE',
@@ -597,7 +597,7 @@ test('SEC-11: Fee & SLA Tampering - Server mengabaikan fee / sla buatan client d
   const user = { id: 'usr-01', publisherId: 'pub-01', roles: ['PENERBIT'] };
   // Client mencoba mengirim fee 0 rupiah dan SLA 1 hari (tampering attempt)
   const maliciousPayload = {
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Mushaf Percobaan Manipulasi Tarif',
     fee: 0,
     base_fee: 0,

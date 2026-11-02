@@ -9,8 +9,8 @@ test('B-05: assignmentSchema allows optional team_id and validates juz assignmen
   const validWithoutTeam = assignmentSchema.body.safeParse({
     stage: 'INITIAL',
     juz_assignments: [
-      { assignee_id: 'a0000000-0000-0000-0000-000000000001', juz_numbers: [1, 2, 3] },
-      { assignee_id: 'a0000000-0000-0000-0000-000000000002', juz_numbers: [4, 5, 6] },
+      { assignee_id: 'a0000000-0000-4000-8000-000000000001', juz_numbers: [1, 2, 3] },
+      { assignee_id: 'a0000000-0000-4000-8000-000000000002', juz_numbers: [4, 5, 6] },
     ],
   });
   assert.ok(validWithoutTeam.success, 'Harus sukses tanpa team_id eksplisit');
@@ -21,7 +21,7 @@ test('B-05: assignmentSchema allows optional team_id and validates juz assignmen
     reassignment_reason: 'ROTASI_TUGAS',
     reassignment_notes: 'Penyesuaian giliran penugasan',
     juz_assignments: [
-      { assignee_id: 'a0000000-0000-0000-0000-000000000001', juz_numbers: [1] },
+      { assignee_id: 'a0000000-0000-4000-8000-000000000001', juz_numbers: [1] },
     ],
   });
   assert.ok(validWithReason.success, 'Harus menerima alasan pergantian generik');
@@ -29,8 +29,8 @@ test('B-05: assignmentSchema allows optional team_id and validates juz assignmen
   const duplicateJuz = assignmentSchema.body.safeParse({
     stage: 'INITIAL',
     juz_assignments: [
-      { assignee_id: 'a0000000-0000-0000-0000-000000000001', juz_numbers: [1, 2] },
-      { assignee_id: 'a0000000-0000-0000-0000-000000000002', juz_numbers: [2, 3] },
+      { assignee_id: 'a0000000-0000-4000-8000-000000000001', juz_numbers: [1, 2] },
+      { assignee_id: 'a0000000-0000-4000-8000-000000000002', juz_numbers: [2, 3] },
     ],
   });
   assert.equal(duplicateJuz.success, false, 'Harus menolak duplikasi juz lintas pentashih jika allow_overlap tidak diaktifkan');
@@ -83,7 +83,7 @@ test('B-05: createAssignments enforces complete 30-juz coverage for 30 Juz manus
           stage: 'INITIAL',
           juz_assignments: [
             {
-              assignee_id: 'a0000000-0000-0000-0000-000000000001',
+              assignee_id: 'a0000000-0000-4000-8000-000000000001',
               juz_numbers: Array.from({ length: 20 }, (_, i) => i + 1), // 1..20
             },
           ],
@@ -176,11 +176,11 @@ test('B-05: createAssignments succeeds with flexible combination covering 1..30 
         stage: 'INITIAL',
         juz_assignments: [
           {
-            assignee_id: 'a0000000-0000-0000-0000-000000000001',
+            assignee_id: 'a0000000-0000-4000-8000-000000000001',
             juz_numbers: Array.from({ length: 20 }, (_, i) => i + 1), // Juz 1..20
           },
           {
-            assignee_id: 'a0000000-0000-0000-0000-000000000002',
+            assignee_id: 'a0000000-0000-4000-8000-000000000002',
             juz_numbers: Array.from({ length: 10 }, (_, i) => i + 21), // Juz 21..30
           },
         ],
@@ -190,8 +190,8 @@ test('B-05: createAssignments succeeds with flexible combination covering 1..30 
 
     assert.equal(res.length, 2);
     assert.equal(createdAssignments.length, 2);
-    assert.equal(createdAssignments[0].assignee_id, 'a0000000-0000-0000-0000-000000000001');
-    assert.equal(createdAssignments[1].assignee_id, 'a0000000-0000-0000-0000-000000000002');
+    assert.equal(createdAssignments[0].assignee_id, 'a0000000-0000-4000-8000-000000000001');
+    assert.equal(createdAssignments[1].assignee_id, 'a0000000-0000-4000-8000-000000000002');
     assert.ok(moveCalled);
   } finally {
     prisma.$transaction = originalTx;

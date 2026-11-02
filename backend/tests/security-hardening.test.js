@@ -112,17 +112,17 @@ test('T-F07: XSS & Protocol Injection - Validator URL aplikasi hanya mengizinkan
 
   // URL dengan protokol aman https:// harus lolos
   const validData = schema.safeParse({
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Mushaf Digital Test',
     apk_url: 'https://play.google.com/store/apps/details?id=com.mushaf',
     mushaf_details: { penanggung_jawab_produk: 'Ahmad Subagio' },
     statement_accepted: true,
   });
-  assert.ok(validData.success, `URL HTTPS harus valid: ${JSON.stringify(validData.error?.errors)}`);
+  assert.ok(validData.success, `URL HTTPS harus valid: ${JSON.stringify(validData.error?.issues || validData.error?.errors)}`);
 
   // URL dengan protokol berbahaya javascript: atau data: harus ditolak
   const xssData1 = schema.safeParse({
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Mushaf Digital Test',
     apk_url: 'javascript:alert(1)',
     mushaf_details: { penanggung_jawab_produk: 'Ahmad Subagio' },
@@ -131,7 +131,7 @@ test('T-F07: XSS & Protocol Injection - Validator URL aplikasi hanya mengizinkan
   assert.equal(xssData1.success, false, 'Protokol javascript: wajib ditolak');
 
   const xssData2 = schema.safeParse({
-    service_type_id: '00000000-0000-0000-0000-000000000001',
+    service_type_id: '00000000-0000-4000-8000-000000000001',
     title: 'Mushaf Digital Test',
     apk_url: 'http://insecure-site.com/app.apk',
     mushaf_details: { penanggung_jawab_produk: 'Ahmad Subagio' },
