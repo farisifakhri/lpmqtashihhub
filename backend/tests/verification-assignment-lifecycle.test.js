@@ -37,7 +37,7 @@ test('revokeAssignmentSchema and reassignAssignmentSchema validation rules', asy
 
   // Reassign: Valid
   const validReassign = reassignAssignmentSchema.body.safeParse({
-    verifier_id: 'a0000000-0000-0000-0000-000000000001',
+    verifier_id: 'a0000000-0000-4000-8000-000000000001',
     nota_no: 'ND-2026/09/REV-01',
     reason: 'Pengalihan tugas karena rotasi berkas.',
     notes: 'Prioritas tinggi.',
