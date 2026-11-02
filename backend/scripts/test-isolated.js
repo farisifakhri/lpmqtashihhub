@@ -23,20 +23,20 @@ try {
   console.log(`Disposable test database: ${database}`);
   await run(process.execPath, ['node_modules/prisma/build/index.js', 'migrate', 'deploy']);
   await run(process.execPath, ['prisma/seed.js']);
-  const unitFiles = (await readdir('tests')).filter(name => name.endsWith('.test.js')).map(name => `tests/${name}`);
+  const unitFiles = (await readdir('tests/unit')).filter(name => name.endsWith('.test.js')).map(name => `tests/unit/${name}`);
   await run(process.execPath, ['--test', ...unitFiles]);
   if (process.argv.includes('--core-team-only')) {
-    await run(process.execPath, ['tests/core-team.integration.js']);
+    await run(process.execPath, ['tests/integration/core-team.integration.js']);
   } else {
-    await run(process.execPath, ['tests/setup-core-team.fixture.js']);
+    await run(process.execPath, ['tests/integration/setup-core-team.fixture.js']);
     if (!process.argv.includes('--rbac-only')) {
-      await run(process.execPath, ['tests/queue.integration.js']);
-      await run(process.execPath, ['tests/test-api.integration.js']);
+      await run(process.execPath, ['tests/integration/queue.integration.js']);
+      await run(process.execPath, ['tests/integration/test-api.integration.js']);
     }
-    await run(process.execPath, ['tests/admin-rbac.integration.js']);
-    await run(process.execPath, ['tests/publisher-registration.integration.js']);
-    await run(process.execPath, ['tests/publisher-dashboard.integration.js']);
-    await run(process.execPath, ['tests/core-team.integration.js']);
+    await run(process.execPath, ['tests/integration/admin-rbac.integration.js']);
+    await run(process.execPath, ['tests/integration/publisher-registration.integration.js']);
+    await run(process.execPath, ['tests/integration/publisher-dashboard.integration.js']);
+    await run(process.execPath, ['tests/integration/core-team.integration.js']);
   }
 } catch (error) {
   console.error(error.message);

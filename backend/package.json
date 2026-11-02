@@ -16,7 +16,7 @@
     "core-team:seed": "node scripts/seed-core-team-roster.js",
     "prisma:studio": "prisma studio",
     "sla:check": "node src/jobs/sla.js",
-    "test:unit": "node --test tests/*.test.js",
+    "test:unit": "node --test tests/unit/*.test.js",
     "test:isolated": "node scripts/test-isolated.js",
     "test:all": "node scripts/test-isolated.js",
     "db:backup": "node scripts/backup-db.js",
