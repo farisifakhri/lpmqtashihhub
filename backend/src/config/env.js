@@ -49,8 +49,26 @@ export const ENV = {
   CLAMAV_PORT: parseInt(process.env.CLAMAV_PORT || '3310', 10),
   CLAMAV_SOCKET: process.env.CLAMAV_SOCKET || null,
   CLAMAV_TIMEOUT_MS: parseInt(process.env.CLAMAV_TIMEOUT_MS || '10000', 10),
+  MAIL_DRIVER: (process.env.MAIL_DRIVER || (isProduction ? 'smtp' : 'internal')).toLowerCase(),
+  MAIL_FROM_ADDRESS: process.env.MAIL_FROM_ADDRESS || 'no-reply@lpmq.kemenag.go.id',
+  MAIL_FROM_NAME: process.env.MAIL_FROM_NAME || 'LPMQ Kementerian Agama RI',
+  SMTP_HOST: process.env.SMTP_HOST || null,
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '587', 10),
+  SMTP_SECURE: process.env.SMTP_SECURE === 'true',
+  SMTP_USER: process.env.SMTP_USER || null,
+  SMTP_PASS: process.env.SMTP_PASS || null,
+  SMTP_REQUIRE_TLS: process.env.SMTP_REQUIRE_TLS !== 'false',
+  SMTP_TIMEOUT_MS: parseInt(process.env.SMTP_TIMEOUT_MS || '15000', 10),
   LPMQ_QURAN_USERNAME: process.env.LPMQ_QURAN_USERNAME || null,
   LPMQ_QURAN_TOKEN: process.env.LPMQ_QURAN_TOKEN || null,
 };
+
+if (!['internal', 'smtp'].includes(ENV.MAIL_DRIVER)) {
+  throw new Error('MAIL_DRIVER harus bernilai "internal" atau "smtp".');
+}
+
+if (ENV.MAIL_DRIVER === 'smtp' && (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP_PASS)) {
+  throw new Error('MAIL_DRIVER=smtp memerlukan SMTP_HOST, SMTP_USER, dan SMTP_PASS.');
+}
 
 export default ENV;
