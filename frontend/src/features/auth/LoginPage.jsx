@@ -12,12 +12,15 @@ export const LoginPage = () => {
   const { login, isLoading, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const resetToken = new URLSearchParams(location.search).get('token')
+    || new URLSearchParams(location.search).get('resetToken')
+    || '';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.error || '');
-  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(() => Boolean(resetToken));
   const [isPublisherNotApproved, setIsPublisherNotApproved] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -272,6 +275,7 @@ export const LoginPage = () => {
       <ForgotPasswordModal
         isOpen={showForgotModal}
         onClose={() => setShowForgotModal(false)}
+        initialToken={resetToken}
       />
     </div>
   );

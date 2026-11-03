@@ -203,19 +203,24 @@ export const forgotPassword = async ({ email, req }) => {
     message: 'Jika email terdaftar, petunjuk telah dikirim.',
   };
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+  const user = normalizedEmail
+    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    : null;
 
   // Dummy compare to avoid timing attack / account enumeration
   const DUMMY_HASH = '$2a$10$7EqJtq98hPqEX7fNZaFWoO.8/lI2/w16/K8L9.lZ63xV1L6o2y72e';
   if (!user || user.status !== 'ACTIVE') {
     await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
+    console.info('[PasswordReset] Email diabaikan: akun tidak ditemukan atau tidak aktif. Tidak ada email yang dikirim.');
     return GENERIC_RESPONSE;
   }
 
   // Consistent dummy compare so timing is identical for existing vs non-existing
   await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
 
-  const rawToken = crypto.randomBytes(32).toString('hex');
+  // 8-digit recovery code; the reset endpoint is also rate limited by IP.
+  const rawToken = crypto.randomInt(0, 100_000_000).toString().padStart(8, '0');
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
   const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 menit
   const requestedIp = req?.ip || req?.headers?.['x-forwarded-for'] || null;
@@ -235,22 +240,30 @@ export const forgotPassword = async ({ email, req }) => {
   });
 
   const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  // Keep a URL for compatibility with existing internal callers/tests. SMTP
+  // sends the portable code so recovery does not depend on localhost links.
   const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
 
   try {
-    await emailProvider.sendEmail({
+    const result = await emailProvider.sendEmail({
       to: user.email,
       toName: user.name,
       subject: 'Petunjuk Pemulihan Kata Sandi - LPMQ Tashih Hub',
       template: 'PASSWORD_RESET',
       payload: {
+        resetCode: rawToken,
         resetUrl,
         expiresMinutes: 30,
       },
     });
+    console.info(`[PasswordReset] Email diterima provider. MessageId: ${result.messageId || 'tidak tersedia'}`);
   } catch (emailErr) {
     // Jangan biarkan kegagalan email mengekspos token ke respons HTTP
-    console.error('Peringatan: Gagal mengirim email pemulihan kata sandi:', emailErr.message);
+    console.error('[PasswordReset] SMTP/provider gagal mengirim email:', {
+      code: emailErr.code || 'UNKNOWN',
+      responseCode: emailErr.responseCode || null,
+      message: emailErr.message,
+    });
   }
 
   await logAudit({

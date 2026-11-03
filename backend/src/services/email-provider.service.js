@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
+import nodemailer from 'nodemailer';
 import { prisma } from '../config/database.js';
+import { ENV } from '../config/env.js';
 import { fail } from './workflow-utils.js';
 
 /**
@@ -61,8 +63,77 @@ export class MockEmailProvider {
   }
 }
 
-// Global provider instance
-export const emailProvider = new MockEmailProvider();
+function payloadToText(payload = {}) {
+  if (typeof payload === 'string') return payload;
+  if (typeof payload.message === 'string') return payload.message;
+  return Object.entries(payload)
+    .filter(([, value]) => value !== undefined && value !== null && typeof value !== 'object')
+    .map(([key, value]) => `${key.replaceAll('_', ' ')}: ${value}`)
+    .join('\n');
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
+}
+
+export class SmtpEmailProvider {
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      host: ENV.SMTP_HOST,
+      port: ENV.SMTP_PORT,
+      secure: ENV.SMTP_SECURE,
+      requireTLS: ENV.SMTP_REQUIRE_TLS,
+      auth: { user: ENV.SMTP_USER, pass: ENV.SMTP_PASS },
+      connectionTimeout: ENV.SMTP_TIMEOUT_MS,
+      greetingTimeout: ENV.SMTP_TIMEOUT_MS,
+      socketTimeout: ENV.SMTP_TIMEOUT_MS,
+    });
+  }
+
+  async sendEmail({ to, toName, subject, template, payload, attachments }) {
+    const text = payloadToText(payload);
+    let html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap">${escapeHtml(text)}</div>`;
+    let messageText = text;
+
+    if (template === 'PASSWORD_RESET' && (payload?.resetCode || payload?.resetUrl)) {
+      const name = toName ? ` ${escapeHtml(toName)}` : '';
+      const expiresMinutes = Number(payload.expiresMinutes) || 30;
+      if (payload.resetCode) {
+        const instructions = 'Kembali ke halaman login, pilih “Lupa kata sandi?” lalu “Sudah memiliki token reset?” dan masukkan kode ini.';
+        messageText = [
+          `Halo${toName ? ` ${toName}` : ''},`,
+          '',
+          'Kami menerima permintaan untuk mengatur ulang kata sandi akun LPMQ Anda.',
+          `Kode pemulihan: ${payload.resetCode}`,
+          '',
+          instructions,
+          `Kode berlaku selama ${expiresMinutes} menit dan hanya dapat digunakan satu kali.`,
+          'Jika Anda tidak meminta pengaturan ulang ini, abaikan email ini.',
+        ].join('\n');
+        html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937"><p>Halo${name},</p><p>Kami menerima permintaan untuk mengatur ulang kata sandi akun LPMQ Anda.</p><p>Kode pemulihan:</p><p style="font-size:28px;font-weight:bold;letter-spacing:6px;color:#14532d">${escapeHtml(payload.resetCode)}</p><p>${escapeHtml(instructions)}</p><p>Kode berlaku selama ${expiresMinutes} menit dan hanya dapat digunakan satu kali.</p><p>Jika Anda tidak meminta pengaturan ulang ini, abaikan email ini.</p></div>`;
+      } else {
+        messageText = `${text}\n\nTautan berlaku selama ${expiresMinutes} menit dan hanya dapat digunakan satu kali.`;
+        html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6">${escapeHtml(messageText)}</div>`;
+      }
+    }
+
+    const result = await this.transporter.sendMail({
+      from: { address: ENV.MAIL_FROM_ADDRESS, name: ENV.MAIL_FROM_NAME },
+      to: toName ? { address: to, name: toName } : to,
+      subject,
+      text: messageText,
+      html,
+      attachments: Array.isArray(attachments) ? attachments : [],
+      headers: template ? { 'X-LPMQ-Template': template } : undefined,
+    });
+    return { success: true, messageId: result.messageId };
+  }
+}
+
+// Keep the in-memory provider for unit tests and local development by default.
+export const emailProvider = ENV.MAIL_DRIVER === 'smtp'
+  ? new SmtpEmailProvider()
+  : new MockEmailProvider();
 
 /**
  * Memproses pengiriman email melalui Outbox dengan Idempotency Key
