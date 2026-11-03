@@ -130,10 +130,10 @@ export class SmtpEmailProvider {
   }
 }
 
-// Keep the in-memory provider for unit tests and local development by default.
-export const emailProvider = ENV.MAIL_DRIVER === 'smtp'
-  ? new SmtpEmailProvider()
-  : new MockEmailProvider();
+// Never send real emails from the test runtime, even if .env selects SMTP.
+export const emailProvider = ENV.NODE_ENV === 'test' || ENV.MAIL_DRIVER !== 'smtp'
+  ? new MockEmailProvider()
+  : new SmtpEmailProvider();
 
 /**
  * Memproses pengiriman email melalui Outbox dengan Idempotency Key

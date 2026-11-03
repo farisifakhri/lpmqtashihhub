@@ -47,7 +47,6 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
     try {
       const res = await authApi.forgotPassword(email);
       setSuccess(res.message || 'Jika email terdaftar, petunjuk telah dikirim.');
-      setStep('RESET');
     } catch (err) {
       setError(err.message || 'Gagal memproses permohonan pemulihan kata sandi.');
     } finally {
@@ -139,7 +138,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
               <button
                 type="button"
                 onClick={() => setStep('RESET')}
-                className="text-xs font-semibold text-brand-700 hover:underline"
+                className="text-xs font-semibold text-brand-fg hover:underline"
               >
                 Sudah memiliki token reset?
               </button>

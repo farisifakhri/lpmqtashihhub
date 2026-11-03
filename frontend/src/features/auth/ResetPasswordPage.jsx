@@ -48,7 +48,7 @@ export const ResetPasswordPage = () => {
   return (
     <main className="min-h-screen bg-canvas flex items-center justify-center p-4">
       <section className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-sm sm:p-8">
-        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-700/10 text-brand-700">
+        <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-700/10 text-brand-fg">
           <KeyRound className="h-5 w-5" aria-hidden="true" />
         </div>
         <h1 className="text-xl font-bold text-ink">Atur ulang kata sandi</h1>
@@ -107,12 +107,12 @@ export const ResetPasswordPage = () => {
         ) : (
           <div className="mt-5 space-y-3">
             <p className="text-sm text-ink-muted">Tautan tidak memuat token reset. Minta email pemulihan yang baru.</p>
-            <Link to="/login" className="inline-flex font-semibold text-brand-700 hover:underline">Ke halaman login untuk meminta tautan baru</Link>
+            <Link to="/login" className="inline-flex font-semibold text-brand-fg hover:underline">Ke halaman login untuk meminta tautan baru</Link>
           </div>
         )}
 
         <div className="mt-6 border-t border-line pt-4 text-center text-sm">
-          <Link to="/login" className="font-semibold text-brand-700 hover:underline">Kembali ke halaman masuk</Link>
+          <Link to="/login" className="font-semibold text-brand-fg hover:underline">Kembali ke halaman masuk</Link>
         </div>
       </section>
     </main>

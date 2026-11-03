@@ -16,7 +16,7 @@ describe('ForgotPasswordModal Security & UX', () => {
     vi.clearAllMocks();
   });
 
-  it('renders modal when open and submits forgot password without leaking token or auto-advancing', async () => {
+  it('sends a generic recovery response without leaking token or auto-advancing', async () => {
     authApi.forgotPassword.mockResolvedValue({
       success: true,
       message: 'Jika email terdaftar, petunjuk telah dikirim.',
@@ -39,7 +39,7 @@ describe('ForgotPasswordModal Security & UX', () => {
     expect(screen.getByText('Jika email terdaftar, petunjuk telah dikirim.')).toBeInTheDocument();
 
     // Verifikasi TIDAK berpindah otomatis ke langkah RESET (form token/password baru tidak muncul)
-    expect(screen.queryByLabelText(/Token \/ Kode Pemulihan/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Kode Pemulihan/i)).not.toBeInTheDocument();
   });
 
   it('allows manual switch to reset step and validates password confirmation', async () => {
@@ -54,7 +54,7 @@ describe('ForgotPasswordModal Security & UX', () => {
     fireEvent.click(screen.getByRole('button', { name: /Sudah memiliki token reset\?/i }));
 
     // Sekarang field token dan password baru harus muncul
-    const tokenInput = screen.getByLabelText(/Token \/ Kode Pemulihan/i);
+    const tokenInput = screen.getByLabelText(/Kode Pemulihan/i);
     const newPasswordInput = screen.getByLabelText(/^Kata Sandi Baru/i);
     const confirmPasswordInput = screen.getByLabelText(/Ulangi Kata Sandi Baru/i);
 
@@ -63,7 +63,7 @@ describe('ForgotPasswordModal Security & UX', () => {
     expect(confirmPasswordInput).toBeInTheDocument();
 
     // Uji validasi konfirmasi kata sandi tidak cocok
-    fireEvent.change(tokenInput, { target: { value: 'token-abc-123' } });
+    fireEvent.change(tokenInput, { target: { value: '12345678' } });
     fireEvent.change(newPasswordInput, { target: { value: 'Rahasia123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'Beda456' } });
     fireEvent.click(screen.getByRole('button', { name: /Perbarui Kata Sandi/i }));
@@ -77,7 +77,7 @@ describe('ForgotPasswordModal Security & UX', () => {
 
     await waitFor(() => {
       expect(authApi.resetPassword).toHaveBeenCalledWith({
-        token: 'token-abc-123',
+        token: '12345678',
         new_password: 'Rahasia123',
       });
     });
