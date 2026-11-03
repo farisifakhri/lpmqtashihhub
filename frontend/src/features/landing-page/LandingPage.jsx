@@ -19,7 +19,7 @@ import {
   FilePlus,
   Users,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import heroImageFirst from '@/assets/berandaaku.webp';
@@ -132,6 +132,9 @@ const heroSlides = [
   { src: heroImageSecond, alt: 'Gambar kedua slideshow beranda LPMQ' },
 ];
 
+const HERO_SLIDE_INTERVAL_MS = 10000;
+let heroSlideRemainingMs = HERO_SLIDE_INTERVAL_MS;
+
 const extendedHeroSlides = [
   { ...heroSlides[heroSlides.length - 1], slideIndex: heroSlides.length - 1, isClone: true },
   ...heroSlides.map((slide, slideIndex) => ({ ...slide, slideIndex, isClone: false })),
@@ -195,16 +198,27 @@ const StatCounter = ({ target, isVisible, duration = 1600 }) => {
 
 export const LandingPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isLandingRoute = location.pathname === '/' || location.pathname === '/landing';
   const [isNavigating, setIsNavigating] = useState(false);
   const [heroTrackIndex, setHeroTrackIndex] = useState(1);
   const [isHeroTrackTransitionEnabled, setIsHeroTrackTransitionEnabled] = useState(true);
   const isHeroTrackTransitioningRef = useRef(false);
   const pendingHeroDirectionsRef = useRef([]);
+  const heroSectionRef = useRef(null);
+  const heroTimerRef = useRef(null);
+  const heroTimerDeadlineRef = useRef(null);
+  const heroTimerRemainingRef = useRef(heroSlideRemainingMs);
+  const heroTimerControlsRef = useRef(null);
   const statsRef = useRef(null);
   const [statsVisible, setStatsVisible] = useState(false);
   const activeHeroSlide = (heroTrackIndex - 1 + heroSlides.length) % heroSlides.length;
 
   const navigateHeroSlide = useCallback((direction) => {
+    heroTimerRemainingRef.current = HERO_SLIDE_INTERVAL_MS;
+    heroSlideRemainingMs = HERO_SLIDE_INTERVAL_MS;
+    heroTimerControlsRef.current?.restart();
+
     const prefersReducedMotion =
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&
@@ -230,19 +244,87 @@ export const LandingPage = () => {
   }, []);
 
   useEffect(() => {
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let isHeroVisible = true;
 
-    if (prefersReducedMotion) return undefined;
+    const pauseTimer = () => {
+      if (heroTimerRef.current !== null) {
+        window.clearTimeout(heroTimerRef.current);
+        heroTimerRef.current = null;
+        if (heroTimerDeadlineRef.current !== null) {
+          heroTimerRemainingRef.current = Math.max(
+            0,
+            heroTimerDeadlineRef.current - Date.now()
+          );
+          heroSlideRemainingMs = heroTimerRemainingRef.current;
+        }
+      }
+      heroTimerDeadlineRef.current = null;
+    };
 
-    const intervalId = window.setInterval(() => {
-      navigateHeroSlide(1);
-    }, 7000);
+    const startTimer = (delay = heroTimerRemainingRef.current) => {
+      if (
+        !isLandingRoute ||
+        !isHeroVisible ||
+        document.visibilityState === 'hidden'
+      ) {
+        return;
+      }
 
-    return () => window.clearInterval(intervalId);
-  }, [navigateHeroSlide]);
+      if (heroTimerRef.current !== null) return;
+
+      heroTimerRemainingRef.current = delay;
+      heroSlideRemainingMs = delay;
+      heroTimerDeadlineRef.current = Date.now() + delay;
+      heroTimerRef.current = window.setTimeout(() => {
+        heroTimerRef.current = null;
+        heroTimerDeadlineRef.current = null;
+        navigateHeroSlide(1);
+      }, delay);
+    };
+
+    const restartTimer = () => {
+      pauseTimer();
+      heroTimerRemainingRef.current = HERO_SLIDE_INTERVAL_MS;
+      heroSlideRemainingMs = HERO_SLIDE_INTERVAL_MS;
+      startTimer(HERO_SLIDE_INTERVAL_MS);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    };
+
+    let heroObserver;
+    if (typeof window.IntersectionObserver !== 'undefined' && heroSectionRef.current) {
+      isHeroVisible = false;
+      heroObserver = new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        isHeroVisible = entry.isIntersecting;
+        if (isHeroVisible) {
+          startTimer();
+        } else {
+          pauseTimer();
+        }
+      });
+      heroObserver.observe(heroSectionRef.current);
+    }
+
+    heroTimerControlsRef.current = { restart: restartTimer };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startTimer();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      heroObserver?.disconnect();
+      pauseTimer();
+      if (heroTimerControlsRef.current?.restart === restartTimer) {
+        heroTimerControlsRef.current = null;
+      }
+    };
+  }, [isLandingRoute, navigateHeroSlide]);
 
   useEffect(() => {
     if (isHeroTrackTransitionEnabled) return undefined;
@@ -347,6 +429,7 @@ export const LandingPage = () => {
       <main className="mx-auto max-w-[1400px] px-5 py-3 sm:px-8 lg:px-12 lg:py-4 space-y-12">
         {/* Section 1: Hero */}
         <section
+          ref={heroSectionRef}
           id="beranda"
           className="relative isolate min-h-[500px] overflow-hidden rounded-[20px] bg-brand-950 sm:min-h-[560px] lg:min-h-[610px]"
           aria-label="Slideshow gambar beranda"

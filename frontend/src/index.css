@@ -317,22 +317,22 @@
 
 @layer utilities {
   .bg-brand-fill {
-    background-color: #579b0a;
+    background-color: #60960A;
   }
   .hover\:bg-brand-fill-hover:hover {
     background-color: #478300;
   }
   .text-brand-fg {
-    color: #4e9508;
+    color: #60960A;
   }
   .hover\:text-brand-fill-hover:hover {
     color: #396a06;
   }
   .border-brand-fg {
-    border-color: #4e9508;
+    border-color: #60960A;
   }
   .border-brand-fill {
-    border-color: #579b0a;
+    border-color: #60960A;
   }
 }
 
