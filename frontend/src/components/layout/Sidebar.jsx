@@ -830,7 +830,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                         Number.isInteger(counts[item.countKey]) &&
                                                         counts[item.countKey] > 0 && (
                                                             <span
-                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
+                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-civic-danger text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
                                                                 aria-label={`${counts[item.countKey]} entri antrean menunggu tindakan`}
                                                             >
                                                                 {counts[item.countKey] > 99 ? "99+" : counts[item.countKey]}
