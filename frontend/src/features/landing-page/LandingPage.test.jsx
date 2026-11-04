@@ -474,6 +474,26 @@ describe('LandingPage sections and navigation', () => {
     expect(card1).toBeInTheDocument();
     expect(card2).toBeInTheDocument();
     expect(card3).toBeInTheDocument();
+    [card1, card2, card3].forEach((title) => {
+      const card = title.closest('.group');
+      expect(card).toHaveClass(
+        'bg-white',
+        'border-lpmq-border',
+        'hover:bg-lpmq-soft',
+        'hover:border-lpmq-green',
+        'group-active:bg-lpmq-green',
+        'group-active:border-lpmq-green',
+        'duration-300'
+      );
+      expect(card.querySelector('.w-12.h-12')).toHaveClass(
+        'bg-lpmq-soft',
+        'text-lpmq-green',
+        'group-hover:ring-lpmq-accent',
+        'group-active:bg-lpmq-green',
+        'group-active:text-white'
+      );
+      expect(title).toHaveClass('text-ink', 'group-hover:text-lpmq-green', 'group-active:text-white');
+    });
 
     // Kartu 1 memiliki tautan ke /login
     const linkPendaftaran = screen.getByRole('link', { name: /Pendaftaran Mushaf Al-Qur'an/i });

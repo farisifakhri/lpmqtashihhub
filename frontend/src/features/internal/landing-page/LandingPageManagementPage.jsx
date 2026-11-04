@@ -57,7 +57,7 @@ const INFORMATION_SUBMENUS = [
   },
   {
     id: 'sop',
-    label: 'SOP Pelayanan Surat Tanda Tashih Izin Edar',
+    label: 'SOP Pelayanan Surat Tanda Tashih',
     description: 'SOP pelayanan Surat Tanda Tashih Izin Edar akan dikelola di bagian ini.',
   },
   {
@@ -488,7 +488,7 @@ export const LandingPageManagementPage = () => {
         </nav>
       )}
 
-      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan'].includes(activeInformationSubmenu) ? (
+      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop'].includes(activeInformationSubmenu) ? (
         <div className="rounded-2xl border border-line bg-surface p-8 sm:p-12 text-center space-y-3">
           <div className="inline-flex p-3 rounded-full bg-surface-subtle text-ink-muted">
             <Sparkles className="h-6 w-6" />
@@ -513,6 +513,10 @@ export const LandingPageManagementPage = () => {
 
       {activeMainMenu === 'informasi' && activeInformationSubmenu === 'panduan' && (
         <InformationGuideManagement />
+      )}
+
+      {activeMainMenu === 'informasi' && activeInformationSubmenu === 'sop' && (
+        <InformationGuideManagement section="SOP" />
       )}
 
       {activeMainMenu === 'informasi' && activeInformationSubmenu === 'regulasi' && (

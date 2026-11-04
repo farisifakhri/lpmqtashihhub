@@ -55,6 +55,7 @@ test('guide create and update schemas constrain input and require a non-empty up
 test('guide list query parses publication state and rejects excessive page sizes', () => {
   const parsed = listInformationGuidesSchema.query.parse({ page: '2', limit: '25', is_published: 'false' });
   assert.deepEqual(parsed, { page: 2, limit: 25, is_published: false });
+  assert.equal(listInformationGuidesSchema.query.parse({ section: 'SOP' }).section, 'SOP');
   assert.equal(listInformationGuidesSchema.query.safeParse({ limit: '101' }).success, false);
 });
 
@@ -85,6 +86,27 @@ test('public guide list excludes drafts and does not select private storage meta
   }
 });
 
+test('public information list scopes results to the requested section', async () => {
+  const originalCount = prisma.informationGuide.count;
+  const originalFindMany = prisma.informationGuide.findMany;
+  try {
+    prisma.informationGuide.count = async ({ where }) => {
+      assert.equal(where.section, 'SOP');
+      return 0;
+    };
+    prisma.informationGuide.findMany = async ({ where }) => {
+      assert.equal(where.section, 'SOP');
+      return [];
+    };
+
+    const result = await listPublicInformationGuides({ section: 'SOP' });
+    assert.deepEqual(result.items, []);
+  } finally {
+    prisma.informationGuide.count = originalCount;
+    prisma.informationGuide.findMany = originalFindMany;
+  }
+});
+
 test('public guide detail cannot retrieve a draft', async () => {
   const originalFindFirst = prisma.informationGuide.findFirst;
   try {
@@ -93,6 +115,21 @@ test('public guide detail cannot retrieve a draft', async () => {
       return null;
     };
     await assert.rejects(getInformationGuide('guide-draft', true), (error) => error.statusCode === 404);
+  } finally {
+    prisma.informationGuide.findFirst = originalFindFirst;
+  }
+});
+
+test('public information detail is constrained to its requested section', async () => {
+  const originalFindFirst = prisma.informationGuide.findFirst;
+  try {
+    prisma.informationGuide.findFirst = async ({ where }) => {
+      assert.deepEqual(where, { id: 'sop-1', section: 'SOP', is_published: true });
+      return { id: 'sop-1', section: 'SOP', title: 'SOP Layanan' };
+    };
+
+    const result = await getInformationGuide('sop-1', true, 'SOP');
+    assert.equal(result.section, 'SOP');
   } finally {
     prisma.informationGuide.findFirst = originalFindFirst;
   }

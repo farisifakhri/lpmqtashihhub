@@ -230,6 +230,7 @@ function guideSelect(includeContent = false, includeStoragePath = false) {
   return {
     id: true,
     title: true,
+    section: true,
     content_type: true,
     ...(includeContent ? { content_html: true } : {}),
     ...(includeStoragePath ? { storage_path: true } : {}),
@@ -244,11 +245,12 @@ function guideSelect(includeContent = false, includeStoragePath = false) {
   };
 }
 
-export async function listPublicInformationGuides({ page = 1, limit = 10, search = '' }) {
+export async function listPublicInformationGuides({ page = 1, limit = 10, search = '', section = 'GUIDE' }) {
   const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
   const where = {
     is_published: true,
+    section,
     ...(search.trim() ? { title: { contains: search.trim() } } : {}),
   };
   const [total, items] = await Promise.all([
@@ -271,10 +273,11 @@ export async function listPublicInformationGuides({ page = 1, limit = 10, search
   return { items, pagination: { total, page: pageNumber, limit: pageSize, totalPages: Math.ceil(total / pageSize) || 1 } };
 }
 
-export async function listAdminInformationGuides({ page = 1, limit = 10, search = '', is_published }) {
+export async function listAdminInformationGuides({ page = 1, limit = 10, search = '', is_published, section = 'GUIDE' }) {
   const pageNumber = Math.max(1, Number.parseInt(page, 10) || 1);
   const pageSize = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
   const where = {
+    section,
     ...(is_published === undefined ? {} : { is_published }),
     ...(search.trim() ? { title: { contains: search.trim() } } : {}),
   };
@@ -291,9 +294,9 @@ export async function listAdminInformationGuides({ page = 1, limit = 10, search 
   return { items, pagination: { total, page: pageNumber, limit: pageSize, totalPages: Math.ceil(total / pageSize) || 1 } };
 }
 
-export async function getInformationGuide(id, publishedOnly = false) {
+export async function getInformationGuide(id, publishedOnly = false, section = 'GUIDE') {
   const guide = await prisma.informationGuide.findFirst({
-    where: { id, ...(publishedOnly ? { is_published: true } : {}) },
+    where: { id, section, ...(publishedOnly ? { is_published: true } : {}) },
     select: guideSelect(true, true),
   });
   if (!guide) fail(404, 'Panduan tidak ditemukan atau belum dipublikasikan.');
@@ -317,6 +320,7 @@ export async function createInformationGuide({ data, file, user, req }) {
       const created = await tx.informationGuide.create({
         data: {
           title: data.title,
+          section: data.section || 'GUIDE',
           content_type: contentType,
           content_html: contentHtml,
           storage_path: savedPath,
@@ -342,7 +346,7 @@ export async function createInformationGuide({ data, file, user, req }) {
 }
 
 export async function updateInformationGuide({ id, data, file, user, req }) {
-  const previous = await getInformationGuide(id);
+  const previous = await getInformationGuide(id, false, data.section || 'GUIDE');
   const contentType = data.content_type || previous.content_type;
   const contentHtmlInput = data.content_html ?? previous.content_html ?? '';
   const isPublished = data.is_published ?? previous.is_published;
@@ -403,9 +407,9 @@ export async function updateInformationGuide({ id, data, file, user, req }) {
   }
 }
 
-export async function deleteInformationGuide({ id, user, req }) {
-  const guide = await prisma.informationGuide.findUnique({
-    where: { id },
+export async function deleteInformationGuide({ id, section = 'GUIDE', user, req }) {
+  const guide = await prisma.informationGuide.findFirst({
+    where: { id, section },
     include: { images: { select: { storage_path: true } } },
   });
   if (!guide) fail(404, 'Panduan tidak ditemukan.');
@@ -421,8 +425,11 @@ export async function deleteInformationGuide({ id, user, req }) {
   ]);
 }
 
-export async function addInformationGuideImage({ id, file, user, req }) {
-  const guide = await prisma.informationGuide.findUnique({ where: { id }, select: { id: true, content_type: true } });
+export async function addInformationGuideImage({ id, section = 'GUIDE', file, user, req }) {
+  const guide = await prisma.informationGuide.findFirst({
+    where: { id, section },
+    select: { id: true, content_type: true },
+  });
   if (!guide) fail(404, 'Panduan tidak ditemukan.');
   if (guide.content_type !== 'EDITOR') fail(400, 'Gambar hanya dapat ditambahkan pada panduan mode Editor.');
   const details = await validateGuideImage(file);
@@ -452,9 +459,9 @@ export async function addInformationGuideImage({ id, file, user, req }) {
   }
 }
 
-export async function getInformationGuideFile(id, publishedOnly = false) {
+export async function getInformationGuideFile(id, publishedOnly = false, section = 'GUIDE') {
   const guide = await prisma.informationGuide.findFirst({
-    where: { id, ...(publishedOnly ? { is_published: true } : {}) },
+    where: { id, section, ...(publishedOnly ? { is_published: true } : {}) },
     select: { storage_path: true, file_name: true, mime_type: true, file_size: true },
   });
   if (!guide?.storage_path) fail(404, 'Berkas panduan tidak ditemukan atau belum dipublikasikan.');
@@ -462,9 +469,9 @@ export async function getInformationGuideFile(id, publishedOnly = false) {
   return { bytes, ...guide, file_size: guide.file_size || bytes.length };
 }
 
-export async function getInformationGuideImage(id, publishedOnly = false) {
+export async function getInformationGuideImage(id, publishedOnly = false, section = 'GUIDE') {
   const image = await prisma.informationGuideImage.findFirst({
-    where: { id, ...(publishedOnly ? { guide: { is_published: true } } : {}) },
+    where: { id, guide: { section, ...(publishedOnly ? { is_published: true } : {}) } },
     select: { storage_path: true, mime_type: true, file_size: true },
   });
   if (!image) fail(404, 'Gambar panduan tidak ditemukan atau belum dipublikasikan.');
