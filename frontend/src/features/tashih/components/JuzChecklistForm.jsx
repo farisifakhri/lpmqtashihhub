@@ -218,6 +218,11 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
           {items.map(item => <JuzRow key={item.id} assignmentId={assignment.id} item={item} onSaved={onSaved} />)}
         </div>
       </div>
+
+      {/* Tutup kedua di akhir daftar: setelah scroll ke Juz 30 user tidak perlu kembali ke atas. */}
+      <div className="flex justify-end border-t border-line pt-3">
+        <button type="button" onClick={onClose} className="rounded-lg border border-line px-3 py-1.5 text-xs text-ink hover:bg-surface-subtle">Tutup</button>
+      </div>
     </div>
   </div>;
 }

@@ -129,6 +129,16 @@ describe('PentashihWorkspacePage Component', () => {
     await waitFor(() => expect(TashihApiModule.tashihApi.recordJuzChecklist).toHaveBeenCalledWith('assign-juz', 1, { result: 'PASSED', notes: '' }));
   });
 
+  it('menutup modal checklist juz lewat tombol Tutup di akhir daftar', async () => {
+    render(<MemoryRouter><PentashihWorkspacePage /></MemoryRouter>);
+    await screen.findByText('REG-JUZ-01');
+    fireEvent.click(screen.getByRole('button', { name: 'Buka Checklist Juz' }));
+    const closeButtons = screen.getAllByRole('button', { name: 'Tutup' });
+    expect(closeButtons).toHaveLength(2);
+    fireEvent.click(closeButtons[1]);
+    expect(screen.queryByRole('dialog', { name: 'Telaah Rentang Naskah Sidang' })).not.toBeInTheDocument();
+  });
+
   it('merender ruang sidang pentashih dan menampilkan tugas aktif', async () => {
     render(
       <MemoryRouter>
