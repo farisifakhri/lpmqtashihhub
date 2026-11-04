@@ -122,6 +122,28 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(workstation.children).toHaveLength(2);
   });
 
+  it('Studio Naskah & Berkas hanya menampilkan versi terbaru tiap jenis berkas', async () => {
+    const base = await VerificationApiModule.verificationApi.getAssignmentDetail();
+    base.data.registration.manuscript_files = [
+      { id: 'cover-v1', file_id: 'f-cover-1', type: 'COVER', version: 1 },
+      { id: 'cover-v2', file_id: 'f-cover-2', type: 'COVER', version: 2 },
+      { id: 'dummy-v1', file_id: 'f-dummy-1', type: 'DUMMY', version: 1 },
+    ];
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue(base);
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const coverTabs = await screen.findAllByRole('button', { name: /Sampul \/ Cover/ });
+    expect(coverTabs).toHaveLength(1);
+    expect(coverTabs[0]).toHaveTextContent('v2');
+    expect(screen.getAllByRole('button', { name: /Dummy Cetak/ })).toHaveLength(1);
+  });
+
   it('mengunggah PDF billing PNBP dan menyertakannya pada draf surat', async () => {
     vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: '00000000-0000-0000-0000-000000000123' });
     vi.spyOn(VerificationApiModule.verificationApi, 'saveDraft').mockResolvedValue({ success: true });

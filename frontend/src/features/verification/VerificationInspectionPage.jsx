@@ -159,7 +159,8 @@ export const VerificationInspectionPage = () => {
     }
 
     if (data.registration?.manuscript_files?.length > 0 && !selectedFileId) {
-      setSelectedFileId(data.registration.manuscript_files[0].id);
+      const [first] = [...data.registration.manuscript_files].sort((a, b) => (b.version || 1) - (a.version || 1));
+      setSelectedFileId(first.id);
     }
     if (data.registration?.physical_master_intake?.volume_count) {
       setHandoverVolumeCount(data.registration.physical_master_intake.volume_count);
@@ -189,9 +190,17 @@ export const VerificationInspectionPage = () => {
   }, [detail, currentUser]);
 
   const allFiles = useMemo(() => {
-    const list = [...(detail?.registration?.manuscript_files || [])];
+    const files = detail?.registration?.manuscript_files || [];
+    // Satu tab per jenis berkas, versi terbaru saja (issue log #4: v1 dan v2 tampil bersamaan).
+    const latestByType = new Map();
+    for (const f of files) {
+      const key = f.type || f.file_type || f.id;
+      const current = latestByType.get(key);
+      if (!current || (f.version || 1) > (current.version || 1)) latestByType.set(key, f);
+    }
+    const list = [...latestByType.values()];
     const meta = detail?.registration?.foreign_metadata || {};
-    const knownFileIds = new Set(list.map((f) => f.file_id || f.id));
+    const knownFileIds = new Set(files.map((f) => f.file_id || f.id));
 
     if (meta.surat_permohonan_file_id && !knownFileIds.has(meta.surat_permohonan_file_id)) {
       list.unshift({
