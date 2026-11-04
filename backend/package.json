@@ -50,6 +50,7 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.5.0",
+    "nodemailer": "^10.3.1",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
     "sanitize-html": "^2.18.1",
