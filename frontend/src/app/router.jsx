@@ -73,6 +73,14 @@ const router = createBrowserRouter([
     path: '/informasi/panduan-permohonan-surat-tanda-tashih/:id',
     element: <InformationGuidePage />,
   },
+  {
+    path: '/informasi/sop-pelayanan-surat-tanda-tashih',
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
+  {
+    path: '/informasi/sop-pelayanan-surat-tanda-tashih/:id',
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
   // Rute Autentikasi Mandiri
   {
     path: '/login',

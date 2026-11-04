@@ -48,6 +48,24 @@ function renderGuidePage(path) {
   );
 }
 
+function renderSopPage(path) {
+  const props = {
+    section: 'SOP',
+    basePath: '/informasi/sop-pelayanan-surat-tanda-tashih',
+    title: 'SOP Pelayanan Surat Tanda Tashih',
+    description: 'Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar',
+    tableLayout: true,
+  };
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/informasi/sop-pelayanan-surat-tanda-tashih" element={<InformationGuidePage {...props} />} />
+        <Route path="/informasi/sop-pelayanan-surat-tanda-tashih/:id" element={<InformationGuidePage {...props} />} />
+      </Routes>
+    </MemoryRouter>
+  );
+}
+
 describe('InformationGuidePage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -87,5 +105,33 @@ describe('InformationGuidePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Server tidak tersedia.');
     fireEvent.click(screen.getByRole('button', { name: /Muat ulang/i }));
     await waitFor(() => expect(informationGuideApi.listPublic).toHaveBeenCalledTimes(2));
+  });
+
+  it('lists SOP records in a labeled table and links each record to its detail', async () => {
+    renderSopPage('/informasi/sop-pelayanan-surat-tanda-tashih');
+
+    expect(await screen.findByRole('heading', { name: 'SOP Pelayanan Surat Tanda Tashih' })).toBeInTheDocument();
+    expect(screen.getByText('Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'No' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Judul Informasi' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Aksi' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Lihat SOP/i })).toHaveAttribute(
+      'href',
+      `/informasi/sop-pelayanan-surat-tanda-tashih/${guide.id}`
+    );
+    expect(informationGuideApi.listPublic).toHaveBeenCalledWith({
+      page: 1,
+      limit: 10,
+      search: '',
+      section: 'SOP',
+    });
+  });
+
+  it('loads SOP details using the SOP section filter', async () => {
+    renderSopPage(`/informasi/sop-pelayanan-surat-tanda-tashih/${guide.id}`);
+
+    expect(await screen.findByRole('heading', { name: guide.title })).toBeInTheDocument();
+    expect(screen.getByTestId('guide-content')).toHaveTextContent('Langkah permohonan');
+    expect(informationGuideApi.getPublic).toHaveBeenCalledWith(guide.id, { section: 'SOP' });
   });
 });

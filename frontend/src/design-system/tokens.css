@@ -114,6 +114,22 @@
   --success-rgb: 15 118 56;
   --success-soft-rgb: 237 248 240;
   --success-line-rgb: 187 240 200;
+
+  /* LPMQ logo palette (public landing page) */
+  --lpmq-green: #60960A;
+  --lpmq-green-rgb: 96 150 10;
+  --lpmq-accent: #88DA00;
+  --lpmq-accent-rgb: 136 218 0;
+  --lpmq-green-dark: #4E7B08;
+  --lpmq-green-dark-rgb: 78 123 8;
+  --lpmq-green-soft: #F2F8E9;
+  --lpmq-green-soft-rgb: 242 248 233;
+  --lpmq-green-soft-hover: #E5F2D0;
+  --lpmq-green-soft-hover-rgb: 229 242 208;
+  --lpmq-nav-text: #526052;
+  --lpmq-nav-text-rgb: 82 96 82;
+  --lpmq-border: #DDE5D8;
+  --lpmq-border-rgb: 221 229 216;
 }
 
 /* Deep Forest Dark Palette (Bukan abu-biru slate, konsisten dengan identitas hijau LPMQ) */
