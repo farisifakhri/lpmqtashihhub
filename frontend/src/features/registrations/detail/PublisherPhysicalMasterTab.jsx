@@ -319,7 +319,7 @@ export function PublisherPhysicalMasterTab({
                     }`}
                   >
                     <Download className="w-3.5 h-3.5 mr-1.5 text-current" />
-                    {isLabelDownloaded ? 'Unduh Ulang Label Pengiriman' : '1. Unduh Label Pengiriman'}
+                    {isLabelDownloaded ? 'Unduh Ulang Label Pengiriman' : 'Unduh Label Pengiriman'}
                   </Button>
                   <Button
                     type="submit"
@@ -332,7 +332,7 @@ export function PublisherPhysicalMasterTab({
                     }`}
                   >
                     <Send className="w-3.5 h-3.5 mr-1.5" />
-                    2. Konfirmasi Pengiriman ke LPMQ
+                    Konfirmasi Pengiriman ke LPMQ
                   </Button>
                 </div>
               </form>
