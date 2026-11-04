@@ -144,6 +144,26 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(screen.getAllByRole('button', { name: /Dummy Cetak/ })).toHaveLength(1);
   });
 
+  it('tombol Lanjutkan memindahkan verifikator ke langkah meja kerja berikutnya', async () => {
+    Element.prototype.scrollIntoView = vi.fn(); // jsdom tidak mengimplementasikan scrollIntoView
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const panelOf = (button) => button.closest('[class*="lg:block"], [class*="lg:hidden"]');
+
+    const toKonten = await screen.findByRole('button', { name: /Lanjutkan ke Konten Mushaf/ });
+    expect(panelOf(toKonten)).toHaveClass('lg:block');
+    fireEvent.click(toKonten);
+
+    expect(panelOf(toKonten)).toHaveClass('lg:hidden');
+    expect(panelOf(screen.getByRole('button', { name: /Lanjutkan ke Kalkulator Tarif & SLA/ }))).toHaveClass('block', 'lg:block');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
   it('mengunggah PDF billing PNBP dan menyertakannya pada draf surat', async () => {
     vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: '00000000-0000-0000-0000-000000000123' });
     vi.spyOn(VerificationApiModule.verificationApi, 'saveDraft').mockResolvedValue({ success: true });

@@ -45,7 +45,16 @@ import {
   BookOpen,
   History,
   Calculator,
+  ArrowRight,
 } from 'lucide-react';
+
+// Urutan langkah meja kerja untuk tombol "Lanjutkan" (issue log #10).
+const NEXT_WORKBENCH_STEP = {
+  naskah: { tab: 'checklist', label: 'Checklist' },
+  checklist: { tab: 'konten', label: 'Konten Mushaf' },
+  konten: { tab: 'kalkulator', label: 'Kalkulator Tarif & SLA' },
+  kalkulator: { tab: 'hasil', label: 'Hasil & Draf Surat' },
+};
 
 const CHECKLIST_DEFINITIONS = [
   {
@@ -712,6 +721,26 @@ export const VerificationInspectionPage = () => {
 
   const activeFile = allFiles.find((f) => f.id === selectedFileId || f.file_id === selectedFileId) || selectedFileObj || allFiles[0];
 
+  const renderNextStepButton = (from) => {
+    const next = NEXT_WORKBENCH_STEP[from];
+    return (
+      <div className="flex justify-end pt-2">
+        <Button
+          variant="primary"
+          className="text-xs"
+          onClick={() => {
+            setActiveWorkbenchTab(next.tab);
+            setActiveMobileTab(next.tab);
+            document.getElementById('inspection-workbench')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          Lanjutkan ke {next.label}
+          <ArrowRight className="w-4 h-4 ml-1.5" />
+        </Button>
+      </div>
+    );
+  };
+
   const getFileLabel = (f) => {
     if (!f) return 'Berkas';
     const type = f.type || f.file_type;
@@ -1071,10 +1100,12 @@ export const VerificationInspectionPage = () => {
             handleCopyReceipt={handleCopyReceipt}
             copiedReceipt={copiedReceipt}
           />
+          {/* Di desktop penampil naskah selalu tampil, jadi "Lanjutkan" ke checklist hanya untuk tab mobile. */}
+          <div className="lg:hidden">{renderNextStepButton('naskah')}</div>
         </div>
 
         {/* Interactive Workbench (lebar penuh, di bawah penampil naskah) */}
-        <div className="block space-y-4">
+        <div id="inspection-workbench" className="block space-y-4 scroll-mt-6">
           {/* Desktop Tab Selector Header */}
           <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
             <div className="flex items-center gap-1 w-full">
@@ -1162,6 +1193,7 @@ export const VerificationInspectionPage = () => {
               definitions={CHECKLIST_DEFINITIONS}
               className="space-y-4"
             />
+            {renderNextStepButton('checklist')}
           </div>
 
           {/* TAB 2: AUDIT KONTEN MUSHAF (REV-16) */}
@@ -1175,11 +1207,13 @@ export const VerificationInspectionPage = () => {
               }}
               isReadOnly={isReadOnly}
             />
+            {renderNextStepButton('konten')}
           </div>
 
           {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN (U-14) */}
           <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'}`}>
             <VerificationCalculatorTab registration={registration} />
+            {renderNextStepButton('kalkulator')}
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
