@@ -373,8 +373,8 @@ export const getPhysicalMasterReceipt = async (id, user) => {
   return reg;
 };
 
-export const listVerificationAssignments = async (query, user) => {
-  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+// Filter antrean penugasan verifikasi; dipakai bersama oleh daftar antrean dan badge sidebar.
+export const buildVerificationAssignmentWhere = (query, user) => {
   const where = {};
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
@@ -406,6 +406,12 @@ export const listVerificationAssignments = async (query, user) => {
       ] }],
     };
   }
+  return where;
+};
+
+export const listVerificationAssignments = async (query, user) => {
+  requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+  const where = buildVerificationAssignmentWhere(query, user);
   const skip = (query.page - 1) * query.limit;
   const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
@@ -513,24 +519,27 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
   return formatted;
 };
 
+// Permohonan siap verifikasi yang master fisiknya sudah diterima namun belum memiliki verifikator aktif.
+export const buildUnassignedRegistrationWhere = () => ({
+  status: 'READY_FOR_VERIFICATION',
+  physical_master_intake: {
+    status: 'RECEIVED',
+    receipt_no: { not: null },
+  },
+  verification_assignments: {
+    none: {
+      status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
+    },
+  },
+});
+
 export const listUnassignedRegistrations = async (query = {}, user) => {
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
 
-  const where = {
-    status: 'READY_FOR_VERIFICATION',
-    physical_master_intake: {
-      status: 'RECEIVED',
-      receipt_no: { not: null },
-    },
-    verification_assignments: {
-      none: {
-        status: { in: ['ASSIGNED', 'IN_PROGRESS', 'WAITING_APPROVAL', 'WAITING_SIGNATURE', 'READY_TO_SEND'] },
-      },
-    },
-  };
+  const where = buildUnassignedRegistrationWhere();
 
   if (query.search) {
     where.OR = [

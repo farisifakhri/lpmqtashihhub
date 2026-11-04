@@ -9,6 +9,7 @@ import * as documentation from '../services/documentation.service.js';
 import * as distribution from '../services/distribution.service.js';
 import * as payment from '../services/payment.service.js';
 import * as notifications from '../services/notification.service.js';
+import { getSidebarBadges } from '../services/sidebar-badge.service.js';
 import { upload, MAX_UPLOAD_BYTES, MAX_DOC_BYTES, MAX_APK_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
 import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
@@ -21,6 +22,8 @@ const action = (fn, status = 200) => async (req, res, next) => {
 router.put('/master/working-days', authenticate, authorize('SUPERADMIN'), validate(calendarSchema), action(req => updateCalendar(req.body.days, req.user)));
 router.post('/master/working-days/sync-holidays', authenticate, authorize('SUPERADMIN', 'ADMIN_INTERNAL'), action(req => syncNationalHolidays(req.user, req.body?.year ? Number(req.body.year) : 2026)));
 router.get('/notifications', authenticate, authorize('ADMIN_INTERNAL', 'PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), action(req => notifications.listMyNotifications(req.user)));
+// Badge sidebar: jumlah pekerjaan menunggu per menu, dicakup otomatis oleh peran user (semua peran).
+router.get('/sidebar-badges', authenticate, action(req => getSidebarBadges(req.user)));
 router.patch('/notifications/:id/read', authenticate, authorize('ADMIN_INTERNAL', 'PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ'), validate(emptyAction), action(req => notifications.markNotificationRead(req.params.id, req.user)));
 
 // Pembayaran & Tagihan PNBP (Epic G: PR-VER-05)

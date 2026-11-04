@@ -41,8 +41,11 @@ export const setAuthToken = (token) => {
   }
 };
 
+export const DATA_MUTATED_EVENT = 'lpmq:data-mutated';
+
 export async function apiClient(endpoint, options = {}) {
-  const { body, headers = {}, ...customConfig } = options;
+  // `silent`: untuk permintaan latar belakang (mis. polling badge) agar kegagalan tidak memunculkan toast.
+  const { body, headers = {}, silent = false, ...customConfig } = options;
   const token = getAuthToken();
 
   const defaultHeaders = {
@@ -101,25 +104,30 @@ export async function apiClient(endpoint, options = {}) {
       throw new ApiError(errorMessage, response.status, data);
     }
 
+    if (String(config.method).toUpperCase() !== 'GET' && typeof window !== 'undefined') {
+      // Memberi tahu komponen (mis. badge sidebar) bahwa data antrean mungkin berubah.
+      window.dispatchEvent(new CustomEvent(DATA_MUTATED_EVENT));
+    }
+
     return data;
   } catch (error) {
     if (error instanceof ApiError) {
       const isLoginAttempt = cleanEndpoint === '/auth/login';
-      if (
+      if (!silent && (
         error.status === 0 ||
         (error.status === 401 && !isLoginAttempt) ||
         error.status === 403 ||
         error.status === 404 ||
         error.status === 429 ||
         error.status >= 500
-      ) {
+      )) {
         showToast(error.message);
       }
       throw error;
     }
     if (error.name === 'AbortError') throw new ApiError('Permintaan dibatalkan. Periksa hasilnya sebelum mengirim ulang.', 0);
     const networkError = new ApiError('Tidak dapat menghubungi server. Periksa koneksi internet Anda, lalu muat ulang untuk memastikan hasil permintaan sebelum mengirim ulang.', 0);
-    showToast(networkError.message);
+    if (!silent) showToast(networkError.message);
     throw networkError;
   }
 }
