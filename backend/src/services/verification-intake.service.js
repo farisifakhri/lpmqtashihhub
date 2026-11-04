@@ -3,7 +3,10 @@ import { prisma } from '../config/database.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
-import { buildUnassignedVerificationWhere } from './queue-filters.js';
+import {
+  buildUnassignedVerificationWhere,
+  buildVerificationAssignmentsWhere,
+} from './queue-filters.js';
 import { calculateDueAt } from './sla.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
@@ -376,37 +379,7 @@ export const getPhysicalMasterReceipt = async (id, user) => {
 
 export const listVerificationAssignments = async (query, user) => {
   requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
-  const where = {};
-  const isHead = user.roles.includes('KEPALA_LPMQ');
-  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
-  if (!isHead && !isAdmin) where.verifier_id = user.id;
-  if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
-  if (query.status) where.status = query.status;
-  if (query.registration_status) {
-    where.registration = { ...(where.registration || {}), status: query.registration_status };
-  }
-  if (query.handover_ready === 'true') {
-    where.status = 'COMPLETED';
-    where.registration = {
-      ...(where.registration || {}),
-      core_distributor_id: { not: null },
-      payment_records: { some: { status: 'VERIFIED' } },
-      OR: [
-        { status: 'PAYMENT_VERIFICATION', physical_handovers: { none: { status: 'PENDING' } } },
-        { status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', physical_handovers: { some: { status: 'RETURNED' } } },
-      ],
-    };
-  }
-  if (query.search) {
-    where.registration = {
-      ...(where.registration || {}),
-      AND: [{ OR: [
-        { registration_no: { contains: query.search } },
-        { title: { contains: query.search } },
-        { publisher: { legal_name: { contains: query.search } } },
-      ] }],
-    };
-  }
+  const where = buildVerificationAssignmentsWhere(query, user);
   const skip = (query.page - 1) * query.limit;
   const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
@@ -569,4 +542,3 @@ export const listUnassignedRegistrations = async (query = {}, user) => {
     },
   };
 };
-

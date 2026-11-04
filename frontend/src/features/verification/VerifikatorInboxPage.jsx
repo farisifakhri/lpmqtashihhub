@@ -222,6 +222,7 @@ export const VerifikatorInboxPage = () => {
     setStartingId(assignmentId);
     try {
       await verificationApi.startVerification(assignmentId);
+      invalidateQueueCounts();
       navigate(`/internal/verifications/${assignmentId}`);
     } catch (err) {
       setError(err.message || 'Gagal memulai pemeriksaan.');

@@ -43,6 +43,15 @@ Saat ini menu "Intake Master Fisik" menampilkan badge statis berlabel "LOKET". I
 8. Semua teks tampilan untuk user memakai Bahasa Indonesia.
 9. **Dokumen acuan proyek** (file docs/SOP/PRD/kontrak API yang sudah ada di repo) tidak boleh diubah, ditimpa, atau dihapus oleh agent. Jika rencana ini bertentangan dengan dokumen acuan (alur status, nama role, definisi antrian, konvensi API, struktur folder, aturan penamaan), **jangan memilih sendiri**. Catat konflik secara spesifik (kutip nama file dan bagian dokumennya), lalu berhenti dan tanyakan ke user. Dokumen acuan dan kode yang sudah berjalan bisa saling berbeda; perbedaan itu juga dilaporkan, bukan diselesaikan sendiri oleh agent.
 10. File baru yang dibuat agent tidak boleh memakai nama yang sudah ada di repo. Periksa dulu sebelum membuat file.
+11. Jangan mengubah `prisma/schema.prisma`; jangan membuat, mengubah, atau menghapus file migrasi; jangan menjalankan perintah `prisma migrate` atau `prisma db push`. Satu-satunya cara menyentuh database adalah `npm test` di backend (database sementara). Kebutuhan indeks hanya dicatat dan dibahas di Tahap I, menunggu persetujuan user.
+
+### Keputusan implementasi untuk semua tahap berikutnya
+
+- Endpoint: `GET /api/v1/me/queue-counts`, dengan respons `{ success, data }`.
+- Count menghitung semua baris yang cocok di server, tanpa paginasi, pencarian, atau filter pilihan user di halaman.
+- Revisi mengikuti menu tempat revisi itu tampil di halaman tujuan.
+- Proyek memakai Zod 4. Jangan menambah skema Zod baru kecuali konvensi repo mewajibkannya; gunakan API Zod 4 bila perlu.
+- Frontend mayoritas JSX; jangan mengonversi file ke TypeScript.
 
 ## 5. Aturan multi-role
 
@@ -120,7 +129,36 @@ Pengujian yang harus dilaporkan:
 
 ---
 
-## TAHAP C: Role verifikator
+## TAHAP C1: Role verifikator — antrean tugas
+
+Item sidebar `VERIFIKATOR` yang dikerjakan:
+
+- “Tugas Verifikasi” (tab default `ASSIGNED`)
+- “Siap Dikirim” (`READY_TO_SEND`)
+- “Siap Serah Terima” (`BAST_READY`)
+
+Prasyarat: baris tabel ketiga item tersebut di `docs/notif-antrean-investigasi.md` sudah dikonfirmasi user.
+
+1. Tambahkan hanya entri antrean C1 untuk `VERIFIKATOR` ke `queue.config.js`; jangan mengubah entri role lain.
+2. Count memakai `verifier_id` dari user yang login, berdasarkan token yang sudah diverifikasi dan role aktif `VERIFIKATOR`. Jangan menerima ID dari parameter client.
+3. Pakai ulang filter endpoint list sebagai sumber bersama; jangan menduplikasi kondisi atau mengubah perilaku endpoint list.
+4. Jangan memakai `findMany()` lalu `.length`; gunakan `count()`.
+5. Tambahkan `countKey` pada ketiga item. Badge merah berisi angka, hanya tampil jika count > 0, dan tampil sebagai `99+` bila lebih dari 99. Hapus badge statis pada ketiga item ini saja; jangan menyentuh item lain.
+6. Pastikan query counts diambil ulang saat user mengganti peran dan setelah aksi yang menyelesaikan antrean, misalnya mulai pemeriksaan, mengirim surat, dan serah terima.
+7. Jika akun memiliki role verifikator sekaligus admin, list tetap memakai cakupan global yang sudah ada sedangkan badge mengikuti role aktif. Jangan mengubah list; jika badge dan isi halaman berbeda, laporkan lokasi dan penyebabnya.
+8. Tambahkan tes unit di `tests/unit/queue.test.js` untuk kunci entri, scoping `verifier_id`, dan memastikan role lain tidak terpengaruh. Gunakan jalur import `../../src/...`.
+
+Verifikasi: jalankan `npm test` di backend, tes frontend, dan `npm run build`; laporkan hasil tiap perintah dan apa yang tidak bisa dijalankan beserta alasannya. Sertakan skenario uji manual dengan dua akun verifikator yang memiliki penugasan berbeda; masing-masing harus melihat angka miliknya sendiri.
+
+## TAHAP C2: Role verifikator — tanda tangan dan pembayaran
+
+Item sidebar `VERIFIKATOR` yang dikerjakan:
+
+- “Tanda Tangan Saya”
+- “Verifikasi Pembayaran”
+
+Alasan dipisahkan dari C1: aturan hitung tanda tangan tersebar di frontend (dua sumber data, limit 50 dan 20, serta urutan tanda tangan). List pembayaran hanya memfilter `PAID` tanpa scoping penugasan verifikator, sedangkan keputusan user menetapkan count hanya untuk pembayaran yang ditugaskan kepada verifikator tersebut.
+
 ## TAHAP D: Role penerbit
 ## TAHAP E: Role pentashih
 ## TAHAP F: Role kepala

@@ -93,15 +93,32 @@ describe('Distributor navigation', () => {
   });
 });
 describe('Verifikator navigation', () => {
-  it('menyembunyikan menu Verifikasi Penerbit dan menampilkan badge notifikasi (Bug 13 & 25)', () => {
-    show('VERIFIKATOR');
+  it('menyembunyikan menu Verifikasi Penerbit dan menampilkan badge antrean dinamis', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { name: 'Petugas', role: 'VERIFIKATOR', roles: ['VERIFIKATOR'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: {
+        verification_assigned: 1,
+        verification_ready_to_send: 100,
+        verification_bast_ready: 0,
+      },
+      error: null,
+    });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
     // Verifikator tidak memiliki menu Verifikasi Penerbit (Langkah 1 khusus Admin)
     expect(document.querySelector('a[href="/internal/publishers"]')).toBeNull();
 
-    // Verifikator memiliki menu Tugas Verifikasi dengan badge notifikasi
     const tugasLink = screen.getByRole('link', { name: /Tugas Verifikasi/ });
     expect(tugasLink).toBeInTheDocument();
     expect(tugasLink.textContent).toContain('1');
+    expect(tugasLink.querySelector('[aria-label="1 entri antrean menunggu tindakan"]')).not.toBeNull();
+    const readyLink = screen.getByRole('link', { name: /Siap Dikirim/ });
+    expect(readyLink.textContent).toContain('99+');
+    expect(readyLink.querySelector('[aria-label="100 entri antrean menunggu tindakan"]')).not.toBeNull();
+    const handoverLink = screen.getByRole('link', { name: /Siap Serah Terima/ });
+    expect(handoverLink.querySelector('[aria-label*="entri antrean"]')).toBeNull();
+    countsSpy.mockRestore();
   });
 });
 

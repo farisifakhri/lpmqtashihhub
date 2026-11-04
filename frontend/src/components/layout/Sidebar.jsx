@@ -364,7 +364,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan naskah & draf",
-                            badge: 1,
+                            countKey: "verification_assigned",
                         },
                         {
                             label: "Tanda Tangan Saya",
@@ -377,6 +377,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications?tab=READY_TO_SEND",
                             icon: <Send className="w-4 h-4 shrink-0" />,
                             description: "Kirim surat hasil verifikasi",
+                            countKey: "verification_ready_to_send",
                         },
                         {
                             label: "Verifikasi Pembayaran",
@@ -389,6 +390,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/verifications?tab=BAST_READY",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Pembayaran sah, terbitkan BAST",
+                            countKey: "verification_bast_ready",
                         },
                         {
                             label: "Arsip Dokumen",

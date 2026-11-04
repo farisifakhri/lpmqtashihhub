@@ -8,6 +8,7 @@ import {
   buildAdminPublisherRegistrationWhere,
   buildMasterIntakeQueueWhere,
   buildUnassignedVerificationWhere,
+  buildVerificationAssignmentsWhere,
 } from '../../src/services/queue-filters.js';
 import { requireActiveRole } from '../../src/middlewares/active-role.middleware.js';
 import { authenticate } from '../../src/middlewares/auth.middleware.js';
@@ -86,6 +87,53 @@ test('queue list and count filters select the documented admin tabs', () => {
       },
     },
   });
+});
+
+test('verifier queue config scopes counts to verifier assignments without changing other roles', () => {
+  const verifier = { id: 'verifier-1', roles: ['VERIFIKATOR'] };
+  assert.deepEqual(
+    QUEUE_CONFIG.VERIFIKATOR.map(({ key, tab }) => [key, tab]),
+    [
+      ['verification_assigned', 'ASSIGNED'],
+      ['verification_ready_to_send', 'READY_TO_SEND'],
+      ['verification_bast_ready', 'BAST_READY'],
+    ],
+  );
+  assert.deepEqual(QUEUE_CONFIG.ADMIN_INTERNAL.map(({ key }) => key), [
+    'publisher_registration_pending',
+    'master_intake_pending',
+    'verification_assignment_pending',
+  ]);
+  assert.deepEqual(buildVerificationAssignmentsWhere({ status: 'ASSIGNED' }, verifier, { scopeToVerifier: true }), {
+    verifier_id: 'verifier-1',
+    status: 'ASSIGNED',
+  });
+  assert.deepEqual(
+    buildVerificationAssignmentsWhere({ status: 'READY_TO_SEND' }, verifier, { scopeToVerifier: true }),
+    { verifier_id: 'verifier-1', status: 'READY_TO_SEND' },
+  );
+  assert.deepEqual(
+    buildVerificationAssignmentsWhere({ handover_ready: 'true' }, verifier, { scopeToVerifier: true }),
+    {
+      verifier_id: 'verifier-1',
+      status: 'COMPLETED',
+      registration: {
+        core_distributor_id: { not: null },
+        payment_records: { some: { status: 'VERIFIED' } },
+        OR: [
+          { status: 'PAYMENT_VERIFICATION', physical_handovers: { none: { status: 'PENDING' } } },
+          { status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', physical_handovers: { some: { status: 'RETURNED' } } },
+        ],
+      },
+    },
+  );
+
+  const verifierAdmin = { id: 'verifier-admin', roles: ['VERIFIKATOR', 'SUPERADMIN'] };
+  assert.deepEqual(buildVerificationAssignmentsWhere({ status: 'ASSIGNED' }, verifierAdmin), { status: 'ASSIGNED' });
+  assert.deepEqual(
+    buildVerificationAssignmentsWhere({ status: 'ASSIGNED' }, verifierAdmin, { scopeToVerifier: true }),
+    { verifier_id: 'verifier-admin', status: 'ASSIGNED' },
+  );
 });
 
 test('active role middleware accepts only a role owned by the authenticated user', () => {
