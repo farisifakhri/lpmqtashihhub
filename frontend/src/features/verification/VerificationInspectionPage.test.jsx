@@ -103,6 +103,25 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(screen.getByText('Yth. Pimpinan PT Mushaf Nusantara')).toBeInTheDocument();
   });
 
+  it('menampilkan penampil naskah dan meja kerja checklist secara display block (bertumpuk, lebar penuh)', async () => {
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const workstation = await screen.findByTestId('inspection-workstation');
+    expect(workstation).toHaveClass('block');
+    expect(workstation.className).not.toMatch(/grid/);
+    // Kedua panel (naskah & meja kerja) menempati lebar penuh, tanpa pembagian kolom.
+    for (const panel of workstation.children) {
+      expect(panel.className).not.toMatch(/col-span/);
+    }
+    expect(workstation.children).toHaveLength(2);
+  });
+
   it('mengunggah PDF billing PNBP dan menyertakannya pada draf surat', async () => {
     vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: '00000000-0000-0000-0000-000000000123' });
     vi.spyOn(VerificationApiModule.verificationApi, 'saveDraft').mockResolvedValue({ success: true });

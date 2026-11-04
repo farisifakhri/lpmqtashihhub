@@ -1043,10 +1043,11 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
-      {/* THE SPLIT-STUDIO WORKSTATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (6 cols): Inspection Document Studio */}
-        <div className={`lg:col-span-6 space-y-4 ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'}`}>
+      {/* INSPECTION WORKSTATION: ditampilkan display block (bertumpuk, lebar penuh) agar
+          penampil naskah dan meja kerja checklist tidak berdesakan dalam dua kolom. */}
+      <div data-testid="inspection-workstation" className="block space-y-6">
+        {/* Inspection Document Studio (lebar penuh) */}
+        <div className={`space-y-4 ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'}`}>
           <InspectionDocumentStudio
             allFiles={allFiles}
             activeFile={activeFile}
@@ -1063,8 +1064,8 @@ export const VerificationInspectionPage = () => {
           />
         </div>
 
-        {/* RIGHT COLUMN (6 cols): Interactive Workbench */}
-        <div className="lg:col-span-6 space-y-4">
+        {/* Interactive Workbench (lebar penuh, di bawah penampil naskah) */}
+        <div className="block space-y-4">
           {/* Desktop Tab Selector Header */}
           <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
             <div className="flex items-center gap-1 w-full">
