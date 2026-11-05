@@ -439,6 +439,7 @@ model Registration {
   documentation_items      DocumentationItem[]
   official_documents       OfficialDocument[]
   notifications            Notification[]
+  survey_responses         SurveyResponse[]
 
   @@index([status, stage_entered_at, id])
   @@index([core_verifier_id, status])
@@ -1188,4 +1189,120 @@ model InformationGuideImage {
 
   @@index([guide_id])
   @@map("information_guide_images")
+}
+
+// ============================================================================
+// Survei Layanan (IKM / IPAK) — dikelola Super Admin
+// Unsur & pertanyaan adalah bank global; SurveyItem menyusun pertanyaan per unsur
+// untuk satu survei (pengganti menu "Pemilihan Survey" di sistem lama).
+// ============================================================================
+
+model SurveyUnsur {
+  id          String       @id @default(uuid())
+  code        String       @unique @db.VarChar(30)
+  name        String       @db.VarChar(255)
+  kind        String       @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  is_archived Boolean      @default(false)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+  items       SurveyItem[]
+
+  @@index([kind])
+  @@map("survey_unsur")
+}
+
+model SurveyQuestion {
+  id         String         @id @default(uuid())
+  text       String         @db.Text
+  type       String         @default("PILIHAN") @db.VarChar(20) // PILIHAN | ESAI
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+  options    SurveyOption[]
+  items      SurveyItem[]
+  answers    SurveyAnswer[]
+
+  @@map("survey_questions")
+}
+
+model SurveyOption {
+  id          String         @id @default(uuid())
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  label       String         @db.VarChar(150)
+  value       Int // 1–4; disimpan eksplisit agar pertanyaan positif/negatif tidak terbalik
+  sort_order  Int            @default(0)
+  answers     SurveyAnswer[]
+
+  @@index([question_id])
+  @@map("survey_options")
+}
+
+model Survey {
+  id          String           @id @default(uuid())
+  name        String           @db.VarChar(255)
+  kind        String           @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  description String?          @db.Text
+  starts_at   DateTime
+  ends_at     DateTime
+  status      String           @default("DRAFT") @db.VarChar(20) // DRAFT | AKTIF | NONAKTIF
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  items       SurveyItem[]
+  responses   SurveyResponse[]
+
+  @@index([status])
+  @@map("surveys")
+}
+
+model SurveyItem {
+  id          String         @id @default(uuid())
+  survey_id   String
+  survey      Survey         @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+  unsur_id    String
+  unsur       SurveyUnsur    @relation(fields: [unsur_id], references: [id])
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id])
+  sort_order  Int            @default(0)
+
+  @@unique([survey_id, question_id])
+  @@index([unsur_id])
+  @@index([question_id])
+  @@map("survey_items")
+}
+
+model SurveyResponse {
+  id              String         @id @default(uuid())
+  survey_id       String
+  survey          Survey         @relation(fields: [survey_id], references: [id])
+  registration_id String?
+  registration    Registration?  @relation(fields: [registration_id], references: [id], onDelete: SetNull)
+  respondent_name String?        @db.VarChar(255)
+  gender          String?        @db.VarChar(1) // L | P
+  age             Int?
+  education       String?        @db.VarChar(50)
+  occupation      String?        @db.VarChar(100)
+  submitted_at    DateTime       @default(now())
+  answers         SurveyAnswer[]
+
+  @@unique([survey_id, registration_id])
+  @@index([survey_id, submitted_at])
+  @@index([registration_id])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id          String         @id @default(uuid())
+  response_id String
+  response    SurveyResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id])
+  option_id   String?
+  option      SurveyOption?  @relation(fields: [option_id], references: [id])
+  essay_text  String?        @db.Text
+  value       Int?
+
+  @@unique([response_id, question_id])
+  @@index([question_id])
+  @@index([option_id])
+  @@map("survey_answers")
 }

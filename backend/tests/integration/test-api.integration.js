@@ -13,6 +13,7 @@ import { runVerificationApprovalPaymentTests } from './verification-approval-pay
 import { runHandoverTests } from './handover.integration.js';
 import { runUserManagementTests } from './user-management.integration.js';
 import { runVerificationPerformanceRbacTests } from './verification-performance-rbac.integration.js';
+import { runSurveyTests } from './survey.integration.js';
 
 const PORT = 5005;
 const BASE_URL = `http://localhost:${PORT}/api/v1`;
@@ -442,6 +443,7 @@ async function runTests() {
       });
 
       await runMasterTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken });
+      await runSurveyTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken });
 
       await runWorkflowTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, dokumentatorToken, adminToken, serviceId: selectedService.id });
       await runVerificationIntakeTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });

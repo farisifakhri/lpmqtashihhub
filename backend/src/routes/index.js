@@ -15,6 +15,7 @@ import lpmqQuranRoutes from './lpmq-quran.routes.js';
 import publisherRegistrationRoutes from './publisher-registration.routes.js';
 import regulationRoutes from './regulation.routes.js';
 import informationGuideRoutes from './information-guide.routes.js';
+import surveyRoutes from './survey.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -89,6 +90,7 @@ router.use(lpmqQuranRoutes);
 router.use(publisherRegistrationRoutes);
 router.use(regulationRoutes);
 router.use(informationGuideRoutes);
+router.use(surveyRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 
