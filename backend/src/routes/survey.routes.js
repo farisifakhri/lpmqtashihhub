@@ -15,6 +15,7 @@ const action = (fn, status = 200) => async (req, res, next) => {
 
 // Unsur survei
 router.get('/admin/survey-unsur', ...superadmin, validate(v.listUnsurSchema), action(req => survey.listUnsur(req.query)));
+router.post('/admin/survey-unsur/restore-standard', ...superadmin, action(req => survey.restoreStandardUnsur(req.user, req)));
 router.post('/admin/survey-unsur', ...superadmin, validate(v.createUnsurSchema), action(req => survey.createUnsur(req.body, req.user, req), 201));
 router.put('/admin/survey-unsur/:id', ...superadmin, validate(v.updateUnsurSchema), action(req => survey.updateUnsur(req.params.id, req.body, req.user, req)));
 router.delete('/admin/survey-unsur/:id', ...superadmin, validate(v.unsurIdSchema), action(req => survey.deleteUnsur(req.params.id, req.user, req)));

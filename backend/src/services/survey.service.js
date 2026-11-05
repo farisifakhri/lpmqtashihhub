@@ -33,9 +33,38 @@ const withAudit = (user, req, actionName, subjectType, fn) =>
 export async function listUnsur({ kind, include_archived } = {}) {
   return prisma.surveyUnsur.findMany({
     where: { ...(kind ? { kind } : {}), ...(include_archived === 'true' ? {} : { is_archived: false }) },
-    orderBy: [{ is_standard: 'desc' }, { code: 'asc' }, { created_at: 'asc' }],
+    orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
     include: { _count: { select: { items: true } } },
   });
+}
+
+// 9 unsur SKM, Pedoman Menteri PANRB No. 9 Tahun 2024, BAB III hlm. 12–13 (urutan = sort_order).
+export const STANDARD_UNSUR = [
+  ['A', 'Persyaratan', 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan, baik persyaratan teknis maupun administratif.'],
+  ['B', 'Sistem, Mekanisme, dan Prosedur', 'Tata cara pelayanan yang dibakukan bagi pemberi dan penerima pelayanan, termasuk pengaduan.'],
+  ['C', 'Waktu Penyelesaian', 'Jangka waktu yang diperlukan untuk menyelesaikan seluruh proses pelayanan dari setiap jenis pelayanan.'],
+  ['D', 'Biaya/Tarif', 'Ongkos yang dikenakan kepada penerima layanan dalam mengurus dan/atau memperoleh pelayanan dari penyelenggara yang besarnya ditetapkan berdasarkan kesepakatan antara penyelenggara dan masyarakat.'],
+  ['E', 'Produk, Spesifikasi, dan Jenis Pelayanan', 'Hasil pelayanan yang diberikan dan diterima sesuai dengan ketentuan yang telah ditetapkan.'],
+  ['F', 'Kompetensi Pelaksana', 'Kemampuan yang harus dimiliki oleh pelaksana meliputi pengetahuan, keahlian, keterampilan, dan pengalaman.'],
+  ['G', 'Perilaku Pelaksana', 'Sikap petugas dalam memberikan pelayanan.'],
+  ['H', 'Penanganan Pengaduan', 'Tata cara pelaksanaan penanganan pengaduan dan tindak lanjut.'],
+  ['I', 'Sarana dan Prasarana', 'Segala sesuatu yang dapat dipakai sebagai alat dalam mencapai maksud dan tujuan. Prasarana adalah segala sesuatu yang merupakan penunjang utama terselenggaranya suatu proses. Sarana digunakan untuk benda yang bergerak dan prasarana untuk benda yang tidak bergerak.'],
+].map(([code, name, definition], i) => ({ code, name, definition, sort_order: i + 1 }));
+
+// Membuat ulang unsur baku yang hilang dan mengembalikan urutannya. Unsur buatan sendiri dengan nama
+// yang sama (mis. "Persyaratan" yang dibuat ulang setelah dihapus) dijadikan unsur baku, bukan diduplikasi.
+export async function restoreStandardUnsur(user, req) {
+  await prisma.$transaction(async (tx) => {
+    for (const std of STANDARD_UNSUR) {
+      const existing = await tx.surveyUnsur.findFirst({ where: { code: std.code } })
+        || await tx.surveyUnsur.findFirst({ where: { name: std.name }, orderBy: { created_at: 'asc' } });
+      const data = { code: std.code, name: std.name, kind: 'IKM', is_standard: true, sort_order: std.sort_order, is_archived: false };
+      if (existing) await tx.surveyUnsur.update({ where: { id: existing.id }, data: { ...data, definition: existing.definition || std.definition } });
+      else await tx.surveyUnsur.create({ data: { ...data, definition: std.definition } });
+    }
+    await audit(tx, user, 'SURVEY_UNSUR_RESTORE_STANDARD', 'SurveyUnsur', 'standard', { codes: STANDARD_UNSUR.map((s) => s.code) }, req);
+  });
+  return listUnsur();
 }
 
 export async function createUnsur(data, user, req) {
@@ -257,7 +286,7 @@ export async function getSurveyReport(id) {
       where: { response: { survey_id: id } },
       select: { question_id: true, value: true, essay_text: true, response: { select: { respondent_name: true, submitted_at: true } } },
     }),
-    prisma.surveyResponse.findMany({ where: { survey_id: id }, select: { gender: true, age: true, education: true, occupation: true } }),
+    prisma.surveyResponse.findMany({ where: { survey_id: id } }),
   ]);
 
   const unsurByQuestion = new Map(survey.items.map((i) => [i.question_id, i.unsur]));
@@ -271,10 +300,13 @@ export async function getSurveyReport(id) {
     if (bucket && a.value != null) { bucket.sum += a.value; bucket.count += 1; }
   }
 
-  const unsur = [...perUnsur.values()].map(({ unsur: u, sum, count }) => {
-    const average = count ? round2(sum / count) : null;
-    return { id: u.id, code: u.code, name: u.name, definition: u.definition, answers: count, average, converted: average == null ? null : round2(average * 25) };
-  });
+  const unsur = [...perUnsur.values()]
+    .sort((a, b) => a.unsur.sort_order - b.unsur.sort_order)
+    .map(({ unsur: u, sum, count }) => {
+      const average = count ? round2(sum / count) : null;
+      const converted = average == null ? null : round2(average * 25);
+      return { id: u.id, code: u.code, name: u.name, definition: u.definition, answers: count, average, converted, mutu: mutuFor(converted) };
+    });
   const scored = unsur.filter((u) => u.average != null);
   const averageAll = scored.length ? scored.reduce((s, u) => s + u.average, 0) / scored.length : null;
   const indexValue = averageAll == null ? null : round2(averageAll * 25);
@@ -291,9 +323,37 @@ export async function getSurveyReport(id) {
       age: countBy(responses, (r) => ageBucket(r.age)),
       education: countBy(responses, (r) => r.education),
       occupation: countBy(responses, (r) => r.occupation),
+      disability: countBy(responses, (r) => (r.is_disabled === true ? 'Ya' : r.is_disabled === false ? 'Tidak' : null)),
+      disability_type: countBy(responses.filter((r) => r.is_disabled), (r) => r.disability_type),
+      service_type: countBy(responses, (r) => r.service_type),
+      service_category: countBy(responses, (r) => r.service_category),
     },
-    essays: answers
-      .filter((a) => a.essay_text?.trim())
-      .map((a) => ({ question: questionText.get(a.question_id), text: a.essay_text, respondent: a.response.respondent_name, submitted_at: a.response.submitted_at })),
+    satisfaction: { average: avgOf(responses, 'overall_satisfaction'), distribution: countBy(responses.filter((r) => r.overall_satisfaction != null), (r) => r.overall_satisfaction) },
+    nps: npsOf(responses),
+    anti_corruption: AK_FIELDS.map((key) => ({ key, average: avgOf(responses, key), answers: responses.filter((r) => r[key] != null).length })),
+    essays: [
+      ...answers
+        .filter((a) => a.essay_text?.trim())
+        .map((a) => ({ question: questionText.get(a.question_id), text: a.essay_text, respondent: a.response.respondent_name, submitted_at: a.response.submitted_at })),
+      ...responses
+        .filter((r) => r.feedback?.trim())
+        .map((r) => ({ question: 'Kritik dan saran', text: r.feedback, respondent: r.respondent_name, submitted_at: r.submitted_at })),
+    ],
   };
+}
+
+const AK_FIELDS = ['ak_transparency', 'ak_no_extortion', 'ak_no_broker', 'ak_no_gratification'];
+
+function avgOf(rows, key) {
+  const values = rows.map((r) => r[key]).filter((v) => v != null);
+  return values.length ? round2(values.reduce((s, v) => s + v, 0) / values.length) : null;
+}
+
+// Net Promoter Score skala 1–10: % promotor (9–10) dikurangi % detraktor (1–6).
+export function npsOf(rows) {
+  const scores = rows.map((r) => r.nps_score).filter((v) => v != null);
+  if (!scores.length) return { score: null, respondents: 0, promoters: 0, passives: 0, detractors: 0 };
+  const promoters = scores.filter((s) => s >= 9).length;
+  const detractors = scores.filter((s) => s <= 6).length;
+  return { score: round2(((promoters - detractors) / scores.length) * 100), respondents: scores.length, promoters, passives: scores.length - promoters - detractors, detractors };
 }

@@ -59,6 +59,26 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     await ok(`/admin/survey-unsur/${standard[8].id}`, adminToken, 'DELETE');
     assert.ok(!(await ok('/admin/survey-unsur?include_archived=true', adminToken, 'GET')).some((u) => u.id === standard[8].id));
 
+    // Kasus nyata: "Persyaratan" dihapus lalu dibuat ulang tanpa kode sehingga jatuh ke urutan terakhir.
+    await ok(`/admin/survey-unsur/${standard[0].id}`, adminToken, 'DELETE');
+    const recreated = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Persyaratan', definition: 'Definisi buatan admin.' }, 201);
+    const restored = await ok('/admin/survey-unsur/restore-standard', adminToken, 'POST');
+    const restoredStandard = restored.filter((u) => u.is_standard);
+    assert.deepEqual(restoredStandard.map((u) => u.name).slice(0, 9), [
+      'Persyaratan', 'Sistem, Mekanisme, dan Prosedur', 'Waktu Penyelesaian', 'Biaya/Tarif',
+      'Produk, Spesifikasi, dan Jenis Pelayanan', 'Kompetensi Pelaksana', 'Perilaku Pelaksana',
+      'Penanganan Pengaduan', 'Sarana dan Prasarana',
+    ]);
+    assert.deepEqual(restoredStandard.map((u) => u.sort_order), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    // Unsur buatan ulang dijadikan baku (tanpa duplikat) dan definisi admin dipertahankan.
+    assert.equal(restoredStandard[0].id, recreated.id);
+    assert.equal(restoredStandard[0].definition, 'Definisi buatan admin.');
+    assert.equal(restored.filter((u) => u.name === 'Persyaratan').length, 1);
+    // Unsur buatan sendiri tampil setelah 9 unsur baku.
+    const custom = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur tambahan' }, 201);
+    assert.equal((await ok('/admin/survey-unsur', adminToken, 'GET')).at(-1).id, custom.id);
+    await ok(`/admin/survey-unsur/${custom.id}`, adminToken, 'DELETE');
+
     // Regresi: mengarsipkan unsur IPAK tidak boleh mengubah jenisnya menjadi IKM.
     const ipak = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-IPAK', name: 'Pungutan liar', kind: 'IPAK' }, 201);
     assert.equal((await ok(`/admin/survey-unsur/${ipak.id}`, adminToken, 'PUT', { is_archived: true })).kind, 'IPAK');
@@ -119,8 +139,10 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
       return { question_id: question.id, option_id: option.id, value: option.value };
     };
     await prisma.surveyResponse.create({ data: { survey_id: survey.id, respondent_name: 'PT Uji Satu', gender: 'L', age: 35, education: 'S1', occupation: 'SWASTA',
+      is_disabled: false, service_category: 'HYBRID', overall_satisfaction: 5, nps_score: 10, ak_transparency: 5, ak_no_extortion: 5, feedback: 'Layanan cepat.',
       answers: { create: [answer(qPositive, 'Sangat sesuai'), answer(qNegative, 'Tidak pernah'), { question_id: qEssay.id, essay_text: 'Pertahankan.' }] } } });
     await prisma.surveyResponse.create({ data: { survey_id: survey.id, respondent_name: 'PT Uji Dua', gender: 'P', age: 45, education: 'S2', occupation: 'SWASTA',
+      is_disabled: true, disability_type: 'FISIK', service_category: 'DARING', overall_satisfaction: 4, nps_score: 6, ak_transparency: 4,
       answers: { create: [answer(qPositive, 'Sesuai'), answer(qNegative, 'Jarang')] } } });
 
     assert.equal((await call(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [] })).status, 409);
@@ -135,7 +157,15 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal(report.index, 87.5);
     assert.equal(report.mutu.grade, 'B');
     assert.equal(report.demographics.gender.reduce((s, g) => s + g.percent, 0), 100);
-    assert.equal(report.essays.length, 1);
+    // Esai pertanyaan + kritik & saran responden.
+    assert.equal(report.essays.length, 2);
+    assert.equal(report.satisfaction.average, 4.5);
+    // NPS: 1 promotor (10), 1 detraktor (6) dari 2 responden → 0.
+    assert.deepEqual(report.nps, { score: 0, respondents: 2, promoters: 1, passives: 0, detractors: 1 });
+    assert.deepEqual(report.anti_corruption.map((a) => [a.key, a.average]), [['ak_transparency', 4.5], ['ak_no_extortion', 5], ['ak_no_broker', null], ['ak_no_gratification', null]]);
+    assert.deepEqual(report.demographics.disability.map((d) => [d.label, d.percent]).sort(), [['Tidak', 50], ['Ya', 50]]);
+    assert.deepEqual(report.demographics.disability_type.map((d) => d.label), ['FISIK']);
+    assert.equal(report.unsur[0].mutu.grade, 'B');
 
     const responses = await ok(`/admin/surveys/${survey.id}/responses`, adminToken, 'GET');
     assert.equal(responses.pagination.total, 2);
