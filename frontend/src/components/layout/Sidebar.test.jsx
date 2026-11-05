@@ -34,8 +34,8 @@ describe('Helper Admin navigation', () => {
 describe('Distributor navigation', () => {
   it('membuka antrean penerimaan dan penugasan tim pada tab yang berbeda', () => {
     show('DISTRIBUTOR');
-    expect(screen.getByRole('link', { name: /Master Menunggu Diterima/ })).toHaveAttribute('href', '/internal/distributions?stage=HANDOVER');
-    expect(screen.getByRole('link', { name: /Distribusi Tim/ })).toHaveAttribute('href', '/internal/distributions?stage=ASSIGNMENT');
+    expect(screen.getByRole('link', { name: /Penerimaan Master Fisik/ })).toHaveAttribute('href', '/internal/distributions/handover');
+    expect(screen.getByRole('link', { name: /Penugasan Tim Sidang/ })).toHaveAttribute('href', '/internal/distributions/assignment');
   });
 });
 describe('Verifikator navigation', () => {

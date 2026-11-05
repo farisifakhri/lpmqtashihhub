@@ -170,7 +170,7 @@ export function JuzChecklistForm({ assignment, onClose, onSaved }) {
           />
         </div>
 
-        {/* Unggah Berkas Rekapan Internal (RF-DIST-18, RF-DIST-19, T-01) */}
+        {/* Unggah Berkas Rekapan Internal */}
         <div className="p-3 bg-white rounded-lg border border-line space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-ink">Berkas Rekapan Koreksi Internal (Opsional)</span>

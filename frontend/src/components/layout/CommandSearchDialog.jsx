@@ -47,13 +47,13 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
         ...(isHead || isSuperAdmin
           ? [
               { label: 'Penugasan Verifikator', desc: 'Helper Admin mencatat Disposisi dan menugaskan verifikator', path: '/internal/verifications?tab=NEED_ASSIGNMENT', icon: CheckSquare, category: 'Helper Admin' },
-              { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas & rasm', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
+              { label: 'Persetujuan Draf Verifikasi', desc: 'Tinjau hasil verifikasi berkas naskah', path: '/internal/verifications?tab=WAITING_APPROVAL', icon: CheckSquare, category: 'Kepala LPMQ' },
               { label: 'Pusat Tanda Tangan Resmi', desc: 'Tandatangani Surat Pemberitahuan & Berita Acara', path: '/internal/signatures', icon: Award, category: 'Kepala LPMQ' },
             ]
           : []),
         ...(isVerifikator || isSuperAdmin
           ? [
-              { label: 'Tugas Verifikasi Naskah', desc: 'Periksa kelengkapan berkas & rasm usmani', path: '/internal/verifications', icon: CheckSquare, category: 'Verifikator' },
+              { label: 'Tugas Verifikasi Naskah', desc: 'Periksa kelengkapan berkas naskah', path: '/internal/verifications', icon: CheckSquare, category: 'Verifikator' },
               { label: 'Verifikasi Pembayaran PNBP', desc: 'Sahkan setoran SIMPONI penerbit', path: '/internal/payments', icon: CreditCard, category: 'Verifikator' },
               { label: 'Tanda Tangan Saya', desc: 'Daftar dokumen menunggu tanda tangan Anda', path: '/internal/signatures', icon: Award, category: 'Verifikator' },
             ]

@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatUserStatus, formatDocumentStatus } from '@/lib/glossary';
 import { TOKENS } from '@/app/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
 import { systemApi } from '@/api/system.api';
@@ -819,7 +820,7 @@ export const ModulePlaceholder = ({
                             <StatusBadge status={statusText} />
                           ) : (
                             <span className="px-2 py-0.5 rounded text-xs font-bold bg-surface-subtle text-ink">
-                              {statusText}
+                              {formatUserStatus(statusText) || formatDocumentStatus(statusText)}
                             </span>
                           )}
                         </td>

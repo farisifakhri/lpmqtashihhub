@@ -17,7 +17,7 @@ export function PublisherRegistrationCard({ registration }) {
   const action = publisherAction(registration);
   const status = registration.status;
 
-  // 3-Phase Tracking Computation according to REV-13
+  // 3-Phase Tracking Computation
   // Phase 1: Permohonan (DRAFT or SUBMITTED)
   const isPhase1Done = status !== 'DRAFT';
   
@@ -90,7 +90,7 @@ export function PublisherRegistrationCard({ registration }) {
         </div>
       </div>
 
-      {/* 3-Phase Stepper Tracker (REV-13: Jangan Disembunyikan) */}
+      {/* 3-Phase Stepper Tracker */}
       <div className="pt-2 border-t border-line/60">
         <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs">
           {/* Phase 1 */}

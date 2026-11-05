@@ -40,7 +40,8 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | B-09 | **Selesai menurut bukti kode** | Engine penerbitan STT PDF resmi ber-QR (`renderSttPdf`), validasi placeholder dinamis, sanitasi karakter, serta pengujian lulus 100%. |
 | B-10 | **Selesai menurut bukti kode** | Skema pelaporan realisasi pencetakan oplah oleh penerbit (`printingReportSchema`) dan penerimaan 5 eksemplar fisik. |
 | B-11 | **Dalam Proses / Siap Dikerjakan** | Penyesuaian antarmuka/UX card dan filter dokumen mushaf dokumentator. |
-| B-12–B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
+| B-12 | **Selesai menurut bukti kode** | Modul Glosarium & Formatters (`frontend/src/lib/glossary.js`), eliminasi bahasa sistem di antarmuka (Billing, Dialog, Arsip, Dokumen), dokumen standar [docs/GLOSARIUM.md](../GLOSARIUM.md), dan pembaharuan README utama. |
+| B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
 | B-14 | **Selesai menurut bukti kode** | Menutup lubang keamanan B1 (dua jalur STT), B2 (bypass transisi penerbit), dan B3 (kebocoran pentashih di `listRegistrations`), seluruh pengujian lulus 100%. |
 | B-15 | **Selesai menurut bukti kode** | Logika rekap kelompok `recap_scope: TEAM vs SELF`, penugasan campuran kelompok-individu atomik 30 juz, eliminasi form checklist per juz, seluruh pengujian backend & frontend lulus 100%. |
 | B-16 | **Siap Dikerjakan** | Wajib berkas rekap revisi penerbit per ronde (titik a & c), pembandingan berkas, dan penegakan siklus wajib dumi sebelum STT. |

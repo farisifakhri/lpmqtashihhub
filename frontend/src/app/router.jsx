@@ -169,6 +169,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'publisher/progress',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="progress" defaultView="processing" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'publisher/revisions',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="revisions" defaultView="REVISION_REQUIRED" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'publisher/registrations/:id',
         element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
       },
@@ -221,7 +237,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/signatures',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'SUPERADMIN']}>
             <SignatureCenterPage />
           </ProtectedRoute>
         ),
@@ -243,6 +259,30 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'internal/distributions/handover',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="HANDOVER" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/assignment',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="ASSIGNMENT" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/monitoring',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="MONITORING" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'internal/master-intake',
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'SUPERADMIN']}>
@@ -253,7 +293,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/tashih',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'ADMIN_INTERNAL', 'SUPERADMIN']}>
             <PentashihWorkspacePage />
           </ProtectedRoute>
         ),

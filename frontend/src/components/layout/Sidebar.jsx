@@ -6,6 +6,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AvatarPickerModal } from "@/components/ui/AvatarPickerModal";
 import {
     LayoutDashboard,
+    AlertTriangle,
     FilePlus,
     FileText,
     CreditCard,
@@ -157,6 +158,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const roleBadge = getRoleBadge(role);
 
     // Navigasi Berbasis Peran sesuai Dokumen Bab 6
+        // Navigasi Berbasis Peran sesuai SOP Pentashihan LPMQ (Non-Redundant & Ramping)
     const getNavSections = () => {
         // 1. Portal Penerbit
         if (role === "PENERBIT" || role === "PUBLISHER" || (isPublisher && !role)) {
@@ -167,46 +169,241 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Beranda",
                             path: "/publisher",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
                             end: true,
                         },
                         {
                             label: "Permohonan Saya",
                             path: "/publisher/registrations",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
-                            description: "Portofolio naskah & riwayat",
+                            description: "Seluruh portofolio naskah",
                         },
                         {
-                            label: "Permohonan Tanda Tashih Baru",
+                            label: "Lacak Status & Progres",
+                            path: "/publisher/progress",
+                            icon: <Clock className="w-4 h-4 shrink-0" />,
+                            description: "Pantau naskah yang sedang diproses",
+                        },
+                        {
+                            label: "Perbaikan Naskah",
+                            path: "/publisher/revisions",
+                            icon: <AlertTriangle className="w-4 h-4 shrink-0 text-civic-warning" />,
+                            description: "Naskah yang dikembalikan untuk revisi",
+                            badge: "Revisi",
+                            badgeVariant: "danger",
+                        },
+                        {
+                            label: "Pendaftaran Naskah Baru",
                             path: "/publisher/new-registration",
                             icon: <FilePlus className="w-4 h-4 shrink-0" />,
-                            description: "Pendaftaran naskah baru",
+                            description: "Pengajuan naskah mushaf baru",
                         },
                         {
-                            label: "Tagihan",
+                            label: "Tagihan & Pembayaran",
                             path: "/publisher/billing",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Billing SIMPONI & bukti bayar",
+                            description: "Billing SIMPONI & bukti setor",
                         },
                         {
                             label: "Arsip Dokumen",
                             path: "/publisher/documents",
                             icon: <Award className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi dokumen",
+                            description: "Surat hasil tashih & STT resmi",
                         },
                     ],
                 },
             ];
         }
 
-        // Role Internal: Verifikator (Diutamakan jika peran aktif adalah Verifikator)
-        if (role === "VERIFIKATOR" || role === "VERIFICATOR") {
-            return getVerifikatorNav();
+        // 2. Verifikator Berkas
+        if (role === "VERIFIKATOR" || role === "VERIFICATOR" || (isVerifikator && role === "VERIFIKATOR")) {
+            return [
+                {
+                    title: "VERIFIKASI BERKAS",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                            end: true,
+                        },
+                        {
+                            label: "Tugas Verifikasi Naskah",
+                            path: "/internal/verifications",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Pemeriksaan naskah & draf surat",
+                            badge: 1,
+                        },
+                        {
+                            label: "Tanda Tangan Saya",
+                            path: "/internal/signatures",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Berita acara & draf hasil",
+                        },
+                        {
+                            label: "Verifikasi Pembayaran",
+                            path: "/internal/payments",
+                            icon: <CreditCard className="w-4 h-4 shrink-0" />,
+                            description: "Validasi setoran PNBP SIMPONI",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
         }
 
-        // Role Internal: Admin (Helper Admin - Alur Penuh Tanpa Akses Penerbit & TTE Kepala)
+        // 3. Distributor (Petugas Loket TMII & Manajemen Tim Sidang)
+        if (isDistributor && !isSuperAdmin) {
+            return [
+                {
+                    title: "DISTRIBUSI & SIDANG TASHIH",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                            end: true,
+                        },
+                        {
+                            label: "Penerimaan Master Fisik",
+                            path: "/internal/distributions/handover",
+                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
+                            description: "Konfirmasi master fisik & BAST loket",
+                        },
+                        {
+                            label: "Penugasan Tim Sidang",
+                            path: "/internal/distributions/assignment",
+                            icon: <Users className="w-4 h-4 shrink-0" />,
+                            description: "Distribusi naskah ke 9 tim inti",
+                        },
+                        {
+                            label: "Monitoring & Revisi Sidang",
+                            path: "/internal/distributions/monitoring",
+                            icon: <ShieldCheck className="w-4 h-4 shrink-0" />,
+                            description: "Pemantauan sidang & naskah koreksi",
+                        },
+                        {
+                            label: "Pengesahan & Dokumen Tashih",
+                            path: "/internal/documents",
+                            icon: <FileText className="w-4 h-4 shrink-0" />,
+                            description: "Berita acara sidang & terbit STT",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua arsip fisik & digital",
+                        },
+                    ],
+                },
+            ];
+        }
+
+        // 4. Pentashih (Anggota Sidang Tashih)
+        if (isPentashih && !isSuperAdmin) {
+            return [
+                {
+                    title: "SIDANG PENTASHIHAN",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                            end: true,
+                        },
+                        {
+                            label: "Sidang Pentashihan",
+                            path: "/internal/tashih",
+                            icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                            description: "Koreksi lafazh, harakat & tanda baca",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
+
+        // 5. Dokumentator (Posdok-Q & Penerbitan STT)
+        if (isDokumentator && !isSuperAdmin) {
+            return [
+                {
+                    title: "DOKUMENTASI & POSDOK-Q",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                            end: true,
+                        },
+                        {
+                            label: "Pengesahan & Terbit STT",
+                            path: "/internal/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Surat Tanda Tashih & Berita Acara",
+                        },
+                        {
+                            label: "Arsip Dokumen Posdok-Q",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Penyimpanan master fisik & digital",
+                        },
+                    ],
+                },
+            ];
+        }
+
+        // 6. Kepala LPMQ (Pimpinan Pengesahan & Penandatangan Resmi)
+        if (isKepala && !isSuperAdmin) {
+            return [
+                {
+                    title: "MANAJEMEN & PENGESAHAN",
+                    items: [
+                        {
+                            label: "Kendali Operasional",
+                            path: "/internal",
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
+                            end: true,
+                        },
+                        {
+                            label: "Persetujuan Verifikasi",
+                            path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
+                            description: "Telaah & persetujuan draf verifikasi",
+                        },
+                        {
+                            label: "Pusat Tanda Tangan (TTE)",
+                            path: "/internal/signatures",
+                            icon: <PenTool className="w-4 h-4 shrink-0" />,
+                            description: "Tanda tangan digital resmi pimpinan",
+                        },
+                        {
+                            label: "Penetapan STT",
+                            path: "/internal/documents",
+                            icon: <Award className="w-4 h-4 shrink-0" />,
+                            description: "Pengesahan Surat Tanda Tashih",
+                        },
+                        {
+                            label: "Arsip Dokumen",
+                            path: "/internal/archive",
+                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
+                            description: "Semua versi untuk Posdok-Q",
+                        },
+                    ],
+                },
+            ];
+        }
+
+        // 7. Admin Internal (Helper Admin)
         if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
             return [
                 {
@@ -215,9 +412,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Kendali Operasional",
                             path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
+                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
                             end: true,
                         },
                     ],
@@ -239,56 +434,37 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badge: "Loket",
                         },
                         {
-                            label: "3. Penugasan Verifikator",
-                            path: "/internal/verifications?tab=NEED_ASSIGNMENT",
-                            icon: <UserCheck className="w-4 h-4 shrink-0" />,
-                            description: "Disposisi tim verifikator berkas",
-                            badge: 1,
-                        },
-                        {
-                            label: "4. Verifikasi Berkas",
-                            path: "/internal/verifications?tab=ASSIGNED",
+                            label: "3. Verifikasi Berkas",
+                            path: "/internal/verifications",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                            description: "Pemeriksaan rasm, waqaf & kelengkapan",
+                            description: "Penugasan & telaah berkas naskah",
                         },
                         {
-                            label: "5. Hasil Verifikasi",
-                            path: "/internal/verifications?tab=WAITING_APPROVAL",
-                            icon: <FileSearch className="w-4 h-4 shrink-0" />,
-                            description: "Telaah draf berita acara & penetapan",
-                        },
-                        {
-                            label: "6. Pembayaran PNBP",
+                            label: "4. Pembayaran PNBP",
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & validasi bayar",
                         },
                         {
-                            label: "7. Distribusi Sidang",
+                            label: "5. Distribusi Sidang Tashih",
                             path: "/internal/distributions",
                             icon: <Users className="w-4 h-4 shrink-0" />,
-                            description: "Pembagian tim & serah-terima naskah",
+                            description: "Serah terima master & penugasan tim",
                         },
                         {
-                            label: "8. Sidang Pentashihan (Awal)",
-                            path: "/internal/tashih?tab=ACTIVE",
+                            label: "6. Sidang Pentashihan",
+                            path: "/internal/tashih",
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
-                            description: "Koreksi lafazh & harakat Juz 1-30",
+                            description: "Koreksi lafazh, harakat & naskah dumi",
                         },
                         {
-                            label: "9. Tashih Revisi & Dumi",
-                            path: "/internal/tashih?tab=REVISION",
-                            icon: <PenTool className="w-4 h-4 shrink-0" />,
-                            description: "Telaah perbaikan & contoh cetak dumi",
-                        },
-                        {
-                            label: "10. Pengesahan & STT",
+                            label: "7. Pengesahan & STT",
                             path: "/internal/documents",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Berita acara & Surat Tanda Tashih",
                         },
                         {
-                            label: "11. Pengarsipan Naskah",
+                            label: "8. Pengarsipan Naskah",
                             path: "/internal/archive",
                             icon: <FolderCheck className="w-4 h-4 shrink-0" />,
                             description: "Arsip fisik Posdok-Q & digital",
@@ -296,219 +472,20 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     ],
                 },
                 {
-                    title: "TATA KELOLA SISTEM",
+                    title: "TATA KELOLA INFORMASI",
                     items: [
                         {
                             label: "Kelola Landing Page",
                             path: "/internal/landing-page",
                             icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
-                            description: "Konten dan regulasi landing page",
+                            description: "Konten, berita & regulasi publik",
                         },
                     ],
                 },
             ];
         }
 
-        // Role Internal: Kepala LPMQ
-        if (isKepala && !isSuperAdmin) {
-            return [
-                {
-                    title: "MANAJEMEN & PENGESAHAN",
-                    items: [
-                        {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
-                            end: true,
-                        },
-                        {
-                            label: "Persetujuan Verifikasi",
-                            path: "/internal/verifications?tab=WAITING_APPROVAL",
-                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                            description: "Telaah draf hasil verifikasi",
-                        },
-                        {
-                            label: "Tanda Tangan",
-                            path: "/internal/signatures",
-                            icon: <PenTool className="w-4 h-4 shrink-0" />,
-                            description: "Tanda tangan digital resmi",
-                        },
-                        {
-                            label: "Penetapan STT",
-                            path: "/internal/documents",
-                            icon: <Award className="w-4 h-4 shrink-0" />,
-                            description: "Penetapan Surat Tanda Tashih",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
-                        },
-                    ],
-                },
-            ];
-        }
-
-        function getVerifikatorNav() {
-            return [
-            {
-                title: "VERIFIKASI BERKAS & RASM",
-                    items: [
-                        {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
-                            end: true,
-                        },
-                        {
-                            label: "Tugas Verifikasi",
-                            path: "/internal/verifications",
-                            icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                            description: "Pemeriksaan naskah & draf",
-                            badge: 1,
-                        },
-                        {
-                            label: "Tanda Tangan Saya",
-                            path: "/internal/signatures",
-                            icon: <PenTool className="w-4 h-4 shrink-0" />,
-                            description: "Berita acara pemeriksaan",
-                        },
-                        {
-                            label: "Siap Dikirim",
-                            path: "/internal/verifications?tab=READY_TO_SEND",
-                            icon: <Send className="w-4 h-4 shrink-0" />,
-                            description: "Kirim surat hasil verifikasi",
-                        },
-                        {
-                            label: "Verifikasi Pembayaran",
-                            path: "/internal/payments",
-                            icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Validasi setoran SIMPONI",
-                        },
-                        {
-                            label: "Siap Serah Terima",
-                            path: "/internal/verifications?tab=BAST_READY",
-                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                            description: "Pembayaran sah, terbitkan BAST",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
-                        },
-                    ],
-                },
-            ];
-        };
-
-        if (isVerifikator && role === "VERIFIKATOR") {
-            return getVerifikatorNav();
-        }
-
-        // Role Internal: Distributor
-        if (isDistributor && !isSuperAdmin) {
-            return [
-                {
-                    title: "DISTRIBUSI SIDANG",
-                    items: [
-                        {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
-                            end: true,
-                        },
-                        {
-                            label: "Master Menunggu Diterima",
-                            path: "/internal/distributions?stage=HANDOVER",
-                            icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                            description: "Konfirmasi fisik master",
-                        },
-                        {
-                            label: "Distribusi Tim",
-                            path: "/internal/distributions?stage=ASSIGNMENT",
-                            icon: <Users className="w-4 h-4 shrink-0" />,
-                            description: "Bagi tugas anggota sidang",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
-                        },
-                    ],
-                },
-            ];
-        }
-
-        // Role Internal: Pentashih
-        if (isPentashih && !isSuperAdmin) {
-            return [
-                {
-                    title: "SIDANG PENTASHIHAN",
-                    items: [
-                        {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
-                            end: true,
-                        },
-                        {
-                            label: "Tugas Saya",
-                            path: "/internal/tashih",
-                            icon: <BookOpen className="w-4 h-4 shrink-0" />,
-                            description: "Koreksi lafaz & tanda baca",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
-                        },
-                    ],
-                },
-            ];
-        }
-
-        if (isDokumentator && !isSuperAdmin) {
-            return [
-                {
-                    title: "DOKUMENTASI",
-                    items: [
-                        {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: (
-                                <LayoutDashboard className="w-4 h-4 shrink-0" />
-                            ),
-                            end: true,
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
-                        },
-                        {
-                            label: "Dokumen Tashih",
-                            path: "/internal/documents",
-                            icon: <FileText className="w-4 h-4 shrink-0" />,
-                        },
-                    ],
-                },
-            ];
-        }
-
-        // Role: Superadmin (Akses Penuh & Alur Operasional Panjang 1-11)
+        // 8. Superadmin (Akses Penuh Tanpa Redundansi)
         return [
             {
                 title: "KENDALI UTAMA",
@@ -538,55 +515,37 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         badge: "Loket",
                     },
                     {
-                        label: "3. Penugasan Verifikator",
-                        path: "/internal/verifications?tab=NEED_ASSIGNMENT",
-                        icon: <UserCheck className="w-4 h-4 shrink-0" />,
-                        description: "Disposisi tim verifikator berkas",
-                    },
-                    {
-                        label: "4. Verifikasi Berkas",
-                        path: "/internal/verifications?tab=ASSIGNED",
+                        label: "3. Verifikasi Berkas",
+                        path: "/internal/verifications",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
-                        description: "Pemeriksaan kelengkapan, rasm & waqaf",
+                        description: "Penugasan & pemeriksaan naskah",
                     },
                     {
-                        label: "5. Hasil Verifikasi",
-                        path: "/internal/verifications?tab=WAITING_APPROVAL",
-                        icon: <FileSearch className="w-4 h-4 shrink-0" />,
-                        description: "Telaah draf berita acara & penetapan",
-                    },
-                    {
-                        label: "6. Pembayaran PNBP",
+                        label: "4. Pembayaran PNBP",
                         path: "/internal/payments",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
                         description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
-                        label: "7. Distribusi Sidang",
+                        label: "5. Distribusi Sidang Tashih",
                         path: "/internal/distributions",
                         icon: <Users className="w-4 h-4 shrink-0" />,
-                        description: "Pembagian tim & serah-terima naskah",
+                        description: "Serah-terima fisik & tim sidang",
                     },
                     {
-                        label: "8. Sidang Pentashihan (Awal)",
-                        path: "/internal/tashih?tab=ACTIVE",
+                        label: "6. Sidang Pentashihan",
+                        path: "/internal/tashih",
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
-                        description: "Koreksi lafazh & harakat Juz 1-30",
+                        description: "Koreksi lafazh, harakat & naskah dumi",
                     },
                     {
-                        label: "9. Tashih Revisi & Dumi",
-                        path: "/internal/tashih?tab=REVISION",
-                        icon: <PenTool className="w-4 h-4 shrink-0" />,
-                        description: "Telaah perbaikan & contoh cetak dumi",
-                    },
-                    {
-                        label: "10. Pengesahan & Terbit STT",
+                        label: "7. Pengesahan & Terbit STT",
                         path: "/internal/documents",
                         icon: <Award className="w-4 h-4 shrink-0" />,
                         description: "Berita acara final & Surat Tanda Tashih",
                     },
                     {
-                        label: "11. Pengarsipan Naskah",
+                        label: "8. Pengarsipan Naskah",
                         path: "/internal/archive",
                         icon: <FolderCheck className="w-4 h-4 shrink-0" />,
                         description: "Semua versi fisik & digital Posdok-Q",
@@ -603,16 +562,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         description: "Akun, peran, dan wewenang",
                     },
                     {
-                        label: "Data Induk dan Parameter",
-                        path: "/internal/settings",
-                        icon: <Settings className="w-4 h-4 shrink-0" />,
-                        description: "Kategori, tarif, dan SLA",
-                    },
-                    {
                         label: "Rotasi Tim Inti",
                         path: "/internal/core-teams",
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Roster sembilan tim dan giliran berikutnya",
+                    },
+                    {
+                        label: "Data Induk dan Parameter",
+                        path: "/internal/settings",
+                        icon: <Settings className="w-4 h-4 shrink-0" />,
+                        description: "Kategori, tarif, dan SLA",
                     },
                     {
                         label: "Kelola Landing Page",
@@ -637,30 +596,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     };
 
     const navSections = getNavSections();
+
     const isCurrentItem = (item, isActive) => {
         const [itemBase, itemQuery] = item.path.split("?");
-        if (location.pathname !== itemBase) return false;
 
-        const currentParams = new URLSearchParams(location.search);
-
-        // Kasus khusus untuk modul Verifikasi
-        if (itemBase === "/internal/verifications") {
-            const currentTab = currentParams.get("tab") || "NEED_ASSIGNMENT";
-            const targetParams = new URLSearchParams(itemQuery || "");
-            const targetTab = targetParams.get("tab") || "NEED_ASSIGNMENT";
-            return currentTab === targetTab;
-        }
-
-        // Kasus khusus untuk modul Sidang Pentashihan
-        if (itemBase === "/internal/tashih") {
-            const currentTab = currentParams.get("tab") || "ACTIVE";
-            const targetParams = new URLSearchParams(itemQuery || "");
-            const targetTab = targetParams.get("tab") || "ACTIVE";
-            return currentTab === targetTab;
-        }
-
-        // Kasus umum jika item memiliki query param
+        // Jika item memiliki query parameter eksplisit
         if (itemQuery) {
+            if (location.pathname !== itemBase) return false;
+            const currentParams = new URLSearchParams(location.search);
             const targetParams = new URLSearchParams(itemQuery);
             for (const [key, val] of targetParams.entries()) {
                 if (currentParams.get(key) !== val) return false;
@@ -668,9 +611,18 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             return true;
         }
 
-        // Jika item tidak memiliki query param tapi halaman saat ini memiliki query param
-        if (location.search) {
-            return false;
+        // Jika item path cocok persis dengan location.pathname
+        if (location.pathname === itemBase) {
+            // Untuk /publisher/registrations, abaikan jika user sedang di tab khusus view
+            if (itemBase === "/publisher/registrations") {
+                const currentView = new URLSearchParams(location.search).get("view");
+                return !currentView || currentView === "ALL";
+            }
+            // Untuk /internal/verifications, jangan aktif jika tab WAITING_APPROVAL milik pimpinan
+            if (itemBase === "/internal/verifications" && location.search.includes("tab=WAITING_APPROVAL") && !item.path.includes("WAITING_APPROVAL")) {
+                return false;
+            }
+            return true;
         }
 
         return isActive;

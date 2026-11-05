@@ -249,7 +249,7 @@ export const ReviewForm = ({
                 </div>
               )}
 
-              {/* Berkas Rekapan Internal Pentashih (RF-DIST-18, RF-DIST-19) */}
+              {/* Berkas Rekapan Internal Pentashih */}
               <div className="space-y-2 p-3.5 rounded-xl border border-line bg-surface">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -286,7 +286,7 @@ export const ReviewForm = ({
                 <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-xs text-brand-900 flex items-start gap-2">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-brand-700 mt-0.5" />
                   <span>
-                    <strong>Kerahasiaan Internal (RF-DIST-19):</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distributor. Berkas ini bersifat internal dan tidak dikirim ke penerbit atau dokumentator.
+                    <strong>Kerahasiaan Dokumen Internal:</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distribusi. Berkas ini bersifat rahasia internal dan tidak dikirim ke penerbit atau dokumentator.
                   </span>
                 </div>
               </div>

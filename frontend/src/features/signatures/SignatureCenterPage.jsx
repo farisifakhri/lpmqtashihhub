@@ -10,6 +10,7 @@ import { SearchField } from '@/components/ui/SearchField';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { formatDocumentStatus, formatDocumentType } from '@/lib/glossary';
 import {
   PenTool,
   FileCheck,
@@ -840,7 +841,7 @@ export const SignatureCenterPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-ink-muted">Status Pengesahan:</span>
-                <span className="font-bold text-brand-800">{previewDoc.status}</span>
+                <span className="font-bold text-brand-800">{formatDocumentStatus(previewDoc.status)}</span>
               </div>
             </div>
 

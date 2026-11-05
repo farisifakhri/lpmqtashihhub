@@ -25,6 +25,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/ui/toast';
 import { TashihLoader } from '@/components/ui/TashihLoader';
+import { formatDocumentType, formatDocumentStatus } from '@/lib/glossary';
 
 const QUALITY_OPTIONS = [
   { value: 'SANGAT_BAIK', label: 'Sangat Baik' },
@@ -197,7 +198,7 @@ export const DokumentatorArchivePage = () => {
           <div>
             <div className="flex items-center gap-2 text-brand-fg font-semibold text-sm mb-1">
               <FolderArchive className="w-5 h-5 text-brand-fg" />
-              <span>Modul Pengarsipan & Verifikasi Fisik (DOC-02)</span>
+              <span>Modul Pengarsipan & Verifikasi Fisik</span>
             </div>
             <h1 className="text-2xl font-bold text-ink tracking-tight">
               Dokumentator: Pengarsipan Naskah & Deposit Mushaf
@@ -447,14 +448,10 @@ export const DokumentatorArchivePage = () => {
                               <FileText className="w-4 h-4 text-brand-fg shrink-0" />
                               <div>
                                 <div className="font-medium text-ink">
-                                  {doc.document_type === 'SURAT_TANDA_TASHIH'
-                                    ? 'Surat Tanda Tashih (STT)'
-                                    : doc.document_type === 'BERITA_ACARA_TASHIH'
-                                    ? 'Berita Acara Pentashihan'
-                                    : doc.document_type}
+                                  {formatDocumentType(doc.document_type)}
                                 </div>
                                 <div className="text-ink-muted font-mono text-[11px]">
-                                  {doc.document_no} (v{doc.version}) • Status: {doc.status}
+                                  {doc.document_no} (v{doc.version}) • Status: {formatDocumentStatus(doc.status)}
                                 </div>
                               </div>
                             </div>

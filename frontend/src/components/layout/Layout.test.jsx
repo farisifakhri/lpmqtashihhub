@@ -42,7 +42,7 @@ describe('Komponen tata letak portal operasional', () => {
     );
 
     // Tombol toggler
-    const togglerBtn = screen.getByRole('button', { name: /tutup navigasi utama/i });
+    const togglerBtn = screen.getByRole('button', { name: /tutup navigasi/i });
     expect(togglerBtn).toBeDefined();
     fireEvent.click(togglerBtn);
     expect(toggleSidebar).toHaveBeenCalledTimes(1);
@@ -58,7 +58,7 @@ describe('Komponen tata letak portal operasional', () => {
     // Buka dropdown
     fireEvent.click(profileBtn);
     expect(screen.getByText(/sesi aktif/i)).toBeDefined();
-    expect(screen.getByText(/kontrol proses mengacu/i)).toBeDefined();
+    expect(screen.getByText(/sop pentashihan mushaf/i)).toBeDefined();
 
     // Tombol logout di dropdown
     const logoutBtn = screen.getByRole('button', { name: /akhiri sesi/i });
@@ -83,14 +83,15 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Sistem Pentashihan')).toBeDefined();
     expect(screen.getByText('Kemenag RI')).toBeDefined();
 
-    // Menu berurutan sesuai alur pentashihan 11-langkah
+    // Menu berurutan sesuai alur pentashihan 8-tahap
     expect(screen.getByText('1. Pendaftaran Penerbit')).toBeDefined();
     expect(screen.getByText('2. Intake Master Fisik')).toBeDefined();
-    expect(screen.getByText('3. Penugasan Verifikator')).toBeDefined();
-    expect(screen.getByText('4. Verifikasi Berkas')).toBeDefined();
-    expect(screen.getByText('6. Pembayaran PNBP')).toBeDefined();
-    expect(screen.getByText('7. Distribusi Sidang')).toBeDefined();
-    expect(screen.getByText('10. Pengesahan & Terbit STT')).toBeDefined();
+    expect(screen.getByText('3. Verifikasi Berkas')).toBeDefined();
+    expect(screen.getByText('4. Pembayaran PNBP')).toBeDefined();
+    expect(screen.getByText('5. Distribusi Sidang Tashih')).toBeDefined();
+    expect(screen.getByText('6. Sidang Pentashihan')).toBeDefined();
+    expect(screen.getByText('7. Pengesahan & Terbit STT')).toBeDefined();
+    expect(screen.getByText('8. Pengarsipan Naskah')).toBeDefined();
     expect(screen.getByText('Identitas dan Akses')).toBeDefined();
   });
 
@@ -109,8 +110,8 @@ describe('Komponen tata letak portal operasional', () => {
     // Menu penerbit sesuai alur baru Mandat Bab 6
     expect(screen.getByText('Beranda')).toBeDefined();
     expect(screen.getByText('Permohonan Saya')).toBeDefined();
-    expect(screen.getByText('Permohonan Tanda Tashih Baru')).toBeDefined();
-    expect(screen.getByText('Tagihan')).toBeDefined();
+    expect(screen.getByText('Pendaftaran Naskah Baru')).toBeDefined();
+    expect(screen.getByText('Tagihan & Pembayaran')).toBeDefined();
     expect(screen.getByText('Arsip Dokumen')).toBeDefined();
   });
 

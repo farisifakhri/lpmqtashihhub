@@ -29,7 +29,7 @@ describe('MushafContentReviewTable (REV-16)', () => {
       />
     );
 
-    expect(screen.getByText(/Verifikasi & Koreksi Konten Mushaf \(REV-16\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Verifikasi & Koreksi Konten Mushaf/i)).toBeInTheDocument();
     expect(screen.getByText('Standar Rasm & Tanda Baca')).toBeInTheDocument();
     expect(screen.getByText('Cakupan & Kelompok Naskah')).toBeInTheDocument();
     expect(screen.getByText('Materi Tambahan / Suplemen')).toBeInTheDocument();

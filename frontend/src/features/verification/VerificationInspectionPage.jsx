@@ -102,8 +102,7 @@ export const VerificationInspectionPage = () => {
   // Tab state for mobile/tablet responsive layout (<1024px)
   const [activeMobileTab, setActiveMobileTab] = useState('checklist'); // 'naskah' | 'checklist' | 'konten' | 'hasil' | 'arsip'
   const [activeWorkbenchTab, setActiveWorkbenchTab] = useState('checklist'); // 'checklist' | 'konten' | 'hasil' | 'arsip'
-  const [paneRatio, setPaneRatio] = useState('50-50'); // '50-50' | '70-30' | '30-70'
-  const [contentReview, setContentReview] = useState(null);
+    const [contentReview, setContentReview] = useState(null);
 
   // Document preview selection
   const [activeDocTab, setActiveDocTab] = useState('digital'); // 'digital' | 'receipt' | 'letter'
@@ -717,20 +716,7 @@ export const VerificationInspectionPage = () => {
     return f.file_name || 'PDF Berkas';
   };
 
-  const leftColSpan =
-    paneRatio === '70-30'
-      ? 'lg:col-span-8'
-      : paneRatio === '30-70'
-      ? 'lg:col-span-4'
-      : 'lg:col-span-6';
-
-  const rightColSpan =
-    paneRatio === '70-30'
-      ? 'lg:col-span-4'
-      : paneRatio === '30-70'
-      ? 'lg:col-span-8'
-      : 'lg:col-span-6';
-
+  
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
       {/* Top Header & Breadcrumb */}
@@ -773,47 +759,6 @@ export const VerificationInspectionPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Desktop Pane Ratio Selector */}
-            <div className="hidden lg:flex items-center bg-surface-subtle p-0.5 rounded-lg border border-line text-xs">
-              <span className="px-2 text-ink-muted text-[11px] font-medium">Layout:</span>
-              <button
-                type="button"
-                onClick={() => setPaneRatio('50-50')}
-                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
-                  paneRatio === '50-50'
-                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-                title="Bagi Rata (50 : 50)"
-              >
-                50:50
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaneRatio('70-30')}
-                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
-                  paneRatio === '70-30'
-                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-                title="Fokus Naskah (70% PDF, 30% Form)"
-              >
-                Fokus Naskah
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaneRatio('30-70')}
-                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
-                  paneRatio === '30-70'
-                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
-                    : 'text-ink-muted hover:text-ink'
-                }`}
-                title="Fokus Formulir (30% PDF, 70% Form)"
-              >
-                Fokus Form
-              </button>
-            </div>
-
             <button
               type="button"
               onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
@@ -1101,264 +1046,252 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
-      {/* THE SPLIT-STUDIO WORKSTATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* LEFT COLUMN: Inspection Document Studio (Sticky + Full Height) */}
-        <div className={`${leftColSpan} ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'} lg:sticky lg:top-4 lg:h-[calc(100vh-140px)] flex flex-col`}>
-          <InspectionDocumentStudio
-            allFiles={allFiles}
-            activeFile={activeFile}
-            selectedFileId={selectedFileId}
-            setSelectedFileId={setSelectedFileId}
-            getFileLabel={getFileLabel}
-            registration={registration}
-            publisher={publisher}
-            physicalMaster={physicalMaster}
-            assignment={assignment}
-            formatDate={formatDate}
-            handleCopyReceipt={handleCopyReceipt}
-            copiedReceipt={copiedReceipt}
+      {/* ========================================================
+       * STACKED WORKSTATION (OPSI B):
+       * 1. Studio Berkas & Naskah Digital (Full-Width di Atas)
+       * 2. Lembar Kerja Pemeriksaan & Hasil (Full-Width di Bawah)
+       * ======================================================== */}
+
+      {/* 1. STUDIO BERKAS DIGITAL (FULL WIDTH DI ATAS) */}
+      <div className={`${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'} w-full`}>
+        <InspectionDocumentStudio
+          allFiles={allFiles}
+          activeFile={activeFile}
+          selectedFileId={selectedFileId}
+          setSelectedFileId={setSelectedFileId}
+          getFileLabel={getFileLabel}
+          registration={registration}
+          publisher={publisher}
+          physicalMaster={physicalMaster}
+          assignment={assignment}
+          formatDate={formatDate}
+          handleCopyReceipt={handleCopyReceipt}
+          copiedReceipt={copiedReceipt}
+        />
+      </div>
+
+      {/* 2. LEMBAR KERJA PEMERIKSAAN (FULL WIDTH DI BAWAH) */}
+      <div className={`${activeMobileTab !== 'naskah' ? 'block' : 'hidden lg:block'} w-full space-y-4`}>
+        {/* Smart PNBP & SLA Summary Strip */}
+        <div className="p-3 bg-gradient-to-r from-brand-50/80 via-white to-surface-subtle rounded-2xl border border-brand-100 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-brand-800 text-white shadow-2xs">
+              <Calculator className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-xs">
+              <span className="text-ink-muted">Estimasi PNBP: </span>
+              <span className="font-mono font-bold text-brand-900">
+                {(() => {
+                  const baseFee = Number(registration?.fee_sla_snapshot?.base_fee ?? registration?.service_type?.base_fee ?? 1000000);
+                  const addonsFee = Number(registration?.fee_sla_snapshot?.addons_fee ?? 0);
+                  const total = Number(registration?.fee_sla_snapshot?.total_fee ?? (baseFee + addonsFee));
+                  return total === 0 ? 'Rp 0' : `Rp ${total.toLocaleString('id-ID')}`;
+                })()}
+              </span>
+              <span className="text-ink-muted mx-1.5">·</span>
+              <span className="text-ink-muted">Target SLA: </span>
+              <span className="font-bold text-ink">
+                {registration?.fee_sla_snapshot?.working_days || 10} Hari Kerja
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveWorkbenchTab('kalkulator');
+              setActiveMobileTab('kalkulator');
+            }}
+            className="text-xs font-bold text-brand-800 hover:text-brand-900 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Simulasi Tarif & SLA</span>
+            <span className="text-xs">↗</span>
+          </button>
+        </div>
+
+        {/* Desktop Tab Selector Header */}
+        <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1 w-full">
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('checklist')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'checklist'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
+              <span>Checklist ({CHECKLIST_DEFINITIONS.length} Butir)</span>
+              <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('konten')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'konten'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-brand-700" />
+              <span>Konten Mushaf</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('kalkulator')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'kalkulator'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <Calculator className="w-3.5 h-3.5 text-brand-700" />
+              <span>Kalkulator Tarif & SLA</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('hasil')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'hasil'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-brand-700" />
+              <span>Hasil & Draf Surat</span>
+              <span className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
+                decision === 'PASSED'
+                  ? 'bg-brand-50 text-brand-800 border border-brand-200'
+                  : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
+              }`}>
+                {decision === 'PASSED' ? 'Lolos' : 'Ditolak / Perbaikan'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* TAB 1: CHECKLIST */}
+        <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <InspectionChecklist
+            activeMobileTab="checklist"
+            sesuaiCount={sesuaiCount}
+            tidakSesuaiCount={tidakSesuaiCount}
+            tidakBerlakuCount={tidakBerlakuCount}
+            checklist={checklist}
+            validationErrors={validationErrors}
+            isReadOnly={isReadOnly}
+            handleChecklistChange={handleChecklistChange}
+            definitions={CHECKLIST_DEFINITIONS}
+            className="space-y-4"
           />
         </div>
 
-        {/* RIGHT COLUMN: Interactive Workbench (Independent Scroll) */}
-        <div className={`${rightColSpan} lg:h-[calc(100vh-140px)] lg:overflow-y-auto pr-1 space-y-4`}>
-          {/* Smart PNBP & SLA Summary Strip */}
-          <div className="p-3 bg-gradient-to-r from-brand-50/80 via-white to-surface-subtle rounded-2xl border border-brand-100 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
-            <div className="flex items-center gap-2.5">
-              <div className="p-1.5 rounded-lg bg-brand-800 text-white shadow-2xs">
-                <Calculator className="w-3.5 h-3.5" />
-              </div>
-              <div className="text-xs">
-                <span className="text-ink-muted">Estimasi PNBP: </span>
-                <span className="font-mono font-bold text-brand-900">
-                  {(() => {
-                    const baseFee = Number(registration?.fee_sla_snapshot?.base_fee ?? registration?.service_type?.base_fee ?? 1000000);
-                    const addonsFee = Number(registration?.fee_sla_snapshot?.addons_fee ?? 0);
-                    const total = Number(registration?.fee_sla_snapshot?.total_fee ?? (baseFee + addonsFee));
-                    return total === 0 ? 'Rp 0' : `Rp ${total.toLocaleString('id-ID')}`;
-                  })()}
-                </span>
-                <span className="text-ink-muted mx-1.5">·</span>
-                <span className="text-ink-muted">Target SLA: </span>
-                <span className="font-bold text-ink">
-                  {registration?.fee_sla_snapshot?.working_days || 10} Hari Kerja
-                </span>
-              </div>
+        {/* TAB 2: AUDIT KONTEN MUSHAF */}
+        <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <MushafContentReviewTable
+            registration={registration}
+            contentReview={contentReview}
+            onChange={(data) => {
+              setIsDirty(true);
+              setContentReview(data);
+            }}
+            isReadOnly={isReadOnly}
+          />
+        </div>
+
+        {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN */}
+        <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <VerificationCalculatorTab registration={registration} />
+        </div>
+
+        {/* TAB 3: HASIL & DRAF SURAT */}
+        <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4 pb-28`}>
+          {/* Multi-Signatory Progress & Email Status Banners */}
+          {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+            <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
+              Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setActiveWorkbenchTab('kalkulator');
-                setActiveMobileTab('kalkulator');
-              }}
-              className="text-xs font-bold text-brand-800 hover:text-brand-900 hover:underline flex items-center gap-1 cursor-pointer"
-            >
-              <span>Simulasi Tarif & SLA</span>
-              <span className="text-xs">↗</span>
-            </button>
-          </div>
-
-          {/* Desktop Tab Selector Header */}
-          <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
-            <div className="flex items-center gap-1 w-full">
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('checklist')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'checklist'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
-                <span>Checklist ({CHECKLIST_DEFINITIONS.length} Butir)</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                  {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('konten')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'konten'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-brand-700" />
-                <span>Konten Mushaf</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
-                  REV-16
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('kalkulator')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'kalkulator'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <Calculator className="w-3.5 h-3.5 text-brand-700" />
-                <span>Kalkulator Tarif & SLA</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                  U-14
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('hasil')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'hasil'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 text-brand-700" />
-                <span>Hasil & Draf Surat</span>
-                <span className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
-                  decision === 'PASSED'
-                    ? 'bg-brand-50 text-brand-800 border border-brand-200'
-                    : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
-                }`}>
-                  {decision === 'PASSED' ? 'Lolos' : 'Ditolak / Perbaikan'}
-                </span>
-              </button>
-            </div>
-          </div>
-
-          {/* TAB 1: CHECKLIST */}
-          <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'}`}>
-            <InspectionChecklist
-              activeMobileTab="checklist"
-              sesuaiCount={sesuaiCount}
-              tidakSesuaiCount={tidakSesuaiCount}
-              tidakBerlakuCount={tidakBerlakuCount}
-              checklist={checklist}
-              validationErrors={validationErrors}
-              isReadOnly={isReadOnly}
-              handleChecklistChange={handleChecklistChange}
-              definitions={CHECKLIST_DEFINITIONS}
-              className="space-y-4"
-            />
-          </div>
-
-          {/* TAB 2: AUDIT KONTEN MUSHAF (REV-16) */}
-          <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'}`}>
-            <MushafContentReviewTable
-              registration={registration}
-              contentReview={contentReview}
-              onChange={(data) => {
-                setIsDirty(true);
-                setContentReview(data);
-              }}
-              isReadOnly={isReadOnly}
-            />
-          </div>
-
-          {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN (U-14) */}
-          <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'}`}>
-            <VerificationCalculatorTab registration={registration} />
-          </div>
-
-          {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
-            {/* Multi-Signatory Progress & Email Status Banners */}
-            {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
-              <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
-                Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
-              </div>
-            )}
-            {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
-              <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
-                <SignatoryProgress
-                  signatories={[
-                    ...(latestResultDoc?.signatories || []).map(sig => ({
-                      role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                    ...baSignatories.map((sig) => ({
-                      role_label: `Berita Acara - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                  ]}
-                />
-
-                <div className="flex flex-wrap items-center gap-3">
-                  {canUserSignLatest && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(latestResultDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Surat Pemberitahuan
-                    </Button>
-                  )}
-                  {canUserSignBa && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(beritaAcaraDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Berita Acara
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isEmailFailed && (
-              <EmailDeliveryStatus
-                status="FAILED"
-                recipient={publisher.email || 'penerbit@mushaf.id'}
-                errorMessage={latestResultDoc?.email_delivery_error}
-                onRetry={() => handleRetryEmail(latestResultDoc?.id)}
-                retrying={actionLoading}
+          )}
+          {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+            <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
+              <SignatoryProgress
+                signatories={[
+                  latestSignatory,
+                  ...(baSignatories || []),
+                ].filter(Boolean)}
+                title="Progres Penandatanganan Internal"
               />
-            )}
 
-            <ResultLetterPanel
-              activeMobileTab="hasil"
-              decision={decision}
-              setDecision={setDecision}
-              loadOfficialTemplate={loadOfficialTemplate}
-              setIsDirty={setIsDirty}
-              isReadOnly={isReadOnly}
-              validationErrors={validationErrors}
-              notes={notes}
-              setNotes={setNotes}
-              letterTab={letterTab}
-              setLetterTab={setLetterTab}
-              letterText={letterText}
-              setLetterText={setLetterText}
-              billingNo={billingNo}
-              setBillingNo={setBillingNo}
-              billingFileId={billingFileId}
-              billingFileName={billingFileName}
-              billingUploading={billingUploading}
-              handleBillingFile={handleBillingFile}
-              resultDocumentId={latestResultDoc?.id}
-              registration={registration}
-              publisher={publisher}
-              showDocumentPdf={showDocumentPdf}
-              tidakSesuaiCount={tidakSesuaiCount}
-              checklist={checklist}
-              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+              <div className="flex flex-wrap items-center gap-3">
+                {canUserSignLatest && (
+                  <Button
+                    variant="primary"
+                    onClick={() => handleSignDocument(latestResultDoc.id)}
+                    disabled={actionLoading}
+                    className="text-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Konfirmasi Internal Surat Pemberitahuan
+                  </Button>
+                )}
+                {canUserSignBa && (
+                  <Button
+                    variant="primary"
+                    onClick={() => handleSignDocument(beritaAcaraDoc.id)}
+                    disabled={actionLoading}
+                    className="text-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Konfirmasi Internal Berita Acara
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isEmailFailed && (
+            <EmailDeliveryStatus
+              status="FAILED"
+              recipient={publisher.email || 'penerbit@mushaf.id'}
+              errorMessage={latestResultDoc?.email_delivery_error}
+              onRetry={() => handleRetryEmail(latestResultDoc?.id)}
+              retrying={actionLoading}
             />
-          </div>
+          )}
+
+          <ResultLetterPanel
+            activeMobileTab="hasil"
+            decision={decision}
+            setDecision={setDecision}
+            loadOfficialTemplate={loadOfficialTemplate}
+            setIsDirty={setIsDirty}
+            isReadOnly={isReadOnly}
+            validationErrors={validationErrors}
+            notes={notes}
+            setNotes={setNotes}
+            letterTab={letterTab}
+            setLetterTab={setLetterTab}
+            letterText={letterText}
+            setLetterText={setLetterText}
+            billingNo={billingNo}
+            setBillingNo={setBillingNo}
+            billingFileId={billingFileId}
+            billingFileName={billingFileName}
+            billingUploading={billingUploading}
+            handleBillingFile={handleBillingFile}
+            resultDocumentId={latestResultDoc?.id}
+            registration={registration}
+            publisher={publisher}
+            showDocumentPdf={showDocumentPdf}
+            tidakSesuaiCount={tidakSesuaiCount}
+            checklist={checklist}
+            className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+          />
         </div>
       </div>
 

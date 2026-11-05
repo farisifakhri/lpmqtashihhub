@@ -244,7 +244,7 @@ export const VerifikatorInboxPage = () => {
     if (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS') {
       return {
         label: 'Pemeriksaan Berkas',
-        title: isAssignmentAdmin ? 'Antrean Verifikasi Berkas (Pemeriksaan Rasm)' : 'Antrean Verifikasi Berkas',
+        title: isAssignmentAdmin ? 'Antrean Penugasan Verifikasi Berkas' : 'Antrean Verifikasi Berkas',
         subtitle: isAssignmentAdmin
           ? 'Pemeriksaan administratif kelengkapan, rasm Usmani standar, tanda waqaf, dan pedoman Kementerian Agama.'
           : 'Daftar naskah mushaf yang ditugaskan Helper Admin untuk diperiksa verifikator.',
@@ -498,7 +498,7 @@ export const VerifikatorInboxPage = () => {
             </form>
           </div>
 
-          {/* FIFO and Volume Queue Metadata Bar */}
+          {/* Volume dan Antrean Berdasarkan Waktu Masuk */}
           <QueueOverview
             total={pagination.total}
             oldest={assignments[0]?.queue_entered_at || assignments[0]?.assigned_at}
