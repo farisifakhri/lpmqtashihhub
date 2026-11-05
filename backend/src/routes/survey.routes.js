@@ -22,6 +22,7 @@ router.delete('/admin/survey-unsur/:id', ...superadmin, validate(v.unsurIdSchema
 
 // Bank pertanyaan
 router.get('/admin/survey-questions', ...superadmin, validate(v.listQuestionsSchema), action(req => survey.listQuestions(req.query)));
+router.post('/admin/survey-questions/seed-standard', ...superadmin, action(req => survey.seedStandardQuestions(req.user, req)));
 router.post('/admin/survey-questions', ...superadmin, validate(v.createQuestionSchema), action(req => survey.createQuestion(req.body, req.user, req), 201));
 router.put('/admin/survey-questions/:id', ...superadmin, validate(v.updateQuestionSchema), action(req => survey.updateQuestion(req.params.id, req.body, req.user, req)));
 router.post('/admin/survey-questions/:id/duplicate', ...superadmin, validate(v.questionIdSchema), action(req => survey.duplicateQuestion(req.params.id, req.user, req), 201));

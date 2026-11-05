@@ -51,6 +51,45 @@ export const STANDARD_UNSUR = [
   ['I', 'Sarana dan Prasarana', 'Segala sesuatu yang dapat dipakai sebagai alat dalam mencapai maksud dan tujuan. Prasarana adalah segala sesuatu yang merupakan penunjang utama terselenggaranya suatu proses. Sarana digunakan untuk benda yang bergerak dan prasarana untuk benda yang tidak bergerak.'],
 ].map(([code, name, definition], i) => ({ code, name, definition, sort_order: i + 1 }));
 
+// Pertanyaan Data Persepsi baku, Pedoman Menteri PANRB No. 9/2024 hlm. 16–18, varian Campuran (Hybrid):
+// layanan pentashihan memadukan pendaftaran daring dan penyerahan master fisik luring.
+const STANDARD_SCALE = [['Sangat baik', 4], ['Baik', 3], ['Kurang baik', 2], ['Tidak baik', 1]].map(([label, value]) => ({ label, value }));
+export const STANDARD_QUESTIONS = [
+  ['A', 'Bagaimana penilaian Bapak/Ibu tentang kesesuaian persyaratan pelayanan yang harus dipenuhi dengan persyaratan pelayanan yang diinformasikan?'],
+  ['B', 'Bagaimana penilaian Bapak/Ibu mengenai kemudahan prosedur yang dijalani untuk mendapatkan layanan?'],
+  ['C', 'Bagaimana penilaian Bapak/Ibu mengenai kesesuaian jangka waktu penyelesaian pelayanan dengan yang diinformasikan?'],
+  ['D', 'Bagaimana penilaian Bapak/Ibu mengenai kesesuaian biaya pelayanan yang dibayarkan dengan yang diinformasikan?'],
+  ['E', 'Bagaimana pendapat Saudara tentang kesesuaian produk pelayanan antara yang ada pada publikasi dengan pelayanan yang diberikan?'],
+  ['F', 'Bagaimana kecepatan respon (membuka halaman, konten, pencarian informasi, unduh/unggah) dari aplikasi sistem pelayanan yang diberikan?'],
+  ['F', 'Bagaimana penilaian Bapak/Ibu mengenai kesigapan petugas pelayanan?'],
+  ['G', 'Bagaimana kemudahan dalam penggunaan fitur pada aplikasi sistem layanan?'],
+  ['G', 'Bagaimana penilaian Bapak/Ibu mengenai perilaku/kemampuan petugas pelayanan?'],
+  ['H', 'Bagaimana penilaian Bapak/Ibu mengenai ketersediaan sarana/media untuk menyampaikan pengaduan/saran?'],
+  ['I', 'Bagaimana penilaian Bapak/Ibu tentang kualitas isi/konten dari aplikasi sistem layanan?'],
+  ['I', 'Bagaimana penilaian Bapak/Ibu terhadap ketersediaan sarana dan prasarana pelayanan di Unit Penyelenggara Pelayanan?'],
+].map(([code, text]) => ({ code, text }));
+
+// Mengisi bank soal dengan pertanyaan baku; aman diulang (teks yang sama pada unsur yang sama dilewati).
+export async function seedStandardQuestions(user, req) {
+  return prisma.$transaction(async (tx) => {
+    const unsur = await tx.surveyUnsur.findMany({ where: { code: { in: [...new Set(STANDARD_QUESTIONS.map((q) => q.code))] } } });
+    const unsurByCode = new Map(unsur.map((u) => [u.code, u]));
+    let created = 0;
+    let existing = 0;
+    const missing = new Set();
+    for (const std of STANDARD_QUESTIONS) {
+      const target = unsurByCode.get(std.code);
+      if (!target) { missing.add(STANDARD_UNSUR.find((s) => s.code === std.code).name); continue; }
+      if (await tx.surveyQuestion.findFirst({ where: { unsur_id: target.id, text: std.text }, select: { id: true } })) { existing += 1; continue; }
+      await tx.surveyQuestion.create({ data: { text: std.text, type: 'PILIHAN', unsur_id: target.id, options: { create: optionRows('PILIHAN', STANDARD_SCALE) } } });
+      created += 1;
+    }
+    const result = { created, existing, missing_unsur: [...missing] };
+    await audit(tx, user, 'SURVEY_QUESTION_SEED_STANDARD', 'SurveyQuestion', 'standard', result, req);
+    return result;
+  });
+}
+
 // Membuat ulang unsur baku yang hilang dan mengembalikan urutannya. Unsur buatan sendiri dengan nama
 // yang sama (mis. "Persyaratan" yang dibuat ulang setelah dihapus) dijadikan unsur baku, bukan diduplikasi.
 export async function restoreStandardUnsur(user, req) {

@@ -31,4 +31,5 @@ export const surveyApi = {
   listResponses: (id, params) => apiClient(`/admin/surveys/${id}/responses${qs(params)}`),
   getReport: (id) => apiClient(`/admin/surveys/${id}/report`),
   restoreStandardUnsur: () => apiClient('/admin/survey-unsur/restore-standard', { method: 'POST' }),
+  seedStandardQuestions: () => apiClient('/admin/survey-questions/seed-standard', { method: 'POST' }),
 };

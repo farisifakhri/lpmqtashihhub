@@ -192,4 +192,24 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     await ok(`/admin/surveys/${copy.id}/activate`, adminToken, 'POST');
     await ok(`/admin/surveys/${copy.id}`, adminToken, 'DELETE');
   });
+
+  await test('Survei: pertanyaan baku Pedoman PANRB diisi ke unsurnya dan aman diulang', async () => {
+    const standardUnsur = await ok('/admin/survey-unsur/restore-standard', adminToken, 'POST');
+    const sarana = standardUnsur.find((u) => u.code === 'I');
+
+    const first = await ok('/admin/survey-questions/seed-standard', adminToken, 'POST');
+    assert.deepEqual(first, { created: 12, existing: 0, missing_unsur: [] });
+    const saranaQuestions = await ok(`/admin/survey-questions?unsur_id=${sarana.id}`, adminToken, 'GET');
+    assert.equal(saranaQuestions.length, 2); // varian Campuran: aplikasi + sarana fisik
+    assert.deepEqual(saranaQuestions[0].options.map((o) => [o.label, o.value]), [['Sangat baik', 4], ['Baik', 3], ['Kurang baik', 2], ['Tidak baik', 1]]);
+
+    // Ditekan lagi: tidak menggandakan.
+    assert.deepEqual(await ok('/admin/survey-questions/seed-standard', adminToken, 'POST'), { created: 0, existing: 12, missing_unsur: [] });
+
+    // Unsur baku yang hilang dilaporkan; pertanyaan unsur lain tetap dibuat ulang.
+    for (const q of saranaQuestions) await ok(`/admin/survey-questions/${q.id}`, adminToken, 'DELETE');
+    await ok(`/admin/survey-unsur/${sarana.id}`, adminToken, 'DELETE');
+    assert.deepEqual(await ok('/admin/survey-questions/seed-standard', adminToken, 'POST'), { created: 0, existing: 10, missing_unsur: ['Sarana dan Prasarana'] });
+    await ok('/admin/survey-unsur/restore-standard', adminToken, 'POST');
+  });
 }

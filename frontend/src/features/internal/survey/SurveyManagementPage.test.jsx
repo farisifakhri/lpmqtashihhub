@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SurveyManagementPage } from './SurveyManagementPage';
 import { surveyApi } from '@/api/survey.api';
+import * as toastModule from '@/components/ui/toast';
 
 const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.', is_standard: true, sort_order: 1, is_archived: false, _count: { items: 0 } };
 const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', unsur_id: 'u1', unsur: { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', sort_order: 1 }, options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
@@ -211,5 +212,21 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(questionSelect).not.toBeDisabled();
     expect(screen.getByRole('option', { name: 'Pertanyaan unsur biaya' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Bagaimana kesesuaian persyaratan?' })).not.toBeInTheDocument();
+  });
+  it('tombol Isi Pertanyaan Baku PANRB mengisi bank soal dan melaporkan hasilnya', async () => {
+    const toast = vi.spyOn(toastModule, 'showToast');
+    const seed = vi.spyOn(surveyApi, 'seedStandardQuestions')
+      .mockResolvedValueOnce({ data: { created: 12, existing: 0, missing_unsur: [] } })
+      .mockResolvedValueOnce({ data: { created: 0, existing: 10, missing_unsur: ['Sarana dan Prasarana'] } });
+    renderPage('/internal/surveys?tab=pertanyaan');
+    const button = await screen.findByRole('button', { name: /Isi Pertanyaan Baku PANRB/ });
+
+    fireEvent.click(button);
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('12 pertanyaan baku ditambahkan.', 'success'));
+    await waitFor(() => expect(surveyApi.listQuestions).toHaveBeenCalledTimes(2)); // daftar dimuat ulang
+
+    fireEvent.click(button);
+    await waitFor(() => expect(toast).toHaveBeenLastCalledWith(expect.stringContaining('unsur Sarana dan Prasarana tidak ditemukan'), 'danger'));
+    expect(seed).toHaveBeenCalledTimes(2);
   });
 });

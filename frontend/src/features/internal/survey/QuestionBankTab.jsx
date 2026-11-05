@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Copy, Lock, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, Lock, X, BookCheck } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -58,6 +58,22 @@ export function QuestionBankTab() {
     }
   };
 
+  const [seeding, setSeeding] = useState(false);
+  // Mengisi pertanyaan Data Persepsi baku Pedoman PANRB 9/2024; aman ditekan berulang.
+  const seedStandard = async () => {
+    setSeeding(true);
+    try {
+      const { data } = await surveyApi.seedStandardQuestions();
+      const parts = [data.created ? `${data.created} pertanyaan baku ditambahkan` : 'Semua pertanyaan baku sudah ada di bank soal'];
+      if (data.created && data.existing) parts.push(`${data.existing} sudah ada sebelumnya`);
+      if (data.missing_unsur.length) parts.push(`unsur ${data.missing_unsur.join(", ")} tidak ditemukan — tekan Pulihkan Unsur Baku PANRB di Nama Unsur, lalu ulangi`);
+      showToast(`${parts.join("; ")}.`, data.missing_unsur.length ? 'danger' : 'success');
+      load();
+    } catch { /* sudah ditampilkan apiClient */ } finally {
+      setSeeding(false);
+    }
+  };
+
   const run = async (fn, message) => {
     try { await fn(); showToast(message, 'success'); load(); } catch { /* sudah ditampilkan */ }
   };
@@ -75,6 +91,9 @@ export function QuestionBankTab() {
             {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
           </select>
           <input className={`${inputClass} w-56`} placeholder="Cari pertanyaan…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari pertanyaan" />
+          <Button size="sm" variant="outline" disabled={seeding} onClick={seedStandard} title="Isi 12 pertanyaan Data Persepsi baku (Pedoman PANRB 9/2024, varian Campuran) ke unsur masing-masing">
+            <BookCheck className="w-4 h-4" /> {seeding ? 'Mengisi…' : 'Isi Pertanyaan Baku PANRB'}
+          </Button>
           <Button size="sm" onClick={() => setForm({ ...EMPTY, unsur_id: unsurFilter })}><Plus className="w-4 h-4" /> Tambah Pertanyaan</Button>
         </div>
       </div>
