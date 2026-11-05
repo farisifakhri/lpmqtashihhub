@@ -4,7 +4,7 @@
 - **Branch:** `feat/b16-rekap-revisi-penerbit-dan-siklus-dumi`
 - **Basis:** `feat/b15-rekap-kelompok-dan-eliminasi-checklist`
 - **PIC:** Fakhri
-- **Status:** **Siap Dikerjakan**
+- **Status:** **Selesai** (Commit `0ee0b9e`)
 - **Dependensi:** B-14 (Gerbang STT), B-15 (Rekap Kelompok)
 - **Memblokir:** B-09 s.d. B-11
 - **Versi Dokumen:** 1.0 (5 November 2026)
@@ -135,9 +135,9 @@ Sesuai SOP Pentashihan Mushaf Al-Qur'an Kementerian Agama RI dan hasil konfirmas
 
 ## 4. Kriteria Keberhasilan (*Definition of Done*)
 
-- [ ] Model `publisher_revision_recaps` tersimpan rapi via migrasi Prisma.
-- [ ] Tombol kirim revisi penerbit mengunci kewajiban unggah dokumen rekap revisi (PDF/DOCX).
-- [ ] Distributor tidak dapat membagikan naskah ronde revisi jika rekap revisi penerbit untuk ronde tersebut belum tersedia.
-- [ ] Seluruh transisi menuju `READY_FOR_STT` wajib melewati kelulusan tahap Dumi (`DUMMY`). Tidak ada jalan pintas dari tashih awal langsung ke STT.
-- [ ] Seluruh pengujian unit backend dan frontend lulus 100%.
+- [x] Model `publisher_revision_recaps` tersimpan rapi via migrasi Prisma.
+- [x] Tombol kirim revisi penerbit mengunci kewajiban unggah dokumen rekap revisi (PDF/DOCX).
+- [x] Distributor tidak dapat membagikan naskah ronde revisi jika rekap revisi penerbit untuk ronde tersebut belum tersedia.
+- [x] Seluruh transisi menuju `READY_FOR_STT` wajib melewati kelulusan tahap Dumi (`DUMMY`). Tidak ada jalan pintas dari tashih awal langsung ke STT.
+- [x] Seluruh pengujian unit backend dan frontend lulus 100%.
 
