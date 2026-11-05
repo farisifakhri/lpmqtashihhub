@@ -54,6 +54,8 @@ model User {
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
+  service_documents_created        ServiceDocument[]               @relation("ServiceDocumentCreatedBy")
+  service_documents_updated        ServiceDocument[]               @relation("ServiceDocumentUpdatedBy")
   information_guides_created       InformationGuide[]              @relation("InformationGuideCreatedBy")
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
@@ -1167,6 +1169,29 @@ model RegulationDocument {
   @@index([created_at])
   @@index([document_number])
   @@map("regulation_documents")
+}
+
+model ServiceDocument {
+  id            String   @id @default(uuid())
+  title         String   @db.VarChar(255)
+  category      String   @db.VarChar(100)
+  file_name     String   @db.VarChar(255)
+  storage_path  String   @db.VarChar(255)
+  file_size     Int
+  mime_type     String   @db.VarChar(100)
+  is_published  Boolean  @default(true)
+  created_by_id String?
+  updated_by_id String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  created_by User? @relation("ServiceDocumentCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by User? @relation("ServiceDocumentUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@map("service_documents")
 }
 
 model InformationGuide {

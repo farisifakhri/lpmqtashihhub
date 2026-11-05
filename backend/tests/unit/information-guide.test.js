@@ -56,6 +56,13 @@ test('guide list query parses publication state and rejects excessive page sizes
   const parsed = listInformationGuidesSchema.query.parse({ page: '2', limit: '25', is_published: 'false' });
   assert.deepEqual(parsed, { page: 2, limit: 25, is_published: false });
   assert.equal(listInformationGuidesSchema.query.parse({ section: 'SOP' }).section, 'SOP');
+  assert.equal(listInformationGuidesSchema.query.parse({ section: 'SIARAN_PERS' }).section, 'SIARAN_PERS');
+  assert.equal(createInformationGuideSchema.body.safeParse({
+    title: 'Siaran Pers LPMQ',
+    section: 'SIARAN_PERS',
+    content_type: 'EDITOR',
+    content_html: '<p>Isi siaran pers</p>',
+  }).success, true);
   assert.equal(listInformationGuidesSchema.query.safeParse({ limit: '101' }).success, false);
 });
 
@@ -100,6 +107,27 @@ test('public information list scopes results to the requested section', async ()
     };
 
     const result = await listPublicInformationGuides({ section: 'SOP' });
+    assert.deepEqual(result.items, []);
+  } finally {
+    prisma.informationGuide.count = originalCount;
+    prisma.informationGuide.findMany = originalFindMany;
+  }
+});
+
+test('public information list scopes siaran pers to its own section', async () => {
+  const originalCount = prisma.informationGuide.count;
+  const originalFindMany = prisma.informationGuide.findMany;
+  try {
+    prisma.informationGuide.count = async ({ where }) => {
+      assert.equal(where.section, 'SIARAN_PERS');
+      return 0;
+    };
+    prisma.informationGuide.findMany = async ({ where }) => {
+      assert.equal(where.section, 'SIARAN_PERS');
+      return [];
+    };
+
+    const result = await listPublicInformationGuides({ section: 'SIARAN_PERS' });
     assert.deepEqual(result.items, []);
   } finally {
     prisma.informationGuide.count = originalCount;

@@ -9,12 +9,13 @@ export const PUBLIC_NAV_ITEMS = [
     label: 'Informasi',
     href: '#',
     children: [
-      { label: 'Informasi Layanan Pentashihan', href: '#' },
-      { label: 'Alur & Regulasi STT', href: '#' },
-      { label: 'Persyaratan Berkas Naskah', href: '#' },
       { label: "Regulasi Penerbit Mushaf Al-Qur'an", href: '/informasi/regulasi-penerbit-mushaf' },
       { label: 'Panduan Permohonan Surat Tanda Tashih/Izin Edar', href: '/informasi/panduan-permohonan-surat-tanda-tashih' },
       { label: 'SOP Pelayanan Surat Tanda Tashih', href: '/informasi/sop-pelayanan-surat-tanda-tashih' },
+      { label: "Direktori Penerbit Mushaf Al-Qur'an", href: '/informasi/direktori-penerbit-mushaf' },
+      { label: 'Survei IKM dan IPAK Pelayanan Surat Tanda Tashih', href: '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih' },
+      { label: 'Siaran Pers', href: '/informasi/siaran-pers' },
+      { label: 'Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar', href: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih' },
     ],
   },
   { label: 'Permohonan Master', href: '#beranda' },
@@ -35,15 +36,7 @@ export const PUBLIC_INFORMATION_NAV_ITEMS = PUBLIC_NAV_ITEMS.map((item) => ({
   href: item.label === 'Informasi' || item.label === 'Pengaduan' ? '#' : '/',
   children: item.children?.map((child) => ({
     ...child,
-    href: child.label === "Regulasi Penerbit Mushaf Al-Qur'an" ||
-      child.label === 'Panduan Permohonan Surat Tanda Tashih/Izin Edar' ||
-      child.label === 'SOP Pelayanan Surat Tanda Tashih'
-      ? child.href
-      : item.label === 'Informasi'
-        ? '/'
-        : item.label === 'Pengaduan'
-          ? '/'
-          : '#',
+    href: item.label === 'Informasi' ? child.href : '/',
   })),
 }));
 
@@ -104,8 +97,8 @@ export const PublicHeader = ({
                     }}
                     className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
                       isOpen || isActive
-                        ? 'text-lpmq-green font-semibold hover:bg-lpmq-soft'
-                        : 'text-lpmq-nav hover:text-lpmq-green hover:bg-lpmq-soft'
+                        ? 'text-lpmq-green font-semibold'
+                        : 'text-lpmq-nav hover:text-lpmq-green'
                     }`}
                   >
                     <span>{item.label}</span>
@@ -164,8 +157,8 @@ export const PublicHeader = ({
                 }}
                 className={`text-[13px] font-medium transition-colors py-2 ${
                   isActive || (activePage === 'Beranda' && index === 0)
-                    ? 'text-lpmq-green font-semibold hover:bg-lpmq-soft'
-                    : 'text-lpmq-nav hover:text-lpmq-green hover:bg-lpmq-soft'
+                    ? 'text-lpmq-green font-semibold'
+                    : 'text-lpmq-nav hover:text-lpmq-green'
                 }`}
               >
                 {item.label}
@@ -226,7 +219,7 @@ export const PublicHeader = ({
               if (hasChildren) {
                 return (
                   <div key={item.label} className="rounded-xl overflow-hidden">
-                    <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-lpmq-nav hover:bg-lpmq-soft">
+                    <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium text-lpmq-nav">
                       <a
                         href={item.href}
                         onClick={(event) => {
@@ -288,7 +281,7 @@ export const PublicHeader = ({
                     if (item.href.startsWith('/')) handleInternalNavigation(item.href, event);
                     setMenuOpen(false);
                   }}
-                  className={`rounded-xl px-3 py-3 text-sm font-medium hover:bg-lpmq-soft hover:text-lpmq-green ${
+                  className={`rounded-xl px-3 py-3 text-sm font-medium hover:text-lpmq-green ${
                     activePage === item.label ? 'text-lpmq-green' : 'text-lpmq-nav'
                   }`}
                 >
