@@ -33,13 +33,13 @@ describe('Helper Admin navigation', () => {
     expect(document.querySelector('a[href*="/internal/tashih"]')).not.toBeNull();
     expect(document.querySelector('a[href="/internal/documents"]')).not.toBeNull();
     // Helper admin does NOT have access to publisher portal, signatures, and superadmin settings
-    for (const path of ['/internal/settings', '/internal/users', '/internal/signatures', '/publisher']) {
+    for (const path of ['/internal/settings', '/internal/users', '/internal/signatures', '/internal/surveys', '/publisher']) {
       expect(document.querySelector(`a[href="${path}"]`)).toBeNull();
     }
   });
   it('keeps SUPERADMIN navigation available', () => {
     show('SUPERADMIN');
-    for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/publisher']) {
+    for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/internal/surveys', '/publisher']) {
       expect(document.querySelector(`a[href*="${path}"]`)).not.toBeNull();
     }
   });

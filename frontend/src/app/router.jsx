@@ -50,6 +50,7 @@ const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/
 const RegulationInfoPage = withSuspense(lazy(() => import('@/features/information/RegulationInfoPage').then(m => ({ default: m.RegulationInfoPage }))));
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
+const SurveyManagementPage = withSuspense(lazy(() => import('@/features/internal/survey/SurveyManagementPage').then(m => ({ default: m.SurveyManagementPage }))));
 
 const router = createBrowserRouter([
   // Rute Publik (Landing Page)
@@ -285,6 +286,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
             <LandingPageManagementPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/surveys',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
+            <SurveyManagementPage />
           </ProtectedRoute>
         ),
       },
