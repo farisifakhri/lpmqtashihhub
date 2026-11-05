@@ -18,6 +18,22 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
     orderBy: { created_at: 'desc' },
   });
+  // B-16 Titik Kontrol (c): Penugasan naskah revisi memblokir bila berkas rekapitulasi penerbit belum diunggah
+  if (lastRevLetter) {
+    const requiredRound = lastRevLetter.version || lastRevLetter.content_snapshot?.revision_round || 1;
+    const recap = await tx.publisherRevisionRecap?.findUnique({
+      where: {
+        registration_id_round_number: {
+          registration_id: id,
+          round_number: requiredRound,
+        },
+      },
+    });
+    if (!recap) {
+      fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
+    }
+  }
+
   const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
   const expectedStage = isDummyRevision
     ? 'DUMMY'
@@ -292,6 +308,10 @@ export async function listMyAssignments(user, query = {}) {
             where: { document_type: 'REVISION_RETURN_LETTER' },
             orderBy: { created_at: 'desc' },
           },
+          publisher_revision_recaps: {
+            include: { recap_file: true },
+            orderBy: { round_number: 'desc' },
+          },
         },
       },
       team: { select: { id: true, name: true, decree_no: true } },
@@ -302,17 +322,7 @@ export async function listMyAssignments(user, query = {}) {
   });
 }
 
-export const assertReadyForSttEligibility = async (tx, registrationId) => {
-  const last = await tx.assignment.findFirst({ where: { registration_id: registrationId }, orderBy: { iteration: 'desc' } });
-  if (!last) fail(409, 'Penugasan belum tersedia.');
-  const assignments = await tx.assignment.findMany({
-    where: { registration_id: registrationId, iteration: last.iteration },
-    include: { reviews: true },
-  });
-
-  if (!assignments.length) fail(409, 'Penugasan belum tersedia.');
-
-  // Kelompokkan penugasan berdasarkan Unit Penugasan (Kelompok vs Individu)
+export const assertDistributionReviewCompleteness = (assignments) => {
   const teamAssignmentsMap = new Map();
   const individualAssignments = [];
 
@@ -326,8 +336,6 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   }
 
   // Tahap 1: Verifikasi kelengkapan status dan keberadaan review
-  // Untuk individu: status wajib COMPLETED dan ada review
-  // Untuk kelompok: jika ada 1 rekap TEAM dengan file, seluruh anggota tim dianggap terpenuhi; jika tidak, semua anggota wajib COMPLETED dan ada review
   const hasIncomplete = individualAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews?.length) ||
     Array.from(teamAssignmentsMap.values()).some(tAssignments => {
       const allReviews = tAssignments.flatMap(a => a.reviews || []);
@@ -340,7 +348,7 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
     fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
   }
 
-  // Tahap 2: Verifikasi hasil keputusan telaah (semua review yang masuk wajib PASSED untuk STT)
+  // Tahap 2: Verifikasi hasil keputusan telaah (semua review yang masuk wajib PASSED)
   if (assignments.some(item => item.reviews?.some(review => review.result !== 'PASSED'))) {
     fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
   }
@@ -367,6 +375,23 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   if (!hasAnyRecap) {
     fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
   }
+};
+
+export const assertReadyForSttEligibility = async (tx, registrationId) => {
+  const last = await tx.assignment.findFirst({ where: { registration_id: registrationId }, orderBy: { iteration: 'desc' } });
+  if (!last) fail(409, 'Penugasan belum tersedia.');
+
+  // B-16: Penegakan Siklus Wajib Dumi - Naskah wajib melalui dan lulus tahap DUMMY sebelum STT
+  if (last.stage !== 'DUMMY') {
+    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena belum melalui dan lulus tahap verifikasi naskah dumi fisik.');
+  }
+  const assignments = await tx.assignment.findMany({
+    where: { registration_id: registrationId, iteration: last.iteration },
+    include: { reviews: true },
+  });
+
+  if (!assignments.length) fail(409, 'Penugasan belum tersedia.');
+  assertDistributionReviewCompleteness(assignments);
 
   return { lastIteration: last.iteration, assignments };
 };
@@ -388,6 +413,13 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   }
 
   if (data.result === 'PASSED') {
+    assertDistributionReviewCompleteness(assignments);
+  }
+
+  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
+  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
+
+  if (isEligibleForStt) {
     await assertReadyForSttEligibility(tx, id);
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
@@ -401,14 +433,19 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     }
   }
 
-  const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
-  await move(tx, reg, status, user, data.notes);
+  const status = isEligibleForStt ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
+  const isTransitionToDummy = data.result === 'PASSED' && last.stage !== 'DUMMY';
+  const decisionNotes = isTransitionToDummy
+    ? (data.notes || 'Telaah teks naskah dinyatakan lulus. Pengajuan dialihkan ke tahap dumi fisik; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.')
+    : data.notes;
+
+  await move(tx, reg, status, user, decisionNotes);
 
   let revisionRound = null;
   let revisionKind = null;
 
   if (status === 'REVISION_REQUIRED') {
-    revisionKind = data.revision_kind || 'NASKAH_PERBAIKAN';
+    revisionKind = isTransitionToDummy ? 'NASKAH_DUMI' : (data.revision_kind || (last.stage === 'DUMMY' ? 'NASKAH_DUMI' : 'NASKAH_PERBAIKAN'));
     const previousLetters = tx.officialDocument?.count
       ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
       : 0;
