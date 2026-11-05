@@ -294,6 +294,23 @@ export async function listMyAssignments(user, query = {}) {
   });
 }
 
+export const assertReadyForSttEligibility = async (tx, registrationId) => {
+  const last = await tx.assignment.findFirst({ where: { registration_id: registrationId }, orderBy: { iteration: 'desc' } });
+  if (!last) fail(409, 'Penugasan belum tersedia.');
+  const assignments = await tx.assignment.findMany({ where: { registration_id: registrationId, iteration: last.iteration }, include: { reviews: true } });
+  if (assignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) {
+    fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
+  }
+  if (assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) {
+    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+  }
+  const hasRecap = assignments.some(item => item.reviews.some(r => r.recap_file_id));
+  if (!hasRecap) {
+    fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
+  }
+  return { lastIteration: last.iteration, assignments };
+};
+
 export const approveDistribution = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
@@ -303,16 +320,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true } });
   if (data.result === 'PASSED') {
-    if (assignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) {
-      fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
-    }
-    if (assignments.some(item => item.reviews.some(review => review.result !== 'PASSED'))) {
-      fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
-    }
-    const hasRecap = assignments.some(item => item.reviews.some(r => r.recap_file_id));
-    if (!hasRecap) {
-      fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
-    }
+    await assertReadyForSttEligibility(tx, id);
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
 
