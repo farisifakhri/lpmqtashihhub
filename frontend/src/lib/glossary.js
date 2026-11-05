@@ -236,3 +236,4 @@ export function formatUserStatus(status) {
   if (!status) return '-';
   return USER_STATUS_LABELS[status] || String(status).replace(/_/g, ' ');
 }
+

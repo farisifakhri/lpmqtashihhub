@@ -48,3 +48,4 @@ describe('Glosarium & Formatters Narasi Resmi (B-12)', () => {
     expect(formatUserStatus('ACTIVE')).toBe('Aktif');
   });
 });
+

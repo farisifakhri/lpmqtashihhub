@@ -117,3 +117,4 @@ Gunakan tabel ini untuk memastikan tidak ada kode sistem (*developer enum*) yang
    SLA resmi adalah dalam satuan **Hari Kerja (HK)** (bukan hari kalender). Hitungan SLA naskah resmi dimulai pada **H+1 setelah verifikasi pembayaran PNBP disahkan**.
 5. **Kerahasiaan Sidang Pentashihan:**
    Identitas pentashih personal dan berkas rekapitulasi koreksi internal bersifat **rahasia dinas LPMQ**. Antarmuka penerbit hanya menerima Surat Pengembalian Naskah Perbaikan resmi yang disahkan Koordinator Distribusi.
+
