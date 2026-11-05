@@ -169,6 +169,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'publisher/progress',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="progress" defaultView="processing" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'publisher/revisions',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="revisions" defaultView="REVISION_REQUIRED" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'publisher/registrations/:id',
         element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
       },
@@ -239,6 +255,30 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <DistributorHandoverInboxPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/handover',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="HANDOVER" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/assignment',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="ASSIGNMENT" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/monitoring',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="MONITORING" />
           </ProtectedRoute>
         ),
       },

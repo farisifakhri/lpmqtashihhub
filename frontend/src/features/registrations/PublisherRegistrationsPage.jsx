@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
+  AlertTriangle,
   Search,
   RefreshCw,
   Plus,
@@ -31,11 +32,16 @@ const STATUS_FILTER_OPTIONS = [
   ['CANCELLED', 'Dibatalkan'],
 ];
 
-export function PublisherRegistrationsPage({ documents = false }) {
+export function PublisherRegistrationsPage({
+  documents = false,
+  defaultView = "ALL",
+  pageTitle,
+  pageSubtitle,
+}) {
   const { currentUser } = useAuth();
   const [params, setParams] = useSearchParams();
   const query = params.get('search') || '';
-  const view = params.get('view') || 'ALL';
+  const view = params.get('view') || defaultView || 'ALL';
   const requestedPage = Number(params.get('page'));
   const page =
     Number.isSafeInteger(requestedPage) && requestedPage > 0 && requestedPage <= 1000000
