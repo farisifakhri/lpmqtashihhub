@@ -32,11 +32,12 @@ const optionBody = z.object({
 const questionBody = z.object({
   text: z.string().trim().min(5, 'Teks pertanyaan minimal 5 karakter.').max(2000, 'Teks pertanyaan maksimal 2000 karakter.'),
   type: z.enum(['PILIHAN', 'ESAI'], { message: 'Tipe pertanyaan harus Pilihan atau Esai.' }),
+  unsur_id: z.string({ message: 'Pilih unsur untuk pertanyaan ini.' }).uuid('Pilih unsur untuk pertanyaan ini.'),
   options: z.array(optionBody).max(10, 'Maksimal 10 opsi jawaban.').default([]),
 });
 
 export const listQuestionsSchema = {
-  query: z.object({ search: z.string().trim().max(191).optional(), type: z.enum(['PILIHAN', 'ESAI']).optional() }),
+  query: z.object({ search: z.string().trim().max(191).optional(), type: z.enum(['PILIHAN', 'ESAI']).optional(), unsur_id: z.string().uuid().optional() }),
 };
 export const createQuestionSchema = { body: questionBody };
 export const updateQuestionSchema = { ...idParams, body: questionBody };

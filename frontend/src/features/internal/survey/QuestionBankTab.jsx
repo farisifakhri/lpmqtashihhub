@@ -7,32 +7,47 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, OPTION_PRESETS } from './survey-constants';
+import { inputClass, OPTION_PRESETS, unsurLabel } from './survey-constants';
 
-const EMPTY = { text: '', type: 'PILIHAN', options: OPTION_PRESETS[0].options };
+const EMPTY = { text: '', type: 'PILIHAN', unsur_id: '', options: OPTION_PRESETS[0].options };
+
+// Bank soal dikelompokkan per unsur (urutan dari server); pertanyaan lama tanpa unsur di grup terakhir.
+const groupByUnsur = (questions) => {
+  const groups = new Map();
+  for (const q of questions) {
+    const key = q.unsur_id || 'none';
+    if (!groups.has(key)) groups.set(key, { unsur: q.unsur, items: [] });
+    groups.get(key).items.push(q);
+  }
+  return [...groups.values()];
+};
 
 export function QuestionBankTab() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [unsurFilter, setUnsurFilter] = useState('');
+  const [unsurList, setUnsurList] = useState([]);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
-    surveyApi.listQuestions({ search: search.trim() || undefined })
+    surveyApi.listQuestions({ search: search.trim() || undefined, unsur_id: unsurFilter || undefined })
       .then((res) => setItems(res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [search]);
+  }, [search, unsurFilter]);
 
   useEffect(load, [load]);
+  useEffect(() => { surveyApi.listUnsur().then((r) => setUnsurList(r.data || [])).catch(() => {}); }, []);
+  const formUnsur = unsurList.find((u) => u.id === form?.unsur_id);
 
   const save = async (event) => {
     event.preventDefault();
     setSaving(true);
     try {
-      const body = { text: form.text, type: form.type, options: form.type === 'PILIHAN' ? form.options : [] };
+      const body = { text: form.text, type: form.type, unsur_id: form.unsur_id, options: form.type === 'PILIHAN' ? form.options : [] };
       if (form.id) await surveyApi.updateQuestion(form.id, body);
       else await surveyApi.createQuestion(body);
       showToast(form.id ? 'Pertanyaan diperbarui.' : 'Pertanyaan ditambahkan.', 'success');
@@ -55,16 +70,26 @@ export function QuestionBankTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-ink-muted">Pertanyaan yang sudah dijawab responden terkunci; gunakan Duplikat untuk membuat versi baru.</p>
         <div className="flex items-center gap-2">
+          <select className={`${inputClass} w-56`} aria-label="Filter unsur" value={unsurFilter} onChange={(e) => setUnsurFilter(e.target.value)}>
+            <option value="">Semua unsur</option>
+            {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
+          </select>
           <input className={`${inputClass} w-56`} placeholder="Cari pertanyaan…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari pertanyaan" />
-          <Button size="sm" onClick={() => setForm({ ...EMPTY })}><Plus className="w-4 h-4" /> Tambah Pertanyaan</Button>
+          <Button size="sm" onClick={() => setForm({ ...EMPTY, unsur_id: unsurFilter })}><Plus className="w-4 h-4" /> Tambah Pertanyaan</Button>
         </div>
       </div>
 
       {!loading && !items.length ? (
         <EmptyState title="Belum ada pertanyaan" description="Tambahkan pertanyaan beserta opsi jawabannya, lalu masukkan ke survei." />
       ) : (
-        <div className="space-y-2.5">
-          {items.map((q) => {
+        <div className="space-y-5">
+          {groupByUnsur(items).map((group) => (
+          <section key={group.unsur?.id || 'none'} className="space-y-2.5" aria-label={group.unsur ? `Pertanyaan unsur ${group.unsur.name}` : 'Pertanyaan tanpa unsur'}>
+            <h3 className="text-sm font-bold text-ink">
+              {group.unsur ? unsurLabel(group.unsur) : 'Belum dikelompokkan ke unsur'}
+              <span className="ml-2 text-xs font-normal text-ink-muted">{group.items.length} pertanyaan</span>
+            </h3>
+          {group.items.map((q) => {
             const locked = q._count?.answers > 0;
             return (
               <article key={q.id} className="rounded-xl border border-line bg-white p-4 space-y-2">
@@ -87,7 +112,7 @@ export function QuestionBankTab() {
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs text-ink-muted">Dipakai di {q._count?.items || 0} survei · {q._count?.answers || 0} jawaban</span>
                   <div className="flex gap-1.5">
-                    {!locked && <Button size="sm" variant="ghost" aria-label="Ubah pertanyaan" onClick={() => setForm({ id: q.id, text: q.text, type: q.type, options: q.options.map(({ label, value }) => ({ label, value })) })}><Pencil className="w-4 h-4" /></Button>}
+                    {!locked && <Button size="sm" variant="ghost" aria-label="Ubah pertanyaan" onClick={() => setForm({ id: q.id, text: q.text, type: q.type, unsur_id: q.unsur_id || '', options: q.options.map(({ label, value }) => ({ label, value })) })}><Pencil className="w-4 h-4" /></Button>}
                     <Button size="sm" variant="ghost" aria-label="Duplikat pertanyaan" onClick={() => run(() => surveyApi.duplicateQuestion(q.id), 'Pertanyaan diduplikat.')}><Copy className="w-4 h-4" /></Button>
                     {!q._count?.items && !locked && (
                       <Button size="sm" variant="ghost" aria-label="Hapus pertanyaan" onClick={() => window.confirm('Hapus pertanyaan ini?') && run(() => surveyApi.deleteQuestion(q.id), 'Pertanyaan dihapus.')}>
@@ -99,12 +124,20 @@ export function QuestionBankTab() {
               </article>
             );
           })}
+          </section>
+          ))}
         </div>
       )}
 
       <Modal isOpen={!!form} onClose={() => setForm(null)} title={form?.id ? 'Ubah Pertanyaan' : 'Tambah Pertanyaan'} size="lg">
         {form && (
           <form onSubmit={save} className="space-y-4">
+            <FormField label="Unsur" required hint={formUnsur?.definition || 'Pertanyaan akan muncul di Pemilihan Survei saat unsur ini dipilih.'}>
+              <select className={inputClass} required value={form.unsur_id} onChange={(e) => setForm({ ...form, unsur_id: e.target.value })}>
+                <option value="">Pilih unsur…</option>
+                {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
+              </select>
+            </FormField>
             <FormField label="Teks pertanyaan" required>
               <textarea className={inputClass} rows={3} minLength={5} maxLength={2000} required value={form.text} onChange={(e) => setForm({ ...form, text: e.target.value })} />
             </FormField>

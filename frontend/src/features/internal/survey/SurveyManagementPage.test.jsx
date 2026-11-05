@@ -6,7 +6,7 @@ import { SurveyManagementPage } from './SurveyManagementPage';
 import { surveyApi } from '@/api/survey.api';
 
 const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.', is_standard: true, sort_order: 1, is_archived: false, _count: { items: 0 } };
-const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
+const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', unsur_id: 'u1', unsur: { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', sort_order: 1 }, options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
 const baseSurvey = { id: 's1', name: 'Survei IKM 2027', kind: 'IKM', description: null, starts_at: '2027-01-01T00:00:00.000Z', ends_at: '2027-12-31T00:00:00.000Z', status: 'DRAFT', display_status: 'DRAFT', updated_at: 'v1', _count: { items: 0, responses: 0 } };
 
 const renderPage = (path = '/internal/surveys') => render(<MemoryRouter initialEntries={[path]}><SurveyManagementPage /></MemoryRouter>);
@@ -182,5 +182,34 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.getByText('Fisik (Tuna Daksa)')).toBeInTheDocument();
     expect(screen.getByText('Campuran (Hybrid)')).toBeInTheDocument();
     expect(screen.getByText('Tanda tashih mushaf cetak')).toBeInTheDocument();
+  });
+
+  it('Pertanyaan Survei: unsur wajib di form, dikirim ke API, dan bank soal dikelompokkan per unsur', async () => {
+    const create = vi.spyOn(surveyApi, 'createQuestion').mockResolvedValue({ data: question });
+    renderPage('/internal/surveys?tab=pertanyaan');
+    expect(await screen.findByRole('heading', { name: /A · Persyaratan Pelayanan/ })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Filter unsur'), { target: { value: 'u1' } });
+    await waitFor(() => expect(surveyApi.listQuestions).toHaveBeenLastCalledWith({ search: undefined, unsur_id: 'u1' }));
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Pertanyaan/ }));
+    expect(screen.getByLabelText(/^Unsur/)).toHaveValue('u1'); // terisi dari filter
+    fireEvent.change(screen.getByLabelText(/Teks pertanyaan/), { target: { value: 'Bagaimana kejelasan persyaratan?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ unsur_id: 'u1', text: 'Bagaimana kejelasan persyaratan?' })));
+  });
+
+  it('Pemilihan Survei hanya menampilkan pertanyaan milik unsur yang dipilih', async () => {
+    const other = { ...question, id: 'q2', text: 'Pertanyaan unsur biaya', unsur_id: 'u2', unsur: { id: 'u2', name: 'Biaya/Tarif' } };
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u2', code: 'D', name: 'Biaya/Tarif' }] });
+    surveyApi.listQuestions.mockResolvedValue({ data: [question, other] });
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
+    await screen.findByRole('option', { name: 'D · Biaya/Tarif' });
+
+    const questionSelect = screen.getByLabelText('Pilih pertanyaan');
+    expect(questionSelect).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u2' } });
+    expect(questionSelect).not.toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Pertanyaan unsur biaya' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Bagaimana kesesuaian persyaratan?' })).not.toBeInTheDocument();
   });
 });

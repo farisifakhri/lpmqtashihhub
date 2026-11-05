@@ -37,7 +37,8 @@ function ItemsEditor({ survey, onSaved }) {
 
   const pickedUnsur = unsurList.find((u) => u.id === pick.unsur_id);
   const used = new Set(draft.map((d) => d.question.id));
-  const available = questions.filter((q) => !used.has(q.id));
+  // Hanya pertanyaan bank soal milik unsur terpilih (dan belum dipakai) agar dropdown tidak panjang.
+  const available = questions.filter((q) => !used.has(q.id) && q.unsur_id === pick.unsur_id);
   const dirty = JSON.stringify(draft.map((d) => [d.unsur.id, d.question.id]))
     !== JSON.stringify(survey.items.map((i) => [i.unsur_id, i.question_id]));
 
@@ -102,12 +103,14 @@ function ItemsEditor({ survey, onSaved }) {
         <div className="space-y-3 rounded-xl border border-dashed border-line-strong bg-surface-subtle/40 p-4">
           <p className="text-xs font-semibold text-ink">Tambah pertanyaan ke survei</p>
           <div className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
-            <select className={inputClass} aria-label="Pilih unsur" value={pick.unsur_id} onChange={(e) => setPick({ ...pick, unsur_id: e.target.value })}>
+            <select className={inputClass} aria-label="Pilih unsur" value={pick.unsur_id} onChange={(e) => setPick({ unsur_id: e.target.value, question_id: '' })}>
               <option value="">Pilih unsur…</option>
               {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
             </select>
-            <select className={inputClass} aria-label="Pilih pertanyaan" value={pick.question_id} onChange={(e) => setPick({ ...pick, question_id: e.target.value })}>
-              <option value="">Pilih pertanyaan dari bank…</option>
+            <select className={inputClass} aria-label="Pilih pertanyaan" disabled={!pick.unsur_id} value={pick.question_id} onChange={(e) => setPick({ ...pick, question_id: e.target.value })}>
+              <option value="">
+                {!pick.unsur_id ? 'Pilih unsur terlebih dahulu' : available.length ? `Pilih pertanyaan (${available.length} tersedia)…` : 'Belum ada pertanyaan untuk unsur ini'}
+              </option>
               {available.map((q) => <option key={q.id} value={q.id}>{q.text}</option>)}
             </select>
             <Button type="button" variant="outline" disabled={!pick.unsur_id || !pick.question_id} onClick={add}><Plus className="w-4 h-4" /> Tambah</Button>

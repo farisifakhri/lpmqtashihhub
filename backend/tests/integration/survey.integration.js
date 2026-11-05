@@ -90,20 +90,29 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     unsurB = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-B', name: 'Prosedur Pelayanan', kind: 'IKM' }, 201);
     assert.equal((await call('/admin/survey-unsur', adminToken, 'POST', { code: 'T-A', name: 'Duplikat kode', kind: 'IKM' })).status, 409);
 
-    const tooFewOptions = await call('/admin/survey-questions', adminToken, 'POST', { text: 'Pertanyaan tanpa opsi cukup', type: 'PILIHAN', options: [{ label: 'Baik', value: 4 }] });
+    const tooFewOptions = await call('/admin/survey-questions', adminToken, 'POST', { text: 'Pertanyaan tanpa opsi cukup', type: 'PILIHAN', unsur_id: unsurA.id, options: [{ label: 'Baik', value: 4 }] });
     assert.equal(tooFewOptions.status, 400);
 
     qPositive = await ok('/admin/survey-questions', adminToken, 'POST', {
-      text: 'Bagaimana kesesuaian persyaratan pelayanan?', type: 'PILIHAN',
+      text: 'Bagaimana kesesuaian persyaratan pelayanan?', type: 'PILIHAN', unsur_id: unsurA.id,
       options: [{ label: 'Sangat sesuai', value: 4 }, { label: 'Sesuai', value: 3 }, { label: 'Kurang sesuai', value: 2 }, { label: 'Tidak sesuai', value: 1 }],
     }, 201);
     qNegative = await ok('/admin/survey-questions', adminToken, 'POST', {
-      text: 'Apakah Anda pernah dipungut biaya tambahan?', type: 'PILIHAN',
+      text: 'Apakah Anda pernah dipungut biaya tambahan?', type: 'PILIHAN', unsur_id: unsurB.id,
       options: [{ label: 'Tidak pernah', value: 4 }, { label: 'Jarang', value: 3 }, { label: 'Sering', value: 2 }, { label: 'Selalu', value: 1 }],
     }, 201);
-    qEssay = await ok('/admin/survey-questions', adminToken, 'POST', { text: 'Saran dan kritik untuk pelayanan', type: 'ESAI' }, 201);
+    qEssay = await ok('/admin/survey-questions', adminToken, 'POST', { text: 'Saran dan kritik untuk pelayanan', type: 'ESAI', unsur_id: unsurB.id }, 201);
     assert.equal(qPositive.options.length, 4);
     assert.equal(qEssay.options.length, 0);
+
+    // Bank soal dikelompokkan per unsur: unsur wajib, bisa difilter per unsur, ikut saat diduplikat.
+    assert.equal((await call('/admin/survey-questions', adminToken, 'POST', { text: 'Pertanyaan tanpa unsur', type: 'ESAI' })).status, 400);
+    assert.equal(qPositive.unsur.name, 'Persyaratan Pelayanan');
+    const perUnsurB = await ok(`/admin/survey-questions?unsur_id=${unsurB.id}`, adminToken, 'GET');
+    assert.deepEqual(perUnsurB.map((q) => q.id).sort(), [qNegative.id, qEssay.id].sort());
+    const copy = await ok(`/admin/survey-questions/${qPositive.id}/duplicate`, adminToken, 'POST', undefined, 201);
+    assert.equal(copy.unsur_id, unsurA.id);
+    await ok(`/admin/survey-questions/${copy.id}`, adminToken, 'DELETE');
   });
 
   await test('Survei: status bebas diatur (seperti sistem lama), lalu pertanyaan disusun', async () => {
@@ -120,6 +129,9 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal(survey.starts_at, null);
     assert.equal((await ok(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST')).status, 'AKTIF');
     assert.equal((await ok(`/admin/surveys/${survey.id}`, adminToken, 'PUT', { status: 'NONAKTIF' })).status, 'NONAKTIF');
+
+    // Pertanyaan milik unsur B tidak boleh ditempatkan di unsur A.
+    assert.equal((await call(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [{ unsur_id: unsurA.id, question_id: qNegative.id }] })).status, 400);
 
     const detail = await ok(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [
       { unsur_id: unsurA.id, question_id: qPositive.id },
@@ -146,7 +158,7 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
       answers: { create: [answer(qPositive, 'Sesuai'), answer(qNegative, 'Jarang')] } } });
 
     assert.equal((await call(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [] })).status, 409);
-    assert.equal((await call(`/admin/survey-questions/${qPositive.id}`, adminToken, 'PUT', { text: 'Diubah setelah ada jawaban', type: 'ESAI' })).status, 409);
+    assert.equal((await call(`/admin/survey-questions/${qPositive.id}`, adminToken, 'PUT', { text: 'Diubah setelah ada jawaban', type: 'ESAI', unsur_id: unsurA.id })).status, 409);
     assert.equal((await call(`/admin/survey-unsur/${unsurA.id}`, adminToken, 'DELETE')).status, 409);
     assert.equal((await call(`/admin/surveys/${survey.id}`, adminToken, 'DELETE')).status, 409);
 

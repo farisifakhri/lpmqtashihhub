@@ -1198,18 +1198,19 @@ model InformationGuideImage {
 // ============================================================================
 
 model SurveyUnsur {
-  id          String       @id @default(uuid())
-  code        String?      @unique @db.VarChar(30) // opsional; diisi A–I untuk unsur baku
-  name        String       @db.VarChar(255)
-  kind        String       @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
-  definition  String?      @db.Text
+  id          String           @id @default(uuid())
+  code        String?          @unique @db.VarChar(30) // opsional; diisi A–I untuk unsur baku
+  name        String           @db.VarChar(255)
+  kind        String           @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  definition  String?          @db.Text
   // 9 unsur baku Pedoman Menteri PANRB 9/2024 (diisi migrasi); tidak boleh dihapus, hanya diarsipkan.
-  is_standard Boolean      @default(false)
-  sort_order  Int          @default(100) // 1–9 = urutan unsur di Pedoman; unsur lain di belakangnya
-  is_archived Boolean      @default(false)
-  created_at  DateTime     @default(now())
-  updated_at  DateTime     @updatedAt
+  is_standard Boolean          @default(false)
+  sort_order  Int              @default(100) // 1–9 = urutan unsur di Pedoman; unsur lain di belakangnya
+  is_archived Boolean          @default(false)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
   items       SurveyItem[]
+  questions   SurveyQuestion[]
 
   @@index([kind])
   @@map("survey_unsur")
@@ -1219,12 +1220,16 @@ model SurveyQuestion {
   id         String         @id @default(uuid())
   text       String         @db.Text
   type       String         @default("PILIHAN") @db.VarChar(20) // PILIHAN | ESAI
+  // Bank soal dikelompokkan per unsur agar Pemilihan Survei cukup menampilkan pertanyaan unsur terpilih.
+  unsur_id   String?
+  unsur      SurveyUnsur?   @relation(fields: [unsur_id], references: [id], onDelete: SetNull)
   created_at DateTime       @default(now())
   updated_at DateTime       @updatedAt
   options    SurveyOption[]
   items      SurveyItem[]
   answers    SurveyAnswer[]
 
+  @@index([unsur_id])
   @@map("survey_questions")
 }
 
@@ -1275,21 +1280,21 @@ model SurveyItem {
 }
 
 model SurveyResponse {
-  id              String         @id @default(uuid())
-  survey_id       String
-  survey          Survey         @relation(fields: [survey_id], references: [id])
-  registration_id String?
-  registration    Registration?  @relation(fields: [registration_id], references: [id], onDelete: SetNull)
-  respondent_name String?        @db.VarChar(255)
-  gender          String?        @db.VarChar(1) // L | P
-  age             Int?
-  education       String?        @db.VarChar(50)
-  occupation      String?        @db.VarChar(100)
+  id                   String         @id @default(uuid())
+  survey_id            String
+  survey               Survey         @relation(fields: [survey_id], references: [id])
+  registration_id      String?
+  registration         Registration?  @relation(fields: [registration_id], references: [id], onDelete: SetNull)
+  respondent_name      String?        @db.VarChar(255)
+  gender               String?        @db.VarChar(1) // L | P
+  age                  Int?
+  education            String?        @db.VarChar(50)
+  occupation           String?        @db.VarChar(100)
   // Data demografis & penilaian tambahan sesuai kuesioner Pedoman Menteri PANRB No. 9/2024 (hlm. 14–20).
   is_disabled          Boolean?
-  disability_type      String?   @db.VarChar(20) // FISIK | INTELEKTUAL | MENTAL | SENSORIK
-  service_type         String?   @db.VarChar(255) // jenis layanan yang diterima
-  service_category     String?   @db.VarChar(10) // DARING | LURING | HYBRID
+  disability_type      String?        @db.VarChar(20) // FISIK | INTELEKTUAL | MENTAL | SENSORIK
+  service_type         String?        @db.VarChar(255) // jenis layanan yang diterima
+  service_category     String?        @db.VarChar(10) // DARING | LURING | HYBRID
   service_received_at  DateTime? // tanggal & jam menerima layanan
   overall_satisfaction Int? // kepuasan keseluruhan, 1–5
   nps_score            Int? // loyalitas, 1–10
@@ -1297,9 +1302,9 @@ model SurveyResponse {
   ak_no_extortion      Int? // tidak ada pungli
   ak_no_broker         Int? // tidak ada percaloan
   ak_no_gratification  Int? // tidak ada imbalan di luar ketentuan
-  feedback             String?   @db.Text // kritik dan saran
-  submitted_at    DateTime       @default(now())
-  answers         SurveyAnswer[]
+  feedback             String?        @db.Text // kritik dan saran
+  submitted_at         DateTime       @default(now())
+  answers              SurveyAnswer[]
 
   @@unique([survey_id, registration_id])
   @@index([survey_id, submitted_at])

@@ -89,6 +89,7 @@ export async function deleteUnsur(id, user, req) {
 
 // ---------------------------------------------------------------- Bank pertanyaan
 const questionInclude = {
+  unsur: { select: { id: true, code: true, name: true, sort_order: true } },
   options: { orderBy: { sort_order: 'asc' } },
   _count: { select: { items: true, answers: true } },
 };
@@ -100,23 +101,32 @@ function assertOptions(type, options) {
 const optionRows = (type, options) =>
   type === 'PILIHAN' ? options.map((o, i) => ({ label: o.label, value: o.value, sort_order: i })) : [];
 
-export async function listQuestions({ search, type } = {}) {
+export async function listQuestions({ search, type, unsur_id } = {}) {
   return prisma.surveyQuestion.findMany({
-    where: { ...(type ? { type } : {}), ...(search ? { text: { contains: search } } : {}) },
-    orderBy: { created_at: 'desc' },
+    where: { ...(type ? { type } : {}), ...(unsur_id ? { unsur_id } : {}), ...(search ? { text: { contains: search } } : {}) },
+    // Dikelompokkan per unsur sesuai urutan Pedoman; pertanyaan tanpa unsur (data lama) tampil terakhir.
+    orderBy: [{ unsur: { sort_order: 'asc' } }, { created_at: 'asc' }],
     include: questionInclude,
   });
 }
 
-export async function createQuestion({ text, type, options }, user, req) {
-  assertOptions(type, options);
-  return withAudit(user, req, 'SURVEY_QUESTION_CREATE', 'SurveyQuestion', (tx) =>
-    tx.surveyQuestion.create({ data: { text, type, options: { create: optionRows(type, options) } }, include: questionInclude }));
+async function requireUnsur(tx, unsurId) {
+  if (!unsurId) return; // duplikat pertanyaan lama yang belum dikelompokkan
+  if (!(await tx.surveyUnsur.findUnique({ where: { id: unsurId } }))) fail(400, 'Unsur yang dipilih tidak ditemukan. Muat ulang halaman lalu pilih kembali.');
 }
 
-export async function updateQuestion(id, { text, type, options }, user, req) {
+export async function createQuestion({ text, type, unsur_id, options }, user, req) {
+  assertOptions(type, options);
+  return withAudit(user, req, 'SURVEY_QUESTION_CREATE', 'SurveyQuestion', async (tx) => {
+    await requireUnsur(tx, unsur_id);
+    return tx.surveyQuestion.create({ data: { text, type, unsur_id, options: { create: optionRows(type, options) } }, include: questionInclude });
+  });
+}
+
+export async function updateQuestion(id, { text, type, unsur_id, options }, user, req) {
   assertOptions(type, options);
   return withAudit(user, req, 'SURVEY_QUESTION_UPDATE', 'SurveyQuestion', async (tx) => {
+    await requireUnsur(tx, unsur_id);
     const question = await tx.surveyQuestion.findUnique({ where: { id }, include: questionInclude });
     if (!question) fail(404, 'Pertanyaan survei tidak ditemukan.');
     // Jawaban lama harus tetap bermakna sama; ubah lewat duplikat.
@@ -124,7 +134,7 @@ export async function updateQuestion(id, { text, type, options }, user, req) {
     await tx.surveyOption.deleteMany({ where: { question_id: id } });
     return tx.surveyQuestion.update({
       where: { id },
-      data: { text, type, options: { create: optionRows(type, options) } },
+      data: { text, type, unsur_id, options: { create: optionRows(type, options) } },
       include: questionInclude,
     });
   });
@@ -133,7 +143,7 @@ export async function updateQuestion(id, { text, type, options }, user, req) {
 export async function duplicateQuestion(id, user, req) {
   const question = await prisma.surveyQuestion.findUnique({ where: { id }, include: questionInclude });
   if (!question) fail(404, 'Pertanyaan survei tidak ditemukan.');
-  return createQuestion({ text: `${question.text} (salinan)`, type: question.type, options: question.options }, user, req);
+  return createQuestion({ text: `${question.text} (salinan)`, type: question.type, unsur_id: question.unsur_id, options: question.options }, user, req);
 }
 
 export async function deleteQuestion(id, user, req) {
@@ -207,12 +217,16 @@ export async function setSurveyItems(id, items, user, req) {
     if (survey._count.responses) fail(409, 'Susunan pertanyaan terkunci karena survei sudah memiliki jawaban.');
     const questionIds = items.map((i) => i.question_id);
     if (new Set(questionIds).size !== questionIds.length) fail(400, 'Satu pertanyaan hanya boleh muncul sekali dalam survei.');
-    const [unsurCount, questionCount] = await Promise.all([
+    const [unsurCount, questions] = await Promise.all([
       tx.surveyUnsur.count({ where: { id: { in: [...new Set(items.map((i) => i.unsur_id))] } } }),
-      tx.surveyQuestion.count({ where: { id: { in: questionIds } } }),
+      tx.surveyQuestion.findMany({ where: { id: { in: questionIds } }, select: { id: true, unsur_id: true } }),
     ]);
-    if (unsurCount !== new Set(items.map((i) => i.unsur_id)).size || questionCount !== questionIds.length) {
+    if (unsurCount !== new Set(items.map((i) => i.unsur_id)).size || questions.length !== questionIds.length) {
       fail(400, 'Sebagian unsur atau pertanyaan tidak ditemukan. Muat ulang halaman lalu susun kembali.');
+    }
+    const unsurOf = new Map(questions.map((q) => [q.id, q.unsur_id]));
+    if (items.some((i) => unsurOf.get(i.question_id) && unsurOf.get(i.question_id) !== i.unsur_id)) {
+      fail(400, 'Pertanyaan harus ditempatkan pada unsur yang sama dengan unsurnya di bank soal.');
     }
     await tx.surveyItem.deleteMany({ where: { survey_id: id } });
     await tx.surveyItem.createMany({ data: items.map((i, idx) => ({ survey_id: id, unsur_id: i.unsur_id, question_id: i.question_id, sort_order: idx })) });
