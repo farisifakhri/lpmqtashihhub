@@ -50,9 +50,13 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     const invalidDates = await call('/admin/surveys', adminToken, 'POST', { name: 'Survei tanggal terbalik', kind: 'IKM', starts_at: '2027-12-31', ends_at: '2027-01-01' });
     assert.equal(invalidDates.status, 400);
 
-    survey = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IKM Uji', kind: 'IKM', starts_at: '2026-01-01', ends_at: '2099-12-31' }, 201);
+    // Seperti sistem lama: cukup nama (topik) + status. Survei baru belum bisa langsung Aktif.
+    assert.equal((await call('/admin/surveys', adminToken, 'POST', { name: 'Survei langsung aktif', status: 'AKTIF' })).status, 409);
+    survey = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IKM Uji', status: 'DRAFT' }, 201);
     assert.equal(survey.status, 'DRAFT');
+    assert.equal(survey.starts_at, null);
     assert.equal((await call(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST')).status, 409);
+    assert.equal((await call(`/admin/surveys/${survey.id}`, adminToken, 'PUT', { status: 'AKTIF' })).status, 409);
 
     const detail = await ok(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [
       { unsur_id: unsurA.id, question_id: qPositive.id },
@@ -61,7 +65,8 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     ] });
     assert.deepEqual(detail.items.map((i) => i.question_id), [qPositive.id, qNegative.id, qEssay.id]);
 
-    const active = await ok(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST');
+    // Status juga bisa diubah lewat form Edit setelah pertanyaan tersusun.
+    const active = await ok(`/admin/surveys/${survey.id}`, adminToken, 'PUT', { name: 'Survei IKM Uji', status: 'AKTIF' });
     assert.equal(active.display_status, 'AKTIF');
   });
 
@@ -98,6 +103,8 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal(copy.status, 'DRAFT');
     assert.equal(copy._count.items, 3);
     await ok(`/admin/surveys/${copy.id}/items`, adminToken, 'PUT', { items: [{ unsur_id: unsurA.id, question_id: qPositive.id }] });
+    // Survei Aktif tanpa jawaban tetap boleh dihapus; yang menahan hapus hanyalah jawaban responden.
+    await ok(`/admin/surveys/${copy.id}/activate`, adminToken, 'POST');
     await ok(`/admin/surveys/${copy.id}`, adminToken, 'DELETE');
   });
 }

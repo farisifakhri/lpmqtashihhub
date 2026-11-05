@@ -20,31 +20,47 @@ describe('SurveyManagementPage (Super Admin)', () => {
     vi.spyOn(surveyApi, 'listQuestions').mockResolvedValue({ data: [question] });
   });
 
-  it('menampilkan daftar survei dengan status turunan (Berakhir) dan jumlah responden', async () => {
+  it('menampilkan daftar survei dengan status (Expired), jumlah responden, dan action lengkap', async () => {
     renderPage();
-    expect(await screen.findByRole('button', { name: 'Survei IKM 2027' })).toBeInTheDocument();
-    expect(screen.getByText('Berakhir')).toBeInTheDocument();
+    expect(await screen.findByText('Survei IKM 2027')).toBeInTheDocument();
+    expect(screen.getByText('Expired')).toBeInTheDocument();
     expect(screen.getByText('12')).toBeInTheDocument();
+    for (const name of [/Nonaktifkan Survei/, 'Lihat Survei IKM 2027', 'Edit Survei IKM 2027', 'Hapus Survei IKM 2027']) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    // Sudah ada jawaban → tidak dapat dihapus.
+    expect(screen.getByRole('button', { name: 'Hapus Survei IKM 2027' })).toBeDisabled();
   });
 
-  it('membuat survei baru lalu langsung membuka halaman susun pertanyaan', async () => {
+  it('menambah survei cukup dengan nama dan status; Aktif belum bisa dipilih untuk survei baru', async () => {
     const create = vi.spyOn(surveyApi, 'createSurvey').mockResolvedValue({ data: baseSurvey });
     renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: /Buat Survei/ }));
-    fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 'Survei IKM 2027' } });
-    fireEvent.change(screen.getByLabelText(/Tanggal mulai/), { target: { value: '2027-01-01' } });
-    fireEvent.change(screen.getByLabelText(/Tanggal selesai/), { target: { value: '2027-12-31' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Buat & Susun Pertanyaan' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Tambah Survei/ }));
+    expect(screen.getByRole('option', { name: 'Aktif' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 'Indeks Persepsi Kualitas Pelayanan' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
 
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Survei IKM 2027', kind: 'IKM', starts_at: '2027-01-01', ends_at: '2027-12-31' })));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Indeks Persepsi Kualitas Pelayanan', status: 'DRAFT' }));
+  });
+
+  it('Edit survei yang sudah punya pertanyaan boleh diubah ke Aktif; Lihat menampilkan detail', async () => {
+    const update = vi.spyOn(surveyApi, 'updateSurvey').mockResolvedValue({ data: baseSurvey });
+    renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit Survei IKM 2027' }));
+    expect(screen.getByRole('option', { name: 'Aktif' })).not.toBeDisabled();
+    fireEvent.change(screen.getByLabelText(/Status/), { target: { value: 'NONAKTIF' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('s1', { name: 'Survei IKM 2027', status: 'NONAKTIF' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Lihat Survei IKM 2027' }));
+    expect(await screen.findByRole('heading', { name: 'Detail Survei' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Susun Pertanyaan/ }));
     expect(await screen.findByRole('heading', { name: 'Pemilihan Survei' })).toBeInTheDocument();
-    expect(screen.getByLabelText('Nama Survei')).toHaveValue('s1');
   });
 
   it('menyusun pertanyaan per unsur dan menyimpan susunannya', async () => {
     const setItems = vi.spyOn(surveyApi, 'setSurveyItems').mockResolvedValue({ data: { ...baseSurvey, items: [{ unsur_id: 'u1', question_id: 'q1', unsur, question }] } });
-    renderPage();
-    fireEvent.click(await screen.findByRole('button', { name: 'Survei IKM 2027' }));
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
 
     await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
     fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u1' } });

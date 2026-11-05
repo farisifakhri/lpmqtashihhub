@@ -6,12 +6,19 @@ export const KIND_OPTIONS = [
   { value: 'LAINNYA', label: 'Lainnya' },
 ];
 
+// Istilah status mengikuti sistem lama: Pending (baru dibuat), Aktif, Expired (dinonaktifkan/lewat periode).
 export const STATUS_BADGE = {
-  DRAFT: { variant: 'default', label: 'Draf' },
+  DRAFT: { variant: 'default', label: 'Pending' },
   AKTIF: { variant: 'success', label: 'Aktif' },
-  NONAKTIF: { variant: 'warning', label: 'Nonaktif' },
-  BERAKHIR: { variant: 'danger', label: 'Berakhir' },
+  NONAKTIF: { variant: 'danger', label: 'Expired' },
+  BERAKHIR: { variant: 'danger', label: 'Expired' },
 };
+
+export const STATUS_OPTIONS = [
+  { value: 'DRAFT', label: 'Pending' },
+  { value: 'AKTIF', label: 'Aktif' },
+  { value: 'NONAKTIF', label: 'Expired' },
+];
 
 // Templat skala 1–4 agar urutan nilai pertanyaan positif/negatif tidak terbalik.
 export const OPTION_PRESETS = [
@@ -50,5 +57,3 @@ export const OPTION_PRESETS = [
 export const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
-// <input type="date"> memakai format YYYY-MM-DD.
-export const toDateInput = (value) => (value ? new Date(value).toISOString().slice(0, 10) : '');

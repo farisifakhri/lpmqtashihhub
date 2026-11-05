@@ -11,7 +11,7 @@ import { inputClass } from './survey-constants';
 
 // Sub-menu sidebar Survei → ?tab=… (mengikuti susunan menu Survey di sistem lama).
 export const SURVEY_VIEWS = {
-  survei: { title: 'Nama Survei', subtitle: 'Buat survei per periode, lalu aktifkan agar dapat diisi penerbit.' },
+  survei: { title: 'Nama Survei', subtitle: 'Tambahkan topik survei dan statusnya. Survei berstatus Aktif dapat diisi penerbit.' },
   unsur: { title: 'Nama Unsur', subtitle: 'Unsur penilaian yang dipakai ulang di semua survei.' },
   pertanyaan: { title: 'Pertanyaan Survei', subtitle: 'Bank pertanyaan beserta opsi jawaban bernilai 1–4.' },
   pemilihan: { title: 'Pemilihan Survei', subtitle: 'Susun pertanyaan per unsur untuk survei yang dipilih.', perSurvey: SurveySetupView },

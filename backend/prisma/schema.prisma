@@ -1242,8 +1242,8 @@ model Survey {
   name        String           @db.VarChar(255)
   kind        String           @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
   description String?          @db.Text
-  starts_at   DateTime
-  ends_at     DateTime
+  starts_at   DateTime?
+  ends_at     DateTime?
   status      String           @default("DRAFT") @db.VarChar(20) // DRAFT | AKTIF | NONAKTIF
   created_at  DateTime         @default(now())
   updated_at  DateTime         @updatedAt

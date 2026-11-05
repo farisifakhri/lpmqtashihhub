@@ -264,7 +264,7 @@ export function SurveySetupView({ surveyId }) {
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-line bg-white p-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2"><h2 className="text-lg font-bold text-ink">{survey.name}</h2><Badge variant={status.variant}>{status.label}</Badge></div>
-          <p className="text-xs text-ink-muted">{survey.kind} · {formatDate(survey.starts_at)} – {formatDate(survey.ends_at)} · {survey._count.items} pertanyaan · {survey._count.responses} responden</p>
+          <p className="text-xs text-ink-muted">{survey._count.items} pertanyaan · {survey._count.responses} responden</p>
           {survey.description && <p className="text-sm text-ink">{survey.description}</p>}
         </div>
         <Button variant={survey.status === 'AKTIF' ? 'outline' : 'primary'} onClick={toggle}>
