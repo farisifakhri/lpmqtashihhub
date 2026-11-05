@@ -97,6 +97,7 @@ test('verifier queue config scopes counts to verifier assignments without changi
       ['verification_assigned', 'ASSIGNED'],
       ['verification_ready_to_send', 'READY_TO_SEND'],
       ['verification_bast_ready', 'BAST_READY'],
+      ['payment_verification_pending', 'Perlu Verifikasi (PAID)'],
     ],
   );
   assert.deepEqual(QUEUE_CONFIG.ADMIN_INTERNAL.map(({ key }) => key), [
@@ -134,6 +135,28 @@ test('verifier queue config scopes counts to verifier assignments without changi
     buildVerificationAssignmentsWhere({ status: 'ASSIGNED' }, verifierAdmin, { scopeToVerifier: true }),
     { verifier_id: 'verifier-admin', status: 'ASSIGNED' },
   );
+});
+
+test('payment verification count is scoped to the token user and does not change other roles', () => {
+  const verifier = { id: 'verifier-from-token', roles: ['VERIFIKATOR'] };
+  const paymentQueue = QUEUE_CONFIG.VERIFIKATOR.find(({ key }) => key === 'payment_verification_pending');
+
+  assert.equal(paymentQueue.model, 'paymentRecord');
+  assert.deepEqual(paymentQueue.buildWhere(verifier), {
+    status: 'PAID',
+    registration: {
+      status: 'PAYMENT_VERIFICATION',
+      verification_assignments: {
+        some: {
+          verifier_id: 'verifier-from-token',
+          status: 'COMPLETED',
+          decision: 'PASSED',
+        },
+      },
+    },
+  });
+  assert.equal(QUEUE_CONFIG.ADMIN_INTERNAL.some(({ key }) => key === 'payment_verification_pending'), false);
+  assert.equal(QUEUE_CONFIG.SUPERADMIN.some(({ key }) => key === 'payment_verification_pending'), false);
 });
 
 test('active role middleware accepts only a role owned by the authenticated user', () => {

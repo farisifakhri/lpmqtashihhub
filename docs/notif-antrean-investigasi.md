@@ -48,7 +48,7 @@ Klarifikasi tersebut dipakai sebagai keputusan untuk tabel di bawah; konflik dok
 | `PENERBIT` | Permohonan Saya | `/publisher/registrations` → `PublisherRegistrationsPage` | Daftar tindakan/perbaikan; revisi dari verifikasi dan serah-terima fisik digabung pada satu menu sesuai klarifikasi | `publisher_revision_pending` | `GET /api/v1/registrations?segment=PUBLISHER_ACTIONS` (filter hitungan khusus untuk revisi) | `REVISION_REQUIRED` dari verifikasi (`revision_source = VERIFICATION`) serta `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` dari serah-terima fisik (`revision_source = PHYSICAL_HANDOVER`); scope wajib `publisher_id` dari user login. Count mencakup seluruh baris. Segmen server `PUBLISHER_ACTIONS` juga mencakup DRAFT dan AWAITING_PAYMENT, jadi badge revisi tidak boleh sekadar menghitung semua segmen. Sidebar saat ini membuka view `ALL`, bukan subfilter tindakan/perbaikan. | `Sidebar.jsx`, `PublisherRegistrationsPage.jsx`, `publisher-status.js`, `registration.service.js`, `queue-utils.js`, `handover.service.js`, `verification-review.service.js`, `schema.prisma` | jelas |
 | `ADMIN_INTERNAL`, `SUPERADMIN` | 3. Penugasan Verifikator | `/internal/verifications?tab=NEED_ASSIGNMENT` → `VerifikatorInboxPage` | Perlu Penugasan → Belum Ditugaskan | `verification_assignment_pending` | `GET /api/v1/verification-assignment-candidates` (alias server: `/api/v1/verification/unassigned-registrations`) | `Registration.status = READY_FOR_VERIFICATION`, intake `RECEIVED` dengan `receipt_no` terisi, dan tidak ada assignment aktif (`ASSIGNED`, `IN_PROGRESS`, `WAITING_APPROVAL`, `WAITING_SIGNATURE`, `READY_TO_SEND`). Tidak di-scope per user. List dan count memakai `buildUnassignedVerificationWhere()` yang sama. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `queue-filters.js`, `schema.prisma` | Tahap B |
 | `VERIFIKATOR` | Tugas Verifikasi | `/internal/verifications` → `VerifikatorInboxPage` | Tab default `ASSIGNED` | `verification_assigned` | `GET /api/v1/verification-assignments?status=ASSIGNED` | `VerificationAssignment.status = ASSIGNED`; list service memakai `verifier_id = user.id` untuk verifikator biasa. Dalam akun multi-role yang juga memiliki role admin, service dapat memakai cakupan admin/global. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `schema.prisma` | jelas |
-| `VERIFIKATOR` | Tanda Tangan Saya | `/internal/signatures` | `NEED_MY_SIGN` / “Menunggu konfirmasi internal Anda” (tab default) | `verification_signature_pending` | Gabungan `GET /api/v1/verification-assignments` dan registrasi `READY_FOR_STT`/`STT_ISSUED`; halaman tidak memiliki satu endpoint list tab khusus. | Hitung semua dokumen pada tab yang dapat ditandatangani user saat ini: signatory user berstatus `PENDING`, prasyarat urutan tanda tangan terpenuhi, dan dokumen belum selesai. Role verifikator hanya melihat penandatanganan yang ditugaskan kepadanya. Query halaman saat ini membatasi sumber dengan `limit=50` (dan STT issued `limit=20`), sehingga implementasi badge harus mengambil total penuh, tidak meniru batas tersebut. | `Sidebar.jsx`, `SignatureCenterPage.jsx`, `verification.api.js`, `schema.prisma` | jelas |
+| `VERIFIKATOR` | Tanda Tangan Saya | `/internal/signatures` | `NEED_MY_SIGN` / “Menunggu konfirmasi internal Anda” (tab default) | `verification_signature_pending` | Gabungan `GET /api/v1/verification-assignments` dan registrasi `READY_FOR_STT`/`STT_ISSUED`; halaman tidak memiliki satu endpoint list tab khusus. | Hitung semua dokumen pada tab yang dapat ditandatangani user saat ini: signatory user berstatus `PENDING`, prasyarat urutan tanda tangan terpenuhi, dan dokumen belum selesai. Role verifikator hanya melihat penandatanganan yang ditugaskan kepadanya. Query halaman saat ini membatasi sumber dengan `limit=50` (dan STT issued `limit=20`), sehingga implementasi badge harus mengambil total penuh, tidak meniru batas tersebut. | `Sidebar.jsx`, `SignatureCenterPage.jsx`, `verification.api.js`, `schema.prisma` | **tidak dikerjakan: bukan antrean verifikator** |
 | `VERIFIKATOR` | Siap Dikirim | `/internal/verifications?tab=READY_TO_SEND` → `VerifikatorInboxPage` | `READY_TO_SEND` | `verification_ready_to_send` | `GET /api/v1/verification-assignments?status=READY_TO_SEND` | `VerificationAssignment.status = READY_TO_SEND`; data milik verifikator ditentukan oleh `verifier_id = user.id` saat bukan admin. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `schema.prisma` | jelas |
 | `VERIFIKATOR` | Verifikasi Pembayaran | `/internal/payments` → `InternalPaymentQueuePage` | Default `PAID` / “Perlu Verifikasi” | `payment_verification_pending` | `GET /api/v1/payments?status=PAID` | Definisi badge sesuai klarifikasi: `PaymentRecord.status = PAID` yang registrasinya ditugaskan ke verifikator aktif (`VerificationAssignment.verifier_id = user.id`), serta masih memenuhi prasyarat aksi. Filter list yang berjalan hanya memfilter `PAID` dan tidak melakukan scoping assignment; perlu disejajarkan saat implementasi. Count mencakup semua baris. | `Sidebar.jsx`, `InternalPaymentQueuePage.jsx`, `payment.api.js`, `workflow.routes.js`, `payment.service.js`, `verification-intake.service.js`, `schema.prisma` | jelas |
 | `VERIFIKATOR` | Siap Serah Terima | `/internal/verifications?tab=BAST_READY` → `VerifikatorInboxPage` | `BAST_READY` | `verifier_handover_ready` | `GET /api/v1/verification-assignments?handover_ready=true` | Service memilih assignment selesai dengan kondisi registrasi/pembayaran yang memenuhi kesiapan serah-terima; saat verifikator biasa, assignment harus milik `verifier_id = user.id`. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `schema.prisma` | jelas |
@@ -143,3 +143,101 @@ Indeks yang sudah ada dan relevan: `publisher_registrations(status, created_at)`
 ## Status Tahap B dan batas indeks
 
 Tahap B mengimplementasikan queue count `ADMIN_INTERNAL`/`SUPERADMIN` dan header role aktif terverifikasi, termasuk filter Intake yang dapat dipakai bersama count/list. Migrasi serta `schema.prisma` tidak diubah. Usulan indeks final beserta hasil `EXPLAIN` (jika dapat dijalankan dengan data seed) hanya disampaikan pada Tahap I sebagai satu proposal migrasi; migrasi tidak dibuat sebelum persetujuan user.
+
+## Usulan C2: Verifikasi Pembayaran
+
+Usulan berikut diturunkan dari kode halaman dan API yang berjalan. Cakupan C2 yang disetujui adalah Verifikasi Pembayaran; bagian tanda tangan dipertahankan hanya sebagai referensi Tahap F dan tidak mengubah endpoint list.
+
+> Catatan: bagian “Tanda Tangan Saya” di bawah dipertahankan sebagai referensi aturan hitung untuk Tahap F (Kepala), bukan cakupan implementasi C2. Verifikator tidak memiliki tindakan tanda tangan di alur nyata.
+
+### Tanda Tangan Saya
+
+Item sidebar `VERIFIKATOR` membuka `/internal/signatures` tanpa query tab. Halaman menetapkan tab default `NEED_MY_SIGN` (“Menunggu konfirmasi internal Anda”).
+
+**Sumber data saat ini**
+
+| Sumber | Pemanggilan halaman | Catatan |
+|---|---|---|
+| Penugasan verifikasi | `GET /api/v1/verification-assignments?status=WAITING_SIGNATURE&limit=50`, juga status `READY_TO_SEND` dan `COMPLETED`, masing-masing `limit=50` | Halaman meratakan dokumen dari setiap assignment, mengambil hanya tipe `SURAT_HASIL_VERIFIKASI`, `SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI`, dan `BERITA_ACARA_VERIFIKASI`, serta menghapus assignment duplikat berdasarkan ID. Respons API menyertakan daftar signatory yang diurutkan menurut `sign_order`. |
+| Registrasi untuk STT | `GET /api/v1/registrations?status=READY_FOR_STT&limit=50` dan `...?status=STT_ISSUED&limit=20` | Halaman juga membentuk dokumen STT dari sumber ini. `canUserSign` mengizinkan Kepala atau user yang memiliki role `SUPERADMIN` (dicek dari `currentUser.roles`, bukan role aktif). Verifikator biasa tidak mendapat STT di `NEED_MY_SIGN`; user multi-role `VERIFIKATOR` + `SUPERADMIN` dapat melihat STT yang sudah diajukan ke TU dan belum selesai. Count C2 yang hanya mencakup assignment verifikator tidak akan mencakup STT tersebut; perlu konfirmasi apakah ini discrepancy yang diterima atau STT harus ikut dihitung. |
+
+Pemanggilan sumber di halaman masing-masing memakai `.catch(() => ({ data: { items: [] } }))`. Jika salah satu API gagal, UI tetap menampilkan hasil parsial tanpa error yang mengidentifikasi sumber gagal. Badge server yang menghitung keseluruhan data bisa karena itu berbeda dari halaman yang gagal memuat sebagian datanya.
+
+**Aturan hitung yang diusulkan**
+
+Hitung satu dokumen verifikasi (bukan satu assignment atau satu baris signatory) untuk setiap dokumen yang memenuhi seluruh syarat:
+
+1. Tipe dokumen termasuk tiga tipe di atas dan dokumen terkait assignment verifikasi dengan `verifier_id = user.id`. `user.id` harus berasal dari user terautentikasi; tidak ada ID dari parameter client.
+2. Status dokumen saat ini `APPROVED` atau `SIGNING`. Halaman juga menerima nilai terhitung `WAITING_SIGNATURE` karena memakai `doc.status || assignment.status`; `WAITING_SIGNATURE` adalah status assignment, bukan anggota enum `VerificationDocumentStatus`, dan hanya dapat menjadi fallback bila status dokumen tidak tersedia di respons. Perlu diputuskan apakah count harus meniru fallback langka ini atau hanya menghitung status dokumen yang tersimpan.
+3. Ada signatory untuk user tersebut dengan `status = PENDING`.
+4. Semua signatory dengan `sign_order` lebih kecil dari signatory user tersebut berstatus `SIGNED`. Kode menganggap status sebelumnya apa pun selain `SIGNED` (termasuk `PENDING` atau `REJECTED`) sebagai penghalang.
+5. Jangan menerapkan limit 50/20, paginasi, pencarian, atau pilihan jenis dokumen UI pada count.
+
+Pada halaman, `NEED_MY_SIGN` menampilkan dokumen dengan `canUserSign` dan status bukan `SIGNED`. Untuk signatory yang tersedia, `canUserSign` ditetapkan bila ditemukan signatory user yang `PENDING` dan tidak ada penandatangan terdahulu yang belum `SIGNED`. Ada fallback bila relasi signatory kosong: penugasan yang dimiliki verifikator dapat dianggap bisa ditandatangani pada tiga status tadi. Endpoint list normal menyertakan relasi `signatories`, sehingga fallback ini terutama berlaku pada respons tanpa relasi/tanpa data signatory; perlu diputuskan apakah count harus meniru fallback tersebut atau hanya memakai relasi tersimpan. Untuk akun multi-role yang memiliki `SUPERADMIN`, halaman memakai `currentUser.roles` untuk menentukan kewenangan tanda tangan STT, sehingga beberapa STT dapat muncul saat role aktif `VERIFIKATOR`; aturan count di atas belum memasukkan sumber STT dan statusnya perlu konfirmasi.
+
+Inisialisasi signatory saat ini membuat Verifikator sebagai signatory urutan 1 pada `BERITA_ACARA_VERIFIKASI`; `SURAT_HASIL_VERIFIKASI` dan `SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI` diinisialisasi dengan signatory Kepala urutan 1. Alur pengajuan hasil juga membuat signatory Verifikator berstatus `SIGNED` untuk dokumen yang dibuat/diperbarui. Karena itu, dari kode saat ini antrean tanda tangan Verifikator pada dokumen riil dapat kosong; jangan mengasumsikan ada signatory pending Verifikator tanpa data yang memenuhi syarat.
+
+Status dokumen yang dikecualikan oleh aturan halaman: `DRAFT`, `SUBMITTED`, `RETURNED`, `SIGNED`, `EMAIL_QUEUED`, `SENT`, `EMAIL_FAILED`, `REVOKED`, dan `ISSUED` (serta status lain di luar `APPROVED`/`SIGNING`; fallback tampilan `WAITING_SIGNATURE` hanya bila status dokumen tidak tersedia). Signatory user yang sudah `SIGNED` atau `REJECTED` tidak dihitung sebagai signatory user `PENDING`.
+
+**Skenario uji turunan dari kode**
+
+Perbandingan berikut membandingkan badge usulan dengan tab default yang datanya berhasil dimuat, tanpa pencarian atau filter jenis dokumen UI.
+
+| Kondisi dokumen | Badge dihitung? | Muncul di tab saat ini? | Badge dan tab sama? | Dasar kode |
+|---|---:|---:|---|---|
+| Giliran Verifikator: dokumen bertipe yang didukung, status dokumen `APPROVED`/`SIGNING` (atau fallback tampilan `WAITING_SIGNATURE` bila `doc.status` tidak tersedia), signatory user `PENDING`, dan semua signatory sebelumnya `SIGNED` | Ya | Ya | Ya bila data API lengkap; bila status dokumen hilang, fallback UI dapat membuat tab dan count berbasis status tersimpan berbeda | `SignatureCenterPage.jsx`: `doc.status || assignment.status`, evaluasi `canUserSign`, pencarian `mySig`, pemeriksaan `pendingPrior`, lalu filter `NEED_MY_SIGN`; `verification-signing.service.js`: validasi status dan urutan tanda tangan. |
+| Signatory sebelumnya belum tanda tangan (statusnya `PENDING` atau `REJECTED`) | Tidak | Tidak | Ya | `pendingPrior` mencari `sign_order` lebih kecil dengan status selain `SIGNED`; tab mengecualikan dokumen dengan `canUserSign = false`. |
+| Signatory Verifikator sudah `SIGNED` | Tidak | Tidak | Ya | Halaman hanya mengaktifkan `canUserSign` untuk `mySig.status === 'PENDING'`; alur sign API memperbarui signatory menjadi `SIGNED`. |
+| Dokumen berstatus `REVOKED` atau `RETURNED` | Tidak | Tidak | Ya | Kedua status tidak termasuk status yang dievaluasi untuk `canUserSign`; status `RETURNED` juga dipakai untuk draf yang dikembalikan. |
+| Assignment dimiliki verifikator lain | Tidak untuk badge user ini | Tidak untuk user verifikator biasa; endpoint list memfilter `verifier_id = user.id` | Ya untuk role verifikator biasa. **Potensi selisih** pada user multi-role admin: endpoint list dapat menjadi global, sehingga dokumen yang memuat signatory user saat ini dapat tampil, sementara badge tetap di-scope ke assignment milik user. | `verification-intake.service.js`: filter list berdasarkan kumpulan role; `SignatureCenterPage.jsx`: `canUserSign` memakai ID signatory dan `isAssignedToMe` hanya dipakai fallback; role admin membuat list dapat global. |
+| Lebih dari 50 assignment yang memenuhi syarat pada satu status sumber | Badge menghitung semua dokumen | Halaman hanya menerima maksimal 50 assignment pada status tersebut | Tidak; badge dapat lebih besar daripada isi tab yang terambil | `SignatureCenterPage.jsx`: tiga pemanggilan list assignment memakai `limit: 50`; endpoint list melakukan paginasi. Count tidak akan mengikuti batas ini. |
+| STT `READY_FOR_STT`/`STT_ISSUED` menunggu tanda tangan Kepala | Tidak pada usulan count assignment `VERIFIKATOR` | Tidak untuk verifikator biasa; bisa ya untuk user multi-role `SUPERADMIN` karena halaman mengizinkan role tersebut menandatangani STT tanpa mengecek role aktif | Ya untuk verifikator biasa; tidak untuk multi-role `SUPERADMIN` bila badge tidak mencakup STT | `SignatureCenterPage.jsx`: aturan STT memakai `isHead || currentUser.roles.includes('SUPERADMIN')`; sumber STT dibentuk dari registrasi dan tidak terkait assignment `verifier_id` untuk count yang diusulkan. |
+
+Statistik `stats.needSign` halaman menghitung `allDocuments` sebelum filter pencarian dan jenis dokumen, sedangkan daftar yang sedang terlihat menerapkan kedua filter tersebut. Dengan demikian badge cocok dengan total tab tanpa filter pilihan user, tetapi dapat lebih besar daripada baris yang sedang terlihat ketika pencarian atau filter jenis dokumen aktif. Ini sesuai keputusan count global tanpa filter pilihan user.
+
+Ada perbedaan pada status yang diterima UI dan aksi tanda tangan backend: UI mengizinkan nilai terhitung `docStatus = WAITING_SIGNATURE` untuk `canUserSign`, sedangkan `signVerificationDocument` hanya menerima status dokumen tersimpan `APPROVED` atau `SIGNING`. Karena `WAITING_SIGNATURE` bukan nilai enum dokumen dan API normal menyertakan `doc.status`, selisih ini hanya mungkin bila status dokumen tidak tersedia di respons; jika terjadi, UI dapat menampilkan dokumen yang aksi tanda tangannya ditolak 409.
+
+Sumber kode utama: `frontend/src/features/signatures/SignatureCenterPage.jsx` (`fetchAssignments`, `allDocuments`, `canUserSign`, `filteredDocuments`, `stats.needSign`); `frontend/src/api/verification.api.js` dan `frontend/src/api/registration.api.js` (parameter API); `backend/src/services/verification-intake.service.js:listVerificationAssignments` (scope assignment list dan relasi signatory); `backend/src/services/verification-signing.service.js:initVerificationSignatories` dan `signVerificationDocument` (inisialisasi signatory, prasyarat urutan, transisi tanda tangan); `backend/src/services/verification-review.service.js` (pembuatan signatory pada pengajuan hasil); `backend/prisma/schema.prisma` (status dan relasi signatory).
+
+### Verifikasi Pembayaran
+
+**Query count yang diusulkan**
+
+Hitung baris `PaymentRecord` dengan `status = PAID` yang registrasinya memiliki assignment sukses yang masih relevan untuk user aktif. Definisi kerja yang diturunkan dari alur sekarang adalah assignment `verifier_id = user.id`, `status = COMPLETED`, dan `decision = PASSED`:
+
+```js
+prisma.paymentRecord.count({
+  where: {
+    status: 'PAID',
+    registration: {
+      status: 'PAYMENT_VERIFICATION',
+      verification_assignments: {
+        some: {
+          verifier_id: user.id,
+          status: 'COMPLETED',
+          decision: 'PASSED',
+        },
+      },
+    },
+  },
+});
+```
+
+`user.id` harus diambil dari user terautentikasi dan role aktif harus `VERIFIKATOR`; count tidak menerima identitas dari client. Query memakai `some`, sesuai keputusan bahwa assignment mana pun pada registrasi cukup memenuhi syarat. Syarat status registrasi `PAYMENT_VERIFICATION` mengikuti `verifyPayment` yang mewajibkan status tersebut sebelum pembayaran diverifikasi. Pengiriman hasil yang lolos mengubah assignment menjadi `COMPLETED` dengan keputusan terkait, dan penerbit mengonfirmasi pembayaran menjadi `PAID` sambil memindahkan registrasi ke `PAYMENT_VERIFICATION`.
+
+**Perbandingan dengan list yang berjalan dan discrepancy**
+
+- `InternalPaymentQueuePage` membuka tab default `PAID` (“Perlu Verifikasi”) dan memanggil `GET /api/v1/payments?status=PAID`, dengan paginasi serta pencarian opsional.
+- `payment.service.js:listPayments` menambahkan `where.status = query.status`, tetapi tidak menambahkan syarat status registrasi atau assignment `verifier_id`; daftar role `VERIFIKATOR` karena itu dapat memuat pembayaran milik verifikator lain dan yang status registrasinya berbeda. Assignment terbaru hanya ikut disertakan pada data untuk tampilan (`orderBy assigned_at desc`, `take: 1`) dan saat ini tidak memilih `verifier_id`.
+- Contoh selisih yang diketahui: registrasi V2 memiliki pembayaran `PAID`, tetapi assignment suksesnya milik V2. Pembayaran itu masih dapat muncul di list V1 karena list hanya memfilter status `PAID`, sedangkan badge V1 yang memakai assignment scope tidak menghitungnya. Untuk user multi-role yang juga `SUPERADMIN`, list dapat tetap global sementara badge aktif `VERIFIKATOR` hanya menghitung assignment user tersebut.
+- Pencarian dan halaman aktif dapat membuat jumlah baris yang sedang terlihat lebih kecil daripada badge; badge menghitung seluruh baris yang cocok dan tidak memakai filter pilihan user.
+
+Sumber kode utama: `frontend/src/features/verification/InternalPaymentQueuePage.jsx` (tab, query, paginasi/pencarian); `frontend/src/api/payment.api.js`; `backend/src/routes/workflow.routes.js` (route `PATCH /payments/:id/verify`, role `VERIFIKATOR`); `backend/src/services/payment.service.js:verifyPayment` (prasyarat status registrasi `PAYMENT_VERIFICATION`); `backend/src/services/payment.service.js:listPayments` (filter list); `backend/src/services/verification-review.service.js` (assignment selesai); `backend/prisma/schema.prisma` (relasi serta status assignment/payment).
+
+### Catatan untuk referensi tanda tangan Tahap F
+
+1. Apakah fallback UI saat relasi signatory kosong juga perlu dipakai untuk count tanda tangan Kepala?
+2. Apakah count tanda tangan perlu meniru fallback UI ke `assignment.status = WAITING_SIGNATURE` ketika `doc.status` tidak tersedia, atau cukup mengandalkan `VerificationDocument.status` tersimpan (`APPROVED`/`SIGNING`)? Fallback ini tidak selaras dengan status yang diterima aksi backend.
+3. Untuk akun multi-role `KEPALA_LPMQ` dan `SUPERADMIN`, apakah antrean STT yang tampil karena halaman memeriksa `currentUser.roles` harus ikut dihitung saat role aktif Kepala?
+
+Keputusan pembayaran untuk C2: pakai assignment mana pun yang cocok (`some`), mensyaratkan status registrasi `PAYMENT_VERIFICATION` karena diwajibkan aksi `verifyPayment`, dan menerima discrepancy dengan list yang tetap tidak diubah. Catatan pertanyaan di atas hanya tersisa sebagai bahan Tahap F (Kepala), karena tindakan tanda tangan Verifikator bukan bagian C2.

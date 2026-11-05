@@ -384,6 +384,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/payments",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Validasi setoran SIMPONI",
+                            countKey: "payment_verification_pending",
                         },
                         {
                             label: "Siap Serah Terima",

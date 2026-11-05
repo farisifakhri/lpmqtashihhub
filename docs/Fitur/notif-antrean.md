@@ -150,14 +150,19 @@ Prasyarat: baris tabel ketiga item tersebut di `docs/notif-antrean-investigasi.m
 
 Verifikasi: jalankan `npm test` di backend, tes frontend, dan `npm run build`; laporkan hasil tiap perintah dan apa yang tidak bisa dijalankan beserta alasannya. Sertakan skenario uji manual dengan dua akun verifikator yang memiliki penugasan berbeda; masing-masing harus melihat angka miliknya sendiri.
 
-## TAHAP C2: Role verifikator — tanda tangan dan pembayaran
+## TAHAP C2: Role verifikator — Verifikasi Pembayaran
 
 Item sidebar `VERIFIKATOR` yang dikerjakan:
 
-- “Tanda Tangan Saya”
 - “Verifikasi Pembayaran”
 
-Alasan dipisahkan dari C1: aturan hitung tanda tangan tersebar di frontend (dua sumber data, limit 50 dan 20, serta urutan tanda tangan). List pembayaran hanya memfilter `PAID` tanpa scoping penugasan verifikator, sedangkan keputusan user menetapkan count hanya untuk pembayaran yang ditugaskan kepada verifikator tersebut.
+“Tanda Tangan Saya” milik `VERIFIKATOR` **tidak dikerjakan**: verifikator tidak memiliki tindakan tanda tangan di alur nyata. `SURAT_HASIL_VERIFIKASI` dan `SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI` memakai Kepala sebagai penandatangan urutan 1, sedangkan signatory Verifikator pada `BERITA_ACARA_VERIFIKASI` sudah `SIGNED` saat pengajuan hasil. Aturan hitung tanda tangan pada dokumen investigasi dipertahankan sebagai referensi Tahap F (Kepala).
+
+Tambahkan hanya key `payment_verification_pending` ke antrean `VERIFIKATOR`. Count memakai `PaymentRecord.count()` untuk status `PAID`, registrasi `PAYMENT_VERIFICATION`, dan registrasi yang memiliki *some* assignment dengan `verifier_id = user.id`, `status = COMPLETED`, serta `decision = PASSED`. ID diambil dari token yang sudah diverifikasi dan count hanya dijalankan untuk role aktif `VERIFIKATOR`; tidak memakai paginasi atau pencarian. Status registrasi termasuk karena aksi `PATCH /api/v1/payments/:id/verify` mensyaratkannya.
+
+Tambahkan `countKey` pada item sidebar “Verifikasi Pembayaran”. Badge merah hanya tampil jika count > 0 dan menampilkan `99+` bila lebih dari 99. Hapus badge statis pada item tersebut bila ada; item “Tanda Tangan Saya” tidak diberi badge dan tidak diubah. Ambil ulang counts setelah aksi verifikasi pembayaran dan saat ganti peran.
+
+Jangan mengubah endpoint/list pembayaran. List saat ini hanya memfilter `PAID` (dan tetap dapat bersifat global untuk akun multi-role), sedangkan badge di-scope ke assignment user aktif; selisih tersebut diketahui dan diterima. Tes unit di `tests/unit/queue.test.js` harus memastikan key baru, scoping memakai `user.id`, dan role lain tidak terpengaruh.
 
 ## TAHAP D: Role penerbit
 ## TAHAP E: Role pentashih

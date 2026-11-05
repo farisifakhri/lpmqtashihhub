@@ -51,6 +51,25 @@ const verifierQueues = [
     tab: 'BAST_READY',
     buildWhere: user => buildVerificationAssignmentsWhere({ handover_ready: 'true' }, user, { scopeToVerifier: true }),
   },
+  {
+    key: 'payment_verification_pending',
+    model: 'paymentRecord',
+    sidebarItem: 'Verifikasi Pembayaran',
+    tab: 'Perlu Verifikasi (PAID)',
+    buildWhere: user => ({
+      status: 'PAID',
+      registration: {
+        status: 'PAYMENT_VERIFICATION',
+        verification_assignments: {
+          some: {
+            verifier_id: user.id,
+            status: 'COMPLETED',
+            decision: 'PASSED',
+          },
+        },
+      },
+    }),
+  },
 ];
 
 export const QUEUE_CONFIG = {
