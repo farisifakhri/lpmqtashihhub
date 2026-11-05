@@ -202,9 +202,9 @@ export const TRANSITION_POLICY = {
       description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
     },
     TASHIH_IN_PROGRESS: {
-      allowedRoles: ['PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
-      ownershipGuard: true,
-      description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor menetapkan penugasan kembali ke pentashih pada siklus revisi',
     },
     CANCELLED: {
       allowedRoles: ['PENERBIT', 'SUPERADMIN'],
@@ -274,17 +274,20 @@ export const TRANSITION_POLICY = {
   WAITING_DISTRIBUTION: {
     TASHIH_IN_PROGRESS: {
       allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Distributor menetapkan tim pentashih dan memulai sidang pentashihan',
     },
   },
   TASHIH_IN_PROGRESS: {
     READY_FOR_STT: {
-      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
-      description: 'Sidang pentashihan selesai dengan rekomendasi penerbitan STT',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor mengesahkan hasil sidang pentashihan dan merekomendasikan penerbitan STT',
     },
     REVISION_REQUIRED: {
-      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
-      description: 'Pentashih menemukan koreksi teks mushaf yang harus diperbaiki penerbit',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor menerbitkan surat pengembalian naskah dan meminta perbaikan kepada penerbit',
     },
   },
   READY_FOR_STT: {
@@ -1144,6 +1147,40 @@ export const dispatchPhysical = async (id, data, user, req) => {
       fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
+    // B-16 Titik Kontrol (a): Kewajiban unggah dokumen rekapitulasi revisi penerbit per ronde
+    if (reg.status === 'REVISION_REQUIRED') {
+      if (!data.recap_file_id) {
+        fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah untuk pengiriman fisik revisi/dumi.');
+      }
+      const lastRevLetter = await tx.officialDocument?.findFirst({
+        where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
+        orderBy: { created_at: 'desc' },
+      });
+      const roundNumber = lastRevLetter?.version || 1;
+      const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
+
+      if (tx.publisherRevisionRecap?.upsert) {
+        await tx.publisherRevisionRecap.upsert({
+          where: {
+            registration_id_round_number: {
+              registration_id: id,
+              round_number: roundNumber,
+            },
+          },
+          create: {
+            registration_id: id,
+            round_number: roundNumber,
+            revision_kind: revisionKind,
+            recap_file_id: data.recap_file_id,
+          },
+          update: {
+            revision_kind: revisionKind,
+            recap_file_id: data.recap_file_id,
+          },
+        });
+      }
+    }
+
     const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
     const courier = data.courier || 'LOKET_LPMQ';
     const trackingNo = data.tracking_no || null;
@@ -1725,7 +1762,23 @@ export const listRegistrations = async ({
   ]);
 
   return {
-    items: queueItems(items, item => item.stage_entered_at, skip, fifo),
+    items: queueItems(
+      publisherScope
+        ? items.map(item => ({
+            ...item,
+            assignments: item.assignments?.map(a => ({
+              id: a.id,
+              stage: a.stage,
+              iteration: a.iteration,
+              status: a.status,
+              due_at: a.due_at,
+            })) || [],
+          }))
+        : items,
+      item => item.stage_entered_at,
+      skip,
+      fifo
+    ),
     summary: { by_status: Object.fromEntries(counts.map(item => [item.status, item._count])), ...(issuedSTT !== null ? { issued_stt: issuedSTT } : {}) },
     pagination: {
       total,
@@ -1774,6 +1827,10 @@ export const getDetail = async (id, user) => {
         orderBy: { created_at: 'desc' },
       },
       payment_records: true,
+      publisher_revision_recaps: {
+        include: { recap_file: true },
+        orderBy: { round_number: 'desc' },
+      },
       assignments: {
         include: {
           assignee: { select: { id: true, name: true } },

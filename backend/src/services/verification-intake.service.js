@@ -450,21 +450,43 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
   const query = maybeUser ? (queryOrUser || {}) : {};
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
 
+  // Ambil verifikator dari roster tim inti aktif (9 tim resmi LPMQ)
+  const rotation = await prisma.coreTeamRotation.findFirst();
+  const activeVersion = rotation?.active_version || 1;
+  const coreRosters = await prisma.coreTeamRoster.findMany({
+    where: { version: activeVersion },
+    select: { team_number: true, verifier_id: true },
+  });
+  const coreVerifierIds = coreRosters.map(r => r.verifier_id).filter(Boolean);
+  const coreTeamMap = new Map(coreRosters.map(r => [r.verifier_id, r.team_number]));
+
+  // Prioritaskan verifikator yang sah: tercatat di Roster Tim Inti atau memiliki peran murni VERIFIKATOR.
+  // Kecualikan akun dummy test (@example.test) dan admin yang bukan verifikator.
   const where = {
     status: query.status || 'ACTIVE',
-    roles: {
-      some: {
-        role: {
-          code: { in: ['VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'] },
+    NOT: {
+      email: { endsWith: '@example.test' },
+    },
+    OR: [
+      { id: { in: coreVerifierIds } },
+      {
+        roles: {
+          some: {
+            role: { code: 'VERIFIKATOR' },
+          },
         },
       },
-    },
+    ],
   };
 
   if (query.search) {
-    where.OR = [
-      { name: { contains: query.search } },
-      { nip: { contains: query.search } },
+    where.AND = [
+      {
+        OR: [
+          { name: { contains: query.search } },
+          { nip: { contains: query.search } },
+        ],
+      },
     ];
   }
 
@@ -490,20 +512,30 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
     const activeAssignments = v.verification_assignments || [];
     const count = activeAssignments.length;
     const oldestDueAt = activeAssignments.length > 0 ? activeAssignments[0].due_at : null;
+    const teamNum = coreTeamMap.get(v.id);
 
     return {
       id: v.id,
       name: v.name,
       nip: v.nip,
       status: v.status,
+      core_team_number: teamNum || null,
       active_assignment_count: count,
       active_assignments_count: count,
       oldest_active_due_at: oldestDueAt,
     };
   });
 
-  // Urutkan berdasarkan beban aktif paling ringan lalu nama (P0-02)
+  // Urutkan verifikator Roster Tim Inti di paling atas (Tim 1 s.d. 9), lalu berdasarkan beban aktif
   formatted.sort((a, b) => {
+    const aIsCore = a.core_team_number != null;
+    const bIsCore = b.core_team_number != null;
+    if (aIsCore && !bIsCore) return -1;
+    if (!aIsCore && bIsCore) return 1;
+    if (aIsCore && bIsCore) {
+      return a.core_team_number - b.core_team_number;
+    }
+
     if (a.active_assignment_count !== b.active_assignment_count) {
       return a.active_assignment_count - b.active_assignment_count;
     }

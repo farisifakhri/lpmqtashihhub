@@ -199,7 +199,7 @@ export const AssignmentListPanel = ({
                           {assignment.team.name}
                         </span>
                       )}
-                      {assignment.juz_items?.length > 0 && <span className="text-xs font-semibold text-brand-800">Juz {assignment.juz_items.map(item => item.juz_number).join(', ')} · {assignment.juz_items.filter(item => item.result).length}/{assignment.juz_items.length} selesai</span>}
+                      {assignment.juz_items?.length > 0 && <span className="text-xs font-semibold text-brand-800">Juz {assignment.juz_items.map(item => item.juz_number).join(', ')}</span>}
                       {isOverdue && !hasReview && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                           <AlertTriangle className="w-3 h-3" /> Overdue SLA
@@ -297,7 +297,7 @@ export const AssignmentListPanel = ({
                         className="font-bold text-xs bg-brand-700 hover:bg-brand-800 text-white"
                         icon={<BookOpen className="w-4 h-4" />}
                       >
-                        {assignment.juz_items?.length ? 'Buka Checklist Juz' : 'Buka Lembar Telaah'}
+                        Buka Lembar Telaah
                       </Button>
                     ) : (
                       <Button
@@ -307,7 +307,7 @@ export const AssignmentListPanel = ({
                         className="text-xs text-ink"
                         icon={<FileText className="w-3.5 h-3.5" />}
                       >
-                        {assignment.juz_items?.length ? 'Lihat Checklist Juz' : 'Lihat Hasil Telaah'}
+                        Lihat Hasil Telaah
                       </Button>
                     )}
                   </div>

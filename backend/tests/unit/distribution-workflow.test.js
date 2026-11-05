@@ -257,7 +257,7 @@ test('approveDistribution transitions to READY_FOR_STT on PASSED and notifies si
     prisma.$transaction = async (cb) => {
       return cb(createMockTx({
         assignment: {
-          findFirst: async () => ({ iteration: 1 }),
+          findFirst: async () => ({ iteration: 1, stage: 'DUMMY' }),
           findMany: async () => [
             { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
             { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'PASSED', recap_file_id: 'file-2' }] },

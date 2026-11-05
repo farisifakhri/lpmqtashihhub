@@ -120,13 +120,15 @@ describe('PentashihWorkspacePage Component', () => {
     vi.spyOn(TashihApiModule.tashihApi, 'recordJuzChecklist').mockResolvedValue({ data: { id: 'juz-1', juz_number: 1, result: 'PASSED', notes: null, completed_at: new Date().toISOString() } });
   });
 
-  it('menyimpan checklist untuk juz yang ditugaskan', async () => {
+  it('membuka lembar telaah sidang dan menampilkan opsi cakupan rekap kelompok', async () => {
     render(<MemoryRouter><PentashihWorkspacePage /></MemoryRouter>);
     await screen.findByText('REG-JUZ-01');
-    fireEvent.click(screen.getByRole('button', { name: 'Buka Checklist Juz' }));
-    expect(screen.getByText('Target panduan: 2 juz per orang per hari. Tidak ada pembatasan otomatis.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Simpan juz 1' }));
-    await waitFor(() => expect(TashihApiModule.tashihApi.recordJuzChecklist).toHaveBeenCalledWith('assign-juz', 1, { result: 'PASSED', notes: '' }));
+    const buttons = screen.getAllByRole('button', { name: 'Buka Lembar Telaah' });
+    fireEvent.click(buttons[0]);
+    expect(screen.getByText('Lembar Telaah Sidang Pentashihan')).toBeInTheDocument();
+    expect(screen.getByText('Cakupan Rekapitulasi Sidang')).toBeInTheDocument();
+    expect(screen.getByText('Rekapan Keseluruhan (Kelompok)')).toBeInTheDocument();
+    expect(screen.getByText('Hanya Rekapan Saya')).toBeInTheDocument();
   });
 
   it('merender ruang sidang pentashih dan menampilkan tugas aktif', async () => {
@@ -142,7 +144,7 @@ describe('PentashihWorkspacePage Component', () => {
       expect(screen.getByText('REG-2026-001')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Standar Usmani')).toBeInTheDocument();
       expect(screen.getByText('PT Pustaka Mushaf Utama')).toBeInTheDocument();
-      expect(screen.getByText('Buka Lembar Telaah')).toBeInTheDocument();
+      expect(screen.getAllByText('Buka Lembar Telaah')[0]).toBeInTheDocument();
     });
   });
 
@@ -154,10 +156,10 @@ describe('PentashihWorkspacePage Component', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Buka Lembar Telaah')).toBeInTheDocument();
+      expect(screen.getAllByText('Buka Lembar Telaah')[0]).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByText('Buka Lembar Telaah'));
+    fireEvent.click(screen.getAllByText('Buka Lembar Telaah')[0]);
 
     await waitFor(() => {
       expect(screen.getByText(/Lembar Telaah Sidang Pentashihan/i)).toBeInTheDocument();

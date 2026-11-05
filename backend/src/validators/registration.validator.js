@@ -157,6 +157,7 @@ export const dispatchPhysicalSchema = {
     tracking_no: z.string().optional(),
     dispatch_date: z.string().optional(),
     notes: z.string().optional(),
+    recap_file_id: z.string().uuid().optional().nullable(),
   }),
 };
 
