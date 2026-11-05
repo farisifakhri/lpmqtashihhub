@@ -72,13 +72,13 @@ test('B14-05: assertReadyForSttEligibility rejects when no recap file is uploade
   );
 });
 
-test('B14-06: assertReadyForSttEligibility passes when all assignments completed with PASSED and recap file exists', async () => {
+test('B14-06: assertReadyForSttEligibility passes when team assignment has TEAM scope recap and all PASSED', async () => {
   const mockTx = {
     assignment: {
       findFirst: async () => ({ id: 'asg-1', iteration: 2 }),
       findMany: async () => [
-        { id: 'asg-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: 'uuid-recap-file' }] },
-        { id: 'asg-2', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: null }] },
+        { id: 'asg-1', team_id: 'team-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: 'uuid-recap-file', recap_scope: 'TEAM' }] },
+        { id: 'asg-2', team_id: 'team-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: null }] },
       ],
     },
   };

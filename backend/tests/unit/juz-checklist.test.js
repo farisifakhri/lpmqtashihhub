@@ -12,32 +12,16 @@ test('penugasan per juz menolak nomor juz ganda dan catatan koreksi kosong', () 
   assert.equal(juzChecklistSchema.body.safeParse({ result: 'PASSED', notes: '' }).success, true);
 });
 
-test('checklist per juz hanya milik pentashih yang ditugaskan dan menyelesaikan tugas setelah semua juz dicatat', async () => {
-  const original = prisma.$transaction;
-  const writes = [];
-  const rows = [
-    { id: 'j1', juz_number: 1, result: 'PASSED', notes: null },
-    { id: 'j2', juz_number: 2, result: null, notes: null },
-  ];
-  const tx = {
-    $queryRaw: async () => [],
-    registration: { findUnique: async () => ({ id: 'reg', status: 'TASHIH_IN_PROGRESS' }) },
-    assignment: {
-      findUnique: async ({ include }) => include ? { id: 'assignment', assignee_id: 'owner', status: 'IN_PROGRESS', juz_items: rows, reviews: [] } : { registration_id: 'reg' },
-      update: async ({ data }) => { writes.push(['assignment', data]); return data; },
-    },
-    assignmentJuz: { update: async ({ data }) => { const result = { ...rows[1], ...data }; writes.push(['juz', result]); return result; } },
-    tashihReview: { create: async ({ data }) => { writes.push(['review', data]); return { id: 'review', ...data }; } },
-    auditLog: { create: async () => ({}) },
-  };
+test('checklist per juz telah dialihkan dan endpoint mengembalikan 410 Gone', async () => {
+  const originalTx = prisma.$transaction;
   try {
-    prisma.$transaction = async callback => callback(tx);
-    await assert.rejects(recordJuzChecklist('assignment', 2, { result: 'PASSED', notes: '' }, { id: 'other', roles: ['PENTASHIH'] }), error => error.statusCode === 403);
-    const saved = await recordJuzChecklist('assignment', 2, { result: 'REVISION_REQUIRED', notes: 'Perbaiki harakat' }, { id: 'owner', roles: ['PENTASHIH'] });
-    assert.equal(saved.result, 'REVISION_REQUIRED');
-    assert.equal(writes.find(([type]) => type === 'review')[1].result, 'REVISION_REQUIRED');
-    assert.equal(writes.find(([type]) => type === 'assignment')[1].status, 'COMPLETED');
+    prisma.$transaction = async (fn) => fn({});
+    const user = { id: 'usr-pentashih', roles: ['PENTASHIH'] };
+    await assert.rejects(
+      recordJuzChecklist('assignment', 2, { result: 'PASSED', notes: '' }, user),
+      (error) => error.statusCode === 410 && /dialihkan/i.test(error.message)
+    );
   } finally {
-    prisma.$transaction = original;
+    prisma.$transaction = originalTx;
   }
 });

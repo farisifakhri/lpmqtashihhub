@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { tashihApi } from '@/api/tashih.api';
 import { ReviewForm } from './components/ReviewForm';
 import { AssignmentListPanel } from './components/AssignmentListPanel';
-import { JuzChecklistForm } from './components/JuzChecklistForm';
 import { useAssignments } from './hooks/useAssignments';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -50,6 +49,7 @@ export const PentashihWorkspacePage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [recapFileId, setRecapFileId] = useState(null);
+  const [recapScope, setRecapScope] = useState('TEAM');
 
   const isRevisionItem = (item) => {
     const regStage = item.registration?.stage || '';
@@ -117,34 +117,17 @@ export const PentashihWorkspacePage = () => {
     }
   };
 
-  const handleJuzSaved = updated => {
-    setSelectedAssignment(previous => {
-      if (!previous) return previous;
-      const newItems = previous.juz_items?.map(item => item.id === updated.id ? updated : item) || [];
-      const allDone = newItems.length > 0 && newItems.every(i => i.result);
-      if (allDone) {
-        setSuccessMessage(`Seluruh ${newItems.length} juz penugasan selesai diperiksa. Harap unggah berkas rekapan telaah dan kirim hasil telaah untuk menyelesaikan tugas.`);
-        fetchAssignments();
-        setTimeout(() => {
-          openReviewModal({ ...previous, juz_items: newItems });
-        }, 100);
-        return { ...previous, juz_items: newItems };
-      }
-      return { ...previous, juz_items: newItems };
-    });
-    setSuccessMessage(`Checklist juz ${updated.juz_number} berhasil disimpan.`);
-    fetchAssignments();
-  };
-
   const openReviewModal = (assignment) => {
     setSelectedAssignment(assignment);
     const existingReview = assignment.reviews?.[0];
     if (existingReview) {
       setReviewResult(existingReview.result || 'PASSED');
       setReviewNotes(existingReview.notes || '');
+      setRecapScope(existingReview.recap_scope || (assignment.team_id || assignment.team ? 'TEAM' : 'SELF'));
     } else {
       setReviewResult('PASSED');
       setReviewNotes('');
+      setRecapScope(assignment.team_id || assignment.team ? 'TEAM' : 'SELF');
     }
     setRecapFileId(assignment.recap_file_id || null);
     setModalError(null);
@@ -181,6 +164,7 @@ export const PentashihWorkspacePage = () => {
         result: reviewResult,
         notes: reviewNotes.trim(),
         recap_file_id: recapFileId || undefined,
+        recap_scope: recapScope,
       });
 
       setSuccessMessage(
@@ -284,11 +268,7 @@ export const PentashihWorkspacePage = () => {
         hasMore={hasMore}
       />
       {/* 4. Modal Formulir Telaah Sidang Pentashihan */}
-      {reviewModalOpen && selectedAssignment?.juz_items?.length ? <JuzChecklistForm
-        assignment={selectedAssignment}
-        onClose={closeReviewModal}
-        onSaved={handleJuzSaved}
-      /> : <ReviewForm
+      <ReviewForm
         selectedAssignment={reviewModalOpen ? selectedAssignment : null}
         reviewResult={reviewResult}
         setReviewResult={setReviewResult}
@@ -296,12 +276,14 @@ export const PentashihWorkspacePage = () => {
         setReviewNotes={setReviewNotes}
         recapFileId={recapFileId}
         setRecapFileId={setRecapFileId}
+        recapScope={recapScope}
+        setRecapScope={setRecapScope}
         submitting={submitting}
         modalError={modalError}
         closeReviewModal={closeReviewModal}
         handleReviewSubmit={handleReviewSubmit}
         getStageLabel={getStageLabel}
-      />}
+      />
     </div>
   );
 };

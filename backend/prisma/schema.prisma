@@ -782,12 +782,14 @@ model TashihReview {
   result        ReviewResult // PASSED, REVISION_REQUIRED, REJECTED
   notes         String?
   recap_file_id String?
+  recap_scope   String       @default("SELF") @db.VarChar(20)
   completed_at  DateTime     @default(now())
 
   // Relations
   assignment Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
 
   @@index([recap_file_id])
+  @@index([recap_scope])
   @@map("tashih_reviews")
 }
 
