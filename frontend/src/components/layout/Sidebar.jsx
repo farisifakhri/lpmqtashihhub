@@ -744,7 +744,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         containsCurrent && "font-bold",
                     )}
                 >
-                    <span className={clsx("shrink-0", containsCurrent ? "lpmq-sidebar-nav-icon-active" : "lpmq-sidebar-nav-icon-inactive")}>
+                    {/* Ikon mengikuti warna teks menu (putih di sidebar hijau), sama seperti label. */}
+                    <span className="shrink-0 text-current">
                         {group.icon}
                     </span>
                     <span className="flex-1 min-w-0 text-left truncate">{group.label}</span>
