@@ -46,17 +46,20 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal(qEssay.options.length, 0);
   });
 
-  await test('Survei: tidak bisa diaktifkan sebelum ada pertanyaan, lalu disusun dan diaktifkan', async () => {
+  await test('Survei: status bebas diatur (seperti sistem lama), lalu pertanyaan disusun', async () => {
     const invalidDates = await call('/admin/surveys', adminToken, 'POST', { name: 'Survei tanggal terbalik', kind: 'IKM', starts_at: '2027-12-31', ends_at: '2027-01-01' });
     assert.equal(invalidDates.status, 400);
 
-    // Seperti sistem lama: cukup nama (topik) + status. Survei baru belum bisa langsung Aktif.
-    assert.equal((await call('/admin/surveys', adminToken, 'POST', { name: 'Survei langsung aktif', status: 'AKTIF' })).status, 409);
+    // Cukup nama (topik) + status; Aktif boleh dipilih walau pertanyaan belum disusun.
+    const direct = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei langsung aktif', status: 'AKTIF' }, 201);
+    assert.equal(direct.display_status, 'AKTIF');
+    await ok(`/admin/surveys/${direct.id}`, adminToken, 'DELETE');
+
     survey = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IKM Uji', status: 'DRAFT' }, 201);
     assert.equal(survey.status, 'DRAFT');
     assert.equal(survey.starts_at, null);
-    assert.equal((await call(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST')).status, 409);
-    assert.equal((await call(`/admin/surveys/${survey.id}`, adminToken, 'PUT', { status: 'AKTIF' })).status, 409);
+    assert.equal((await ok(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST')).status, 'AKTIF');
+    assert.equal((await ok(`/admin/surveys/${survey.id}`, adminToken, 'PUT', { status: 'NONAKTIF' })).status, 'NONAKTIF');
 
     const detail = await ok(`/admin/surveys/${survey.id}/items`, adminToken, 'PUT', { items: [
       { unsur_id: unsurA.id, question_id: qPositive.id },

@@ -10,6 +10,7 @@ import { showToast } from '@/components/ui/toast';
 import { inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate } from './survey-constants';
 
 const EMPTY = { name: '', status: 'DRAFT', itemCount: 0 };
+const NO_QUESTIONS_NOTE = 'Catatan: survei belum memiliki pertanyaan, jadi belum bisa diisi penerbit. Susun pertanyaannya di Pemilihan Survei.';
 
 const StatusBadge = ({ survey }) => {
   const status = STATUS_BADGE[survey.display_status] || STATUS_BADGE.DRAFT;
@@ -88,7 +89,8 @@ export function SurveyListTab({ onOpen }) {
       const body = { name: form.name, status: form.status };
       if (form.id) await surveyApi.updateSurvey(form.id, body);
       else await surveyApi.createSurvey(body);
-      showToast(form.id ? 'Survei diperbarui.' : 'Survei ditambahkan. Susun pertanyaannya di Pemilihan Survei.', 'success');
+      const saved = form.id ? 'Survei diperbarui.' : 'Survei ditambahkan.';
+      showToast(form.status === 'AKTIF' && !form.itemCount ? `${saved} ${NO_QUESTIONS_NOTE}` : saved, 'success');
       setForm(null);
       load();
     } catch { /* pesan galat sudah ditampilkan apiClient */ } finally {
@@ -100,8 +102,8 @@ export function SurveyListTab({ onOpen }) {
     try { await fn(); showToast(message, 'success'); load(); } catch { /* sudah ditampilkan */ }
   };
 
-  // Aktif hanya bisa dipilih bila survei sudah punya pertanyaan (survei baru belum punya).
-  const canActivate = form && form.itemCount > 0;
+  const activate = (s) =>
+    run(() => surveyApi.activateSurvey(s.id), s._count?.items ? 'Survei diaktifkan.' : `Survei diaktifkan. ${NO_QUESTIONS_NOTE}`);
 
   return (
     <section className="space-y-4">
@@ -132,7 +134,7 @@ export function SurveyListTab({ onOpen }) {
                         {s.status === 'AKTIF' ? (
                           <Button size="sm" variant="danger" onClick={() => run(() => surveyApi.deactivateSurvey(s.id), 'Survei dinonaktifkan.')}><PowerOff className="w-4 h-4" /> Nonaktifkan Survei</Button>
                         ) : (
-                          <Button size="sm" variant="secondary" onClick={() => run(() => surveyApi.activateSurvey(s.id), 'Survei diaktifkan.')}><Power className="w-4 h-4" /> Aktifkan Survei</Button>
+                          <Button size="sm" variant="secondary" onClick={() => activate(s)}><Power className="w-4 h-4" /> Aktifkan Survei</Button>
                         )}
                         <Button size="sm" variant="ghost" aria-label={`Lihat ${s.name}`} onClick={() => setViewId(s.id)}><Eye className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label={`Edit ${s.name}`}
@@ -160,11 +162,9 @@ export function SurveyListTab({ onOpen }) {
             <FormField label="Nama survei" required hint="Topik survei, mis. Indeks Persepsi Kualitas Pelayanan atau Survei IKM 2027.">
               <input className={inputClass} value={form.name} minLength={3} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </FormField>
-            <FormField label="Status" required hint={canActivate ? undefined : 'Aktif dapat dipilih setelah pertanyaan disusun di Pemilihan Survei.'}>
+            <FormField label="Status" required hint="Survei Aktif dapat diisi penerbit setelah pertanyaannya disusun di Pemilihan Survei.">
               <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {STATUS_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value} disabled={o.value === 'AKTIF' && !canActivate}>{o.label}</option>
-                ))}
+                {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </FormField>
             <div className="flex justify-end gap-2">

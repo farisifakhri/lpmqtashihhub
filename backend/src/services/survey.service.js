@@ -148,11 +148,7 @@ export async function getSurvey(id) {
   return present(await requireSurvey(prisma, id, surveyDetailInclude));
 }
 
-const NEEDS_QUESTIONS = 'Survei belum memiliki pertanyaan. Simpan sebagai Pending, susun pertanyaannya di Pemilihan Survei, lalu aktifkan.';
-
 export async function createSurvey(data, user, req) {
-  // Survei baru belum punya pertanyaan, jadi belum bisa langsung Aktif.
-  if (data.status === 'AKTIF') fail(409, NEEDS_QUESTIONS);
   return present(await withAudit(user, req, 'SURVEY_CREATE', 'Survey', (tx) =>
     tx.survey.create({ data, include: surveyListInclude })));
 }
@@ -163,7 +159,6 @@ export async function updateSurvey(id, data, user, req) {
     const startsAt = data.starts_at !== undefined ? data.starts_at : survey.starts_at;
     const endsAt = data.ends_at !== undefined ? data.ends_at : survey.ends_at;
     if (startsAt && endsAt && new Date(endsAt) < new Date(startsAt)) fail(400, 'Tanggal selesai tidak boleh sebelum tanggal mulai.');
-    if (data.status === 'AKTIF' && !survey._count.items) fail(409, NEEDS_QUESTIONS);
     return tx.survey.update({ where: { id }, data, include: surveyListInclude });
   }));
 }
@@ -199,8 +194,7 @@ export async function setSurveyItems(id, items, user, req) {
 
 export async function setSurveyStatus(id, status, user, req) {
   return present(await withAudit(user, req, status === 'AKTIF' ? 'SURVEY_ACTIVATE' : 'SURVEY_DEACTIVATE', 'Survey', async (tx) => {
-    const survey = await requireSurvey(tx, id);
-    if (status === 'AKTIF' && !survey._count.items) fail(409, NEEDS_QUESTIONS);
+    await requireSurvey(tx, id);
     return tx.survey.update({ where: { id }, data: { status }, include: surveyListInclude });
   }));
 }

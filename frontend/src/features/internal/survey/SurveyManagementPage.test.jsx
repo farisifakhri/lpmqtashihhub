@@ -32,15 +32,26 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.getByRole('button', { name: 'Hapus Survei IKM 2027' })).toBeDisabled();
   });
 
-  it('menambah survei cukup dengan nama dan status; Aktif belum bisa dipilih untuk survei baru', async () => {
+  it('menambah survei cukup dengan nama dan status; Aktif bisa langsung dipilih', async () => {
     const create = vi.spyOn(surveyApi, 'createSurvey').mockResolvedValue({ data: baseSurvey });
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /Tambah Survei/ }));
-    expect(screen.getByRole('option', { name: 'Aktif' })).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Aktif' })).not.toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 'Indeks Persepsi Kualitas Pelayanan' } });
+    fireEvent.change(screen.getByLabelText(/Status/), { target: { value: 'AKTIF' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
 
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Indeks Persepsi Kualitas Pelayanan', status: 'DRAFT' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Indeks Persepsi Kualitas Pelayanan', status: 'AKTIF' }));
+  });
+
+  it('tombol Aktifkan Survei tetap bisa dipakai walau survei belum punya pertanyaan', async () => {
+    surveyApi.listSurveys.mockResolvedValue({ data: [{ ...baseSurvey, name: 'remaja dewasa', _count: { items: 0, responses: 0 } }] });
+    const activate = vi.spyOn(surveyApi, 'activateSurvey').mockResolvedValue({ data: { ...baseSurvey, status: 'AKTIF' } });
+    renderPage();
+    const button = await screen.findByRole('button', { name: /Aktifkan Survei/ });
+    expect(button).not.toBeDisabled();
+    fireEvent.click(button);
+    await waitFor(() => expect(activate).toHaveBeenCalledWith('s1'));
   });
 
   it('Edit survei yang sudah punya pertanyaan boleh diubah ke Aktif; Lihat menampilkan detail', async () => {
