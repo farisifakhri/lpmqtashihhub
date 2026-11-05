@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckSquare, AlertTriangle, AlertCircle } from 'lucide-react';
+import { CheckSquare, AlertTriangle, AlertCircle, CheckCircle2, XCircle, MinusCircle } from 'lucide-react';
 
 export const InspectionChecklist = ({
   activeMobileTab,
@@ -28,25 +28,27 @@ export const InspectionChecklist = ({
         }`
       }
     >
-      {/* Section Checklist */}
-      <div className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-4">
-        <div className="flex items-center justify-between border-b border-line pb-3">
+      {/* Section Checklist Card */}
+      <div className="p-4 sm:p-5 bg-white rounded-2xl border border-line shadow-2xs space-y-3.5">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
           <div>
-            <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+            <h3 className="text-xs sm:text-sm font-bold text-ink flex items-center gap-2">
               <CheckSquare className="w-4 h-4 text-brand-800" />
               Lembar Kerja Checklist Pemeriksaan
             </h3>
-            <p className="text-xs text-ink-muted mt-0.5">
+            <p className="text-[11px] text-ink-muted mt-0.5">
               Evaluasi {CHECKLIST_DEFINITIONS?.length || 8} butir standar verifikasi administrasi & rasm
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {currentTidakSesuai > 0 && (
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine flex items-center gap-1">
+                <XCircle className="w-3.5 h-3.5" />
                 {currentTidakSesuai} Tidak Sesuai
               </span>
             )}
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-brand-50 text-brand-900 border border-brand-100">
+            <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-md bg-brand-50 text-brand-900 border border-brand-200 flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
               {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS?.length || 8} Lengkap
             </span>
           </div>
@@ -68,7 +70,7 @@ export const InspectionChecklist = ({
         )}
 
         {/* Checklist items list */}
-        <div className="space-y-3.5">
+        <div className="space-y-3">
           {CHECKLIST_DEFINITIONS.map((def) => {
             const currentItem = checklist.find((c) => c.code === def.code) || {
               code: def.code,
@@ -81,9 +83,9 @@ export const InspectionChecklist = ({
             return (
               <div
                 key={def.code}
-                className={`p-3.5 rounded-xl border transition-all ${
+                className={`p-3 rounded-xl border transition-all ${
                   currentItem.result === 'SESUAI'
-                    ? 'bg-brand-50/20 border-brand-100'
+                    ? 'bg-brand-50/15 border-brand-100/70 hover:border-brand-200'
                     : isItemRejected
                     ? 'bg-civic-dangerSoft/25 border-civic-dangerLine ring-1 ring-civic-dangerLine/40'
                     : 'bg-canvas border-line'
@@ -100,15 +102,15 @@ export const InspectionChecklist = ({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-ink-muted leading-relaxed">
+                  <p className="text-[11px] text-ink-muted leading-relaxed">
                     {def.description}
                   </p>
                 </div>
 
                 {/* Radio Results */}
-                <div className="mt-3 flex items-center gap-1.5 p-1 bg-white rounded-lg border border-line text-xs">
+                <div className="mt-2.5 flex items-center gap-1 p-1 bg-white rounded-lg border border-line text-xs">
                   <label
-                    className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
+                    className={`flex-1 py-1 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                       currentItem.result === 'SESUAI'
                         ? 'bg-brand-800 text-white shadow-2xs'
                         : 'text-ink-muted hover:text-ink'
@@ -127,7 +129,7 @@ export const InspectionChecklist = ({
                   </label>
 
                   <label
-                    className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
+                    className={`flex-1 py-1 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                       currentItem.result === 'TIDAK_SESUAI'
                         ? 'bg-civic-danger text-white shadow-2xs'
                         : 'text-ink-muted hover:text-ink'
@@ -146,7 +148,7 @@ export const InspectionChecklist = ({
                   </label>
 
                   <label
-                    className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
+                    className={`flex-1 py-1 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                       currentItem.result === 'TIDAK_BERLAKU'
                         ? 'bg-ink text-white shadow-2xs'
                         : 'text-ink-muted hover:text-ink'
@@ -167,9 +169,9 @@ export const InspectionChecklist = ({
 
                 {/* Rejection Prompt & Note Input */}
                 {isItemRejected && (
-                  <div className="mt-2 p-2 bg-white rounded-lg border border-civic-dangerLine/60 text-xs text-civic-danger flex items-start gap-1.5">
+                  <div className="mt-2 p-2 bg-white rounded-lg border border-civic-dangerLine/60 text-xs text-civic-danger flex items-start gap-1.5 animate-fadeIn">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>
+                    <span className="text-[11px] leading-relaxed">
                       Butir ini dinyatakan <strong>Tidak Sesuai</strong>. Naskah otomatis direkomendasikan <strong>Ditolak / Dikembalikan</strong> ke penerbit. Tuliskan rincian kekurangan secara spesifik di bawah:
                     </span>
                   </div>
@@ -177,7 +179,7 @@ export const InspectionChecklist = ({
 
                 <div className="mt-2">
                   <textarea
-                    rows={2}
+                    rows={isItemRejected ? 2 : 1}
                     value={currentItem.notes || ''}
                     maxLength={1000}
                     onChange={(e) => handleChecklistChange(def.code, 'notes', e.target.value)}
@@ -187,7 +189,7 @@ export const InspectionChecklist = ({
                         ? 'Tuliskan catatan rincian kekurangan butir ini (wajib)...'
                         : 'Catatan tambahan (opsional)...'
                     }
-                    className={`w-full px-3 py-2 text-xs rounded-lg border bg-white focus:outline-none focus:ring-2 resize-y ${
+                    className={`w-full px-2.5 py-1.5 text-xs rounded-lg border bg-white focus:outline-none focus:ring-2 resize-y transition-all ${
                       isItemRejected && !currentItem.notes?.trim()
                         ? 'border-civic-dangerLine bg-civic-dangerSoft/20 focus:ring-civic-danger/20'
                         : itemError
