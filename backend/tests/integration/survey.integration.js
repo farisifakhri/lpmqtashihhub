@@ -228,7 +228,11 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     const locked = await call('/admin/survey-questions', adminToken, 'POST', { ...body, text: 'Pertanyaan ke survei terkunci', survey_id: survey.id });
     assert.equal(locked.status, 409);
 
-    await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
+    // Pertanyaan yang dipakai survei tanpa jawaban boleh dihapus dan ikut keluar dari susunannya.
     await ok(`/admin/survey-questions/${q.id}`, adminToken, 'DELETE');
+    assert.deepEqual((await ok(`/admin/surveys/${target.id}`, adminToken, 'GET')).items, []);
+    // Pertanyaan yang sudah dijawab responden tetap tidak dapat dihapus.
+    assert.equal((await call(`/admin/survey-questions/${qPositive.id}`, adminToken, 'DELETE')).status, 409);
+    await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
   });
 }

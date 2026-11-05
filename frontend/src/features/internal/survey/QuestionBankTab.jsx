@@ -137,8 +137,14 @@ export function QuestionBankTab() {
                   <div className="flex gap-1.5">
                     {!locked && <Button size="sm" variant="ghost" aria-label="Ubah pertanyaan" onClick={() => setForm({ id: q.id, text: q.text, type: q.type, survey_id: '', unsur_id: q.unsur_id || '', options: q.options.map(({ label, value }) => ({ label, value })) })}><Pencil className="w-4 h-4" /></Button>}
                     <Button size="sm" variant="ghost" aria-label="Duplikat pertanyaan" onClick={() => run(() => surveyApi.duplicateQuestion(q.id), 'Pertanyaan diduplikat.')}><Copy className="w-4 h-4" /></Button>
-                    {!q._count?.items && !locked && (
-                      <Button size="sm" variant="ghost" aria-label="Hapus pertanyaan" onClick={() => run(() => surveyApi.deleteQuestion(q.id), 'Pertanyaan dihapus.', 2000)}>
+                    {/* Hanya pertanyaan yang sudah dijawab responden yang tidak dapat dihapus. */}
+                    {!locked && (
+                      <Button size="sm" variant="ghost" aria-label="Hapus pertanyaan"
+                        onClick={() => run(
+                          () => surveyApi.deleteQuestion(q.id),
+                          q.items?.length ? `Pertanyaan dihapus dan dikeluarkan dari survei ${q.items.map((i) => i.survey.name).join(', ')}.` : 'Pertanyaan dihapus.',
+                          2000,
+                        )}>
                         <Trash2 className="w-4 h-4 text-civic-danger" />
                       </Button>
                     )}

@@ -204,7 +204,10 @@ export async function deleteQuestion(id, user, req) {
   return withAudit(user, req, 'SURVEY_QUESTION_DELETE', 'SurveyQuestion', async (tx) => {
     const question = await tx.surveyQuestion.findUnique({ where: { id }, include: questionInclude });
     if (!question) fail(404, 'Pertanyaan survei tidak ditemukan.');
-    if (question._count.items || question._count.answers) fail(409, 'Pertanyaan ini sudah dipakai pada survei sehingga tidak dapat dihapus.');
+    // Jawaban responden adalah data laporan; selama belum dijawab, pertanyaan boleh dihapus
+    // dan ikut dikeluarkan dari susunan survei yang memakainya.
+    if (question._count.answers) fail(409, 'Pertanyaan ini sudah memiliki jawaban responden sehingga tidak dapat dihapus.');
+    await tx.surveyItem.deleteMany({ where: { question_id: id } });
     return tx.surveyQuestion.delete({ where: { id } });
   });
 }
