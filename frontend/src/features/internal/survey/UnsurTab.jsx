@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Archive, ArchiveRestore } from 'lucide-react';
+import { Plus, Pencil, Trash2, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -56,6 +56,12 @@ export function UnsurTab() {
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
             Tampilkan yang diarsipkan
           </label>
+          <Button size="sm" variant="outline"
+            title="Membuat ulang unsur baku yang terhapus dan mengembalikan urutan 1–9 sesuai Pedoman Menteri PANRB No. 9/2024"
+            onClick={() => window.confirm('Pulihkan 9 unsur baku PANRB dan urutannya? Unsur baku yang terhapus akan dibuat ulang; unsur bernama sama dijadikan unsur baku.')
+              && run(() => surveyApi.restoreStandardUnsur(), 'Unsur baku PANRB dipulihkan sesuai urutan Pedoman.')}>
+            <RotateCcw className="w-4 h-4" /> Pulihkan Unsur Baku PANRB
+          </Button>
           <Button size="sm" onClick={() => setForm({ ...EMPTY })}><Plus className="w-4 h-4" /> Tambah Unsur</Button>
         </div>
       </div>
@@ -66,11 +72,12 @@ export function UnsurTab() {
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-              <tr><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
+              <tr><th className="p-3 w-12">No.</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
               {items.map((u) => (
                 <tr key={u.id} className={u.is_archived ? 'opacity-60' : ''}>
+                  <td className="p-3 align-top font-semibold text-ink-muted">{u.is_standard ? `${u.sort_order}.` : '–'}</td>
                   <td className="p-3 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
                       {u.name}

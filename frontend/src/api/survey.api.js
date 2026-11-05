@@ -30,4 +30,5 @@ export const surveyApi = {
   duplicateSurvey: (id) => apiClient(`/admin/surveys/${id}/duplicate`, { method: 'POST' }),
   listResponses: (id, params) => apiClient(`/admin/surveys/${id}/responses${qs(params)}`),
   getReport: (id) => apiClient(`/admin/surveys/${id}/report`),
+  restoreStandardUnsur: () => apiClient('/admin/survey-unsur/restore-standard', { method: 'POST' }),
 };

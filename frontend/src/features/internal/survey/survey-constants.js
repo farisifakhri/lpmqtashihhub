@@ -54,3 +54,46 @@ export const OPTION_PRESETS = [
 export const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
 
+
+// ---- Instrumen kuesioner SKM, Pedoman Menteri PANRB No. 9 Tahun 2024 (BAB III, hlm. 14–22) ----
+export const OPENING_TEXT = 'Ayo berikan suara Anda! Isi survei kami sekarang berdasarkan pengalaman Bapak/Ibu ketika menggunakan layanan kami dan berinteraksi dengan petugas layanan kami. Survei ini hanya membutuhkan waktu ±10 menit untuk penyelesaiannya. Hasil survei akan kami gunakan murni untuk perbaikan kualitas pelayanan yang kami berikan. Terima kasih.';
+export const CLOSING_TEXT = 'Terima kasih atas partisipasi Bapak/Ibu untuk mengisi survei ini. Seluruh data dan informasi yang Bapak/Ibu berikan akan kami jamin kerahasiaannya dan hanya akan kami gunakan murni untuk perbaikan kualitas pelayanan yang kami berikan.';
+
+export const DEMOGRAPHIC_FIELDS = [
+  'Penyandang disabilitas (ya/tidak) dan jenis disabilitas',
+  'Jenis kelamin',
+  'Usia',
+  'Pendidikan terakhir',
+  'Pekerjaan utama',
+  'Jenis layanan yang diterima',
+  'Kategori layanan (Daring / Luring / Campuran)',
+  'Tanggal dan jam menerima layanan',
+];
+
+export const DISABILITY_LABELS = {
+  FISIK: 'Fisik (Tuna Daksa)',
+  INTELEKTUAL: 'Intelektual',
+  MENTAL: 'Mental',
+  SENSORIK: 'Sensorik (Tuli, Tuna Rungu, Tuna Netra)',
+};
+export const SERVICE_CATEGORY_LABELS = { DARING: 'Daring', LURING: 'Luring', HYBRID: 'Campuran (Hybrid)' };
+
+export const SATISFACTION_LABELS = { 1: 'Sangat Tidak Puas', 2: 'Tidak Puas', 3: 'Antara Puas dan Tidak Puas', 4: 'Puas', 5: 'Sangat Puas' };
+
+export const ANTI_CORRUPTION_STATEMENTS = {
+  ak_transparency: { aspect: 'Transparansi Pelayanan', text: 'Standar dan prosedur pemberian layanan pada unit ini diinformasikan dengan jelas.' },
+  ak_no_extortion: { aspect: 'Integritas Petugas', text: 'Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.' },
+  ak_no_broker: { aspect: 'Integritas Petugas', text: 'Tidak ada percaloan/perantara tidak resmi pada unit ini.' },
+  ak_no_gratification: { aspect: 'Integritas Petugas', text: 'Tidak ada penerimaan imbalan uang/barang/fasilitas oleh petugas di luar ketentuan yang berlaku.' },
+};
+
+// Kategorisasi IKM (Pedoman hlm. 22).
+export const IKM_CATEGORIES = [
+  { persepsi: 1, interval: '1,00 – 2,5996', konversi: '25,00 – 64,99', mutu: 'D', kinerja: 'Tidak baik' },
+  { persepsi: 2, interval: '2,60 – 3,064', konversi: '65,00 – 76,60', mutu: 'C', kinerja: 'Kurang baik' },
+  { persepsi: 3, interval: '3,0644 – 3,532', konversi: '76,61 – 88,30', mutu: 'B', kinerja: 'Baik' },
+  { persepsi: 4, interval: '3,5324 – 4,00', konversi: '88,31 – 100,00', mutu: 'A', kinerja: 'Sangat baik' },
+];
+
+export const formatDateTime = (value) =>
+  value ? new Date(value).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';

@@ -7,7 +7,17 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate, unsurLabel } from './survey-constants';
+import {
+  inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate, unsurLabel,
+  OPENING_TEXT, CLOSING_TEXT, DEMOGRAPHIC_FIELDS, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS,
+} from './survey-constants';
+
+const QuestionnaireSection = ({ title, children }) => (
+  <section className="rounded-lg border border-line p-3 text-sm text-ink space-y-1.5">
+    <h5 className="text-xs font-bold text-brand-900">{title}</h5>
+    <div className="text-xs leading-relaxed text-ink-muted">{children}</div>
+  </section>
+);
 
 const EMPTY = { name: '', status: 'DRAFT', itemCount: 0 };
 const NO_QUESTIONS_NOTE = 'Catatan: survei belum memiliki pertanyaan, jadi belum bisa diisi penerbit. Susun pertanyaannya di Pemilihan Survei.';
@@ -38,20 +48,38 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
             <dt className="text-ink-muted">Dibuat</dt><dd>{formatDate(survey.created_at)}</dd>
             <dt className="text-ink-muted">Diperbarui</dt><dd>{formatDate(survey.updated_at)}</dd>
           </dl>
-          <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Pertanyaan</h4>
-            {!survey.items.length ? (
-              <p className="text-sm text-ink-muted">Belum ada pertanyaan. Susun di Pemilihan Survei.</p>
-            ) : (
-              <ol className="space-y-1.5 text-sm">
-                {survey.items.map((item, i) => (
-                  <li key={item.id} className="rounded-lg border border-line p-2.5">
-                    <span className="text-xs text-ink-muted">{i + 1}. {unsurLabel(item.unsur)}</span>
-                    <p className="text-ink">{item.question.text}</p>
-                  </li>
-                ))}
-              </ol>
-            )}
+          {/* Struktur kuesioner sesuai Pedoman Menteri PANRB No. 9/2024 hlm. 14–21, urut seperti yang dilihat responden. */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Struktur Kuesioner (Pedoman PANRB 9/2024)</h4>
+            <QuestionnaireSection title="1. Kalimat Pembuka"><p>{survey.description || OPENING_TEXT}</p></QuestionnaireSection>
+            <QuestionnaireSection title="2. Data Demografis">
+              <ul className="list-disc pl-5 space-y-0.5">{DEMOGRAPHIC_FIELDS.map((f) => <li key={f}>{f}</li>)}</ul>
+            </QuestionnaireSection>
+            <QuestionnaireSection title="3. Data Persepsi (skala 1–4: Tidak baik – Sangat baik)">
+              {!survey.items.length ? (
+                <p className="text-civic-warning">Belum ada pertanyaan. Susun di Pemilihan Survei.</p>
+              ) : (
+                <ol className="space-y-1.5">
+                  {survey.items.map((item, i) => (
+                    <li key={item.id}>
+                      <span className="text-xs text-ink-muted">{i + 1}. {unsurLabel(item.unsur)}</span>
+                      <p className="text-ink">{item.question.text}</p>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </QuestionnaireSection>
+            <QuestionnaireSection title="4. Kepuasan Secara Keseluruhan (skala 1–5)">
+              <p>{Object.values(SATISFACTION_LABELS).join(' · ')}</p>
+            </QuestionnaireSection>
+            <QuestionnaireSection title="5. Loyalitas (skala 1–10)">
+              <p>"Saya akan merekomendasikan layanan pada unit ini ke orang lain" — 1 Tidak merekomendasikan, 10 Sangat merekomendasikan.</p>
+            </QuestionnaireSection>
+            <QuestionnaireSection title="6. Kritik dan Saran"><p>Isian bebas.</p></QuestionnaireSection>
+            <QuestionnaireSection title="7. Pengukuran Perilaku Anti-Korupsi (skala 1–5: Sangat tidak setuju – Sangat setuju)">
+              <ul className="list-disc pl-5 space-y-0.5">{Object.values(ANTI_CORRUPTION_STATEMENTS).map((s) => <li key={s.text}>{s.text}</li>)}</ul>
+            </QuestionnaireSection>
+            <QuestionnaireSection title="8. Kalimat Penutup"><p>{CLOSING_TEXT}</p></QuestionnaireSection>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Tutup</Button>

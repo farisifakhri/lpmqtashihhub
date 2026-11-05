@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, STATUS_BADGE, formatDate, unsurLabel } from './survey-constants';
+import {
+  inputClass, STATUS_BADGE, formatDate, formatDateTime, unsurLabel,
+  DISABILITY_LABELS, SERVICE_CATEGORY_LABELS, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, IKM_CATEGORIES,
+} from './survey-constants';
 
 // Tampilan per survei untuk sub-menu Pemilihan, Jawaban, Responden, dan Laporan Survei.
 
@@ -137,65 +140,135 @@ function DistributionTable({ title, rows }) {
   );
 }
 
+const mapLabels = (rows, labels) => rows.map((r) => ({ ...r, label: labels[r.label] || r.label }));
+
 export function RespondentsView({ surveyId }) {
   const report = useReport(surveyId);
   if (!report) return <p className="text-sm text-ink-muted">Memuat data responden…</p>;
+  const d = report.demographics;
 
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-line bg-white p-4">
         <p className="text-xs text-ink-muted">Total responden</p>
         <p className="text-2xl font-bold text-ink">{report.respondents}</p>
-        <p className="text-xs text-ink-muted">Persentase dihitung per responden, bukan per baris jawaban.</p>
+        <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB No. 9/2024. Persentase dihitung per responden.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        <DistributionTable title="Jenis kelamin" rows={report.demographics.gender} />
-        <DistributionTable title="Usia" rows={report.demographics.age} />
-        <DistributionTable title="Pendidikan" rows={report.demographics.education} />
-        <DistributionTable title="Pekerjaan" rows={report.demographics.occupation} />
+        <DistributionTable title="Penyandang disabilitas" rows={d.disability} />
+        <DistributionTable title="Jenis disabilitas" rows={mapLabels(d.disability_type, DISABILITY_LABELS)} />
+        <DistributionTable title="Jenis kelamin" rows={d.gender} />
+        <DistributionTable title="Usia" rows={d.age} />
+        <DistributionTable title="Pendidikan" rows={d.education} />
+        <DistributionTable title="Pekerjaan" rows={d.occupation} />
+        <DistributionTable title="Jenis layanan yang diterima" rows={d.service_type} />
+        <DistributionTable title="Kategori layanan" rows={mapLabels(d.service_category, SERVICE_CATEGORY_LABELS)} />
       </div>
     </div>
   );
 }
 
+const StatCard = ({ label, value, hint }) => (
+  <div className="rounded-xl border border-line bg-white p-4">
+    <p className="text-xs text-ink-muted">{label}</p>
+    <p className="text-2xl font-bold text-ink">{value ?? '-'}</p>
+    {hint && <p className="text-xs text-ink-muted">{hint}</p>}
+  </div>
+);
+
 export function ReportView({ surveyId }) {
   const report = useReport(surveyId);
   if (!report) return <p className="text-sm text-ink-muted">Memuat laporan…</p>;
+  const nps = report.nps;
 
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-line bg-white p-4"><p className="text-xs text-ink-muted">Responden</p><p className="text-2xl font-bold text-ink">{report.respondents}</p></div>
-        <div className="rounded-xl border border-line bg-white p-4"><p className="text-xs text-ink-muted">Nilai indeks (25–100)</p><p className="text-2xl font-bold text-ink">{report.index ?? '-'}</p></div>
-        <div className="rounded-xl border border-line bg-white p-4"><p className="text-xs text-ink-muted">Mutu pelayanan</p><p className="text-2xl font-bold text-brand-800">{report.mutu ? `${report.mutu.grade} · ${report.mutu.label}` : '-'}</p></div>
+        <StatCard label="Responden" value={report.respondents} />
+        <StatCard label="Indeks Kepuasan Masyarakat (25–100)" value={report.index} />
+        <StatCard label="Mutu / kinerja unit pelayanan" value={report.mutu ? `${report.mutu.grade} · ${report.mutu.label}` : null} />
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-line bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-            <tr><th className="p-3">Unsur</th><th className="p-3">Jawaban</th><th className="p-3">Rata-rata (1–4)</th><th className="p-3">Nilai × 25</th></tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {report.unsur.map((u) => (
-              <tr key={u.id}><td className="p-3"><span className="font-semibold text-ink">{unsurLabel(u)}</span>{u.definition && <p className="text-xs text-ink-muted">{u.definition}</p>}</td><td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td></tr>
-            ))}
-          </tbody>
-        </table>
+      <section className="space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Data persepsi per unsur</h4>
+        <div className="overflow-x-auto rounded-xl border border-line bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
+              <tr><th className="p-3">Unsur</th><th className="p-3">Jawaban</th><th className="p-3">Nilai persepsi (1–4)</th><th className="p-3">Nilai konversi</th><th className="p-3">Mutu</th></tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {!report.unsur.length && <tr><td colSpan={5} className="p-3 text-xs text-ink-muted">Belum ada pertanyaan pilihan pada survei ini.</td></tr>}
+              {report.unsur.map((u) => (
+                <tr key={u.id}>
+                  <td className="p-3"><span className="font-semibold text-ink">{unsurLabel(u)}</span>{u.definition && <p className="text-xs text-ink-muted">{u.definition}</p>}</td>
+                  <td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td>
+                  <td className="p-3">{u.mutu ? `${u.mutu.grade} · ${u.mutu.label}` : '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)</h4>
+        <div className="overflow-x-auto rounded-xl border border-line bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
+              <tr><th className="p-3">Nilai persepsi</th><th className="p-3">Nilai interval (NI)</th><th className="p-3">Nilai interval konversi (NIK)</th><th className="p-3">Mutu pelayanan</th><th className="p-3">Kinerja unit</th></tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {IKM_CATEGORIES.map((c) => (
+                <tr key={c.mutu} className={report.mutu?.grade === c.mutu ? 'bg-brand-50 font-semibold' : ''}>
+                  <td className="p-3">{c.persepsi}</td><td className="p-3">{c.interval}</td><td className="p-3">{c.konversi}</td><td className="p-3">{c.mutu}</td><td className="p-3">{c.kinerja}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="text-xs text-ink-muted">IKM = rata-rata nilai persepsi seluruh unsur terisi × 25 (nilai penimbang sama untuk setiap unsur).</p>
+      </section>
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <StatCard label="Kepuasan secara keseluruhan (1–5)" value={report.satisfaction.average}
+          hint={report.satisfaction.average != null ? SATISFACTION_LABELS[Math.round(report.satisfaction.average)] : 'Belum ada data.'} />
+        <StatCard label="Loyalitas — Net Promoter Score (−100 s.d. 100)" value={nps.score}
+          hint={nps.respondents ? `${nps.promoters} promotor (9–10) · ${nps.passives} pasif (7–8) · ${nps.detractors} detraktor (1–6)` : 'Belum ada data.'} />
       </div>
-      <p className="text-xs text-ink-muted">Indeks = rata-rata nilai seluruh unsur × 25. Mutu: A ≥ 88,31 · B ≥ 76,61 · C ≥ 65,00 · D di bawahnya (PermenPANRB 14/2017).</p>
+
+      <section className="space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Pengukuran perilaku anti-korupsi (1–5: Sangat tidak setuju – Sangat setuju)</h4>
+        <div className="overflow-x-auto rounded-xl border border-line bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
+              <tr><th className="p-3">Aspek</th><th className="p-3">Pernyataan</th><th className="p-3">Jawaban</th><th className="p-3">Rata-rata</th></tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {report.anti_corruption.map((a) => (
+                <tr key={a.key}>
+                  <td className="p-3">{ANTI_CORRUPTION_STATEMENTS[a.key]?.aspect}</td><td className="p-3">{ANTI_CORRUPTION_STATEMENTS[a.key]?.text}</td>
+                  <td className="p-3">{a.answers}</td><td className="p-3">{a.average ?? '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="rounded-xl border border-line bg-white p-4 space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Saran & jawaban esai ({report.essays.length})</h4>
-        {!report.essays.length ? <p className="text-xs text-ink-muted">Belum ada jawaban esai.</p> : report.essays.map((e, i) => (
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kritik, saran & jawaban esai ({report.essays.length})</h4>
+        {!report.essays.length ? <p className="text-xs text-ink-muted">Belum ada kritik atau saran.</p> : report.essays.map((e, i) => (
           <blockquote key={i} className="border-l-2 border-brand-300 pl-3 text-sm text-ink">
             {e.text}
-            <footer className="text-xs text-ink-muted">{e.respondent || 'Responden'} · {formatDate(e.submitted_at)}</footer>
+            <footer className="text-xs text-ink-muted">{e.question} · {e.respondent || 'Responden'} · {formatDate(e.submitted_at)}</footer>
           </blockquote>
         ))}
       </div>
     </div>
   );
 }
+
+const yesNo = (v) => (v === true ? 'Ya' : v === false ? 'Tidak' : '-');
 
 export function ResponsesView({ surveyId }) {
   const [page, setPage] = useState(1);
@@ -210,25 +283,46 @@ export function ResponsesView({ surveyId }) {
       <div className="overflow-x-auto rounded-xl border border-line bg-white">
         <table className="w-full text-sm">
           <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-            <tr><th className="p-3">Waktu</th><th className="p-3">Responden</th><th className="p-3">No. Pendaftaran</th><th className="p-3">JK</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th><th className="p-3" /></tr>
+            <tr>
+              <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">No. Pendaftaran</th>
+              <th className="p-3">JK</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
+              <th className="p-3">Kategori layanan</th><th className="p-3">Kepuasan</th><th className="p-3">NPS</th><th className="p-3" />
+            </tr>
           </thead>
           <tbody className="divide-y divide-line">
             {data.items.map((r) => (
               <React.Fragment key={r.id}>
                 <tr>
-                  <td className="p-3 text-xs">{formatDate(r.submitted_at)}</td>
+                  <td className="p-3 text-xs">{formatDateTime(r.submitted_at)}</td>
                   <td className="p-3">{r.registration?.publisher?.legal_name || r.respondent_name || '-'}</td>
                   <td className="p-3 font-mono text-xs">{r.registration?.registration_no || '-'}</td>
                   <td className="p-3">{r.gender || '-'}</td><td className="p-3">{r.age ?? '-'}</td><td className="p-3">{r.education || '-'}</td><td className="p-3">{r.occupation || '-'}</td>
+                  <td className="p-3">{SERVICE_CATEGORY_LABELS[r.service_category] || '-'}</td>
+                  <td className="p-3">{r.overall_satisfaction ?? '-'}</td><td className="p-3">{r.nps_score ?? '-'}</td>
                   <td className="p-3 text-right"><Button size="sm" variant="ghost" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Tutup' : 'Lihat jawaban'}</Button></td>
                 </tr>
                 {open === r.id && (
-                  <tr><td colSpan={8} className="bg-surface-subtle/50 p-3">
-                    <ul className="space-y-1.5 text-xs">
-                      {r.answers.map((a) => (
-                        <li key={a.id}><span className="text-ink-muted">{a.question.text}</span> → <strong className="text-ink">{a.option?.label || a.essay_text || '-'}</strong>{a.value != null && ` (${a.value})`}</li>
-                      ))}
-                    </ul>
+                  <tr><td colSpan={11} className="bg-surface-subtle/50 p-3">
+                    <div className="grid gap-4 md:grid-cols-2 text-xs">
+                      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                        <dt className="text-ink-muted">Penyandang disabilitas</dt><dd>{yesNo(r.is_disabled)}{r.is_disabled && r.disability_type ? ` — ${DISABILITY_LABELS[r.disability_type] || r.disability_type}` : ''}</dd>
+                        <dt className="text-ink-muted">Jenis layanan</dt><dd>{r.service_type || '-'}</dd>
+                        <dt className="text-ink-muted">Menerima layanan</dt><dd>{formatDateTime(r.service_received_at)}</dd>
+                        <dt className="text-ink-muted">Kepuasan keseluruhan</dt><dd>{r.overall_satisfaction ? `${r.overall_satisfaction} — ${SATISFACTION_LABELS[r.overall_satisfaction]}` : '-'}</dd>
+                        <dt className="text-ink-muted">Loyalitas (1–10)</dt><dd>{r.nps_score ?? '-'}</dd>
+                        {Object.entries(ANTI_CORRUPTION_STATEMENTS).map(([key, s]) => (
+                          <React.Fragment key={key}><dt className="text-ink-muted">{s.text}</dt><dd>{r[key] ?? '-'}</dd></React.Fragment>
+                        ))}
+                        <dt className="text-ink-muted">Kritik dan saran</dt><dd>{r.feedback || '-'}</dd>
+                      </dl>
+                      <ul className="space-y-1.5">
+                        <li className="font-semibold text-ink">Data persepsi</li>
+                        {!r.answers.length && <li className="text-ink-muted">Tidak ada jawaban.</li>}
+                        {r.answers.map((a) => (
+                          <li key={a.id}><span className="text-ink-muted">{a.question.text}</span> → <strong className="text-ink">{a.option?.label || a.essay_text || '-'}</strong>{a.value != null && ` (${a.value})`}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </td></tr>
                 )}
               </React.Fragment>

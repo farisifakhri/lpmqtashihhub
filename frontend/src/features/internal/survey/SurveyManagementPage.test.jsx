@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { SurveyManagementPage } from './SurveyManagementPage';
 import { surveyApi } from '@/api/survey.api';
 
-const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.', is_standard: true, is_archived: false, _count: { items: 0 } };
+const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.', is_standard: true, sort_order: 1, is_archived: false, _count: { items: 0 } };
 const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
 const baseSurvey = { id: 's1', name: 'Survei IKM 2027', kind: 'IKM', description: null, starts_at: '2027-01-01T00:00:00.000Z', ends_at: '2027-12-31T00:00:00.000Z', status: 'DRAFT', display_status: 'DRAFT', updated_at: 'v1', _count: { items: 0, responses: 0 } };
 
@@ -65,6 +65,10 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat Survei IKM 2027' }));
     expect(await screen.findByRole('heading', { name: 'Detail Survei' })).toBeInTheDocument();
+    for (const section of ['1. Kalimat Pembuka', '2. Data Demografis', '4. Kepuasan Secara Keseluruhan (skala 1–5)', '5. Loyalitas (skala 1–10)', '8. Kalimat Penutup']) {
+      expect(await screen.findByText(section)).toBeInTheDocument();
+    }
+    expect(screen.getByText('Penyandang disabilitas (ya/tidak) dan jenis disabilitas')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Susun Pertanyaan/ }));
     expect(await screen.findByRole('heading', { name: 'Pemilihan Survei' })).toBeInTheDocument();
   });
@@ -85,9 +89,13 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
   it('sub-menu Laporan Survei meminta pilih survei lalu menampilkan indeks dan mutu', async () => {
     const getReport = vi.spyOn(surveyApi, 'getReport').mockResolvedValue({ data: {
-      respondents: 2, index: 87.5, mutu: { grade: 'B', label: 'Baik' }, essays: [],
-      unsur: [{ id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', answers: 2, average: 3.5, converted: 87.5 }],
-      demographics: { gender: [], age: [], education: [], occupation: [] },
+      respondents: 2, index: 87.5, mutu: { grade: 'B', label: 'Baik' },
+      essays: [{ question: 'Kritik dan saran', text: 'Layanan cepat.', respondent: 'PT Uji', submitted_at: '2027-02-01T00:00:00.000Z' }],
+      unsur: [{ id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', answers: 2, average: 3.5, converted: 87.5, mutu: { grade: 'B', label: 'Baik' } }],
+      demographics: { gender: [], age: [], education: [], occupation: [], disability: [], disability_type: [], service_type: [], service_category: [] },
+      satisfaction: { average: 4.5, distribution: [] },
+      nps: { score: 0, respondents: 2, promoters: 1, passives: 0, detractors: 1 },
+      anti_corruption: [{ key: 'ak_transparency', average: 4.5, answers: 2 }, { key: 'ak_no_extortion', average: 5, answers: 1 }, { key: 'ak_no_broker', average: null, answers: 0 }, { key: 'ak_no_gratification', average: null, answers: 0 }],
     } });
     renderPage('/internal/surveys?tab=laporan');
     expect(screen.getByRole('heading', { name: 'Laporan Survei' })).toBeInTheDocument();
@@ -95,8 +103,13 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
     await screen.findByRole('option', { name: 'Survei IKM 2027' });
     fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
-    expect(await screen.findByText('B · Baik')).toBeInTheDocument();
+    expect((await screen.findAllByText('B · Baik')).length).toBe(2); // mutu keseluruhan + mutu per unsur
     expect(getReport).toHaveBeenCalledWith('s1');
+    expect(screen.getByText('Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)')).toBeInTheDocument();
+    expect(screen.getByText('Kepuasan secara keseluruhan (1–5)')).toBeInTheDocument();
+    expect(screen.getByText('1 promotor (9–10) · 0 pasif (7–8) · 1 detraktor (1–6)')).toBeInTheDocument();
+    expect(screen.getByText('Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.')).toBeInTheDocument();
+    expect(screen.getByText('Layanan cepat.')).toBeInTheDocument();
   });
 
   it('Nama Unsur menampilkan unsur baku beserta definisinya; unsur baku yang tidak dipakai dapat dihapus', async () => {
@@ -143,5 +156,31 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(await screen.findByRole('button', { name: 'Hapus Unsur terpakai' })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: 'Hapus Persyaratan Pelayanan' }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith('u1'));
+  });
+
+  it('Nama Unsur menampilkan nomor urut Pedoman dan tombol Pulihkan Unsur Baku memanggil API', async () => {
+    const restore = vi.spyOn(surveyApi, 'restoreStandardUnsur').mockResolvedValue({ data: [unsur] });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderPage('/internal/surveys?tab=unsur');
+    expect(await screen.findByText('1.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Pulihkan Unsur Baku PANRB/ }));
+    await waitFor(() => expect(restore).toHaveBeenCalled());
+  });
+
+  it('Responden Survei menampilkan seluruh data demografis Pedoman', async () => {
+    vi.spyOn(surveyApi, 'getReport').mockResolvedValue({ data: {
+      respondents: 1, index: null, mutu: null, essays: [], unsur: [],
+      demographics: {
+        gender: [{ label: 'Laki-laki', count: 1, percent: 100 }], age: [], education: [], occupation: [],
+        disability: [{ label: 'Ya', count: 1, percent: 100 }], disability_type: [{ label: 'FISIK', count: 1, percent: 100 }],
+        service_type: [{ label: 'Tanda tashih mushaf cetak', count: 1, percent: 100 }], service_category: [{ label: 'HYBRID', count: 1, percent: 100 }],
+      },
+      satisfaction: { average: null, distribution: [] }, nps: { score: null, respondents: 0, promoters: 0, passives: 0, detractors: 0 }, anti_corruption: [],
+    } });
+    renderPage('/internal/surveys?tab=responden&survey=s1');
+    expect(await screen.findByText('Penyandang disabilitas')).toBeInTheDocument();
+    expect(screen.getByText('Fisik (Tuna Daksa)')).toBeInTheDocument();
+    expect(screen.getByText('Campuran (Hybrid)')).toBeInTheDocument();
+    expect(screen.getByText('Tanda tashih mushaf cetak')).toBeInTheDocument();
   });
 });
