@@ -40,9 +40,11 @@ export const assignmentSchema = { params, body: z.object({
     const juz = data.juz_assignments?.flatMap(item => item.juz_numbers) || [];
     if (new Set(juz).size !== juz.length) {
       const teamByAssignee = new Map();
+      const juzSetByAssignee = new Map();
       for (const item of (data.juz_assignments || [])) {
         const itemTeam = item.team_id !== undefined ? item.team_id : (data.is_individual ? null : (data.team_id || null));
         teamByAssignee.set(item.assignee_id, itemTeam);
+        juzSetByAssignee.set(item.assignee_id, new Set(item.juz_numbers));
       }
       const juzToAssignees = new Map();
       for (const item of (data.juz_assignments || [])) {
@@ -55,10 +57,23 @@ export const assignmentSchema = { params, body: z.object({
       for (const [, assigneeList] of juzToAssignees.entries()) {
         if (assigneeList.length > 1) {
           const firstTeam = teamByAssignee.get(assigneeList[0]);
-          if (!firstTeam || assigneeList.some(aId => teamByAssignee.get(aId) !== firstTeam)) {
+          if (!firstTeam) {
             invalidOverlap = true;
             break;
           }
+          const firstSet = juzSetByAssignee.get(assigneeList[0]);
+          for (const aId of assigneeList) {
+            if (teamByAssignee.get(aId) !== firstTeam) {
+              invalidOverlap = true;
+              break;
+            }
+            const aSet = juzSetByAssignee.get(aId);
+            if (aSet.size !== firstSet.size || ![...aSet].every(j => firstSet.has(j))) {
+              invalidOverlap = true;
+              break;
+            }
+          }
+          if (invalidOverlap) break;
         }
       }
       if (invalidOverlap) {
