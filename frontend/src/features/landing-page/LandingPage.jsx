@@ -510,7 +510,7 @@ export const LandingPage = () => {
         {/* Quick Links Section: Akses Menu Cepat */}
         <section className="space-y-4" aria-label="Akses Menu Cepat">
           <div className="text-center pb-2">
-            <span className="text-xs font-bold text-brand-fg uppercase tracking-wider block mb-1">
+            <span className="text-xs font-bold text-lpmq-green uppercase tracking-wider block mb-1">
               Pintasan Layanan
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-ink">
@@ -524,15 +524,15 @@ export const LandingPage = () => {
               const CardContent = (
                 <>
                   <div className="flex items-center justify-between mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center text-brand-700 group-hover:scale-105 transition-transform shadow-2xs">
+                    <div className="w-10 h-10 rounded-xl bg-lpmq-soft border border-lpmq-border flex items-center justify-center text-lpmq-green group-hover:scale-105 transition-transform shadow-2xs">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="w-7 h-7 rounded-full bg-surface-subtle group-hover:bg-brand-fill group-hover:text-white flex items-center justify-center text-ink-muted transition-colors">
+                    <span className="w-7 h-7 rounded-full bg-surface-subtle group-hover:bg-lpmq-green group-hover:text-white flex items-center justify-center text-lpmq-green transition-colors">
                       <ArrowUpRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-ink group-hover:text-brand-fg transition-colors">
+                    <h3 className="text-sm font-bold text-ink group-hover:text-lpmq-green transition-colors">
                       {item.title}
                     </h3>
                     {/* Deskripsi tersembunyi secara default dan hanya muncul saat kursor diarahkan (hover) */}
@@ -548,7 +548,7 @@ export const LandingPage = () => {
               );
 
               const cardClasses =
-                "rounded-2xl bg-surface p-5 border border-line shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-brand-600/50 group flex flex-col justify-between";
+                "rounded-2xl bg-surface p-5 border border-line shadow-2xs transition-all duration-200 hover:-translate-y-1 hover:bg-lpmq-soft hover:shadow-md hover:border-lpmq-green/50 group flex flex-col justify-between";
 
               if (item.isInternal) {
                 return (
@@ -583,7 +583,7 @@ export const LandingPage = () => {
             <div className="lg:col-span-7 flex flex-col space-y-6 sm:space-y-8">
               <div className="space-y-3">
                 <h2
-                  className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-700 tracking-tight"
+                  className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-lpmq-green tracking-tight"
                   aria-label="Informasi Pelayanan - Maklumat Pelayanan"
                 >
                   Maklumat Pelayanan
@@ -604,7 +604,7 @@ export const LandingPage = () => {
                         key={idx}
                         className="flex flex-col items-center text-center p-2 sm:p-3 space-y-2"
                       >
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-2xs">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-lpmq-green text-white flex items-center justify-center shadow-2xs">
                           <IconComponent className="w-6 h-6 stroke-[2.2]" />
                         </div>
                         <span className="text-2xl sm:text-3xl font-black text-ink tracking-tight">
@@ -632,7 +632,7 @@ export const LandingPage = () => {
                 return (
                   <div
                     key={idx}
-                    className="flex-1 rounded-2xl bg-brand-600 text-white p-5 sm:p-6 shadow-sm flex items-center gap-4 transition-all duration-200 hover:bg-brand-700"
+                    className="flex-1 rounded-2xl bg-lpmq-green text-white p-5 sm:p-6 shadow-sm flex items-center gap-4 transition-all duration-200 hover:bg-lpmq-dark"
                   >
                     <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white border border-white/20">
                       <IconComponent className="w-6 h-6 sm:w-7 sm:h-7 stroke-[2]" />
@@ -668,12 +668,12 @@ export const LandingPage = () => {
               const hasRoute = Boolean(service.href);
 
               const cardContent = (
-                <div className="p-6 rounded-2xl border border-line bg-surface-subtle hover:bg-surface hover:border-brand-600 hover:shadow-sm transition-all duration-300 group flex flex-col justify-between min-h-[140px] h-full cursor-pointer">
-                  <div className="w-12 h-12 rounded-xl bg-brand-100 text-brand-800 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors shadow-2xs">
+                <div className="p-6 rounded-2xl border border-lpmq-border bg-white hover:bg-lpmq-soft hover:border-lpmq-green group-active:bg-lpmq-green group-active:border-lpmq-green hover:shadow-sm transition-all duration-300 group flex flex-col justify-between min-h-[140px] h-full cursor-pointer">
+                  <div className="w-12 h-12 rounded-xl bg-lpmq-soft text-lpmq-green flex items-center justify-center group-hover:ring-2 group-hover:ring-lpmq-accent group-hover:ring-offset-1 group-active:bg-lpmq-green group-active:text-white transition-all duration-300 shadow-2xs">
                     <IconComponent className="w-6 h-6 stroke-[2]" />
                   </div>
                   <div className="mt-5">
-                    <h3 className="text-base font-bold text-ink group-hover:text-brand-700 transition-colors leading-snug">
+                    <h3 className="text-base font-bold text-ink group-hover:text-lpmq-green group-active:text-white transition-colors duration-300 leading-snug">
                       {service.title}
                     </h3>
                   </div>
@@ -686,7 +686,7 @@ export const LandingPage = () => {
                     key={idx}
                     to={service.href}
                     onClick={(e) => handleNavigate(service.href, e)}
-                    className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-2xl"
+                    className="group active:bg-lpmq-green active:border-lpmq-green block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lpmq-green rounded-2xl"
                   >
                     {cardContent}
                   </Link>
@@ -698,7 +698,7 @@ export const LandingPage = () => {
                   key={idx}
                   role="button"
                   tabIndex={0}
-                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 rounded-2xl"
+                  className="group active:bg-lpmq-green active:border-lpmq-green block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lpmq-green rounded-2xl"
                   onClick={(e) => {
                     if (!service.href) {
                       e.preventDefault();

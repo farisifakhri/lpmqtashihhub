@@ -45,6 +45,15 @@ export default {
           100: 'rgb(var(--brand-100-rgb) / <alpha-value>)',
           50: 'rgb(var(--brand-50-rgb) / <alpha-value>)',
         },
+        lpmq: {
+          green: 'rgb(var(--lpmq-green-rgb) / <alpha-value>)',
+          accent: 'rgb(var(--lpmq-accent-rgb) / <alpha-value>)',
+          dark: 'rgb(var(--lpmq-green-dark-rgb) / <alpha-value>)',
+          soft: 'rgb(var(--lpmq-green-soft-rgb) / <alpha-value>)',
+          'soft-hover': 'rgb(var(--lpmq-green-soft-hover-rgb) / <alpha-value>)',
+          nav: 'rgb(var(--lpmq-nav-text-rgb) / <alpha-value>)',
+          border: 'rgb(var(--lpmq-border-rgb) / <alpha-value>)',
+        },
         civicGold: {
           700: 'rgb(var(--gold-700-rgb) / <alpha-value>)',
           500: 'rgb(var(--gold-500-rgb) / <alpha-value>)',
