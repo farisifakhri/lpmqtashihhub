@@ -25,6 +25,33 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal((await call('/admin/surveys', helperAdminToken)).status, 403);
   });
 
+  await test('Survei: 9 unsur baku Pedoman PANRB 9/2024 langsung tersedia beserta definisinya', async () => {
+    const list = await ok('/admin/survey-unsur', adminToken, 'GET');
+    const standard = list.filter((u) => u.is_standard);
+    assert.deepEqual(standard.map((u) => `${u.code} ${u.name}`), [
+      'A Persyaratan', 'B Sistem, Mekanisme, dan Prosedur', 'C Waktu Penyelesaian', 'D Biaya/Tarif',
+      'E Produk, Spesifikasi, dan Jenis Pelayanan', 'F Kompetensi Pelaksana', 'G Perilaku Pelaksana',
+      'H Penanganan Pengaduan', 'I Sarana dan Prasarana',
+    ]);
+    assert.match(standard[0].definition, /^Syarat yang harus dipenuhi/);
+    assert.ok(standard.every((u) => u.definition));
+
+    // Unsur baku tidak dapat dihapus, tetapi definisinya boleh disesuaikan dan unsurnya boleh diarsipkan.
+    const persyaratan = standard[0];
+    assert.equal((await call(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'DELETE')).status, 409);
+    const edited = await ok(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'PUT', { definition: 'Definisi khusus pentashihan.' });
+    assert.equal(edited.definition, 'Definisi khusus pentashihan.');
+    assert.equal(edited.is_standard, true);
+    await ok(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'PUT', { definition: persyaratan.definition, is_archived: true });
+    assert.ok(!(await ok('/admin/survey-unsur', adminToken, 'GET')).some((u) => u.id === persyaratan.id));
+    await ok(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'PUT', { is_archived: false });
+
+    // Regresi: mengarsipkan unsur IPAK tidak boleh mengubah jenisnya menjadi IKM.
+    const ipak = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-IPAK', name: 'Pungutan liar', kind: 'IPAK' }, 201);
+    assert.equal((await ok(`/admin/survey-unsur/${ipak.id}`, adminToken, 'PUT', { is_archived: true })).kind, 'IPAK');
+    await ok(`/admin/survey-unsur/${ipak.id}`, adminToken, 'DELETE');
+  });
+
   await test('Survei: Super Admin menyiapkan unsur dan bank pertanyaan', async () => {
     unsurA = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-A', name: 'Persyaratan Pelayanan', kind: 'IKM' }, 201);
     unsurB = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-B', name: 'Prosedur Pelayanan', kind: 'IKM' }, 201);

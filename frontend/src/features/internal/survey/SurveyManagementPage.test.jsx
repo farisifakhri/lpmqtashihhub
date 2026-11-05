@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { SurveyManagementPage } from './SurveyManagementPage';
 import { surveyApi } from '@/api/survey.api';
 
-const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', is_archived: false, _count: { items: 0 } };
+const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.', is_standard: true, is_archived: false, _count: { items: 0 } };
 const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
 const baseSurvey = { id: 's1', name: 'Survei IKM 2027', kind: 'IKM', description: null, starts_at: '2027-01-01T00:00:00.000Z', ends_at: '2027-12-31T00:00:00.000Z', status: 'DRAFT', display_status: 'DRAFT', updated_at: 'v1', _count: { items: 0, responses: 0 } };
 
@@ -97,5 +97,28 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
     expect(await screen.findByText('B · Baik')).toBeInTheDocument();
     expect(getReport).toHaveBeenCalledWith('s1');
+  });
+
+  it('Nama Unsur menampilkan unsur baku beserta definisinya dan tidak menyediakan Hapus untuk unsur baku', async () => {
+    const update = vi.spyOn(surveyApi, 'updateUnsur').mockResolvedValue({ data: unsur });
+    renderPage('/internal/surveys?tab=unsur');
+    expect(await screen.findByText('Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.')).toBeInTheDocument();
+    expect(screen.getByText('Baku PANRB')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Hapus Persyaratan Pelayanan' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ubah Persyaratan Pelayanan' }));
+    const definition = screen.getByLabelText('Definisi');
+    expect(definition).toHaveValue(unsur.definition);
+    fireEvent.change(definition, { target: { value: 'Syarat khusus pentashihan.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('u1', { code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat khusus pentashihan.' }));
+  });
+
+  it('Pemilihan Survei menampilkan definisi unsur yang dipilih', async () => {
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
+    await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
+    expect(screen.queryByTestId('picked-unsur-definition')).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u1' } });
+    expect(screen.getByTestId('picked-unsur-definition')).toHaveTextContent('Syarat yang harus dipenuhi');
   });
 });

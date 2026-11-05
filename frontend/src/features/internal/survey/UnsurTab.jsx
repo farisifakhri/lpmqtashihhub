@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import { inputClass, KIND_OPTIONS } from './survey-constants';
 
-const EMPTY = { code: '', name: '', kind: 'IKM' };
+const EMPTY = { code: '', name: '', kind: 'IKM', definition: '' };
 
 export function UnsurTab() {
   const [items, setItems] = useState([]);
@@ -33,8 +33,9 @@ export function UnsurTab() {
     setSaving(true);
     try {
       const { id, code, name, kind } = form;
-      if (id) await surveyApi.updateUnsur(id, { code, name, kind });
-      else await surveyApi.createUnsur({ code, name, kind });
+      const body = { code, name, kind, definition: form.definition.trim() || null };
+      if (id) await surveyApi.updateUnsur(id, body);
+      else await surveyApi.createUnsur(body);
       showToast(id ? 'Unsur diperbarui.' : 'Unsur ditambahkan.', 'success');
       setForm(null);
       load();
@@ -65,23 +66,33 @@ export function UnsurTab() {
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-              <tr><th className="p-3">Kode</th><th className="p-3">Nama Unsur</th><th className="p-3">Jenis</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
+              <tr><th className="p-3">Kode</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Jenis</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
               {items.map((u) => (
                 <tr key={u.id} className={u.is_archived ? 'opacity-60' : ''}>
-                  <td className="p-3 font-mono text-xs">{u.code}</td>
-                  <td className="p-3 text-ink">{u.name} {u.is_archived && <Badge>Diarsipkan</Badge>}</td>
+                  <td className="p-3 font-mono text-xs align-top">{u.code}</td>
+                  <td className="p-3 space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
+                      {u.name}
+                      {u.is_standard && <Badge variant="success">Baku PANRB</Badge>}
+                      {u.is_archived && <Badge>Diarsipkan</Badge>}
+                    </div>
+                    <p className="text-xs text-ink-muted leading-relaxed">{u.definition || 'Belum ada definisi.'}</p>
+                  </td>
                   <td className="p-3"><Badge variant="info">{u.kind}</Badge></td>
                   <td className="p-3 text-xs text-ink-muted">{u._count?.items || 0} survei</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
-                      <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`} onClick={() => setForm({ ...u })}><Pencil className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`}
+                        onClick={() => setForm({ id: u.id, code: u.code, name: u.name, kind: u.kind, definition: u.definition || '', is_standard: u.is_standard })}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" aria-label={u.is_archived ? `Pulihkan ${u.name}` : `Arsipkan ${u.name}`}
                         onClick={() => run(() => surveyApi.updateUnsur(u.id, { is_archived: !u.is_archived }), u.is_archived ? 'Unsur dipulihkan.' : 'Unsur diarsipkan.')}>
                         {u.is_archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                       </Button>
-                      {!u._count?.items && (
+                      {!u._count?.items && !u.is_standard && (
                         <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`}
                           onClick={() => window.confirm(`Hapus unsur "${u.name}"?`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.')}>
                           <Trash2 className="w-4 h-4 text-civic-danger" />
@@ -109,6 +120,9 @@ export function UnsurTab() {
               <select className={inputClass} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
                 {KIND_OPTIONS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
               </select>
+            </FormField>
+            <FormField label="Definisi" hint={form.is_standard ? 'Definisi baku dari Pedoman Menteri PANRB No. 9/2024; boleh disesuaikan dengan layanan pentashihan.' : 'Penjelasan singkat unsur agar penyusun pertanyaan dan pembaca laporan memahami maksudnya.'}>
+              <textarea className={inputClass} rows={4} maxLength={2000} value={form.definition} onChange={(e) => setForm({ ...form, definition: e.target.value })} />
             </FormField>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setForm(null)}>Batal</Button>

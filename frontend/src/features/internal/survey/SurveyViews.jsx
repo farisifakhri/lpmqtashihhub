@@ -32,6 +32,7 @@ function ItemsEditor({ survey, onSaved }) {
     surveyApi.listQuestions().then((r) => setQuestions(r.data || [])).catch(() => {});
   }, [locked]);
 
+  const pickedUnsur = unsurList.find((u) => u.id === pick.unsur_id);
   const used = new Set(draft.map((d) => d.question.id));
   const available = questions.filter((q) => !used.has(q.id));
   const dirty = JSON.stringify(draft.map((d) => [d.unsur.id, d.question.id]))
@@ -108,6 +109,11 @@ function ItemsEditor({ survey, onSaved }) {
             </select>
             <Button type="button" variant="outline" disabled={!pick.unsur_id || !pick.question_id} onClick={add}><Plus className="w-4 h-4" /> Tambah</Button>
           </div>
+          {pickedUnsur?.definition && (
+            <p data-testid="picked-unsur-definition" className="rounded-lg border border-line bg-white p-3 text-xs text-ink-muted leading-relaxed">
+              <strong className="text-ink">{pickedUnsur.name}:</strong> {pickedUnsur.definition}
+            </p>
+          )}
           <div className="flex justify-end">
             <Button type="button" disabled={!dirty || saving} onClick={save}><Save className="w-4 h-4" /> {saving ? 'Menyimpan…' : 'Simpan Susunan'}</Button>
           </div>
@@ -171,7 +177,7 @@ export function ReportView({ surveyId }) {
           </thead>
           <tbody className="divide-y divide-line">
             {report.unsur.map((u) => (
-              <tr key={u.id}><td className="p-3">{u.code} · {u.name}</td><td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td></tr>
+              <tr key={u.id}><td className="p-3"><span className="font-semibold text-ink">{u.code} · {u.name}</span>{u.definition && <p className="text-xs text-ink-muted">{u.definition}</p>}</td><td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td></tr>
             ))}
           </tbody>
         </table>

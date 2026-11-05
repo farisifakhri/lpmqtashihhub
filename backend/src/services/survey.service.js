@@ -53,6 +53,7 @@ export async function deleteUnsur(id, user, req) {
   return withAudit(user, req, 'SURVEY_UNSUR_DELETE', 'SurveyUnsur', async (tx) => {
     const unsur = await tx.surveyUnsur.findUnique({ where: { id }, include: { _count: { select: { items: true } } } });
     if (!unsur) fail(404, 'Unsur survei tidak ditemukan.');
+    if (unsur.is_standard) fail(409, 'Unsur baku Pedoman Menteri PANRB tidak dapat dihapus. Arsipkan bila tidak dipakai.');
     if (unsur._count.items) fail(409, 'Unsur ini sudah dipakai pada survei. Arsipkan unsur alih-alih menghapusnya.');
     return tx.surveyUnsur.delete({ where: { id } });
   });
@@ -273,7 +274,7 @@ export async function getSurveyReport(id) {
 
   const unsur = [...perUnsur.values()].map(({ unsur: u, sum, count }) => {
     const average = count ? round2(sum / count) : null;
-    return { id: u.id, code: u.code, name: u.name, answers: count, average, converted: average == null ? null : round2(average * 25) };
+    return { id: u.id, code: u.code, name: u.name, definition: u.definition, answers: count, average, converted: average == null ? null : round2(average * 25) };
   });
   const scored = unsur.filter((u) => u.average != null);
   const averageAll = scored.length ? scored.reduce((s, u) => s + u.average, 0) / scored.length : null;

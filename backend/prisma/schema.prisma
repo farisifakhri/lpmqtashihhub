@@ -1202,6 +1202,9 @@ model SurveyUnsur {
   code        String       @unique @db.VarChar(30)
   name        String       @db.VarChar(255)
   kind        String       @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  definition  String?      @db.Text
+  // 9 unsur baku Pedoman Menteri PANRB 9/2024 (diisi migrasi); tidak boleh dihapus, hanya diarsipkan.
+  is_standard Boolean      @default(false)
   is_archived Boolean      @default(false)
   created_at  DateTime     @default(now())
   updated_at  DateTime     @updatedAt

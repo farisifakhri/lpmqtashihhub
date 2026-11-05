@@ -15,11 +15,13 @@ const unsurBody = z.object({
   code: z.string().trim().min(1, 'Kode unsur wajib diisi.').max(30, 'Kode unsur maksimal 30 karakter.'),
   name: z.string().trim().min(3, 'Nama unsur minimal 3 karakter.').max(255, 'Nama unsur maksimal 255 karakter.'),
   kind: KIND.default('IKM'),
+  definition: z.string().trim().max(2000, 'Definisi maksimal 2000 karakter.').optional().nullable(),
   is_archived: z.boolean().optional(),
 });
 
 export const createUnsurSchema = { body: unsurBody };
-export const updateUnsurSchema = { ...idParams, body: unsurBody.partial() };
+// Tanpa default: pembaruan sebagian (mis. arsipkan) tidak boleh mengubah jenis unsur IPAK menjadi IKM.
+export const updateUnsurSchema = { ...idParams, body: unsurBody.extend({ kind: KIND.optional() }).partial() };
 
 const optionBody = z.object({
   label: z.string().trim().min(1, 'Label opsi wajib diisi.').max(150, 'Label opsi maksimal 150 karakter.'),
