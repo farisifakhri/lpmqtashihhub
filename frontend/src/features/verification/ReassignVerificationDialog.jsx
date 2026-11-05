@@ -214,7 +214,9 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
                       }`}
                     >
                       <div>
-                        <div className="font-bold text-ink">{v.name}</div>
+                        <div className="font-bold text-ink">
+                          {v.core_team_number ? `[Tim Inti ${v.core_team_number}] ` : ''}{v.name}
+                        </div>
                         <div className="text-xs text-ink-muted">NIP: {v.nip || '-'}</div>
                       </div>
                       <div className="text-right">

@@ -102,6 +102,7 @@ export const VerificationInspectionPage = () => {
   // Tab state for mobile/tablet responsive layout (<1024px)
   const [activeMobileTab, setActiveMobileTab] = useState('checklist'); // 'naskah' | 'checklist' | 'konten' | 'hasil' | 'arsip'
   const [activeWorkbenchTab, setActiveWorkbenchTab] = useState('checklist'); // 'checklist' | 'konten' | 'hasil' | 'arsip'
+  const [paneRatio, setPaneRatio] = useState('50-50'); // '50-50' | '70-30' | '30-70'
   const [contentReview, setContentReview] = useState(null);
 
   // Document preview selection
@@ -716,6 +717,20 @@ export const VerificationInspectionPage = () => {
     return f.file_name || 'PDF Berkas';
   };
 
+  const leftColSpan =
+    paneRatio === '70-30'
+      ? 'lg:col-span-8'
+      : paneRatio === '30-70'
+      ? 'lg:col-span-4'
+      : 'lg:col-span-6';
+
+  const rightColSpan =
+    paneRatio === '70-30'
+      ? 'lg:col-span-4'
+      : paneRatio === '30-70'
+      ? 'lg:col-span-8'
+      : 'lg:col-span-6';
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
       {/* Top Header & Breadcrumb */}
@@ -757,17 +772,60 @@ export const VerificationInspectionPage = () => {
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
-            className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer"
-          >
-            {showWorkflowGuide ? (
-              <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
-            ) : (
-              <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Desktop Pane Ratio Selector */}
+            <div className="hidden lg:flex items-center bg-surface-subtle p-0.5 rounded-lg border border-line text-xs">
+              <span className="px-2 text-ink-muted text-[11px] font-medium">Layout:</span>
+              <button
+                type="button"
+                onClick={() => setPaneRatio('50-50')}
+                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
+                  paneRatio === '50-50'
+                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+                title="Bagi Rata (50 : 50)"
+              >
+                50:50
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaneRatio('70-30')}
+                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
+                  paneRatio === '70-30'
+                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+                title="Fokus Naskah (70% PDF, 30% Form)"
+              >
+                Fokus Naskah
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaneRatio('30-70')}
+                className={`px-2.5 py-1 rounded text-xs transition-all cursor-pointer ${
+                  paneRatio === '30-70'
+                    ? 'bg-white font-bold text-brand-900 shadow-2xs border border-line'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+                title="Fokus Formulir (30% PDF, 70% Form)"
+              >
+                Fokus Form
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
+              className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer px-2.5 py-1.5 rounded-lg border border-brand-200 bg-brand-50/50 hover:bg-brand-50 transition-colors"
+            >
+              {showWorkflowGuide ? (
+                <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
+              ) : (
+                <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className={showWorkflowGuide ? 'pt-3 border-t border-line space-y-3 animate-fadeIn' : 'hidden'}>
@@ -1044,9 +1102,9 @@ export const VerificationInspectionPage = () => {
       </div>
 
       {/* THE SPLIT-STUDIO WORKSTATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (6 cols): Inspection Document Studio */}
-        <div className={`lg:col-span-6 space-y-4 ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT COLUMN: Inspection Document Studio (Sticky + Full Height) */}
+        <div className={`${leftColSpan} ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'} lg:sticky lg:top-4 lg:h-[calc(100vh-140px)] flex flex-col`}>
           <InspectionDocumentStudio
             allFiles={allFiles}
             activeFile={activeFile}
@@ -1063,8 +1121,44 @@ export const VerificationInspectionPage = () => {
           />
         </div>
 
-        {/* RIGHT COLUMN (6 cols): Interactive Workbench */}
-        <div className="lg:col-span-6 space-y-4">
+        {/* RIGHT COLUMN: Interactive Workbench (Independent Scroll) */}
+        <div className={`${rightColSpan} lg:h-[calc(100vh-140px)] lg:overflow-y-auto pr-1 space-y-4`}>
+          {/* Smart PNBP & SLA Summary Strip */}
+          <div className="p-3 bg-gradient-to-r from-brand-50/80 via-white to-surface-subtle rounded-2xl border border-brand-100 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-brand-800 text-white shadow-2xs">
+                <Calculator className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-xs">
+                <span className="text-ink-muted">Estimasi PNBP: </span>
+                <span className="font-mono font-bold text-brand-900">
+                  {(() => {
+                    const baseFee = Number(registration?.fee_sla_snapshot?.base_fee ?? registration?.service_type?.base_fee ?? 1000000);
+                    const addonsFee = Number(registration?.fee_sla_snapshot?.addons_fee ?? 0);
+                    const total = Number(registration?.fee_sla_snapshot?.total_fee ?? (baseFee + addonsFee));
+                    return total === 0 ? 'Rp 0' : `Rp ${total.toLocaleString('id-ID')}`;
+                  })()}
+                </span>
+                <span className="text-ink-muted mx-1.5">·</span>
+                <span className="text-ink-muted">Target SLA: </span>
+                <span className="font-bold text-ink">
+                  {registration?.fee_sla_snapshot?.working_days || 10} Hari Kerja
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveWorkbenchTab('kalkulator');
+                setActiveMobileTab('kalkulator');
+              }}
+              className="text-xs font-bold text-brand-800 hover:text-brand-900 hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              <span>Simulasi Tarif & SLA</span>
+              <span className="text-xs">↗</span>
+            </button>
+          </div>
+
           {/* Desktop Tab Selector Header */}
           <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
             <div className="flex items-center gap-1 w-full">
