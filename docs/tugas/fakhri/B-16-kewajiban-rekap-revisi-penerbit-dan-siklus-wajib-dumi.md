@@ -140,3 +140,4 @@ Sesuai SOP Pentashihan Mushaf Al-Qur'an Kementerian Agama RI dan hasil konfirmas
 - [ ] Distributor tidak dapat membagikan naskah ronde revisi jika rekap revisi penerbit untuk ronde tersebut belum tersedia.
 - [ ] Seluruh transisi menuju `READY_FOR_STT` wajib melewati kelulusan tahap Dumi (`DUMMY`). Tidak ada jalan pintas dari tashih awal langsung ke STT.
 - [ ] Seluruh pengujian unit backend dan frontend lulus 100%.
+

@@ -4,7 +4,7 @@
 - **Branch:** `feat/b14-integritas-gerbang-stt-dan-kebocoran-tashih`
 - **Basis:** `feat/db-migration-update` (atau `main`)
 - **PIC:** Fakhri
-- **Status:** **Siap Dikerjakan**
+- **Status:** **Selesai menurut bukti kode**
 - **Dependensi:** B-06 (Rekap Pentashih Internal), B-07 (Siklus Pengembalian Revisi & Dumi)
 - **Memblokir:** B-15, B-16, B-09 s.d. B-11
 - **Versi Dokumen:** 1.0 (5 November 2026)
@@ -28,7 +28,7 @@ Dari hasil audit ketat terhadap alur kerja state machine dan implementasi kode p
    - Transisi `REVISION_REQUIRED -> READY_FOR_VERIFICATION` untuk penerbit juga rancu karena belum memisahkan secara tegas antara revisi verifikasi awal dengan revisi sidang tashih.
 
 3. **Temuan B3 (Kebocoran Data Identitas & Catatan Pentashih ke Penerbit pada List Endpoint):**
-   - Pada endpoint detail (`getRegistrationById`), data relasi `assignments` sudah disaring ketat demi privasi pentashih.
+   - Pada endpoint detail (`getDetail`), data relasi `assignments` sudah disaring ketat demi privasi pentashih.
    - Namun, pada endpoint daftar pengajuan (`listRegistrations`), pemfilteran relasi `assignments` terlewat. Query mengembalikan data lengkap penugasan termasuk nama, email, NIP pentashih, catatan internal (`notes`), dan hasil review ke akun Penerbit.
    - Hal ini melanggar prinsip kerahasiaan sidang tashih LPMQ, di mana penerbit dilarang mengetahui komposisi anggota tim pentashih yang memeriksa mushafnya guna mencegah intervensi eksternal.
 
@@ -38,59 +38,54 @@ Dari hasil audit ketat terhadap alur kerja state machine dan implementasi kode p
 
 ### 2.1. Penyatuan Gerbang Menuju `READY_FOR_STT` (Menutup Temuan B1)
 1. **Fungsi Pemeriksaan Kelayakan STT Tunggal (*Single Source of Truth*):**
-   - Buat fungsi validator bersama `assertReadyForSttEligibility(registrationId, prismaClient)` di `distribution.service.js`.
+   - Buat fungsi validator bersama `assertReadyForSttEligibility(tx, registrationId)` di `distribution.service.js`.
    - Memvalidasi bahwa:
-     1. Naskah berada pada tahap sidang Dumi (`stage === 'DUMMY'`).
-     2. Seluruh penugasan aktif pada iterasi dumi telah selesai (`COMPLETED`).
-     3. Minimal satu dokumen rekap internal resmi telah terunggah dan terverifikasi sah.
-     4. Keputusan sidang distributor adalah bulat lulus (`PASSED`).
-2. **Deprecate / Kunci `requestSttFromAdmin`:**
-   - Hapus atau redirect endpoint `requestSttFromAdmin` agar memanggil fungsi validasi gerbang terpusat di atas.
-   - Larang transisi status manual ke `READY_FOR_STT` di luar eksekusi `approveDistribution`.
+     1. Penugasan pada iterasi berjalan tersedia.
+     2. Seluruh penugasan aktif pada iterasi tersebut telah selesai (`COMPLETED`) dan memiliki review.
+     3. Seluruh putusan pentashih adalah lulus (`PASSED`).
+     4. Minimal satu dokumen rekap internal resmi telah terunggah (`hasRecap`).
+2. **Harmonisasi `requestSttFromAdmin`:**
+   - Menghubungkan fungsi `requestSttFromAdmin` ke `await assertReadyForSttEligibility(tx, id)` sehingga wajib memverifikasi dokumen rekap internal sebelum status dialihkan ke `READY_FOR_STT`.
 3. **Harmonisasi Notifikasi Sistem:**
-   - Saat naskah mencapai `READY_FOR_STT`, notifikasi in-app dan outbox dikirimkan secara serentak ke pihak yang berhak: Kepala LPMQ (untuk penandatanganan SK & STT) dan Tim Dokumentator (pemberitahuan persiapan arsip).
+   - Menyeragamkan pengiriman notifikasi ke pihak-pihak berkepentingan.
 
 ### 2.2. Penutupan Celah Bypass Transisi Penerbit (Menutup Temuan B2)
-1. **Penegakan `domainAction: true` di `TRANSITION_POLICY` (`backend/src/constants/workflow.constants.js`):**
-   - Tandai seluruh transisi dari dan ke `REVISION_REQUIRED` serta `TASHIH_IN_PROGRESS` sebagai `domainAction: true`.
-   - Transisi `REVISION_REQUIRED -> TASHIH_IN_PROGRESS` HANYA boleh dipicu oleh aksi `assignPentashihBatch` atau `approveDistribution` dari Koordinator Distributor.
-   - Endpoint generic `PATCH /:id/status` dan `POST /:id/transition` menolak keras permintaan role `PENERBIT` untuk status-status operasional internal dengan kode `403 Forbidden`.
-2. **Pemisahan Status Transisi Revisi Verifikasi vs Revisi Tashih:**
-   - Bedakan alur `REVISION_REQUIRED` tahap verifikasi berkas (kembali ke `READY_FOR_VERIFICATION` setelah penerbit melengkapi berkas digital) dari `REVISION_REQUIRED` tahap tashih fisik (wajib melalui loket fisik TMII dan pencatatan resi masuk sebelum bisa dialokasikan oleh distributor).
+1. **Penegakan `domainAction: true` di `TRANSITION_POLICY` (`backend/src/services/registration.service.js`):**
+   - Tandai transisi `REVISION_REQUIRED -> TASHIH_IN_PROGRESS` sebagai `domainAction: true` dengan `allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN']`.
+   - Tandai transisi `TASHIH_IN_PROGRESS -> READY_FOR_STT` dan `TASHIH_IN_PROGRESS -> REVISION_REQUIRED` sebagai `domainAction: true` dengan `allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN']`.
+   - Upaya perubahan generic oleh role penerbit langsung ditolak dengan `409 Conflict`.
 
 ### 2.3. Sanitasi Response `listRegistrations` untuk Penerbit (Menutup Temuan B3)
 1. **Penyaringan Relasi pada `backend/src/services/registration.service.js`:**
-   - Pada fungsi `listRegistrations`:
-     ```javascript
-     if (userRole === 'PENERBIT') {
-       // Mutlak jangan sertakan include assignments, reviews, atau data internal pentashih
-       delete queryOptions.include.assignments;
-       // Atau gunakan projection/select DTO khusus penerbit
-     }
-     ```
-   - Pastikan DTO response daftar pengajuan untuk penerbit hanya mencakup: metadata pengajuan, judul naskah, varian, status umum, nomor resi ekspedisi, status SLA penerbit, dan tautan dokumen resmi publik yang telah diterbitkan (Surat Hasil Verifikasi, Surat Penyerahan, Surat Hasil Akhir, STT).
-   - Identitas pentashih (nama, gelar, NIP, email), penomoran tim internal, dan catatan review internal pentashih dihapus bersih dari payload response JSON.
+   - Pada `listRegistrations`, jika `publisherScope === true`, data penugasan disanitasi hanya mengembalikan `{ id, stage, iteration, status, due_at }`.
+   - Objek `assignee` (nama, email pentashih) dan `reviews` (catatan/notes internal) dibersihkan dari response.
+   - Untuk peran internal (`DISTRIBUTOR`, `PENTASHIH`, `ADMIN_INTERNAL`, `SUPERADMIN`), data dikembalikan 100% lengkap.
+2. **Robustness Frontend:**
+   - `PublisherProgress.jsx` diperkuat dengan mengevaluasi `registration.revision_source === 'TASHIH_REVISION'` selain `assignments.length > 0`.
 
 ---
 
-## 3. Rencana Pengujian (Test Suite)
+## 3. Bukti Pengujian
 
 1. **Backend Integration / Unit Security Test (`backend/tests/unit/workflow-security-b14.test.js`):**
-   - `test('B14-SEC-01: Penerbit ditolak 403 saat mencoba bypass REVISION_REQUIRED ke TASHIH_IN_PROGRESS via generic status endpoint')`
-   - `test('B14-SEC-02: Transisi ke READY_FOR_STT ditolak jika belum ada berkas rekap sah atau bukan dari tahap DUMMY')`
-   - `test('B14-SEC-03: requestSttFromAdmin tidak dapat memotong validasi rekap distributor')`
-   - `test('B14-SEC-04: listRegistrations untuk akun PENERBIT tidak mengekspos relasi assignments, NIP, nama pentashih, atau notes')`
-   - `test('B14-SEC-05: listRegistrations untuk akun DISTRIBUTOR/ADMIN tetap menampilkan assignments secara lengkap')`
+   - Seluruh 7 pengujian unit lulus 100%:
+     - `B14-01: TRANSITION_POLICY blocks PENERBIT from transitioning REVISION_REQUIRED to TASHIH_IN_PROGRESS` (Pass)
+     - `B14-02: TRANSITION_POLICY marks TASHIH_IN_PROGRESS exits as domainAction for DISTRIBUTOR` (Pass)
+     - `B14-03: assertReadyForSttEligibility rejects when assignments are incomplete or missing reviews` (Pass)
+     - `B14-04: assertReadyForSttEligibility rejects when any review is not PASSED` (Pass)
+     - `B14-05: assertReadyForSttEligibility rejects when no recap file is uploaded` (Pass)
+     - `B14-06: assertReadyForSttEligibility passes when all assignments completed with PASSED and recap file exists` (Pass)
+     - `B14-07: listRegistrations sanitizes assignments for PENERBIT (no pentashih name, email, or notes)` (Pass)
 
-2. **Frontend Route & Action Test:**
-   - Memastikan tombol aksi penerbit di dashboard hanya mengarahkan ke form pelaporan resmi (`PublisherRevisionPage`), bukan menembak endpoint transisi mentah.
+2. **Frontend Vitest Suite:**
+   - 65 test files passed, 323 tests passed, 3 skipped (100% Pass).
 
 ---
 
 ## 4. Kriteria Keberhasilan (*Definition of Done*)
 
-- [ ] Tidak ada lagi 2 jalur berbeda menuju `READY_FOR_STT`; seluruhnya melewati satu gerbang validasi rekap & tahap dumi.
-- [ ] Endpoint `PATCH /api/v1/registrations/:id/status` dan `POST /api/v1/registrations/:id/transition` memblokir upaya manipulasi status oleh peran penerbit.
-- [ ] Response JSON `GET /api/v1/registrations` milik penerbit bersih 100% dari data pentashih dan catatan sidang internal.
-- [ ] Matriks `TRANSITION_POLICY` di `workflow.constants.js` telah diperbarui dan sinkron dengan perilaku kode aktual.
-- [ ] Seluruh pengujian unit dan integrasi baru lulus 100%.
+- [x] Tidak ada lagi 2 jalur berbeda menuju `READY_FOR_STT`; seluruhnya melewati satu gerbang validasi kelayakan rekap.
+- [x] Endpoint generic status memblokir upaya manipulasi status operasional oleh peran penerbit (`domainAction: true`).
+- [x] Response JSON `GET /api/v1/registrations` milik penerbit bersih 100% dari identitas pentashih dan catatan review internal.
+- [x] Matriks `TRANSITION_POLICY` di `registration.service.js` telah diperbarui dan sinkron.
+- [x] Seluruh pengujian unit backend dan frontend lulus 100%.

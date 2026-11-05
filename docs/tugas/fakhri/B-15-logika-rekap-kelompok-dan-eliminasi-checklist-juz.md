@@ -106,3 +106,4 @@ Berdasarkan kesepakatan operasional sidang pentashihan LPMQ:
 - [ ] Individu mandiri wajib mengunggah rekapnya sendiri tanpa terpengaruh rekap pentashih lain.
 - [ ] Formulir checklist butir per juz telah dihapus bersih dari antarmuka pentashih; pelaporan kini murni berbasis dokumen rekapitulasi + putusan akhir.
 - [ ] Seluruh pengujian unit backend dan frontend lulus 100%.
+
