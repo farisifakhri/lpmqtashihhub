@@ -409,7 +409,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   const allReviews = assignments.flatMap(a => a.reviews || []);
   const hasRevisionRequired = allReviews.some(r => r.result === 'REVISION_REQUIRED' || r.result === 'REJECTED');
   if (hasRevisionRequired && data.result === 'PASSED') {
-    fail(409, 'Keputusan distributor tidak dapat diluluskan karena terdapat hasil telaah pentashih yang menyatakan naskah perlu perbaikan.');
+    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus (perlu perbaikan). Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
   }
 
   // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
