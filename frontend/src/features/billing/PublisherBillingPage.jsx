@@ -5,6 +5,7 @@ import { paymentApi } from '@/api/payment.api';
 import { getAuthToken } from '@/api/client';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { formatRegistrationStatus } from '@/lib/glossary';
 import {
   CreditCard,
   Search,
@@ -200,7 +201,7 @@ export const PublisherBillingPage = () => {
     if (payment.status !== 'UNPAID') return;
     const allowedStatuses = ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'];
     if (payment.registration?.status && !allowedStatuses.includes(payment.registration.status)) {
-      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus "${payment.registration.status}". Formulir konfirmasi pembayaran dibuka setelah verifikasi berkas disetujui LPMQ.`);
+      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus "${formatRegistrationStatus(payment.registration.status)}". Formulir konfirmasi pembayaran dibuka setelah verifikasi berkas disetujui LPMQ.`);
       return;
     }
     setSelectedPayment(payment);
@@ -223,7 +224,7 @@ export const PublisherBillingPage = () => {
       if (payment?.status === 'UNPAID') {
         openConfirmModal(payment);
       } else if (!payment) {
-        setError(`Alur Pembayaran Belum Dibuka: Permohonan ${reg?.registration_no || 'ini'} belum mencapai tahap pembayaran PNBP (Status: ${reg?.status || 'Proses Verifikasi'}). Menu pengisian pembayaran dikunci hingga surat hasil verifikasi diterbitkan.`);
+        setError(`Alur Pembayaran Belum Dibuka: Permohonan ${reg?.registration_no || 'ini'} belum mencapai tahap pembayaran PNBP (Status: ${formatRegistrationStatus(reg?.status)}). Menu pengisian pembayaran dikunci hingga surat hasil verifikasi diterbitkan.`);
       } else {
         setSuccessMessage('Bukti pembayaran naskah ini sudah dikirim atau diverifikasi. Tidak perlu mengirim ulang.');
       }
@@ -657,7 +658,7 @@ export const PublisherBillingPage = () => {
                     {isUnpaid && !isPayable && (
                       <div
                         className="inline-flex items-center gap-1.5 text-ink-muted bg-canvas border border-line px-3.5 py-1.5 rounded-xl font-medium text-xs"
-                        title={`Status naskah: ${reg.status || 'Proses Verifikasi'}. Formulir konfirmasi pembayaran dibuka setelah verifikasi disetujui.`}
+                        title={`Status naskah: ${formatRegistrationStatus(reg.status)}. Formulir konfirmasi pembayaran dibuka setelah verifikasi disetujui.`}
                       >
                         <Clock className="w-3.5 h-3.5 text-ink-muted" />
                         Menunggu Pengesahan Verifikasi

@@ -12,6 +12,7 @@ import { clsx } from 'clsx';
 import { waitingLabel } from './QueueOverview';
 import { WorkflowPhaseStatus } from './WorkflowPhaseStatus';
 import { DocumentArchive } from './DocumentArchive';
+import { formatRegistrationStatus } from '@/lib/glossary';
 
 export function RegistrationDetailDialog({ id, onClose }) {
   const authContext = useOptionalAuth();
@@ -160,7 +161,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (
               <span className="text-civic-info font-semibold">Verifikator telah ditugaskan (Disposisi terbit).</span>
             ) : (
-              <span>Tahap saat ini: <strong className="text-ink">{data.status}</strong></span>
+              <span>Tahap saat ini: <strong className="text-ink">{formatRegistrationStatus(data.status)}</strong></span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">

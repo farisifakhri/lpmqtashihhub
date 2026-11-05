@@ -25,6 +25,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/ui/toast';
 import { TashihLoader } from '@/components/ui/TashihLoader';
+import { formatDocumentType, formatDocumentStatus } from '@/lib/glossary';
 
 const QUALITY_OPTIONS = [
   { value: 'SANGAT_BAIK', label: 'Sangat Baik' },
@@ -447,14 +448,10 @@ export const DokumentatorArchivePage = () => {
                               <FileText className="w-4 h-4 text-brand-fg shrink-0" />
                               <div>
                                 <div className="font-medium text-ink">
-                                  {doc.document_type === 'SURAT_TANDA_TASHIH'
-                                    ? 'Surat Tanda Tashih (STT)'
-                                    : doc.document_type === 'BERITA_ACARA_TASHIH'
-                                    ? 'Berita Acara Pentashihan'
-                                    : doc.document_type}
+                                  {formatDocumentType(doc.document_type)}
                                 </div>
                                 <div className="text-ink-muted font-mono text-[11px]">
-                                  {doc.document_no} (v{doc.version}) • Status: {doc.status}
+                                  {doc.document_no} (v{doc.version}) • Status: {formatDocumentStatus(doc.status)}
                                 </div>
                               </div>
                             </div>

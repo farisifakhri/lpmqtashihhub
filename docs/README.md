@@ -9,6 +9,7 @@ Dokumen ini berfungsi sebagai peta navigasi dan indeks seluruh dokumentasi tekni
 ```text
 docs/
 ├── README.md                           <- Peta navigasi dokumentasi (file ini)
+├── GLOSARIUM.md                        <- Rujukan resmi glosarium istilah & anti-bahasa sistem (B-12)
 ├── MASTER_PLAN.md                      <- Snapshot master plan dan keputusan arsitektur awal
 ├── publisher-dashboard.md              <- Spesifikasi dashboard & portal penerbit
 │
@@ -68,5 +69,6 @@ docs/
 | **Multi-Naskah & Varian Ukuran/Oplah** | [docs/architecture/pengajuan-naskah-varian.md](architecture/pengajuan-naskah-varian.md) |
 | **Desain UI & Palet Warna Peran** | [docs/architecture/design.md](architecture/design.md) |
 | **Status Penyelesaian Backlog** | [docs/tugas/README.md](tugas/README.md) & [docs/tugas/BACKLOG-FASE-LANJUTAN.md](tugas/BACKLOG-FASE-LANJUTAN.md) |
+| **Glosarium Istilah Resmi & Anti-Bahasa Sistem** | [docs/GLOSARIUM.md](GLOSARIUM.md) |
 | **SOP Resmi Kemenag RI** | Folder [docs/references/sop/](references/sop/) |
 

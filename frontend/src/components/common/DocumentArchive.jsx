@@ -6,6 +6,7 @@ import { getAuthToken } from '@/api/client';
 import { DocumentVersionHistory } from './DocumentVersionHistory';
 import { PrivateFileViewer } from './PrivateFileViewer';
 import { Button } from '@/components/ui/Button';
+import { formatDocumentType, formatDocumentStatus } from '@/lib/glossary';
 
 const labels = {
   SURAT_PERMOHONAN: 'Surat Permohonan Tanda Tashih',
@@ -172,7 +173,7 @@ export function DocumentArchive({ registrationId }) {
               <DocumentVersionHistory
                 versions={versions.map((item) => ({
                   ...item,
-                  file_name: `${labels[item.document_type] || item.document_type} · ${item.status}`,
+                  file_name: `${formatDocumentType(item.document_type)} · ${formatDocumentStatus(item.status)}`,
                 }))}
                 currentVersionId={selected?.id}
                 onSelectVersion={(item) => setSelectedId(item.id)}
@@ -191,7 +192,7 @@ export function DocumentArchive({ registrationId }) {
               <div className="flex items-center gap-2">
                 <h4 className="font-bold text-ink text-sm">Tinjau dokumen</h4>
                 <span className={`text-xs font-bold px-2 py-0.5 rounded border uppercase ${statusBadgeClasses[selected.status] || 'bg-surface-subtle text-ink border-line'}`}>
-                  {selected.status}
+                  {formatDocumentStatus(selected.status)}
                 </span>
                 <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
                   Versi {selected.version}
@@ -310,10 +311,10 @@ export function DocumentArchive({ registrationId }) {
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5 bg-surface-subtle">
               <div>
                 <h2 className="text-sm font-bold text-ink">
-                  Dokumen Resmi: {labels[selected?.document_type] || selected?.document_type}
+                  Dokumen Resmi: {formatDocumentType(selected?.document_type)}
                 </h2>
                 <p className="text-xs text-ink-muted">
-                  Nomor: {selected?.document_no || 'DRAF'} · Status: {selected?.status}
+                  Nomor: {selected?.document_no || 'DRAF'} · Status: {formatDocumentStatus(selected?.status)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
