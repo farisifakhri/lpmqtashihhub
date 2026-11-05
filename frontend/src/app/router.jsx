@@ -49,6 +49,8 @@ const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/p
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
 const RegulationInfoPage = withSuspense(lazy(() => import('@/features/information/RegulationInfoPage').then(m => ({ default: m.RegulationInfoPage }))));
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
+const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
+const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 
 const router = createBrowserRouter([
@@ -67,19 +69,39 @@ const router = createBrowserRouter([
   },
   {
     path: '/informasi/panduan-permohonan-surat-tanda-tashih',
-    element: <InformationGuidePage />,
+    element: <InformationGuidePage tableLayout />,
   },
   {
     path: '/informasi/panduan-permohonan-surat-tanda-tashih/:id',
-    element: <InformationGuidePage />,
+    element: <InformationGuidePage tableLayout />,
   },
   {
     path: '/informasi/sop-pelayanan-surat-tanda-tashih',
-    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih Izin Edar" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
   },
   {
     path: '/informasi/sop-pelayanan-surat-tanda-tashih/:id',
-    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih Izin Edar" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
+  {
+    path: '/informasi/direktori-penerbit-mushaf',
+    element: <InformationPlaceholderPage title="Direktori Penerbit Mushaf Al-Qur'an" basePath="/informasi/direktori-penerbit-mushaf" />,
+  },
+  {
+    path: '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih',
+    element: <InformationPlaceholderPage title="Survei IKM dan IPAK Pelayanan Surat Tanda Tashih" basePath="/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih" />,
+  },
+  {
+    path: '/informasi/siaran-pers',
+    element: <InformationGuidePage section="SIARAN_PERS" basePath="/informasi/siaran-pers" title="Siaran Pers" description="Daftar siaran pers LPMQ." tableLayout />,
+  },
+  {
+    path: '/informasi/siaran-pers/:id',
+    element: <InformationGuidePage section="SIARAN_PERS" basePath="/informasi/siaran-pers" title="Siaran Pers" description="Daftar siaran pers LPMQ." tableLayout />,
+  },
+  {
+    path: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih',
+    element: <DownloadDocumentsPage />,
   },
   // Rute Autentikasi Mandiri
   {

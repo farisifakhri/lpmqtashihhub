@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { informationGuideApi } from '@/api/information-guide.api';
+import { PublicAppPromotion } from '@/components/public/PublicAppPromotion';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS } from '@/components/public/PublicHeader';
 import { InformationGuideContent } from './InformationGuideContent';
@@ -35,7 +36,10 @@ export function InformationGuidePage({
   tableLayout = false,
 }) {
   const isSop = section === 'SOP';
-  const itemName = isSop ? 'SOP' : 'panduan';
+  const isSiaranPers = section === 'SIARAN_PERS';
+  const hasSection = section !== 'GUIDE';
+  const itemName = isSiaranPers ? 'Siaran Pers' : isSop ? 'SOP' : 'Panduan';
+  const pageBadge = isSiaranPers ? 'Siaran Pers' : isSop ? 'SOP Pelayanan' : 'Panduan Permohonan';
   const navigate = useNavigate();
   const { id } = useParams();
   const [guides, setGuides] = useState([]);
@@ -58,17 +62,17 @@ export function InformationGuidePage({
         page,
         limit: pagination.limit,
         search,
-        ...(isSop ? { section } : {}),
+        ...(hasSection ? { section } : {}),
       });
       setGuides(response.data || []);
       setPagination(response.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 });
     } catch (requestError) {
-      setError(requestError.message || 'Daftar panduan tidak dapat dimuat.');
+      setError(requestError.message || `Daftar ${itemName} tidak dapat dimuat.`);
       setGuides([]);
     } finally {
       setLoading(false);
     }
-  }, [page, pagination.limit, search, section, isSop]);
+  }, [page, pagination.limit, search, section, hasSection]);
 
   useEffect(() => {
     if (id) return undefined;
@@ -82,12 +86,12 @@ export function InformationGuidePage({
     let active = true;
     setLoading(true);
     setError('');
-    (isSop ? informationGuideApi.getPublic(id, { section }) : informationGuideApi.getPublic(id))
+    (hasSection ? informationGuideApi.getPublic(id, { section }) : informationGuideApi.getPublic(id))
       .then((response) => { if (active) setGuide(response.data); })
       .catch((requestError) => { if (active) setError(requestError.message || 'Panduan tidak dapat ditemukan.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id, section, isSop]);
+  }, [id, section, hasSection]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -107,7 +111,7 @@ export function InformationGuidePage({
     setPreviewOpen(true);
     if (guide.mime_type !== 'application/pdf') return;
     try {
-      const url = await informationGuideApi.fetchFileBlobUrl(guide.id, isSop ? { section } : undefined);
+      const url = await informationGuideApi.fetchFileBlobUrl(guide.id, hasSection ? { section } : undefined);
       setPreviewUrl(url);
     } catch (requestError) {
       setPreviewError(requestError.message || 'Pratinjau berkas tidak dapat dimuat.');
@@ -118,7 +122,7 @@ export function InformationGuidePage({
     if (!guide) return;
     try {
       const fileName = `${guide.title}${getFileExtension(guide.mime_type)}`;
-      await informationGuideApi.download(guide.id, fileName, isSop ? { section } : undefined);
+      await informationGuideApi.download(guide.id, fileName, hasSection ? { section } : undefined);
     } catch (requestError) {
       setError(requestError.message || 'Berkas tidak dapat diunduh.');
     }
@@ -137,14 +141,59 @@ export function InformationGuidePage({
         navItems={PUBLIC_INFORMATION_NAV_ITEMS}
         handleNavigate={handleNavigate}
       />
+      {tableLayout && (
+        <section className="border-b border-line bg-surface">
+          <div className="mx-auto max-w-[1400px] px-5 py-6 sm:px-8 lg:px-12">
+            <nav aria-label="Breadcrumb" className="mb-4 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+              <Link to="/" className="transition-colors hover:text-brand-700">Beranda</Link>
+              <span className="text-line-strong">/</span>
+              <span>Informasi</span>
+              <span className="text-line-strong">/</span>
+              <span className="font-semibold text-brand-fg">{title}</span>
+            </nav>
+            {!id && (
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div className="max-w-3xl space-y-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-800">
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>{pageBadge}</span>
+                  </div>
+                  <h1 id="guide-list-title" className="text-2xl font-extrabold tracking-tight text-brand-900 sm:text-3xl lg:text-4xl">
+                    {title}
+                  </h1>
+                  <p className="text-xs leading-relaxed text-ink-muted sm:text-sm">
+                    {description}
+                  </p>
+                </div>
+                {tableLayout && (
+                  <div className="flex shrink-0 items-center gap-2 md:pb-1">
+                    <button
+                      type="button"
+                      onClick={fetchGuides}
+                      disabled={loading}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 py-2 text-xs font-medium text-ink transition-colors hover:bg-surface-subtle disabled:opacity-50"
+                      title="Muat ulang data"
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                      <span>Segarkan</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
       <main className="mx-auto min-h-[55vh] max-w-[1400px] px-5 py-8 sm:px-8 lg:px-12">
-        <nav aria-label="Breadcrumb" className="mb-5 text-xs text-ink-muted">
-          <Link to="/" className="hover:text-brand-700">Beranda</Link>
-          <span className="mx-2">/</span>
-          <Link to={basePath} className="hover:text-brand-700">Informasi</Link>
-          <span className="mx-2">/</span>
-          <span className="text-ink">{title}</span>
-        </nav>
+        {!tableLayout && (
+          <nav aria-label="Breadcrumb" className="mb-5 text-xs text-ink-muted">
+            <Link to="/" className="hover:text-brand-700">Beranda</Link>
+            <span className="mx-2">/</span>
+            <Link to={basePath} className="hover:text-brand-700">Informasi</Link>
+            <span className="mx-2">/</span>
+            <span className="text-ink">{title}</span>
+          </nav>
+        )}
 
         {id ? (
           <section aria-labelledby="guide-detail-title" className="mx-auto max-w-4xl">
@@ -161,7 +210,7 @@ export function InformationGuidePage({
             {!loading && guide && (
               <article className="rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8">
                 <header className="border-b border-line pb-5">
-                  <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-800">Informasi Layanan</span>
+                  <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-800">{itemName}</span>
                   <h1 id="guide-detail-title" className="mt-3 text-xl font-extrabold leading-tight text-ink sm:text-2xl">{guide.title}</h1>
                   <p className="mt-2 text-xs text-ink-muted">
                     Diperbarui {new Date(guide.updated_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -196,11 +245,13 @@ export function InformationGuidePage({
           </section>
         ) : (
           <section aria-labelledby="guide-list-title">
-            <div className="mb-6">
-              <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-bold text-brand-800">Informasi</span>
-              <h1 id="guide-list-title" className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">{description}</p>
-            </div>
+            {!tableLayout && (
+              <div className="mb-6">
+                <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-bold text-brand-800">Informasi</span>
+                <h1 id="guide-list-title" className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h1>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">{description}</p>
+              </div>
+            )}
             <div className="mb-5 rounded-2xl border border-line bg-surface p-4 shadow-sm">
               <label className="relative block max-w-xl">
                 <span className="sr-only">Cari {itemName}</span>
@@ -220,8 +271,8 @@ export function InformationGuidePage({
             {!loading && !error && guides.length === 0 && !tableLayout && (
               <div className="rounded-2xl border border-line bg-surface px-5 py-14 text-center">
                 <FileText className="mx-auto h-8 w-8 text-ink-muted" />
-                <h2 className="mt-3 text-base font-bold text-ink">{isSop ? 'SOP belum tersedia' : 'Panduan belum tersedia'}</h2>
-                <p className="mt-1 text-sm text-ink-muted">Silakan kembali lagi nanti untuk melihat panduan layanan.</p>
+                <h2 className="mt-3 text-base font-bold text-ink">{itemName} belum tersedia</h2>
+                <p className="mt-1 text-sm text-ink-muted">Silakan kembali lagi nanti untuk melihat {itemName.toLowerCase()}.</p>
               </div>
             )}
             {!loading && !error && tableLayout && (
@@ -230,7 +281,7 @@ export function InformationGuidePage({
                   <thead className="border-b border-line bg-surface-subtle text-xs font-bold uppercase tracking-wide text-ink-muted">
                     <tr>
                       <th scope="col" className="w-20 px-4 py-3 sm:px-5">No</th>
-                      <th scope="col" className="px-4 py-3 sm:px-5">Judul Informasi</th>
+                      <th scope="col" className="px-4 py-3 sm:px-5">{isSiaranPers ? 'Judul Pers' : 'Judul Informasi'}</th>
                       <th scope="col" className="w-36 px-4 py-3 text-center sm:px-5">Aksi</th>
                     </tr>
                   </thead>
@@ -240,15 +291,15 @@ export function InformationGuidePage({
                         <td className="px-4 py-4 text-ink-muted sm:px-5">{(pagination.page - 1) * pagination.limit + index + 1}</td>
                         <td className="px-4 py-4 font-semibold leading-6 text-ink sm:px-5">{item.title}</td>
                         <td className="px-4 py-4 text-center sm:px-5">
-                          <Link to={`${basePath}/${item.id}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
-                            Lihat SOP <Eye className="h-4 w-4" />
+                          <Link to={`${basePath}/${item.id}`} className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-brand-200 bg-brand-50 px-2 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+                            {isSiaranPers ? 'Lihat' : `Lihat ${isSop ? 'SOP' : 'panduan'}`} <Eye className="h-3.5 w-3.5 shrink-0" />
                           </Link>
                         </td>
                       </tr>
                     )) : (
                       <tr>
                         <td colSpan={3} className="px-4 py-12 text-center text-sm text-ink-muted sm:px-5">
-                          SOP belum tersedia. Silakan kembali lagi nanti.
+                          {itemName} belum tersedia. Silakan kembali lagi nanti.
                         </td>
                       </tr>
                     )}
@@ -256,7 +307,7 @@ export function InformationGuidePage({
                 </table>
                 {guides.length > 0 && <div className="flex flex-col items-center justify-between gap-3 border-t border-line bg-surface-subtle/50 p-4 sm:flex-row">
                   <p className="text-xs text-ink-muted">
-                    Menampilkan {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} SOP
+                    Menampilkan {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} {itemName.toLowerCase()}
                   </p>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink disabled:opacity-40"><ChevronLeft className="h-3.5 w-3.5" /> Sebelumnya</button>
@@ -301,6 +352,7 @@ export function InformationGuidePage({
           </section>
         )}
       </main>
+      <PublicAppPromotion />
       <PublicFooter />
 
       {previewOpen && (

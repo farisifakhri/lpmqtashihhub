@@ -26,6 +26,7 @@ import {
 import { regulationApi } from '@/api/regulation.api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { InformationGuideManagement } from './InformationGuideManagement';
+import { ServiceDocumentManagement } from './ServiceDocumentManagement';
 
 const CATEGORIES = [
   'Ketentuan Pentashihan',
@@ -67,7 +68,7 @@ const INFORMATION_SUBMENUS = [
   },
   {
     id: 'survei',
-    label: 'Survei IKM dan IPAK Pelayananan Surat Tanda Tashih',
+    label: 'Survei IKM dan IPAK Pelayanan Surat Tanda Tashih',
     description: 'Informasi survei IKM dan IPAK pelayanan akan dikelola di bagian ini.',
   },
   {
@@ -488,7 +489,7 @@ export const LandingPageManagementPage = () => {
         </nav>
       )}
 
-      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop'].includes(activeInformationSubmenu) ? (
+      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop', 'siaran-pers', 'unduh-dokumen'].includes(activeInformationSubmenu) ? (
         <div className="rounded-2xl border border-line bg-surface p-8 sm:p-12 text-center space-y-3">
           <div className="inline-flex p-3 rounded-full bg-surface-subtle text-ink-muted">
             <Sparkles className="h-6 w-6" />
@@ -517,6 +518,14 @@ export const LandingPageManagementPage = () => {
 
       {activeMainMenu === 'informasi' && activeInformationSubmenu === 'sop' && (
         <InformationGuideManagement section="SOP" />
+      )}
+
+      {activeMainMenu === 'informasi' && activeInformationSubmenu === 'siaran-pers' && (
+        <InformationGuideManagement section="SIARAN_PERS" />
+      )}
+
+      {activeMainMenu === 'informasi' && activeInformationSubmenu === 'unduh-dokumen' && (
+        <ServiceDocumentManagement />
       )}
 
       {activeMainMenu === 'informasi' && activeInformationSubmenu === 'regulasi' && (

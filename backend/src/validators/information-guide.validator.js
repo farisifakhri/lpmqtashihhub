@@ -7,7 +7,7 @@ const booleanFromQuery = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
-const section = z.enum(['GUIDE', 'SOP']);
+const section = z.enum(['GUIDE', 'SOP', 'SIARAN_PERS']);
 
 const guideFields = {
   title: z.string().trim().min(3, 'Judul panduan minimal 3 karakter.').max(255, 'Judul panduan maksimal 255 karakter.'),

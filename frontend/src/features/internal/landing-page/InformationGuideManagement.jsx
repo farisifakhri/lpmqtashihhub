@@ -58,11 +58,16 @@ function GuideToast({ toast }) {
 
 export function InformationGuideManagement({ section = 'GUIDE' }) {
   const isSop = section === 'SOP';
-  const itemName = isSop ? 'SOP' : 'Panduan';
-  const itemNameLower = isSop ? 'SOP' : 'panduan';
-  const pageTitle = isSop
-    ? 'SOP Pelayanan Surat Tanda Tashih'
-    : 'Panduan Permohonan Surat Tanda Tashih/Izin Edar';
+  const isSiaranPers = section === 'SIARAN_PERS';
+  const hasSection = section !== 'GUIDE';
+  const hasNumberColumn = !isSop && !isSiaranPers;
+  const itemName = isSiaranPers ? 'Siaran Pers' : isSop ? 'SOP' : 'Panduan';
+  const itemNameLower = isSiaranPers ? 'siaran pers' : isSop ? 'SOP' : 'panduan';
+  const pageTitle = isSiaranPers
+    ? 'Siaran Pers'
+    : isSop
+      ? 'SOP Pelayanan Surat Tanda Tashih'
+      : 'Panduan Permohonan Surat Tanda Tashih/Izin Edar';
   const [guides, setGuides] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
   const [page, setPage] = useState(1);
@@ -102,7 +107,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
         limit: pagination.limit,
         search,
         is_published: published,
-        ...(isSop ? { section } : {}),
+        ...(hasSection ? { section } : {}),
       });
       setGuides(response.data || []);
       setPagination(response.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 });
@@ -112,7 +117,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
     } finally {
       setLoading(false);
     }
-  }, [page, pagination.limit, search, published, section, isSop, itemName]);
+  }, [page, pagination.limit, search, published, section, hasSection, itemName]);
 
   useEffect(() => {
     fetchGuides();
@@ -151,7 +156,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
   const openEdit = async (item) => {
     setFormError('');
     try {
-      const response = isSop
+      const response = hasSection
         ? await informationGuideApi.getAdmin(item.id, { section })
         : await informationGuideApi.getAdmin(item.id);
       setGuideId(response.data.id);
@@ -174,14 +179,14 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
     setPreviewError('');
     setPreviewFileUrl('');
     try {
-      const response = isSop
+      const response = hasSection
         ? await informationGuideApi.getAdmin(item.id, { section })
         : await informationGuideApi.getAdmin(item.id);
       setPreview(response.data);
       if (response.data.content_type === 'DOCUMENT' && response.data.mime_type === 'application/pdf') {
         const url = await informationGuideApi.fetchFileBlobUrl(
           item.id,
-          isSop ? { admin: true, section } : { admin: true }
+          hasSection ? { admin: true, section } : { admin: true }
         );
         setPreviewFileUrl(url);
       }
@@ -233,7 +238,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
         payload.append('title', form.title.trim());
         payload.append('content_type', form.content_type);
         payload.append('is_published', String(form.is_published));
-        if (isSop) payload.append('section', section);
+        if (hasSection) payload.append('section', section);
         if (form.content_type === 'EDITOR') payload.append('content_html', contentHtml);
         if (form.file) payload.append('file', form.file);
       } else {
@@ -242,12 +247,12 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
           content_type: form.content_type,
           content_html: contentHtml,
           is_published: form.is_published,
-          ...(isSop ? { section } : {}),
+          ...(hasSection ? { section } : {}),
         };
       }
 
       const response = guideId
-        ? isSop
+        ? hasSection
           ? await informationGuideApi.update(guideId, payload, { section })
           : await informationGuideApi.update(guideId, payload)
         : await informationGuideApi.create(payload);
@@ -282,7 +287,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      if (isSop) await informationGuideApi.delete(deleteTarget.id, { section });
+      if (hasSection) await informationGuideApi.delete(deleteTarget.id, { section });
       else await informationGuideApi.delete(deleteTarget.id);
       setDeleteTarget(null);
       fetchGuides();
@@ -299,7 +304,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
       await informationGuideApi.download(
         item.id,
         item.file_name || item.title,
-        isSop ? { admin: true, section } : { admin: true }
+        hasSection ? { admin: true, section } : { admin: true }
       );
     } catch (requestError) {
       showToast(getErrorMessage(requestError, itemName), 'error');
@@ -384,22 +389,14 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
             </button>
           </div>
         )}
-        {!loading && !error && guides.length === 0 && !isSop && (
-          <div className="space-y-2 p-10 text-center">
-            <FileText className="mx-auto h-8 w-8 text-ink-muted" />
-            <h3 className="text-sm font-bold text-ink">Belum ada {itemNameLower}</h3>
-            <p className="text-xs text-ink-muted">
-              Tambahkan {itemNameLower} untuk ditampilkan pada halaman informasi publik.
-            </p>
-          </div>
-        )}
-        {!loading && !error && (guides.length > 0 || isSop) && (
+        {!loading && !error && (
           <>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-left text-xs">
                 <thead className="border-b border-line bg-surface-subtle text-[11px] font-bold uppercase tracking-wide text-ink-muted">
                   <tr>
-                    <th scope="col" className="px-4 py-3">Judul {itemName}</th>
+                    {hasNumberColumn && <th scope="col" className="w-16 px-4 py-3">No</th>}
+                    <th scope="col" className="px-4 py-3">{isSop ? `Judul ${itemName}` : isSiaranPers ? 'Judul Pers' : 'Judul Informasi'}</th>
                     <th scope="col" className="px-4 py-3">Bentuk Konten</th>
                     <th scope="col" className="px-4 py-3">Status</th>
                     <th scope="col" className="px-4 py-3">Tanggal Diperbarui</th>
@@ -407,8 +404,9 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line">
-                  {guides.length > 0 ? guides.map((item) => (
+                  {guides.length > 0 ? guides.map((item, index) => (
                     <tr key={item.id} className="hover:bg-surface-subtle/60">
+                      {hasNumberColumn && <td className="px-4 py-3.5 text-ink-muted">{firstRecord + index}</td>}
                       <td className="max-w-[360px] px-4 py-3.5 font-semibold leading-5 text-ink">{item.title}</td>
                       <td className="px-4 py-3.5 text-ink-muted">
                         {item.content_type === 'EDITOR' ? 'Editor rich-text' : 'Berkas dokumen'}
@@ -476,8 +474,8 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
                     </tr>
                   )) : (
                     <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center text-xs text-ink-muted">
-                        Belum ada SOP yang ditambahkan.
+                      <td colSpan={hasNumberColumn ? 6 : 5} className="px-4 py-10 text-center text-xs text-ink-muted">
+                        Belum ada {itemNameLower} yang ditambahkan.
                       </td>
                     </tr>
                   )}
@@ -611,7 +609,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
                   </label>
                   <InformationGuideEditor
                     guideId={guideId}
-                    section={isSop ? section : undefined}
+                    section={hasSection ? section : undefined}
                     content={form.content_html}
                     onChange={(content_html) => setForm((current) => ({ ...current, content_html }))}
                   />
@@ -688,7 +686,7 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
                 </p>
               )}
               {preview?.content_type === 'EDITOR' && (
-                <InformationGuideContent admin html={preview.content_html || ''} section={isSop ? section : undefined} />
+                <InformationGuideContent admin html={preview.content_html || ''} section={hasSection ? section : undefined} />
               )}
               {preview?.content_type === 'DOCUMENT' &&
                 preview.mime_type === 'application/pdf' &&

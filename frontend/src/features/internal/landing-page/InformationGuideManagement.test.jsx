@@ -54,6 +54,9 @@ describe('InformationGuideManagement', () => {
     render(<InformationGuideManagement />);
 
     expect(await screen.findByText('Panduan Admin')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'No' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Judul Informasi' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Aksi' })).toBeInTheDocument();
     expect(screen.getAllByText('Draf').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /Tambah Panduan/i }));
 
@@ -66,5 +69,20 @@ describe('InformationGuideManagement', () => {
 
     await waitFor(() => expect(informationGuideApi.create).toHaveBeenCalledTimes(1));
     expect(informationGuideApi.create.mock.calls[0][0]).toBeInstanceOf(FormData);
+  });
+
+  it('keeps the Panduan table headers visible when there are no records', async () => {
+    informationGuideApi.listAdmin.mockResolvedValueOnce({
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+    });
+
+    render(<InformationGuideManagement />);
+
+    expect(await screen.findByText('Belum ada panduan yang ditambahkan.')).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'No' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Judul Informasi' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Aksi' })).toBeInTheDocument();
   });
 });
