@@ -7,7 +7,7 @@ import { fileApi } from '@/api/file.api';
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
   submitting, modalError, closeReviewModal, handleReviewSubmit, getStageLabel,
-  recapFileId, setRecapFileId,
+  recapFileId, setRecapFileId, recapScope = 'SELF', setRecapScope,
 }) => {
   const [uploadingRecap, setUploadingRecap] = useState(false);
   const [recapFileName, setRecapFileName] = useState('');
@@ -155,6 +155,74 @@ export const ReviewForm = ({
                   </div>
                 )}
               </div>
+
+              {/* Cakupan Rekapitulasi: Kelompok (TEAM) vs Mandiri (SELF) - B-15 */}
+              {selectedAssignment?.team_id || selectedAssignment?.team ? (
+                <div className="space-y-2.5 p-3.5 rounded-xl border border-brand-200/80 bg-brand-50/20">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                      Cakupan Rekapitulasi Sidang
+                    </label>
+                    <span className="text-[11px] font-semibold text-brand-800">
+                      Tim: {selectedAssignment.team?.name || 'Kelompok Aktif'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label
+                      className={clsx(
+                        'p-3 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-2.5 bg-white',
+                        recapScope === 'TEAM'
+                          ? 'border-brand-700 ring-2 ring-brand-700/10 shadow-xs'
+                          : 'border-line hover:border-line-strong'
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="recapScope"
+                        value="TEAM"
+                        checked={recapScope === 'TEAM'}
+                        onChange={(e) => setRecapScope && setRecapScope(e.target.value)}
+                        className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                      />
+                      <div>
+                        <div className="font-bold text-xs text-ink">Rekapan Keseluruhan (Kelompok)</div>
+                        <div className="text-[11px] text-ink-muted mt-0.5 leading-snug">
+                          Mewakili seluruh anggota tim. Kewajiban unggah anggota lain otomatis terpenuhi.
+                        </div>
+                      </div>
+                    </label>
+
+                    <label
+                      className={clsx(
+                        'p-3 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-2.5 bg-white',
+                        recapScope === 'SELF'
+                          ? 'border-brand-700 ring-2 ring-brand-700/10 shadow-xs'
+                          : 'border-line hover:border-line-strong'
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="recapScope"
+                        value="SELF"
+                        checked={recapScope === 'SELF'}
+                        onChange={(e) => setRecapScope && setRecapScope(e.target.value)}
+                        className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                      />
+                      <div>
+                        <div className="font-bold text-xs text-ink">Hanya Rekapan Saya</div>
+                        <div className="text-[11px] text-ink-muted mt-0.5 leading-snug">
+                          Hanya bagian juz saya. Anggota kelompok lain tetap wajib mengunggah rekap mandiri.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl border border-line bg-canvas text-xs text-ink-muted flex items-center justify-between">
+                  <span>Penugasan Sidang Mandiri (Individu)</span>
+                  <span className="font-semibold text-brand-800">Rekapan Perorangan (SELF)</span>
+                </div>
+              )}
 
               {/* Berkas Rekapan Internal Pentashih (RF-DIST-18, RF-DIST-19) */}
               <div className="space-y-2 p-3.5 rounded-xl border border-line bg-surface">
