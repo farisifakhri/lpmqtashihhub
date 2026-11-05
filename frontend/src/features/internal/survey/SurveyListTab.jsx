@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Copy, Settings2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Copy, Settings2, Power, PowerOff } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -55,11 +55,7 @@ export function SurveyListTab({ onOpen }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-ink">Daftar Survei</h2>
-          <p className="text-xs text-ink-muted">Buat survei per periode, susun pertanyaannya, lalu aktifkan agar dapat diisi penerbit.</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-2">
           <input className={`${inputClass} w-56`} placeholder="Cari nama survei…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari survei" />
           <Button size="sm" onClick={() => setForm({ ...EMPTY })}><Plus className="w-4 h-4" /> Buat Survei</Button>
@@ -88,7 +84,12 @@ export function SurveyListTab({ onOpen }) {
                     <td className="p-3"><Badge variant={status.variant}>{status.label}</Badge></td>
                     <td className="p-3">
                       <div className="flex justify-end gap-1.5">
-                        <Button size="sm" variant="outline" onClick={() => onOpen(s.id)}><Settings2 className="w-4 h-4" /> Kelola</Button>
+                        {s.status === 'AKTIF' ? (
+                          <Button size="sm" variant="danger" onClick={() => run(() => surveyApi.deactivateSurvey(s.id), 'Survei dinonaktifkan.')}><PowerOff className="w-4 h-4" /> Nonaktifkan</Button>
+                        ) : (
+                          <Button size="sm" variant="secondary" onClick={() => run(() => surveyApi.activateSurvey(s.id), 'Survei diaktifkan.')}><Power className="w-4 h-4" /> Aktifkan</Button>
+                        )}
+                        <Button size="sm" variant="outline" onClick={() => onOpen(s.id)}><Settings2 className="w-4 h-4" /> Susun</Button>
                         <Button size="sm" variant="ghost" aria-label={`Ubah ${s.name}`}
                           onClick={() => setForm({ id: s.id, name: s.name, kind: s.kind, description: s.description || '', starts_at: toDateInput(s.starts_at), ends_at: toDateInput(s.ends_at) })}>
                           <Pencil className="w-4 h-4" />

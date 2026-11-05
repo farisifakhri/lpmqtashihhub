@@ -1,43 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { surveyApi } from '@/api/survey.api';
 import { SurveyListTab } from './SurveyListTab';
-import { SurveyDetail } from './SurveyDetail';
 import { UnsurTab } from './UnsurTab';
 import { QuestionBankTab } from './QuestionBankTab';
+import { SurveySetupView, ResponsesView, RespondentsView, ReportView } from './SurveyViews';
+import { inputClass } from './survey-constants';
 
-const TABS = [
-  { id: 'survei', label: 'Daftar Survei' },
-  { id: 'unsur', label: 'Unsur' },
-  { id: 'pertanyaan', label: 'Bank Pertanyaan' },
-];
+// Sub-menu sidebar Survei → ?tab=… (mengikuti susunan menu Survey di sistem lama).
+export const SURVEY_VIEWS = {
+  survei: { title: 'Nama Survei', subtitle: 'Buat survei per periode, lalu aktifkan agar dapat diisi penerbit.' },
+  unsur: { title: 'Nama Unsur', subtitle: 'Unsur penilaian yang dipakai ulang di semua survei.' },
+  pertanyaan: { title: 'Pertanyaan Survei', subtitle: 'Bank pertanyaan beserta opsi jawaban bernilai 1–4.' },
+  pemilihan: { title: 'Pemilihan Survei', subtitle: 'Susun pertanyaan per unsur untuk survei yang dipilih.', perSurvey: SurveySetupView },
+  jawaban: { title: 'Jawaban Survei', subtitle: 'Jawaban yang masuk per responden.', perSurvey: ResponsesView },
+  responden: { title: 'Responden Survei', subtitle: 'Profil responden: jenis kelamin, usia, pendidikan, pekerjaan.', perSurvey: RespondentsView },
+  laporan: { title: 'Laporan Survei', subtitle: 'Nilai per unsur, indeks, dan mutu pelayanan.', perSurvey: ReportView },
+};
+
+function SurveyPicker({ value, onChange }) {
+  const [surveys, setSurveys] = useState([]);
+  useEffect(() => { surveyApi.listSurveys().then((r) => setSurveys(r.data || [])).catch(() => {}); }, []);
+  return (
+    <div className="rounded-xl border border-line bg-white p-4">
+      <label htmlFor="survey-picker" className="block text-[13px] font-semibold text-ink mb-1.5">Nama Survei</label>
+      <select id="survey-picker" className={inputClass} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Pilih nama survei…</option>
+        {surveys.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+      </select>
+    </div>
+  );
+}
 
 export function SurveyManagementPage() {
-  const [tab, setTab] = useState('survei');
-  const [openSurveyId, setOpenSurveyId] = useState(null);
+  const [params, setParams] = useSearchParams();
+  const tab = SURVEY_VIEWS[params.get('tab')] ? params.get('tab') : 'survei';
+  const surveyId = params.get('survey') || '';
+  const view = SURVEY_VIEWS[tab];
+
+  // Tanpa ?tab, tampilkan Nama Survei dan tandai sub-menunya aktif di sidebar.
+  useEffect(() => {
+    if (params.get('tab') !== tab) setParams({ tab }, { replace: true });
+  }, [params, tab, setParams]);
+
+  const go = (nextTab, id) => setParams({ tab: nextTab, ...(id ? { survey: id } : {}) });
+  const PerSurvey = view.perSurvey;
 
   return (
     <main className="mx-auto max-w-7xl space-y-5 pb-12">
       <PageHeader
-        breadcrumbs={[{ label: 'Tata Kelola Sistem' }, { label: 'Survei Layanan' }]}
-        title="Survei Layanan"
-        subtitle="Kelola survei IKM dan IPAK pelayanan Surat Tanda Tashih: unsur penilaian, bank pertanyaan, susunan survei, jawaban, dan laporan indeks."
+        breadcrumbs={[{ label: 'Tata Kelola Sistem' }, { label: 'Survei' }, { label: view.title }]}
+        title={view.title}
+        subtitle={view.subtitle}
       />
 
-      {openSurveyId ? (
-        <SurveyDetail surveyId={openSurveyId} onBack={() => setOpenSurveyId(null)} />
-      ) : (
+      {tab === 'survei' && <SurveyListTab onOpen={(id) => go('pemilihan', id)} />}
+      {tab === 'unsur' && <UnsurTab />}
+      {tab === 'pertanyaan' && <QuestionBankTab />}
+      {PerSurvey && (
         <>
-          <div role="tablist" aria-label="Menu survei" className="flex gap-1 rounded-xl border border-line bg-surface-subtle p-1 text-sm">
-            {TABS.map((t) => (
-              <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-                className={`flex-1 rounded-lg px-3 py-2 font-semibold transition-colors ${tab === t.id ? 'bg-white text-brand-900 shadow-2xs' : 'text-ink-muted hover:text-ink'}`}>
-                {t.label}
-              </button>
-            ))}
-          </div>
-          {tab === 'survei' && <SurveyListTab onOpen={setOpenSurveyId} />}
-          {tab === 'unsur' && <UnsurTab />}
-          {tab === 'pertanyaan' && <QuestionBankTab />}
+          <SurveyPicker value={surveyId} onChange={(id) => go(tab, id)} />
+          {surveyId
+            ? <PerSurvey key={surveyId} surveyId={surveyId} />
+            : <EmptyState title="Pilih survei" description="Pilih nama survei di atas untuk menampilkan datanya." />}
         </>
       )}
     </main>

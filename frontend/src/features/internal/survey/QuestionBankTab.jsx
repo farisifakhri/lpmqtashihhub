@@ -53,10 +53,7 @@ export function QuestionBankTab() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-ink">Bank Pertanyaan</h2>
-          <p className="text-xs text-ink-muted">Pertanyaan yang sudah dijawab responden terkunci; gunakan Duplikat untuk membuat versi baru.</p>
-        </div>
+        <p className="text-xs text-ink-muted">Pertanyaan yang sudah dijawab responden terkunci; gunakan Duplikat untuk membuat versi baru.</p>
         <div className="flex items-center gap-2">
           <input className={`${inputClass} w-56`} placeholder="Cari pertanyaan…" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Cari pertanyaan" />
           <Button size="sm" onClick={() => setForm({ ...EMPTY })}><Plus className="w-4 h-4" /> Tambah Pertanyaan</Button>

@@ -49,11 +49,7 @@ export function UnsurTab() {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="text-base font-bold text-ink">Unsur Survei</h2>
-          <p className="text-xs text-ink-muted">Dimensi penilaian (mis. 9 unsur IKM) yang dipakai ulang di semua survei.</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-xs text-ink-muted">
             <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />

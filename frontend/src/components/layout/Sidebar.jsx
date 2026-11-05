@@ -30,6 +30,8 @@ import {
     Clock,
     PanelsTopLeft,
     ClipboardList,
+    ChevronRight,
+    Circle,
     X,
     Sparkles,
     LogOut,
@@ -45,6 +47,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
     const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
+    const [openGroups, setOpenGroups] = React.useState({});
     const badgeCounts = useSidebarBadges(currentUser);
 
     const handleCycleRole = (e) => {
@@ -656,10 +659,17 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         description: "Konten dan regulasi landing page",
                     },
                     {
-                        label: "Survei Layanan",
-                        path: "/internal/surveys",
+                        label: "Survei",
                         icon: <ClipboardList className="w-4 h-4 shrink-0" />,
-                        description: "Survei IKM & IPAK, unsur, pertanyaan, laporan",
+                        children: [
+                            { label: "Nama Survei", path: "/internal/surveys?tab=survei" },
+                            { label: "Nama Unsur", path: "/internal/surveys?tab=unsur" },
+                            { label: "Pertanyaan Survei", path: "/internal/surveys?tab=pertanyaan" },
+                            { label: "Pemilihan Survei", path: "/internal/surveys?tab=pemilihan" },
+                            { label: "Jawaban Survei", path: "/internal/surveys?tab=jawaban" },
+                            { label: "Responden Survei", path: "/internal/surveys?tab=responden" },
+                            { label: "Laporan Survei", path: "/internal/surveys?tab=laporan" },
+                        ],
                     },
                 ],
             },
@@ -715,6 +725,59 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         return isActive;
+    };
+
+    // Menu bertingkat (mis. Survei): terbuka otomatis bila salah satu sub-menunya sedang dibuka.
+    const renderGroup = (group) => {
+        const containsCurrent = group.children.some((child) => location.pathname === child.path.split("?")[0]);
+        const open = openGroups[group.label] ?? containsCurrent;
+        const panelId = `sidebar-group-${group.label.toLowerCase().replace(/\W+/g, "-")}`;
+        return (
+            <div key={group.label}>
+                <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    onClick={() => setOpenGroups((prev) => ({ ...prev, [group.label]: !open }))}
+                    className={clsx(
+                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors duration-200 lpmq-sidebar-nav-inactive",
+                        containsCurrent && "font-bold",
+                    )}
+                >
+                    <span className={clsx("shrink-0", containsCurrent ? "lpmq-sidebar-nav-icon-active" : "lpmq-sidebar-nav-icon-inactive")}>
+                        {group.icon}
+                    </span>
+                    <span className="flex-1 min-w-0 text-left truncate">{group.label}</span>
+                    <ChevronRight className={clsx("w-3.5 h-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none", open && "rotate-90")} />
+                </button>
+                {open && (
+                    <div id={panelId} className="mt-0.5 space-y-0.5 pl-4">
+                        {group.children.map((child) => (
+                            <NavLink
+                                key={child.path}
+                                to={child.path}
+                                onClick={() => {
+                                    if (window.innerWidth < 1024 && onClose) onClose();
+                                }}
+                                className={({ isActive }) =>
+                                    clsx(
+                                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs transition-colors duration-200",
+                                        isCurrentItem(child, isActive) ? "lpmq-sidebar-nav-active font-bold shadow-2xs" : "lpmq-sidebar-nav-inactive",
+                                    )
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <Circle className={clsx("w-2.5 h-2.5 shrink-0", isCurrentItem(child, isActive) && "fill-current")} />
+                                        <span className="truncate">{child.label}</span>
+                                    </>
+                                )}
+                            </NavLink>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -800,6 +863,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                 </div>
                                 <nav className="space-y-0.5">
                                     {section.items.map((item) => {
+                                        if (item.children) return renderGroup(item);
                                         const pendingCount = getBadgeCount(badgeCounts, item.badgeKey);
                                         return (
                                         <NavLink

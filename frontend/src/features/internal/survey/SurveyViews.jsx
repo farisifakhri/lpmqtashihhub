@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save } from 'lucide-react';
+import { ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -7,11 +7,16 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import { inputClass, STATUS_BADGE, formatDate } from './survey-constants';
 
-const SUBTABS = [
-  { id: 'susunan', label: 'Susunan Pertanyaan' },
-  { id: 'laporan', label: 'Laporan' },
-  { id: 'jawaban', label: 'Jawaban & Responden' },
-];
+// Tampilan per survei untuk sub-menu Pemilihan, Jawaban, Responden, dan Laporan Survei.
+
+function useReport(surveyId) {
+  const [report, setReport] = useState(null);
+  useEffect(() => {
+    setReport(null);
+    surveyApi.getReport(surveyId).then((r) => setReport(r.data)).catch(() => {});
+  }, [surveyId]);
+  return report;
+}
 
 function ItemsEditor({ survey, onSaved }) {
   const locked = survey._count?.responses > 0;
@@ -126,9 +131,29 @@ function DistributionTable({ title, rows }) {
   );
 }
 
-function ReportView({ surveyId }) {
-  const [report, setReport] = useState(null);
-  useEffect(() => { surveyApi.getReport(surveyId).then((r) => setReport(r.data)).catch(() => {}); }, [surveyId]);
+export function RespondentsView({ surveyId }) {
+  const report = useReport(surveyId);
+  if (!report) return <p className="text-sm text-ink-muted">Memuat data responden…</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-line bg-white p-4">
+        <p className="text-xs text-ink-muted">Total responden</p>
+        <p className="text-2xl font-bold text-ink">{report.respondents}</p>
+        <p className="text-xs text-ink-muted">Persentase dihitung per responden, bukan per baris jawaban.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <DistributionTable title="Jenis kelamin" rows={report.demographics.gender} />
+        <DistributionTable title="Usia" rows={report.demographics.age} />
+        <DistributionTable title="Pendidikan" rows={report.demographics.education} />
+        <DistributionTable title="Pekerjaan" rows={report.demographics.occupation} />
+      </div>
+    </div>
+  );
+}
+
+export function ReportView({ surveyId }) {
+  const report = useReport(surveyId);
   if (!report) return <p className="text-sm text-ink-muted">Memuat laporan…</p>;
 
   return (
@@ -153,13 +178,6 @@ function ReportView({ surveyId }) {
       </div>
       <p className="text-xs text-ink-muted">Indeks = rata-rata nilai seluruh unsur × 25. Mutu: A ≥ 88,31 · B ≥ 76,61 · C ≥ 65,00 · D di bawahnya (PermenPANRB 14/2017).</p>
 
-      <div className="grid gap-3 md:grid-cols-2">
-        <DistributionTable title="Jenis kelamin" rows={report.demographics.gender} />
-        <DistributionTable title="Usia" rows={report.demographics.age} />
-        <DistributionTable title="Pendidikan" rows={report.demographics.education} />
-        <DistributionTable title="Pekerjaan" rows={report.demographics.occupation} />
-      </div>
-
       <div className="rounded-xl border border-line bg-white p-4 space-y-2">
         <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Saran & jawaban esai ({report.essays.length})</h4>
         {!report.essays.length ? <p className="text-xs text-ink-muted">Belum ada jawaban esai.</p> : report.essays.map((e, i) => (
@@ -173,7 +191,7 @@ function ReportView({ surveyId }) {
   );
 }
 
-function ResponsesView({ surveyId }) {
+export function ResponsesView({ surveyId }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(null);
@@ -221,11 +239,11 @@ function ResponsesView({ surveyId }) {
   );
 }
 
-export function SurveyDetail({ surveyId, onBack }) {
+export function SurveySetupView({ surveyId }) {
   const [survey, setSurvey] = useState(null);
-  const [tab, setTab] = useState('susunan');
 
   const load = useCallback(() => {
+    setSurvey(null);
     surveyApi.getSurvey(surveyId).then((r) => setSurvey(r.data)).catch(() => {});
   }, [surveyId]);
   useEffect(load, [load]);
@@ -243,7 +261,6 @@ export function SurveyDetail({ surveyId, onBack }) {
 
   return (
     <section className="space-y-4">
-      <Button variant="ghost" size="sm" onClick={onBack}><ArrowLeft className="w-4 h-4" /> Kembali ke daftar survei</Button>
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-line bg-white p-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2"><h2 className="text-lg font-bold text-ink">{survey.name}</h2><Badge variant={status.variant}>{status.label}</Badge></div>
@@ -255,18 +272,7 @@ export function SurveyDetail({ surveyId, onBack }) {
         </Button>
       </div>
 
-      <div role="tablist" className="flex gap-1 rounded-xl border border-line bg-surface-subtle p-1 text-sm">
-        {SUBTABS.map((t) => (
-          <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} onClick={() => setTab(t.id)}
-            className={`flex-1 rounded-lg px-3 py-2 font-semibold transition-colors ${tab === t.id ? 'bg-white text-brand-900 shadow-2xs' : 'text-ink-muted hover:text-ink'}`}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'susunan' && <ItemsEditor key={survey.updated_at} survey={survey} onSaved={setSurvey} />}
-      {tab === 'laporan' && <ReportView surveyId={survey.id} />}
-      {tab === 'jawaban' && <ResponsesView surveyId={survey.id} />}
+      <ItemsEditor key={`${survey.id}-${survey.updated_at}`} survey={survey} onSaved={setSurvey} />
     </section>
   );
 }

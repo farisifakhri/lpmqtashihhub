@@ -19,9 +19,9 @@ beforeEach(() => {
   mockBadges({});
 });
 
-const show = role => {
+const show = (role, path = '/') => {
   vi.spyOn(AuthContext, 'useAuth').mockReturnValue({ currentUser: { name: 'Petugas', role, roles: [role] } });
-  render(<MemoryRouter><Sidebar /></MemoryRouter>);
+  render(<MemoryRouter initialEntries={[path]}><Sidebar /></MemoryRouter>);
 };
 describe('Helper Admin navigation', () => {
   it('labels ADMIN_INTERNAL correctly with operational workflow and hides publisher & superadmin system links', () => {
@@ -39,9 +39,26 @@ describe('Helper Admin navigation', () => {
   });
   it('keeps SUPERADMIN navigation available', () => {
     show('SUPERADMIN');
-    for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/internal/surveys', '/publisher']) {
+    for (const path of ['/internal/verifications', '/internal/distributions', '/internal/tashih', '/internal/documents', '/internal/settings', '/internal/users', '/publisher']) {
       expect(document.querySelector(`a[href*="${path}"]`)).not.toBeNull();
     }
+  });
+  it('menampilkan menu Survei bertingkat dengan 7 sub-menu untuk SUPERADMIN', () => {
+    show('SUPERADMIN');
+    const toggle = screen.getByRole('button', { name: 'Survei' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelector('a[href^="/internal/surveys"]')).toBeNull();
+
+    act(() => toggle.click());
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const links = [...document.querySelectorAll(`#${toggle.getAttribute('aria-controls')} a`)].map(a => a.textContent);
+    expect(links).toEqual(['Nama Survei', 'Nama Unsur', 'Pertanyaan Survei', 'Pemilihan Survei', 'Jawaban Survei', 'Responden Survei', 'Laporan Survei']);
+  });
+  it('membuka grup Survei otomatis dan menandai sub-menu yang sedang dibuka', () => {
+    show('SUPERADMIN', '/internal/surveys?tab=laporan');
+    expect(screen.getByRole('button', { name: 'Survei' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('link', { name: 'Laporan Survei' })).toHaveClass('lpmq-sidebar-nav-active');
+    expect(screen.getByRole('link', { name: 'Nama Survei' })).not.toHaveClass('lpmq-sidebar-nav-active');
   });
 });
 

@@ -9,7 +9,7 @@ const unsur = { id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM',
 const question = { id: 'q1', text: 'Bagaimana kesesuaian persyaratan?', type: 'PILIHAN', options: [{ id: 'o1', label: 'Sangat sesuai', value: 4 }, { id: 'o2', label: 'Tidak sesuai', value: 1 }], _count: { items: 0, answers: 0 } };
 const baseSurvey = { id: 's1', name: 'Survei IKM 2027', kind: 'IKM', description: null, starts_at: '2027-01-01T00:00:00.000Z', ends_at: '2027-12-31T00:00:00.000Z', status: 'DRAFT', display_status: 'DRAFT', updated_at: 'v1', _count: { items: 0, responses: 0 } };
 
-const renderPage = () => render(<MemoryRouter><SurveyManagementPage /></MemoryRouter>);
+const renderPage = (path = '/internal/surveys') => render(<MemoryRouter initialEntries={[path]}><SurveyManagementPage /></MemoryRouter>);
 
 describe('SurveyManagementPage (Super Admin)', () => {
   beforeEach(() => {
@@ -37,7 +37,8 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Buat & Susun Pertanyaan' }));
 
     await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Survei IKM 2027', kind: 'IKM', starts_at: '2027-01-01', ends_at: '2027-12-31' })));
-    expect(await screen.findByRole('tab', { name: 'Susunan Pertanyaan' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Pemilihan Survei' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nama Survei')).toHaveValue('s1');
   });
 
   it('menyusun pertanyaan per unsur dan menyimpan susunannya', async () => {
@@ -53,5 +54,21 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Simpan Susunan/ }));
     await waitFor(() => expect(setItems).toHaveBeenCalledWith('s1', [{ unsur_id: 'u1', question_id: 'q1' }]));
+  });
+
+  it('sub-menu Laporan Survei meminta pilih survei lalu menampilkan indeks dan mutu', async () => {
+    const getReport = vi.spyOn(surveyApi, 'getReport').mockResolvedValue({ data: {
+      respondents: 2, index: 87.5, mutu: { grade: 'B', label: 'Baik' }, essays: [],
+      unsur: [{ id: 'u1', code: 'A', name: 'Persyaratan Pelayanan', answers: 2, average: 3.5, converted: 87.5 }],
+      demographics: { gender: [], age: [], education: [], occupation: [] },
+    } });
+    renderPage('/internal/surveys?tab=laporan');
+    expect(screen.getByRole('heading', { name: 'Laporan Survei' })).toBeInTheDocument();
+    expect(screen.getByText('Pilih survei')).toBeInTheDocument();
+
+    await screen.findByRole('option', { name: 'Survei IKM 2027' });
+    fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
+    expect(await screen.findByText('B · Baik')).toBeInTheDocument();
+    expect(getReport).toHaveBeenCalledWith('s1');
   });
 });
