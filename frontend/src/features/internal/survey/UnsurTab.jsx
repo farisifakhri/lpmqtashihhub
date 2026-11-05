@@ -90,12 +90,12 @@ export function UnsurTab() {
                         onClick={() => run(() => surveyApi.updateUnsur(u.id, { is_archived: !u.is_archived }), u.is_archived ? 'Unsur dipulihkan.' : 'Unsur diarsipkan.')}>
                         {u.is_archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                       </Button>
-                      {!u._count?.items && !u.is_standard && (
-                        <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`}
-                          onClick={() => window.confirm(`Hapus unsur "${u.name}"?`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.')}>
-                          <Trash2 className="w-4 h-4 text-civic-danger" />
-                        </Button>
-                      )}
+                      {/* Unsur yang masih dipakai survei tidak dapat dihapus; arsipkan saja. */}
+                      <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`} disabled={u._count?.items > 0}
+                        title={u._count?.items > 0 ? 'Unsur masih dipakai pada survei sehingga tidak dapat dihapus; arsipkan saja.' : undefined}
+                        onClick={() => window.confirm(`Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.')}>
+                        <Trash2 className="w-4 h-4 text-civic-danger" />
+                      </Button>
                     </div>
                   </td>
                 </tr>

@@ -36,9 +36,8 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.match(standard[0].definition, /^Syarat yang harus dipenuhi/);
     assert.ok(standard.every((u) => u.definition));
 
-    // Unsur baku tidak dapat dihapus, tetapi definisinya boleh disesuaikan dan unsurnya boleh diarsipkan.
+    // Definisi unsur baku boleh disesuaikan dan unsurnya boleh diarsipkan.
     const persyaratan = standard[0];
-    assert.equal((await call(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'DELETE')).status, 409);
     const edited = await ok(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'PUT', { definition: 'Definisi khusus pentashihan.' });
     assert.equal(edited.definition, 'Definisi khusus pentashihan.');
     assert.equal(edited.is_standard, true);
@@ -55,6 +54,10 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.ok(ordered.indexOf(standard[8].id) < ordered.indexOf(tanpaKode1.id), 'unsur baku tampil lebih dulu');
     await ok(`/admin/survey-unsur/${tanpaKode1.id}`, adminToken, 'DELETE');
     await ok(`/admin/survey-unsur/${tanpaKode2.id}`, adminToken, 'DELETE');
+
+    // Unsur yang tidak dipakai survei mana pun boleh dihapus, termasuk unsur baku.
+    await ok(`/admin/survey-unsur/${standard[8].id}`, adminToken, 'DELETE');
+    assert.ok(!(await ok('/admin/survey-unsur?include_archived=true', adminToken, 'GET')).some((u) => u.id === standard[8].id));
 
     // Regresi: mengarsipkan unsur IPAK tidak boleh mengubah jenisnya menjadi IKM.
     const ipak = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-IPAK', name: 'Pungutan liar', kind: 'IPAK' }, 201);

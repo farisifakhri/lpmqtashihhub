@@ -53,7 +53,6 @@ export async function deleteUnsur(id, user, req) {
   return withAudit(user, req, 'SURVEY_UNSUR_DELETE', 'SurveyUnsur', async (tx) => {
     const unsur = await tx.surveyUnsur.findUnique({ where: { id }, include: { _count: { select: { items: true } } } });
     if (!unsur) fail(404, 'Unsur survei tidak ditemukan.');
-    if (unsur.is_standard) fail(409, 'Unsur baku Pedoman Menteri PANRB tidak dapat dihapus. Arsipkan bila tidak dipakai.');
     if (unsur._count.items) fail(409, 'Unsur ini sudah dipakai pada survei. Arsipkan unsur alih-alih menghapusnya.');
     return tx.surveyUnsur.delete({ where: { id } });
   });

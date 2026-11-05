@@ -99,12 +99,12 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(getReport).toHaveBeenCalledWith('s1');
   });
 
-  it('Nama Unsur menampilkan unsur baku beserta definisinya dan tidak menyediakan Hapus untuk unsur baku', async () => {
+  it('Nama Unsur menampilkan unsur baku beserta definisinya; unsur baku yang tidak dipakai dapat dihapus', async () => {
     const update = vi.spyOn(surveyApi, 'updateUnsur').mockResolvedValue({ data: unsur });
     renderPage('/internal/surveys?tab=unsur');
     expect(await screen.findByText('Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.')).toBeInTheDocument();
     expect(screen.getByText('Baku PANRB')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Hapus Persyaratan Pelayanan' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hapus Persyaratan Pelayanan' })).not.toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ubah Persyaratan Pelayanan' }));
     const definition = screen.getByLabelText('Definisi');
@@ -132,5 +132,16 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.queryByTestId('picked-unsur-definition')).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u1' } });
     expect(screen.getByTestId('picked-unsur-definition')).toHaveTextContent('Syarat yang harus dipenuhi');
+  });
+
+  it('tombol Hapus menghapus unsur yang tidak dipakai dan nonaktif untuk unsur yang masih dipakai', async () => {
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u2', name: 'Unsur terpakai', is_standard: false, _count: { items: 2 } }] });
+    const remove = vi.spyOn(surveyApi, 'deleteUnsur').mockResolvedValue({ data: unsur });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderPage('/internal/surveys?tab=unsur');
+
+    expect(await screen.findByRole('button', { name: 'Hapus Unsur terpakai' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Persyaratan Pelayanan' }));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('u1'));
   });
 });
