@@ -242,7 +242,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               required
               value={notaNo}
               onChange={(e) => setNotaNo(e.target.value)}
-              placeholder="Contoh: ND-2026/09/REV-001"
+              placeholder="Contoh: ND-2026/09/001"
               className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info font-mono"
             />
           </div>

@@ -13,7 +13,7 @@ export const DOCUMENT_TYPE_LABELS = {
   NOTA_DINAS_VERIFIKASI: 'Disposisi / Nota Dinas Verifikasi',
   SURAT_HASIL_VERIFIKASI: 'Surat Hasil Verifikasi Berkas & Naskah',
   SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI: 'Surat Pemberitahuan Hasil Verifikasi',
-  BERITA_ACARA_VERIFIKASI: 'Berita Acara Verifikasi Berkas & Rasm',
+  BERITA_ACARA_VERIFIKASI: 'Berita Acara Verifikasi Berkas',
   BERITA_ACARA_TASHIH: 'Berita Acara Pentashihan',
   SURAT_TANDA_TASHIH: 'Surat Tanda Tashih (STT)',
   REVISION_RETURN_LETTER: 'Surat Pengembalian Naskah Perbaikan',

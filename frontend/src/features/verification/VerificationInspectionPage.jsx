@@ -1138,9 +1138,6 @@ export const VerificationInspectionPage = () => {
             >
               <BookOpen className="w-3.5 h-3.5 text-brand-700" />
               <span>Konten Mushaf</span>
-              <span className="text-xs px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
-                REV-16
-              </span>
             </button>
 
             <button
@@ -1154,9 +1151,6 @@ export const VerificationInspectionPage = () => {
             >
               <Calculator className="w-3.5 h-3.5 text-brand-700" />
               <span>Kalkulator Tarif & SLA</span>
-              <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                U-14
-              </span>
             </button>
 
             <button
@@ -1197,7 +1191,7 @@ export const VerificationInspectionPage = () => {
           />
         </div>
 
-        {/* TAB 2: AUDIT KONTEN MUSHAF (REV-16) */}
+        {/* TAB 2: AUDIT KONTEN MUSHAF */}
         <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'} pb-28`}>
           <MushafContentReviewTable
             registration={registration}
@@ -1210,7 +1204,7 @@ export const VerificationInspectionPage = () => {
           />
         </div>
 
-        {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN (U-14) */}
+        {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN */}
         <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'} pb-28`}>
           <VerificationCalculatorTab registration={registration} />
         </div>

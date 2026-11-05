@@ -339,7 +339,7 @@ export const PublisherDashboard = () => {
               Permohonan terbaru
             </h2>
             <p className="text-xs text-ink-muted mt-0.5">
-              Urut permohonan terbaru. Antrean kerja FIFO dikelola tim internal LPMQ.
+              Daftar permohonan naskah yang baru diajukan dan sedang diproses tim LPMQ.
             </p>
           </div>
           <Link

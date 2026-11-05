@@ -176,7 +176,7 @@ export const ShippingLabelDialog = ({ isOpen = true, onClose, registration }) =>
             ref={printRef}
             className="border-2 border-black p-6 sm:p-8 bg-white space-y-6 print:border-2 print:border-black print:p-6"
           >
-            {/* Header: Logo & Centered Title (RF-REG-10) */}
+            {/* Header: Logo & Centered Title */}
             <div className="flex items-center justify-between gap-4 pb-3 border-b-2 border-black">
               <img
                 src={kemenagLogo}

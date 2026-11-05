@@ -198,7 +198,7 @@ export const DokumentatorArchivePage = () => {
           <div>
             <div className="flex items-center gap-2 text-brand-fg font-semibold text-sm mb-1">
               <FolderArchive className="w-5 h-5 text-brand-fg" />
-              <span>Modul Pengarsipan & Verifikasi Fisik (DOC-02)</span>
+              <span>Modul Pengarsipan & Verifikasi Fisik</span>
             </div>
             <h1 className="text-2xl font-bold text-ink tracking-tight">
               Dokumentator: Pengarsipan Naskah & Deposit Mushaf

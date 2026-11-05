@@ -4,7 +4,7 @@
 [![Kementerian Agama RI](https://img.shields.io/badge/Kemenag_RI-Lajnah_Pentashihan_Mushaf_Al--Qur'an-1E560D.svg)](https://lpmq.kemenag.go.id)
 [![Glosarium Resmi](https://img.shields.io/badge/Dokumentasi-Glosarium_Istilah_Resmi-396A06.svg)](docs/GLOSARIUM.md)
 
-**LPMQ Tashih Hub** adalah platform layanan publik digital resmi milik **Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ), Badan Litbang dan Diklat / Balitbang Diklat Kementerian Agama Republik Indonesia**. Aplikasi ini melayani pendaftaran badan hukum penerbit, pengajuan tanda tashih mushaf Al-Qur'an multi-naskah dan varian ukuran/oplah, verifikasi berkas dan rasm, pembayaran Penerimaan Negara Bukan Pajak (PNBP), distribusi sidang pentashihan per rentang juz, siklus revisi naskah dan dumi (*pra-cetak*), hingga penerbitan **Surat Tanda Tashih (STT)** digital ber-QR yang sah secara hukum.
+**LPMQ Tashih Hub** adalah platform layanan publik digital resmi milik **Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ), Badan Litbang dan Diklat / Balitbang Diklat Kementerian Agama Republik Indonesia**. Aplikasi ini melayani pendaftaran badan hukum penerbit, pengajuan tanda tashih mushaf Al-Qur'an multi-naskah dan varian ukuran/oplah, verifikasi berkas, pembayaran Penerimaan Negara Bukan Pajak (PNBP), distribusi sidang pentashihan per rentang juz, siklus revisi naskah dan dumi (*pra-cetak*), hingga penerbitan **Surat Tanda Tashih (STT)** digital ber-QR yang sah secara hukum.
 
 ---
 

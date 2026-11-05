@@ -215,11 +215,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // 2. Verifikator Berkas & Rasm
+        // 2. Verifikator Berkas
         if (role === "VERIFIKATOR" || role === "VERIFICATOR" || (isVerifikator && role === "VERIFIKATOR")) {
             return [
                 {
-                    title: "VERIFIKASI BERKAS & RASM",
+                    title: "VERIFIKASI BERKAS",
                     items: [
                         {
                             label: "Kendali Operasional",
@@ -434,7 +434,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badge: "Loket",
                         },
                         {
-                            label: "3. Verifikasi Berkas & Rasm",
+                            label: "3. Verifikasi Berkas",
                             path: "/internal/verifications",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Penugasan & telaah berkas naskah",
@@ -515,7 +515,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         badge: "Loket",
                     },
                     {
-                        label: "3. Verifikasi Berkas & Rasm",
+                        label: "3. Verifikasi Berkas",
                         path: "/internal/verifications",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Penugasan & pemeriksaan naskah",
