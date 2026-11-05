@@ -4,10 +4,10 @@
 - **Branch:** `feat/b15-rekap-kelompok-dan-eliminasi-checklist`
 - **Basis:** `feat/b14-integritas-gerbang-stt-dan-kebocoran-tashih`
 - **PIC:** Fakhri
-- **Status:** **Siap Dikerjakan**
+- **Status:** **Selesai (Commit 8b29f4b)**
 - **Dependensi:** B-14 (Integritas Gerbang STT & Proteksi Privasi)
 - **Memblokir:** B-16 (Rekap Penerbit & Siklus Dumi)
-- **Versi Dokumen:** 1.0 (5 November 2026)
+- **Versi Dokumen:** 1.1 (5 November 2026)
 
 ---
 
@@ -101,9 +101,9 @@ Berdasarkan kesepakatan operasional sidang pentashihan LPMQ:
 
 ## 4. Kriteria Keberhasilan (*Definition of Done*)
 
-- [ ] Distributor dapat menetapkan kombinasi kelompok dan individu dalam satu aksi penugasan yang mencakup 30 juz.
-- [ ] Opsi pilihan `recap_scope` (`TEAM` vs `SELF`) tersimpan di basis data dan berfungsi sesuai aturan pengguguran tugas kelompok.
-- [ ] Individu mandiri wajib mengunggah rekapnya sendiri tanpa terpengaruh rekap pentashih lain.
-- [ ] Formulir checklist butir per juz telah dihapus bersih dari antarmuka pentashih; pelaporan kini murni berbasis dokumen rekapitulasi + putusan akhir.
-- [ ] Seluruh pengujian unit backend dan frontend lulus 100%.
+- [x] Distributor dapat menetapkan kombinasi kelompok dan individu dalam satu aksi penugasan yang mencakup 30 juz.
+- [x] Opsi pilihan `recap_scope` (`TEAM` vs `SELF`) tersimpan di basis data dan berfungsi sesuai aturan pengguguran tugas kelompok.
+- [x] Individu mandiri wajib mengunggah rekapnya sendiri tanpa terpengaruh rekap pentashih lain.
+- [x] Formulir checklist butir per juz telah dihapus bersih dari antarmuka pentashih; pelaporan kini murni berbasis dokumen rekapitulasi + putusan akhir.
+- [x] Seluruh pengujian unit backend dan frontend lulus 100%.
 

@@ -42,7 +42,7 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | B-11 | **Dalam Proses / Siap Dikerjakan** | Penyesuaian antarmuka/UX card dan filter dokumen mushaf dokumentator. |
 | B-12–B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
 | B-14 | **Selesai menurut bukti kode** | Menutup lubang keamanan B1 (dua jalur STT), B2 (bypass transisi penerbit), dan B3 (kebocoran pentashih di `listRegistrations`), seluruh pengujian lulus 100%. |
-| B-15 | **Siap Dikerjakan** | Logika rekap kelompok `TEAM` vs `SELF`, penugasan campuran atomik, dan penghapusan form checklist butir per juz. |
+| B-15 | **Selesai menurut bukti kode** | Logika rekap kelompok `recap_scope: TEAM vs SELF`, penugasan campuran kelompok-individu atomik 30 juz, eliminasi form checklist per juz, seluruh pengujian backend & frontend lulus 100%. |
 | B-16 | **Siap Dikerjakan** | Wajib berkas rekap revisi penerbit per ronde (titik a & c), pembandingan berkas, dan penegakan siklus wajib dumi sebelum STT. |
 
 **Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, `frontend/src/features/verification/VerificationInspectionPage.jsx`, dan `frontend/src/features/verification/VerificationInspectionPage.test.jsx`.
