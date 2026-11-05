@@ -1151,6 +1151,7 @@ model RegulationDocument {
 model InformationGuide {
   id            String                  @id @default(uuid())
   title         String                  @db.VarChar(255)
+  section       String                  @default("GUIDE") @db.VarChar(20)
   content_type  String                  @db.VarChar(20)
   content_html  String?                 @db.LongText
   storage_path  String?                 @db.VarChar(500)
@@ -1167,6 +1168,7 @@ model InformationGuide {
   updated_at    DateTime                @updatedAt
 
   @@index([is_published])
+  @@index([section])
   @@index([content_type])
   @@index([created_at])
   @@map("information_guides")

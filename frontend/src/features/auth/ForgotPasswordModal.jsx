@@ -1,18 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, KeyRound, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/api/auth.api';
 
-export const ForgotPasswordModal = ({ isOpen, onClose }) => {
-  const [step, setStep] = useState('REQUEST'); // 'REQUEST' | 'RESET'
+export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
+  const [step, setStep] = useState(initialToken ? 'RESET' : 'REQUEST'); // 'REQUEST' | 'RESET'
   const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(initialToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    if (!isOpen || !initialToken) return;
+    setStep('RESET');
+    setToken(initialToken);
+    setError('');
+    setSuccess('');
+  }, [initialToken, isOpen]);
 
   const handleResetState = () => {
     setStep('REQUEST');
@@ -130,7 +138,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
               <button
                 type="button"
                 onClick={() => setStep('RESET')}
-                className="text-xs font-semibold text-brand-700 hover:underline"
+                className="text-xs font-semibold text-brand-fg hover:underline"
               >
                 Sudah memiliki token reset?
               </button>
@@ -150,17 +158,21 @@ export const ForgotPasswordModal = ({ isOpen, onClose }) => {
           <form onSubmit={handleResetPassword} className="space-y-3.5">
             <div className="space-y-1">
               <label htmlFor="reset-token" className="block text-xs font-bold text-ink">
-                Token / Kode Pemulihan <span className="text-civic-danger">*</span>
+                Kode Pemulihan <span className="text-civic-danger">*</span>
               </label>
               <input
                 id="reset-token"
                 type="text"
                 value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="Tempelkan token pemulihan di sini"
+                onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                placeholder="Masukkan kode 8 digit dari email"
+                inputMode="numeric"
+                maxLength={8}
+                pattern="[0-9]{8}"
                 required
                 className="w-full px-3 py-2 text-xs font-mono bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
               />
+              <p className="mt-1 text-xs text-ink-muted">Kode berisi 8 digit dan berlaku selama 30 menit.</p>
             </div>
 
             <div className="space-y-1">

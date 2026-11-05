@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { LandingPageManagementPage } from './LandingPageManagementPage';
 import * as AuthContext from '@/features/auth/AuthContext';
 import { regulationApi } from '@/api/regulation.api';
@@ -9,7 +9,7 @@ import { informationGuideApi } from '@/api/information-guide.api';
 const informationSubmenus = [
   "Regulasi Penerbit Mushaf Al-Qur'an",
   'Panduan Permohonan Surat Tanda Tashih/Izin Edar',
-  'SOP Pelayanan Surat Tanda Tashih Izin Edar',
+  'SOP Pelayanan Surat Tanda Tashih',
   "Direktori Penerbit Mushaf Al-Qur'an",
   'Survei IKM dan IPAK Pelayananan Surat Tanda Tashih',
   'Siaran Pers',
@@ -96,6 +96,39 @@ describe('LandingPageManagementPage navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: informationSubmenus[0] }));
     expect(await screen.findByText('Total Regulasi')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tambah Dokumen' })).toBeInTheDocument();
+  });
+
+  it('uses the existing guide-management form for the isolated SOP section', async () => {
+    vi.spyOn(informationGuideApi, 'create').mockResolvedValue({
+      success: true,
+      data: { is_published: false, content_type: 'EDITOR' },
+    });
+    render(<LandingPageManagementPage />);
+    expect(await screen.findByText('Total Regulasi')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'SOP Pelayanan Surat Tanda Tashih' }));
+    expect(await screen.findByRole('button', { name: 'Tambah SOP' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(informationGuideApi.listAdmin).toHaveBeenCalledWith(expect.objectContaining({ section: 'SOP' }));
+    });
+    expect(screen.getByRole('columnheader', { name: 'Judul SOP' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Bentuk Konten' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Status' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Tanggal Diperbarui' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Aksi' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah SOP' }));
+    const dialog = screen.getByRole('dialog', { name: 'Tambah SOP' });
+    expect(within(dialog).getByLabelText('Judul SOP *')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Bentuk Konten')).toBeInTheDocument();
+    expect(within(dialog).getByText('Publikasikan SOP')).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Judul SOP *'), { target: { value: 'SOP Uji Administrasi' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan Draf' }));
+    await waitFor(() => expect(informationGuideApi.create).toHaveBeenCalledTimes(1));
+    expect(informationGuideApi.create.mock.calls[0][0]).toMatchObject({
+      title: 'SOP Uji Administrasi',
+      section: 'SOP',
+    });
   });
 
   it('keeps document creation in the filters and shows only title and one complete document-number badge', async () => {

@@ -17,7 +17,8 @@ import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS } from '@/components/public/PublicHeader';
 import { InformationGuideContent } from './InformationGuideContent';
 
-const BASE_PATH = '/informasi/panduan-permohonan-surat-tanda-tashih';
+const GUIDE_BASE_PATH = '/informasi/panduan-permohonan-surat-tanda-tashih';
+const GUIDE_TITLE = 'Panduan Permohonan Surat Tanda Tashih/Izin Edar';
 
 function getFileExtension(mimeType) {
   if (mimeType === 'application/pdf') return '.pdf';
@@ -26,7 +27,15 @@ function getFileExtension(mimeType) {
   return '';
 }
 
-export function InformationGuidePage() {
+export function InformationGuidePage({
+  section = 'GUIDE',
+  basePath = GUIDE_BASE_PATH,
+  title = GUIDE_TITLE,
+  description = 'Temukan panduan layanan permohonan Surat Tanda Tashih dan Izin Edar yang diterbitkan oleh LPMQ.',
+  tableLayout = false,
+}) {
+  const isSop = section === 'SOP';
+  const itemName = isSop ? 'SOP' : 'panduan';
   const navigate = useNavigate();
   const { id } = useParams();
   const [guides, setGuides] = useState([]);
@@ -45,7 +54,12 @@ export function InformationGuidePage() {
     setLoading(true);
     setError('');
     try {
-      const response = await informationGuideApi.listPublic({ page, limit: pagination.limit, search });
+      const response = await informationGuideApi.listPublic({
+        page,
+        limit: pagination.limit,
+        search,
+        ...(isSop ? { section } : {}),
+      });
       setGuides(response.data || []);
       setPagination(response.pagination || { page: 1, limit: 10, total: 0, totalPages: 1 });
     } catch (requestError) {
@@ -54,7 +68,7 @@ export function InformationGuidePage() {
     } finally {
       setLoading(false);
     }
-  }, [page, pagination.limit, search]);
+  }, [page, pagination.limit, search, section, isSop]);
 
   useEffect(() => {
     if (id) return undefined;
@@ -68,12 +82,12 @@ export function InformationGuidePage() {
     let active = true;
     setLoading(true);
     setError('');
-    informationGuideApi.getPublic(id)
+    (isSop ? informationGuideApi.getPublic(id, { section }) : informationGuideApi.getPublic(id))
       .then((response) => { if (active) setGuide(response.data); })
       .catch((requestError) => { if (active) setError(requestError.message || 'Panduan tidak dapat ditemukan.'); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [id]);
+  }, [id, section, isSop]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,7 +107,7 @@ export function InformationGuidePage() {
     setPreviewOpen(true);
     if (guide.mime_type !== 'application/pdf') return;
     try {
-      const url = await informationGuideApi.fetchFileBlobUrl(guide.id);
+      const url = await informationGuideApi.fetchFileBlobUrl(guide.id, isSop ? { section } : undefined);
       setPreviewUrl(url);
     } catch (requestError) {
       setPreviewError(requestError.message || 'Pratinjau berkas tidak dapat dimuat.');
@@ -104,7 +118,7 @@ export function InformationGuidePage() {
     if (!guide) return;
     try {
       const fileName = `${guide.title}${getFileExtension(guide.mime_type)}`;
-      await informationGuideApi.download(guide.id, fileName);
+      await informationGuideApi.download(guide.id, fileName, isSop ? { section } : undefined);
     } catch (requestError) {
       setError(requestError.message || 'Berkas tidak dapat diunduh.');
     }
@@ -119,7 +133,7 @@ export function InformationGuidePage() {
     <div className="min-h-screen bg-canvas font-sans text-ink">
       <PublicHeader
         activePage="Informasi"
-        activeHref={BASE_PATH}
+        activeHref={basePath}
         navItems={PUBLIC_INFORMATION_NAV_ITEMS}
         handleNavigate={handleNavigate}
       />
@@ -127,15 +141,15 @@ export function InformationGuidePage() {
         <nav aria-label="Breadcrumb" className="mb-5 text-xs text-ink-muted">
           <Link to="/" className="hover:text-brand-700">Beranda</Link>
           <span className="mx-2">/</span>
-          <Link to={BASE_PATH} className="hover:text-brand-700">Informasi</Link>
+          <Link to={basePath} className="hover:text-brand-700">Informasi</Link>
           <span className="mx-2">/</span>
-          <span className="text-ink">Panduan Permohonan Surat Tanda Tashih/Izin Edar</span>
+          <span className="text-ink">{title}</span>
         </nav>
 
         {id ? (
           <section aria-labelledby="guide-detail-title" className="mx-auto max-w-4xl">
-            <button type="button" onClick={() => navigate(BASE_PATH)} className="mb-5 inline-flex items-center gap-2 text-xs font-semibold text-brand-700 hover:text-brand-800">
-              <ArrowLeft className="h-4 w-4" /> Kembali ke daftar panduan
+            <button type="button" onClick={() => navigate(basePath)} className="mb-5 inline-flex items-center gap-2 text-xs font-semibold text-brand-700 hover:text-brand-800">
+              <ArrowLeft className="h-4 w-4" /> Kembali ke daftar {itemName}
             </button>
             {loading && <div className="h-40 animate-pulse rounded-2xl bg-surface-subtle" aria-busy="true" aria-label="Memuat panduan" />}
             {!loading && error && (
@@ -155,17 +169,17 @@ export function InformationGuidePage() {
                   {guide.content_type === 'DOCUMENT' && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button type="button" onClick={openFilePreview} className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
-                        <Eye className="h-4 w-4" /> Lihat panduan
+                        <Eye className="h-4 w-4" /> Lihat {itemName}
                       </button>
                       <button type="button" onClick={downloadGuide} className="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-800">
-                        <Download className="h-4 w-4" /> Unduh panduan
+                        <Download className="h-4 w-4" /> Unduh {itemName}
                       </button>
                     </div>
                   )}
                 </header>
                 {guide.content_type === 'EDITOR' ? (
                   <div className="pt-4">
-                    <InformationGuideContent html={guide.content_html || ''} />
+                    <InformationGuideContent html={guide.content_html || ''} section={section} />
                   </div>
                 ) : (
                   <div className="mt-5 flex items-start gap-3 rounded-xl border border-line bg-surface-subtle p-4">
@@ -184,18 +198,18 @@ export function InformationGuidePage() {
           <section aria-labelledby="guide-list-title">
             <div className="mb-6">
               <span className="inline-flex rounded-lg border border-brand-200 bg-brand-50 px-2.5 py-1 text-[11px] font-bold text-brand-800">Informasi</span>
-              <h1 id="guide-list-title" className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">Panduan Permohonan Surat Tanda Tashih/Izin Edar</h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">Temukan panduan layanan permohonan Surat Tanda Tashih dan Izin Edar yang diterbitkan oleh LPMQ.</p>
+              <h1 id="guide-list-title" className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">{title}</h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-ink-muted">{description}</p>
             </div>
             <div className="mb-5 rounded-2xl border border-line bg-surface p-4 shadow-sm">
               <label className="relative block max-w-xl">
-                <span className="sr-only">Cari panduan</span>
+                <span className="sr-only">Cari {itemName}</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-                <input type="search" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Cari judul panduan..." className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 pl-9 text-sm text-ink focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600" />
+                <input type="search" value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder={`Cari judul ${itemName}...`} className="w-full rounded-xl border border-line bg-surface px-3 py-2.5 pl-9 text-sm text-ink focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600" />
               </label>
             </div>
 
-            {loading && <div className="space-y-3 rounded-2xl border border-line bg-surface p-5" aria-busy="true" aria-label="Memuat daftar panduan">{[1, 2, 3].map((row) => <div key={row} className="h-16 animate-pulse rounded-xl bg-surface-subtle" />)}</div>}
+            {loading &&             <div className="space-y-3 rounded-2xl border border-line bg-surface p-5" aria-busy="true" aria-label={`Memuat daftar ${itemName}`}>{[1, 2, 3].map((row) => <div key={row} className="h-16 animate-pulse rounded-xl bg-surface-subtle" />)}</div>}
             {!loading && error && (
               <div className="rounded-2xl border border-civic-dangerLine bg-civic-dangerSoft p-8 text-center">
                 <AlertCircle className="mx-auto h-6 w-6 text-civic-danger" />
@@ -203,14 +217,56 @@ export function InformationGuidePage() {
                 <button type="button" onClick={fetchGuides} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2 text-xs font-semibold text-white"><RefreshCw className="h-4 w-4" /> Muat ulang</button>
               </div>
             )}
-            {!loading && !error && guides.length === 0 && (
+            {!loading && !error && guides.length === 0 && !tableLayout && (
               <div className="rounded-2xl border border-line bg-surface px-5 py-14 text-center">
                 <FileText className="mx-auto h-8 w-8 text-ink-muted" />
-                <h2 className="mt-3 text-base font-bold text-ink">Panduan belum tersedia</h2>
+                <h2 className="mt-3 text-base font-bold text-ink">{isSop ? 'SOP belum tersedia' : 'Panduan belum tersedia'}</h2>
                 <p className="mt-1 text-sm text-ink-muted">Silakan kembali lagi nanti untuk melihat panduan layanan.</p>
               </div>
             )}
-            {!loading && !error && guides.length > 0 && (
+            {!loading && !error && tableLayout && (
+              <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
+                <table className="w-full min-w-[560px] text-left text-sm">
+                  <thead className="border-b border-line bg-surface-subtle text-xs font-bold uppercase tracking-wide text-ink-muted">
+                    <tr>
+                      <th scope="col" className="w-20 px-4 py-3 sm:px-5">No</th>
+                      <th scope="col" className="px-4 py-3 sm:px-5">Judul Informasi</th>
+                      <th scope="col" className="w-36 px-4 py-3 text-center sm:px-5">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {guides.length > 0 ? guides.map((item, index) => (
+                      <tr key={item.id} className="hover:bg-surface-subtle/60">
+                        <td className="px-4 py-4 text-ink-muted sm:px-5">{(pagination.page - 1) * pagination.limit + index + 1}</td>
+                        <td className="px-4 py-4 font-semibold leading-6 text-ink sm:px-5">{item.title}</td>
+                        <td className="px-4 py-4 text-center sm:px-5">
+                          <Link to={`${basePath}/${item.id}`} className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+                            Lihat SOP <Eye className="h-4 w-4" />
+                          </Link>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={3} className="px-4 py-12 text-center text-sm text-ink-muted sm:px-5">
+                          SOP belum tersedia. Silakan kembali lagi nanti.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                {guides.length > 0 && <div className="flex flex-col items-center justify-between gap-3 border-t border-line bg-surface-subtle/50 p-4 sm:flex-row">
+                  <p className="text-xs text-ink-muted">
+                    Menampilkan {(pagination.page - 1) * pagination.limit + 1}–{Math.min(pagination.page * pagination.limit, pagination.total)} dari {pagination.total} SOP
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink disabled:opacity-40"><ChevronLeft className="h-3.5 w-3.5" /> Sebelumnya</button>
+                    <span className="text-xs text-ink-muted">{pagination.page} / {pagination.totalPages || 1}</span>
+                    <button type="button" onClick={() => setPage((value) => Math.min(pagination.totalPages, value + 1))} disabled={page >= pagination.totalPages} className="inline-flex items-center gap-1 rounded-lg border border-line bg-surface px-3 py-2 text-xs text-ink disabled:opacity-40">Berikutnya <ChevronRight className="h-3.5 w-3.5" /></button>
+                  </div>
+                </div>}
+              </div>
+            )}
+            {!loading && !error && guides.length > 0 && !tableLayout && (
               <div className="overflow-hidden rounded-2xl border border-line bg-surface shadow-sm">
                 <div className="divide-y divide-line">
                   {guides.map((item) => (
@@ -226,7 +282,7 @@ export function InformationGuidePage() {
                           </p>
                         </div>
                       </div>
-                      <Link to={`${BASE_PATH}/${item.id}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
+                      <Link to={`${basePath}/${item.id}`} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2 text-xs font-semibold text-brand-800 hover:bg-brand-100">
                         Lihat panduan <Eye className="h-4 w-4" />
                       </Link>
                     </article>

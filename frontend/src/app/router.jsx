@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { HomeRedirect } from '@/features/home/HomeRedirect';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage';
 import { RegisterPublisherPage } from '@/features/auth/RegisterPublisherPage';
 import { ModulePlaceholder } from '@/components/common/ModulePlaceholder';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -72,10 +73,22 @@ const router = createBrowserRouter([
     path: '/informasi/panduan-permohonan-surat-tanda-tashih/:id',
     element: <InformationGuidePage />,
   },
+  {
+    path: '/informasi/sop-pelayanan-surat-tanda-tashih',
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
+  {
+    path: '/informasi/sop-pelayanan-surat-tanda-tashih/:id',
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
   // Rute Autentikasi Mandiri
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     path: '/register',

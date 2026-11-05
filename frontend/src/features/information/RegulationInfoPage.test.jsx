@@ -79,7 +79,7 @@ describe('RegulationInfoPage Public Component', () => {
     await screen.findByText(/KMA No. 44 Tahun 2024/i);
 
     const header = screen.getByRole('banner');
-    expect(header).toHaveClass('sticky', 'top-0', 'z-50', 'border-b', 'border-line');
+    expect(header).toHaveClass('sticky', 'top-0', 'z-50', 'border-b', 'border-lpmq-border', 'bg-white', 'backdrop-blur');
     expect(header.querySelector('img[alt="Logo Tashih LPMQ"]')).toHaveClass('h-10', 'w-auto');
     expect(within(header).getByRole('link', { name: 'LPMQ Kemenag RI' })).toHaveAttribute('href', '/');
     expect(within(header).getByRole('link', { name: /Hubungi Layanan Tashih Online melalui WhatsApp/ })).toHaveAttribute(

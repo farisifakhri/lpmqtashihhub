@@ -7,8 +7,11 @@ const booleanFromQuery = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const section = z.enum(['GUIDE', 'SOP']);
+
 const guideFields = {
   title: z.string().trim().min(3, 'Judul panduan minimal 3 karakter.').max(255, 'Judul panduan maksimal 255 karakter.'),
+  section: section.optional(),
   content_type: z.enum(['DOCUMENT', 'EDITOR']),
   content_html: z.string().max(80_000, 'Konten panduan terlalu panjang.').optional(),
   is_published: z.preprocess((value) => {
@@ -26,6 +29,7 @@ export const createInformationGuideSchema = {
 export const updateInformationGuideSchema = {
   body: z.object({
     title: guideFields.title.optional(),
+    section: guideFields.section,
     content_type: guideFields.content_type.optional(),
     content_html: guideFields.content_html,
     is_published: guideFields.is_published,
@@ -38,6 +42,7 @@ export const listInformationGuidesSchema = {
     limit: z.preprocess((value) => value ? Number.parseInt(value, 10) : 10, z.number().int().positive().max(100).default(10)),
     search: z.string().trim().max(255).optional(),
     is_published: booleanFromQuery,
+    section: section.optional(),
   }),
 };
 
@@ -45,10 +50,16 @@ export const informationGuideIdSchema = {
   params: z.object({
     id: z.string().uuid('ID panduan tidak valid.'),
   }),
+  query: z.object({
+    section: section.optional(),
+  }),
 };
 
 export const informationGuideImageParamsSchema = {
   params: z.object({
     imageId: z.string().uuid('ID gambar tidak valid.'),
+  }),
+  query: z.object({
+    section: section.optional(),
   }),
 };

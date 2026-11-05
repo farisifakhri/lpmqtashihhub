@@ -1,8 +1,13 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, render, screen, fireEvent, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './LandingPage';
+
+const initialVisibilityStateDescriptor = Object.getOwnPropertyDescriptor(
+  document,
+  'visibilityState'
+);
 
 vi.mock('./DistributionMap', async () => {
   const { createElement } = await import('react');
@@ -25,6 +30,12 @@ describe('LandingPage sections and navigation', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllGlobals();
+    if (initialVisibilityStateDescriptor) {
+      Object.defineProperty(document, 'visibilityState', initialVisibilityStateDescriptor);
+    } else {
+      delete document.visibilityState;
+    }
   });
 
   it('keeps the retained sections and navigation while removing the requested sections', async () => {
@@ -178,7 +189,7 @@ describe('LandingPage sections and navigation', () => {
     });
   });
 
-  it('shows slide-one text only on the first slide and supports circular controls and 7-second autoplay', () => {
+  it('shows slide-one text only on the first slide and supports circular controls and 10-second autoplay', () => {
     vi.useFakeTimers();
 
     render(
@@ -230,10 +241,145 @@ describe('LandingPage sections and navigation', () => {
     expect(slideOneHeading()).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(7000);
+      vi.advanceTimersByTime(10000);
     });
     expect(track.style.transform).toBe('translateX(-50%)');
     expect(slideOneHeading()).not.toBeInTheDocument();
+  });
+
+  it('preserves the remaining autoplay time while navigating away from Beranda', () => {
+    vi.useFakeTimers();
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <nav aria-label="Test route controls">
+          <Link to="/informasi">Test ke Informasi</Link>
+          <Link to="/">Test ke Beranda</Link>
+        </nav>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/informasi" element={<h1>Informasi</h1>} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    let hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const track = hero.querySelector('[data-hero-track]');
+
+    fireEvent.click(within(hero).getByRole('button', { name: 'Slide berikutnya' }));
+    fireEvent.transitionEnd(track);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+
+    fireEvent.click(screen.getByRole('link', { name: 'Test ke Informasi' }));
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+    expect(screen.getByRole('heading', { name: 'Informasi' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('link', { name: 'Test ke Beranda' }));
+    hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const resumedTrack = hero.querySelector('[data-hero-track]');
+    expect(resumedTrack.style.transform).toBe('translateX(-25%)');
+
+    act(() => {
+      vi.advanceTimersByTime(5999);
+    });
+    expect(resumedTrack.style.transform).toBe('translateX(-25%)');
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(resumedTrack.style.transform).toBe('translateX(-50%)');
+  });
+
+  it('pauses autoplay while the browser tab is hidden and resumes the remaining time', () => {
+    vi.useFakeTimers();
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    const hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const track = hero.querySelector('[data-hero-track]');
+
+    fireEvent.click(within(hero).getByRole('button', { name: 'Slide berikutnya' }));
+    fireEvent.transitionEnd(track);
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    fireEvent(document, new Event('visibilitychange'));
+    act(() => {
+      vi.advanceTimersByTime(60000);
+    });
+    expect(track.style.transform).toBe('translateX(-50%)');
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    fireEvent(document, new Event('visibilitychange'));
+    act(() => {
+      vi.advanceTimersByTime(5999);
+    });
+    expect(track.style.transform).toBe('translateX(-50%)');
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(track.style.transform).toBe('translateX(-75%)');
+
+  });
+
+  it('pauses autoplay while the hero is outside the viewport', () => {
+    vi.useFakeTimers();
+    const observers = [];
+    class TestIntersectionObserver {
+      constructor(callback) {
+        this.callback = callback;
+        observers.push(this);
+      }
+
+      observe(target) {
+        this.target = target;
+      }
+
+      disconnect() {}
+    }
+
+    vi.stubGlobal('IntersectionObserver', TestIntersectionObserver);
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    const hero = screen.getByRole('region', { name: 'Slideshow gambar beranda' });
+    const track = hero.querySelector('[data-hero-track]');
+    const heroObserver = observers.find((observer) => observer.target === hero);
+
+    fireEvent.click(within(hero).getByRole('button', { name: 'Slide berikutnya' }));
+    fireEvent.transitionEnd(track);
+
+    act(() => {
+      heroObserver.callback([{ target: hero, isIntersecting: true }]);
+      vi.advanceTimersByTime(4000);
+      heroObserver.callback([{ target: hero, isIntersecting: false }]);
+      vi.advanceTimersByTime(60000);
+    });
+    expect(track.style.transform).toBe('translateX(-50%)');
+
+    act(() => {
+      heroObserver.callback([{ target: hero, isIntersecting: true }]);
+      vi.advanceTimersByTime(5999);
+    });
+    expect(track.style.transform).toBe('translateX(-50%)');
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(track.style.transform).toBe('translateX(-75%)');
   });
 
   it('adds the About Us information above the retained footer links', () => {
@@ -328,6 +474,26 @@ describe('LandingPage sections and navigation', () => {
     expect(card1).toBeInTheDocument();
     expect(card2).toBeInTheDocument();
     expect(card3).toBeInTheDocument();
+    [card1, card2, card3].forEach((title) => {
+      const card = title.closest('.group');
+      expect(card).toHaveClass(
+        'bg-white',
+        'border-lpmq-border',
+        'hover:bg-lpmq-soft',
+        'hover:border-lpmq-green',
+        'group-active:bg-lpmq-green',
+        'group-active:border-lpmq-green',
+        'duration-300'
+      );
+      expect(card.querySelector('.w-12.h-12')).toHaveClass(
+        'bg-lpmq-soft',
+        'text-lpmq-green',
+        'group-hover:ring-lpmq-accent',
+        'group-active:bg-lpmq-green',
+        'group-active:text-white'
+      );
+      expect(title).toHaveClass('text-ink', 'group-hover:text-lpmq-green', 'group-active:text-white');
+    });
 
     // Kartu 1 memiliki tautan ke /login
     const linkPendaftaran = screen.getByRole('link', { name: /Pendaftaran Mushaf Al-Qur'an/i });
@@ -411,7 +577,7 @@ describe('LandingPage sections and navigation', () => {
     expect(infoSection.contains(fbLink)).toBe(false);
   });
 
-  it('slides the hero horizontally every seven seconds and cycles back to the first image', () => {
+  it('slides the hero horizontally every ten seconds and cycles back to the first image', () => {
     vi.useFakeTimers();
     const { unmount } = render(
       <MemoryRouter>
@@ -423,14 +589,19 @@ describe('LandingPage sections and navigation', () => {
     const track = hero.querySelector('[data-hero-track]');
     expect(track.style.transform).toBe('translateX(-25%)');
 
+    fireEvent.click(within(hero).getByRole('button', { name: 'Slide berikutnya' }));
+    fireEvent.transitionEnd(track);
+    fireEvent.click(within(hero).getByRole('button', { name: 'Slide sebelumnya' }));
+    fireEvent.transitionEnd(track);
+
     act(() => {
-      vi.advanceTimersByTime(7000);
+      vi.advanceTimersByTime(10000);
     });
     expect(track.style.transform).toBe('translateX(-50%)');
 
     fireEvent.transitionEnd(track);
     act(() => {
-      vi.advanceTimersByTime(7000);
+      vi.advanceTimersByTime(10000);
     });
     expect(track.style.transform).toBe('translateX(-75%)');
     fireEvent.transitionEnd(track, { propertyName: 'transform' });
