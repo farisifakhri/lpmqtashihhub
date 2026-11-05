@@ -17,3 +17,4 @@ ALTER TABLE `publisher_revision_recaps` ADD CONSTRAINT `publisher_revision_recap
 
 -- AddForeignKey
 ALTER TABLE `publisher_revision_recaps` ADD CONSTRAINT `publisher_revision_recaps_registration_id_fkey` FOREIGN KEY (`registration_id`) REFERENCES `registrations`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
