@@ -1233,7 +1233,7 @@ export const VerificationInspectionPage = () => {
           </div>
 
           {/* TAB 1: CHECKLIST */}
-          <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'}`}>
+          <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'} pb-28`}>
             <InspectionChecklist
               activeMobileTab="checklist"
               sesuaiCount={sesuaiCount}
@@ -1267,58 +1267,67 @@ export const VerificationInspectionPage = () => {
           </div>
 
           {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
+          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4 pb-28`}>
             {/* Multi-Signatory Progress & Email Status Banners */}
             {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
               <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
                 Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
               </div>
             )}
-            {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
-              <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
-                <SignatoryProgress
-                  signatories={[
-                    ...(latestResultDoc?.signatories || []).map(sig => ({
-                      role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                    ...baSignatories.map((sig) => ({
-                      role_label: `Berita Acara - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                  ]}
-                />
+            {(() => {
+              const combinedSignatories = [
+                ...(latestResultDoc?.signatories || []).map(sig => ({
+                  role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
+                  name: sig.name_position_snapshot,
+                  status: sig.status,
+                  signed_at: sig.signed_at,
+                })),
+                ...baSignatories.map((sig) => ({
+                  role_label: `Berita Acara - Urutan ${sig.sign_order}`,
+                  name: sig.name_position_snapshot,
+                  status: sig.status,
+                  signed_at: sig.signed_at,
+                })),
+              ];
+              const showSignatoryBox = (combinedSignatories.length > 0 || canUserSignLatest || canUserSignBa) &&
+                (['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status));
 
-                <div className="flex flex-wrap items-center gap-3">
-                  {canUserSignLatest && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(latestResultDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Surat Pemberitahuan
-                    </Button>
+              if (!showSignatoryBox) return null;
+
+              return (
+                <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
+                  {combinedSignatories.length > 0 && (
+                    <SignatoryProgress signatories={combinedSignatories} />
                   )}
-                  {canUserSignBa && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(beritaAcaraDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Berita Acara
-                    </Button>
+                  {(canUserSignLatest || canUserSignBa) && (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {canUserSignLatest && (
+                        <Button
+                          variant="primary"
+                          onClick={() => handleSignDocument(latestResultDoc.id)}
+                          disabled={actionLoading}
+                          className="text-xs"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                          Konfirmasi Internal Surat Pemberitahuan
+                        </Button>
+                      )}
+                      {canUserSignBa && (
+                        <Button
+                          variant="primary"
+                          onClick={() => handleSignDocument(beritaAcaraDoc.id)}
+                          disabled={actionLoading}
+                          className="text-xs"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                          Konfirmasi Internal Berita Acara
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {isEmailFailed && (
               <EmailDeliveryStatus

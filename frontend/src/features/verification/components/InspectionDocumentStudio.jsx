@@ -13,21 +13,23 @@ import {
   Maximize2,
   Minimize2,
   X,
+  BookOpen,
+  Info,
 } from 'lucide-react';
 import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 import { SlaIndicator } from '@/components/ui/SlaIndicator';
 import { Button } from '@/components/ui/Button';
 
 export function InspectionDocumentStudio({
-  allFiles,
+  allFiles = [],
   activeFile,
   selectedFileId,
   setSelectedFileId,
   getFileLabel,
-  registration,
-  publisher,
-  physicalMaster,
-  assignment,
+  registration = {},
+  publisher = {},
+  physicalMaster = {},
+  assignment = {},
   formatDate,
   handleCopyReceipt,
   copiedReceipt,
@@ -49,53 +51,57 @@ export function InspectionDocumentStudio({
                 Studio Berkas Digital
               </h3>
               <p className="text-[11px] text-ink-muted">
-                {allFiles.length} dokumen naskah terlampir
+                {allFiles.length > 0
+                  ? `${allFiles.length} berkas digital terlampir`
+                  : 'Master cetak fisik di loket TMII'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Tab Pills */}
-            <div className="flex flex-wrap items-center gap-1">
-              {allFiles.map((f) => {
-                const isSelected =
-                  activeFile &&
-                  (activeFile.id === f.id ||
-                    (activeFile.file_id && activeFile.file_id === f.file_id));
-                return (
-                  <button
-                    key={f.id || f.file_id}
-                    type="button"
-                    onClick={() => setSelectedFileId(f.id || f.file_id)}
-                    className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      isSelected
-                        ? 'bg-brand-800 text-white shadow-2xs'
-                        : 'bg-white text-ink border border-line hover:bg-canvas hover:border-brand-300'
-                    }`}
-                  >
-                    <span>{getFileLabel(f)}</span>
-                    {f.version && (
-                      <span
-                        className={`font-mono text-[10px] px-1 py-0.2 rounded ${
-                          isSelected
-                            ? 'bg-brand-900/60 text-white'
-                            : 'bg-surface-subtle text-ink-muted'
-                        }`}
-                      >
-                        v{f.version}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {/* Tab Pills if files exist */}
+            {allFiles.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1">
+                {allFiles.map((f) => {
+                  const isSelected =
+                    activeFile &&
+                    (activeFile.id === f.id ||
+                      (activeFile.file_id && activeFile.file_id === f.file_id));
+                  return (
+                    <button
+                      key={f.id || f.file_id}
+                      type="button"
+                      onClick={() => setSelectedFileId(f.id || f.file_id)}
+                      className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-brand-800 text-white shadow-2xs'
+                          : 'bg-white text-ink border border-line hover:bg-canvas hover:border-brand-300'
+                      }`}
+                    >
+                      <span>{getFileLabel(f)}</span>
+                      {f.version && (
+                        <span
+                          className={`font-mono text-[10px] px-1 py-0.2 rounded ${
+                            isSelected
+                              ? 'bg-brand-900/60 text-white'
+                              : 'bg-surface-subtle text-ink-muted'
+                          }`}
+                        >
+                          v{f.version}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Maximize Button */}
             {activeFile && (
               <button
                 type="button"
                 onClick={() => setIsFullscreen(true)}
-                className="p-1.5 rounded-lg border border-line bg-white hover:bg-canvas text-ink-muted hover:text-brand-800 transition-colors ml-1"
+                className="p-1.5 rounded-lg border border-line bg-white hover:bg-canvas text-ink-muted hover:text-brand-800 transition-colors ml-1 cursor-pointer"
                 title="Buka Pratinjau Layar Penuh (Fokus Naskah)"
                 aria-label="Perbesar naskah layar penuh"
               >
@@ -123,18 +129,18 @@ export function InspectionDocumentStudio({
         )}
 
         {/* Main Document Viewer (Flexible Height for Dual Pane) */}
-        <div className="flex-1 min-h-[520px] lg:min-h-0 p-2 bg-surface-subtle flex flex-col justify-center">
+        <div className="flex-1 min-h-[460px] lg:min-h-0 p-3 bg-surface-subtle flex flex-col justify-center">
           {activeFile ? (
             activeFile.file_url ? (
-              <div className="w-full h-full min-h-[500px] lg:min-h-0 rounded-xl border border-line overflow-hidden bg-white shadow-2xs flex-1 flex flex-col">
+              <div className="w-full h-full min-h-[440px] lg:min-h-0 rounded-xl border border-line overflow-hidden bg-white shadow-2xs flex-1 flex flex-col">
                 <iframe
                   src={`${activeFile.file_url}#toolbar=0`}
                   title={activeFile.file_name || 'Naskah'}
-                  className="w-full h-full border-0 flex-1 min-h-[500px] lg:min-h-0"
+                  className="w-full h-full border-0 flex-1 min-h-[440px] lg:min-h-0"
                 />
               </div>
             ) : (
-              <div className="w-full h-full min-h-[500px] lg:min-h-0 rounded-xl border border-line overflow-hidden bg-white shadow-2xs flex-1 flex flex-col">
+              <div className="w-full h-full min-h-[440px] lg:min-h-0 rounded-xl border border-line overflow-hidden bg-white shadow-2xs flex-1 flex flex-col">
                 <PrivateFileViewer
                   fileId={activeFile.file_id || activeFile.id}
                   fileName={
@@ -147,9 +153,75 @@ export function InspectionDocumentStudio({
               </div>
             )
           ) : (
-            <div className="py-24 text-center text-ink-muted space-y-2">
-              <FileText className="w-10 h-10 mx-auto stroke-1 text-ink-muted/50" />
-              <p className="text-xs font-medium">Tidak ada berkas digital terlampir.</p>
+            /* Fallback Informative Physical Master Desk Card */
+            <div className="w-full h-full min-h-[420px] rounded-xl border border-line bg-white p-6 shadow-2xs flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-3 rounded-2xl bg-brand-50 border border-brand-100 text-brand-800 shrink-0 shadow-2xs">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-200 inline-block">
+                      Master Cetak Fisik Resmi
+                    </span>
+                    <h4 className="text-sm font-bold text-ink leading-snug">
+                      {registration.title || 'Naskah Master Al-Qur’an'}
+                    </h4>
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                      Pemeriksaan rasm, harakat, waqaf, dan kelengkapan dilakukan langsung menggunakan naskah master fisik di meja kerja verifikator.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="p-3 rounded-xl border border-line bg-surface-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase">Tanda Terima Loket</span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-brand-900 text-xs">
+                        {physicalMaster?.receipt_no || 'TT-LPMQ-PENDING'}
+                      </span>
+                      {physicalMaster?.receipt_no && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopyReceipt(physicalMaster.receipt_no)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-800 hover:underline cursor-pointer"
+                        >
+                          {copiedReceipt ? <Check className="w-3 h-3 text-brand-700" /> : <Copy className="w-3 h-3" />}
+                          {copiedReceipt ? 'Disalin' : 'Salin'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="p-3 rounded-xl border border-line bg-surface-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase">Format & Jumlah</span>
+                    <p className="text-xs font-semibold text-ink">
+                      Format {physicalMaster?.format || 'A4'} · {physicalMaster?.volume_count || 30} Jilid
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl border border-line bg-surface-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase">Kondisi Berkas</span>
+                    <p className="text-xs font-semibold text-brand-800">
+                      {physicalMaster?.condition || 'BAIK & LENGKAP'}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl border border-line bg-surface-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase">Lokasi Penelaahan</span>
+                    <p className="text-xs font-semibold text-ink">
+                      LPMQ TMII, Jakarta Timur
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-brand-50/70 border border-brand-100 flex items-start gap-2.5 text-xs text-brand-900 mt-4">
+                <Info className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  Jika pemohon mengunggah berkas digital susulan (seperti surat permohonan resmi, dumi, atau sampul revisi), dokumen akan otomatis muncul pada tab berkas di atas.
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -164,7 +236,7 @@ export function InspectionDocumentStudio({
             <span className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-brand-800" />
               <span>Identitas Naskah & Tanda Terima Fisik</span>
-              {physicalMaster.receipt_no && (
+              {physicalMaster?.receipt_no && (
                 <span className="font-mono text-[10px] bg-brand-100 text-brand-800 border border-brand-200 px-2 py-0.5 rounded-full font-bold">
                   ✓ Fisik Diterima
                 </span>
@@ -201,7 +273,7 @@ export function InspectionDocumentStudio({
                   <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
                     Penerimaan Master Fisik di TMII
                   </span>
-                  {physicalMaster.receipt_no ? (
+                  {physicalMaster?.receipt_no ? (
                     <div className="space-y-1 text-xs">
                       <div className="flex items-center justify-between">
                         <span className="font-mono font-bold text-brand-900 text-xs">
@@ -212,7 +284,7 @@ export function InspectionDocumentStudio({
                           onClick={() => handleCopyReceipt(physicalMaster.receipt_no)}
                           className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-800 hover:underline cursor-pointer"
                         >
-                          {copiedReceipt ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          {copiedReceipt ? <Check className="w-3 h-3 text-brand-700" /> : <Copy className="w-3 h-3" />}
                           {copiedReceipt ? 'Tersalin' : 'Salin'}
                         </button>
                       </div>
@@ -233,7 +305,7 @@ export function InspectionDocumentStudio({
               </div>
 
               {/* SLA Indicator */}
-              {assignment.sla && (
+              {assignment?.sla && (
                 <SlaIndicator
                   dueDate={assignment.sla.due_at}
                   isOverdue={assignment.sla.is_overdue}
@@ -262,52 +334,52 @@ export function InspectionDocumentStudio({
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-ink">
-                    {getFileLabel(activeFile)}
+                    {getFileLabel(activeFile)} · {activeFile.file_name || 'Naskah'}
                   </h3>
-                  <p className="text-xs text-ink-muted">
-                    {activeFile.file_name || activeFile.original_name || 'Dokumen PDF Naskah'}
-                  </p>
+                  <p className="text-xs text-ink-muted">{registration.title}</p>
                 </div>
               </div>
+
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsFullscreen(false)}
-                  className="text-xs flex items-center gap-1.5"
-                >
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span>Kembali ke Studio</span>
-                </Button>
+                {activeFile.file_url && (
+                  <Button
+                    as="a"
+                    href={activeFile.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Unduh
+                  </Button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsFullscreen(false)}
-                  className="p-1 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-subtle"
-                  aria-label="Tutup"
+                  className="p-1.5 rounded-lg hover:bg-surface-subtle text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                  aria-label="Tutup pratinjau layar penuh"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
-            <div className="flex-1 w-full p-2 bg-surface-subtle flex flex-col">
+
+            <div className="flex-1 bg-surface-subtle p-2">
               {activeFile.file_url ? (
                 <iframe
-                  src={`${activeFile.file_url}#toolbar=1`}
+                  src={activeFile.file_url}
                   title={activeFile.file_name || 'Naskah Layar Penuh'}
-                  className="w-full h-full border-0 rounded-xl bg-white shadow-xs"
+                  className="w-full h-full border-0 rounded-xl bg-white"
                 />
               ) : (
-                <div className="w-full h-full rounded-xl overflow-hidden bg-white shadow-xs">
-                  <PrivateFileViewer
-                    fileId={activeFile.file_id || activeFile.id}
-                    fileName={
-                      activeFile.file_name ||
-                      (activeFile.type === 'COVER' ? 'cover.jpg' : 'naskah.pdf')
-                    }
-                    mimeType={activeFile.mime_type}
-                    height="100%"
-                  />
-                </div>
+                <PrivateFileViewer
+                  fileId={activeFile.file_id || activeFile.id}
+                  fileName={activeFile.file_name}
+                  mimeType={activeFile.mime_type}
+                  height="100%"
+                />
               )}
             </div>
           </div>
@@ -316,3 +388,5 @@ export function InspectionDocumentStudio({
     </>
   );
 }
+
+export default InspectionDocumentStudio;

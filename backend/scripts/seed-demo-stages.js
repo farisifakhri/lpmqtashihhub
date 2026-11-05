@@ -1,6 +1,52 @@
 import 'dotenv/config';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { prisma } from '../src/config/database.js';
+
+function generateMinimalPdfBuffer(titleText = 'Naskah Mushaf Demo LPMQ') {
+  const content = `%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 120 >>
+stream
+BT
+/F1 18 Tf
+50 750 Td
+(${titleText.replace(/[()\\]/g, '')}) Tj
+0 -30 Td
+/F1 12 Tf
+(Lajnah Pentashihan Mushaf Al-Quran LPMQ Kemenag RI) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000244 00000 n 
+0000000416 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+498
+%%EOF
+`;
+  return Buffer.from(content, 'utf-8');
+}
 
 async function main() {
   const isCleanOnly = process.argv.includes('--clean');
@@ -40,7 +86,13 @@ async function main() {
     return;
   }
 
-  // 2. Persiapkan data master & personil
+  // 2. Pastikan direktori storage/private ada untuk menyimpan PDF berkas sampel
+  const storageDir = path.resolve('storage/private');
+  if (!fs.existsSync(storageDir)) {
+    fs.mkdirSync(storageDir, { recursive: true });
+  }
+
+  // 3. Persiapkan data master & personil
   const publisher = await prisma.publisher.findFirst({
     include: { user: true },
   });
@@ -87,8 +139,8 @@ async function main() {
 
   const now = new Date();
 
-  // Helper untuk membuat Registration + Manuscript + ManuscriptItem
-  async function createBaseRegistration({ regNo, title, status, extraReg = {} }) {
+  // Helper untuk membuat Registration + Manuscript + ManuscriptItem + File PDF Nyata
+  async function createBaseRegistration({ regNo, title, status, extraReg = {}, attachFiles = true }) {
     const reg = await prisma.registration.create({
       data: {
         registration_no: regNo,
@@ -138,6 +190,63 @@ async function main() {
       },
     });
 
+    // Lampirkan berkas PDF naskah valid ke StoredFile & ManuscriptFile
+    if (attachFiles && publisher.user_id) {
+      const samplePdf = generateMinimalPdfBuffer(`Sampel Naskah Juz 1-3: ${title}`);
+      const sampleFileId = randomUUID();
+      fs.writeFileSync(path.join(storageDir, sampleFileId), samplePdf);
+
+      await prisma.storedFile.create({
+        data: {
+          id: sampleFileId,
+          owner_id: publisher.user_id,
+          mime_type: 'application/pdf',
+          file_size: samplePdf.length,
+          checksum: createHash('sha256').update(samplePdf).digest('hex'),
+        },
+      });
+
+      await prisma.manuscriptFile.create({
+        data: {
+          registration_id: reg.id,
+          manuscript_id: ms.id,
+          file_id: sampleFileId,
+          type: 'SAMPLE_PAGE_1_5',
+          mime_type: 'application/pdf',
+          file_size: samplePdf.length,
+          checksum: createHash('sha256').update(samplePdf).digest('hex'),
+          version: 1,
+        },
+      });
+
+      const coverPdf = generateMinimalPdfBuffer(`Cover Mushaf: ${title}`);
+      const coverFileId = randomUUID();
+      fs.writeFileSync(path.join(storageDir, coverFileId), coverPdf);
+
+      await prisma.storedFile.create({
+        data: {
+          id: coverFileId,
+          owner_id: publisher.user_id,
+          mime_type: 'application/pdf',
+          file_size: coverPdf.length,
+          checksum: createHash('sha256').update(coverPdf).digest('hex'),
+        },
+      });
+
+      await prisma.manuscriptFile.create({
+        data: {
+          registration_id: reg.id,
+          manuscript_id: ms.id,
+          file_id: coverFileId,
+          type: 'COVER',
+          mime_type: 'application/pdf',
+          file_size: coverPdf.length,
+          checksum: createHash('sha256').update(coverPdf).digest('hex'),
+          version: 1,
+        },
+      });
+    }
+
     return { reg, ms };
   }
 
@@ -151,6 +260,7 @@ async function main() {
     title: "Mushaf Al-Qur'an Standar Indonesia (Tahap 1: Draf Pengajuan)",
     status: 'DRAFT',
     extraReg: { statement_accepted: false },
+    attachFiles: false,
   });
   console.log(`[1] DRAFT                     : ${t1.reg.registration_no} - Siap dicoba submit oleh Penerbit`);
 
@@ -361,34 +471,103 @@ async function main() {
   console.log(`[9] PERLU REVISI PENERBIT     : ${t9.reg.registration_no} - Siap dicoba unduh rekap koreksi & upload revisi`);
 
   // -------------------------------------------------------------
-  // TAHAP 10: COMPLETED (Tanda Tashih Terbit Resmi)
+  // TAHAP 10: READY_FOR_STT (Sidang Selesai, Siap Terbit STT di menu Pengesahan)
   // -------------------------------------------------------------
   const t10 = await createBaseRegistration({
-    regNo: 'REG-DEMO-10-SELESAI',
-    title: "Mushaf Al-Qur'an Standar Braille (Tahap 10: Tanda Tashih Terbit Sah)",
-    status: 'COMPLETED',
+    regNo: 'REG-DEMO-10-READY-STT',
+    title: "Mushaf Al-Qur'an Standar Indonesia (Tahap 10: Siap Terbit Surat Tanda Tashih)",
+    status: 'READY_FOR_STT',
+  });
+  console.log(`[10] SIAP TERBIT STT          : ${t10.reg.registration_no} - Muncul di menu "10. Pengesahan & STT" (/internal/documents)`);
+
+  // -------------------------------------------------------------
+  // TAHAP 11: STT_ISSUED (STT Telah Terbit Resmi oleh Kepala LPMQ)
+  // -------------------------------------------------------------
+  const t11 = await createBaseRegistration({
+    regNo: 'REG-DEMO-11-STT-ISSUED',
+    title: "Mushaf Al-Qur'an Qiraat Ashim (Tahap 11: STT Telah Terbit Resmi)",
+    status: 'STT_ISSUED',
   });
   await prisma.officialDocument.create({
     data: {
-      registration_id: t10.reg.id,
+      registration_id: t11.reg.id,
       document_type: 'SURAT_TANDA_TASHIH',
-      document_no: 'STT/LPMQ/01/2026/DEMO-0010',
+      document_no: 'STT/LPMQ/01/2026/DEMO-0011',
       status: 'ISSUED',
       qr_token: `STT-TOKEN-${randomUUID()}`,
       issued_at: now,
       valid_until: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000),
       content_snapshot: {
         legal_name: publisher.legal_name,
-        title: t10.reg.title,
+        title: t11.reg.title,
+        status: 'SAH',
+        oplah: 5000,
+        ukuran: '21,0 x 29,7 cm',
+      },
+    },
+  });
+  console.log(`[11] STT RESMI TERBIT         : ${t11.reg.registration_no} - Siap dicek dokumen STT dan QR token-nya`);
+
+  // -------------------------------------------------------------
+  // TAHAP 12: DOCUMENTATION_IN_PROGRESS (Di meja Dokumentator / Arsip)
+  // -------------------------------------------------------------
+  const t12 = await createBaseRegistration({
+    regNo: 'REG-DEMO-12-DOKUMENTASI',
+    title: "Mushaf Al-Qur'an Isyarat Braille (Tahap 12: Pendokumentasian & Serah Terima Arsip)",
+    status: 'DOCUMENTATION_IN_PROGRESS',
+  });
+  await prisma.officialDocument.create({
+    data: {
+      registration_id: t12.reg.id,
+      document_type: 'SURAT_TANDA_TASHIH',
+      document_no: 'STT/LPMQ/01/2026/DEMO-0012',
+      status: 'ISSUED',
+      qr_token: `STT-TOKEN-${randomUUID()}`,
+      issued_at: now,
+      valid_until: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000),
+      content_snapshot: {
+        legal_name: publisher.legal_name,
+        title: t12.reg.title,
         status: 'SAH',
       },
     },
   });
-  console.log(`[10] SELESAI / STT TERBIT     : ${t10.reg.registration_no} - Siap dicoba verifikasi QR publik & arsip`);
+  console.log(`[12] PROSES DOKUMENTASI       : ${t12.reg.registration_no} - Siap dicoba pencatatan lemari & rak arsip di Posdok-Q`);
 
-  console.log('\n=== SUKSES! SELURUH 10 TAHAPAN ALUR LPMQ KINI TERSEDIA LENGKAP ===');
-  console.log('Catatan: Naskah sampel ini TIDAK diwajibkan dalam produksi.');
-  console.log('Untuk membersihkannya kembali kapan saja, jalankan: npm run clean:demo-stages');
+  // -------------------------------------------------------------
+  // TAHAP 13: COMPLETED (Selesai & Terarsip Resmi di Posdok-Q)
+  // -------------------------------------------------------------
+  const t13 = await createBaseRegistration({
+    regNo: 'REG-DEMO-13-SELESAI',
+    title: "Mushaf Al-Qur'an Pusaka Istiqlal (Tahap 13: Selesai & Terarsip di Posdok-Q)",
+    status: 'COMPLETED',
+  });
+  await prisma.officialDocument.create({
+    data: {
+      registration_id: t13.reg.id,
+      document_type: 'SURAT_TANDA_TASHIH',
+      document_no: 'STT/LPMQ/01/2026/DEMO-0013',
+      status: 'ISSUED',
+      qr_token: `STT-TOKEN-${randomUUID()}`,
+      issued_at: now,
+      valid_until: new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000),
+      content_snapshot: {
+        legal_name: publisher.legal_name,
+        title: t13.reg.title,
+        status: 'SAH',
+        archive_location: {
+          cabinet: 'LEM-01',
+          rack: 'RAK-03',
+          box: 'BOKS-A12',
+        },
+      },
+    },
+  });
+  console.log(`[13] SELESAI / TERARSIP POSDOK: ${t13.reg.registration_no} - Terarsip resmi di Posdok-Q TMII`);
+
+  console.log('\n=== SUKSES! 13 TAHAPAN ALUR LENGKAP TERSEDIA DENGAN BERKAS PDF NYATA ===');
+  console.log('Catatan: Naskah sampel ini bersumber dari skrip mandiri opsional.');
+  console.log('Untuk membersihkannya kapan saja, jalankan: npm run clean:demo-stages');
 }
 
 main()

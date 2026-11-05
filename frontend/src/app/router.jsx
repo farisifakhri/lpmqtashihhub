@@ -199,7 +199,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/signatures',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'SUPERADMIN']}>
             <SignatureCenterPage />
           </ProtectedRoute>
         ),
@@ -231,7 +231,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/tashih',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'ADMIN_INTERNAL', 'SUPERADMIN']}>
             <PentashihWorkspacePage />
           </ProtectedRoute>
         ),
