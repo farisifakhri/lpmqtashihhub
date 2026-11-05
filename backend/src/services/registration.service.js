@@ -1147,6 +1147,40 @@ export const dispatchPhysical = async (id, data, user, req) => {
       fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
+    // B-16 Titik Kontrol (a): Kewajiban unggah dokumen rekapitulasi revisi penerbit per ronde
+    if (reg.status === 'REVISION_REQUIRED') {
+      if (!data.recap_file_id) {
+        fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah untuk pengiriman fisik revisi/dumi.');
+      }
+      const lastRevLetter = await tx.officialDocument?.findFirst({
+        where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
+        orderBy: { created_at: 'desc' },
+      });
+      const roundNumber = lastRevLetter?.version || 1;
+      const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
+
+      if (tx.publisherRevisionRecap?.upsert) {
+        await tx.publisherRevisionRecap.upsert({
+          where: {
+            registration_id_round_number: {
+              registration_id: id,
+              round_number: roundNumber,
+            },
+          },
+          create: {
+            registration_id: id,
+            round_number: roundNumber,
+            revision_kind: revisionKind,
+            recap_file_id: data.recap_file_id,
+          },
+          update: {
+            revision_kind: revisionKind,
+            recap_file_id: data.recap_file_id,
+          },
+        });
+      }
+    }
+
     const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
     const courier = data.courier || 'LOKET_LPMQ';
     const trackingNo = data.tracking_no || null;
@@ -1793,6 +1827,10 @@ export const getDetail = async (id, user) => {
         orderBy: { created_at: 'desc' },
       },
       payment_records: true,
+      publisher_revision_recaps: {
+        include: { recap_file: true },
+        orderBy: { round_number: 'desc' },
+      },
       assignments: {
         include: {
           assignee: { select: { id: true, name: true } },

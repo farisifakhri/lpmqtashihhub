@@ -25,7 +25,7 @@ test('B14-02: TRANSITION_POLICY marks TASHIH_IN_PROGRESS exits as domainAction f
 test('B14-03: assertReadyForSttEligibility rejects when assignments are incomplete or missing reviews', async () => {
   const mockTx = {
     assignment: {
-      findFirst: async () => ({ id: 'asg-1', iteration: 1 }),
+      findFirst: async () => ({ id: 'asg-1', iteration: 1, stage: 'DUMMY' }),
       findMany: async () => [
         { id: 'asg-1', status: 'IN_PROGRESS', reviews: [] },
       ],
@@ -41,7 +41,7 @@ test('B14-03: assertReadyForSttEligibility rejects when assignments are incomple
 test('B14-04: assertReadyForSttEligibility rejects when any review is not PASSED', async () => {
   const mockTx = {
     assignment: {
-      findFirst: async () => ({ id: 'asg-1', iteration: 1 }),
+      findFirst: async () => ({ id: 'asg-1', iteration: 1, stage: 'DUMMY' }),
       findMany: async () => [
         { id: 'asg-1', status: 'COMPLETED', reviews: [{ result: 'PASSED' }] },
         { id: 'asg-2', status: 'COMPLETED', reviews: [{ result: 'REVISION_REQUIRED' }] },
@@ -58,7 +58,7 @@ test('B14-04: assertReadyForSttEligibility rejects when any review is not PASSED
 test('B14-05: assertReadyForSttEligibility rejects when no recap file is uploaded', async () => {
   const mockTx = {
     assignment: {
-      findFirst: async () => ({ id: 'asg-1', iteration: 1 }),
+      findFirst: async () => ({ id: 'asg-1', iteration: 1, stage: 'DUMMY' }),
       findMany: async () => [
         { id: 'asg-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: null }] },
         { id: 'asg-2', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: undefined }] },
@@ -75,7 +75,7 @@ test('B14-05: assertReadyForSttEligibility rejects when no recap file is uploade
 test('B14-06: assertReadyForSttEligibility passes when team assignment has TEAM scope recap and all PASSED', async () => {
   const mockTx = {
     assignment: {
-      findFirst: async () => ({ id: 'asg-1', iteration: 2 }),
+      findFirst: async () => ({ id: 'asg-1', iteration: 2, stage: 'DUMMY' }),
       findMany: async () => [
         { id: 'asg-1', team_id: 'team-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: 'uuid-recap-file', recap_scope: 'TEAM' }] },
         { id: 'asg-2', team_id: 'team-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: null }] },

@@ -9,7 +9,10 @@ import {
   Download,
   Send,
   AlertCircle,
+  Upload,
+  FileText,
 } from 'lucide-react';
+import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
 
 export function PublisherPhysicalMasterTab({
@@ -30,6 +33,26 @@ export function PublisherPhysicalMasterTab({
   const isLabelDownloaded = Boolean(
     data?.foreign_metadata?.shipping_label_downloaded_at || downloadedSession
   );
+  const [uploadingRecap, setUploadingRecap] = useState(false);
+  const [recapFileName, setRecapFileName] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
+  const handleRecapUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRecap(true);
+    setUploadError('');
+    try {
+      const res = await fileApi.upload(file);
+      const fileId = res?.data?.id || res?.id;
+      setDispatchData({ ...dispatchData, recap_file_id: fileId });
+      setRecapFileName(file.name);
+    } catch (err) {
+      setUploadError(err.message || 'Gagal mengunggah berkas rekapitulasi perbaikan.');
+    } finally {
+      setUploadingRecap(false);
+    }
+  };
 
   const handleOpenShippingLabel = () => {
     setDownloadedSession(true);
@@ -37,6 +60,8 @@ export function PublisherPhysicalMasterTab({
       setShowShippingLabel(true);
     }
   };
+
+  const isRevisionRequired = data.status === 'REVISION_REQUIRED';
 
   return (
     <div className="space-y-6">
@@ -293,6 +318,49 @@ export function PublisherPhysicalMasterTab({
                     <option value="LAINNYA">Kurir / Ekspedisi Lainnya</option>
                   </select>
                 </div>
+                {data.status === 'REVISION_REQUIRED' && (
+                  <div className="space-y-2 p-3.5 rounded-xl border border-brand-200 bg-brand-50/30">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                        Berkas Rekapitulasi Perbaikan Penerbit
+                      </label>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                        Wajib Dilampirkan
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                      Unggah berkas daftar tindak lanjut butir perbaikan yang telah dilakukan penerbit sesuai catatan telaah sidang LPMQ (PDF/Word, maks. 25 MB).
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-300 bg-white hover:bg-brand-50 text-xs font-semibold text-brand-900 cursor-pointer transition-colors shadow-2xs">
+                        <Upload className="w-3.5 h-3.5 text-brand-700" />
+                        <span>{uploadingRecap ? 'Mengunggah...' : dispatchData.recap_file_id ? 'Ganti Berkas Rekapitulasi' : 'Pilih Berkas Rekapitulasi'}</span>
+                        <input
+                          type="file"
+                          onChange={handleRecapUpload}
+                          disabled={busy || uploadingRecap}
+                          accept=".pdf,.doc,.docx"
+                          className="sr-only"
+                        />
+                      </label>
+                      {recapFileName ? (
+                        <span className="text-xs text-brand-800 font-medium inline-flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5" />
+                          {recapFileName}
+                        </span>
+                      ) : dispatchData.recap_file_id ? (
+                        <span className="text-xs text-brand-800 font-medium inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
+                          Berkas rekapitulasi tersimpan
+                        </span>
+                      ) : (
+                        <span className="text-xs text-ink-muted italic">Belum ada berkas dipilih</span>
+                      )}
+                    </div>
+                    {uploadError && <p className="text-xs text-civic-danger">{uploadError}</p>}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-ink mb-1">
                     Nomor Resi / Keterangan Tanda Kirim
@@ -323,12 +391,12 @@ export function PublisherPhysicalMasterTab({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={busy || !isLabelDownloaded}
-                    variant={isLabelDownloaded ? 'primary' : 'outline'}
+                    disabled={busy || !isLabelDownloaded || uploadingRecap || (data.status === 'REVISION_REQUIRED' && !dispatchData.recap_file_id)}
+                    variant={isLabelDownloaded && (!isRevisionRequired || dispatchData.recap_file_id) ? 'primary' : 'outline'}
                     size="sm"
-                    title={!isLabelDownloaded ? 'Unduh label pengiriman terlebih dahulu' : ''}
+                    title={!isLabelDownloaded ? 'Unduh label pengiriman terlebih dahulu' : (data.status === 'REVISION_REQUIRED' && !dispatchData.recap_file_id) ? 'Unggah berkas rekapitulasi perbaikan terlebih dahulu' : ''}
                     className={`text-xs font-bold w-full sm:w-auto ${
-                      !isLabelDownloaded ? 'opacity-50 cursor-not-allowed bg-surface-subtle text-ink-muted' : ''
+                      !isLabelDownloaded || (data.status === 'REVISION_REQUIRED' && !dispatchData.recap_file_id) ? 'opacity-50 cursor-not-allowed bg-surface-subtle text-ink-muted' : ''
                     }`}
                   >
                     <Send className="w-3.5 h-3.5 mr-1.5" />

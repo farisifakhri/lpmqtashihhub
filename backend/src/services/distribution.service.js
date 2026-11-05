@@ -18,6 +18,22 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
     orderBy: { created_at: 'desc' },
   });
+  // B-16 Titik Kontrol (c): Penugasan naskah revisi memblokir bila berkas rekapitulasi penerbit belum diunggah
+  if (lastRevLetter) {
+    const requiredRound = lastRevLetter.version || lastRevLetter.content_snapshot?.revision_round || 1;
+    const recap = await tx.publisherRevisionRecap?.findUnique({
+      where: {
+        registration_id_round_number: {
+          registration_id: id,
+          round_number: requiredRound,
+        },
+      },
+    });
+    if (!recap) {
+      fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
+    }
+  }
+
   const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
   const expectedStage = isDummyRevision
     ? 'DUMMY'
@@ -292,6 +308,10 @@ export async function listMyAssignments(user, query = {}) {
             where: { document_type: 'REVISION_RETURN_LETTER' },
             orderBy: { created_at: 'desc' },
           },
+          publisher_revision_recaps: {
+            include: { recap_file: true },
+            orderBy: { round_number: 'desc' },
+          },
         },
       },
       team: { select: { id: true, name: true, decree_no: true } },
@@ -305,6 +325,11 @@ export async function listMyAssignments(user, query = {}) {
 export const assertReadyForSttEligibility = async (tx, registrationId) => {
   const last = await tx.assignment.findFirst({ where: { registration_id: registrationId }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
+
+  // B-16: Penegakan Siklus Wajib Dumi - Naskah wajib melalui dan lulus tahap DUMMY sebelum STT
+  if (last.stage !== 'DUMMY') {
+    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena belum melalui dan lulus tahap verifikasi naskah dumi fisik.');
+  }
   const assignments = await tx.assignment.findMany({
     where: { registration_id: registrationId, iteration: last.iteration },
     include: { reviews: true },
@@ -387,7 +412,10 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     fail(409, 'Keputusan distributor tidak dapat diluluskan karena terdapat hasil telaah pentashih yang menyatakan naskah perlu perbaikan.');
   }
 
-  if (data.result === 'PASSED') {
+  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
+  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
+
+  if (isEligibleForStt) {
     await assertReadyForSttEligibility(tx, id);
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
@@ -401,14 +429,19 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     }
   }
 
-  const status = data.result === 'PASSED' ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
-  await move(tx, reg, status, user, data.notes);
+  const status = isEligibleForStt ? 'READY_FOR_STT' : 'REVISION_REQUIRED';
+  const isTransitionToDummy = data.result === 'PASSED' && last.stage !== 'DUMMY';
+  const decisionNotes = isTransitionToDummy
+    ? (data.notes || 'Telaah teks naskah dinyatakan lulus. Pengajuan dialihkan ke tahap dumi fisik; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.')
+    : data.notes;
+
+  await move(tx, reg, status, user, decisionNotes);
 
   let revisionRound = null;
   let revisionKind = null;
 
   if (status === 'REVISION_REQUIRED') {
-    revisionKind = data.revision_kind || 'NASKAH_PERBAIKAN';
+    revisionKind = isTransitionToDummy ? 'NASKAH_DUMI' : (data.revision_kind || (last.stage === 'DUMMY' ? 'NASKAH_DUMI' : 'NASKAH_PERBAIKAN'));
     const previousLetters = tx.officialDocument?.count
       ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
       : 0;

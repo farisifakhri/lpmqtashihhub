@@ -439,6 +439,7 @@ model Registration {
   documentation_items      DocumentationItem[]
   official_documents       OfficialDocument[]
   notifications            Notification[]
+  publisher_revision_recaps PublisherRevisionRecap[]
 
   @@index([status, stage_entered_at, id])
   @@index([core_verifier_id, status])
@@ -480,6 +481,22 @@ model ManuscriptFile {
   manuscript   Manuscript?  @relation(fields: [manuscript_id], references: [id], onDelete: SetNull)
 
   @@map("manuscript_files")
+}
+
+model PublisherRevisionRecap {
+  id              String       @id @default(uuid())
+  registration_id String
+  round_number    Int
+  revision_kind   String       @db.VarChar(20) // "CORRECTION" | "DUMMY"
+  recap_file_id   String
+  created_at      DateTime     @default(now())
+
+  recap_file      StoredFile   @relation(fields: [recap_file_id], references: [id])
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@unique([registration_id, round_number])
+  @@index([recap_file_id])
+  @@map("publisher_revision_recaps")
 }
 
 // -------------------------------------------------------------
@@ -901,6 +918,8 @@ model StoredFile {
   file_size  Int
   checksum   String
   created_at DateTime @default(now())
+
+  publisher_revision_recaps PublisherRevisionRecap[]
 
   @@index([owner_id])
   @@map("stored_files")

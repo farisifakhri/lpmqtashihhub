@@ -87,20 +87,45 @@ export const ReviewForm = ({
                 </div>
               )}
 
-              {/* Catatan Sidang Ronde Sebelumnya (B-07) */}
+              {/* Catatan Sidang Ronde Sebelumnya & Dokumen Rekap Revisi Penerbit (B-07 & B-16) */}
               {previousRevLetters.length > 0 && (
-                <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2 text-xs">
-                  <div className="flex items-center gap-2 font-bold text-ink">
-                    <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
-                    <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
+                <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between font-bold text-ink">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
+                      <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
+                    </div>
+                    <span className="text-[11px] text-civic-warning font-semibold">Bahan Komparasi Sidang</span>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-civic-warningLine text-ink leading-relaxed">
-                    <p className="font-semibold text-ink-muted text-[11px] mb-1">
+                  <div className="bg-white p-3 rounded-lg border border-civic-warningLine text-ink leading-relaxed space-y-2">
+                    <p className="font-semibold text-ink-muted text-[11px]">
                       Ronde #{previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1} • Oleh: {previousRevLetters[0].content_snapshot?.distributor_name || 'Distributor'}
                     </p>
                     <p className="whitespace-pre-line text-xs font-mono bg-canvas p-2 rounded border border-line">
                       {previousRevLetters[0].content_snapshot?.notes || '-'}
                     </p>
+                    {/* Berkas Rekap Hasil Perbaikan Penerbit (B-16) */}
+                    {(() => {
+                      const roundNum = previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1;
+                      const pubRecap = (selectedAssignment?.registration?.publisher_revision_recaps || []).find((r) => r.round_number === roundNum);
+                      if (pubRecap?.recap_file_id) {
+                        return (
+                          <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] text-ink-muted font-semibold">Tindak Lanjut Butir Perbaikan Penerbit:</span>
+                            <a
+                              href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-brand-700" />
+                              <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
+                            </a>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               )}

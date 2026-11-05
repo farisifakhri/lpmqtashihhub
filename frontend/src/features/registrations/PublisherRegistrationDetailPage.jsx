@@ -55,6 +55,7 @@ export function PublisherRegistrationDetailPage() {
     const [dispatchData, setDispatchData] = useState({
         courier: "LOKET_LPMQ",
         tracking_no: "",
+        recap_file_id: null,
     });
 
     // Modals & Dialogs State
