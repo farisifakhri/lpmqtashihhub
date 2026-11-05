@@ -131,7 +131,20 @@ const questionInclude = {
   unsur: { select: { id: true, code: true, name: true, sort_order: true } },
   options: { orderBy: { sort_order: 'asc' } },
   _count: { select: { items: true, answers: true } },
+  items: { select: { survey: { select: { id: true, name: true } } } },
 };
+
+// "Nama survei" di form pertanyaan: tambahkan ke akhir susunan survei itu (seperti Pemilihan Survey sistem lama).
+async function attachToSurvey(tx, questionId, unsurId, surveyId) {
+  if (!surveyId) return;
+  const survey = await tx.survey.findUnique({ where: { id: surveyId }, include: { _count: { select: { responses: true } } } });
+  if (!survey) fail(400, 'Survei yang dipilih tidak ditemukan. Muat ulang halaman lalu pilih kembali.');
+  if (await tx.surveyItem.findFirst({ where: { survey_id: surveyId, question_id: questionId } })) return;
+  if (survey._count.responses) fail(409, 'Susunan survei ini terkunci karena sudah memiliki jawaban. Pilih survei lain atau kosongkan Nama survei.');
+  if (!unsurId) fail(400, 'Pilih unsur sebelum menambahkan pertanyaan ke survei.');
+  const last = await tx.surveyItem.findFirst({ where: { survey_id: surveyId }, orderBy: { sort_order: 'desc' } });
+  await tx.surveyItem.create({ data: { survey_id: surveyId, unsur_id: unsurId, question_id: questionId, sort_order: (last?.sort_order ?? -1) + 1 } });
+}
 
 function assertOptions(type, options) {
   if (type === 'PILIHAN' && (!options || options.length < 2)) fail(400, 'Pertanyaan pilihan memerlukan minimal 2 opsi jawaban.');
@@ -154,15 +167,17 @@ async function requireUnsur(tx, unsurId) {
   if (!(await tx.surveyUnsur.findUnique({ where: { id: unsurId } }))) fail(400, 'Unsur yang dipilih tidak ditemukan. Muat ulang halaman lalu pilih kembali.');
 }
 
-export async function createQuestion({ text, type, unsur_id, options }, user, req) {
+export async function createQuestion({ text, type, unsur_id, survey_id, options }, user, req) {
   assertOptions(type, options);
   return withAudit(user, req, 'SURVEY_QUESTION_CREATE', 'SurveyQuestion', async (tx) => {
     await requireUnsur(tx, unsur_id);
-    return tx.surveyQuestion.create({ data: { text, type, unsur_id, options: { create: optionRows(type, options) } }, include: questionInclude });
+    const created = await tx.surveyQuestion.create({ data: { text, type, unsur_id, options: { create: optionRows(type, options) } } });
+    await attachToSurvey(tx, created.id, unsur_id, survey_id);
+    return tx.surveyQuestion.findUnique({ where: { id: created.id }, include: questionInclude });
   });
 }
 
-export async function updateQuestion(id, { text, type, unsur_id, options }, user, req) {
+export async function updateQuestion(id, { text, type, unsur_id, survey_id, options }, user, req) {
   assertOptions(type, options);
   return withAudit(user, req, 'SURVEY_QUESTION_UPDATE', 'SurveyQuestion', async (tx) => {
     await requireUnsur(tx, unsur_id);
@@ -171,11 +186,11 @@ export async function updateQuestion(id, { text, type, unsur_id, options }, user
     // Jawaban lama harus tetap bermakna sama; ubah lewat duplikat.
     if (question._count.answers) fail(409, 'Pertanyaan ini sudah memiliki jawaban dan tidak dapat diubah. Gunakan Duplikat untuk membuat versi baru.');
     await tx.surveyOption.deleteMany({ where: { question_id: id } });
-    return tx.surveyQuestion.update({
-      where: { id },
-      data: { text, type, unsur_id, options: { create: optionRows(type, options) } },
-      include: questionInclude,
-    });
+    await tx.surveyQuestion.update({ where: { id }, data: { text, type, unsur_id, options: { create: optionRows(type, options) } } });
+    // Unsur pertanyaan berubah: susunan survei yang memakainya ikut pindah unsur agar laporan tetap benar.
+    if (unsur_id && unsur_id !== question.unsur_id) await tx.surveyItem.updateMany({ where: { question_id: id }, data: { unsur_id } });
+    await attachToSurvey(tx, id, unsur_id, survey_id);
+    return tx.surveyQuestion.findUnique({ where: { id }, include: questionInclude });
   });
 }
 

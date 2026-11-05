@@ -212,4 +212,23 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.deepEqual(await ok('/admin/survey-questions/seed-standard', adminToken, 'POST'), { created: 0, existing: 10, missing_unsur: ['Sarana dan Prasarana'] });
     await ok('/admin/survey-unsur/restore-standard', adminToken, 'POST');
   });
+
+  await test('Survei: "Nama survei" di form pertanyaan langsung menyusun pertanyaan ke survei itu', async () => {
+    const target = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei dari bank soal' }, 201);
+    const body = { text: 'Bagaimana kejelasan informasi tarif?', type: 'ESAI', unsur_id: unsurA.id, survey_id: target.id };
+    const q = await ok('/admin/survey-questions', adminToken, 'POST', body, 201);
+    assert.deepEqual(q.items.map((i) => i.survey.name), ['Survei dari bank soal']);
+
+    // Disimpan ulang dengan survei yang sama: tidak digandakan. Pindah unsur: susunan survei ikut pindah.
+    await ok(`/admin/survey-questions/${q.id}`, adminToken, 'PUT', { ...body, unsur_id: unsurB.id });
+    const detail = await ok(`/admin/surveys/${target.id}`, adminToken, 'GET');
+    assert.deepEqual(detail.items.map((i) => [i.question_id, i.unsur_id]), [[q.id, unsurB.id]]);
+
+    // Survei yang sudah dijawab terkunci.
+    const locked = await call('/admin/survey-questions', adminToken, 'POST', { ...body, text: 'Pertanyaan ke survei terkunci', survey_id: survey.id });
+    assert.equal(locked.status, 409);
+
+    await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
+    await ok(`/admin/survey-questions/${q.id}`, adminToken, 'DELETE');
+  });
 }

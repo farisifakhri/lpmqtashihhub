@@ -12,7 +12,7 @@ export function ToastProvider({ children }) {
 
   useEffect(() => {
     if (!toasts.length) return undefined;
-    const timer = window.setTimeout(() => setToasts(items => items.slice(1)), 5000);
+    const timer = window.setTimeout(() => setToasts(items => items.slice(1)), toasts[0].duration ?? 5000);
     return () => window.clearTimeout(timer);
   }, [toasts]);
 

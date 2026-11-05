@@ -229,4 +229,26 @@ describe('SurveyManagementPage (Super Admin)', () => {
     await waitFor(() => expect(toast).toHaveBeenLastCalledWith(expect.stringContaining('unsur Sarana dan Prasarana tidak ditemukan'), 'danger'));
     expect(seed).toHaveBeenCalledTimes(2);
   });
+  it('Pertanyaan Survei: Nama survei memasukkan pertanyaan ke survei; hapus tanpa konfirmasi dengan notifikasi 2 detik', async () => {
+    const create = vi.spyOn(surveyApi, 'createQuestion').mockResolvedValue({ data: question });
+    const remove = vi.spyOn(surveyApi, 'deleteQuestion').mockResolvedValue({ data: question });
+    const confirm = vi.spyOn(window, 'confirm');
+    const toast = vi.spyOn(toastModule, 'showToast');
+    surveyApi.listQuestions.mockResolvedValue({ data: [{ ...question, items: [{ survey: { id: 's1', name: 'Survei IKM 2027' } }], _count: { items: 1, answers: 0 } }, { ...question, id: 'q9', text: 'Pertanyaan bebas', items: [], _count: { items: 0, answers: 0 } }] });
+    renderPage('/internal/surveys?tab=pertanyaan');
+    expect(await screen.findByText('Dipakai di: Survei IKM 2027', { exact: false })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Pertanyaan/ }));
+    await screen.findByRole('option', { name: 'Survei IKM 2027' });
+    fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 's1' } });
+    fireEvent.change(screen.getByLabelText(/^Unsur/), { target: { value: 'u1' } });
+    fireEvent.change(screen.getByLabelText(/Teks pertanyaan/), { target: { value: 'Bagaimana kejelasan tarif?' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ survey_id: 's1', unsur_id: 'u1' })));
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus pertanyaan' })[0]);
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('q9'));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 2000);
+  });
 });

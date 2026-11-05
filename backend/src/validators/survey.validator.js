@@ -33,6 +33,8 @@ const questionBody = z.object({
   text: z.string().trim().min(5, 'Teks pertanyaan minimal 5 karakter.').max(2000, 'Teks pertanyaan maksimal 2000 karakter.'),
   type: z.enum(['PILIHAN', 'ESAI'], { message: 'Tipe pertanyaan harus Pilihan atau Esai.' }),
   unsur_id: z.string({ message: 'Pilih unsur untuk pertanyaan ini.' }).uuid('Pilih unsur untuk pertanyaan ini.'),
+  // Opsional: langsung masukkan pertanyaan ke susunan survei ini.
+  survey_id: z.preprocess((x) => (x === '' ? null : x), z.string().uuid('Survei tidak valid.').nullable().optional()),
   options: z.array(optionBody).max(10, 'Maksimal 10 opsi jawaban.').default([]),
 });
 
