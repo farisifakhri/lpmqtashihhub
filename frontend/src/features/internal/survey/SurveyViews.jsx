@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, STATUS_BADGE, formatDate } from './survey-constants';
+import { inputClass, STATUS_BADGE, formatDate, unsurLabel } from './survey-constants';
 
 // Tampilan per survei untuk sub-menu Pemilihan, Jawaban, Responden, dan Laporan Survei.
 
@@ -77,7 +77,7 @@ function ItemsEditor({ survey, onSaved }) {
             <li key={d.question.id} className="flex items-start gap-3 rounded-xl border border-line bg-white p-3">
               <span className="mt-0.5 w-6 shrink-0 text-right text-xs font-bold text-ink-muted">{i + 1}.</span>
               <div className="flex-1 min-w-0 space-y-1">
-                <Badge variant="info">{d.unsur.code} · {d.unsur.name}</Badge>
+                <Badge variant="info">{unsurLabel(d.unsur)}</Badge>
                 <p className="text-sm text-ink">{d.question.text}</p>
                 <p className="text-xs text-ink-muted">
                   {d.question.type === 'ESAI' ? 'Esai' : d.question.options?.map((o) => `${o.label} (${o.value})`).join(' · ')}
@@ -101,7 +101,7 @@ function ItemsEditor({ survey, onSaved }) {
           <div className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
             <select className={inputClass} aria-label="Pilih unsur" value={pick.unsur_id} onChange={(e) => setPick({ ...pick, unsur_id: e.target.value })}>
               <option value="">Pilih unsur…</option>
-              {unsurList.map((u) => <option key={u.id} value={u.id}>{u.code} · {u.name}</option>)}
+              {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
             </select>
             <select className={inputClass} aria-label="Pilih pertanyaan" value={pick.question_id} onChange={(e) => setPick({ ...pick, question_id: e.target.value })}>
               <option value="">Pilih pertanyaan dari bank…</option>
@@ -177,7 +177,7 @@ export function ReportView({ surveyId }) {
           </thead>
           <tbody className="divide-y divide-line">
             {report.unsur.map((u) => (
-              <tr key={u.id}><td className="p-3"><span className="font-semibold text-ink">{u.code} · {u.name}</span>{u.definition && <p className="text-xs text-ink-muted">{u.definition}</p>}</td><td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td></tr>
+              <tr key={u.id}><td className="p-3"><span className="font-semibold text-ink">{unsurLabel(u)}</span>{u.definition && <p className="text-xs text-ink-muted">{u.definition}</p>}</td><td className="p-3">{u.answers}</td><td className="p-3">{u.average ?? '-'}</td><td className="p-3">{u.converted ?? '-'}</td></tr>
             ))}
           </tbody>
         </table>

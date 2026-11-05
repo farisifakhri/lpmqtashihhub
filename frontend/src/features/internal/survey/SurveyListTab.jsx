@@ -7,7 +7,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate } from './survey-constants';
+import { inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate, unsurLabel } from './survey-constants';
 
 const EMPTY = { name: '', status: 'DRAFT', itemCount: 0 };
 const NO_QUESTIONS_NOTE = 'Catatan: survei belum memiliki pertanyaan, jadi belum bisa diisi penerbit. Susun pertanyaannya di Pemilihan Survei.';
@@ -46,7 +46,7 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
               <ol className="space-y-1.5 text-sm">
                 {survey.items.map((item, i) => (
                   <li key={item.id} className="rounded-lg border border-line p-2.5">
-                    <span className="text-xs text-ink-muted">{i + 1}. {item.unsur.code} · {item.unsur.name}</span>
+                    <span className="text-xs text-ink-muted">{i + 1}. {unsurLabel(item.unsur)}</span>
                     <p className="text-ink">{item.question.text}</p>
                   </li>
                 ))}

@@ -7,9 +7,9 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, KIND_OPTIONS } from './survey-constants';
+import { inputClass } from './survey-constants';
 
-const EMPTY = { code: '', name: '', kind: 'IKM', definition: '' };
+const EMPTY = { name: '', definition: '' };
 
 export function UnsurTab() {
   const [items, setItems] = useState([]);
@@ -32,8 +32,8 @@ export function UnsurTab() {
     event.preventDefault();
     setSaving(true);
     try {
-      const { id, code, name, kind } = form;
-      const body = { code, name, kind, definition: form.definition.trim() || null };
+      const { id, name } = form;
+      const body = { name, definition: form.definition.trim() || null };
       if (id) await surveyApi.updateUnsur(id, body);
       else await surveyApi.createUnsur(body);
       showToast(id ? 'Unsur diperbarui.' : 'Unsur ditambahkan.', 'success');
@@ -66,12 +66,11 @@ export function UnsurTab() {
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-              <tr><th className="p-3">Kode</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Jenis</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
+              <tr><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
               {items.map((u) => (
                 <tr key={u.id} className={u.is_archived ? 'opacity-60' : ''}>
-                  <td className="p-3 font-mono text-xs align-top">{u.code}</td>
                   <td className="p-3 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
                       {u.name}
@@ -80,12 +79,11 @@ export function UnsurTab() {
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed">{u.definition || 'Belum ada definisi.'}</p>
                   </td>
-                  <td className="p-3"><Badge variant="info">{u.kind}</Badge></td>
                   <td className="p-3 text-xs text-ink-muted">{u._count?.items || 0} survei</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
                       <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`}
-                        onClick={() => setForm({ id: u.id, code: u.code, name: u.name, kind: u.kind, definition: u.definition || '', is_standard: u.is_standard })}>
+                        onClick={() => setForm({ id: u.id, name: u.name, definition: u.definition || '', is_standard: u.is_standard })}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" aria-label={u.is_archived ? `Pulihkan ${u.name}` : `Arsipkan ${u.name}`}
@@ -110,16 +108,8 @@ export function UnsurTab() {
       <Modal isOpen={!!form} onClose={() => setForm(null)} title={form?.id ? 'Ubah Unsur' : 'Tambah Unsur'} size="md">
         {form && (
           <form onSubmit={save} className="space-y-4">
-            <FormField label="Kode" required hint="Contoh: A, B, IPAK-1. Harus unik.">
-              <input className={inputClass} value={form.code} maxLength={30} required onChange={(e) => setForm({ ...form, code: e.target.value })} />
-            </FormField>
             <FormField label="Nama unsur" required>
-              <input className={inputClass} value={form.name} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </FormField>
-            <FormField label="Jenis" required>
-              <select className={inputClass} value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}>
-                {KIND_OPTIONS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
-              </select>
+              <input className={inputClass} value={form.name} minLength={3} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </FormField>
             <FormField label="Definisi" hint={form.is_standard ? 'Definisi baku dari Pedoman Menteri PANRB No. 9/2024; boleh disesuaikan dengan layanan pentashihan.' : 'Penjelasan singkat unsur agar penyusun pertanyaan dan pembaca laporan memahami maksudnya.'}>
               <textarea className={inputClass} rows={4} maxLength={2000} value={form.definition} onChange={(e) => setForm({ ...form, definition: e.target.value })} />

@@ -12,16 +12,17 @@ export const listUnsurSchema = {
 };
 
 const unsurBody = z.object({
-  code: z.string().trim().min(1, 'Kode unsur wajib diisi.').max(30, 'Kode unsur maksimal 30 karakter.'),
+  // Kode dan jenis tidak lagi diisi di form; kode hanya dipakai unsur baku (A–I), jenis default IKM di database.
+  code: z.preprocess((v) => (v === '' ? null : v), z.string().trim().max(30, 'Kode unsur maksimal 30 karakter.').nullable().optional()),
   name: z.string().trim().min(3, 'Nama unsur minimal 3 karakter.').max(255, 'Nama unsur maksimal 255 karakter.'),
-  kind: KIND.default('IKM'),
+  kind: KIND.optional(),
   definition: z.string().trim().max(2000, 'Definisi maksimal 2000 karakter.').optional().nullable(),
   is_archived: z.boolean().optional(),
 });
 
 export const createUnsurSchema = { body: unsurBody };
-// Tanpa default: pembaruan sebagian (mis. arsipkan) tidak boleh mengubah jenis unsur IPAK menjadi IKM.
-export const updateUnsurSchema = { ...idParams, body: unsurBody.extend({ kind: KIND.optional() }).partial() };
+// Tanpa default agar pembaruan sebagian (mis. arsipkan) tidak mengubah jenis unsur.
+export const updateUnsurSchema = { ...idParams, body: unsurBody.partial() };
 
 const optionBody = z.object({
   label: z.string().trim().min(1, 'Label opsi wajib diisi.').max(150, 'Label opsi maksimal 150 karakter.'),

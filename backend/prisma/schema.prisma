@@ -1199,7 +1199,7 @@ model InformationGuideImage {
 
 model SurveyUnsur {
   id          String       @id @default(uuid())
-  code        String       @unique @db.VarChar(30)
+  code        String?      @unique @db.VarChar(30) // opsional; diisi A–I untuk unsur baku
   name        String       @db.VarChar(255)
   kind        String       @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
   definition  String?      @db.Text

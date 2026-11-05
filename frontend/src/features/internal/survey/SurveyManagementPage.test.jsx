@@ -111,7 +111,19 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(definition).toHaveValue(unsur.definition);
     fireEvent.change(definition, { target: { value: 'Syarat khusus pentashihan.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith('u1', { code: 'A', name: 'Persyaratan Pelayanan', kind: 'IKM', definition: 'Syarat khusus pentashihan.' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('u1', { name: 'Persyaratan Pelayanan', definition: 'Syarat khusus pentashihan.' }));
+  });
+
+  it('Tambah Unsur cukup nama dan definisi (tanpa kode dan jenis)', async () => {
+    const create = vi.spyOn(surveyApi, 'createUnsur').mockResolvedValue({ data: unsur });
+    renderPage('/internal/surveys?tab=unsur');
+    fireEvent.click(await screen.findByRole('button', { name: /Tambah Unsur/ }));
+    expect(screen.queryByLabelText(/Kode/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Jenis/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Nama unsur/), { target: { value: 'Pungutan liar' } });
+    fireEvent.change(screen.getByLabelText('Definisi'), { target: { value: 'Pungutan di luar ketentuan.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Pungutan liar', definition: 'Pungutan di luar ketentuan.' }));
   });
 
   it('Pemilihan Survei menampilkan definisi unsur yang dipilih', async () => {

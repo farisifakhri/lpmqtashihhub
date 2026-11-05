@@ -46,6 +46,16 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.ok(!(await ok('/admin/survey-unsur', adminToken, 'GET')).some((u) => u.id === persyaratan.id));
     await ok(`/admin/survey-unsur/${persyaratan.id}`, adminToken, 'PUT', { is_archived: false });
 
+    // Form unsur tidak lagi meminta kode/jenis: dua unsur tanpa kode boleh berdampingan, jenis default IKM.
+    const tanpaKode1 = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur tanpa kode satu', definition: 'Definisi satu.' }, 201);
+    const tanpaKode2 = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur tanpa kode dua' }, 201);
+    assert.equal(tanpaKode1.code, null);
+    assert.equal(tanpaKode1.kind, 'IKM');
+    const ordered = (await ok('/admin/survey-unsur', adminToken, 'GET')).map((u) => u.id);
+    assert.ok(ordered.indexOf(standard[8].id) < ordered.indexOf(tanpaKode1.id), 'unsur baku tampil lebih dulu');
+    await ok(`/admin/survey-unsur/${tanpaKode1.id}`, adminToken, 'DELETE');
+    await ok(`/admin/survey-unsur/${tanpaKode2.id}`, adminToken, 'DELETE');
+
     // Regresi: mengarsipkan unsur IPAK tidak boleh mengubah jenisnya menjadi IKM.
     const ipak = await ok('/admin/survey-unsur', adminToken, 'POST', { code: 'T-IPAK', name: 'Pungutan liar', kind: 'IPAK' }, 201);
     assert.equal((await ok(`/admin/survey-unsur/${ipak.id}`, adminToken, 'PUT', { is_archived: true })).kind, 'IPAK');

@@ -33,7 +33,7 @@ const withAudit = (user, req, actionName, subjectType, fn) =>
 export async function listUnsur({ kind, include_archived } = {}) {
   return prisma.surveyUnsur.findMany({
     where: { ...(kind ? { kind } : {}), ...(include_archived === 'true' ? {} : { is_archived: false }) },
-    orderBy: [{ kind: 'asc' }, { code: 'asc' }],
+    orderBy: [{ is_standard: 'desc' }, { code: 'asc' }, { created_at: 'asc' }],
     include: { _count: { select: { items: true } } },
   });
 }
