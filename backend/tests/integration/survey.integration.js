@@ -236,6 +236,15 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
   });
 
+  await test('Survei: dua survei baku Pedoman PANRB tersedia sejak awal berstatus Pending', async () => {
+    const byName = new Map((await ok('/admin/surveys', adminToken, 'GET')).map((s) => [s.name, s]));
+    for (const [name, kind] of [['Indeks Persepsi Kualitas Pelayanan', 'IKM'], ['Indeks Persepsi Anti Korupsi', 'IPAK']]) {
+      assert.ok(byName.get(name), `survei baku "${name}" tidak ada`);
+      assert.equal(byName.get(name).kind, kind);
+      assert.equal(byName.get(name).display_status, 'DRAFT');
+    }
+  });
+
   await test('Survei: unsur bisa dikhususkan ke satu survei dan tidak dipakai di survei lain', async () => {
     const own = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IPAK khusus' }, 201);
     const other = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei lain' }, 201);
