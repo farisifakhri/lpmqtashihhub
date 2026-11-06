@@ -155,6 +155,28 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(unsurSelect).toHaveValue(''); // pilihan unsur lama dikosongkan
   });
 
+  it('urutan unsur bisa dipindahkan dan ikut tersimpan', async () => {
+    const u2 = { ...unsur, id: 'u2', code: 'D', name: 'Biaya/Tarif' };
+    const q2 = { ...question, id: 'q2', text: 'Pertanyaan unsur biaya', unsur_id: 'u2' };
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, u2] });
+    surveyApi.listQuestions.mockResolvedValue({ data: [question, q2] });
+    const setItems = vi.spyOn(surveyApi, 'setSurveyItems').mockResolvedValue({ data: { ...baseSurvey, items: [] } });
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
+    await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
+
+    for (const [id, label, qid] of [['u1', 'Persyaratan Pelayanan', 'q1'], ['u2', 'Biaya/Tarif', 'q2']]) {
+      fireEvent.change(screen.getByLabelText('Tambah unsur ke survei'), { target: { value: id } });
+      fireEvent.change(screen.getByLabelText(`Tambah pertanyaan ${label}`), { target: { value: qid } });
+    }
+    expect(screen.getByRole('button', { name: 'Naikkan unsur Persyaratan Pelayanan' })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Naikkan unsur Biaya/Tarif' }));
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Susunan/ }));
+    await waitFor(() => expect(setItems).toHaveBeenCalledWith('s1', [
+      { unsur_id: 'u2', question_id: 'q2' }, { unsur_id: 'u1', question_id: 'q1' },
+    ]));
+  });
+
   it('Pemilihan Survei menyembunyikan unsur khusus survei lain', async () => {
     surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u9', code: null, name: 'Unsur khusus lain', survey_id: 's2' }] });
     renderPage('/internal/surveys?tab=pemilihan&survey=s1');

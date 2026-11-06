@@ -119,7 +119,10 @@ export async function createUnsur(data, user, req) {
 
 export async function updateUnsur(id, data, user, req) {
   return withAudit(user, req, 'SURVEY_UNSUR_UPDATE', 'SurveyUnsur', async (tx) => {
-    if (!(await tx.surveyUnsur.findUnique({ where: { id } }))) fail(404, 'Unsur survei tidak ditemukan.');
+    const unsur = await tx.surveyUnsur.findUnique({ where: { id } });
+    if (!unsur) fail(404, 'Unsur survei tidak ditemukan.');
+    // 9 unsur baku PANRB berlaku untuk semua survei; mengikatnya ke satu survei membuatnya hilang dari survei lain.
+    if (unsur.is_standard && data.survey_id) fail(422, 'Unsur baku PANRB berlaku untuk semua survei dan tidak dapat dikhususkan ke satu survei.');
     await requireUnsurSurvey(tx, data.survey_id);
     return tx.surveyUnsur.update({ where: { id }, data });
   });

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save } from 'lucide-react';
+import { ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save, GripVertical } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -39,6 +39,8 @@ function ItemsEditor({ survey, onSaved }) {
   const [unsurList, setUnsurList] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [dragging, setDragging] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
 
   useEffect(() => {
     if (locked) return;
@@ -67,6 +69,13 @@ function ItemsEditor({ survey, onSaved }) {
     [next[qi], next[qi + delta]] = [next[qi + delta], next[qi]];
     return next;
   });
+  // Pindahkan satu unsur beserta pertanyaannya ke posisi lain (lewat seret atau tombol naik/turun).
+  const moveGroup = (from, to) => {
+    if (to < 0 || to >= groups.length || from === to) return;
+    const next = [...groups];
+    next.splice(to, 0, ...next.splice(from, 1));
+    setGroups(next);
+  };
   const save = async () => {
     setSaving(true);
     try {
@@ -94,14 +103,32 @@ function ItemsEditor({ survey, onSaved }) {
       {groups.map((g, gi) => {
         const available = availableFor(g.unsur.id);
         return (
-          <section key={g.unsur.id} data-testid={`unsur-group-${g.unsur.id}`} className="space-y-3 rounded-xl border border-line bg-white p-4">
+          <section key={g.unsur.id} data-testid={`unsur-group-${g.unsur.id}`}
+            className={`space-y-3 rounded-xl border bg-white p-4 ${dragOver === gi ? 'border-brand-700' : 'border-line'}`}
+            onDragOver={(e) => { if (dragging !== null) { e.preventDefault(); setDragOver(gi); } }}
+            onDragLeave={() => setDragOver((v) => (v === gi ? null : v))}
+            onDrop={(e) => { e.preventDefault(); moveGroup(dragging, gi); setDragging(null); setDragOver(null); }}>
             <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 space-y-1">
-                <h3 className="text-sm font-bold text-ink">{unsurLabel(g.unsur)} <span className="font-normal text-ink-muted">· {g.questions.length} pertanyaan</span></h3>
-                {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
+              <div className="flex min-w-0 items-start gap-2">
+                {!locked && (
+                  // Pegangan seret; tombol naik/turun di sebelahnya untuk pengguna keyboard.
+                  <span draggable aria-hidden="true" title="Seret untuk memindahkan unsur"
+                    onDragStart={() => setDragging(gi)} onDragEnd={() => { setDragging(null); setDragOver(null); }}
+                    className="mt-0.5 cursor-grab text-ink-muted active:cursor-grabbing">
+                    <GripVertical className="w-4 h-4" />
+                  </span>
+                )}
+                <div className="min-w-0 space-y-1">
+                  <h3 className="text-sm font-bold text-ink">{unsurLabel(g.unsur)} <span className="font-normal text-ink-muted">· {g.questions.length} pertanyaan</span></h3>
+                  {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
+                </div>
               </div>
               {!locked && (
-                <Button size="sm" variant="ghost" aria-label={`Keluarkan unsur ${g.unsur.name}`} onClick={() => setGroups(groups.filter((_, i) => i !== gi))}><X className="w-4 h-4" /></Button>
+                <div className="flex shrink-0 gap-1">
+                  <Button size="sm" variant="ghost" aria-label={`Naikkan unsur ${g.unsur.name}`} disabled={gi === 0} onClick={() => moveGroup(gi, gi - 1)}><ArrowUp className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" aria-label={`Turunkan unsur ${g.unsur.name}`} disabled={gi === groups.length - 1} onClick={() => moveGroup(gi, gi + 1)}><ArrowDown className="w-4 h-4" /></Button>
+                  <Button size="sm" variant="ghost" aria-label={`Keluarkan unsur ${g.unsur.name}`} onClick={() => setGroups(groups.filter((_, i) => i !== gi))}><X className="w-4 h-4" /></Button>
+                </div>
               )}
             </div>
 

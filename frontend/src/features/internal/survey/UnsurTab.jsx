@@ -118,8 +118,10 @@ export function UnsurTab() {
       <Modal isOpen={!!form} onClose={() => setForm(null)} title={form?.id ? 'Ubah Unsur' : 'Tambah Unsur'} size="md">
         {form && (
           <form onSubmit={save} className="space-y-4">
-            <FormField label="Nama survei" hint="Opsional. Pilih survei bila unsur ini khusus untuk survei tersebut; kosongkan agar unsur bisa dipakai di semua survei.">
-              <select className={inputClass} value={form.survey_id} onChange={(e) => setForm({ ...form, survey_id: e.target.value })}>
+            <FormField label="Nama survei" hint={form.is_standard
+              ? 'Unsur baku PANRB selalu berlaku untuk semua survei sehingga tidak dapat dikhususkan.'
+              : 'Opsional. Pilih survei bila unsur ini khusus untuk survei tersebut; kosongkan agar unsur bisa dipakai di semua survei.'}>
+              <select className={inputClass} disabled={form.is_standard} value={form.survey_id} onChange={(e) => setForm({ ...form, survey_id: e.target.value })}>
                 <option value="">Semua survei (unsur umum)</option>
                 {surveyList.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
               </select>

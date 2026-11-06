@@ -249,6 +249,9 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     const own = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IPAK khusus' }, 201);
     const other = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei lain' }, 201);
     assert.equal((await call('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur survei hilang', survey_id: '00000000-0000-4000-8000-000000000000' })).status, 400);
+    // Unsur baku PANRB berlaku untuk semua survei, jadi tidak boleh diikat ke satu survei.
+    const baku = (await ok('/admin/survey-unsur', adminToken, 'GET')).find((u) => u.is_standard);
+    assert.equal((await call(`/admin/survey-unsur/${baku.id}`, adminToken, 'PUT', { survey_id: own.id })).status, 422);
     const unsur = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Pungutan liar khusus', survey_id: own.id }, 201);
     assert.equal((await ok('/admin/survey-unsur', adminToken, 'GET')).find((u) => u.id === unsur.id).survey.name, 'Survei IPAK khusus');
     const q = await ok('/admin/survey-questions', adminToken, 'POST', { text: 'Apakah ada pungutan liar?', type: 'ESAI', unsur_id: unsur.id }, 201);
