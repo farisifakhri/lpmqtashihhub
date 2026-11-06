@@ -29,8 +29,23 @@ describe('SurveyManagementPage (Super Admin)', () => {
     for (const name of [/Nonaktifkan Survei/, 'Lihat Survei IKM 2027', 'Edit Survei IKM 2027', 'Hapus Survei IKM 2027']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
-    // Sudah ada jawaban → tidak dapat dihapus.
-    expect(screen.getByRole('button', { name: 'Hapus Survei IKM 2027' })).toBeDisabled();
+    // Sudah ada jawaban → tetap dapat dihapus, tetapi konfirmasinya menyebut jawaban yang ikut hilang.
+    const remove = vi.spyOn(surveyApi, 'deleteSurvey').mockResolvedValue({ data: null });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Survei IKM 2027' }));
+    expect(confirm.mock.calls[0][0]).toMatch(/12 jawaban responden/);
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('s1', 'true'));
+  });
+
+  it('urutan survei bisa dipindahkan dan langsung tersimpan', async () => {
+    const other = { ...baseSurvey, id: 's2', name: 'Survei lain' };
+    surveyApi.listSurveys.mockResolvedValue({ data: [{ ...baseSurvey, _count: { items: 0, responses: 0 } }, other] });
+    const reorder = vi.spyOn(surveyApi, 'reorderSurveys').mockResolvedValue({ data: [] });
+    renderPage();
+    await screen.findByText('Survei lain');
+    expect(screen.getByRole('button', { name: 'Naikkan Survei IKM 2027' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Naikkan Survei lain' }));
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith(['s2', 's1']));
   });
 
   it('menambah survei cukup dengan nama dan status; Aktif bisa langsung dipilih', async () => {
@@ -193,15 +208,26 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.queryByTestId('unsur-group-u1')).not.toBeInTheDocument();
   });
 
-  it('tombol Hapus menghapus unsur yang tidak dipakai dan nonaktif untuk unsur yang masih dipakai', async () => {
+  it('tombol Hapus unsur tetap jalan walau unsurnya dipakai, dengan konfirmasi yang menjelaskan akibatnya', async () => {
     surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u2', name: 'Unsur terpakai', is_standard: false, _count: { items: 2 } }] });
     const remove = vi.spyOn(surveyApi, 'deleteUnsur').mockResolvedValue({ data: unsur });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage('/internal/surveys?tab=unsur');
 
-    expect(await screen.findByRole('button', { name: 'Hapus Unsur terpakai' })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: 'Hapus Persyaratan Pelayanan' }));
-    await waitFor(() => expect(remove).toHaveBeenCalledWith('u1'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Hapus Persyaratan Pelayanan' }));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('u1', undefined));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Unsur terpakai' }));
+    expect(confirm.mock.calls.at(-1)[0]).toMatch(/dipakai pada 2 susunan survei/);
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('u2', 'true'));
+  });
+
+  it('urutan unsur bisa dipindahkan dan langsung tersimpan', async () => {
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u2', name: 'Biaya/Tarif' }] });
+    const reorder = vi.spyOn(surveyApi, 'reorderUnsur').mockResolvedValue({ data: [] });
+    renderPage('/internal/surveys?tab=unsur');
+    fireEvent.click(await screen.findByRole('button', { name: 'Naikkan Biaya/Tarif' }));
+    await waitFor(() => expect(reorder).toHaveBeenCalledWith(['u2', 'u1']));
   });
 
   it('Nama Unsur menampilkan nomor urut Pedoman dan tombol Pulihkan Unsur Baku memanggil API', async () => {
@@ -304,11 +330,22 @@ describe('SurveyManagementPage (Super Admin)', () => {
     // Pertanyaan yang dipakai survei (belum dijawab) juga bisa dihapus.
     const [usedDelete, freeDelete] = screen.getAllByRole('button', { name: 'Hapus pertanyaan' });
     fireEvent.click(usedDelete);
-    await waitFor(() => expect(remove).toHaveBeenCalledWith('q1'));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('q1', undefined));
     expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus dan dikeluarkan dari survei Survei IKM 2027.', 'success', 1000);
     fireEvent.click(freeDelete);
-    await waitFor(() => expect(remove).toHaveBeenCalledWith('q9'));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('q9', undefined));
     expect(confirm).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 1000);
+  });
+
+  it('pertanyaan yang sudah dijawab tetap bisa dihapus setelah dikonfirmasi', async () => {
+    surveyApi.listQuestions.mockResolvedValue({ data: [{ ...question, items: [], _count: { items: 0, answers: 3 } }] });
+    const remove = vi.spyOn(surveyApi, 'deleteQuestion').mockResolvedValue({ data: null });
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderPage('/internal/surveys?tab=pertanyaan');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Hapus pertanyaan' }));
+    expect(confirm.mock.calls[0][0]).toMatch(/3 jawaban responden/);
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('q1', 'true'));
   });
 });

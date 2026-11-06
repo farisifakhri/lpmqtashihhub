@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Eye, Power, PowerOff, ListChecks } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Power, PowerOff, ListChecks, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
+import { useRowDrag, moveItem } from './useRowDrag';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { FormField } from '@/components/ui/FormField';
@@ -130,6 +131,23 @@ export function SurveyListTab({ onOpen }) {
     try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
   };
 
+  // Urutan baru langsung disimpan; daftar lokal ikut berubah agar tampilan tidak berkedip.
+  const moveRow = (from, to) => {
+    const next = moveItem(items, from, to);
+    if (next === items) return;
+    setItems(next);
+    surveyApi.reorderSurveys(next.map((s) => s.id)).catch(load);
+  };
+  const drag = useRowDrag(moveRow);
+
+  const removeSurvey = (s) => {
+    const warning = s._count?.responses
+      ? `Hapus survei "${s.name}" beserta ${s._count.responses} jawaban respondennya? Laporan survei ini ikut hilang dan tidak dapat dikembalikan.`
+      : `Hapus survei "${s.name}"? Susunan pertanyaannya ikut terhapus.`;
+    if (!window.confirm(warning)) return;
+    run(() => surveyApi.deleteSurvey(s.id, s._count?.responses ? 'true' : undefined), 'Survei dihapus.', 1000);
+  };
+
   const activate = (s) =>
     run(() => surveyApi.activateSurvey(s.id), s._count?.items ? 'Survei diaktifkan.' : `Survei diaktifkan. ${NO_QUESTIONS_NOTE}`);
 
@@ -146,13 +164,14 @@ export function SurveyListTab({ onOpen }) {
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-              <tr><th className="p-3">Nama Survei</th><th className="p-3">Status</th><th className="p-3">Pertanyaan</th><th className="p-3">Responden</th><th className="p-3 text-right">Action</th></tr>
+              <tr><th className="p-3 w-8"><span className="sr-only">Urutan</span></th><th className="p-3">Nama Survei</th><th className="p-3">Status</th><th className="p-3">Pertanyaan</th><th className="p-3">Responden</th><th className="p-3 text-right">Action</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {items.map((s) => {
-                const hasResponses = s._count?.responses > 0;
-                return (
-                  <tr key={s.id}>
+              {items.map((s, index) => (
+                  <tr key={s.id} {...drag.rowProps(index)} className={drag.isOver(index) ? 'outline outline-2 -outline-offset-2 outline-brand-700' : undefined}>
+                    <td className="p-3">
+                      <span {...drag.gripProps(index)} className="inline-flex cursor-grab text-ink-muted active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>
+                    </td>
                     <td className="p-3 font-semibold text-ink">{s.name}</td>
                     <td className="p-3"><StatusBadge survey={s} /></td>
                     <td className="p-3">{s._count?.items || 0}</td>
@@ -164,21 +183,22 @@ export function SurveyListTab({ onOpen }) {
                         ) : (
                           <Button size="sm" variant="secondary" onClick={() => activate(s)}><Power className="w-4 h-4" /> Aktifkan Survei</Button>
                         )}
+                        <Button size="sm" variant="ghost" aria-label={`Naikkan ${s.name}`} disabled={index === 0} onClick={() => moveRow(index, index - 1)}><ArrowUp className="w-4 h-4" /></Button>
+                        <Button size="sm" variant="ghost" aria-label={`Turunkan ${s.name}`} disabled={index === items.length - 1} onClick={() => moveRow(index, index + 1)}><ArrowDown className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label={`Lihat ${s.name}`} onClick={() => setViewId(s.id)}><Eye className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label={`Edit ${s.name}`}
                           onClick={() => setForm({ id: s.id, name: s.name, status: s.status, itemCount: s._count?.items || 0 })}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="ghost" aria-label={`Hapus ${s.name}`} disabled={hasResponses}
-                          title={hasResponses ? 'Survei yang sudah dijawab tidak dapat dihapus; nonaktifkan saja.' : undefined}
-                          onClick={() => window.confirm(`Hapus survei "${s.name}"? Susunan pertanyaannya ikut terhapus.`) && run(() => surveyApi.deleteSurvey(s.id), 'Survei dihapus.', 1000)}>
+                        <Button size="sm" variant="ghost" aria-label={`Hapus ${s.name}`}
+                          title={s._count?.responses ? 'Survei sudah dijawab; penghapusan ikut membuang jawabannya.' : undefined}
+                          onClick={() => removeSurvey(s)}>
                           <Trash2 className="w-4 h-4 text-civic-danger" />
                         </Button>
                       </div>
                     </td>
                   </tr>
-                );
-              })}
+              ))}
             </tbody>
           </table>
         </div>

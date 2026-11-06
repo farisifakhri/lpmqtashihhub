@@ -128,13 +128,26 @@ export async function updateUnsur(id, data, user, req) {
   });
 }
 
-export async function deleteUnsur(id, user, req) {
+export async function deleteUnsur(id, { force } = {}, user, req) {
   return withAudit(user, req, 'SURVEY_UNSUR_DELETE', 'SurveyUnsur', async (tx) => {
     const unsur = await tx.surveyUnsur.findUnique({ where: { id }, include: { _count: { select: { items: true } } } });
     if (!unsur) fail(404, 'Unsur survei tidak ditemukan.');
-    if (unsur._count.items) fail(409, 'Unsur ini sudah dipakai pada survei. Arsipkan unsur alih-alih menghapusnya.');
+    // force: unsur dikeluarkan dari susunan survei yang memakainya; pertanyaannya tetap ada di bank soal tanpa unsur.
+    if (unsur._count.items && force !== 'true') fail(409, 'Unsur ini sudah dipakai pada survei. Hapus paksa untuk mengeluarkannya dari susunan survei tersebut.');
+    await tx.surveyItem.deleteMany({ where: { unsur_id: id } });
     return tx.surveyUnsur.delete({ where: { id } });
   });
+}
+
+// Urutan tampil unsur mengikuti daftar id yang dikirim (hasil seret di halaman Nama Unsur).
+export async function reorderUnsur(ids, user, req) {
+  await withAudit(user, req, 'SURVEY_UNSUR_REORDER', 'SurveyUnsur', async (tx) => {
+    const found = await tx.surveyUnsur.count({ where: { id: { in: ids } } });
+    if (found !== ids.length) fail(400, 'Sebagian unsur tidak ditemukan. Muat ulang halaman lalu susun kembali.');
+    for (const [index, id] of ids.entries()) await tx.surveyUnsur.update({ where: { id }, data: { sort_order: index + 1 } });
+    return { ids };
+  });
+  return listUnsur();
 }
 
 // ---------------------------------------------------------------- Bank pertanyaan
@@ -211,13 +224,15 @@ export async function duplicateQuestion(id, user, req) {
   return createQuestion({ text: `${question.text} (salinan)`, type: question.type, unsur_id: question.unsur_id, options: question.options }, user, req);
 }
 
-export async function deleteQuestion(id, user, req) {
+export async function deleteQuestion(id, { force } = {}, user, req) {
   return withAudit(user, req, 'SURVEY_QUESTION_DELETE', 'SurveyQuestion', async (tx) => {
     const question = await tx.surveyQuestion.findUnique({ where: { id }, include: questionInclude });
     if (!question) fail(404, 'Pertanyaan survei tidak ditemukan.');
     // Jawaban responden adalah data laporan; selama belum dijawab, pertanyaan boleh dihapus
     // dan ikut dikeluarkan dari susunan survei yang memakainya.
-    if (question._count.answers) fail(409, 'Pertanyaan ini sudah memiliki jawaban responden sehingga tidak dapat dihapus.');
+    // force: jawaban responden atas pertanyaan ini ikut terhapus sehingga laporan survei berubah.
+    if (question._count.answers && force !== 'true') fail(409, 'Pertanyaan ini sudah memiliki jawaban responden. Hapus paksa bila jawabannya memang ingin dibuang.');
+    await tx.surveyAnswer.deleteMany({ where: { question_id: id } });
     await tx.surveyItem.deleteMany({ where: { question_id: id } });
     return tx.surveyQuestion.delete({ where: { id } });
   });
@@ -245,7 +260,7 @@ async function requireSurvey(tx, id, include = surveyListInclude) {
 export async function listSurveys({ search, status } = {}) {
   const surveys = await prisma.survey.findMany({
     where: { ...(status ? { status } : {}), ...(search ? { name: { contains: search } } : {}) },
-    orderBy: { created_at: 'desc' },
+    orderBy: [{ sort_order: 'asc' }, { created_at: 'desc' }],
     include: surveyListInclude,
   });
   return surveys.map(present);
@@ -270,13 +285,27 @@ export async function updateSurvey(id, data, user, req) {
   }));
 }
 
-export async function deleteSurvey(id, user, req) {
+export async function deleteSurvey(id, { force } = {}, user, req) {
   return withAudit(user, req, 'SURVEY_DELETE', 'Survey', async (tx) => {
     const survey = await requireSurvey(tx, id);
-    // Jawaban responden adalah data laporan; survei yang sudah dijawab cukup dinonaktifkan (Expired).
-    if (survey._count.responses) fail(409, 'Survei ini sudah memiliki jawaban responden sehingga tidak dapat dihapus. Nonaktifkan survei bila tidak dipakai lagi.');
+    // Jawaban responden adalah data laporan; force menghapusnya sekalian, jadi laporan survei ini hilang.
+    if (survey._count.responses && force !== 'true') {
+      fail(409, 'Survei ini sudah memiliki jawaban responden. Nonaktifkan survei, atau hapus paksa bila jawabannya memang ingin dibuang.');
+    }
+    await tx.surveyResponse.deleteMany({ where: { survey_id: id } }); // jawaban ikut terhapus (cascade)
     return tx.survey.delete({ where: { id } });
   });
+}
+
+// Urutan tampil survei mengikuti daftar id yang dikirim (hasil seret di halaman Nama Survei).
+export async function reorderSurveys(ids, user, req) {
+  await withAudit(user, req, 'SURVEY_REORDER', 'Survey', async (tx) => {
+    const found = await tx.survey.count({ where: { id: { in: ids } } });
+    if (found !== ids.length) fail(400, 'Sebagian survei tidak ditemukan. Muat ulang halaman lalu susun kembali.');
+    for (const [index, id] of ids.entries()) await tx.survey.update({ where: { id }, data: { sort_order: index + 1 } });
+    return { ids };
+  });
+  return listSurveys();
 }
 
 export async function setSurveyItems(id, items, user, req) {

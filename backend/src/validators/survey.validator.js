@@ -3,9 +3,14 @@ import { z } from 'zod';
 const KIND = z.enum(['IKM', 'IPAK', 'LAINNYA'], { message: 'Jenis harus IKM, IPAK, atau Lainnya.' });
 const idParams = { params: z.object({ id: z.string().uuid('ID tidak valid.') }) };
 
-export const unsurIdSchema = idParams;
-export const questionIdSchema = idParams;
-export const surveyIdSchema = idParams;
+// Hapus paksa: ?force=true menghapus sekalian data yang menguncinya (lihat service).
+const forceQuery = { query: z.object({ force: z.enum(['true', 'false']).optional() }) };
+export const unsurIdSchema = { ...idParams, ...forceQuery };
+export const reorderSchema = {
+  body: z.object({ ids: z.array(z.string().uuid('ID tidak valid.')).min(1, 'Daftar urutan kosong.').max(500) }),
+};
+export const questionIdSchema = { ...idParams, ...forceQuery };
+export const surveyIdSchema = { ...idParams, ...forceQuery };
 
 export const listUnsurSchema = {
   query: z.object({ kind: KIND.optional(), include_archived: z.enum(['true', 'false']).optional() }),

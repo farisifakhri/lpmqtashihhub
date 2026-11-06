@@ -80,6 +80,14 @@ export function QuestionBankTab() {
     try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
   };
 
+  const removeQuestion = (q) => {
+    const answers = q._count?.answers || 0;
+    const surveys = q.items?.length ? ` dan dikeluarkan dari survei ${q.items.map((i) => i.survey.name).join(', ')}` : '';
+    // Hanya pertanyaan yang sudah dijawab yang perlu konfirmasi: jawabannya ikut hilang dari laporan.
+    if (answers && !window.confirm(`Hapus pertanyaan ini beserta ${answers} jawaban responden? Laporan survei ikut berubah dan tidak dapat dikembalikan.`)) return;
+    run(() => surveyApi.deleteQuestion(q.id, answers ? 'true' : undefined), `Pertanyaan dihapus${surveys}.`, 1000);
+  };
+
   const setOption = (index, patch) =>
     setForm({ ...form, options: form.options.map((o, i) => (i === index ? { ...o, ...patch } : o)) });
 
@@ -137,17 +145,12 @@ export function QuestionBankTab() {
                   <div className="flex gap-1.5">
                     {!locked && <Button size="sm" variant="ghost" aria-label="Ubah pertanyaan" onClick={() => setForm({ id: q.id, text: q.text, type: q.type, survey_id: '', unsur_id: q.unsur_id || '', options: q.options.map(({ label, value }) => ({ label, value })) })}><Pencil className="w-4 h-4" /></Button>}
                     <Button size="sm" variant="ghost" aria-label="Duplikat pertanyaan" onClick={() => run(() => surveyApi.duplicateQuestion(q.id), 'Pertanyaan diduplikat.')}><Copy className="w-4 h-4" /></Button>
-                    {/* Hanya pertanyaan yang sudah dijawab responden yang tidak dapat dihapus. */}
-                    {!locked && (
-                      <Button size="sm" variant="ghost" aria-label="Hapus pertanyaan"
-                        onClick={() => run(
-                          () => surveyApi.deleteQuestion(q.id),
-                          q.items?.length ? `Pertanyaan dihapus dan dikeluarkan dari survei ${q.items.map((i) => i.survey.name).join(', ')}.` : 'Pertanyaan dihapus.',
-                          1000,
-                        )}>
-                        <Trash2 className="w-4 h-4 text-civic-danger" />
-                      </Button>
-                    )}
+                    {/* Pertanyaan yang sudah dijawab tetap bisa dihapus, tetapi jawabannya ikut hilang → dikonfirmasi dulu. */}
+                    <Button size="sm" variant="ghost" aria-label="Hapus pertanyaan"
+                      title={locked ? 'Pertanyaan sudah dijawab; penghapusan ikut membuang jawabannya.' : undefined}
+                      onClick={() => removeQuestion(q)}>
+                      <Trash2 className="w-4 h-4 text-civic-danger" />
+                    </Button>
                   </div>
                 </div>
               </article>

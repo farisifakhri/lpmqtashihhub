@@ -17,8 +17,9 @@ const action = (fn, status = 200) => async (req, res, next) => {
 router.get('/admin/survey-unsur', ...superadmin, validate(v.listUnsurSchema), action(req => survey.listUnsur(req.query)));
 router.post('/admin/survey-unsur/restore-standard', ...superadmin, action(req => survey.restoreStandardUnsur(req.user, req)));
 router.post('/admin/survey-unsur', ...superadmin, validate(v.createUnsurSchema), action(req => survey.createUnsur(req.body, req.user, req), 201));
+router.put('/admin/survey-unsur/reorder', ...superadmin, validate(v.reorderSchema), action(req => survey.reorderUnsur(req.body.ids, req.user, req)));
 router.put('/admin/survey-unsur/:id', ...superadmin, validate(v.updateUnsurSchema), action(req => survey.updateUnsur(req.params.id, req.body, req.user, req)));
-router.delete('/admin/survey-unsur/:id', ...superadmin, validate(v.unsurIdSchema), action(req => survey.deleteUnsur(req.params.id, req.user, req)));
+router.delete('/admin/survey-unsur/:id', ...superadmin, validate(v.unsurIdSchema), action(req => survey.deleteUnsur(req.params.id, req.query, req.user, req)));
 
 // Bank pertanyaan
 router.get('/admin/survey-questions', ...superadmin, validate(v.listQuestionsSchema), action(req => survey.listQuestions(req.query)));
@@ -26,14 +27,15 @@ router.post('/admin/survey-questions/seed-standard', ...superadmin, action(req =
 router.post('/admin/survey-questions', ...superadmin, validate(v.createQuestionSchema), action(req => survey.createQuestion(req.body, req.user, req), 201));
 router.put('/admin/survey-questions/:id', ...superadmin, validate(v.updateQuestionSchema), action(req => survey.updateQuestion(req.params.id, req.body, req.user, req)));
 router.post('/admin/survey-questions/:id/duplicate', ...superadmin, validate(v.questionIdSchema), action(req => survey.duplicateQuestion(req.params.id, req.user, req), 201));
-router.delete('/admin/survey-questions/:id', ...superadmin, validate(v.questionIdSchema), action(req => survey.deleteQuestion(req.params.id, req.user, req)));
+router.delete('/admin/survey-questions/:id', ...superadmin, validate(v.questionIdSchema), action(req => survey.deleteQuestion(req.params.id, req.query, req.user, req)));
 
 // Survei
 router.get('/admin/surveys', ...superadmin, validate(v.listSurveysSchema), action(req => survey.listSurveys(req.query)));
 router.post('/admin/surveys', ...superadmin, validate(v.createSurveySchema), action(req => survey.createSurvey(req.body, req.user, req), 201));
 router.get('/admin/surveys/:id', ...superadmin, validate(v.surveyIdSchema), action(req => survey.getSurvey(req.params.id)));
+router.put('/admin/surveys/reorder', ...superadmin, validate(v.reorderSchema), action(req => survey.reorderSurveys(req.body.ids, req.user, req)));
 router.put('/admin/surveys/:id', ...superadmin, validate(v.updateSurveySchema), action(req => survey.updateSurvey(req.params.id, req.body, req.user, req)));
-router.delete('/admin/surveys/:id', ...superadmin, validate(v.surveyIdSchema), action(req => survey.deleteSurvey(req.params.id, req.user, req)));
+router.delete('/admin/surveys/:id', ...superadmin, validate(v.surveyIdSchema), action(req => survey.deleteSurvey(req.params.id, req.query, req.user, req)));
 router.put('/admin/surveys/:id/items', ...superadmin, validate(v.setSurveyItemsSchema), action(req => survey.setSurveyItems(req.params.id, req.body.items, req.user, req)));
 router.post('/admin/surveys/:id/activate', ...superadmin, validate(v.surveyIdSchema), action(req => survey.setSurveyStatus(req.params.id, 'AKTIF', req.user, req)));
 router.post('/admin/surveys/:id/deactivate', ...superadmin, validate(v.surveyIdSchema), action(req => survey.setSurveyStatus(req.params.id, 'NONAKTIF', req.user, req)));

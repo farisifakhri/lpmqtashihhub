@@ -236,6 +236,39 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
   });
 
+  await test('Survei: hapus paksa menembus kuncian, tanpa force tetap 409', async () => {
+    const target = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei untuk dihapus paksa' }, 201);
+    const unsurF = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur hapus paksa' }, 201);
+    const qF = await ok('/admin/survey-questions', adminToken, 'POST', { text: 'Pertanyaan hapus paksa?', type: 'ESAI', unsur_id: unsurF.id }, 201);
+    await ok(`/admin/surveys/${target.id}/items`, adminToken, 'PUT', { items: [{ unsur_id: unsurF.id, question_id: qF.id }] });
+    await prisma.surveyResponse.create({ data: { survey_id: target.id, respondent_name: 'PT Uji Hapus',
+      answers: { create: [{ question_id: qF.id, essay_text: 'Jawaban uji.' }] } } });
+
+    // Unsur dipakai susunan survei, pertanyaan sudah dijawab, survei sudah punya responden.
+    assert.equal((await call(`/admin/survey-unsur/${unsurF.id}`, adminToken, 'DELETE')).status, 409);
+    assert.equal((await call(`/admin/survey-questions/${qF.id}`, adminToken, 'DELETE')).status, 409);
+    assert.equal((await call(`/admin/surveys/${target.id}`, adminToken, 'DELETE')).status, 409);
+
+    await ok(`/admin/survey-questions/${qF.id}?force=true`, adminToken, 'DELETE');
+    await ok(`/admin/survey-unsur/${unsurF.id}?force=true`, adminToken, 'DELETE');
+    await ok(`/admin/surveys/${target.id}?force=true`, adminToken, 'DELETE');
+    assert.equal((await call(`/admin/surveys/${target.id}`, adminToken, 'GET')).status, 404);
+    assert.equal(await prisma.surveyResponse.count({ where: { survey_id: target.id } }), 0);
+  });
+
+  await test('Survei: urutan survei dan unsur mengikuti daftar id yang dikirim', async () => {
+    const unsurIds = (await ok('/admin/survey-unsur', adminToken, 'GET')).map((u) => u.id);
+    const flipped = [unsurIds[1], unsurIds[0], ...unsurIds.slice(2)];
+    assert.deepEqual((await ok('/admin/survey-unsur/reorder', adminToken, 'PUT', { ids: flipped })).map((u) => u.id), flipped);
+    assert.deepEqual((await ok('/admin/survey-unsur', adminToken, 'GET')).map((u) => u.id), flipped);
+    assert.equal((await call('/admin/survey-unsur/reorder', adminToken, 'PUT', { ids: ['00000000-0000-4000-8000-000000000000'] })).status, 400);
+
+    const surveyIds = (await ok('/admin/surveys', adminToken, 'GET')).map((s) => s.id);
+    const flippedSurveys = [surveyIds[1], surveyIds[0], ...surveyIds.slice(2)];
+    await ok('/admin/surveys/reorder', adminToken, 'PUT', { ids: flippedSurveys });
+    assert.deepEqual((await ok('/admin/surveys', adminToken, 'GET')).map((s) => s.id), flippedSurveys);
+  });
+
   await test('Survei: dua survei baku Pedoman PANRB tersedia sejak awal berstatus Pending', async () => {
     const byName = new Map((await ok('/admin/surveys', adminToken, 'GET')).map((s) => [s.name, s]));
     for (const [name, kind] of [['Indeks Persepsi Kualitas Pelayanan', 'IKM'], ['Indeks Persepsi Anti Korupsi', 'IPAK']]) {

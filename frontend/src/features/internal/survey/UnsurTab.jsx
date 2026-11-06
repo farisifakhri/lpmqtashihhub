@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Archive, ArchiveRestore, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Archive, ArchiveRestore, RotateCcw, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import { inputClass } from './survey-constants';
+import { useRowDrag, moveItem } from './useRowDrag';
 
 const EMPTY = { name: '', definition: '', survey_id: '' };
 
@@ -46,6 +47,23 @@ export function UnsurTab() {
     }
   };
 
+  // Urutan baru langsung disimpan; daftar lokal ikut berubah agar tampilan tidak berkedip.
+  const moveRow = (from, to) => {
+    const next = moveItem(items, from, to);
+    if (next === items) return;
+    setItems(next);
+    surveyApi.reorderUnsur(next.map((u) => u.id)).catch(load);
+  };
+  const drag = useRowDrag(moveRow);
+
+  const removeUnsur = (u) => {
+    const warning = u._count?.items
+      ? `Hapus unsur "${u.name}"? Unsur ini dipakai pada ${u._count.items} susunan survei dan akan dikeluarkan dari sana. Pertanyaannya tetap ada di bank soal.`
+      : `Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`;
+    if (!window.confirm(warning)) return;
+    run(() => surveyApi.deleteUnsur(u.id, u._count?.items ? 'true' : undefined), 'Unsur dihapus.', 1000);
+  };
+
   const run = async (fn, message, duration) => {
     try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
   };
@@ -74,12 +92,16 @@ export function UnsurTab() {
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
-              <tr><th className="p-3 w-12">No.</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
+              <tr><th className="p-3 w-8"><span className="sr-only">Urutan</span></th><th className="p-3 w-12">No.</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {items.map((u) => (
-                <tr key={u.id} className={u.is_archived ? 'opacity-60' : ''}>
-                  <td className="p-3 align-top font-semibold text-ink-muted">{u.is_standard ? `${u.sort_order}.` : '–'}</td>
+              {items.map((u, index) => (
+                <tr key={u.id} {...drag.rowProps(index)}
+                  className={`${u.is_archived ? 'opacity-60' : ''} ${drag.isOver(index) ? 'outline outline-2 -outline-offset-2 outline-brand-700' : ''}`}>
+                  <td className="p-3 align-top">
+                    <span {...drag.gripProps(index)} className="inline-flex cursor-grab text-ink-muted active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>
+                  </td>
+                  <td className="p-3 align-top font-semibold text-ink-muted">{index + 1}.</td>
                   <td className="p-3 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
                       {u.name}
@@ -92,6 +114,8 @@ export function UnsurTab() {
                   <td className="p-3 text-xs text-ink-muted">{u._count?.items || 0} survei</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
+                      <Button size="sm" variant="ghost" aria-label={`Naikkan ${u.name}`} disabled={index === 0} onClick={() => moveRow(index, index - 1)}><ArrowUp className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" aria-label={`Turunkan ${u.name}`} disabled={index === items.length - 1} onClick={() => moveRow(index, index + 1)}><ArrowDown className="w-4 h-4" /></Button>
                       <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`}
                         onClick={() => setForm({ id: u.id, name: u.name, definition: u.definition || '', survey_id: u.survey_id || '', is_standard: u.is_standard })}>
                         <Pencil className="w-4 h-4" />
@@ -100,10 +124,9 @@ export function UnsurTab() {
                         onClick={() => run(() => surveyApi.updateUnsur(u.id, { is_archived: !u.is_archived }), u.is_archived ? 'Unsur dipulihkan.' : 'Unsur diarsipkan.')}>
                         {u.is_archived ? <ArchiveRestore className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
                       </Button>
-                      {/* Unsur yang masih dipakai survei tidak dapat dihapus; arsipkan saja. */}
-                      <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`} disabled={u._count?.items > 0}
-                        title={u._count?.items > 0 ? 'Unsur masih dipakai pada survei sehingga tidak dapat dihapus; arsipkan saja.' : undefined}
-                        onClick={() => window.confirm(`Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.', 1000)}>
+                      <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`}
+                        title={u._count?.items > 0 ? 'Unsur dipakai pada survei; penghapusan mengeluarkannya dari susunan survei tersebut.' : undefined}
+                        onClick={() => removeUnsur(u)}>
                         <Trash2 className="w-4 h-4 text-civic-danger" />
                       </Button>
                     </div>
