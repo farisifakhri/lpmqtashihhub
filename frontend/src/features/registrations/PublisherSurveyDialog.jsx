@@ -55,9 +55,23 @@ function SurveyForm({ survey, onSubmit, saving }) {
   const [form, setForm] = useState(emptyForm);
   const groups = useMemo(() => groupByUnsur(survey.items), [survey.items]);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+  // Satu layar per bagian: kuesioner 11+ pertanyaan terlalu panjang bila ditumpuk jadi satu gulungan.
+  const steps = useMemo(() => ['responden', ...groups.map((g) => g.unsur.id), 'penilaian'], [groups]);
+  const [step, setStep] = useState(0);
+  const atUnsur = step > 0 && step < steps.length - 1 ? groups[step - 1] : null;
+  const isLast = step === steps.length - 1;
+
+  // Pertanyaan pilihan pada bagian ini wajib terisi sebelum lanjut.
+  const stepIncomplete = atUnsur?.questions.some((q) => q.type !== 'ESAI' && !form.answers[q.id]);
+
+  const next = () => {
+    if (stepIncomplete) { showToast('Jawab seluruh pertanyaan pada bagian ini dulu.', 'danger'); return; }
+    setStep((s) => Math.min(s + 1, steps.length - 1));
+  };
 
   const submit = (event) => {
     event.preventDefault();
+    if (!isLast) { next(); return; }
     const answers = [];
     for (const g of groups) {
       for (const q of g.questions) {
@@ -93,6 +107,14 @@ function SurveyForm({ survey, onSubmit, saving }) {
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      <div className="flex items-center gap-3">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-subtle">
+          <div className="h-1.5 rounded-full bg-brand-700 transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+        </div>
+        <span className="shrink-0 text-xs font-semibold text-ink-muted">Bagian {step + 1} dari {steps.length}</span>
+      </div>
+
+      {step === 0 && (
       <section className="space-y-3 rounded-xl border border-line bg-white p-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Data responden</h3>
         <div className="grid gap-3 md:grid-cols-2">
@@ -135,11 +157,12 @@ function SurveyForm({ survey, onSubmit, saving }) {
           <ScaleRow name={`disabilitas-${survey.id}`} value={form.disability_type} onChange={(v) => set({ disability_type: v })} options={DISABILITIES} />
         )}
       </section>
+      )}
 
-      {groups.map((g, gi) => (
+      {atUnsur && [atUnsur].map((g) => (
         <section key={g.unsur.id} className="space-y-4 rounded-xl border border-line bg-white p-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-ink">{gi + 1}. {unsurLabel(g.unsur)}</h3>
+            <h3 className="text-sm font-bold text-ink">{step}. {unsurLabel(g.unsur)}</h3>
             {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
           </div>
           {g.questions.map((q) => (
@@ -159,6 +182,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
         </section>
       ))}
 
+      {isLast && (
       <section className="space-y-4 rounded-xl border border-line bg-white p-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kepuasan, loyalitas, dan anti-korupsi</h3>
         <div className="space-y-2">
@@ -184,9 +208,15 @@ function SurveyForm({ survey, onSubmit, saving }) {
           <textarea className={inputClass} rows={3} maxLength={2000} value={form.feedback} onChange={(e) => set({ feedback: e.target.value })} />
         </label>
       </section>
+      )}
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={saving}>{saving ? 'Mengirim…' : `Kirim ${survey.name}`}</Button>
+      <div className="flex items-center justify-between gap-2">
+        <Button type="button" variant="outline" disabled={step === 0 || saving} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+          Kembali
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? 'Mengirim…' : isLast ? 'Kirim Survei' : 'Lanjut'}
+        </Button>
       </div>
     </form>
   );

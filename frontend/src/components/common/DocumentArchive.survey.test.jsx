@@ -42,7 +42,9 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     fireEvent.click(tombol);
 
     const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('Bagaimana kesesuaian persyaratan pelayanan?')).toBeInTheDocument();
+    // Kuesioner dibagi per bagian; bagian pertama adalah data responden.
+    expect(within(dialog).getByText('Bagian 1 dari 3')).toBeInTheDocument();
+    expect(within(dialog).getByText('DATA RESPONDEN', { exact: false })).toBeInTheDocument();
     expect(fileApi.downloadDocument).not.toHaveBeenCalled();
   });
 
@@ -57,8 +59,10 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
     await screen.findByRole('dialog');
-    fireEvent.click(screen.getByLabelText('Sangat baik'));
-    fireEvent.click(screen.getByRole('button', { name: /Kirim Indeks Persepsi Kualitas Pelayanan/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' })); // lewati data responden
+    fireEvent.click(await screen.findByLabelText('Sangat baik'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' })); // selesai bagian unsur
+    fireEvent.click(await screen.findByRole('button', { name: 'Kirim Survei' }));
 
     await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/LPMQ/2026/001.pdf'));
   });
