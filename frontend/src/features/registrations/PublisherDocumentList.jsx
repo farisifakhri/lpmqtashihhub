@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Download, FileText, ClipboardList } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Download, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
+import { PublisherSurveyDialog } from './PublisherSurveyDialog';
 import { dateLabel, downloadAvailable } from './publisher-status';
 
 export function PublisherDocumentList({ documents = [], registration = null }) {
@@ -11,6 +11,7 @@ export function PublisherDocumentList({ documents = [], registration = null }) {
   const [error, setError] = useState('');
   // STT baru dapat dicetak setelah penerbit mengisi survei kepuasan layanan.
   const [surveysPending, setSurveysPending] = useState([]);
+  const [surveyFor, setSurveyFor] = useState(null); // dokumen STT yang menunggu survei diisi
   const registrationId = registration?.id;
 
   const loadSurveys = useCallback(() => {
@@ -20,6 +21,12 @@ export function PublisherDocumentList({ documents = [], registration = null }) {
       .catch(() => setSurveysPending([]));
   }, [registrationId]);
   useEffect(loadSurveys, [loadSurveys]);
+
+  // Survei kepuasan wajib diisi dulu: tombol unduh memunculkan pop-up surveinya.
+  const requestDownload = (document) => {
+    if (surveysPending.length) { setSurveyFor(document); return; }
+    download(document);
+  };
 
   const download = async (document) => {
     setBusy(document.id);
@@ -173,30 +180,32 @@ export function PublisherDocumentList({ documents = [], registration = null }) {
               )}
             </div>
           </div>
-          {surveysPending.length ? (
-            <div className="flex flex-col items-end gap-1.5">
-              <Link
-                to={`/publisher/registrations/${registrationId}/survey`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-800 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-900"
-              >
-                <ClipboardList className="h-4 w-4" /> Isi Survei untuk Cetak STT
-              </Link>
-              <p className="text-xs text-civic-warning">Belum diisi: {surveysPending.map((s) => s.name).join(', ')}</p>
-            </div>
-          ) : (
+          <div className="flex flex-col items-end gap-1.5">
             <Button
               size="sm"
               variant="outline"
               disabled={busy !== null || !downloadAvailable(document)}
-              onClick={() => download(document)}
+              onClick={() => requestDownload(document)}
               className="text-xs font-bold"
             >
               <Download className="h-4 w-4 mr-1 text-brand-700" />
               {busy === document.id ? 'Mengunduh…' : 'Unduh STT'}
             </Button>
-          )}
+            {!!surveysPending.length && (
+              <p className="text-xs text-civic-warning">
+                Isi survei kepuasan dulu: {surveysPending.map((s) => s.name).join(', ')}
+              </p>
+            )}
+          </div>
         </div>
       ))}
+
+      <PublisherSurveyDialog
+        registrationId={registrationId}
+        isOpen={!!surveyFor}
+        onClose={() => { setSurveyFor(null); loadSurveys(); }}
+        onCompleted={() => { const doc = surveyFor; setSurveyFor(null); setSurveysPending([]); if (doc) download(doc); }}
+      />
 
       {!issued.length && (
         <p className="text-sm text-ink-muted">

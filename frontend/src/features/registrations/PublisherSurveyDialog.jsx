@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, ClipboardList, Lock } from 'lucide-react';
-import { PageHeader } from '@/components/ui/PageHeader';
+import { CheckCircle2, ClipboardList, Lock } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import {
@@ -194,14 +192,15 @@ function SurveyForm({ survey, onSubmit, saving }) {
   );
 }
 
-export function PublisherSurveyPage() {
-  const { id: registrationId } = useParams();
-  const navigate = useNavigate();
+// Pop-up survei: muncul saat penerbit menekan Unduh STT dan masih ada survei yang belum diisi.
+// Setelah seluruh survei terisi, unduhan STT diteruskan lewat onCompleted().
+export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompleted }) {
   const [surveys, setSurveys] = useState(null);
   const [active, setActive] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(() => {
+    if (!isOpen || !registrationId) return;
     publisherSurveyApi.listForRegistration(registrationId)
       .then((res) => {
         const list = res.data || [];
@@ -209,82 +208,86 @@ export function PublisherSurveyPage() {
         setActive((cur) => cur || list.find((s) => !s.answered)?.id || list[0]?.id || null);
       })
       .catch(() => setSurveys([]));
-  }, [registrationId]);
+  }, [isOpen, registrationId]);
   useEffect(load, [load]);
 
   const submit = async (surveyId, body) => {
     setSaving(true);
     try {
       await publisherSurveyApi.submit(registrationId, surveyId, body);
-      showToast('Terima kasih, survei Anda tersimpan.', 'success');
-      const sisa = surveys.filter((s) => !s.answered && s.id !== surveyId);
-      setActive(sisa[0]?.id || surveyId);
-      load();
+      const res = await publisherSurveyApi.listForRegistration(registrationId);
+      const list = res.data || [];
+      setSurveys(list);
+      const sisa = list.filter((s) => !s.answered);
+      if (!sisa.length) {
+        showToast('Terima kasih. Survei selesai, STT sedang diunduh.', 'success');
+        onCompleted?.();
+        return;
+      }
+      showToast(`Tersimpan. Tersisa ${sisa.length} survei lagi.`, 'success');
+      setActive(sisa[0].id);
     } catch { /* pesan galat sudah ditampilkan apiClient */ } finally {
       setSaving(false);
     }
   };
 
-  if (!surveys) return <main className="mx-auto max-w-4xl p-6 text-sm text-ink-muted">Memuat survei…</main>;
-
-  const belum = surveys.filter((s) => !s.answered).length;
-  const dipilih = surveys.find((s) => s.id === active);
+  const belum = (surveys || []).filter((s) => !s.answered).length;
+  const dipilih = (surveys || []).find((s) => s.id === active);
 
   return (
-    <main className="mx-auto max-w-4xl space-y-5 pb-12">
-      <PageHeader
-        breadcrumbs={[{ label: 'Permohonan Saya' }, { label: 'Survei Kepuasan' }]}
-        title="Survei Kepuasan Layanan"
-        subtitle="Isi survei berikut untuk membuka pencetakan Surat Tanda Tashih. Jawaban Anda dipakai untuk perbaikan mutu layanan."
-      />
-
-      <Button variant="outline" size="sm" onClick={() => navigate(`/publisher/registrations/${registrationId}`)}>
-        <ArrowLeft className="h-4 w-4" /> Kembali ke detail permohonan
-      </Button>
-
-      {!surveys.length ? (
-        <EmptyState title="Belum ada survei aktif" description="Tidak ada survei yang perlu diisi. STT dapat langsung dicetak." />
+    <Modal isOpen={isOpen} onClose={onClose} size="2xl"
+      title="Isi Survei Kepuasan Layanan"
+      description="Surat Tanda Tashih dapat diunduh setelah survei ini Anda isi. Jawaban dipakai untuk perbaikan mutu layanan.">
+      {!surveys ? <p className="text-sm text-ink-muted">Memuat survei…</p> : !surveys.length ? (
+        <p className="text-sm text-ink-muted">Tidak ada survei yang perlu diisi.</p>
       ) : (
-        <>
-          <div className={`rounded-xl border p-4 text-sm ${belum ? 'border-civic-warningLine bg-civic-warningSoft text-civic-warning' : 'border-civic-successLine bg-civic-successSoft text-civic-success'}`}>
-            {belum
-              ? <span className="flex items-center gap-2"><Lock className="h-4 w-4 shrink-0" /> {belum} survei belum diisi. STT dapat dicetak setelah seluruhnya terisi.</span>
-              : <span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 shrink-0" /> Seluruh survei sudah terisi. Silakan cetak STT di detail permohonan.</span>}
+        <div className="space-y-4">
+          <div className={`flex items-center gap-2 rounded-xl border p-3 text-sm ${belum
+            ? 'border-civic-warningLine bg-civic-warningSoft text-civic-warning'
+            : 'border-civic-successLine bg-civic-successSoft text-civic-success'}`}>
+            {belum ? <Lock className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
+            {belum ? `${belum} survei belum diisi.` : 'Seluruh survei sudah terisi.'}
           </div>
 
           {/* Pembagian per nama survei */}
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar survei">
-            {surveys.map((s) => (
-              <button key={s.id} type="button" role="tab" aria-selected={s.id === active} onClick={() => setActive(s.id)}
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-                  s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
-                {s.answered ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
-                {s.name}
-                <Badge variant={s.answered ? 'success' : 'warning'}>{s.answered ? 'Terisi' : 'Belum'}</Badge>
-              </button>
-            ))}
-          </div>
+          {surveys.length > 1 && (
+            <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar survei">
+              {surveys.map((s) => (
+                <button key={s.id} type="button" role="tab" aria-selected={s.id === active} onClick={() => setActive(s.id)}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                    s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
+                  {s.answered ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+                  {s.name}
+                  <Badge variant={s.answered ? 'success' : 'warning'}>{s.answered ? 'Terisi' : 'Belum'}</Badge>
+                </button>
+              ))}
+            </div>
+          )}
 
           {dipilih && (
-            <section className="space-y-4">
-              <div className="rounded-xl border border-line bg-surface-subtle/40 p-4">
-                <h2 className="text-base font-bold text-ink">{dipilih.name}</h2>
-                {dipilih.description && <p className="mt-1 text-sm text-ink-muted">{dipilih.description}</p>}
-                <p className="mt-1 text-xs text-ink-muted">{dipilih._count?.items || dipilih.items.length} pertanyaan · perkiraan 10 menit</p>
+            <div className="space-y-4">
+              <div className="rounded-xl border border-line bg-surface-subtle/40 p-3">
+                <h3 className="text-sm font-bold text-ink">{dipilih.name}</h3>
+                {dipilih.description && <p className="mt-0.5 text-xs text-ink-muted">{dipilih.description}</p>}
+                <p className="mt-0.5 text-xs text-ink-muted">{dipilih.items.length} pertanyaan · perkiraan 10 menit</p>
               </div>
               {dipilih.answered ? (
-                <div className="flex items-center gap-2 rounded-xl border border-civic-successLine bg-civic-successSoft p-4 text-sm text-civic-success">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" /> Survei ini sudah Anda isi pada {formatDateTime(dipilih.answered_at)}.
-                </div>
+                <p className="flex items-center gap-2 rounded-xl border border-civic-successLine bg-civic-successSoft p-3 text-sm text-civic-success">
+                  <CheckCircle2 className="h-4 w-4 shrink-0" /> Sudah Anda isi pada {formatDateTime(dipilih.answered_at)}.
+                </p>
               ) : (
                 <SurveyForm survey={dipilih} onSubmit={submit} saving={saving} />
               )}
-            </section>
+            </div>
           )}
-        </>
+
+          <div className="flex justify-end border-t border-line pt-3">
+            <Button type="button" variant="outline" onClick={onClose}>Tutup</Button>
+          </div>
+        </div>
       )}
-    </main>
+    </Modal>
   );
 }
 
-export default PublisherSurveyPage;
+export default PublisherSurveyDialog;
