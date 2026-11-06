@@ -64,7 +64,7 @@ router.post('/registrations/:id/printing-reports', authenticate, authorize('PENE
 router.get('/official-documents/:id/pdf', authenticate, authorize('PENERBIT', 'ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'VERIFIKATOR'), async (req, res, next) => {
   try {
     const document = await documents.getDocument(req.params.id, req.user);
-    const bytes = await documents.documentPdf(document, req.user);
+    const bytes = await documents.documentPdf(document, req.user, { forDownload: req.query.download === '1' });
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${document.document_no || document.document_type}.pdf"`, 'Cache-Control': 'private, no-store' });
     res.send(bytes);
   } catch (error) { next(error); }

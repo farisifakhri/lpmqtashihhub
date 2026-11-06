@@ -30,10 +30,13 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     vi.spyOn(fileApi, 'downloadDocument').mockResolvedValue();
   });
 
-  it('menahan unduhan STT dan menampilkan pop-up survei', async () => {
+  it('menahan unduhan STT dan menampilkan pop-up survei, tetapi pratinjau tetap bebas', async () => {
     asPublisher();
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
     render(<DocumentArchive registrationId="reg-1" />);
+
+    // Meninjau STT tidak dikunci survei.
+    expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeEnabled();
 
     const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ });
     fireEvent.click(tombol);

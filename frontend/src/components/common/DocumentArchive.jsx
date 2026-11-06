@@ -242,12 +242,12 @@ export function DocumentArchive({ registrationId }) {
                 type="button"
                 variant="primary"
                 size="sm"
-                onClick={guarded(selected, () => printPdf(selected))}
+                onClick={() => printPdf(selected)}
                 disabled={pdfLoading}
                 className="text-xs font-bold"
               >
                 <Eye className="w-3.5 h-3.5 mr-1.5" />
-                {pdfLoading ? 'Membuka PDF…' : needsSurvey(selected) ? 'Isi Survei untuk Buka STT' : 'Lihat Dokumen PDF'}
+                {pdfLoading ? 'Membuka PDF…' : 'Lihat Dokumen PDF'}
               </Button>
               {selected.source === 'APPLICATION' && selected.file_id && (
                 <Button
@@ -352,14 +352,26 @@ export function DocumentArchive({ registrationId }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={pdfUrl}
-                  download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`}
-                  className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-brand-700" />
-                  Unduh Salinan PDF
-                </a>
+                {/* Menyimpan salinan tetap melewati gerbang survei, meski pratinjaunya sudah terbuka. */}
+                {needsSurvey(selected) ? (
+                  <button
+                    type="button"
+                    onClick={guarded(selected, downloadOfficial(selected))}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 transition-colors hover:bg-brand-100 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-brand-700" />
+                    Isi Survei untuk Unduh
+                  </button>
+                ) : (
+                  <a
+                    href={pdfUrl}
+                    download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`}
+                    className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5 text-brand-700" />
+                    Unduh Salinan PDF
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => setPdfUrl(null)}

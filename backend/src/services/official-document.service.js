@@ -471,14 +471,15 @@ export async function renderDraft(document) {
 
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
-export async function documentPdf(document, user = null) {
+export async function documentPdf(document, user = null, { forDownload = false } = {}) {
   const isPublisher = user && user.roles.includes('PENERBIT') && !user.roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(r));
 
-  // Penerbit mengisi Survei Kepuasan Masyarakat lebih dulu sebelum mencetak STT (Pedoman Menteri PANRB 9/2024).
-  if (isPublisher && document.document_type === 'SURAT_TANDA_TASHIH') {
+  // Penerbit boleh meninjau STT kapan saja; mengunduh salinannya menunggu Survei Kepuasan
+  // Masyarakat terisi (Pedoman Menteri PANRB 9/2024).
+  if (isPublisher && forDownload && document.document_type === 'SURAT_TANDA_TASHIH') {
     const belum = await pendingSurveysForRegistration(document.registration_id);
     if (belum.length) {
-      const error = new Error(`Isi survei kepuasan layanan terlebih dahulu sebelum mencetak STT: ${belum.join(', ')}.`);
+      const error = new Error(`Isi survei kepuasan layanan terlebih dahulu sebelum mengunduh STT: ${belum.join(', ')}.`);
       error.statusCode = 409;
       error.code = 'SURVEY_REQUIRED';
       throw error;
