@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
 import {
-  Menu,
-  X,
+  PanelLeftClose,
+  PanelLeft,
   Home,
   ChevronRight,
   ChevronDown,
@@ -17,6 +17,7 @@ import {
   Minimize2,
   Sparkles,
   Check,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useDensity } from '@/context/DensityContext';
@@ -119,13 +120,19 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
   const roleConfig = getRoleConfig(role);
 
-  // Dynamic breadcrumb mapping (max 3 levels)
+  // Dynamic breadcrumb mapping (clean hierarchy)
   const getBreadcrumb = (pathname) => {
     if (pathname === '/publisher' || pathname === '/publisher/') {
       return { parent: null, name: 'Ikhtisar Layanan' };
     }
     if (pathname.startsWith('/publisher/new-registration')) {
       return { parent: 'Permohonan', name: 'Permohonan Naskah Baru' };
+    }
+    if (pathname.startsWith('/publisher/progress')) {
+      return { parent: 'Permohonan', name: 'Lacak Status & Progres' };
+    }
+    if (pathname.startsWith('/publisher/revisions')) {
+      return { parent: 'Permohonan', name: 'Perbaikan Naskah' };
     }
     if (pathname.startsWith('/publisher/registrations')) {
       return { parent: 'Permohonan', name: 'Daftar Permohonan Saya' };
@@ -150,6 +157,15 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     }
     if (pathname.startsWith('/internal/payments')) {
       return { parent: 'Keuangan', name: 'Verifikasi Pembayaran PNBP' };
+    }
+    if (pathname.startsWith('/internal/distributions/handover')) {
+      return { parent: 'Distribusi', name: 'Siap Serah Terima' };
+    }
+    if (pathname.startsWith('/internal/distributions/assignment')) {
+      return { parent: 'Distribusi', name: 'Penugasan Pentashih' };
+    }
+    if (pathname.startsWith('/internal/distributions/monitoring')) {
+      return { parent: 'Distribusi', name: 'Monitoring Distribusi' };
     }
     if (pathname.startsWith('/internal/distributions')) {
       return { parent: 'Distribusi', name: 'Distribusi Sidang & SK Tim' };
@@ -199,16 +215,20 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
 
         <div className="w-full px-3 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full">
-            {/* Left Side: Sidebar Toggler & Breadcrumbs */}
+            {/* Left Side: Sidebar Toggler & Clean Breadcrumbs */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <button
                 type="button"
                 onClick={onToggleSidebar}
-                className="h-9 w-9 rounded-lg flex items-center justify-center text-ink-muted hover:text-brand-fg bg-surface-subtle/80 hover:bg-surface-strong/60 border border-line hover:border-brand-500/40 transition-all focus:outline-none focus:ring-2 focus:ring-brand-700/20 shadow-2xs active:scale-95 cursor-pointer"
-                aria-label={sidebarOpen ? 'Tutup navigasi utama' : 'Buka navigasi utama'}
-                title={sidebarOpen ? 'Tutup Sidebar' : 'Buka Sidebar'}
+                className="h-9 w-9 rounded-lg flex items-center justify-center text-ink-muted hover:text-ink bg-surface-subtle/70 hover:bg-surface-subtle border border-line/70 hover:border-brand-500/40 transition-all focus:outline-none focus:ring-2 focus:ring-brand-700/20 shadow-2xs active:scale-95 cursor-pointer group"
+                aria-label={sidebarOpen ? 'Tutup navigasi samping' : 'Buka navigasi samping'}
+                title={sidebarOpen ? 'Sembunyikan Sidebar' : 'Tampilkan Sidebar'}
               >
-                {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                {sidebarOpen ? (
+                  <PanelLeftClose className="w-4 h-4 text-ink-muted group-hover:text-brand-fg transition-colors" />
+                ) : (
+                  <PanelLeft className="w-4 h-4 text-ink-muted group-hover:text-brand-fg transition-colors" />
+                )}
               </button>
 
               {/* Official Logos (Shown on mobile/tablet when sidebar is hidden) */}
@@ -221,29 +241,29 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                 </div>
               </div>
 
-              {/* Dynamic Breadcrumbs (Max 3 levels) */}
-              <nav aria-label="Breadcrumb" className="hidden sm:flex items-center text-xs text-ink-muted min-w-0">
-                <ol className="flex items-center gap-1.5 min-w-0 truncate">
+              {/* Clean Minimalist Breadcrumbs */}
+              <nav aria-label="Breadcrumb" className="hidden sm:flex items-center text-xs text-ink-muted min-w-0 pl-1">
+                <ol className="flex items-center gap-1.5 min-w-0">
                   <li className="flex items-center">
                     <Link
                       to={homePath}
-                      className="h-8 w-8 rounded-lg flex items-center justify-center bg-surface-subtle/80 border border-line/70 text-ink-muted hover:text-brand-fg hover:border-brand-400/50 transition-all shadow-2xs"
-                      title="Beranda"
+                      className="p-1.5 rounded-md text-ink-muted hover:text-brand-fg hover:bg-surface-subtle transition-all"
+                      title="Kembali ke Beranda"
                     >
-                      <Home className="w-3.5 h-3.5 text-brand-fg" />
+                      <Home className="w-3.5 h-3.5" />
                     </Link>
                   </li>
                   {breadcrumb.parent && (
-                    <li className="flex items-center gap-1.5">
-                      <ChevronRight className="w-3.5 h-3.5 text-ink-muted/50 shrink-0" />
-                      <span className="px-2 py-0.5 rounded-md bg-surface-subtle/60 border border-line/40 text-ink-muted whitespace-nowrap text-xs font-medium">
+                    <li className="flex items-center gap-1.5 text-ink-muted/80">
+                      <ChevronRight className="w-3 h-3 text-ink-muted/40 shrink-0" />
+                      <span className="whitespace-nowrap font-medium text-xs">
                         {breadcrumb.parent}
                       </span>
                     </li>
                   )}
                   <li className="flex items-center gap-1.5 min-w-0">
-                    <ChevronRight className="w-3.5 h-3.5 text-ink-muted/50 shrink-0" />
-                    <span className="px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 font-semibold text-xs truncate max-w-[220px] md:max-w-xs shadow-2xs">
+                    <ChevronRight className="w-3 h-3 text-ink-muted/40 shrink-0" />
+                    <span className="font-semibold text-ink text-xs truncate max-w-[200px] md:max-w-xs" title={breadcrumb.name}>
                       {breadcrumb.name}
                     </span>
                   </li>
@@ -251,43 +271,31 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
               </nav>
             </div>
 
-            {/* Right Side: Command Search, Notifications, Density, Theme, and Profile */}
+            {/* Right Side: Command Search, Notifications, Theme, and Profile */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Command Search Trigger Button */}
               <button
                 type="button"
                 onClick={() => setCommandSearchOpen(true)}
-                className="h-9 flex items-center gap-2 px-3 rounded-lg bg-surface-subtle/80 hover:bg-surface-strong/60 border border-line hover:border-brand-500/50 text-xs text-ink-muted hover:text-ink transition-all shadow-2xs group cursor-pointer"
+                className="h-9 flex items-center gap-2 px-3 rounded-lg bg-surface-subtle/60 hover:bg-surface-subtle border border-line/80 hover:border-brand-500/40 text-xs text-ink-muted hover:text-ink transition-all shadow-2xs group cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-700/20 active:scale-[0.99]"
                 aria-label="Pencarian cepat perintah (Ctrl+K)"
                 title="Pencarian Cepat (Ctrl+K atau /)"
               >
-                <Search className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-fg transition-colors" />
-                <span className="hidden md:inline font-medium">Cari perintah...</span>
-                <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold text-ink-muted bg-surface border border-line rounded shadow-2xs group-hover:border-brand-300 transition-colors">
-                  Ctrl+K
-                </kbd>
+                <Search className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-fg transition-colors shrink-0" />
+                <span className="hidden md:inline font-normal text-ink-muted/90 group-hover:text-ink transition-colors">
+                  Cari perintah atau menu...
+                </span>
+                <div className="hidden md:flex items-center pl-1">
+                  <kbd className="inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-ink-muted/80 bg-surface border border-line rounded shadow-2xs group-hover:border-line-strong transition-colors">
+                    Ctrl+K
+                  </kbd>
+                </div>
               </button>
 
               {/* Notification Center */}
               <NotificationCenter />
 
-              {/* Mode Kepadatan Tampilan (Nyaman / Ringkas) */}
-              <button
-                type="button"
-                onClick={toggleDensity}
-                className="hidden sm:inline-flex items-center gap-1.5 h-9 px-2.5 rounded-lg bg-surface-subtle/80 hover:bg-surface-strong/60 border border-line hover:border-brand-500/50 text-xs font-semibold text-ink-muted hover:text-ink transition-all shadow-2xs cursor-pointer group"
-                title={`Kepadatan Tampilan: ${isCompact ? 'Ringkas (Klik untuk beralih ke Nyaman)' : 'Nyaman (Klik untuk beralih ke Ringkas)'}`}
-                aria-label="Ganti mode kepadatan tampilan"
-              >
-                {isCompact ? (
-                  <Minimize2 className="w-3.5 h-3.5 text-brand-fg group-hover:scale-110 transition-transform" />
-                ) : (
-                  <Maximize2 className="w-3.5 h-3.5 text-brand-fg group-hover:scale-110 transition-transform" />
-                )}
-                <span className="hidden xl:inline">{isCompact ? 'Ringkas' : 'Nyaman'}</span>
-              </button>
-
-              {/* Mode Tema Gelap / Terang */}
+              {/* Mode Tema Gelap / Terang (Icon Only) */}
               <Switcher />
 
               {/* Quick Role Switcher Dropdown (Multi-Role Support) */}
@@ -296,7 +304,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setRoleDropdownOpen((prev) => !prev)}
-                    className="flex items-center gap-1.5 h-10 px-3 rounded-xl border border-brand-200 bg-brand-50/80 hover:bg-brand-100/90 text-brand-900 text-xs font-bold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600/30"
+                    className="flex items-center gap-1.5 h-9 px-2.5 rounded-lg border border-brand-200/80 bg-brand-50/70 hover:bg-brand-100/80 text-brand-900 text-xs font-bold transition-all shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-600/30"
                     aria-expanded={roleDropdownOpen}
                     aria-haspopup="true"
                     aria-label="Pilih Peran Pengguna Aktif"
@@ -361,11 +369,12 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                    className={`flex items-center gap-2 h-10 pl-1.5 pr-2.5 rounded-xl transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-600/30 cursor-pointer shadow-2xs ${
+                    className={clsx(
+                      "flex items-center gap-2 h-9 pl-1 pr-2 rounded-lg transition-all text-left focus:outline-none focus:ring-2 focus:ring-brand-600/30 cursor-pointer shadow-2xs border",
                       profileDropdownOpen
-                        ? 'bg-surface-subtle border-brand-500/60 ring-2 ring-brand-500/10'
-                        : 'bg-surface-subtle/70 hover:bg-surface-subtle border border-line/80 hover:border-brand-400/50'
-                    }`}
+                        ? "bg-surface-subtle border-brand-500/50 ring-2 ring-brand-500/10 text-ink"
+                        : "bg-surface-subtle/60 hover:bg-surface-subtle border-line/80 hover:border-brand-400/50 text-ink"
+                    )}
                     aria-expanded={profileDropdownOpen}
                     aria-haspopup="true"
                     aria-label={`Menu profil ${currentUser.name}`}
@@ -382,21 +391,23 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                       <div className="text-xs font-bold text-ink truncate max-w-[130px]">
                         {currentUser.name}
                       </div>
-                      <div className="text-[11px] text-ink-muted truncate max-w-[130px] font-medium">
+                      <div className="text-[10px] text-ink-muted truncate max-w-[130px] font-medium">
                         {roleConfig.label}
                       </div>
                     </div>
 
                     <ChevronDown
-                      className={`w-3.5 h-3.5 text-ink-muted transition-transform duration-200 ${
-                        profileDropdownOpen ? 'rotate-180 text-brand-fg' : ''
-                      }`}
+                      className={clsx(
+                        "w-3.5 h-3.5 text-ink-muted transition-transform duration-200 ml-0.5",
+                        profileDropdownOpen && "rotate-180 text-brand-fg"
+                      )}
                     />
                   </button>
 
                   {/* Dropdown Menu */}
                   {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-72 bg-surface rounded-xl shadow-xl border border-line py-1.5 z-50 animate-slideUp">
+                      {/* Active Session Info */}
                       <div className="px-4 py-3 border-b border-line bg-surface-subtle/40">
                         <p className="text-[10px] text-ink-muted font-bold uppercase tracking-wider mb-2">Sesi Aktif</p>
                         <div className="flex items-center gap-3">
@@ -422,12 +433,57 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                         </div>
                       </div>
 
+                      {/* SOP Notice */}
                       <div className="px-3.5 py-1.5 bg-surface-subtle/30 border-b border-line/60 text-[11px] text-ink-muted flex items-center gap-1.5">
                         <span className="w-1.5 h-1.5 rounded-full bg-brand-700 shrink-0" />
-                        <span>Kontrol proses mengacu pada SOP Pentashihan LPMQ</span>
+                        <span>SOP Pentashihan Mushaf Al-Qur'an LPMQ</span>
                       </div>
 
-                      {/* Ganti Peran Aktif jika memiliki peran ganda (Item 21) */}
+                      {/* Density / Display Preference */}
+                      <div className="px-3.5 py-2.5 mx-2 my-2 bg-surface-subtle/60 rounded-xl border border-line/70">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                            <SlidersHorizontal className="w-3.5 h-3.5 text-brand-700" />
+                            Kepadatan Antarmuka
+                          </span>
+                          <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
+                            {isCompact ? 'Ringkas' : 'Nyaman'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-ink-muted leading-tight mb-2">
+                          Atur kerapatan padding dan spasi antarmuka kerja.
+                        </p>
+                        <div className="grid grid-cols-2 gap-1.5 bg-surface p-1 rounded-lg border border-line/80">
+                          <button
+                            type="button"
+                            onClick={() => { if (isCompact) toggleDensity(); }}
+                            className={clsx(
+                              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer",
+                              !isCompact
+                                ? "bg-brand-50 text-brand-900 border border-brand-200 shadow-2xs font-bold"
+                                : "text-ink-muted hover:text-ink hover:bg-surface-subtle"
+                            )}
+                          >
+                            <Maximize2 className="w-3 h-3 text-brand-700" />
+                            <span>Nyaman</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { if (!isCompact) toggleDensity(); }}
+                            className={clsx(
+                              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer",
+                              isCompact
+                                ? "bg-brand-50 text-brand-900 border border-brand-200 shadow-2xs font-bold"
+                                : "text-ink-muted hover:text-ink hover:bg-surface-subtle"
+                            )}
+                          >
+                            <Minimize2 className="w-3 h-3 text-brand-700" />
+                            <span>Ringkas</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Ganti Peran Aktif jika memiliki peran ganda */}
                       {currentUser?.roles && currentUser.roles.length > 1 && (
                         <div className="p-2.5 mx-2 my-1.5 bg-brand-50/70 rounded-xl border border-brand-200/80 space-y-1.5">
                           <div className="flex items-center justify-between text-[10px] font-extrabold uppercase tracking-wider text-brand-900">

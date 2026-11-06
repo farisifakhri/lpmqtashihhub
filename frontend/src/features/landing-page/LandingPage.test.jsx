@@ -504,16 +504,19 @@ describe('LandingPage sections and navigation', () => {
     expect(screen.queryByText('Dokumen Persyaratan')).not.toBeInTheDocument();
     expect(screen.queryByText('Standar Waktu Layanan (SLA)')).not.toBeInTheDocument();
 
-    // Submenu Informasi tetap tampil di navigasi namun diputus dari #informasi
     const infoSubmenus = [
-      screen.getAllByText('Informasi Layanan Pentashihan')[0],
-      screen.getAllByText('Alur & Regulasi STT')[0],
-      screen.getAllByText('Persyaratan Berkas Naskah')[0],
+      ["Regulasi Penerbit Mushaf Al-Qur'an", '/informasi/regulasi-penerbit-mushaf'],
+      ['Panduan Permohonan Surat Tanda Tashih/Izin Edar', '/informasi/panduan-permohonan-surat-tanda-tashih'],
+      ['SOP Pelayanan Surat Tanda Tashih', '/informasi/sop-pelayanan-surat-tanda-tashih'],
+      ["Direktori Penerbit Mushaf Al-Qur'an", '/informasi/direktori-penerbit-mushaf'],
+      ['Survei IKM dan IPAK Pelayanan Surat Tanda Tashih', '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih'],
+      ['Siaran Pers', '/informasi/siaran-pers'],
+      ['Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar', '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih'],
     ];
-    infoSubmenus.forEach((submenu) => {
+    infoSubmenus.forEach(([label, href]) => {
+      const submenu = screen.getAllByText(label)[0];
       expect(submenu).toBeInTheDocument();
-      const anchor = submenu.closest('a');
-      expect(anchor).toHaveAttribute('href', '#');
+      expect(submenu.closest('a')).toHaveAttribute('href', href);
     });
   });
 

@@ -135,7 +135,7 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
               Kalkulator PNBP & Acuan Waktu Layanan (SLA)
             </h2>
             <p className="text-xs sm:text-sm text-ink-muted">
-              Acuan simulasi tarif dan SLA berbasis item naskah sesuai B-01 & PP No. 59 Tahun 2020.
+              Acuan simulasi tarif dan SLA berbasis item naskah sesuai PP No. 59 Tahun 2020.
             </p>
           </div>
         </div>

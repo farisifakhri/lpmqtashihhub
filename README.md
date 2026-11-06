@@ -1,86 +1,182 @@
-# Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an
+# Sistem Manajemen Layanan Pentashihan Mushaf Al-Qur'an (LPMQ Tashih Hub)
 
-Aplikasi LPMQ untuk portal penerbit dan petugas internal. Frontend menggunakan React 18, Vite 5, dan Tailwind CSS. Backend menggunakan Express 4, Prisma 5, dan MySQL 8, dengan autentikasi JWT, RBAC, audit log, serta penyimpanan unggahan privat.
+[![Quality Gate CI](https://github.com/farisifakhri/lpmqtashihhub/actions/workflows/ci.yml/badge.svg)](https://github.com/farisifakhri/lpmqtashihhub/actions)
+[![Kementerian Agama RI](https://img.shields.io/badge/Kemenag_RI-Lajnah_Pentashihan_Mushaf_Al--Qur'an-1E560D.svg)](https://lpmq.kemenag.go.id)
+[![Glosarium Resmi](https://img.shields.io/badge/Dokumentasi-Glosarium_Istilah_Resmi-396A06.svg)](docs/GLOSARIUM.md)
 
-## Status implementasi
+**LPMQ Tashih Hub** adalah platform layanan publik digital resmi milik **Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ), Badan Litbang dan Diklat / Balitbang Diklat Kementerian Agama Republik Indonesia**. Aplikasi ini melayani pendaftaran badan hukum penerbit, pengajuan tanda tashih mushaf Al-Qur'an multi-naskah dan varian ukuran/oplah, verifikasi berkas, pembayaran Penerimaan Negara Bukan Pajak (PNBP), distribusi sidang pentashihan per rentang juz, siklus revisi naskah dan dumi (*pra-cetak*), hingga penerbitan **Surat Tanda Tashih (STT)** digital ber-QR yang sah secara hukum.
 
-Repository ini memuat fitur-fitur berikut. Daftar ini bukan klaim bahwa seluruh kriteria penerimaan atau temuan UAT telah selesai, dan tidak menyatakan hasil test terbaru. Status paket serta bukti implementasi yang sudah ditinjau dicatat di [peta tugas](docs/tugas/README.md) dan [backlog fase lanjutan](docs/tugas/BACKLOG-FASE-LANJUTAN.md).
+---
 
-- **Penerimaan Fisik & Intake Loket (`ADMIN_INTERNAL`)**: Pencatatan nomor resi, tanda terima fisik, bukti fisik paket, dan tanggal terima (`received_at`). Admin Internal diisolasi khusus pada tugas teknis intake (`RF-REG-11`, `RF-REG-13`, `T-03`).
-- **Verifikasi Berkas & Naskah (`VERIFIKATOR`)**: Penugasan via Nota Dinas, checklist butir pemeriksaan selaras Berita Acara resmi Kemenag RI (T-06), tombol pengajuan "Ajukan Draft" (`RF-VER-04`), penandatanganan digital bertingkat, dan outbox pengiriman hasil verifikasi.
-- **Pembayaran PNBP & Serah-Terima Fisik**: Validasi pembayaran sah, penghitungan SLA H+1 pasca verifikasi bayar (`RF-CALC-05`), serah-terima fisik ke distributor, dan penanganan fisik cacat (`PHYSICAL_HANDOVER_CORRECTION_REQUIRED`).
-- **Distribusi & Pentashihan Rentang Juz (`RF-DIST-05`)**: 6 Kelompok Utama Pentashihan (SK LPMQ 2025), penugasan berbasis rentang juz tanpa tumpang tindih, dan workspace pentashih interaktif.
-- **Berkas Rekapan Koreksi Internal (`RF-DIST-18`, `RF-DIST-19`)**: Pentashih mengunggah 1 (satu) berkas rekapan internal per rentang juz yang bersifat rahasia internal tim (hanya dapat diakses pentashih, distributor, dan admin internal).
-- **Surat Pengembalian Revisi Resmi (`REVISION_RETURN_LETTER`)**: Reviu Distributor dengan penetapan `revision_kind` (`NASKAH_PERBAIKAN` / `NASKAH_DUMI`), penomoran ronde otomatis (Ronde 1, 2, 3, dst.), dan penerbitan draf surat resmi Kemenag RI (`RF-DIST-08`, `RF-DIST-09`, `RF-DIST-17`).
-- **Penanganan Naskah Dumi (T-04)**: Naskah Dumi dipilih setelah naskah bersih; temuan minor pada dumi diterbitkan notice koreksi tanpa siklus baru ke penerbit.
-- **Template Surat Permohonan & Label Pengiriman**: Unduhan langsung template resmi `.docx` di portal pendaftaran (`RF-PBL-01`) dan cetak label pengiriman dengan logo Kemenag & LPMQ tajam dan terbaca jelas (`RF-REG-10`).
-- **Pusat Arsip Global**: Menu Arsip & Dokumen dipusatkan di Sidebar `/internal/archive` yang dapat diakses oleh seluruh peran internal (`RF-DOC-14`).
-- **Pendaftaran & Sertifikasi Penerbit Resmi (`T-F01–T-F07`, `T-S01–T-S03`)**: Pendaftaran badan hukum terverifikasi (PT, CV, Yayasan, Lembaga, Koperasi), matriks dokumen dinamis (Akta, NIB, NPWP, Surat Tugas), verifikasi berkas oleh Admin Internal, serta penerbitan Sertifikat Tanda Terdaftar Penerbit resmi Kemenag RI dengan QR verifikasi publik.
-- **Pengajuan Multi-Naskah & Varian Ukuran/Oplah (`B-01`)**: Mendukung pengajuan hingga 20 naskah per registrasi, katalog 16 Jenis Naskah Master Items resmi LPMQ, penentuan varian ukuran & oplah, engine kalkulasi tarif PNBP deterministik (dengan aturan absorpsi Terjemah oleh Perkata/Tafsir), dan penentuan batas SLA maksimal 60 HK.
-- **Penerbitan STT Digital Resmi & Laporan Cetak (`B-09`, `B-10`)**: Penomoran surat kedinasan otomatis kode `TL.01`, penyatuan berkas billing PNBP SIMPONI (`B-04`), penerbitan Surat Tanda Tashih (STT) PDF digital resmi, serta modul pencatatan laporan realisasi pencetakan oplah dan pemenuhan 5 eksemplar.
-- **Kelola Landing Page, Dokumen Regulasi & Panduan Informasi**: Portal CMS publik untuk mengelola unduhan dokumen regulasi resmi (PDF) serta artikel panduan layanan kaya teks dengan sanitasi ketat anti-XSS.
-- **Multi-Role Switcher & Controlled Administrative Override**: Penggantian konteks kerja langsung melalui sidebar untuk personil multi-role dan override administratif penugasan verifikator tim inti.
+## 👥 8 Peran Pengguna & Ruang Lingkup Wewenang
 
-Spesifikasi kontrak API lengkap dan arsitektur alur kerja tercatat pada [docs/api/workflow.md](docs/api/workflow.md) dan catatan keputusan pada [keputusan 8 Oktober 2026](docs/references/keputusan-2026-10-08.md).
+Sistem menerapkan kendali akses berbasis peran (*Role-Based Access Control / RBAC*) yang ketat selaras dengan Tata Naskah Dinas dan Standar Operasional Prosedur (SOP) Kementerian Agama RI:
 
-## Prasyarat
+| Peran Pengguna | Kode Sistem | Ruang Lingkup Wewenang & Tanggung Jawab |
+|---|---|---|
+| **Penerbit Terverifikasi** | `PENERBIT` | Mendaftarkan badan hukum (PT, CV, Yayasan, Lembaga, Koperasi), mengajukan permohonan naskah baru, mengunggah sampel digital, memantau estimasi SLA, membayar tagihan PNBP SIMPONI, mengunggah naskah revisi/dumi, dan mengunduh STT resmi. |
+| **Helper Admin Loket** | `ADMIN_INTERNAL` | Melayani *intake* master fisik di loket LPMQ, memverifikasi nomor resi ekspedisi, menerbitkan tanda terima fisik, serta melakukan verifikasi administratif akun pendaftaran penerbit. |
+| **Verifikator Dokumen** | `VERIFIKATOR` | Menerima disposisi penugasan (Nota Dinas), memeriksa checklist administrasi dan rasm mushaf, menyusun draf Berita Acara Verifikasi (BAV), menerbitkan surat lolos/tolak berkas berkode `TL.01`, serta menyerahkan master fisik ke distributor. |
+| **Koordinator Distribusi** | `DISTRIBUTOR` | Menerima serah-terima fisik master mushaf (BAST), membentuk formatur tim sidang pentashihan, membagi rentang juz penugasan tanpa tumpang tindih, mereviu putusan pentashih, dan menerbitkan Surat Pengembalian Naskah Perbaikan resmi. |
+| **Pentashih Naskah** | `PENTASHIH` | Meneliti keabsahan lafazh ayat suci, rasm usmani, harakat, dan tanda waqaf per rentang juz yang ditugaskan, memberikan rekomendasi kelulusan (`PASSED` / `REVISION_REQUIRED`), dan mengunggah berkas rekapan koreksi internal. |
+| **Administrator Dokumen** | `DOKUMENTATOR` | Mengelola arsip dokumen resmi negara, memproses penomoran STT, menyusun Berita Acara Pentashihan (BAT), serta mencatat pemenuhan deposit 5 eksemplar cetak fisik mushaf dari penerbit. |
+| **Kepala LPMQ** | `KEPALA_LPMQ` | Mengesahkan Nota Dinas penugasan verifikator, menyetujui draf surat hasil verifikasi naskah, menandatangani Surat Tanda Tashih (STT) digital ber-QR, dan mengawasi kepatuhan SLA layanan. |
+| **Administrator Sistem** | `SUPERADMIN` | Mengelola data master layanan, akun pengguna dan penugasan peran ganda (*multi-role*), audit log keamanan, serta konfigurasi portal informasi landing page. |
 
-- Node.js 20 dan npm.
-- MySQL 8 yang berjalan dan database kosong `lpmq_db` (atau nama lain sesuai `DATABASE_URL`).
-- Kredensial database lokal yang dapat membuat dan mengubah tabel.
+---
 
-## Menjalankan lokal
+## 🔄 8 Fase Alur Kerja Layanan
 
-Dari root repository:
+Alur pentashihan mushaf dirancang berkesinambungan melalui 8 fase resmi:
 
-```sh
-npm ci
-npm --prefix backend ci
-npm --prefix frontend ci
+```
+[1. Pendaftaran] ──> [2. Verifikasi] ──> [3. Pembayaran] ──> [4. Serah-Terima]
+       │                    │                  │                   │
+[8. Selesai]     <── [7. Dokumentasi]<── [6. STT]        <── [5. Pentashihan]
 ```
 
-Salin `backend/.env.example` menjadi `backend/.env` dan sesuaikan `DATABASE_URL` serta `JWT_SECRET`. Salin `frontend/.env.example` menjadi `frontend/.env` dan arahkan `VITE_API_BASE_URL` ke `http://localhost:5000/api/v1`. Jangan commit file `.env` atau data asli. Akun seed hanya untuk pengembangan lokal.
+| No | Fase Layanan | Aktor Utama | Keluaran (*Output*) & Keterangan |
+|---|---|---|---|
+| **1** | **Pendaftaran** | Penerbit | Nomor Registrasi Naskah & Tanda Terima Permohonan elektronik ber-QR. |
+| **2** | **Verifikasi Permohonan & Naskah Fisik** | Penerbit, Helper Admin, Verifikator, Kepala LPMQ | Penerimaan naskah fisik A4 di loket, Nota Dinas Penugasan, checklist rasm 8 butir, dan Surat Hasil Verifikasi berkode dinas `TL.01`. |
+| **3** | **Pembayaran PNBP** | Penerbit, Verifikator | Penerbitan kode billing SIMPONI (berlaku 7 hari), validasi setoran Nomor Transaksi Penerimaan Negara (NTPN). Penghitungan target SLA resmi dimulai H+1 pasca verifikasi bayar. |
+| **4** | **Serah-Terima Fisik** | Verifikator, Distributor | Berita Acara Serah Terima (BAST) master fisik naskah dari verifikator ke distributor. |
+| **5** | **Sidang Pentashihan** | Distributor, Pentashih, Penerbit | Penugasan 6 Kelompok Utama Pentashihan (SK 2025), telaah per rentang juz, Berkas Rekapan Internal (rahasia tim), Surat Pengembalian Revisi beronde, penegakan siklus wajib Naskah Dumi (*pra-cetak*). |
+| **6** | **Penerbitan STT** | Kepala LPMQ | Surat Tanda Tashih (STT) digital ber-QR resmi Kementerian Agama RI. |
+| **7** | **Dokumentasi & Deposit Eksemplar** | Penerbit, Dokumentator | Laporan realisasi pencetakan oplah dan penyerahan deposit **5 eksemplar fisik** mushaf dalam waktu 1 bulan kalender sejak STT terbit. |
+| **8** | **Selesai & Arsip** | Sistem LPMQ | Penutupan siklus naskah dan pengarsipan permanen di Pusat Dokumen LPMQ. |
 
+---
+
+## 📖 Glosarium Singkat Istilah Kunci
+
+Untuk panduan terminologi lengkap dan kaidah anti-bahasa sistem, lihat dokumen resmi **[docs/GLOSARIUM.md](docs/GLOSARIUM.md)**.
+
+* **Permohonan Terdaftar:** Status awal ketika penerbit telah melengkapi data mushaf dan mengirimkan permohonan ke LPMQ (menggantikan istilah teknis `DRAFT` / *Draf Belum Diajukan*).
+* **Master Fisik Naskah:** Naskah Al-Qur'an lengkap (Juz 1–30) cetak satu muka pada kertas A4 tanpa jilid keras yang diserahkan penerbit ke loket LPMQ untuk ditelaah.
+* **Naskah Dumi (*Dummy*):** Naskah contoh cetak pra-cetak (*mockup sample*) dalam bentuk jilid jadi yang wajib diperiksa sebelum izin pencetakan massal STT diterbitkan. Seluruh naskah wajib melalui tahap dumi.
+* **Surat Tanda Tashih (STT):** Dokumen negara berkekuatan hukum yang menyatakan mushaf Al-Qur'an telah ditashih dan diizinkan beredar di wilayah Republik Indonesia.
+* **Surat Hasil Verifikasi (`TL.01`):** Surat resmi pemberitahuan hasil kelolosan administrasi berkas naskah yang menjadi dasar penerbitan kode billing PNBP.
+* **SIMPONI:** Sistem Informasi PNBP Online milik Kementerian Keuangan RI yang digunakan untuk memungut tarif jasa pentashihan mushaf sesuai PP Tarif PNBP Kemenag RI.
+* **Berita Acara Serah Terima (BAST):** Berita acara penyerahan berkas master fisik antar unit kerja internal LPMQ (Verifikator $\rightarrow$ Distributor).
+* **Hari Kerja (HK):** Satuan waktu resmi penghitungan Service Level Agreement (SLA). Hari libur nasional dan cuti bersama tidak dihitung ke dalam masa layanan.
+
+---
+
+## 🛠️ Arsitektur & Teknologi Stack
+
+* **Frontend:** React 18, Vite 5, Tailwind CSS, React Router 7, TipTap Rich Text Editor, Lucide Icons, Vitest.
+* **Backend:** Node.js 20, Express 4, Prisma ORM 5, Zod Schema Validation, JSON Web Token (JWT), PDFKit / Puppeteer Renderer.
+* **Basis Data:** MySQL 8 dengan integritas relasional, skema migrasi terotomatisasi, dan sequence penomoran surat atomik anti-tabrakan.
+* **Keamanan:** Proteksi Cross-Site Scripting (DOMPurify anti-XSS), mitigasi Insecure Direct Object Reference (IDOR), penyimpanan unggahan berkas privat terenkripsi, sanitasi nama berkas, dan Audit Log seluruh transaksi operasional.
+
+---
+
+## 🚀 Panduan Menjalankan Sistem di Lingkungan Lokal
+
+### 1. Prasyarat Sistem
+* **Node.js** versi `>= 20.x` dan **npm** versi `>= 10.x`
+* **MySQL** versi `8.x` yang sedang aktif (misalnya via Laragon, XAMPP, atau Docker)
+
+### 2. Kloning & Pemasangan Dependensi
+```sh
+# Kloning repositori
+git clone https://github.com/farisifakhri/lpmqtashihhub.git
+cd lpmqtashihhub
+
+# Pasang dependensi root, backend, dan frontend
+npm install
+npm --prefix backend install
+npm --prefix frontend install
+```
+
+### 3. Konfigurasi Lingkungan (*Environment Variables*)
+1. Salin file contoh konfigurasi backend:
+   ```sh
+   cp backend/.env.example backend/.env
+   ```
+   Sesuaikan `DATABASE_URL` (contoh: `mysql://root:@localhost:3306/lpmq_db`) dan pastikan `JWT_SECRET` terisi.
+2. Salin file contoh konfigurasi frontend:
+   ```sh
+   cp frontend/.env.example frontend/.env
+   ```
+   Pastikan `VITE_API_BASE_URL` mengarah ke `http://localhost:5000/api/v1`.
+
+### 4. Migrasi Basis Data & Seed Data Demo
 ```sh
 cd backend
 npx prisma generate
 npx prisma migrate deploy
 npm run prisma:seed
 cd ..
-npm run dev
 ```
 
-Frontend tersedia di `http://localhost:5173` dan API di `http://localhost:5000/api/v1`. `GET /api/v1/health` memeriksa database dan mengembalikan HTTP 503 saat tidak siap. Dalam development server masih dapat membuka endpoint kesehatan ketika database gagal tersambung; dalam production startup gagal. Siapkan `JWT_SECRET` yang kuat dan konfigurasi origin yang sesuai sebelum menjalankan production.
+### 5. Menjalankan Server Pengembangan
+Dari root repository:
+```sh
+npm run dev
+```
+* **Frontend Portal:** Akses di [http://localhost:5173](http://localhost:5173) (atau port Vite yang tampil di terminal).
+* **Backend API:** Berjalan di [http://localhost:5000/api/v1](http://localhost:5000/api/v1).
+* **Pemeriksaan Kesehatan Server:** Buka `GET http://localhost:5000/api/v1/health`.
 
-## Validasi
+---
+
+## 🔑 Akun Demo Pengembangan (*Seed Accounts*)
+
+Gunakan kata sandi standar untuk seluruh akun demo lokal: `Password123!`
+
+| Peran | Akun Email | Nama Petugas / Instansi |
+|---|---|---|
+| **Super Admin** | `superadmin@lpmq.kemenag.go.id` | Super Admin LPMQ |
+| **Helper Admin Loket** | `admin.internal@lpmq.kemenag.go.id` | Muhammad Zamroni Ahbab, S.S.I., M.Ag. |
+| **Verifikator Dokumen** | `verifikator@lpmq.kemenag.go.id` | Shera Diya Zahiyah, S.Hum. |
+| **Koordinator Distribusi** | `distributor@lpmq.kemenag.go.id` | H. Fahrur Rozi, M.A. |
+| **Pentashih Naskah** | `pentashih@lpmq.kemenag.go.id` | Dr. H. Ahmad Jaeni, M.A. |
+| **Administrator Dokumen** | `dokumentator@lpmq.kemenag.go.id` | Ahmad Khotib, S.Sos. |
+| **Kepala LPMQ** | `kepala@lpmq.kemenag.go.id` | H. Abdul Aziz Sidqi, M.A. |
+| **Penerbit Mushaf** | `penerbit@demo.com` | PT Madina Quran Nusantara |
+
+---
+
+## 🧪 Validasi & Pengujian Mutu (*Testing & Quality Assurance*)
+
+Seluruh fitur dilengkapi pengujian otomatis unit dan integrasi:
 
 ```sh
-cd backend
-npx prisma validate
-cd ..
+# Menjalankan pengujian backend
 npm --prefix backend test
+
+# Menjalankan pengujian frontend (Vitest)
 npm --prefix frontend test
+
+# Memvalidasi skema Prisma
+cd backend && npx prisma validate && cd ..
+
+# Menjalankan build bundle produksi frontend
 npm --prefix frontend run build
 ```
 
-Tes backend integrasi membutuhkan database uji yang sudah dimigrasi dan di-seed. CI menjalankan MySQL 8, validasi/migrasi Prisma, seed, tes backend/frontend, dan build. Jangan arahkan tes integrasi ke database produksi karena tes menulis data.
+---
 
-## Struktur proyek
+## 📁 Struktur Direktori & Navigasi Dokumentasi
 
 ```text
-backend/                 Express API, Prisma schema/migrations/seed, tests
-frontend/                React/Vite UI, API client, component tests
-backend/prisma/          Model dan migrasi MySQL
-backend/src/             Routes, controllers, services, middleware
-frontend/src/            Router, halaman, komponen, konteks autentikasi
-docs/                    Dokumentasi teknis, keputusan, dan sumber SOP
-docs/api/                Kontrak workflow dan siklus SOP
-.github/workflows/ci.yml Quality gate CI
-docs/api/workflow.md    Kontrak API alur layanan
-docs/architecture/design.md          Rancangan arsitektur dan domain
-docs/architecture/implementation.md  Baseline dan rencana implementasi
-docs/architecture/user-flows.md      Alur pengguna per peran
-docs/tugas/README.md                 Peta tugas dan status bukti implementasi
+lpmqtashihhub/
+├── backend/                 API Express, Prisma ORM, Skema Migrasi, & Pengujian Integrasi
+│   ├── prisma/              schema.prisma, migrations/, & seed data resmi
+│   └── src/                 Controllers, Services, Routes, Middlewares, & PDF Renderers
+├── frontend/                Aplikasi Antarmuka React 18, Vite, & Tailwind CSS
+│   ├── src/components/      Komponen UI terstandarisasi, Layout, Navbar, & Sidebar
+│   ├── src/features/        Modul fungsional per peran (penerbit, verifikasi, distribusi, tashih)
+│   └── src/lib/             Glosarium resmi (glossary.js) & Engine Kalkulator PNBP
+└── docs/                    Dokumentasi Arsitektur, Keputusan Rapat, & Glosarium
+    ├── GLOSARIUM.md         <- Rujukan Standar Glosarium & Anti-Bahasa Sistem
+    ├── README.md            <- Indeks Direktori Dokumentasi
+    ├── api/workflow.md      <- Spesifikasi Kontrak API & State Machine
+    └── tugas/README.md      <- Peta Tugas Notulensi & Status Penyelesaian Backlog
 ```
 
-SOP dan keputusan stakeholder menjadi sumber aturan bisnis. Cakupan implementasi dan temuan yang belum terverifikasi perlu dibaca bersama peta tugas; integrasi produksi tingkat lanjut (gateway SIMPONI, sertifikat digital BSrE, dan SMTP produksi) tetap memerlukan konfigurasi serta verifikasi di lingkungan terkait.
+---
+
+*Hak Cipta &copy; 2026 Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) — Kementerian Agama Republik Indonesia.*

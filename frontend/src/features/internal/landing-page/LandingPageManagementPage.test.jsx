@@ -5,13 +5,14 @@ import { LandingPageManagementPage } from './LandingPageManagementPage';
 import * as AuthContext from '@/features/auth/AuthContext';
 import { regulationApi } from '@/api/regulation.api';
 import { informationGuideApi } from '@/api/information-guide.api';
+import { serviceDocumentApi } from '@/api/service-document.api';
 
 const informationSubmenus = [
   "Regulasi Penerbit Mushaf Al-Qur'an",
   'Panduan Permohonan Surat Tanda Tashih/Izin Edar',
   'SOP Pelayanan Surat Tanda Tashih',
   "Direktori Penerbit Mushaf Al-Qur'an",
-  'Survei IKM dan IPAK Pelayananan Surat Tanda Tashih',
+  'Survei IKM dan IPAK Pelayanan Surat Tanda Tashih',
   'Siaran Pers',
   'Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar',
 ];
@@ -32,6 +33,11 @@ describe('LandingPageManagementPage navigation', () => {
       data: { totalAll: 0, totalPublished: 0, totalUnpublished: 0, categories: [] },
     });
     vi.spyOn(informationGuideApi, 'listAdmin').mockResolvedValue({
+      success: true,
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+    });
+    vi.spyOn(serviceDocumentApi, 'listAdmin').mockResolvedValue({
       success: true,
       data: [],
       pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
@@ -128,6 +134,42 @@ describe('LandingPageManagementPage navigation', () => {
     expect(informationGuideApi.create.mock.calls[0][0]).toMatchObject({
       title: 'SOP Uji Administrasi',
       section: 'SOP',
+    });
+  });
+
+  it('uses the SOP guide form and backend section for Siaran Pers', async () => {
+    vi.spyOn(informationGuideApi, 'create').mockResolvedValue({
+      success: true,
+      data: { is_published: false, content_type: 'EDITOR' },
+    });
+    render(<LandingPageManagementPage />);
+    expect(await screen.findByText('Total Regulasi')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Siaran Pers' }));
+    expect(await screen.findByRole('heading', { name: 'Siaran Pers' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Tambah Siaran Pers' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(informationGuideApi.listAdmin).toHaveBeenCalledWith(
+        expect.objectContaining({ section: 'SIARAN_PERS' }),
+      );
+    });
+    expect(screen.getByRole('columnheader', { name: 'Judul Pers' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Aksi' })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'No' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah Siaran Pers' }));
+    const dialog = screen.getByRole('dialog', { name: 'Tambah Siaran Pers' });
+    expect(within(dialog).getByLabelText('Judul Siaran Pers *')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Bentuk Konten')).toBeInTheDocument();
+    expect(within(dialog).getByText('Publikasikan siaran pers')).toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText('Judul Siaran Pers *'), {
+      target: { value: 'Rilis Layanan Pentashihan' },
+    });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan Draf' }));
+    await waitFor(() => expect(informationGuideApi.create).toHaveBeenCalledTimes(1));
+    expect(informationGuideApi.create.mock.calls[0][0]).toMatchObject({
+      title: 'Rilis Layanan Pentashihan',
+      section: 'SIARAN_PERS',
     });
   });
 

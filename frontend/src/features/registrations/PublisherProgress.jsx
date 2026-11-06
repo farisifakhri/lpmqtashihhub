@@ -72,7 +72,9 @@ function getDetailedStage(registration) {
     const isPhysicalReturn =
       registration.revision_source === 'PHYSICAL_MASTER' ||
       registration.physical_master_intake?.status === 'RETURNED';
-    const isTashihRevision = Array.isArray(registration.assignments) && registration.assignments.length > 0;
+    const isTashihRevision =
+      registration.revision_source === 'TASHIH_REVISION' ||
+      (Array.isArray(registration.assignments) && registration.assignments.length > 0);
 
     if (isPhysicalReturn) {
       return {

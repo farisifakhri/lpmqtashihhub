@@ -266,7 +266,7 @@ export const InspectionReferencePanels = ({
                       <div className="flex items-center justify-between">
                         <span>{h.verifier?.name || 'Verifikator'}</span>
                         <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${h.status === 'REVOKED' ? 'bg-civic-dangerSoft text-civic-danger' : (isCur ? 'bg-brand-100 text-brand-800' : 'bg-surface-subtle text-ink')}`}>
-                          {h.status === 'REVOKED' ? 'Dicabut' : h.status}
+                          {h.status === 'REVOKED' ? 'Dicabut' : h.status === 'ASSIGNED' ? 'Ditugaskan' : h.status === 'IN_PROGRESS' ? 'Sedang Memeriksa' : h.status === 'COMPLETED' ? 'Selesai' : (h.status || 'Aktif')}
                         </span>
                       </div>
                       {hNota?.document_no && (

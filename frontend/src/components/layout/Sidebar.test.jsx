@@ -65,8 +65,8 @@ describe('Helper Admin navigation', () => {
 describe('Distributor navigation', () => {
   it('membuka antrean penerimaan dan penugasan tim pada tab yang berbeda', () => {
     show('DISTRIBUTOR');
-    expect(screen.getByRole('link', { name: /Master Menunggu Diterima/ })).toHaveAttribute('href', '/internal/distributions?stage=HANDOVER');
-    expect(screen.getByRole('link', { name: /Distribusi Tim/ })).toHaveAttribute('href', '/internal/distributions?stage=ASSIGNMENT');
+    expect(screen.getByRole('link', { name: /Penerimaan Master Fisik/ })).toHaveAttribute('href', '/internal/distributions/handover');
+    expect(screen.getByRole('link', { name: /Penugasan Tim Sidang/ })).toHaveAttribute('href', '/internal/distributions/assignment');
   });
 });
 describe('Verifikator navigation', () => {
@@ -95,19 +95,19 @@ describe('Badge notifikasi sidebar', () => {
   });
 
   it('menampilkan badge pada tiap menu yang memiliki antrean, termasuk 99+ untuk jumlah besar', async () => {
-    mockBadges({ publisher_registrations: 2, master_intake: 150, verification_need_assignment: 3 });
+    mockBadges({ publisher_registrations: 2, master_intake: 150, verification_assigned: 3 });
     show('ADMIN_INTERNAL');
     const intake = screen.getByRole('link', { name: /Intake Master Fisik/ });
     expect((await within(intake).findByTestId('sidebar-pending-badge')).textContent).toContain('99+');
     expect(within(screen.getByRole('link', { name: /Pendaftaran Penerbit/ })).getByTestId('sidebar-pending-badge').textContent).toContain('2');
-    expect(within(screen.getByRole('link', { name: /Penugasan Verifikator/ })).getByTestId('sidebar-pending-badge').textContent).toContain('3');
+    expect(within(screen.getByRole('link', { name: /Verifikasi Berkas/ })).getByTestId('sidebar-pending-badge').textContent).toContain('3');
     expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(3);
   });
 
-  it('menjumlahkan antrean sidang awal dan revisi pada menu Tugas Saya pentashih', async () => {
+  it('menjumlahkan antrean sidang awal dan revisi pada menu pentashih', async () => {
     mockBadges({ tashih_initial: 2, tashih_revision: 3 });
     show('PENTASHIH');
-    const link = screen.getByRole('link', { name: /Tugas Saya/ });
+    const link = screen.getByRole('link', { name: /Sidang Pentashihan/ });
     expect((await within(link).findByTestId('sidebar-pending-badge')).textContent).toContain('5');
   });
 

@@ -54,6 +54,8 @@ model User {
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
+  service_documents_created        ServiceDocument[]               @relation("ServiceDocumentCreatedBy")
+  service_documents_updated        ServiceDocument[]               @relation("ServiceDocumentUpdatedBy")
   information_guides_created       InformationGuide[]              @relation("InformationGuideCreatedBy")
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
@@ -440,6 +442,7 @@ model Registration {
   official_documents       OfficialDocument[]
   notifications            Notification[]
   survey_responses         SurveyResponse[]
+  publisher_revision_recaps PublisherRevisionRecap[]
 
   @@index([status, stage_entered_at, id])
   @@index([core_verifier_id, status])
@@ -481,6 +484,22 @@ model ManuscriptFile {
   manuscript   Manuscript?  @relation(fields: [manuscript_id], references: [id], onDelete: SetNull)
 
   @@map("manuscript_files")
+}
+
+model PublisherRevisionRecap {
+  id              String       @id @default(uuid())
+  registration_id String
+  round_number    Int
+  revision_kind   String       @db.VarChar(20) // "CORRECTION" | "DUMMY"
+  recap_file_id   String
+  created_at      DateTime     @default(now())
+
+  recap_file      StoredFile   @relation(fields: [recap_file_id], references: [id])
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@unique([registration_id, round_number])
+  @@index([recap_file_id])
+  @@map("publisher_revision_recaps")
 }
 
 // -------------------------------------------------------------
@@ -783,12 +802,14 @@ model TashihReview {
   result        ReviewResult // PASSED, REVISION_REQUIRED, REJECTED
   notes         String?
   recap_file_id String?
+  recap_scope   String       @default("SELF") @db.VarChar(20)
   completed_at  DateTime     @default(now())
 
   // Relations
   assignment Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
 
   @@index([recap_file_id])
+  @@index([recap_scope])
   @@map("tashih_reviews")
 }
 
@@ -900,6 +921,8 @@ model StoredFile {
   file_size  Int
   checksum   String
   created_at DateTime @default(now())
+
+  publisher_revision_recaps PublisherRevisionRecap[]
 
   @@index([owner_id])
   @@map("stored_files")
@@ -1147,6 +1170,29 @@ model RegulationDocument {
   @@index([created_at])
   @@index([document_number])
   @@map("regulation_documents")
+}
+
+model ServiceDocument {
+  id            String   @id @default(uuid())
+  title         String   @db.VarChar(255)
+  category      String   @db.VarChar(100)
+  file_name     String   @db.VarChar(255)
+  storage_path  String   @db.VarChar(255)
+  file_size     Int
+  mime_type     String   @db.VarChar(100)
+  is_published  Boolean  @default(true)
+  created_by_id String?
+  updated_by_id String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  created_by User? @relation("ServiceDocumentCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by User? @relation("ServiceDocumentUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@map("service_documents")
 }
 
 model InformationGuide {

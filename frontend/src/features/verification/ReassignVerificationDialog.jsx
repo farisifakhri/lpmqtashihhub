@@ -214,7 +214,9 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
                       }`}
                     >
                       <div>
-                        <div className="font-bold text-ink">{v.name}</div>
+                        <div className="font-bold text-ink">
+                          {v.core_team_number ? `[Tim Inti ${v.core_team_number}] ` : ''}{v.name}
+                        </div>
                         <div className="text-xs text-ink-muted">NIP: {v.nip || '-'}</div>
                       </div>
                       <div className="text-right">
@@ -240,7 +242,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               required
               value={notaNo}
               onChange={(e) => setNotaNo(e.target.value)}
-              placeholder="Contoh: ND-2026/09/REV-001"
+              placeholder="Contoh: ND-2026/09/001"
               className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info font-mono"
             />
           </div>

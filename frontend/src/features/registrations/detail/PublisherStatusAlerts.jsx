@@ -227,7 +227,7 @@ export function PublisherStatusAlerts({
             </div>
           </div>
 
-          {/* Durasi & Deadline Naskah Awal (RF-PUB-08 / T-05) */}
+          {/* Durasi & Batas Waktu Naskah Awal */}
           <div className="p-3 bg-white rounded-lg border border-brand-100 text-xs space-y-1.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-ink-muted font-medium">Estimasi Target Penyelesaian Naskah Awal:</span>

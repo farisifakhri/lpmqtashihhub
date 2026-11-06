@@ -11,6 +11,7 @@ import { PrivateFileViewer } from '@/components/common/PrivateFileViewer';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { formatHandoverStatus } from '@/lib/glossary';
 import {
   CreditCard,
   Search,
@@ -574,7 +575,7 @@ export const InternalPaymentQueuePage = () => {
               </div>
               {latestHandover && (
                 <div className="font-mono text-brand-900 bg-brand-100 px-2 py-0.5 rounded">
-                  BAST: {latestHandover.receipt_no} ({latestHandover.status})
+                  BAST: {latestHandover.receipt_no} ({formatHandoverStatus(latestHandover.status)})
                 </div>
               )}
             </div>

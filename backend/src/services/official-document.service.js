@@ -9,6 +9,7 @@ import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
+import { assertReadyForSttEligibility } from './distribution.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
@@ -541,24 +542,7 @@ export const requestSttFromAdmin = (id, data, user, req) => prisma.$transaction(
     fail(403, 'Hanya distributor tim inti yang dapat mengajukan STT.');
   }
 
-  const lastAssignment = await tx.assignment.findFirst({
-    where: { registration_id: id },
-    orderBy: { iteration: 'desc' },
-  });
-  if (!lastAssignment) {
-    fail(409, 'Naskah belum memiliki riwayat sidang pentashihan.');
-  }
-
-  const activeAssignments = await tx.assignment.findMany({
-    where: { registration_id: id, iteration: lastAssignment.iteration },
-    include: { reviews: true },
-  });
-  if (activeAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) {
-    fail(409, 'Masih ada pentashih yang belum menyelesaikan sidang telaah.');
-  }
-  if (activeAssignments.some(item => item.reviews.some(r => r.result !== 'PASSED'))) {
-    fail(409, 'Pengajuan STT tidak dapat diproses karena ada hasil telaah yang belum lulus.');
-  }
+  await assertReadyForSttEligibility(tx, id);
 
   if (reg.status === 'TASHIH_IN_PROGRESS') {
     await move(tx, reg, 'READY_FOR_STT', user, 'Sidang pentashihan selesai, distributor mengajukan STT ke Admin', req);

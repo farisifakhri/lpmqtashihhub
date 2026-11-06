@@ -125,7 +125,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.deepEqual(submitted.fee_sla_snapshot, before.fee_sla_snapshot);
 
     // Penerbit mengirim fisik naskah perbaikan, Admin Internal menerima, Distributor konfirmasi serah-terima
-    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'JNE', tracking_no: 'REVISE123' });
+    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'JNE', tracking_no: 'REVISE123', recap_file_id: file.id });
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
       receipt_no: `TT-REV-${reg.id.slice(0, 8)}`,
@@ -140,7 +140,7 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/physical-master/handovers/${pending.id}/receive`, distributor, 'POST', { condition: 'BAIK' });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTION');
 
-    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'REVISION' }, 201);
+    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 201);
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
