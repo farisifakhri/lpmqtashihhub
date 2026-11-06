@@ -8,7 +8,7 @@ export async function getDocumentationDetail(id, user) {
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: {
-      publisher: { select: { id: true, legal_name: true, brand_name: true, email: true } },
+      publisher: { select: { id: true, legal_name: true, user: { select: { email: true } } } },
       service_type: { select: { id: true, name: true, duration_initial: true } },
       manuscript_files: {
         select: { id: true, file_type: true, file_id: true, file_name: true, file_size: true, created_at: true },
@@ -134,7 +134,7 @@ export async function getPrintingReports(id, user) {
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: {
-      publisher: { select: { id: true, legal_name: true, brand_name: true, email: true, phone: true } },
+      publisher: { select: { id: true, legal_name: true, phone: true, user: { select: { email: true } } } },
       service_type: { select: { id: true, name: true, service_kind: true } },
       official_documents: {
         where: { document_type: 'SURAT_TANDA_TASHIH' },
