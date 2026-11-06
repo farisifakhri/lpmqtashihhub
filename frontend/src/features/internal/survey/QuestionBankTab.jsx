@@ -143,7 +143,7 @@ export function QuestionBankTab() {
                         onClick={() => run(
                           () => surveyApi.deleteQuestion(q.id),
                           q.items?.length ? `Pertanyaan dihapus dan dikeluarkan dari survei ${q.items.map((i) => i.survey.name).join(', ')}.` : 'Pertanyaan dihapus.',
-                          2000,
+                          1000,
                         )}>
                         <Trash2 className="w-4 h-4 text-civic-danger" />
                       </Button>

@@ -126,8 +126,8 @@ export function SurveyListTab({ onOpen }) {
     }
   };
 
-  const run = async (fn, message) => {
-    try { await fn(); showToast(message, 'success'); load(); } catch { /* sudah ditampilkan */ }
+  const run = async (fn, message, duration) => {
+    try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
   };
 
   const activate = (s) =>
@@ -171,7 +171,7 @@ export function SurveyListTab({ onOpen }) {
                         </Button>
                         <Button size="sm" variant="ghost" aria-label={`Hapus ${s.name}`} disabled={hasResponses}
                           title={hasResponses ? 'Survei yang sudah dijawab tidak dapat dihapus; nonaktifkan saja.' : undefined}
-                          onClick={() => window.confirm(`Hapus survei "${s.name}"? Susunan pertanyaannya ikut terhapus.`) && run(() => surveyApi.deleteSurvey(s.id), 'Survei dihapus.')}>
+                          onClick={() => window.confirm(`Hapus survei "${s.name}"? Susunan pertanyaannya ikut terhapus.`) && run(() => surveyApi.deleteSurvey(s.id), 'Survei dihapus.', 1000)}>
                           <Trash2 className="w-4 h-4 text-civic-danger" />
                         </Button>
                       </div>

@@ -283,10 +283,10 @@ describe('SurveyManagementPage (Super Admin)', () => {
     const [usedDelete, freeDelete] = screen.getAllByRole('button', { name: 'Hapus pertanyaan' });
     fireEvent.click(usedDelete);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('q1'));
-    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus dan dikeluarkan dari survei Survei IKM 2027.', 'success', 2000);
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus dan dikeluarkan dari survei Survei IKM 2027.', 'success', 1000);
     fireEvent.click(freeDelete);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('q9'));
     expect(confirm).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 2000);
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 1000);
   });
 });

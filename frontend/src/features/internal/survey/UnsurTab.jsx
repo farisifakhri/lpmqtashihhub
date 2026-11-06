@@ -46,8 +46,8 @@ export function UnsurTab() {
     }
   };
 
-  const run = async (fn, message) => {
-    try { await fn(); showToast(message, 'success'); load(); } catch { /* sudah ditampilkan */ }
+  const run = async (fn, message, duration) => {
+    try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
   };
 
   return (
@@ -103,7 +103,7 @@ export function UnsurTab() {
                       {/* Unsur yang masih dipakai survei tidak dapat dihapus; arsipkan saja. */}
                       <Button size="sm" variant="ghost" aria-label={`Hapus ${u.name}`} disabled={u._count?.items > 0}
                         title={u._count?.items > 0 ? 'Unsur masih dipakai pada survei sehingga tidak dapat dihapus; arsipkan saja.' : undefined}
-                        onClick={() => window.confirm(`Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.')}>
+                        onClick={() => window.confirm(`Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`) && run(() => surveyApi.deleteUnsur(u.id), 'Unsur dihapus.', 1000)}>
                         <Trash2 className="w-4 h-4 text-civic-danger" />
                       </Button>
                     </div>
