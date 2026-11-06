@@ -3,6 +3,9 @@ import { FileText, Printer, Download, Eye, Clock, ShieldCheck, CheckCircle2 } fr
 import { registrationApi } from '@/api/registration.api';
 import { fileApi } from '@/api/file.api';
 import { getAuthToken } from '@/api/client';
+import { useOptionalAuth } from '@/features/auth/AuthContext';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
+import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
 import { DocumentVersionHistory } from './DocumentVersionHistory';
 import { PrivateFileViewer } from './PrivateFileViewer';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +36,36 @@ export function DocumentArchive({ registrationId }) {
   const [error, setError] = useState('');
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  // Penerbit mengisi survei kepuasan dulu sebelum STT dapat dibuka atau diunduh.
+  const auth = useOptionalAuth();
+  const roles = auth?.currentUser?.roles || (auth?.currentUser?.role ? [auth.currentUser.role] : []);
+  const isPublisher = roles.includes('PENERBIT') && !roles.includes('SUPERADMIN');
+  const [surveysPending, setSurveysPending] = useState([]);
+  const [surveyAction, setSurveyAction] = useState(null); // aksi yang ditunda sampai survei terisi
+
+  useEffect(() => {
+    if (!isPublisher || !registrationId) return undefined;
+    let active = true;
+    publisherSurveyApi.listForRegistration(registrationId)
+      .then((res) => { if (active) setSurveysPending((res.data || []).filter((item) => !item.answered)); })
+      .catch(() => { if (active) setSurveysPending([]); });
+    return () => { active = false; };
+  }, [isPublisher, registrationId]);
+
+  const needsSurvey = (document) => isPublisher && surveysPending.length > 0
+    && document?.source === 'OFFICIAL' && document?.document_type === 'SURAT_TANDA_TASHIH';
+
+  // Jalankan aksinya, atau tahan dulu dengan pop-up survei bila STT belum boleh dibuka.
+  const guarded = (document, action) => () => {
+    if (needsSurvey(document)) { setSurveyAction(() => action); return; }
+    action();
+  };
+
+  const downloadOfficial = (document) => () => {
+    setError('');
+    fileApi.downloadDocument(document.id, `${document.document_no || document.document_type}.pdf`)
+      .catch((reason) => setError(reason.message || 'Dokumen tidak dapat diunduh.'));
+  };
 
   useEffect(() => () => {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -207,12 +240,12 @@ export function DocumentArchive({ registrationId }) {
                 type="button"
                 variant="primary"
                 size="sm"
-                onClick={() => printPdf(selected)}
+                onClick={guarded(selected, () => printPdf(selected))}
                 disabled={pdfLoading}
                 className="text-xs font-bold"
               >
                 <Eye className="w-3.5 h-3.5 mr-1.5" />
-                {pdfLoading ? 'Membuka PDF…' : 'Lihat Dokumen PDF'}
+                {pdfLoading ? 'Membuka PDF…' : needsSurvey(selected) ? 'Isi Survei untuk Buka STT' : 'Lihat Dokumen PDF'}
               </Button>
               {selected.source === 'APPLICATION' && selected.file_id && (
                 <Button
@@ -243,11 +276,11 @@ export function DocumentArchive({ registrationId }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`)}
+                  onClick={guarded(selected, downloadOfficial(selected))}
                   className="text-xs font-semibold"
                 >
                   <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Unduh Dokumen
+                  {needsSurvey(selected) ? 'Isi Survei untuk Unduh' : 'Unduh Dokumen'}
                 </Button>
               )}
             </div>
@@ -342,6 +375,18 @@ export function DocumentArchive({ registrationId }) {
           </div>
         </div>
       )}
+
+      <PublisherSurveyDialog
+        registrationId={registrationId}
+        isOpen={!!surveyAction}
+        onClose={() => setSurveyAction(null)}
+        onCompleted={() => {
+          const lanjutkan = surveyAction;
+          setSurveyAction(null);
+          setSurveysPending([]);
+          lanjutkan?.();
+        }}
+      />
     </section>
   );
 }

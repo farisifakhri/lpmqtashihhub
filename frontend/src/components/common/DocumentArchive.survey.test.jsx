@@ -1,0 +1,73 @@
+import React from 'react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { DocumentArchive } from './DocumentArchive';
+import { registrationApi } from '@/api/registration.api';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
+import { fileApi } from '@/api/file.api';
+import * as AuthContext from '@/features/auth/AuthContext';
+
+const unsur = { id: 'u1', code: 'A', name: 'Persyaratan', definition: 'Syarat yang harus dipenuhi.' };
+const question = {
+  id: 'q1', text: 'Bagaimana kesesuaian persyaratan pelayanan?', type: 'PILIHAN',
+  options: [{ id: 'o4', label: 'Sangat baik', value: 4 }, { id: 'o1', label: 'Tidak baik', value: 1 }],
+};
+const survei = {
+  id: 's1', name: 'Indeks Persepsi Kualitas Pelayanan', description: null,
+  answered: false, answered_at: null, items: [{ unsur, question }],
+};
+const stt = {
+  id: 'doc-1', source: 'OFFICIAL', document_type: 'SURAT_TANDA_TASHIH', document_no: 'STT/LPMQ/2026/001',
+  status: 'ISSUED', version: 1, created_at: '2026-11-06T00:00:00.000Z', content_snapshot: {},
+};
+
+const asPublisher = () => vi.spyOn(AuthContext, 'useOptionalAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+
+describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(registrationApi, 'getDocumentArchive').mockResolvedValue({ data: [stt] });
+    vi.spyOn(fileApi, 'downloadDocument').mockResolvedValue();
+  });
+
+  it('menahan unduhan STT dan menampilkan pop-up survei', async () => {
+    asPublisher();
+    vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
+    render(<DocumentArchive registrationId="reg-1" />);
+
+    const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ });
+    fireEvent.click(tombol);
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Bagaimana kesesuaian persyaratan pelayanan?')).toBeInTheDocument();
+    expect(fileApi.downloadDocument).not.toHaveBeenCalled();
+  });
+
+  it('melanjutkan unduhan setelah survei terakhir dikirim', async () => {
+    asPublisher();
+    vi.spyOn(publisherSurveyApi, 'listForRegistration')
+      .mockResolvedValueOnce({ data: [survei] }) // pemuatan arsip
+      .mockResolvedValueOnce({ data: [survei] }) // pemuatan pop-up
+      .mockResolvedValue({ data: [{ ...survei, answered: true, answered_at: '2026-11-06T10:00:00.000Z' }] });
+    vi.spyOn(publisherSurveyApi, 'submit').mockResolvedValue({ data: { id: 'r1' } });
+    render(<DocumentArchive registrationId="reg-1" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByLabelText('Sangat baik'));
+    fireEvent.click(screen.getByRole('button', { name: /Kirim Indeks Persepsi Kualitas Pelayanan/ }));
+
+    await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/LPMQ/2026/001.pdf'));
+  });
+
+  it('petugas internal tidak diminta mengisi survei', async () => {
+    vi.spyOn(AuthContext, 'useOptionalAuth').mockReturnValue({ currentUser: { roles: ['DOKUMENTATOR'] } });
+    const daftar = vi.spyOn(publisherSurveyApi, 'listForRegistration');
+    render(<DocumentArchive registrationId="reg-1" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Unduh Dokumen/ }));
+    await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalled());
+    expect(daftar).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
