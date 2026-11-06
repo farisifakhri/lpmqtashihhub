@@ -25,6 +25,7 @@ const withSuspense = (Component) => (props) => (
 const PublisherDashboard = withSuspense(lazy(() => import('@/features/registrations/PublisherDashboard').then(m => ({ default: m.PublisherDashboard }))));
 const PublisherRegistrationsPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationsPage').then(m => ({ default: m.PublisherRegistrationsPage }))));
 const PublisherRegistrationDetailPage = withSuspense(lazy(() => import('@/features/registrations/PublisherRegistrationDetailPage').then(m => ({ default: m.PublisherRegistrationDetailPage }))));
+const PublisherSurveyPage = withSuspense(lazy(() => import('@/features/registrations/PublisherSurveyPage').then(m => ({ default: m.PublisherSurveyPage }))));
 const NewRegistrationPage = withSuspense(lazy(() => import('@/features/registrations/NewRegistrationPage').then(m => ({ default: m.NewRegistrationPage }))));
 const PublisherBillingPage = withSuspense(lazy(() => import('@/features/billing/PublisherBillingPage').then(m => ({ default: m.PublisherBillingPage }))));
 const InternalDashboard = withSuspense(lazy(() => import('@/features/internal/InternalDashboard').then(m => ({ default: m.InternalDashboard }))));
@@ -150,6 +151,10 @@ const router = createBrowserRouter([
       {
         path: 'publisher/registrations/:id',
         element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
+      },
+      {
+        path: 'publisher/registrations/:id/survey',
+        element: <ProtectedRoute portalType="publisher"><PublisherSurveyPage /></ProtectedRoute>,
       },
       {
         path: 'publisher/billing',

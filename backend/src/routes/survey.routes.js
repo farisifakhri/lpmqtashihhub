@@ -43,4 +43,10 @@ router.post('/admin/surveys/:id/duplicate', ...superadmin, validate(v.surveyIdSc
 router.get('/admin/surveys/:id/responses', ...superadmin, validate(v.listResponsesSchema), action(req => survey.listResponses(req.params.id, req.query)));
 router.get('/admin/surveys/:id/report', ...superadmin, validate(v.surveyIdSchema), action(req => survey.getSurveyReport(req.params.id)));
 
+// Survei untuk penerbit: wajib diisi sebelum STT dapat dicetak.
+const penerbit = [authenticate, authorize('PENERBIT', 'SUPERADMIN')];
+router.get('/registrations/:registrationId/surveys', ...penerbit, validate(v.registrationSurveySchema), action(req => survey.listSurveysForRegistration(req.params.registrationId)));
+router.post('/registrations/:registrationId/surveys/:surveyId/response', ...penerbit, validate(v.submitSurveyResponseSchema),
+  action(req => survey.submitSurveyResponse(req.params.surveyId, req.params.registrationId, req.body, req.user, req), 201));
+
 export default router;

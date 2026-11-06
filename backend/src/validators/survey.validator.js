@@ -94,3 +94,35 @@ export const listResponsesSchema = {
     limit: z.coerce.number().int().min(1).max(100).default(20),
   }),
 };
+
+// ------------------------------------------------- Pengisian survei oleh penerbit
+const likert5 = z.coerce.number().int().min(1, 'Nilai antara 1 dan 5.').max(5, 'Nilai antara 1 dan 5.');
+
+export const registrationSurveySchema = { params: z.object({ registrationId: z.string().uuid('ID pengajuan tidak valid.') }) };
+
+export const submitSurveyResponseSchema = {
+  params: z.object({ registrationId: z.string().uuid('ID pengajuan tidak valid.'), surveyId: z.string().uuid('ID survei tidak valid.') }),
+  body: z.object({
+    answers: z.array(z.object({
+      question_id: z.string().uuid('Pertanyaan tidak valid.'),
+      option_id: z.string().uuid('Pilihan jawaban tidak valid.').optional().nullable(),
+      essay_text: z.string().trim().max(2000, 'Jawaban esai maksimal 2000 karakter.').optional().nullable(),
+    })).max(200).default([]),
+    respondent_name: z.string().trim().max(255).optional().nullable(),
+    gender: z.enum(['L', 'P']).optional().nullable(),
+    age: z.coerce.number().int().min(10, 'Usia minimal 10 tahun.').max(100, 'Usia maksimal 100 tahun.').optional().nullable(),
+    education: z.string().trim().max(50).optional().nullable(),
+    occupation: z.string().trim().max(100).optional().nullable(),
+    is_disabled: z.boolean().optional().nullable(),
+    disability_type: z.enum(['FISIK', 'INTELEKTUAL', 'MENTAL', 'SENSORIK']).optional().nullable(),
+    service_type: z.string().trim().max(255).optional().nullable(),
+    service_category: z.enum(['DARING', 'LURING', 'HYBRID']).optional().nullable(),
+    overall_satisfaction: likert5.optional().nullable(),
+    nps_score: z.coerce.number().int().min(1, 'Skor antara 1 dan 10.').max(10, 'Skor antara 1 dan 10.').optional().nullable(),
+    ak_transparency: likert5.optional().nullable(),
+    ak_no_extortion: likert5.optional().nullable(),
+    ak_no_broker: likert5.optional().nullable(),
+    ak_no_gratification: likert5.optional().nullable(),
+    feedback: z.string().trim().max(2000, 'Kritik dan saran maksimal 2000 karakter.').optional().nullable(),
+  }),
+};

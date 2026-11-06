@@ -1,12 +1,25 @@
-import React, { useState } from 'react';
-import { Download, FileText } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Download, FileText, ClipboardList } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import { dateLabel, downloadAvailable } from './publisher-status';
 
 export function PublisherDocumentList({ documents = [], registration = null }) {
   const [busy, setBusy] = useState(null);
   const [error, setError] = useState('');
+  // STT baru dapat dicetak setelah penerbit mengisi survei kepuasan layanan.
+  const [surveysPending, setSurveysPending] = useState([]);
+  const registrationId = registration?.id;
+
+  const loadSurveys = useCallback(() => {
+    if (!registrationId) return;
+    publisherSurveyApi.listForRegistration(registrationId)
+      .then((res) => setSurveysPending((res.data || []).filter((s) => !s.answered)))
+      .catch(() => setSurveysPending([]));
+  }, [registrationId]);
+  useEffect(loadSurveys, [loadSurveys]);
 
   const download = async (document) => {
     setBusy(document.id);
@@ -160,16 +173,28 @@ export function PublisherDocumentList({ documents = [], registration = null }) {
               )}
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy !== null || !downloadAvailable(document)}
-            onClick={() => download(document)}
-            className="text-xs font-bold"
-          >
-            <Download className="h-4 w-4 mr-1 text-brand-700" />
-            {busy === document.id ? 'Mengunduh…' : 'Unduh STT'}
-          </Button>
+          {surveysPending.length ? (
+            <div className="flex flex-col items-end gap-1.5">
+              <Link
+                to={`/publisher/registrations/${registrationId}/survey`}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-800 px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-brand-900"
+              >
+                <ClipboardList className="h-4 w-4" /> Isi Survei untuk Cetak STT
+              </Link>
+              <p className="text-xs text-civic-warning">Belum diisi: {surveysPending.map((s) => s.name).join(', ')}</p>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy !== null || !downloadAvailable(document)}
+              onClick={() => download(document)}
+              className="text-xs font-bold"
+            >
+              <Download className="h-4 w-4 mr-1 text-brand-700" />
+              {busy === document.id ? 'Mengunduh…' : 'Unduh STT'}
+            </Button>
+          )}
         </div>
       ))}
 

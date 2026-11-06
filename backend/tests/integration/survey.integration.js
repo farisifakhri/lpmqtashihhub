@@ -278,6 +278,34 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     }
   });
 
+  await test('Survei: penerbit mengisi survei aktif untuk pengajuannya, sekali saja', async () => {
+    const reg = await ok('/registrations', publisherToken, 'POST', { title: 'Naskah uji survei penerbit', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    // Survei milik suite ini sudah berisi pertanyaan; aktifkan agar tampil untuk penerbit.
+    await ok(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST');
+
+    const daftar = await ok(`/registrations/${reg.id}/surveys`, publisherToken, 'GET');
+    const target = daftar.find((s) => s.id === survey.id);
+    assert.ok(target, 'survei aktif harus tampil untuk penerbit');
+    assert.equal(target.answered, false);
+
+    // Pertanyaan pilihan wajib dijawab seluruhnya.
+    assert.equal((await call(`/registrations/${reg.id}/surveys/${survey.id}/response`, publisherToken, 'POST', { answers: [] })).status, 400);
+
+    const answers = target.items.map((i) => (i.question.type === 'ESAI'
+      ? { question_id: i.question.id, essay_text: 'Masukan uji.' }
+      : { question_id: i.question.id, option_id: i.question.options[0].id }));
+    await ok(`/registrations/${reg.id}/surveys/${survey.id}/response`, publisherToken, 'POST',
+      { answers, respondent_name: 'Penerbit Uji', gender: 'L', age: 40, overall_satisfaction: 5, nps_score: 9 }, 201);
+
+    assert.equal((await ok(`/registrations/${reg.id}/surveys`, publisherToken, 'GET')).find((s) => s.id === survey.id).answered, true);
+    assert.equal((await call(`/registrations/${reg.id}/surveys/${survey.id}/response`, publisherToken, 'POST', { answers })).status, 409);
+    // Pengajuan penerbit lain tidak dapat diintip.
+    // Hanya penerbit pemilik (dan Super Admin) yang boleh membuka survei pengajuan ini.
+    assert.equal((await call(`/registrations/${reg.id}/surveys`, helperAdminToken, 'GET')).status, 403);
+    assert.equal((await call(`/registrations/${reg.id}/surveys`, null, 'GET')).status, 401);
+    await ok(`/admin/surveys/${survey.id}/deactivate`, adminToken, 'POST');
+  });
+
   await test('Survei: unsur bisa dikhususkan ke satu survei dan tidak dipakai di survei lain', async () => {
     const own = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IPAK khusus' }, 201);
     const other = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei lain' }, 201);

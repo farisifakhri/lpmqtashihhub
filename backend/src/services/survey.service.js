@@ -471,3 +471,84 @@ export function npsOf(rows) {
   const detractors = scores.filter((s) => s <= 6).length;
   return { score: round2(((promoters - detractors) / scores.length) * 100), respondents: scores.length, promoters, passives: scores.length - promoters - detractors, detractors };
 }
+
+// ---------------------------------------------------- Pengisian survei oleh penerbit
+// Survei yang wajib diisi penerbit sebelum mencetak STT: seluruh survei AKTIF yang punya pertanyaan.
+export async function listSurveysForRegistration(registrationId) {
+  const surveys = await prisma.survey.findMany({
+    where: { status: 'AKTIF', items: { some: {} } },
+    orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
+    include: {
+      ...surveyDetailInclude,
+      responses: { where: { registration_id: registrationId }, select: { id: true, submitted_at: true } },
+    },
+  });
+  return surveys.map((s) => ({
+    ...present(s),
+    answered: s.responses.length > 0,
+    answered_at: s.responses[0]?.submitted_at || null,
+    responses: undefined,
+  }));
+}
+
+// Dipakai gerbang cetak STT: daftar nama survei yang belum diisi penerbit.
+export async function pendingSurveysForRegistration(registrationId) {
+  return (await listSurveysForRegistration(registrationId)).filter((s) => !s.answered).map((s) => s.name);
+}
+
+export async function submitSurveyResponse(surveyId, registrationId, data, user, req) {
+  return withAudit(user, req, 'SURVEY_RESPONSE_SUBMIT', 'Survey', async (tx) => {
+    const survey = await tx.survey.findUnique({
+      where: { id: surveyId },
+      include: { items: { include: { question: { include: { options: true } } } } },
+    });
+    if (!survey) fail(404, 'Survei tidak ditemukan.');
+    if (survey.status !== 'AKTIF') fail(409, 'Survei ini sedang tidak aktif sehingga belum dapat diisi.');
+    if (await tx.surveyResponse.findFirst({ where: { survey_id: surveyId, registration_id: registrationId }, select: { id: true } })) {
+      fail(409, 'Survei ini sudah Anda isi untuk pengajuan tersebut.');
+    }
+
+    const byQuestion = new Map(survey.items.map((i) => [i.question_id, i.question]));
+    const jawaban = [];
+    for (const a of data.answers || []) {
+      const q = byQuestion.get(a.question_id);
+      if (!q) fail(400, 'Ada jawaban untuk pertanyaan di luar survei ini. Muat ulang halaman lalu isi kembali.');
+      if (q.type === 'ESAI') {
+        jawaban.push({ question_id: q.id, essay_text: a.essay_text || null });
+        continue;
+      }
+      const option = q.options.find((o) => o.id === a.option_id);
+      if (!option) fail(400, `Pilihan jawaban tidak sah untuk pertanyaan "${q.text.slice(0, 60)}".`);
+      jawaban.push({ question_id: q.id, option_id: option.id, value: option.value });
+    }
+    // Pertanyaan pilihan wajib dijawab; esai boleh dikosongkan.
+    const wajib = survey.items.filter((i) => i.question.type === 'PILIHAN').map((i) => i.question_id);
+    const terjawab = new Set(jawaban.filter((j) => j.option_id).map((j) => j.question_id));
+    if (wajib.some((id) => !terjawab.has(id))) fail(400, 'Seluruh pertanyaan pilihan wajib dijawab sebelum survei dikirim.');
+
+    return tx.surveyResponse.create({
+      data: {
+        survey_id: surveyId,
+        registration_id: registrationId,
+        respondent_name: data.respondent_name || null,
+        gender: data.gender || null,
+        age: data.age ?? null,
+        education: data.education || null,
+        occupation: data.occupation || null,
+        is_disabled: data.is_disabled ?? null,
+        disability_type: data.disability_type || null,
+        service_type: data.service_type || null,
+        service_category: data.service_category || null,
+        overall_satisfaction: data.overall_satisfaction ?? null,
+        nps_score: data.nps_score ?? null,
+        ak_transparency: data.ak_transparency ?? null,
+        ak_no_extortion: data.ak_no_extortion ?? null,
+        ak_no_broker: data.ak_no_broker ?? null,
+        ak_no_gratification: data.ak_no_gratification ?? null,
+        feedback: data.feedback || null,
+        answers: { create: jawaban },
+      },
+      select: { id: true, submitted_at: true },
+    });
+  });
+}
