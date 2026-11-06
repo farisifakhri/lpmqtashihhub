@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save, GripVertical } from 'lucide-react';
+import { ArrowUp, ArrowDown, X, Plus, Lock, Power, PowerOff, Save, GripVertical, Trash2 } from 'lucide-react';
 import { surveyApi } from '@/api/survey.api';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -373,7 +373,21 @@ export function ResponsesView({ surveyId }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(null);
-  useEffect(() => { surveyApi.listResponses(surveyId, { page, limit: 20 }).then((r) => setData(r.data)).catch(() => {}); }, [surveyId, page]);
+  const load = useCallback(() => {
+    surveyApi.listResponses(surveyId, { page, limit: 20 }).then((r) => setData(r.data)).catch(() => {});
+  }, [surveyId, page]);
+  useEffect(load, [load]);
+
+  // Hapus jawaban responden (mis. isian uji coba); laporan IKM dihitung ulang dari data tersisa.
+  const removeResponse = async (r) => {
+    const nama = r.registration?.publisher?.legal_name || r.respondent_name || 'responden';
+    try {
+      await surveyApi.deleteResponse(surveyId, r.id);
+      showToast(`Jawaban ${nama} dihapus.`, 'success', 500);
+      setOpen((cur) => (cur === r.id ? null : cur));
+      load();
+    } catch { /* pesan galat sudah ditampilkan apiClient */ }
+  };
   if (!data) return <p className="text-sm text-ink-muted">Memuat jawaban…</p>;
   if (!data.items.length) return <EmptyState title="Belum ada responden" description="Jawaban akan muncul setelah penerbit mengisi survei ini." />;
 
@@ -398,7 +412,15 @@ export function ResponsesView({ surveyId }) {
                   <td className="p-3">{r.gender || '-'}</td><td className="p-3">{r.age ?? '-'}</td><td className="p-3">{r.education || '-'}</td><td className="p-3">{r.occupation || '-'}</td>
                   <td className="p-3">{SERVICE_CATEGORY_LABELS[r.service_category] || '-'}</td>
                   <td className="p-3">{r.overall_satisfaction ?? '-'}</td><td className="p-3">{r.nps_score ?? '-'}</td>
-                  <td className="p-3 text-right"><Button size="sm" variant="ghost" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Tutup' : 'Lihat jawaban'}</Button></td>
+                  <td className="p-3">
+                    <div className="flex justify-end gap-1.5">
+                      <Button size="sm" variant="ghost" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Tutup' : 'Lihat jawaban'}</Button>
+                      <Button size="sm" variant="ghost" aria-label={`Hapus jawaban ${r.registration?.publisher?.legal_name || r.respondent_name || 'responden'}`}
+                        onClick={() => removeResponse(r)}>
+                        <Trash2 className="w-4 h-4 text-civic-danger" />
+                      </Button>
+                    </div>
+                  </td>
                 </tr>
                 {open === r.id && (
                   <tr><td colSpan={11} className="bg-surface-subtle/50 p-3">

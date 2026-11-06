@@ -126,3 +126,7 @@ export const submitSurveyResponseSchema = {
     feedback: z.string().trim().max(2000, 'Kritik dan saran maksimal 2000 karakter.').optional().nullable(),
   }),
 };
+
+export const deleteResponseSchema = {
+  params: z.object({ id: z.string().uuid('ID survei tidak valid.'), responseId: z.string().uuid('ID jawaban tidak valid.') }),
+};

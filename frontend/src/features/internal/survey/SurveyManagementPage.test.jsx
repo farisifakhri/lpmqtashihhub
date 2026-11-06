@@ -357,4 +357,22 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(confirm).not.toHaveBeenCalled();
     expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus beserta 3 jawabannya.', 'success', 500);
   });
+
+  it('Jawaban Survei: Super Admin dapat menghapus jawaban satu responden', async () => {
+    const responden = {
+      id: 'resp-1', submitted_at: '2026-11-06T09:00:00.000Z', respondent_name: 'Budi Santoso',
+      gender: 'L', age: 41, education: 'S1', occupation: 'SWASTA', service_category: 'HYBRID',
+      overall_satisfaction: 5, nps_score: 9, is_disabled: false, answers: [],
+      registration: { registration_no: 'REG-202611-0008', publisher: { legal_name: 'PT Dummy Mushaf' } },
+    };
+    vi.spyOn(surveyApi, 'listResponses').mockResolvedValue({ data: { items: [responden], pagination: { page: 1, limit: 20, total: 1, totalPages: 1 } } });
+    const remove = vi.spyOn(surveyApi, 'deleteResponse').mockResolvedValue({ data: { id: 'resp-1' } });
+    const toast = vi.spyOn(toastModule, 'showToast');
+    renderPage('/internal/surveys?tab=jawaban&survey=s1');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Hapus jawaban PT Dummy Mushaf' }));
+    await waitFor(() => expect(remove).toHaveBeenCalledWith('s1', 'resp-1'));
+    expect(toast).toHaveBeenCalledWith('Jawaban PT Dummy Mushaf dihapus.', 'success', 500);
+    expect(surveyApi.listResponses).toHaveBeenCalledTimes(2); // dimuat ulang setelah dihapus
+  });
 });

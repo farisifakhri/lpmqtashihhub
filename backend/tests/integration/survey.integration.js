@@ -236,6 +236,22 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
   });
 
+  await test('Survei: Super Admin menghapus satu jawaban responden', async () => {
+    const sebelum = await ok(`/admin/surveys/${survey.id}/responses`, adminToken, 'GET');
+    const target = sebelum.items[0];
+    assert.ok(target, 'butuh minimal satu jawaban dari uji laporan');
+
+    assert.equal((await call(`/admin/surveys/${survey.id}/responses/${target.id}`, publisherToken, 'DELETE')).status, 403);
+    assert.equal((await call(`/admin/surveys/${survey.id}/responses/00000000-0000-4000-8000-000000000000`, adminToken, 'DELETE')).status, 404);
+
+    await ok(`/admin/surveys/${survey.id}/responses/${target.id}`, adminToken, 'DELETE');
+    const sesudah = await ok(`/admin/surveys/${survey.id}/responses`, adminToken, 'GET');
+    assert.equal(sesudah.pagination.total, sebelum.pagination.total - 1);
+    assert.equal(await prisma.surveyAnswer.count({ where: { response_id: target.id } }), 0);
+    // Laporan dihitung ulang dari data tersisa.
+    assert.equal((await ok(`/admin/surveys/${survey.id}/report`, adminToken, 'GET')).respondents, sebelum.pagination.total - 1);
+  });
+
   await test('Survei: hapus paksa menembus kuncian, tanpa force tetap 409', async () => {
     const target = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei untuk dihapus paksa' }, 201);
     const unsurF = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur hapus paksa' }, 201);

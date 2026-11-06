@@ -552,3 +552,17 @@ export async function submitSurveyResponse(surveyId, registrationId, data, user,
     });
   });
 }
+
+// Super Admin menghapus satu jawaban responden (mis. uji coba atau isian ganda).
+// Laporan dihitung langsung dari data, jadi indeks ikut menyesuaikan tanpa perhitungan ulang.
+export async function deleteSurveyResponse(surveyId, responseId, user, req) {
+  return withAudit(user, req, 'SURVEY_RESPONSE_DELETE', 'Survey', async (tx) => {
+    const response = await tx.surveyResponse.findUnique({
+      where: { id: responseId },
+      select: { id: true, survey_id: true, respondent_name: true, registration: { select: { registration_no: true } } },
+    });
+    if (!response || response.survey_id !== surveyId) fail(404, 'Jawaban survei tidak ditemukan.');
+    await tx.surveyResponse.delete({ where: { id: responseId } }); // jawaban per pertanyaan ikut (cascade)
+    return { id: responseId, respondent: response.registration?.registration_no || response.respondent_name || null };
+  });
+}

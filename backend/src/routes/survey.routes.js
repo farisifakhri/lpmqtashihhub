@@ -41,6 +41,7 @@ router.post('/admin/surveys/:id/activate', ...superadmin, validate(v.surveyIdSch
 router.post('/admin/surveys/:id/deactivate', ...superadmin, validate(v.surveyIdSchema), action(req => survey.setSurveyStatus(req.params.id, 'NONAKTIF', req.user, req)));
 router.post('/admin/surveys/:id/duplicate', ...superadmin, validate(v.surveyIdSchema), action(req => survey.duplicateSurvey(req.params.id, req.user, req), 201));
 router.get('/admin/surveys/:id/responses', ...superadmin, validate(v.listResponsesSchema), action(req => survey.listResponses(req.params.id, req.query)));
+router.delete('/admin/surveys/:id/responses/:responseId', ...superadmin, validate(v.deleteResponseSchema), action(req => survey.deleteSurveyResponse(req.params.id, req.params.responseId, req.user, req)));
 router.get('/admin/surveys/:id/report', ...superadmin, validate(v.surveyIdSchema), action(req => survey.getSurveyReport(req.params.id)));
 
 // Survei untuk penerbit: wajib diisi sebelum STT dapat dicetak.
