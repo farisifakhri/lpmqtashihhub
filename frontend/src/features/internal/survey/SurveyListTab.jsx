@@ -140,13 +140,12 @@ export function SurveyListTab({ onOpen }) {
   };
   const drag = useRowDrag(moveRow);
 
-  const removeSurvey = (s) => {
-    const warning = s._count?.responses
-      ? `Hapus survei "${s.name}" beserta ${s._count.responses} jawaban respondennya? Laporan survei ini ikut hilang dan tidak dapat dikembalikan.`
-      : `Hapus survei "${s.name}"? Susunan pertanyaannya ikut terhapus.`;
-    if (!window.confirm(warning)) return;
-    run(() => surveyApi.deleteSurvey(s.id, s._count?.responses ? 'true' : undefined), 'Survei dihapus.', 1000);
-  };
+  // Hapus tanpa konfirmasi; jawaban responden survei ini ikut terhapus bila ada.
+  const removeSurvey = (s) => run(
+    () => surveyApi.deleteSurvey(s.id, s._count?.responses ? 'true' : undefined),
+    s._count?.responses ? `Survei dihapus beserta ${s._count.responses} jawabannya.` : 'Survei dihapus.',
+    500,
+  );
 
   const activate = (s) =>
     run(() => surveyApi.activateSurvey(s.id), s._count?.items ? 'Survei diaktifkan.' : `Survei diaktifkan. ${NO_QUESTIONS_NOTE}`);

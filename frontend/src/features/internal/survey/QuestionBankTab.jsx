@@ -83,9 +83,9 @@ export function QuestionBankTab() {
   const removeQuestion = (q) => {
     const answers = q._count?.answers || 0;
     const surveys = q.items?.length ? ` dan dikeluarkan dari survei ${q.items.map((i) => i.survey.name).join(', ')}` : '';
-    // Hanya pertanyaan yang sudah dijawab yang perlu konfirmasi: jawabannya ikut hilang dari laporan.
-    if (answers && !window.confirm(`Hapus pertanyaan ini beserta ${answers} jawaban responden? Laporan survei ikut berubah dan tidak dapat dikembalikan.`)) return;
-    run(() => surveyApi.deleteQuestion(q.id, answers ? 'true' : undefined), `Pertanyaan dihapus${surveys}.`, 1000);
+    // Hapus tanpa konfirmasi; jawaban responden atas pertanyaan ini ikut terhapus bila ada.
+    const note = answers ? ` beserta ${answers} jawabannya` : '';
+    run(() => surveyApi.deleteQuestion(q.id, answers ? 'true' : undefined), `Pertanyaan dihapus${note}${surveys}.`, 500);
   };
 
   const setOption = (index, patch) =>

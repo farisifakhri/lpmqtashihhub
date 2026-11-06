@@ -29,12 +29,14 @@ describe('SurveyManagementPage (Super Admin)', () => {
     for (const name of [/Nonaktifkan Survei/, 'Lihat Survei IKM 2027', 'Edit Survei IKM 2027', 'Hapus Survei IKM 2027']) {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
     }
-    // Sudah ada jawaban → tetap dapat dihapus, tetapi konfirmasinya menyebut jawaban yang ikut hilang.
+    // Sudah ada jawaban → tetap dihapus tanpa konfirmasi, jawabannya ikut terbuang.
     const remove = vi.spyOn(surveyApi, 'deleteSurvey').mockResolvedValue({ data: null });
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const toast = vi.spyOn(toastModule, 'showToast');
     fireEvent.click(screen.getByRole('button', { name: 'Hapus Survei IKM 2027' }));
-    expect(confirm.mock.calls[0][0]).toMatch(/12 jawaban responden/);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('s1', 'true'));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('Survei dihapus beserta 12 jawabannya.', 'success', 500);
   });
 
   it('urutan survei bisa dipindahkan dan langsung tersimpan', async () => {
@@ -208,18 +210,20 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.queryByTestId('unsur-group-u1')).not.toBeInTheDocument();
   });
 
-  it('tombol Hapus unsur tetap jalan walau unsurnya dipakai, dengan konfirmasi yang menjelaskan akibatnya', async () => {
+  it('tombol Hapus unsur tetap jalan walau unsurnya dipakai, tanpa konfirmasi', async () => {
     surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u2', name: 'Unsur terpakai', is_standard: false, _count: { items: 2 } }] });
     const remove = vi.spyOn(surveyApi, 'deleteUnsur').mockResolvedValue({ data: unsur });
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const toast = vi.spyOn(toastModule, 'showToast');
     renderPage('/internal/surveys?tab=unsur');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Hapus Persyaratan Pelayanan' }));
     await waitFor(() => expect(remove).toHaveBeenCalledWith('u1', undefined));
 
     fireEvent.click(screen.getByRole('button', { name: 'Hapus Unsur terpakai' }));
-    expect(confirm.mock.calls.at(-1)[0]).toMatch(/dipakai pada 2 susunan survei/);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('u2', 'true'));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('Unsur dihapus dari 2 susunan survei.', 'success', 500);
   });
 
   it('urutan unsur bisa dipindahkan dan langsung tersimpan', async () => {
@@ -331,21 +335,23 @@ describe('SurveyManagementPage (Super Admin)', () => {
     const [usedDelete, freeDelete] = screen.getAllByRole('button', { name: 'Hapus pertanyaan' });
     fireEvent.click(usedDelete);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('q1', undefined));
-    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus dan dikeluarkan dari survei Survei IKM 2027.', 'success', 1000);
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus dan dikeluarkan dari survei Survei IKM 2027.', 'success', 500);
     fireEvent.click(freeDelete);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('q9', undefined));
     expect(confirm).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 1000);
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus.', 'success', 500);
   });
 
-  it('pertanyaan yang sudah dijawab tetap bisa dihapus setelah dikonfirmasi', async () => {
+  it('pertanyaan yang sudah dijawab tetap bisa dihapus tanpa konfirmasi', async () => {
     surveyApi.listQuestions.mockResolvedValue({ data: [{ ...question, items: [], _count: { items: 0, answers: 3 } }] });
     const remove = vi.spyOn(surveyApi, 'deleteQuestion').mockResolvedValue({ data: null });
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage('/internal/surveys?tab=pertanyaan');
 
+    const toast = vi.spyOn(toastModule, 'showToast');
     fireEvent.click(await screen.findByRole('button', { name: 'Hapus pertanyaan' }));
-    expect(confirm.mock.calls[0][0]).toMatch(/3 jawaban responden/);
     await waitFor(() => expect(remove).toHaveBeenCalledWith('q1', 'true'));
+    expect(confirm).not.toHaveBeenCalled();
+    expect(toast).toHaveBeenCalledWith('Pertanyaan dihapus beserta 3 jawabannya.', 'success', 500);
   });
 });

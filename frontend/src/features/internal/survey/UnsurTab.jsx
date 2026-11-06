@@ -56,13 +56,12 @@ export function UnsurTab() {
   };
   const drag = useRowDrag(moveRow);
 
-  const removeUnsur = (u) => {
-    const warning = u._count?.items
-      ? `Hapus unsur "${u.name}"? Unsur ini dipakai pada ${u._count.items} susunan survei dan akan dikeluarkan dari sana. Pertanyaannya tetap ada di bank soal.`
-      : `Hapus unsur "${u.name}"? Tindakan ini tidak dapat dibatalkan.`;
-    if (!window.confirm(warning)) return;
-    run(() => surveyApi.deleteUnsur(u.id, u._count?.items ? 'true' : undefined), 'Unsur dihapus.', 1000);
-  };
+  // Hapus tanpa konfirmasi; unsur ikut dikeluarkan dari susunan survei yang memakainya.
+  const removeUnsur = (u) => run(
+    () => surveyApi.deleteUnsur(u.id, u._count?.items ? 'true' : undefined),
+    u._count?.items ? `Unsur dihapus dari ${u._count.items} susunan survei.` : 'Unsur dihapus.',
+    500,
+  );
 
   const run = async (fn, message, duration) => {
     try { await fn(); showToast(message, 'success', duration); load(); } catch { /* sudah ditampilkan */ }
