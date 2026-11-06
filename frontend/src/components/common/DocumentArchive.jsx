@@ -146,7 +146,9 @@ export function DocumentArchive({ registrationId }) {
     }, {});
   }, [documents]);
 
-  const selected = documents.find((item) => item.id === selectedId) || documents[0];
+  // Tanpa pilihan manual, buka langsung STT bila sudah terbit: itu dokumen yang dicari penerbit.
+  const issuedStt = documents.find((item) => item.document_type === 'SURAT_TANDA_TASHIH' && item.status === 'ISSUED');
+  const selected = documents.find((item) => item.id === selectedId) || issuedStt || documents[0];
   const snapshot = selected?.content_snapshot || {};
   const text = snapshot.letter_text || snapshot.notes || (selected?.document_type === 'NOTA_DINAS_VERIFIKASI'
     ? `Penugasan verifikasi naskah ${snapshot.title || '-'} kepada ${snapshot.verifier_name || 'verifikator'}. Batas penyelesaian: ${snapshot.due_at ? new Date(snapshot.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'}.`
