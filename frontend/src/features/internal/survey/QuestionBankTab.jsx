@@ -7,7 +7,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass, OPTION_PRESETS, unsurLabel } from './survey-constants';
+import { inputClass, OPTION_PRESETS, unsurLabel, unsurForSurvey } from './survey-constants';
 
 const EMPTY = { text: '', type: 'PILIHAN', survey_id: '', unsur_id: '', options: OPTION_PRESETS[0].options };
 
@@ -162,7 +162,12 @@ export function QuestionBankTab() {
         {form && (
           <form onSubmit={save} className="space-y-4">
             <FormField label="Nama survei" hint="Opsional. Pertanyaan langsung masuk ke susunan survei ini; kosongkan bila hanya disimpan di bank soal.">
-              <select className={inputClass} value={form.survey_id} onChange={(e) => setForm({ ...form, survey_id: e.target.value })}>
+              <select className={inputClass} value={form.survey_id} onChange={(e) => {
+                const survey_id = e.target.value;
+                // Unsur khusus survei lain tidak berlaku lagi setelah survei diganti.
+                const keep = unsurForSurvey(unsurList, survey_id).some((u) => u.id === form.unsur_id);
+                setForm({ ...form, survey_id, unsur_id: keep ? form.unsur_id : '' });
+              }}>
                 <option value="">Tidak dimasukkan ke survei</option>
                 {surveyList.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
               </select>
@@ -170,7 +175,7 @@ export function QuestionBankTab() {
             <FormField label="Unsur" required hint={formUnsur?.definition || 'Pertanyaan akan muncul di Pemilihan Survei saat unsur ini dipilih.'}>
               <select className={inputClass} required value={form.unsur_id} onChange={(e) => setForm({ ...form, unsur_id: e.target.value })}>
                 <option value="">Pilih unsur…</option>
-                {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
+                {unsurForSurvey(unsurList, form.survey_id).map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
               </select>
             </FormField>
             <FormField label="Teks pertanyaan" required>

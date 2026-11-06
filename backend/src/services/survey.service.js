@@ -34,8 +34,12 @@ export async function listUnsur({ kind, include_archived } = {}) {
   return prisma.surveyUnsur.findMany({
     where: { ...(kind ? { kind } : {}), ...(include_archived === 'true' ? {} : { is_archived: false }) },
     orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
-    include: { _count: { select: { items: true } } },
+    include: { survey: { select: { id: true, name: true } }, _count: { select: { items: true } } },
   });
+}
+
+async function requireUnsurSurvey(tx, surveyId) {
+  if (surveyId && !(await tx.survey.findUnique({ where: { id: surveyId }, select: { id: true } }))) fail(400, 'Survei yang dipilih tidak ditemukan. Muat ulang halaman lalu pilih kembali.');
 }
 
 // 9 unsur SKM, Pedoman Menteri PANRB No. 9 Tahun 2024, BAB III hlm. 12–13 (urutan = sort_order).
@@ -107,12 +111,16 @@ export async function restoreStandardUnsur(user, req) {
 }
 
 export async function createUnsur(data, user, req) {
-  return withAudit(user, req, 'SURVEY_UNSUR_CREATE', 'SurveyUnsur', (tx) => tx.surveyUnsur.create({ data }));
+  return withAudit(user, req, 'SURVEY_UNSUR_CREATE', 'SurveyUnsur', async (tx) => {
+    await requireUnsurSurvey(tx, data.survey_id);
+    return tx.surveyUnsur.create({ data });
+  });
 }
 
 export async function updateUnsur(id, data, user, req) {
   return withAudit(user, req, 'SURVEY_UNSUR_UPDATE', 'SurveyUnsur', async (tx) => {
     if (!(await tx.surveyUnsur.findUnique({ where: { id } }))) fail(404, 'Unsur survei tidak ditemukan.');
+    await requireUnsurSurvey(tx, data.survey_id);
     return tx.surveyUnsur.update({ where: { id }, data });
   });
 }
@@ -274,13 +282,16 @@ export async function setSurveyItems(id, items, user, req) {
     if (survey._count.responses) fail(409, 'Susunan pertanyaan terkunci karena survei sudah memiliki jawaban.');
     const questionIds = items.map((i) => i.question_id);
     if (new Set(questionIds).size !== questionIds.length) fail(400, 'Satu pertanyaan hanya boleh muncul sekali dalam survei.');
-    const [unsurCount, questions] = await Promise.all([
-      tx.surveyUnsur.count({ where: { id: { in: [...new Set(items.map((i) => i.unsur_id))] } } }),
+    const [unsurRows, questions] = await Promise.all([
+      tx.surveyUnsur.findMany({ where: { id: { in: [...new Set(items.map((i) => i.unsur_id))] } }, select: { id: true, survey_id: true } }),
       tx.surveyQuestion.findMany({ where: { id: { in: questionIds } }, select: { id: true, unsur_id: true } }),
     ]);
-    if (unsurCount !== new Set(items.map((i) => i.unsur_id)).size || questions.length !== questionIds.length) {
+    if (unsurRows.length !== new Set(items.map((i) => i.unsur_id)).size || questions.length !== questionIds.length) {
       fail(400, 'Sebagian unsur atau pertanyaan tidak ditemukan. Muat ulang halaman lalu susun kembali.');
     }
+    // Unsur yang sudah ada di survei ini (mis. hasil Duplikat) tetap boleh dipakai.
+    const current = new Set((await tx.surveyItem.findMany({ where: { survey_id: id }, select: { unsur_id: true } })).map((i) => i.unsur_id));
+    if (unsurRows.some((u) => u.survey_id && u.survey_id !== id && !current.has(u.id))) fail(400, 'Unsur khusus survei lain tidak dapat dipakai pada survei ini.');
     const unsurOf = new Map(questions.map((q) => [q.id, q.unsur_id]));
     if (items.some((i) => unsurOf.get(i.question_id) && unsurOf.get(i.question_id) !== i.unsur_id)) {
       fail(400, 'Pertanyaan harus ditempatkan pada unsur yang sama dengan unsurnya di bank soal.');

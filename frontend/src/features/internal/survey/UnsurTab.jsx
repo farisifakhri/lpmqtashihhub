@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import { inputClass } from './survey-constants';
 
-const EMPTY = { name: '', definition: '' };
+const EMPTY = { name: '', definition: '', survey_id: '' };
 
 export function UnsurTab() {
   const [items, setItems] = useState([]);
@@ -17,6 +17,8 @@ export function UnsurTab() {
   const [showArchived, setShowArchived] = useState(false);
   const [form, setForm] = useState(null); // null = modal tertutup; { id?, ...fields }
   const [saving, setSaving] = useState(false);
+  const [surveyList, setSurveyList] = useState([]);
+  useEffect(() => { surveyApi.listSurveys().then((r) => setSurveyList(r.data || [])).catch(() => {}); }, []);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -33,7 +35,7 @@ export function UnsurTab() {
     setSaving(true);
     try {
       const { id, name } = form;
-      const body = { name, definition: form.definition.trim() || null };
+      const body = { name, definition: form.definition.trim() || null, survey_id: form.survey_id || null };
       if (id) await surveyApi.updateUnsur(id, body);
       else await surveyApi.createUnsur(body);
       showToast(id ? 'Unsur diperbarui.' : 'Unsur ditambahkan.', 'success');
@@ -83,6 +85,7 @@ export function UnsurTab() {
                       {u.name}
                       {u.is_standard && <Badge variant="success">Baku PANRB</Badge>}
                       {u.is_archived && <Badge>Diarsipkan</Badge>}
+                      <Badge variant={u.survey ? 'info' : 'default'}>{u.survey ? `Survei: ${u.survey.name}` : 'Semua survei'}</Badge>
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed">{u.definition || 'Belum ada definisi.'}</p>
                   </td>
@@ -90,7 +93,7 @@ export function UnsurTab() {
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
                       <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`}
-                        onClick={() => setForm({ id: u.id, name: u.name, definition: u.definition || '', is_standard: u.is_standard })}>
+                        onClick={() => setForm({ id: u.id, name: u.name, definition: u.definition || '', survey_id: u.survey_id || '', is_standard: u.is_standard })}>
                         <Pencil className="w-4 h-4" />
                       </Button>
                       <Button size="sm" variant="ghost" aria-label={u.is_archived ? `Pulihkan ${u.name}` : `Arsipkan ${u.name}`}
@@ -115,6 +118,12 @@ export function UnsurTab() {
       <Modal isOpen={!!form} onClose={() => setForm(null)} title={form?.id ? 'Ubah Unsur' : 'Tambah Unsur'} size="md">
         {form && (
           <form onSubmit={save} className="space-y-4">
+            <FormField label="Nama survei" hint="Opsional. Pilih survei bila unsur ini khusus untuk survei tersebut; kosongkan agar unsur bisa dipakai di semua survei.">
+              <select className={inputClass} value={form.survey_id} onChange={(e) => setForm({ ...form, survey_id: e.target.value })}>
+                <option value="">Semua survei (unsur umum)</option>
+                {surveyList.map((sv) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
+              </select>
+            </FormField>
             <FormField label="Nama unsur" required>
               <input className={inputClass} value={form.name} minLength={3} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </FormField>

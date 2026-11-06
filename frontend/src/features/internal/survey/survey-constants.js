@@ -97,3 +97,6 @@ export const IKM_CATEGORIES = [
 
 export const formatDateTime = (value) =>
   value ? new Date(value).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+
+// Unsur yang boleh dipakai pada survei: unsur umum + unsur khusus survei itu. Tanpa survei = semua unsur.
+export const unsurForSurvey = (list, surveyId) => (surveyId ? list.filter((u) => !u.survey_id || u.survey_id === surveyId) : list);

@@ -235,4 +235,22 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal((await call(`/admin/survey-questions/${qPositive.id}`, adminToken, 'DELETE')).status, 409);
     await ok(`/admin/surveys/${target.id}`, adminToken, 'DELETE');
   });
+
+  await test('Survei: unsur bisa dikhususkan ke satu survei dan tidak dipakai di survei lain', async () => {
+    const own = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei IPAK khusus' }, 201);
+    const other = await ok('/admin/surveys', adminToken, 'POST', { name: 'Survei lain' }, 201);
+    assert.equal((await call('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur survei hilang', survey_id: '00000000-0000-4000-8000-000000000000' })).status, 400);
+    const unsur = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Pungutan liar khusus', survey_id: own.id }, 201);
+    assert.equal((await ok('/admin/survey-unsur', adminToken, 'GET')).find((u) => u.id === unsur.id).survey.name, 'Survei IPAK khusus');
+    const q = await ok('/admin/survey-questions', adminToken, 'POST', { text: 'Apakah ada pungutan liar?', type: 'ESAI', unsur_id: unsur.id }, 201);
+    const items = [{ unsur_id: unsur.id, question_id: q.id }];
+    assert.equal((await call(`/admin/surveys/${other.id}/items`, adminToken, 'PUT', { items })).status, 400);
+    await ok(`/admin/surveys/${own.id}/items`, adminToken, 'PUT', { items });
+    // Salinan survei tetap boleh menyimpan ulang unsur bawaan survei asalnya.
+    const copy = await ok(`/admin/surveys/${own.id}/duplicate`, adminToken, 'POST', undefined, 201);
+    await ok(`/admin/surveys/${copy.id}/items`, adminToken, 'PUT', { items });
+    // Jadikan unsur umum → boleh dipakai survei lain.
+    assert.equal((await ok(`/admin/survey-unsur/${unsur.id}`, adminToken, 'PUT', { survey_id: '' })).survey_id, null);
+    await ok(`/admin/surveys/${other.id}/items`, adminToken, 'PUT', { items });
+  });
 }

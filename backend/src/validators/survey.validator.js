@@ -18,6 +18,8 @@ const unsurBody = z.object({
   kind: KIND.optional(),
   definition: z.string().trim().max(2000, 'Definisi maksimal 2000 karakter.').optional().nullable(),
   is_archived: z.boolean().optional(),
+  // Opsional: unsur khusus survei ini; kosong = unsur umum.
+  survey_id: z.preprocess((x) => (x === '' ? null : x), z.string().uuid('Survei tidak valid.').nullable().optional()),
 });
 
 export const createUnsurSchema = { body: unsurBody };

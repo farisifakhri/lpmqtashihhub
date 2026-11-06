@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import {
-  inputClass, STATUS_BADGE, formatDate, formatDateTime, unsurLabel,
+  inputClass, STATUS_BADGE, formatDate, formatDateTime, unsurLabel, unsurForSurvey,
   DISABILITY_LABELS, SERVICE_CATEGORY_LABELS, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, IKM_CATEGORIES,
 } from './survey-constants';
 
@@ -49,7 +49,7 @@ function ItemsEditor({ survey, onSaved }) {
   const used = new Set(groups.flatMap((g) => g.questions.map((q) => q.id)));
   // Pertanyaan bank soal milik unsur ini yang belum dipakai di survei.
   const availableFor = (unsurId) => questions.filter((q) => q.unsur_id === unsurId && !used.has(q.id));
-  const unusedUnsur = unsurList.filter((u) => !groups.some((g) => g.unsur.id === u.id));
+  const unusedUnsur = unsurForSurvey(unsurList, survey.id).filter((u) => !groups.some((g) => g.unsur.id === u.id));
   const dirty = JSON.stringify(flatten(groups))
     !== JSON.stringify(survey.items.map((i) => ({ unsur_id: i.unsur_id, question_id: i.question_id })));
 

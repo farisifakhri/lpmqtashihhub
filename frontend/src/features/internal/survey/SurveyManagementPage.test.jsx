@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { SurveyManagementPage } from './SurveyManagementPage';
 import { surveyApi } from '@/api/survey.api';
@@ -124,7 +124,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(definition).toHaveValue(unsur.definition);
     fireEvent.change(definition, { target: { value: 'Syarat khusus pentashihan.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith('u1', { name: 'Persyaratan Pelayanan', definition: 'Syarat khusus pentashihan.' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('u1', { name: 'Persyaratan Pelayanan', definition: 'Syarat khusus pentashihan.', survey_id: null }));
   });
 
   it('Tambah Unsur cukup nama dan definisi (tanpa kode dan jenis)', async () => {
@@ -135,8 +135,31 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.queryByLabelText(/Jenis/)).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/Nama unsur/), { target: { value: 'Pungutan liar' } });
     fireEvent.change(screen.getByLabelText('Definisi'), { target: { value: 'Pungutan di luar ketentuan.' } });
+    await screen.findByRole('option', { name: 'Survei IKM 2027' });
+    fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 's1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Pungutan liar', definition: 'Pungutan di luar ketentuan.' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Pungutan liar', definition: 'Pungutan di luar ketentuan.', survey_id: 's1' }));
+  });
+
+  it('unsur khusus survei hanya muncul bila survei itu dipilih di form pertanyaan dan Pemilihan Survei', async () => {
+    const khusus = { ...unsur, id: 'u9', code: null, name: 'Unsur khusus lain', survey_id: 's2', survey: { id: 's2', name: 'Survei lain' } };
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, khusus] });
+    renderPage('/internal/surveys?tab=pertanyaan');
+    fireEvent.click(await screen.findByRole('button', { name: /Tambah Pertanyaan/ }));
+    const unsurSelect = screen.getByLabelText(/^Unsur/);
+    await waitFor(() => expect(within(unsurSelect).getByRole('option', { name: 'Unsur khusus lain' })).toBeInTheDocument()); // tanpa survei: semua unsur
+    fireEvent.change(screen.getByLabelText(/^Unsur/), { target: { value: 'u9' } });
+    await screen.findByRole('option', { name: 'Survei IKM 2027' });
+    fireEvent.change(screen.getByLabelText(/Nama survei/), { target: { value: 's1' } });
+    expect(within(unsurSelect).queryByRole('option', { name: 'Unsur khusus lain' })).not.toBeInTheDocument();
+    expect(unsurSelect).toHaveValue(''); // pilihan unsur lama dikosongkan
+  });
+
+  it('Pemilihan Survei menyembunyikan unsur khusus survei lain', async () => {
+    surveyApi.listUnsur.mockResolvedValue({ data: [unsur, { ...unsur, id: 'u9', code: null, name: 'Unsur khusus lain', survey_id: 's2' }] });
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
+    await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
+    expect(screen.queryByRole('option', { name: 'Unsur khusus lain' })).not.toBeInTheDocument();
   });
 
   it('Pemilihan Survei menampilkan definisi unsur dan bisa mengeluarkan unsur', async () => {
