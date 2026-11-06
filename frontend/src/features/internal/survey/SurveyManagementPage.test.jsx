@@ -258,6 +258,9 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(screen.getByText('Fisik (Tuna Daksa)')).toBeInTheDocument();
     expect(screen.getByText('Campuran (Hybrid)')).toBeInTheDocument();
     expect(screen.getByText('Tanda tashih mushaf cetak')).toBeInTheDocument();
+    // Tiap kartu demografi punya diagram donat yang menyebut isinya untuk pembaca layar.
+    expect(screen.getByRole('img', { name: 'Jenis kelamin: Laki-laki 100%' })).toBeInTheDocument();
+    expect(screen.getAllByRole('img').length).toBe(5); // kartu tanpa data tidak menggambar diagram
   });
 
   it('Pertanyaan Survei: unsur wajib di form, dikirim ke API, dan bank soal dikelompokkan per unsur', async () => {

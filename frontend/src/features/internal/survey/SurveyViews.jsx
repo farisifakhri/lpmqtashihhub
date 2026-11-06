@@ -190,21 +190,56 @@ function ItemsEditor({ survey, onSaved }) {
   );
 }
 
-function DistributionTable({ title, rows }) {
+const mapLabels = (rows, labels) => rows.map((r) => ({ ...r, label: labels[r.label] || r.label }));
+
+// Warna irisan diagram; diambil dari token desain lewat `currentColor`, bukan warna lepas.
+const SLICE_COLORS = ['text-brand-700', 'text-civic-info', 'text-civicGold-700', 'text-brand-500',
+  'text-civic-warning', 'text-brand-300', 'text-civic-danger', 'text-brand-900'];
+const sliceColor = (index) => SLICE_COLORS[index % SLICE_COLORS.length];
+
+// Diagram donat: tiap irisan satu lingkaran ber-pathLength 100, jadi persen = panjang garisnya.
+function DonutChart({ rows, label }) {
+  let offset = 0;
   return (
-    <div className="rounded-xl border border-line bg-white p-4 space-y-2">
-      <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">{title}</h4>
-      {!rows.length ? <p className="text-xs text-ink-muted">Belum ada data.</p> : rows.map((r) => (
-        <div key={r.label} className="space-y-1">
-          <div className="flex justify-between text-xs text-ink"><span>{r.label}</span><span>{r.count} · {r.percent}%</span></div>
-          <div className="h-1.5 rounded-full bg-surface-subtle"><div className="h-1.5 rounded-full bg-brand-700" style={{ width: `${r.percent}%` }} /></div>
-        </div>
-      ))}
-    </div>
+    <svg viewBox="0 0 42 42" className="h-24 w-24 shrink-0" role="img"
+      aria-label={`${label}: ${rows.map((r) => `${r.label} ${r.percent}%`).join(', ')}`}>
+      <circle cx="21" cy="21" r="15.9" fill="none" strokeWidth="7" stroke="currentColor" className="text-line" />
+      {rows.map((r, i) => {
+        const dash = Number(r.percent) || 0;
+        const circle = (
+          <circle key={r.label} cx="21" cy="21" r="15.9" fill="none" strokeWidth="7" pathLength="100"
+            strokeDasharray={`${dash} ${100 - dash}`} strokeDashoffset={-offset} transform="rotate(-90 21 21)"
+            stroke="currentColor" className={sliceColor(i)} />
+        );
+        offset += dash;
+        return circle;
+      })}
+    </svg>
   );
 }
 
-const mapLabels = (rows, labels) => rows.map((r) => ({ ...r, label: labels[r.label] || r.label }));
+// Kartu demografi: diagram donat + rincian angkanya (angka tetap terbaca tanpa melihat diagram).
+function DistributionCard({ title, rows }) {
+  return (
+    <div className="space-y-3 rounded-xl border border-line bg-white p-4">
+      <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">{title}</h4>
+      {!rows.length ? <p className="text-xs text-ink-muted">Belum ada data.</p> : (
+        <div className="flex items-center gap-4">
+          <DonutChart rows={rows} label={title} />
+          <ul className="min-w-0 flex-1 space-y-1.5">
+            {rows.map((r, i) => (
+              <li key={r.label} className="flex items-center gap-2 text-xs">
+                <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-sm bg-current ${sliceColor(i)}`} />
+                <span className="min-w-0 flex-1 truncate text-ink" title={r.label}>{r.label}</span>
+                <span className="shrink-0 text-ink-muted">{r.count} · {r.percent}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function RespondentsView({ surveyId }) {
   const report = useReport(surveyId);
@@ -219,14 +254,14 @@ export function RespondentsView({ surveyId }) {
         <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB No. 9/2024. Persentase dihitung per responden.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        <DistributionTable title="Penyandang disabilitas" rows={d.disability} />
-        <DistributionTable title="Jenis disabilitas" rows={mapLabels(d.disability_type, DISABILITY_LABELS)} />
-        <DistributionTable title="Jenis kelamin" rows={d.gender} />
-        <DistributionTable title="Usia" rows={d.age} />
-        <DistributionTable title="Pendidikan" rows={d.education} />
-        <DistributionTable title="Pekerjaan" rows={d.occupation} />
-        <DistributionTable title="Jenis layanan yang diterima" rows={d.service_type} />
-        <DistributionTable title="Kategori layanan" rows={mapLabels(d.service_category, SERVICE_CATEGORY_LABELS)} />
+        <DistributionCard title="Penyandang disabilitas" rows={d.disability} />
+        <DistributionCard title="Jenis disabilitas" rows={mapLabels(d.disability_type, DISABILITY_LABELS)} />
+        <DistributionCard title="Jenis kelamin" rows={d.gender} />
+        <DistributionCard title="Usia" rows={d.age} />
+        <DistributionCard title="Pendidikan" rows={d.education} />
+        <DistributionCard title="Pekerjaan" rows={d.occupation} />
+        <DistributionCard title="Jenis layanan yang diterima" rows={d.service_type} />
+        <DistributionCard title="Kategori layanan" rows={mapLabels(d.service_category, SERVICE_CATEGORY_LABELS)} />
       </div>
     </div>
   );
