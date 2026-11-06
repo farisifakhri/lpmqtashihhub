@@ -79,10 +79,9 @@ describe('SurveyManagementPage (Super Admin)', () => {
     renderPage('/internal/surveys?tab=pemilihan&survey=s1');
 
     await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
-    fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u1' } });
-    fireEvent.change(screen.getByLabelText('Pilih pertanyaan'), { target: { value: 'q1' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Tambah$/ }));
-    expect(screen.getByText('Bagaimana kesesuaian persyaratan?')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Tambah unsur ke survei'), { target: { value: 'u1' } });
+    fireEvent.change(screen.getByLabelText('Tambah pertanyaan Persyaratan Pelayanan'), { target: { value: 'q1' } });
+    expect(screen.getByTestId('unsur-group-u1')).toHaveTextContent('Bagaimana kesesuaian persyaratan?');
 
     fireEvent.click(screen.getByRole('button', { name: /Simpan Susunan/ }));
     await waitFor(() => expect(setItems).toHaveBeenCalledWith('s1', [{ unsur_id: 'u1', question_id: 'q1' }]));
@@ -140,12 +139,13 @@ describe('SurveyManagementPage (Super Admin)', () => {
     await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Pungutan liar', definition: 'Pungutan di luar ketentuan.' }));
   });
 
-  it('Pemilihan Survei menampilkan definisi unsur yang dipilih', async () => {
+  it('Pemilihan Survei menampilkan definisi unsur dan bisa mengeluarkan unsur', async () => {
     renderPage('/internal/surveys?tab=pemilihan&survey=s1');
     await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
-    expect(screen.queryByTestId('picked-unsur-definition')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u1' } });
-    expect(screen.getByTestId('picked-unsur-definition')).toHaveTextContent('Syarat yang harus dipenuhi');
+    fireEvent.change(screen.getByLabelText('Tambah unsur ke survei'), { target: { value: 'u1' } });
+    expect(screen.getByTestId('unsur-group-u1')).toHaveTextContent('Syarat yang harus dipenuhi');
+    fireEvent.click(screen.getByRole('button', { name: 'Keluarkan unsur Persyaratan Pelayanan' }));
+    expect(screen.queryByTestId('unsur-group-u1')).not.toBeInTheDocument();
   });
 
   it('tombol Hapus menghapus unsur yang tidak dipakai dan nonaktif untuk unsur yang masih dipakai', async () => {
@@ -206,12 +206,22 @@ describe('SurveyManagementPage (Super Admin)', () => {
     renderPage('/internal/surveys?tab=pemilihan&survey=s1');
     await screen.findByRole('option', { name: 'D · Biaya/Tarif' });
 
-    const questionSelect = screen.getByLabelText('Pilih pertanyaan');
-    expect(questionSelect).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Pilih unsur'), { target: { value: 'u2' } });
-    expect(questionSelect).not.toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Tambah unsur ke survei'), { target: { value: 'u2' } });
     expect(screen.getByRole('option', { name: 'Pertanyaan unsur biaya' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Bagaimana kesesuaian persyaratan?' })).not.toBeInTheDocument();
+  });
+
+  it('Tambah semua memasukkan seluruh pertanyaan unsur sekaligus lalu disimpan berurutan per unsur', async () => {
+    const q3 = { ...question, id: 'q3', text: 'Pertanyaan persyaratan kedua' };
+    surveyApi.listQuestions.mockResolvedValue({ data: [question, q3] });
+    const setItems = vi.spyOn(surveyApi, 'setSurveyItems').mockResolvedValue({ data: { ...baseSurvey, items: [] } });
+    renderPage('/internal/surveys?tab=pemilihan&survey=s1');
+    await screen.findByRole('option', { name: 'A · Persyaratan Pelayanan' });
+    fireEvent.change(screen.getByLabelText('Tambah unsur ke survei'), { target: { value: 'u1' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah semua pertanyaan Persyaratan Pelayanan' }));
+    expect(screen.getByLabelText('Tambah pertanyaan Persyaratan Pelayanan')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Susunan/ }));
+    await waitFor(() => expect(setItems).toHaveBeenCalledWith('s1', [{ unsur_id: 'u1', question_id: 'q1' }, { unsur_id: 'u1', question_id: 'q3' }]));
   });
   it('tombol Isi Pertanyaan Baku PANRB mengisi bank soal dan melaporkan hasilnya', async () => {
     const toast = vi.spyOn(toastModule, 'showToast');

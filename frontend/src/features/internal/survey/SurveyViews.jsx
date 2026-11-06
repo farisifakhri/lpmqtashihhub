@@ -21,12 +21,23 @@ function useReport(surveyId) {
   return report;
 }
 
+// Kelompokkan item survei per unsur, urut sesuai kemunculan pertama.
+const groupItems = (items) => {
+  const groups = [];
+  for (const { unsur, question } of items) {
+    let g = groups.find((x) => x.unsur.id === unsur.id);
+    if (!g) groups.push(g = { unsur, questions: [] });
+    g.questions.push(question);
+  }
+  return groups;
+};
+const flatten = (groups) => groups.flatMap((g) => g.questions.map((q) => ({ unsur_id: g.unsur.id, question_id: q.id })));
+
 function ItemsEditor({ survey, onSaved }) {
   const locked = survey._count?.responses > 0;
-  const [draft, setDraft] = useState(survey.items.map((i) => ({ unsur: i.unsur, question: i.question })));
+  const [groups, setGroups] = useState(() => groupItems(survey.items));
   const [unsurList, setUnsurList] = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [pick, setPick] = useState({ unsur_id: '', question_id: '' });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -35,29 +46,31 @@ function ItemsEditor({ survey, onSaved }) {
     surveyApi.listQuestions().then((r) => setQuestions(r.data || [])).catch(() => {});
   }, [locked]);
 
-  const pickedUnsur = unsurList.find((u) => u.id === pick.unsur_id);
-  const used = new Set(draft.map((d) => d.question.id));
-  // Hanya pertanyaan bank soal milik unsur terpilih (dan belum dipakai) agar dropdown tidak panjang.
-  const available = questions.filter((q) => !used.has(q.id) && q.unsur_id === pick.unsur_id);
-  const dirty = JSON.stringify(draft.map((d) => [d.unsur.id, d.question.id]))
-    !== JSON.stringify(survey.items.map((i) => [i.unsur_id, i.question_id]));
+  const used = new Set(groups.flatMap((g) => g.questions.map((q) => q.id)));
+  // Pertanyaan bank soal milik unsur ini yang belum dipakai di survei.
+  const availableFor = (unsurId) => questions.filter((q) => q.unsur_id === unsurId && !used.has(q.id));
+  const unusedUnsur = unsurList.filter((u) => !groups.some((g) => g.unsur.id === u.id));
+  const dirty = JSON.stringify(flatten(groups))
+    !== JSON.stringify(survey.items.map((i) => ({ unsur_id: i.unsur_id, question_id: i.question_id })));
 
-  const add = () => {
-    const unsur = unsurList.find((u) => u.id === pick.unsur_id);
-    const question = questions.find((q) => q.id === pick.question_id);
-    if (!unsur || !question) return;
-    setDraft([...draft, { unsur, question }]);
-    setPick({ ...pick, question_id: '' });
+  const updateGroup = (gi, change) => setGroups(groups.map((g, i) => (i === gi ? { ...g, questions: change(g.questions) } : g)));
+  const addUnsur = (id) => {
+    const unsur = unsurList.find((u) => u.id === id);
+    if (unsur) setGroups([...groups, { unsur, questions: [] }]);
   };
-  const move = (index, delta) => {
-    const next = [...draft];
-    [next[index], next[index + delta]] = [next[index + delta], next[index]];
-    setDraft(next);
+  const addQuestion = (gi, id) => {
+    const q = questions.find((x) => x.id === id);
+    if (q) updateGroup(gi, (qs) => [...qs, q]);
   };
+  const move = (gi, qi, delta) => updateGroup(gi, (qs) => {
+    const next = [...qs];
+    [next[qi], next[qi + delta]] = [next[qi + delta], next[qi]];
+    return next;
+  });
   const save = async () => {
     setSaving(true);
     try {
-      const res = await surveyApi.setSurveyItems(survey.id, draft.map((d) => ({ unsur_id: d.unsur.id, question_id: d.question.id })));
+      const res = await surveyApi.setSurveyItems(survey.id, flatten(groups));
       showToast('Susunan pertanyaan disimpan.', 'success');
       onSaved(res.data);
     } catch { /* sudah ditampilkan apiClient */ } finally {
@@ -65,6 +78,7 @@ function ItemsEditor({ survey, onSaved }) {
     }
   };
 
+  let number = 0;
   return (
     <div className="space-y-4">
       {locked && (
@@ -73,54 +87,74 @@ function ItemsEditor({ survey, onSaved }) {
         </p>
       )}
 
-      {!draft.length ? (
-        <EmptyState title="Belum ada pertanyaan" description="Pilih unsur dan pertanyaan di bawah untuk menyusun survei." />
-      ) : (
-        <ol className="space-y-2">
-          {draft.map((d, i) => (
-            <li key={d.question.id} className="flex items-start gap-3 rounded-xl border border-line bg-white p-3">
-              <span className="mt-0.5 w-6 shrink-0 text-right text-xs font-bold text-ink-muted">{i + 1}.</span>
-              <div className="flex-1 min-w-0 space-y-1">
-                <Badge variant="info">{unsurLabel(d.unsur)}</Badge>
-                <p className="text-sm text-ink">{d.question.text}</p>
-                <p className="text-xs text-ink-muted">
-                  {d.question.type === 'ESAI' ? 'Esai' : d.question.options?.map((o) => `${o.label} (${o.value})`).join(' · ')}
-                </p>
+      {!groups.length && (
+        <EmptyState title="Belum ada unsur" description="Tambahkan unsur di bawah, lalu pilih pertanyaannya dari bank soal." />
+      )}
+
+      {groups.map((g, gi) => {
+        const available = availableFor(g.unsur.id);
+        return (
+          <section key={g.unsur.id} data-testid={`unsur-group-${g.unsur.id}`} className="space-y-3 rounded-xl border border-line bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <h3 className="text-sm font-bold text-ink">{unsurLabel(g.unsur)} <span className="font-normal text-ink-muted">· {g.questions.length} pertanyaan</span></h3>
+                {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
               </div>
               {!locked && (
-                <div className="flex shrink-0 gap-1">
-                  <Button size="sm" variant="ghost" aria-label={`Naikkan pertanyaan ${i + 1}`} disabled={i === 0} onClick={() => move(i, -1)}><ArrowUp className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" aria-label={`Turunkan pertanyaan ${i + 1}`} disabled={i === draft.length - 1} onClick={() => move(i, 1)}><ArrowDown className="w-4 h-4" /></Button>
-                  <Button size="sm" variant="ghost" aria-label={`Keluarkan pertanyaan ${i + 1}`} onClick={() => setDraft(draft.filter((_, idx) => idx !== i))}><X className="w-4 h-4" /></Button>
-                </div>
+                <Button size="sm" variant="ghost" aria-label={`Keluarkan unsur ${g.unsur.name}`} onClick={() => setGroups(groups.filter((_, i) => i !== gi))}><X className="w-4 h-4" /></Button>
               )}
-            </li>
-          ))}
-        </ol>
-      )}
+            </div>
+
+            {!!g.questions.length && (
+              <ol className="space-y-2">
+                {g.questions.map((q, qi) => {
+                  number += 1;
+                  return (
+                    <li key={q.id} className="flex items-start gap-3 rounded-lg border border-line p-3">
+                      <span className="mt-0.5 w-6 shrink-0 text-right text-xs font-bold text-ink-muted">{number}.</span>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-sm text-ink">{q.text}</p>
+                        <p className="text-xs text-ink-muted">
+                          {q.type === 'ESAI' ? 'Esai' : q.options?.map((o) => `${o.label} (${o.value})`).join(' · ')}
+                        </p>
+                      </div>
+                      {!locked && (
+                        <div className="flex shrink-0 gap-1">
+                          <Button size="sm" variant="ghost" aria-label={`Naikkan pertanyaan ${number}`} disabled={qi === 0} onClick={() => move(gi, qi, -1)}><ArrowUp className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="ghost" aria-label={`Turunkan pertanyaan ${number}`} disabled={qi === g.questions.length - 1} onClick={() => move(gi, qi, 1)}><ArrowDown className="w-4 h-4" /></Button>
+                          <Button size="sm" variant="ghost" aria-label={`Keluarkan pertanyaan ${number}`} onClick={() => updateGroup(gi, (qs) => qs.filter((x) => x.id !== q.id))}><X className="w-4 h-4" /></Button>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+
+            {!locked && (
+              <div className="grid gap-2 md:grid-cols-[1fr_auto]">
+                <select className={inputClass} aria-label={`Tambah pertanyaan ${g.unsur.name}`} disabled={!available.length} value="" onChange={(e) => addQuestion(gi, e.target.value)}>
+                  <option value="">{available.length ? `Tambah pertanyaan (${available.length} tersedia)…` : 'Tidak ada pertanyaan tersisa untuk unsur ini'}</option>
+                  {available.map((q) => <option key={q.id} value={q.id}>{q.text}</option>)}
+                </select>
+                <Button type="button" variant="outline" aria-label={`Tambah semua pertanyaan ${g.unsur.name}`} disabled={!available.length} onClick={() => updateGroup(gi, (qs) => [...qs, ...available])}>
+                  <Plus className="w-4 h-4" /> Tambah semua
+                </Button>
+              </div>
+            )}
+          </section>
+        );
+      })}
 
       {!locked && (
         <div className="space-y-3 rounded-xl border border-dashed border-line-strong bg-surface-subtle/40 p-4">
-          <p className="text-xs font-semibold text-ink">Tambah pertanyaan ke survei</p>
-          <div className="grid gap-2 md:grid-cols-[1fr_2fr_auto]">
-            <select className={inputClass} aria-label="Pilih unsur" value={pick.unsur_id} onChange={(e) => setPick({ unsur_id: e.target.value, question_id: '' })}>
-              <option value="">Pilih unsur…</option>
-              {unsurList.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
-            </select>
-            <select className={inputClass} aria-label="Pilih pertanyaan" disabled={!pick.unsur_id} value={pick.question_id} onChange={(e) => setPick({ ...pick, question_id: e.target.value })}>
-              <option value="">
-                {!pick.unsur_id ? 'Pilih unsur terlebih dahulu' : available.length ? `Pilih pertanyaan (${available.length} tersedia)…` : 'Belum ada pertanyaan untuk unsur ini'}
-              </option>
-              {available.map((q) => <option key={q.id} value={q.id}>{q.text}</option>)}
-            </select>
-            <Button type="button" variant="outline" disabled={!pick.unsur_id || !pick.question_id} onClick={add}><Plus className="w-4 h-4" /> Tambah</Button>
-          </div>
-          {pickedUnsur?.definition && (
-            <p data-testid="picked-unsur-definition" className="rounded-lg border border-line bg-white p-3 text-xs text-ink-muted leading-relaxed">
-              <strong className="text-ink">{pickedUnsur.name}:</strong> {pickedUnsur.definition}
-            </p>
-          )}
-          <div className="flex justify-end">
+          <label htmlFor="add-unsur" className="block text-xs font-semibold text-ink">Tambah unsur ke survei</label>
+          <select id="add-unsur" className={inputClass} disabled={!unusedUnsur.length} value="" onChange={(e) => addUnsur(e.target.value)}>
+            <option value="">{unusedUnsur.length ? 'Pilih unsur…' : 'Semua unsur sudah ditambahkan'}</option>
+            {unusedUnsur.map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
+          </select>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-ink-muted">Unsur tanpa pertanyaan tidak ikut disimpan.</p>
             <Button type="button" disabled={!dirty || saving} onClick={save}><Save className="w-4 h-4" /> {saving ? 'Menyimpan…' : 'Simpan Susunan'}</Button>
           </div>
         </div>
