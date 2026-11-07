@@ -241,7 +241,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badgeKey: "verification_assigned",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan naskah & draf surat",
-                            badge: 1,
                         },
                         {
                             label: "Tanda Tangan Saya",
