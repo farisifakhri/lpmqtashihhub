@@ -165,8 +165,13 @@ export async function getSidebarBadges(user) {
   const roles = user?.roles || [];
   if (isPublisherOnly(user) && !user.publisherId) return {};
 
+  // Pengguna multi-role (mis. Verifikator+Pentashih): hanya tampilkan badge untuk peran
+  // yang sedang aktif agar tidak membingungkan saat berganti peran.
+  const activeRole = user?.activeRole && roles.includes(user.activeRole) ? user.activeRole : null;
+  const eligibleRoles = activeRole && roles.length > 1 ? [activeRole] : roles;
+
   const visible = SIDEBAR_BADGES.filter(badge =>
-    badge.roles.some(role => roles.includes(role)) && (!badge.when || badge.when(user)),
+    badge.roles.some(role => eligibleRoles.includes(role)) && (!badge.when || badge.when(user)),
   );
   const results = await Promise.allSettled(visible.map(badge => badge.count(user)));
 

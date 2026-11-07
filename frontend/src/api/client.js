@@ -60,6 +60,12 @@ export async function apiClient(endpoint, options = {}) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
 
+  // Peran aktif untuk pengguna multi-role; backend memakainya menyaring badge dan menu.
+  try {
+    const activeRole = localStorage.getItem('lpmq_active_role');
+    if (activeRole) defaultHeaders['X-Active-Role'] = activeRole;
+  } catch { /* localStorage tidak tersedia */ }
+
   const config = {
     method: body ? 'POST' : 'GET',
     cache: 'no-store',

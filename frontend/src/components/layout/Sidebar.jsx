@@ -72,38 +72,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const role = currentUser?.role || "";
     const roles = currentUser?.roles || [];
 
-    const isPublisher =
-        role === "PENERBIT" ||
-        role === "PUBLISHER" ||
-        roles.includes("PENERBIT");
-
-    const isSuperAdmin = role === "SUPERADMIN" || roles.includes("SUPERADMIN");
-
-    const isAdmin =
-        role === "ADMIN_INTERNAL" || roles.includes("ADMIN_INTERNAL");
-
-    const isVerifikator =
-        role === "VERIFIKATOR" ||
-        role === "VERIFICATOR" ||
-        roles.includes("VERIFIKATOR");
-
-    const isDistributor =
-        role === "DISTRIBUTOR" || roles.includes("DISTRIBUTOR");
-
-    const isPentashih =
-        role === "PENTASHIH" ||
-        role === "TASHIH_MEMBER" ||
-        roles.includes("PENTASHIH");
-
-    const isDokumentator =
-        role === "DOKUMENTATOR" ||
-        role === "DOCUMENTATOR" ||
-        roles.includes("DOKUMENTATOR");
-
-    const isKepala =
-        role === "KEPALA_LPMQ" ||
-        role === "HEAD_OF_LPMQ" ||
-        roles.includes("KEPALA_LPMQ");
+    // Menu sidebar mengikuti peran aktif (role) saja, bukan daftar roles yang dimiliki pengguna,
+    // agar tombol Ganti Peran benar-benar mengubah tampilan untuk pengguna multi-role.
+    const isPublisher = role === "PENERBIT" || role === "PUBLISHER";
+    const isSuperAdmin = role === "SUPERADMIN";
+    const isAdmin = role === "ADMIN_INTERNAL";
+    const isVerifikator = role === "VERIFIKATOR" || role === "VERIFICATOR";
+    const isDistributor = role === "DISTRIBUTOR";
+    const isPentashih = role === "PENTASHIH" || role === "TASHIH_MEMBER";
+    const isDokumentator = role === "DOKUMENTATOR" || role === "DOCUMENTATOR";
+    const isKepala = role === "KEPALA_LPMQ" || role === "HEAD_OF_LPMQ";
 
     const getRoleBadge = (userRole) => {
         switch (userRole) {
