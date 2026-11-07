@@ -3,6 +3,7 @@ import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
+import { formatFileType } from '@/lib/glossary';
 
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
@@ -154,31 +155,42 @@ export const ReviewForm = ({
                 <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
                   Berkas Master Mushaf Digital
                 </label>
-                {selectedAssignment.registration?.manuscript_files?.length ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {selectedAssignment.registration.manuscript_files.map((file) => (
-                      <a
-                        key={file.id}
-                        href={`/api/v1/uploads/${file.file_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2.5 rounded-lg border border-line bg-white hover:border-brand-700 hover:bg-brand-50/30 transition-all flex items-center justify-between text-xs group"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-                          <span className="font-medium text-ink group-hover:text-brand-800 truncate">
-                            {file.file_type || 'Berkas Naskah'}
-                          </span>
-                        </div>
-                        <Download className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700 shrink-0 ml-1" />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
+                {(() => {
+                  // Satu kartu per jenis berkas (COVER, SAMPLE_PAGE_1_5, ...), versi terbaru saja —
+                  // data mentah bisa punya duplikat yang mengaburkan daftar.
+                  const files = selectedAssignment.registration?.manuscript_files || [];
+                  const terbaru = new Map();
+                  for (const f of files) {
+                    const key = f.type || f.id;
+                    const sekarang = terbaru.get(key);
+                    if (!sekarang || (f.version || 1) > (sekarang.version || 1)) terbaru.set(key, f);
+                  }
+                  const daftar = [...terbaru.values()];
+                  return daftar.length ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {daftar.map((file) => (
+                        <button
+                          type="button"
+                          key={file.id}
+                          onClick={() => fileApi.downloadPrivateFile(file.file_id, `${formatFileType(file.type)}.pdf`)}
+                          className="p-2.5 rounded-lg border border-line bg-white hover:border-brand-700 hover:bg-brand-50/30 transition-all flex items-center justify-between text-xs group text-left cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <FileText className="w-4 h-4 text-brand-700 shrink-0" />
+                            <span className="font-medium text-ink group-hover:text-brand-800 truncate">
+                              {formatFileType(file.type)}
+                            </span>
+                          </div>
+                          <Download className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700 shrink-0 ml-1" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
                   <div className="p-3 rounded-lg bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs">
                     Berkas digital belum diunggah atau naskah diperiksa melalui master fisik cetak A4.
                   </div>
-                )}
+                  );
+                })()}
               </div>
 
               {/* Cakupan Rekapitulasi: Kelompok (TEAM) vs Mandiri (SELF) - B-15 */}
