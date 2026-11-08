@@ -24,6 +24,7 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 |B-14|`feat/b14-integritas-gerbang-stt-dan-kebocoran-tashih`|Integritas Gerbang STT, Penutupan Bypass Transisi Penerbit, dan Proteksi Privasi Identitas Pentashih pada List Registrations (Audit B1, B2, B3)|**Fakhri**|B-06, B-07|
 |B-15|`feat/b15-rekap-kelompok-dan-eliminasi-checklist`|Logika Rekap Kelompok (`recap_scope: TEAM vs SELF`), Penugasan Campuran Kelompok-Individu, dan Eliminasi Checklist Butir Per Juz (Audit A1, A2, A4)|**Fakhri**|B-14|
 |B-16|`feat/b16-rekap-revisi-penerbit-dan-siklus-dumi`|Kewajiban Unggah Berkas Rekap Revisi Penerbit (Per Ronde, Titik a & c) dan Penegakan Siklus Wajib Dumi Sebelum STT (Audit A3)|**Fakhri**|B-14, B-15|
+|B-17|`feat/b17-integritas-siklus-revisi-dan-penutupan-kebocoran`|Integritas Siklus Revisi, Pembanding Distributor, dan Penutupan Kebocoran Dokumen (Audit Pasca-B16 #1 s.d. #9)|**Fakhri**|B-16|
 
 ## Status implementasi per 5 November 2026
 
@@ -44,7 +45,8 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
 | B-14 | **Selesai menurut bukti kode** | Menutup lubang keamanan B1 (dua jalur STT), B2 (bypass transisi penerbit), dan B3 (kebocoran pentashih di `listRegistrations`), seluruh pengujian lulus 100%. |
 | B-15 | **Selesai menurut bukti kode** | Logika rekap kelompok `recap_scope: TEAM vs SELF`, penugasan campuran kelompok-individu atomik 30 juz, eliminasi form checklist per juz, seluruh pengujian backend & frontend lulus 100%. |
-| B-16 | **Siap Dikerjakan** | Wajib berkas rekap revisi penerbit per ronde (titik a & c), pembandingan berkas, dan penegakan siklus wajib dumi sebelum STT. |
+| B-16 | **Selesai menurut bukti kode** | Wajib berkas rekap revisi penerbit per ronde (titik a & c), pembandingan berkas, dan penegakan siklus wajib dumi sebelum STT (PR #68). |
+| B-17 | **Dalam Pengerjaan (Tahap 1: Backend)** | Integritas siklus revisi (endpoint mandiri rekap penerbit), pembanding wajib distributor, gerbang rekap sebelum revisi, eliminasi bypass transisi, sanitasi snapshot dokumen resmi, dan perbaikan validasi berkas. |
 
 **Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, `frontend/src/features/verification/VerificationInspectionPage.jsx`, dan `frontend/src/features/verification/VerificationInspectionPage.test.jsx`.
 

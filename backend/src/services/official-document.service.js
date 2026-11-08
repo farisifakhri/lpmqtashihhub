@@ -75,7 +75,12 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
     total_oplah: totalOplah,
     fee_sla: reg.fee_sla_snapshot,
     verification: source?.verification_assignments || [],
-    assignments: (source?.assignments || []).map(item => ({ stage: item.stage, iteration: item.iteration, assignee: item.assignee?.name, team: item.team, status: item.status, due_at: item.due_at, reviews: item.reviews })),
+    assignments: (source?.assignments || []).map(item => ({
+      stage: item.stage,
+      iteration: item.iteration,
+      status: item.status,
+      due_at: item.due_at,
+    })),
   };
   const document = await tx.officialDocument.create({ data: {
     registration_id: id, document_type: data.document_type, document_no: `DRAFT-${randomUUID()}`,

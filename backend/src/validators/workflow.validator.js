@@ -7,7 +7,6 @@ export const confirmPaymentSchema = { params, body: z.object({
 }).strict() };
 export const assignmentSchema = { params, body: z.object({
   team_id: z.string().min(1).max(191).nullable().optional(),
-  team_ids: z.array(z.string().min(1).max(191)).max(10).optional(),
   assignee_ids: z.array(z.string().uuid()).min(1).max(50).optional(),
   juz_assignments: z.array(z.object({
     team_id: z.string().min(1).max(191).nullable().optional(),
@@ -129,6 +128,7 @@ export const reviewSchema = { params, body: z.object({
 export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
   notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
+  comparison_notes: z.string().trim().min(5, 'Catatan telaah pembanding minimal 5 karakter.').max(2000, 'Catatan telaah pembanding maksimal 2000 karakter.').optional(),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
   outgoing_courier: z.string().trim().max(100).optional(),
   outgoing_tracking_no: z.string().trim().max(100).optional(),
