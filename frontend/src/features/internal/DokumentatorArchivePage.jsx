@@ -417,7 +417,7 @@ export const DokumentatorArchivePage = () => {
                 onClick={() => setTabFilter('READY_FOR_STT')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'READY_FOR_STT'
-                    ? 'bg-amber-50 text-amber-800 font-bold border border-amber-200'
+                    ? 'bg-civic-warningSoft text-civic-warning font-bold border border-civic-warningLine'
                     : 'text-ink-muted hover:text-ink'
                 }`}
               >
@@ -428,7 +428,7 @@ export const DokumentatorArchivePage = () => {
                 onClick={() => setTabFilter('WAITING_TU')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'WAITING_TU'
-                    ? 'bg-blue-50 text-blue-800 font-bold border border-blue-200'
+                    ? 'bg-civic-infoSoft text-civic-info font-bold border border-civic-infoLine'
                     : 'text-ink-muted hover:text-ink'
                 }`}
               >
@@ -439,7 +439,7 @@ export const DokumentatorArchivePage = () => {
                 onClick={() => setTabFilter('STT_ISSUED')}
                 className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'STT_ISSUED'
-                    ? 'bg-purple-50 text-purple-800 font-bold border border-purple-200'
+                    ? 'bg-brand-50 text-brand-800 font-bold border border-brand-200'
                     : 'text-ink-muted hover:text-ink'
                 }`}
               >
@@ -533,18 +533,18 @@ export const DokumentatorArchivePage = () => {
                           {sttDoc ? (
                             <span className="font-mono text-brand-800">{sttDoc.document_no}</span>
                           ) : item.status === 'READY_FOR_STT' ? (
-                            <span className="text-amber-700 font-bold">Siap Draf STT</span>
+                            <span className="text-civic-warning font-bold">Siap Draf STT</span>
                           ) : (
                             <span className="text-ink-muted">Belum ada</span>
                           )}
                         </div>
                         {sttDoc && (
                           <div className="flex items-center gap-2 text-ink-muted pt-1 border-t border-line">
-                            <span>Paraf 1: <strong className={hasParaf1 ? 'text-civic-success' : 'text-amber-600'}>{hasParaf1 ? '✓ Sudah' : 'Menunggu'}</strong></span>
+                            <span>Paraf 1: <strong className={hasParaf1 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf1 ? '✓ Sudah' : 'Menunggu'}</strong></span>
                             <span>·</span>
-                            <span>Paraf 2: <strong className={hasParaf2 ? 'text-civic-success' : 'text-amber-600'}>{hasParaf2 ? '✓ Sudah' : 'Menunggu'}</strong></span>
+                            <span>Paraf 2: <strong className={hasParaf2 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf2 ? '✓ Sudah' : 'Menunggu'}</strong></span>
                             <span>·</span>
-                            <span>TTD: <strong className={sttDoc.status === 'ISSUED' ? 'text-civic-success' : 'text-amber-600'}>{sttDoc.status === 'ISSUED' ? '✓ Sah' : 'Menunggu'}</strong></span>
+                            <span>TTD: <strong className={sttDoc.status === 'ISSUED' ? 'text-civic-success' : 'text-civic-warning'}>{sttDoc.status === 'ISSUED' ? '✓ Sah' : 'Menunggu'}</strong></span>
                           </div>
                         )}
                       </div>
@@ -582,7 +582,7 @@ export const DokumentatorArchivePage = () => {
                             size="xs"
                             variant="outline"
                             onClick={() => handleSubmitToTu(sttDoc.id)}
-                            className="text-xs font-bold text-amber-700 border-amber-300 hover:bg-amber-50"
+                            className="text-xs font-bold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft"
                           >
                             <Send className="w-3 h-3 mr-1" />
                             Kirim ke TU

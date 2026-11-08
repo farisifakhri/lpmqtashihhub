@@ -824,10 +824,10 @@ export const SignatureCenterPage = () => {
                     {/* STT Paraf 1 Action */}
                     {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf1 && (
                       <Button
-                        variant="primary"
+                        variant="gold"
                         onClick={() => setParafDialog({ doc, order: 1 })}
                         disabled={actionLoading}
-                        className="text-xs px-3.5 py-1.5 font-bold bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                        className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
                         Paraf 1 (TU)
@@ -837,10 +837,10 @@ export const SignatureCenterPage = () => {
                     {/* STT Paraf 2 Action */}
                     {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf2 && (
                       <Button
-                        variant="primary"
+                        variant="gold"
                         onClick={() => setParafDialog({ doc, order: 2 })}
                         disabled={actionLoading}
-                        className="text-xs px-3.5 py-1.5 font-bold bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                        className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
                         Paraf 2 (TU)
@@ -924,7 +924,7 @@ export const SignatureCenterPage = () => {
           <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line">
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
-                <PenTool className="w-5 h-5 text-amber-600" />
+                <PenTool className="w-5 h-5 text-civic-warning" />
                 Pembubuhan Paraf {parafDialog.order} Tata Usaha
               </div>
               <button
@@ -962,11 +962,11 @@ export const SignatureCenterPage = () => {
                 Batal
               </Button>
               <Button
-                variant="primary"
+                variant="gold"
                 size="sm"
                 onClick={handleConfirmParaf}
                 disabled={actionLoading}
-                className="bg-amber-600 hover:bg-amber-700 text-white border-amber-600 font-bold"
+                className="font-bold"
               >
                 {actionLoading ? 'Menyimpan...' : `Bubuhkan Paraf ${parafDialog.order}`}
               </Button>

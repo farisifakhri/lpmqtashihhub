@@ -37,14 +37,14 @@ export function PublisherOfficialDocsTab({
     <div className="space-y-6">
       {/* Banner Ucapan Selamat & Download STT Resmi (Paket B-18) */}
       {isSttIssued && (
-        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 p-6 shadow-sm space-y-4">
+        <div className="rounded-2xl border border-civic-successLine bg-civic-successSoft/30 p-6 shadow-xs space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-start gap-3.5">
-              <div className="p-3 bg-emerald-600 text-white rounded-xl shadow-xs shrink-0 mt-0.5">
+              <div className="p-3 bg-brand-fill text-white rounded-xl shadow-xs shrink-0 mt-0.5">
                 <Sparkles className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-civic-successSoft text-civic-success border border-civic-successLine">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   Surat Tanda Tashih Resmi Diterbitkan
                 </div>
@@ -62,16 +62,16 @@ export function PublisherOfficialDocsTab({
                 variant="primary"
                 size="md"
                 onClick={() => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold shrink-0 shadow-xs flex items-center gap-2"
+                className="font-bold shrink-0 shadow-xs flex items-center gap-2"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-200" />
+                <ShieldCheck className="w-4 h-4 text-brand-100" />
                 <span>Unduh STT Resmi (PDF)</span>
               </Button>
             )}
           </div>
 
           {issuedStt && (
-            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-emerald-200/60 text-xs text-ink-muted">
+            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-civic-successLine text-xs text-ink-muted">
               <div>
                 Nomor Dokumen: <strong className="font-mono text-ink">{issuedStt.document_no}</strong>
               </div>
@@ -87,11 +87,11 @@ export function PublisherOfficialDocsTab({
           )}
 
           {/* Kartu Peringatan Kewajiban 5 Eksemplar Fisik (Batas Waktu: 30 Hari Kalender) */}
-          <div className="p-4 bg-white/80 border border-amber-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="p-4 bg-white/80 border border-civic-warningLine rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div className="flex items-start gap-2.5">
-              <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <Clock className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
               <div>
-                <strong className="text-amber-900 font-bold block">
+                <strong className="text-ink font-bold block">
                   Kewajiban Pengiriman 5 Eksemplar Fisik (Batas Waktu: 30 Hari Kalender)
                 </strong>
                 <span className="text-ink-muted text-[11px] block mt-0.5">
@@ -103,7 +103,7 @@ export function PublisherOfficialDocsTab({
               variant="outline"
               size="sm"
               onClick={scrollToPrintingReport}
-              className="text-xs font-semibold text-amber-800 border-amber-300 hover:bg-amber-50 shrink-0"
+              className="text-xs font-semibold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft shrink-0"
             >
               <ArrowDown className="w-3.5 h-3.5 mr-1" />
               Isi Laporan Cetak
