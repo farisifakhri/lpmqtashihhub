@@ -9,6 +9,7 @@ import { printingReportSchema } from '../validators/workflow.validator.js';
 import {
   createRegistrationSchema,
   dispatchPhysicalSchema,
+  publisherRevisionRecapSchema,
   transitionStatusSchema,
   createManuscriptFileSchema,
   registrationIdParamSchema,
@@ -59,6 +60,12 @@ router.post(
 // Aksi workflow submit & transisi status (didukung PATCH dan POST)
 router.post('/:id/submit', authorize('PENERBIT'), registrationController.submitRegistration);
 router.post('/:id/dispatch-physical', authorize('PENERBIT'), validate(dispatchPhysicalSchema), registrationController.dispatchPhysical);
+router.post(
+  '/:id/publisher-revision-recap',
+  authorize('PENERBIT'),
+  validate(publisherRevisionRecapSchema),
+  registrationController.uploadPublisherRevisionRecap
+);
 
 const transitionRoles = [
   // ADMIN_INTERNAL is intentionally excluded: team assignment is a separate domain action.

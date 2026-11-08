@@ -199,6 +199,7 @@ export const TRANSITION_POLICY = {
     READY_FOR_VERIFICATION: {
       allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
+      domainAction: true,
       description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
     },
     TASHIH_IN_PROGRESS: {
@@ -1147,37 +1148,65 @@ export const dispatchPhysical = async (id, data, user, req) => {
       fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
-    // B-16 Titik Kontrol (a): Kewajiban unggah dokumen rekapitulasi revisi penerbit per ronde
+    // B-16 & B-17 Titik Kontrol (a): Kewajiban unggah dokumen rekapitulasi revisi penerbit per ronde
     if (reg.status === 'REVISION_REQUIRED') {
-      if (!data.recap_file_id) {
-        fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah untuk pengiriman fisik revisi/dumi.');
-      }
       const lastRevLetter = await tx.officialDocument?.findFirst({
         where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
         orderBy: { created_at: 'desc' },
       });
-      const roundNumber = lastRevLetter?.version || 1;
+      const roundNumber = lastRevLetter?.content_snapshot?.revision_round || lastRevLetter?.version || 1;
       const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
 
-      if (tx.publisherRevisionRecap?.upsert) {
-        await tx.publisherRevisionRecap.upsert({
-          where: {
-            registration_id_round_number: {
+      if (data.recap_file_id) {
+        if (tx.storedFile?.findUnique) {
+          const recapFile = await tx.storedFile.findUnique({
+            where: { id: data.recap_file_id },
+          });
+          if (!recapFile) {
+            fail(400, 'Berkas rekapitulasi perbaikan tidak ditemukan pada sistem penyimpanan.');
+          }
+          if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
+            fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
+          }
+          if (recapFile.owner_id && recapFile.owner_id !== user.id && recapFile.owner_id !== reg.publisher_id) {
+            fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+          }
+        }
+
+        if (tx.publisherRevisionRecap?.upsert) {
+          await tx.publisherRevisionRecap.upsert({
+            where: {
+              registration_id_round_number: {
+                registration_id: id,
+                round_number: roundNumber,
+              },
+            },
+            create: {
               registration_id: id,
               round_number: roundNumber,
+              revision_kind: revisionKind,
+              recap_file_id: data.recap_file_id,
             },
-          },
-          create: {
-            registration_id: id,
-            round_number: roundNumber,
-            revision_kind: revisionKind,
-            recap_file_id: data.recap_file_id,
-          },
-          update: {
-            revision_kind: revisionKind,
-            recap_file_id: data.recap_file_id,
-          },
-        });
+            update: {
+              revision_kind: revisionKind,
+              recap_file_id: data.recap_file_id,
+            },
+          });
+        }
+      } else {
+        const existingRecap = tx.publisherRevisionRecap?.findUnique
+          ? await tx.publisherRevisionRecap.findUnique({
+              where: {
+                registration_id_round_number: {
+                  registration_id: id,
+                  round_number: roundNumber,
+                },
+              },
+            })
+          : null;
+        if (!existingRecap || !existingRecap.recap_file_id) {
+          fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah untuk pengiriman fisik revisi/dumi.');
+        }
       }
     }
 
@@ -1225,6 +1254,76 @@ export const dispatchPhysical = async (id, data, user, req) => {
   syncRegistrationToExistingWebsite(id).catch(() => {});
 
   return updated;
+};
+
+export const uploadPublisherRevisionRecap = async (id, data, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await lockRegistration(tx, id);
+    requireOwner(reg, user);
+    requireStatus(reg, ['REVISION_REQUIRED']);
+
+    if (!data.recap_file_id) {
+      fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah.');
+    }
+
+    if (tx.storedFile?.findUnique) {
+      const recapFile = await tx.storedFile.findUnique({
+        where: { id: data.recap_file_id },
+      });
+      if (!recapFile) {
+        fail(400, 'Berkas rekapitulasi perbaikan tidak ditemukan pada sistem penyimpanan.');
+      }
+      if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
+        fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
+      }
+      if (recapFile.owner_id && recapFile.owner_id !== user.id && recapFile.owner_id !== reg.publisher_id) {
+        fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+      }
+    }
+
+    const lastRevLetter = await tx.officialDocument?.findFirst({
+      where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
+      orderBy: { created_at: 'desc' },
+    });
+    const roundNumber = lastRevLetter?.content_snapshot?.revision_round || lastRevLetter?.version || 1;
+    const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
+
+    let recapRecord = null;
+    if (tx.publisherRevisionRecap?.upsert) {
+      recapRecord = await tx.publisherRevisionRecap.upsert({
+        where: {
+          registration_id_round_number: {
+            registration_id: id,
+            round_number: roundNumber,
+          },
+        },
+        create: {
+          registration_id: id,
+          round_number: roundNumber,
+          revision_kind: revisionKind,
+          recap_file_id: data.recap_file_id,
+        },
+        update: {
+          revision_kind: revisionKind,
+          recap_file_id: data.recap_file_id,
+        },
+      });
+    }
+
+    await audit(tx, user, 'UPLOAD_PUBLISHER_REVISION_RECAP', 'Registration', id, {
+      round_number: roundNumber,
+      revision_kind: revisionKind,
+      recap_file_id: data.recap_file_id,
+      notes: data.notes || null,
+    }, req);
+
+    return recapRecord || {
+      registration_id: id,
+      round_number: roundNumber,
+      revision_kind: revisionKind,
+      recap_file_id: data.recap_file_id,
+    };
+  });
 };
 
 export const submitRegistration = async (id, user, req) => {
@@ -1890,7 +1989,27 @@ export const getDetail = async (id, user) => {
     reg.manuscript_files = [];
   }
   if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
-    reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
+    reg.official_documents = (reg.official_documents || [])
+      .filter(document => document.status === 'ISSUED')
+      .map(doc => {
+        if (!doc.content_snapshot) return doc;
+        let snap = doc.content_snapshot;
+        if (typeof snap === 'string') {
+          try { snap = JSON.parse(snap); } catch { snap = {}; }
+        }
+        if (snap && snap.assignments && Array.isArray(snap.assignments)) {
+          snap = {
+            ...snap,
+            assignments: snap.assignments.map(a => ({
+              stage: a.stage,
+              iteration: a.iteration,
+              status: a.status,
+              due_at: a.due_at,
+            })),
+          };
+        }
+        return { ...doc, content_snapshot: snap };
+      });
     if (reg.verification_assignments) {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
         id: a.id,
@@ -2209,6 +2328,7 @@ export default {
   createDraft,
   submitRegistration,
   dispatchPhysical,
+  uploadPublisherRevisionRecap,
   transitionStatus,
   listRegistrations,
   getDetail,
