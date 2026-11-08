@@ -32,7 +32,7 @@ async function main() {
           },
         },
         publisher: {
-          select: { id: true, legal_name: true, name: true },
+          select: { id: true, legal_name: true },
         },
         payment_records: {
           select: { id: true, billing_no: true, amount: true, status: true },

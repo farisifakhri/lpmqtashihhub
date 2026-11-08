@@ -25,7 +25,7 @@ export const createHandover = (registrationId, data, user, req) =>
     if (!distributorId) fail(409, 'Distributor tim inti belum ditetapkan untuk pengajuan ini. Hubungi administrator.');
     if (!reg.core_team_number && !user.roles.includes('SUPERADMIN')) {
       const latestAssignment = await tx.verificationAssignment.findFirst({
-        where: { registration_id: reg.id }, orderBy: { created_at: 'desc' }, select: { verifier_id: true },
+        where: { registration_id: reg.id }, orderBy: { assigned_at: 'desc' }, select: { verifier_id: true },
       });
       if (latestAssignment?.verifier_id !== user.id) fail(403, 'Hanya verifikator yang ditugaskan pada pengajuan ini yang dapat menyerahkan master fisik.');
     }
