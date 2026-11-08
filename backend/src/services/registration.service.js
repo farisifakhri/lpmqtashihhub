@@ -294,18 +294,26 @@ export const TRANSITION_POLICY = {
   READY_FOR_STT: {
     STT_ISSUED: {
       allowedRoles: ['KEPALA_LPMQ', 'SUPERADMIN'],
-      description: 'Kepala LPMQ menandatangani dan menerbitkan Surat Tanda Tashih',
+      domainAction: true,
+      description: 'Kepala LPMQ menandatangani dan menerbitkan Surat Tanda Tashih melalui pengesahan dokumen resmi',
     },
   },
   STT_ISSUED: {
     DOCUMENTATION_IN_PROGRESS: {
       allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Dokumentator memulai proses pencatatan dan dokumentasi arsip mushaf',
+    },
+    COMPLETED: {
+      allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Dokumentasi arsip dan 5 eksemplar fisik tuntas, pengajuan selesai sepenuhnya',
     },
   },
   DOCUMENTATION_IN_PROGRESS: {
     COMPLETED: {
       allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Pendokumentasian arsip tuntas, pengajuan selesai sepenuhnya',
     },
   },
@@ -1823,13 +1831,29 @@ export const listRegistrations = async ({
       skip,
       take,
       include: {
-        ...(publisherScope || segment === 'PUBLISHER_DOCUMENTS' ? {
-          official_documents: {
-            where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
-            select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
-            orderBy: { version: 'desc' },
-          },
-        } : {}),
+        official_documents: publisherScope
+          ? {
+              where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
+              select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
+              orderBy: { version: 'desc' },
+            }
+          : {
+              select: {
+                id: true,
+                document_no: true,
+                document_type: true,
+                version: true,
+                status: true,
+                file_id: true,
+                issued_at: true,
+                valid_until: true,
+                content_snapshot: true,
+                signatories: {
+                  select: { id: true, name_position_snapshot: true, signing_status: true, signed_at: true },
+                },
+              },
+              orderBy: { version: 'desc' },
+            },
         publisher: { select: { id: true, legal_name: true, entity_type: true } },
         service_type: { select: { id: true, name: true, service_kind: true } },
         verification_assignments: {

@@ -605,7 +605,7 @@ export const sendDraftToDistributor = (documentId, user, req) => prisma.$transac
 }, { isolationLevel: 'ReadCommitted' });
 
 export const submitToTu = (documentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
   const doc = await tx.officialDocument.findUnique({
     where: { id: documentId },
     include: { registration: true, signatories: true },
@@ -723,6 +723,12 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
   }
   if (doc.status === 'ISSUED') fail(409, 'Dokumen ini sudah resmi diterbitkan.');
 
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  const tuWorkflow = snapshot.tu_workflow;
+  if (!tuWorkflow?.paraf_1 || !tuWorkflow?.paraf_2) {
+    fail(409, 'Surat Tanda Tashih (STT) baru dapat disahkan setelah dibubuhi Paraf 1 dan Paraf 2 oleh Tata Usaha.');
+  }
+
   const now = new Date();
   const validUntil = new Date(now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000); // 2 tahun kalender
 
@@ -744,7 +750,6 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
     });
   }
 
-  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
   snapshot.final_signature = {
     signed_by: { id: user.id, name: 'H. Abdul Aziz Sidqi, M.Ag.', nip: '197106061998031006', title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an' },
     signed_at: now.toISOString(),
