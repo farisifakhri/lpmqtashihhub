@@ -626,6 +626,11 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
   if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
   if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
 
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  if (snapshot.tu_workflow?.submitted_at || snapshot.tu_workflow?.paraf_1) {
+    fail(409, 'Dokumen draf STT sudah diserahkan ke Tata Usaha dan tidak dapat disubmit ulang.');
+  }
+
   if (data?.signer_1_id && data?.signer_2_id && data.signer_1_id === data.signer_2_id) {
     fail(400, 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.');
   }
@@ -646,7 +651,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
       include: { roles: { include: { role: true } } },
     });
     if (!u) fail(404, `Pengguna untuk ${slotName} tidak ditemukan.`);
-    if (u.is_active === false) fail(400, `Pengguna untuk ${slotName} berstatus tidak aktif.`);
+    if (u.status && u.status !== 'ACTIVE') fail(400, `Pengguna untuk ${slotName} berstatus tidak aktif.`);
 
     const roles = getUserRoles(u);
     const hasTuAccess = roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
@@ -659,15 +664,33 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     return u;
   };
 
-  const findUserByRole = async (code) => {
-    const ur = await tx.userRole.findFirst({
-      where: { role: { code } },
-      include: { user: { include: { roles: { include: { role: true } } } } },
-    });
-    return ur?.user;
+  const findActiveUserByRole = async (code) => {
+    if (tx.user?.findFirst) {
+      const u = await tx.user.findFirst({
+        where: {
+          status: 'ACTIVE',
+          roles: { some: { role: { code } } },
+        },
+        include: { roles: { include: { role: true } } },
+      });
+      if (u) return u;
+    }
+    if (tx.userRole?.findFirst) {
+      const ur = await tx.userRole.findFirst({
+        where: { role: { code } },
+        include: { user: { include: { roles: { include: { role: true } } } } },
+      });
+      if (ur?.user) return ur.user;
+    }
+    return null;
   };
 
-  const kepala = await findUserByRole('KEPALA_LPMQ') || (getUserRoles(user).includes('KEPALA_LPMQ') ? user : null);
+  const kepala = await findActiveUserByRole('KEPALA_LPMQ')
+    || (getUserRoles(user).includes('KEPALA_LPMQ') && (user.status ? user.status === 'ACTIVE' : true) ? user : null);
+
+  if (!kepala) {
+    fail(400, 'Akun Kepala LPMQ aktif tidak ditemukan pada sistem. Pastikan akun pimpinan telah dikonfigurasi.');
+  }
 
   let penandatangan1;
   let penandatangan2;
@@ -679,17 +702,37 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     penandatangan2 = await getTuSigner(data.signer_2_id, 'Paraf 2');
   }
 
+  const callerRoles = getUserRoles(user);
+  const callerHasTu = callerRoles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r)) && (user.status ? user.status === 'ACTIVE' : true);
+
   if (!penandatangan1) {
-    penandatangan1 = await findUserByRole('ADMIN_INTERNAL');
+    penandatangan1 = (callerHasTu ? user : null)
+      || await findActiveUserByRole('ADMIN_INTERNAL')
+      || await findActiveUserByRole('SUPERADMIN');
   }
   if (!penandatangan2) {
-    penandatangan2 = await findUserByRole('SUPERADMIN');
+    if (tx.user?.findFirst) {
+      penandatangan2 = await tx.user.findFirst({
+        where: {
+          status: 'ACTIVE',
+          id: { not: penandatangan1?.id },
+          roles: { some: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } } },
+        },
+        include: { roles: { include: { role: true } } },
+      });
+    }
+    if (!penandatangan2 && tx.userRole?.findFirst) {
+      const ur = await tx.userRole.findFirst({
+        where: {
+          role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } },
+        },
+        include: { user: { include: { roles: { include: { role: true } } } } },
+      });
+      if (ur?.user && ur.user.id !== penandatangan1?.id) {
+        penandatangan2 = ur.user;
+      }
+    }
   }
-
-  const callerRoles = getUserRoles(user);
-  const callerHasTu = callerRoles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
-  if (!penandatangan1 && callerHasTu) penandatangan1 = user;
-  if (!penandatangan2 && callerHasTu && user.id !== penandatangan1?.id) penandatangan2 = user;
 
   if (!penandatangan1 || !penandatangan2) {
     fail(400, 'Daftar penandatangan Tata Usaha tidak lengkap. Diperlukan dua staf TU yang aktif.');
@@ -699,14 +742,14 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     fail(400, 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.');
   }
 
-  if (kepala && (penandatangan1.id === kepala.id || penandatangan2.id === kepala.id)) {
+  if (penandatangan1.id === kepala.id || penandatangan2.id === kepala.id) {
     fail(400, 'Kepala LPMQ tidak diperkenankan ditugaskan sebagai pemaraf draf STT.');
   }
 
   const signatoriesConfig = [
     { order: 1, title: 'Penandatangan 1 - Tata Usaha (Paraf 1)', user: penandatangan1 },
     { order: 2, title: 'Penandatangan 2 - Tata Usaha (Paraf 2)', user: penandatangan2 },
-    { order: 3, title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an', user: kepala || { id: 'u-kepala', name: 'Dr. H. Abdul Aziz Sidqi, M.Ag.' } },
+    { order: 3, title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an', user: kepala },
   ];
 
   for (const item of signatoriesConfig) {
@@ -732,14 +775,15 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     }
   }
 
-  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  const isPoolMode = !data?.signer_1_id && !data?.signer_2_id;
   snapshot.tu_workflow = {
     submitted_at: new Date().toISOString(),
     submitted_by: { id: user.id, name: user.name },
     status: 'SUBMITTED_TO_TU',
+    pool_mode: isPoolMode,
     designated_signers: {
-      paraf_1: { id: penandatangan1.id, name: penandatangan1.name },
-      paraf_2: { id: penandatangan2.id, name: penandatangan2.name },
+      paraf_1: data?.signer_1_id ? { id: penandatangan1.id, name: penandatangan1.name } : null,
+      paraf_2: data?.signer_2_id ? { id: penandatangan2.id, name: penandatangan2.name } : null,
     },
   };
 
@@ -780,23 +824,31 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
   }
 
   // 4. Penegakan kendali ganda (four-eyes principle): Staf yang membubuhkan Paraf 2 tidak boleh sama dengan Pemaraf 1
-  if (order === 2 && snapshot.tu_workflow.paraf_1?.signed_by?.id === user.id && !user.roles?.includes('SUPERADMIN')) {
+  if (order === 2 && snapshot.tu_workflow.paraf_1?.signed_by?.id === user.id) {
     fail(409, 'Paraf 1 dan Paraf 2 harus dibubuhkan oleh dua orang staf Tata Usaha yang berbeda untuk memenuhi prinsip dual-control.');
   }
 
   // 5. Pencocokan identitas pemanggil terhadap slot penandatangan
   const orderTitle = order === 1 ? 'Paraf 1' : 'Paraf 2';
+  const designated = snapshot.tu_workflow?.designated_signers?.[`paraf_${order}`];
+  const isPoolSlot = Boolean(snapshot.tu_workflow?.pool_mode || designated === null);
+
   const sig = (doc.signatories || []).find(s => s.name_position_snapshot.includes(orderTitle))
     || (doc.signatories || [])[order - 1];
 
-  if (sig?.signer_user_id && sig.signer_user_id !== user.id && !user.roles?.includes('SUPERADMIN')) {
-    fail(403, `Anda tidak terdaftar sebagai penandatangan ${orderTitle} untuk dokumen ini.`);
+  if (!isPoolSlot) {
+    const designatedId = designated?.id || sig?.signer_user_id;
+    if (designatedId && designatedId !== user.id && !user.roles?.includes('SUPERADMIN')) {
+      fail(403, `Anda tidak terdaftar sebagai penandatangan ${orderTitle} untuk dokumen ini.`);
+    }
   }
 
   if (sig) {
     await tx.documentSignatory.update({
       where: { id: sig.id },
       data: {
+        signer_user_id: user.id,
+        name_position_snapshot: `${user.name} (Penandatangan ${order} - Tata Usaha (${orderTitle}))`,
         signing_status: 'SIGNED',
         signed_at: new Date(),
         method: 'INTERNAL_APPROVAL',

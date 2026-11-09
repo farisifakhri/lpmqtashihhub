@@ -43,7 +43,7 @@ describe('RevokePentashihAssignmentDialog Component (B-19b)', () => {
     expect(screen.getByText(/Peringatan Integritas Cakupan Juz/i)).toBeInTheDocument();
   });
 
-  it('memvalidasi alasan pencabutan minimal 5 karakter sebelum mengizinkan submit', async () => {
+  it('memvalidasi alasan pencabutan minimal 10 karakter sebelum mengizinkan submit', async () => {
     render(
       <RevokePentashihAssignmentDialog
         assignment={mockAssignment}
@@ -56,10 +56,11 @@ describe('RevokePentashihAssignmentDialog Component (B-19b)', () => {
     expect(submitBtn).toBeDisabled();
 
     const textarea = screen.getByLabelText(/Alasan Pelepasan/i);
-    fireEvent.change(textarea, { target: { value: 'Cuti' } }); // 4 chars
+    fireEvent.change(textarea, { target: { value: 'Cuti sakit' } }); // 10 chars, wait: 'Cuti sak' is 8 chars
+    fireEvent.change(textarea, { target: { value: 'Cuti sak' } }); // 8 chars (< 10)
     expect(submitBtn).toBeDisabled();
 
-    fireEvent.change(textarea, { target: { value: 'Cuti ibadah umrah selama 14 hari' } }); // > 5 chars
+    fireEvent.change(textarea, { target: { value: 'Cuti ibadah umrah selama 14 hari' } }); // > 10 chars
     expect(submitBtn).not.toBeDisabled();
   });
 
