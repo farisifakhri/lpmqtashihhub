@@ -583,7 +583,7 @@ export const requestPasswordResetForUser = async (id, currentUser, req) => {
     },
   });
 
-  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
   const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
 
   let sentEmail = false;
