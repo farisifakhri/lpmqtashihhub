@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { X, FileText, CheckCircle2, AlertCircle, Clock, ShieldCheck, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { verificationApi } from '@/api/verification.api';
+import { AuthContext } from '@/features/auth/AuthContext';
 
 export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onConflict }) => {
+  const authContext = useContext(AuthContext);
+  const currentUser = authContext?.currentUser;
+  const isSuperAdmin = currentUser ? (currentUser.role === 'SUPERADMIN' || currentUser.roles?.includes('SUPERADMIN')) : true;
+
   const suggestedVerifierId =
     registration?.core_verifier_id ||
     registration?.core_team?.verifier?.id ||
@@ -98,10 +103,12 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     setNotaError(false);
 
     try {
+      const isOverriding = Boolean(isSuperAdmin && registration?.core_team_number && selectedVerifierId && selectedVerifierId !== suggestedVerifierId);
       const payload = {
         verifier_id: selectedVerifierId,
         nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
+        ...(isOverriding ? { override_core_team: true } : {}),
       };
 
       const res = await verificationApi.createAssignment(registration.id, payload);
@@ -208,11 +215,34 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           {registration?.core_team_number && (
             <div className="rounded-xl bg-brand-50 border border-brand-100 p-3 text-brand-900 flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="font-bold text-xs">Rekomendasi Tim Inti {registration.core_team_number}</p>
+              <div className="space-y-1 w-full">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-bold text-xs">Rekomendasi Tim Inti {registration.core_team_number}</p>
+                  {isSuperAdmin && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-civicGold-100 text-civicGold-700 border border-civicGold-700/30">
+                      <ShieldCheck className="w-3 h-3 text-civicGold-700" />
+                      Hak Override Super Admin Aktif
+                    </span>
+                  )}
+                </div>
                 <p className="text-[11px] text-brand-800">
                   {selectedVerifier?.name ? `Petugas terpilih otomatis: ${selectedVerifier.name}. ` : ''}
-                  Sesuai regulasi rotasi Tim Inti LPMQ, verifikator telah ditetapkan secara otomatis untuk naskah ini.
+                  {isSuperAdmin
+                    ? 'Sebagai Super Admin, Anda berwenang mengganti atau memilih verifikator lain dari daftar bila petugas Tim Inti berhalangan.'
+                    : 'Sesuai regulasi rotasi Tim Inti LPMQ, verifikator telah ditetapkan secara otomatis untuk naskah ini.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Super Admin Override Alert */}
+          {isSuperAdmin && registration?.core_team_number && selectedVerifierId && selectedVerifierId !== suggestedVerifierId && (
+            <div className="p-3 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold">Dispensasi / Intervensi Super Admin</p>
+                <p className="text-[11px] mt-0.5 text-civic-warning">
+                  Verifikator untuk naskah Tim Inti {registration.core_team_number} akan dialihkan ke <strong>{selectedVerifier?.name || 'petugas terpilih'}</strong>.
                 </p>
               </div>
             </div>
@@ -261,8 +291,8 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                   role="combobox"
                   value={selectedVerifierId}
                   onChange={(e) => setSelectedVerifierId(e.target.value)}
-                  disabled={submitting}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 bg-white"
+                  disabled={submitting || (Boolean(registration?.core_team_number) && !isSuperAdmin)}
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 bg-white disabled:bg-surface disabled:text-ink-muted"
                 >
                   <option value="">-- Pilih Petugas Verifikator --</option>
                   {filteredVerifiers.map((v) => {
@@ -281,7 +311,9 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               </div>
             )}
             <p className="text-xs text-ink-muted">
-              Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.
+              {Boolean(registration?.core_team_number) && !isSuperAdmin
+                ? 'Pilihan dikunci sesuai penetapan rotasi Tim Inti. Hubungi Super Admin jika diperlukan dispensasi pengalihan petugas.'
+                : 'Menampilkan staf aktif dengan kewenangan Verifikator beserta beban kerja aktif saat ini.'}
             </p>
           </div>
 

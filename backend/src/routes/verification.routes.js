@@ -53,12 +53,12 @@ router.get('/verification/unassigned-registrations', authenticate, authorize('AD
 router.get('/verification-assignment-candidates', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
 
 // PR-VER-03: Pemeriksaan berkas & penyusunan draf surat hasil verifikasi (Epic D)
-router.patch('/verification-assignments/:id/start', authenticate, authorize('VERIFIKATOR'), validate(assignmentIdSchema), action(req => review.startVerification(req.params.id, req.user, req)));
+router.patch('/verification-assignments/:id/start', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.startVerification(req.params.id, req.user, req)));
 router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(assignmentIdSchema), action(req => review.getVerificationAssignmentDetail(req.params.id, req.user)));
 router.post('/verification-assignments/:id/revoke', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(revokeAssignmentSchema), action(req => review.revokeVerificationAssignment(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/reassign', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(reassignAssignmentSchema), action(req => review.reassignVerificationAssignment(req.params.id, req.body, req.user, req)));
-router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
-router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
+router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
+router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), async (req, res, next) => {
   try {
     const file = await review.getVerificationAttachment(req.params.documentId, req.params.fileId, req.user);
@@ -68,17 +68,17 @@ router.get('/verification-documents/:documentId/attachments/:fileId', authentica
 });
 
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E) & Pengiriman Hasil Verifikasi (Epic F)
-router.post('/verification-documents/:id/sign', authenticate, authorize('VERIFIKATOR', 'KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.signVerificationDocumentHandler(req.params.id, req.user, req)));
-router.post('/verification-documents/:id/retry-email', authenticate, authorize('VERIFIKATOR'), validate(documentIdSchema), action(req => review.retryVerificationEmail(req.params.id, req.user, req)));
+router.post('/verification-documents/:id/sign', authenticate, authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.signVerificationDocumentHandler(req.params.id, req.user, req)));
+router.post('/verification-documents/:id/retry-email', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.retryVerificationEmail(req.params.id, req.user, req)));
 
-router.post('/verification-documents/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
-router.post('/verification-results/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
+router.post('/verification-documents/:id/approve', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
+router.post('/verification-results/:id/approve', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
 
-router.post('/verification-documents/:id/return', authenticate, authorize('KEPALA_LPMQ'), validate(returnVerificationSchema), action(req => review.returnVerificationDocument(req.params.id, req.body, req.user, req)));
-router.post('/verification-results/:id/return', authenticate, authorize('KEPALA_LPMQ'), validate(returnVerificationSchema), action(req => review.returnVerificationDocument(req.params.id, req.body, req.user, req)));
+router.post('/verification-documents/:id/return', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(returnVerificationSchema), action(req => review.returnVerificationDocument(req.params.id, req.body, req.user, req)));
+router.post('/verification-results/:id/return', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(returnVerificationSchema), action(req => review.returnVerificationDocument(req.params.id, req.body, req.user, req)));
 
-router.post('/verification-documents/:id/send', authenticate, authorize('VERIFIKATOR'), validate(sendVerificationSchema), action(req => review.sendVerificationResult(req.params.id, req.body, req.user, req)));
-router.post('/verification-results/:id/send', authenticate, authorize('VERIFIKATOR'), validate(sendVerificationSchema), action(req => review.sendVerificationResult(req.params.id, req.body, req.user, req)));
+router.post('/verification-documents/:id/send', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(sendVerificationSchema), action(req => review.sendVerificationResult(req.params.id, req.body, req.user, req)));
+router.post('/verification-results/:id/send', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(sendVerificationSchema), action(req => review.sendVerificationResult(req.params.id, req.body, req.user, req)));
 
 router.get('/verification-documents/:id', authenticate, validate(documentIdSchema), action(req => review.getVerificationDocument(req.params.id, req.user)));
 router.get('/verification-documents/:id/pdf', authenticate, validate(documentIdSchema), async (req, res, next) => {

@@ -70,7 +70,7 @@ router.get('/physical-master/handovers/:id/pdf', authenticate, async (req, res, 
 router.post(
   '/physical-master/handovers/:id/receive',
   authenticate,
-  authorize('DISTRIBUTOR'),
+  authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(receiveHandoverSchema),
   action((req) => handoverService.receiveHandover(req.params.id, req.body, req.user, req))
 );
@@ -79,7 +79,7 @@ router.post(
 router.post(
   '/physical-master/handovers/:id/return',
   authenticate,
-  authorize('DISTRIBUTOR'),
+  authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(returnHandoverSchema),
   action((req) => handoverService.returnHandover(req.params.id, req.body, req.user, req))
 );

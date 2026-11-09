@@ -31,7 +31,8 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  if (assignment.verifier_id !== user.id) {
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status === 'IN_PROGRESS') {
@@ -57,12 +58,13 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
 }, transactionOptions);
 
 export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['VERIFIKATOR']);
+  requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  if (assignment.verifier_id !== user.id) {
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status !== 'IN_PROGRESS') {
@@ -141,12 +143,13 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
 }, transactionOptions);
 
 export const submitVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['VERIFIKATOR']);
+  requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  if (assignment.verifier_id !== user.id) {
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status !== 'IN_PROGRESS') {
@@ -790,8 +793,9 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 export const approveVerificationDocument = async (documentId, user, req) => {
 const createdFiles = [];
 try { return await prisma.$transaction(async tx => {
-  if (!user.roles.includes('KEPALA_LPMQ')) {
-    fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (!user.roles.includes('KEPALA_LPMQ') && !isSuperAdmin) {
+    fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ atau Super Admin.');
   }
 
   const doc = await tx.verificationDocument.findUnique({
@@ -924,8 +928,9 @@ catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
 };
 
 export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
-  if (!user.roles.includes('KEPALA_LPMQ')) {
-    fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (!user.roles.includes('KEPALA_LPMQ') && !isSuperAdmin) {
+    fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ atau Super Admin.');
   }
 
   const doc = await tx.verificationDocument.findUnique({
@@ -1020,7 +1025,8 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
   if (!['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(doc.document_type)) {
     fail(400, 'Hanya dokumen Surat Hasil Verifikasi yang dapat dikirimkan kepada penerbit.');
   }
-  if (doc.assignment && doc.assignment.verifier_id !== user.id) {
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (doc.assignment && doc.assignment.verifier_id !== user.id && !isSuperAdmin) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk mengirimkan surat hasil pengajuan ini.');
   }
   if (doc.status === 'SENT') {

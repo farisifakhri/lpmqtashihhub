@@ -895,7 +895,8 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
 }, { isolationLevel: 'ReadCommitted' });
 
 export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['KEPALA_LPMQ']);
+  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
   const doc = await tx.officialDocument.findUnique({
     where: { id },
     include: { signatories: true, registration: true },
@@ -919,7 +920,7 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
     fail(409, 'Paraf 1 dan Paraf 2 harus dibubuhkan oleh dua orang staf Tata Usaha yang berbeda.');
   }
 
-  if (user.id && (paraf1SignerId === user.id || paraf2SignerId === user.id)) {
+  if (!isSuperAdmin && user.id && (paraf1SignerId === user.id || paraf2SignerId === user.id)) {
     fail(409, 'Kepala LPMQ tidak dapat mengesahkan dokumen yang diparaf oleh akunnya sendiri. Pisahkan peran verifikator paraf dan penandatangan definitif.');
   }
 
