@@ -31,7 +31,7 @@ const statusBadgeClasses = {
 };
 
 export function DocumentArchive({ registrationId }) {
-  const [documents, setDocuments] = useState([]);
+  const [allDocuments, setDocuments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -42,6 +42,7 @@ export function DocumentArchive({ registrationId }) {
   const roles = auth?.currentUser?.roles || (auth?.currentUser?.role ? [auth.currentUser.role] : []);
   const isPublisher = roles.includes('PENERBIT') && !roles.includes('SUPERADMIN');
   const [surveysPending, setSurveysPending] = useState([]);
+  const [surveysChecked, setSurveysChecked] = useState(false);
   const [surveyAction, setSurveyAction] = useState(null); // aksi yang ditunda sampai survei terisi
 
   useEffect(() => {
@@ -49,9 +50,16 @@ export function DocumentArchive({ registrationId }) {
     let active = true;
     publisherSurveyApi.listForRegistration(registrationId)
       .then((res) => { if (active) setSurveysPending((res.data || []).filter((item) => !item.answered)); })
-      .catch(() => { if (active) setSurveysPending([]); });
+      .catch(() => { if (active) setSurveysPending([]); })
+      .finally(() => { if (active) setSurveysChecked(true); });
     return () => { active = false; };
   }, [isPublisher, registrationId]);
+
+  // Selama survei belum terisi, STT disembunyikan seluruhnya dari penerbit (bukan hanya tombol unduhnya).
+  const isStt = (item) => item?.source === 'OFFICIAL' && item?.document_type === 'SURAT_TANDA_TASHIH';
+  const sttLocked = isPublisher && (!surveysChecked || surveysPending.length > 0);
+  const lockedStt = sttLocked ? allDocuments.find((item) => isStt(item) && item.status === 'ISSUED') : null;
+  const documents = sttLocked ? allDocuments.filter((item) => !isStt(item)) : allDocuments;
 
   const needsSurvey = (document) => isPublisher && surveysPending.length > 0
     && document?.source === 'OFFICIAL' && document?.document_type === 'SURAT_TANDA_TASHIH';
@@ -187,7 +195,27 @@ export function DocumentArchive({ registrationId }) {
 
       {loading && <p role="status" className="text-xs text-ink-muted">Memuat arsip dokumen…</p>}
       {error && <p role="alert" className="text-xs text-civic-danger font-medium p-3 bg-civic-dangerSoft rounded-lg border border-civic-dangerLine">{error}</p>}
-      {!loading && !error && !documents.length && (
+      {!loading && lockedStt && (
+        <div className="rounded-xl border border-civic-successLine bg-civic-successSoft/40 p-5 text-center space-y-3" aria-label="STT terkunci survei">
+          <ShieldCheck className="w-10 h-10 mx-auto text-civic-success" />
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-ink">Surat Tanda Tashih Anda sudah terbit</p>
+            <p className="text-xs text-ink-muted max-w-md mx-auto">
+              Isi survei kepuasan layanan terlebih dahulu. Setelah seluruh survei terkirim, STT dapat Anda tinjau dan unduh.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            className="text-xs font-bold"
+            onClick={() => { setSelectedId(lockedStt.id); setSurveyAction(() => () => printPdf(lockedStt)); }}
+          >
+            Isi Survei untuk Membuka STT
+          </Button>
+        </div>
+      )}
+      {!loading && !error && !documents.length && !lockedStt && (
         <div className="p-6 text-center rounded-xl border border-dashed border-line bg-canvas/50 space-y-1">
           <FileText className="w-8 h-8 text-ink-muted/50 mx-auto" />
           <p className="text-xs font-semibold text-ink">Belum Ada Dokumen Resmi</p>

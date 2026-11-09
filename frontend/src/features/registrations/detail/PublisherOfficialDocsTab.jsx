@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FileText,
   Eye,
@@ -17,6 +17,7 @@ import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { PrintingReportSection } from './PrintingReportSection';
 import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
 import { showToast } from '@/components/ui/toast';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
 
 export function PublisherOfficialDocsTab({
   data,
@@ -28,6 +29,16 @@ export function PublisherOfficialDocsTab({
   );
   const isSttIssued = Boolean(issuedStt) || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status);
   const [surveyOpen, setSurveyOpen] = useState(false);
+  // Rincian STT (nomor, tanggal) baru tampil setelah seluruh survei terisi; anggap terkunci sampai terbukti tidak.
+  const [surveyLocked, setSurveyLocked] = useState(true);
+  useEffect(() => {
+    if (!issuedStt) return undefined;
+    let active = true;
+    publisherSurveyApi.listForRegistration(data.id)
+      .then((res) => { if (active) setSurveyLocked((res.data || []).some((s) => !s.answered)); })
+      .catch(() => { if (active) setSurveyLocked(false); }); // backend tetap menegakkan gerbang survei
+    return () => { active = false; };
+  }, [data.id, issuedStt?.id]);
 
   // Backend menolak unduhan STT (409) selama survei belum terisi; tampilkan pop-up survei lalu ulangi unduhan.
   const downloadStt = () => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)
@@ -68,16 +79,22 @@ export function PublisherOfficialDocsTab({
               <Button
                 variant="primary"
                 size="md"
-                onClick={downloadStt}
+                onClick={surveyLocked ? () => setSurveyOpen(true) : downloadStt}
                 className="font-bold shrink-0 shadow-xs flex items-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-brand-100" />
-                <span>Unduh STT Resmi (PDF)</span>
+                <span>{surveyLocked ? 'Isi Survei untuk Membuka STT' : 'Unduh STT Resmi (PDF)'}</span>
               </Button>
             )}
           </div>
 
-          {issuedStt && (
+          {issuedStt && surveyLocked && (
+            <p className="pt-3 border-t border-civic-successLine text-xs text-ink-muted">
+              Isi survei kepuasan layanan terlebih dahulu untuk melihat dan mengunduh Surat Tanda Tashih.
+            </p>
+          )}
+
+          {issuedStt && !surveyLocked && (
             <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-civic-successLine text-xs text-ink-muted">
               <div>
                 Nomor Dokumen: <strong className="font-mono text-ink">{issuedStt.document_no}</strong>
@@ -297,7 +314,7 @@ export function PublisherOfficialDocsTab({
         registrationId={data.id}
         isOpen={surveyOpen}
         onClose={() => setSurveyOpen(false)}
-        onCompleted={() => { setSurveyOpen(false); downloadStt(); }}
+        onCompleted={() => { setSurveyOpen(false); setSurveyLocked(false); downloadStt(); }}
       />
     </div>
   );
