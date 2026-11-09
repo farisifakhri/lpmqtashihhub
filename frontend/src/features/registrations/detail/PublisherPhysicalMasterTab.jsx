@@ -50,7 +50,7 @@ export function PublisherPhysicalMasterTab({
       const fileId = res?.data?.id || res?.id;
       setDispatchData({ ...dispatchData, recap_file_id: fileId });
       setRecapFileName(file.name);
-      if (data?.status === 'REVISION_REQUIRED' && data?.id) {
+      if (['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION'].includes(data?.status) && data?.id) {
         await registrationApi.uploadPublisherRevisionRecap(data.id, { recap_file_id: fileId });
         setUploadSuccessMsg('Berkas rekapitulasi perbaikan berhasil diunggah dan disimpan ke sistem.');
       }
@@ -68,7 +68,7 @@ export function PublisherPhysicalMasterTab({
     }
   };
 
-  const isRevisionRequired = data.status === 'REVISION_REQUIRED';
+  const isRevisionRequired = ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION'].includes(data?.status);
 
   return (
     <div className="space-y-6">

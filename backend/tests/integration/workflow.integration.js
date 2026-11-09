@@ -11,11 +11,16 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(result.status, status, JSON.stringify(result.json));
     return result.json.data;
   };
-  const upload = async () => {
-    const response = await fetch(`${base}/uploads`, { method: 'POST', headers: { Authorization: `Bearer ${publisherToken}`, 'Content-Type': 'application/pdf' }, body: Buffer.from('%PDF-1.4\n%%EOF') });
+  const uploadAs = async (token) => {
+    const response = await fetch(`${base}/uploads`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/pdf' },
+      body: Buffer.from('%PDF-1.4\n%%EOF'),
+    });
     assert.equal(response.status, 201);
     return (await response.json()).data;
   };
+  const upload = () => uploadAs(publisherToken);
   let reg, file, payment, assignments;
   const distributor = (await loginAs('distributor@lpmq.kemenag.go.id')).token;
   const pentashih = (await loginAs('pentashih@lpmq.kemenag.go.id')).token;
@@ -111,8 +116,9 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const load = await expect(`/distribution-teams/${team.id}/workload`, distributor);
     assert.ok(load.some(item => item.assignee_id === assignee.id && item.status === 'OVERDUE'));
     await expect(`/registrations/${reg.id}/manuscripts`, pentashih);
-    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: file.id }, 201);
-    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: file.id }, 409);
+    const pentashihRecapFile = await uploadAs(pentashih);
+    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: pentashihRecapFile.id }, 201);
+    await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: pentashihRecapFile.id }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Hasil belum lulus' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaikan oleh penerbit' });
   });
@@ -140,17 +146,24 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/physical-master/handovers/${pending.id}/receive`, distributor, 'POST', { condition: 'BAIK' });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTION');
 
-    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 201);
+    // B-19a: Penugasan revisi awal mewajibkan catatan telaah pembanding distributor (minimal 20 karakter)
+    await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 400);
+
+    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', {
+      team_id: team.id,
+      assignee_ids: [assignee.id],
+      stage: 'DUMMY',
+      comparison_notes: 'Catatan telaah pembanding distributor terhadap naskah revisi ronde ini (minimal 20 karakter).',
+    }, 201);
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
-    await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai', recap_file_id: file.id }, 201);
-    // B-17: Pada ronde revisi/dumi, distributor wajib mengisi comparison_notes (ditolak 400 jika kosong)
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Rekomendasi STT disetujui' }, 400);
+    const pentashihRecapRound2 = await uploadAs(pentashih);
+    await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai', recap_file_id: pentashihRecapRound2.id }, 201);
+
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', {
       result: 'PASSED',
       notes: 'Rekomendasi STT disetujui',
-      comparison_notes: 'Hasil perbaikan naskah dumi telah diperiksa dan sesuai dengan catatan sidang ronde sebelumnya.',
     });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'READY_FOR_STT');
   });

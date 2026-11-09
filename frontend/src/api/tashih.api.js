@@ -56,6 +56,18 @@ export const tashihApi = {
   getTeamWorkload: async (teamId) => {
     return apiClient(`/distribution-teams/${teamId}/workload`);
   },
+
+  /**
+   * Admin / Distributor mencabut penugasan pentashih (misal karena cuti/sakit)
+   * @param {string} assignmentId - UUID Assignment
+   * @param {Object} payload - { reason: string }
+   */
+  revokeAssignment: async (assignmentId, payload) => {
+    return apiClient(`/assignments/${assignmentId}/revoke`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
 };
 
 export default tashihApi;
