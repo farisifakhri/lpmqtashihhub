@@ -558,12 +558,18 @@ export async function getAdminPublisherRegistrationDetail(id) {
         where: { is_replaced: false },
         orderBy: { created_at: 'asc' },
       },
+      revision_tokens: {
+        orderBy: { created_at: 'desc' },
+        take: 1,
+      },
     },
   });
 
   if (!reg) {
     fail(404, 'Data pendaftaran penerbit tidak ditemukan.');
   }
+
+  const latestRevisionToken = reg.revision_tokens?.[0] || null;
 
   return {
     id: reg.id,
@@ -579,6 +585,13 @@ export async function getAdminPublisherRegistrationDetail(id) {
     status: reg.status,
     alasan: reg.reason,
     versi: reg.version,
+    revision_token_info: latestRevisionToken
+      ? {
+          expires_at: latestRevisionToken.expires_at,
+          used_at: latestRevisionToken.used_at,
+          is_active: !latestRevisionToken.used_at && latestRevisionToken.expires_at > new Date(),
+        }
+      : null,
     dokumen: reg.documents.map(d => ({
       id: d.id,
       tipe: d.document_type,
@@ -748,12 +761,92 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
     revisionToken: revisionTokenRaw,
   });
 
+  const frontendUrl = (ENV.PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+
   return {
     id: result.id,
     kode_pendaftaran: result.registration_code,
     status: result.status,
     versi: result.version,
     decided_at: result.decided_at,
+    revision_token: revisionTokenRaw,
+    revision_url: revisionTokenRaw ? `${frontendUrl}/pendaftaran-penerbit/perbaikan?token=${revisionTokenRaw}` : null,
+  };
+}
+
+/**
+ * Menerbitkan ulang (regenerate) token perbaikan pendaftaran penerbit oleh admin
+ * @param {string} id ID pendaftaran penerbit
+ * @param {object} currentUser Akun admin yang bertindak
+ * @param {object} req Express request
+ */
+export async function resendPublisherRegistrationRevisionToken(id, currentUser, req) {
+  const reg = await prisma.publisherRegistration.findUnique({
+    where: { id },
+  });
+
+  if (!reg) {
+    fail(404, 'Data pendaftaran penerbit tidak ditemukan.');
+  }
+
+  if (reg.status !== 'PERLU_PERBAIKAN') {
+    const err = new Error('Penerbitan ulang token perbaikan hanya dapat dilakukan untuk permohonan yang berstatus PERLU_PERBAIKAN.');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const frontendUrl = (ENV.PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const revisionTokenRaw = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(revisionTokenRaw).digest('hex');
+  const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  await prisma.$transaction(async tx => {
+    // Hanguskan token aktif sebelumnya yang belum digunakan
+    await tx.publisherRevisionToken.updateMany({
+      where: {
+        registration_id: reg.id,
+        used_at: null,
+      },
+      data: {
+        used_at: new Date(),
+      },
+    });
+
+    // Buat entri token perbaikan baru dengan masa berlaku 14 hari
+    await tx.publisherRevisionToken.create({
+      data: {
+        registration_id: reg.id,
+        token_hash: tokenHash,
+        expires_at: expiresAt,
+      },
+    });
+
+    await audit(
+      tx,
+      currentUser,
+      'RESEND_PUBLISHER_REVISION_TOKEN',
+      'PublisherRegistration',
+      id,
+      { registration_code: reg.registration_code },
+      req
+    );
+  });
+
+  // Kirim email notifikasi perbaikan dengan token baru
+  await sendPublisherRegistrationEmail('PUBLISHER_REGISTRATION_NEEDS_REVISION', {
+    email: reg.email,
+    name: reg.name,
+    code: reg.registration_code,
+    reason: reg.reason,
+    revisionToken: revisionTokenRaw,
+  });
+
+  return {
+    id: reg.id,
+    kode_pendaftaran: reg.registration_code,
+    revision_token: revisionTokenRaw,
+    revision_url: `${frontendUrl}/pendaftaran-penerbit/perbaikan?token=${revisionTokenRaw}`,
+    expires_at: expiresAt,
   };
 }
 

@@ -553,7 +553,7 @@ export const RegisterPublisherPage = () => {
 
                         <div className="pt-2 flex flex-col sm:flex-row gap-3">
                             <Link
-                                to="/cek-status"
+                                to={`/cek-status?kode=${encodeURIComponent(successData.kode_pendaftaran)}`}
                                 className="flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold text-center text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
                             >
                                 Cek Status Pendaftaran

@@ -86,6 +86,16 @@ export const publisherRegistrationApi = {
   },
 
   /**
+   * Menerbitkan ulang (regenerate) token perbaikan pendaftaran penerbit oleh admin
+   * POST /api/v1/admin/publisher-registrations/:id/resend-revision-token
+   */
+  resendRevisionToken: async (id) => {
+    return apiClient(`/admin/publisher-registrations/${encodeURIComponent(id)}/resend-revision-token`, {
+      method: 'POST',
+    });
+  },
+
+  /**
    * Mengunduh dokumen persyaratan pendaftaran dengan otorisasi JWT
    */
   downloadDocument: async (registrationId, documentId, fileName = 'dokumen.pdf') => {
@@ -125,6 +135,27 @@ export const publisherRegistrationApi = {
     });
     if (!response.ok) {
       throw new Error('Gagal mengunduh sertifikat penerbit.');
+    }
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName.replace(/[\\/:*?"<>|]/g, '-');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  },
+
+  /**
+   * Mengunduh sertifikat penerbit resmi secara publik berdasarkan ID atau kode pendaftaran
+   */
+  downloadPublicCertificate: async (idOrCode, fileName = 'sertifikat-penerbit.pdf') => {
+    const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const url = `${cleanBase}/publisher-registrations/${encodeURIComponent(idOrCode)}/certificate`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Gagal mengunduh sertifikat penerbit dari server.');
     }
     const blob = await response.blob();
     const blobUrl = URL.createObjectURL(blob);

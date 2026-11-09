@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
     Search,
     ShieldCheck,
@@ -11,6 +11,10 @@ import {
     RefreshCw,
     ExternalLink,
     HelpCircle,
+    FileCheck,
+    Download,
+    KeyRound,
+    ArrowRight,
 } from "lucide-react";
 import kemenagLogo from "@/assets/kemenag1.png";
 import lpmqLogo from "@/assets/logo-lpmq1.png";
@@ -18,14 +22,21 @@ import Switcher from "../darkmode/Switcher";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
 
 export const CheckRegistrationStatusPage = () => {
-    const [kodePendaftaran, setKodePendaftaran] = useState("");
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const urlKode = searchParams.get("kode") || "";
+
+    const [kodePendaftaran, setKodePendaftaran] = useState(urlKode);
     const [isLoading, setIsLoading] = useState(false);
     const [statusResult, setStatusResult] = useState(null);
     const [error, setError] = useState("");
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        const cleanCode = kodePendaftaran.trim().toUpperCase();
+    // Quick token input for revision form
+    const [inputToken, setInputToken] = useState("");
+    const [isDownloadingCert, setIsDownloadingCert] = useState(false);
+
+    const performSearch = useCallback(async (codeToSearch) => {
+        const cleanCode = (codeToSearch || "").trim().toUpperCase();
 
         if (!cleanCode) {
             setError("Harap masukkan kode pendaftaran Anda.");
@@ -61,6 +72,44 @@ export const CheckRegistrationStatusPage = () => {
             }
         } finally {
             setIsLoading(false);
+        }
+    }, []);
+
+    // Auto-search jika parameter kode ada di URL
+    useEffect(() => {
+        if (urlKode) {
+            setKodePendaftaran(urlKode.toUpperCase());
+            performSearch(urlKode);
+        }
+    }, [urlKode, performSearch]);
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        performSearch(kodePendaftaran);
+    };
+
+    const handleGoToRevision = (e) => {
+        e.preventDefault();
+        const cleanToken = inputToken.trim();
+        if (cleanToken) {
+            navigate(`/pendaftaran-penerbit/perbaikan?token=${encodeURIComponent(cleanToken)}`);
+        } else {
+            navigate('/pendaftaran-penerbit/perbaikan');
+        }
+    };
+
+    const handleDownloadCertificate = async () => {
+        if (!statusResult?.kode_pendaftaran) return;
+        setIsDownloadingCert(true);
+        try {
+            await publisherRegistrationApi.downloadPublicCertificate(
+                statusResult.kode_pendaftaran,
+                `Sertifikat-Penerbit-${statusResult.kode_pendaftaran}.pdf`
+            );
+        } catch (err) {
+            alert(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi loket LPMQ.");
+        } finally {
+            setIsDownloadingCert(false);
         }
     };
 
@@ -226,16 +275,16 @@ export const CheckRegistrationStatusPage = () => {
 
                         {/* STATUS: PERLU_PERBAIKAN */}
                         {statusResult.status === "PERLU_PERBAIKAN" && (
-                            <div className="p-4 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-ink space-y-3">
+                            <div className="p-4 sm:p-5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-ink space-y-4">
                                 <div className="flex items-center gap-2 text-civic-warning font-bold text-sm">
                                     <AlertTriangle className="w-4 h-4" />
                                     <span>Memerlukan Perbaikan Dokumen</span>
                                 </div>
-                                <div className="p-3 rounded-lg bg-surface border border-line text-xs space-y-1">
+                                <div className="p-3.5 rounded-lg bg-surface border border-line text-xs space-y-1">
                                     <p className="font-semibold text-ink">
                                         Catatan Kekurangan dari Petugas:
                                     </p>
-                                    <p className="text-ink-muted italic">
+                                    <p className="text-ink-muted italic leading-relaxed">
                                         "{statusResult.alasan || "Silakan periksa dokumen persyaratan Anda."}"
                                     </p>
                                 </div>
@@ -243,12 +292,50 @@ export const CheckRegistrationStatusPage = () => {
                                     {statusResult.instruksi ||
                                         "Tautan perbaikan sekali pakai telah dikirimkan ke alamat email terdaftar Anda. Anda dapat memperbarui dokumen yang belum sesuai dalam kurun waktu 14 hari kalender."}
                                 </p>
+
+                                {/* Aksi Alur Perbaikan Dokumen */}
+                                <div className="pt-2 border-t border-civic-warningLine/60 space-y-3">
+                                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                        <Link
+                                            to="/pendaftaran-penerbit/perbaikan"
+                                            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs cursor-pointer"
+                                        >
+                                            <FileCheck className="w-4 h-4" />
+                                            <span>Buka Formulir Perbaikan Dokumen</span>
+                                        </Link>
+                                    </div>
+
+                                    {/* Input Token Cepat */}
+                                    <form onSubmit={handleGoToRevision} className="p-3 rounded-xl bg-surface border border-line space-y-2">
+                                        <label htmlFor="quick-token-input" className="block text-[11px] font-bold text-ink flex items-center gap-1.5">
+                                            <KeyRound className="w-3.5 h-3.5 text-brand-fg" />
+                                            <span>Sudah Memiliki Token Perbaikan dari Email atau Petugas?</span>
+                                        </label>
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            <input
+                                                id="quick-token-input"
+                                                type="text"
+                                                value={inputToken}
+                                                onChange={(e) => setInputToken(e.target.value.trim())}
+                                                placeholder="Tempel token perbaikan di sini..."
+                                                className="flex-1 px-3 py-2 text-xs font-mono bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans"
+                                            />
+                                            <button
+                                                type="submit"
+                                                className="px-3.5 py-2 rounded-lg text-xs font-bold text-ink bg-surface border border-line hover:bg-surface-subtle hover:text-brand-fg transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                                            >
+                                                <span>Lanjutkan</span>
+                                                <ArrowRight className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         )}
 
                         {/* STATUS: DISETUJUI */}
                         {statusResult.status === "DISETUJUI" && (
-                            <div className="p-4 rounded-xl bg-brand-50 border border-brand-100 text-ink space-y-3">
+                            <div className="p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-100 text-ink space-y-3.5">
                                 <div className="flex items-center gap-2 text-brand-800 font-bold text-sm">
                                     <CheckCircle2 className="w-4 h-4" />
                                     <span>Pendaftaran Telah Disetujui</span>
@@ -256,10 +343,23 @@ export const CheckRegistrationStatusPage = () => {
                                 <p className="text-xs text-ink-muted leading-relaxed">
                                     Selamat! Pendaftaran akun penerbit Anda telah disetujui secara resmi oleh LPMQ Kementerian Agama RI. Akun Anda kini aktif dan dapat digunakan untuk masuk ke portal pentashihan mushaf Al-Qur'an.
                                 </p>
-                                <div className="pt-1">
+                                <div className="pt-1 flex flex-col sm:flex-row gap-2.5">
+                                    <button
+                                        type="button"
+                                        disabled={isDownloadingCert}
+                                        onClick={handleDownloadCertificate}
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-brand-800 bg-surface border border-brand-200 hover:bg-surface-subtle transition-colors shadow-2xs cursor-pointer disabled:opacity-60"
+                                    >
+                                        {isDownloadingCert ? (
+                                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Download className="w-3.5 h-3.5 text-brand-fg" />
+                                        )}
+                                        <span>{isDownloadingCert ? "Mengunduh..." : "Unduh Sertifikat Penerbit Resmi (PDF)"}</span>
+                                    </button>
                                     <Link
                                         to="/login"
-                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
+                                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
                                     >
                                         <span>Masuk ke Portal Pentashihan</span>
                                         <ArrowLeft className="w-3.5 h-3.5 rotate-180" />

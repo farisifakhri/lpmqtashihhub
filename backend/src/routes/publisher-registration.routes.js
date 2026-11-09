@@ -101,6 +101,13 @@ router.post(
   publisherRegistrationController.decideRegistration
 );
 
+// 8b. Menerbitkan Ulang (Regenerate) Token Perbaikan
+router.post(
+  '/admin/publisher-registrations/:id/resend-revision-token',
+  ...adminAuth,
+  publisherRegistrationController.resendRevisionToken
+);
+
 // 9. Unduh / Lihat Sertifikat Penerbit (U-06)
 router.get(
   '/admin/publisher-registrations/:id/certificate',
