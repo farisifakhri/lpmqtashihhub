@@ -894,13 +894,13 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
   return updated;
 }, { isolationLevel: 'ReadCommitted' });
 
-export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['KEPALA_LPMQ', 'SUPERADMIN']);
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  const doc = await tx.officialDocument.findUnique({
-    where: { id },
-    include: { signatories: true, registration: true },
-  });
+export const signDocument = async (id, user, req) => {
+  requireRole(user, ['KEPALA_LPMQ']);
+  return prisma.$transaction(async tx => {
+    const doc = await tx.officialDocument.findUnique({
+      where: { id },
+      include: { signatories: true, registration: true },
+    });
   if (!doc) fail(404, 'Dokumen tidak ditemukan.');
   if (doc.document_type !== 'SURAT_TANDA_TASHIH') {
     fail(409, 'Dokumen belum dapat ditetapkan karena format resmi dan alur penandatanganan masih menunggu keputusan stakeholder. Dokumen tetap berstatus draf; hubungi pengelola layanan untuk informasi tindak lanjut.');
@@ -920,7 +920,7 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
     fail(409, 'Paraf 1 dan Paraf 2 harus dibubuhkan oleh dua orang staf Tata Usaha yang berbeda.');
   }
 
-  if (!isSuperAdmin && user.id && (paraf1SignerId === user.id || paraf2SignerId === user.id)) {
+  if (user.id && (paraf1SignerId === user.id || paraf2SignerId === user.id)) {
     fail(409, 'Kepala LPMQ tidak dapat mengesahkan dokumen yang diparaf oleh akunnya sendiri. Pisahkan peran verifikator paraf dan penandatangan definitif.');
   }
 
@@ -1025,3 +1025,4 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
   await audit(tx, user, 'SIGN_OFFICIAL_DOCUMENT', 'OfficialDocument', id, { document_no: officialDocNo, valid_until: validUntil }, req);
   return updatedDoc;
 }, { isolationLevel: 'ReadCommitted' });
+};
