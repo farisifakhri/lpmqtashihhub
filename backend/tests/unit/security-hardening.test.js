@@ -59,6 +59,9 @@ test('T-F07: Security Configuration - Header Helmet, Cache Control & CORS di app
 
   // Pastikan CORS memeriksa ALLOWED_ORIGINS
   assert.ok(appFile.includes('ENV.ALLOWED_ORIGINS'), 'app.js wajib membatasi origin CORS');
+
+  // Frontend mengirim X-Active-Role untuk pengguna multi-role; tanpanya preflight ditolak browser
+  assert.ok(appFile.includes("'X-Active-Role'"), 'CORS allowedHeaders wajib memuat X-Active-Role');
 });
 
 test('T-F07: JWT Protection - Mencegah penggunaan kunci rahasia lemah di non-development', async () => {

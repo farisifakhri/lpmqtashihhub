@@ -47,7 +47,8 @@ export const fileApi = {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   },
   downloadDocument: async (id, filename = 'Surat-Tanda-Tashih.pdf') => {
-    const response = await fetch(`${base}/official-documents/${encodeURIComponent(id)}/pdf`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
+    // ?download=1 menandai permintaan unduhan; peninjauan PDF tidak memakai penanda ini.
+    const response = await fetch(`${base}/official-documents/${encodeURIComponent(id)}/pdf?download=1`, { headers: { Authorization: `Bearer ${getAuthToken()}` } });
     if (!response.ok) throw new ApiError(await errorMessage(response), response.status);
     if (!response.headers.get('content-type')?.includes('application/pdf')) throw new Error('Server tidak mengembalikan PDF resmi. Silakan hubungi pengelola layanan.');
     const url = URL.createObjectURL(await response.blob());

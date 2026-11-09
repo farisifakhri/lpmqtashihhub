@@ -239,7 +239,7 @@ export const forgotPassword = async ({ email, req }) => {
     },
   });
 
-  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
   // Keep a URL for compatibility with existing internal callers/tests. SMTP
   // sends the portable code so recovery does not depend on localhost links.
   const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;

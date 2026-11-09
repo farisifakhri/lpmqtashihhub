@@ -33,8 +33,12 @@ import {
     Sparkles,
     LogOut,
     RefreshCw,
+    ClipboardList,
+    ChevronRight,
+    Circle,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useSidebarBadges, getBadgeCount, formatBadgeCount } from "./useSidebarBadges";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
@@ -44,6 +48,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
     const [avatarPickerOpen, setAvatarPickerOpen] = React.useState(false);
+    const [openGroups, setOpenGroups] = React.useState({});
+    const badgeCounts = useSidebarBadges(currentUser);
 
     const handleCycleRole = (e) => {
         e?.stopPropagation?.();
@@ -66,38 +72,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const role = currentUser?.role || "";
     const roles = currentUser?.roles || [];
 
-    const isPublisher =
-        role === "PENERBIT" ||
-        role === "PUBLISHER" ||
-        roles.includes("PENERBIT");
-
-    const isSuperAdmin = role === "SUPERADMIN" || roles.includes("SUPERADMIN");
-
-    const isAdmin =
-        role === "ADMIN_INTERNAL" || roles.includes("ADMIN_INTERNAL");
-
-    const isVerifikator =
-        role === "VERIFIKATOR" ||
-        role === "VERIFICATOR" ||
-        roles.includes("VERIFIKATOR");
-
-    const isDistributor =
-        role === "DISTRIBUTOR" || roles.includes("DISTRIBUTOR");
-
-    const isPentashih =
-        role === "PENTASHIH" ||
-        role === "TASHIH_MEMBER" ||
-        roles.includes("PENTASHIH");
-
-    const isDokumentator =
-        role === "DOKUMENTATOR" ||
-        role === "DOCUMENTATOR" ||
-        roles.includes("DOKUMENTATOR");
-
-    const isKepala =
-        role === "KEPALA_LPMQ" ||
-        role === "HEAD_OF_LPMQ" ||
-        roles.includes("KEPALA_LPMQ");
+    // Menu sidebar mengikuti peran aktif (role) saja, bukan daftar roles yang dimiliki pengguna,
+    // agar tombol Ganti Peran benar-benar mengubah tampilan untuk pengguna multi-role.
+    const isPublisher = role === "PENERBIT" || role === "PUBLISHER";
+    const isSuperAdmin = role === "SUPERADMIN";
+    const isAdmin = role === "ADMIN_INTERNAL";
+    const isVerifikator = role === "VERIFIKATOR" || role === "VERIFICATOR";
+    const isDistributor = role === "DISTRIBUTOR";
+    const isPentashih = role === "PENTASHIH" || role === "TASHIH_MEMBER";
+    const isDokumentator = role === "DOKUMENTATOR" || role === "DOCUMENTATOR";
+    const isKepala = role === "KEPALA_LPMQ" || role === "HEAD_OF_LPMQ";
 
     const getRoleBadge = (userRole) => {
         switch (userRole) {
@@ -175,6 +159,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Permohonan Saya",
                             path: "/publisher/registrations",
+                            badgeKey: "publisher_registrations",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
                             description: "Seluruh portofolio naskah",
                         },
@@ -201,6 +186,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Tagihan & Pembayaran",
                             path: "/publisher/billing",
+                            badgeKey: "publisher_billing",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & bukti setor",
                         },
@@ -230,19 +216,21 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Tugas Verifikasi Naskah",
                             path: "/internal/verifications",
+                            badgeKey: "verification_assigned",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Pemeriksaan naskah & draf surat",
-                            badge: 1,
                         },
                         {
                             label: "Tanda Tangan Saya",
                             path: "/internal/signatures",
+                            badgeKey: "signatures_pending",
                             icon: <PenTool className="w-4 h-4 shrink-0" />,
                             description: "Berita acara & draf hasil",
                         },
                         {
                             label: "Verifikasi Pembayaran",
                             path: "/internal/payments",
+                            badgeKey: "payments_pending_verification",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Validasi setoran PNBP SIMPONI",
                         },
@@ -272,12 +260,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Penerimaan Master Fisik",
                             path: "/internal/distributions/handover",
+                            badgeKey: "handover_pending",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Konfirmasi master fisik & BAST loket",
                         },
                         {
                             label: "Penugasan Tim Sidang",
                             path: "/internal/distributions/assignment",
+                            badgeKey: "distribution_waiting",
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Distribusi naskah ke 9 tim inti",
                         },
@@ -290,6 +280,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Pengesahan & Dokumen Tashih",
                             path: "/internal/documents",
+                            badgeKey: "stt_ready",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
                             description: "Berita acara sidang & terbit STT",
                         },
@@ -319,6 +310,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Sidang Pentashihan",
                             path: "/internal/tashih",
+                            badgeKey: ["tashih_initial", "tashih_revision"],
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & tanda baca",
                         },
@@ -348,6 +340,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Pengesahan & Terbit STT",
                             path: "/internal/documents",
+                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Surat Tanda Tashih & Berita Acara",
                         },
@@ -383,12 +376,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Pusat Tanda Tangan (TTE)",
                             path: "/internal/signatures",
+                            badgeKey: "signatures_pending",
                             icon: <PenTool className="w-4 h-4 shrink-0" />,
                             description: "Tanda tangan digital resmi pimpinan",
                         },
                         {
                             label: "Penetapan STT",
                             path: "/internal/documents",
+                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Pengesahan Surat Tanda Tashih",
                         },
@@ -423,12 +418,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "1. Pendaftaran Penerbit",
                             path: "/internal/publishers",
+                            badgeKey: "publisher_registrations",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
                         },
                         {
                             label: "2. Intake Master Fisik",
                             path: "/internal/master-intake",
+                            badgeKey: "master_intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
                             badge: "Loket",
@@ -436,30 +433,35 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "3. Verifikasi Berkas",
                             path: "/internal/verifications",
+                            badgeKey: "verification_assigned",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Penugasan & telaah berkas naskah",
                         },
                         {
                             label: "4. Pembayaran PNBP",
                             path: "/internal/payments",
+                            badgeKey: "payments_pending_verification",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & validasi bayar",
                         },
                         {
                             label: "5. Distribusi Sidang Tashih",
                             path: "/internal/distributions",
+                            badgeKey: ["handover_pending", "distribution_waiting"],
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Serah terima master & penugasan tim",
                         },
                         {
                             label: "6. Sidang Pentashihan",
                             path: "/internal/tashih",
+                            badgeKey: ["tashih_initial", "tashih_revision"],
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & naskah dumi",
                         },
                         {
                             label: "7. Pengesahan & STT",
                             path: "/internal/documents",
+                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Berita acara & Surat Tanda Tashih",
                         },
@@ -504,12 +506,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "1. Pendaftaran Penerbit",
                         path: "/internal/publishers",
+                        badgeKey: "publisher_registrations",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
                     },
                     {
                         label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
+                        badgeKey: "master_intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
                         badge: "Loket",
@@ -517,30 +521,35 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "3. Verifikasi Berkas",
                         path: "/internal/verifications",
+                        badgeKey: "verification_assigned",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Penugasan & pemeriksaan naskah",
                     },
                     {
                         label: "4. Pembayaran PNBP",
                         path: "/internal/payments",
+                        badgeKey: "payments_pending_verification",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
                         description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
                         label: "5. Distribusi Sidang Tashih",
                         path: "/internal/distributions",
+                        badgeKey: ["handover_pending", "distribution_waiting"],
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Serah-terima fisik & tim sidang",
                     },
                     {
                         label: "6. Sidang Pentashihan",
                         path: "/internal/tashih",
+                        badgeKey: ["tashih_initial", "tashih_revision"],
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
                         description: "Koreksi lafazh, harakat & naskah dumi",
                     },
                     {
                         label: "7. Pengesahan & Terbit STT",
                         path: "/internal/documents",
+                        badgeKey: "stt_ready",
                         icon: <Award className="w-4 h-4 shrink-0" />,
                         description: "Berita acara final & Surat Tanda Tashih",
                     },
@@ -578,6 +587,20 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/landing-page",
                         icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
                         description: "Konten dan regulasi landing page",
+                    },
+                    {
+                        label: "Survei",
+                        icon: <ClipboardList className="w-4 h-4 shrink-0" />,
+                        description: "Survei Kepuasan Masyarakat (PANRB 9/2024)",
+                        children: [
+                            { label: "Nama Survei", path: "/internal/surveys?tab=survei" },
+                            { label: "Nama Unsur", path: "/internal/surveys?tab=unsur" },
+                            { label: "Pertanyaan Survei", path: "/internal/surveys?tab=pertanyaan" },
+                            { label: "Pemilihan Survei", path: "/internal/surveys?tab=pemilihan" },
+                            { label: "Jawaban Survei", path: "/internal/surveys?tab=jawaban" },
+                            { label: "Responden Survei", path: "/internal/surveys?tab=responden" },
+                            { label: "Laporan Survei", path: "/internal/surveys?tab=laporan" },
+                        ],
                     },
                 ],
             },
@@ -626,6 +649,58 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         return isActive;
+    };
+
+    // Menu bertingkat (mis. Survei): terbuka otomatis bila salah satu sub-menunya sedang dibuka.
+    const renderGroup = (group) => {
+        const containsCurrent = group.children.some((child) => location.pathname === child.path.split("?")[0]);
+        const open = openGroups[group.label] ?? containsCurrent;
+        const panelId = `sidebar-group-${group.label.toLowerCase().replace(/W+/g, "-")}`;
+        return (
+            <div key={group.label}>
+                <button
+                    type="button"
+                    aria-expanded={open}
+                    aria-controls={panelId}
+                    onClick={() => setOpenGroups((prev) => ({ ...prev, [group.label]: !open }))}
+                    className={clsx(
+                        "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors duration-200 lpmq-sidebar-nav-inactive",
+                        containsCurrent && "font-bold",
+                    )}
+                >
+                    {/* Ikon mengikuti warna teks menu (putih di sidebar hijau), sama seperti label. */}
+                    <span className="shrink-0 text-current">{group.icon}</span>
+                    <span className="flex-1 min-w-0 text-left truncate">{group.label}</span>
+                    <ChevronRight className={clsx("w-3.5 h-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none", open && "rotate-90")} />
+                </button>
+                {open && (
+                    <div id={panelId} className="mt-0.5 space-y-0.5 pl-4">
+                        {group.children.map((child) => (
+                            <NavLink
+                                key={child.path}
+                                to={child.path}
+                                onClick={() => {
+                                    if (window.innerWidth < 1024 && onClose) onClose();
+                                }}
+                                className={({ isActive }) =>
+                                    clsx(
+                                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs transition-colors duration-200",
+                                        isCurrentItem(child, isActive) ? "lpmq-sidebar-nav-active font-bold shadow-2xs" : "lpmq-sidebar-nav-inactive",
+                                    )
+                                }
+                            >
+                                {({ isActive }) => (
+                                    <>
+                                        <Circle className={clsx("w-2.5 h-2.5 shrink-0", isCurrentItem(child, isActive) && "fill-current")} />
+                                        <span className="truncate">{child.label}</span>
+                                    </>
+                                )}
+                            </NavLink>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
     };
 
     return (
@@ -710,7 +785,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                     {section.title}
                                 </div>
                                 <nav className="space-y-0.5">
-                                    {section.items.map((item) => (
+                                    {section.items.map((item) => {
+                                        if (item.children) return renderGroup(item);
+                                        const pendingCount = getBadgeCount(badgeCounts, item.badgeKey);
+                                        return (
                                         <NavLink
                                             key={item.path + item.label}
                                             to={item.path}
@@ -768,7 +846,15 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                                 </span>
                                                             )}
                                                     </div>
-                                                    {item.badge && (
+                                                    {pendingCount > 0 ? (
+                                                        <span
+                                                            data-testid="sidebar-pending-badge"
+                                                            className="shrink-0 font-extrabold shadow-2xs flex items-center justify-center transition-all bg-civic-danger text-white rounded-full min-w-[20px] h-5 px-1.5 text-[11px] tabular-nums"
+                                                        >
+                                                            {formatBadgeCount(pendingCount)}
+                                                            <span className="sr-only"> menunggu tindakan</span>
+                                                        </span>
+                                                    ) : item.badge ? (
                                                         <span
                                                             className={clsx(
                                                                 "shrink-0 font-extrabold shadow-2xs flex items-center justify-center transition-all",
@@ -779,11 +865,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                         >
                                                             {item.badge}
                                                         </span>
-                                                    )}
+                                                    ) : null}
                                                 </>
                                             )}
                                         </NavLink>
-                                    ))}
+                                        );
+                                    })}
                                 </nav>
                             </div>
                         ))}

@@ -179,6 +179,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname.startsWith('/internal/signatures')) {
       return { parent: 'Pengesahan', name: 'Pusat Tanda Tangan' };
     }
+    if (pathname.startsWith('/internal/surveys')) {
+      return { parent: 'Tata Kelola Sistem', name: 'Survei' };
+    }
     if (pathname.startsWith('/internal/archive')) {
       return { parent: 'Dokumentasi', name: 'Arsip Dokumen & Naskah' };
     }

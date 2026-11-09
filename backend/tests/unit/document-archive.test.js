@@ -5,18 +5,31 @@ import { renderVerificationPdf } from '../../src/services/verification-document-
 import { documentPdf } from '../../src/services/official-document.service.js';
 
 const document = { id: 'v1', document_type: 'NOTA_DINAS_VERIFIKASI', version: 1, status: 'DRAFT' };
+// r1: penerbit p1, tim inti verifikator v1 & distributor d1, pentashih t1; tidak ada baris verification_assignments.
+const reg = { id: 'r1', publisher_id: 'p1', core_verifier_id: 'v1', core_distributor_id: 'd1', assignees: ['t1'] };
+const inScope = where =>
+  (!('publisher_id' in where) || where.publisher_id === reg.publisher_id)
+  && (!('core_verifier_id' in where) || where.core_verifier_id === reg.core_verifier_id)
+  && (!('core_distributor_id' in where) || where.core_distributor_id === reg.core_distributor_id)
+  && (!where.assignments || reg.assignees.includes(where.assignments.some.assignee_id));
 const db = {
-  registration: { findUnique: async () => ({ id: 'r1', publisher_id: 'p1' }) },
-  verificationAssignment: { findFirst: async () => null },
+  registration: {
+    findUnique: async () => ({ id: reg.id, publisher_id: reg.publisher_id }),
+    findFirst: async ({ where }) => (inScope(where) ? { id: reg.id } : null),
+  },
   verificationDocument: { findMany: async () => [document] },
   officialDocument: { findMany: async () => [{ ...document, id: 'o1', document_type: 'BERITA_ACARA_TASHIH' }] },
 };
 
 test('archive includes draft verification and tashih versions for the owner and approved internal roles', async () => {
   for (const user of [
-    { roles: ['PENERBIT'], publisherId: 'p1' },
-    { roles: ['ADMIN_INTERNAL'] },
-    { roles: ['DOKUMENTATOR'] },
+    { id: 'u-pub', roles: ['PENERBIT'], publisherId: 'p1' },
+    { id: 'u-admin', roles: ['ADMIN_INTERNAL'] },
+    { id: 'u-doc', roles: ['DOKUMENTATOR'] },
+    // Verifikator tim inti tetap boleh walau belum ada baris penugasan (naskah ini tampil di daftarnya).
+    { id: 'v1', roles: ['PENTASHIH', 'VERIFIKATOR'] },
+    { id: 'd1', roles: ['DISTRIBUTOR'] },
+    { id: 't1', roles: ['PENTASHIH'] },
   ]) {
     const result = await listDocumentArchive('r1', user, db);
     assert.deepEqual(result.map(item => [item.source, item.status]), [['VERIFICATION', 'DRAFT'], ['OFFICIAL', 'DRAFT']]);
@@ -25,8 +38,10 @@ test('archive includes draft verification and tashih versions for the owner and 
 
 test('archive denies another publisher and unrelated staff', async () => {
   for (const user of [
-    { roles: ['PENERBIT'], publisherId: 'p2' },
-    { roles: ['VERIFIKATOR'] },
+    { id: 'u-pub2', roles: ['PENERBIT'], publisherId: 'p2' },
+    { id: 'v2', roles: ['VERIFIKATOR'] },
+    { id: 'd2', roles: ['DISTRIBUTOR'] },
+    { id: 't2', roles: ['PENTASHIH'] },
   ]) {
     await assert.rejects(listDocumentArchive('r1', user, db), error => error.statusCode === 403);
   }

@@ -3,6 +3,9 @@ import { FileText, Printer, Download, Eye, Clock, ShieldCheck, CheckCircle2 } fr
 import { registrationApi } from '@/api/registration.api';
 import { fileApi } from '@/api/file.api';
 import { getAuthToken } from '@/api/client';
+import { useOptionalAuth } from '@/features/auth/AuthContext';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
+import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
 import { DocumentVersionHistory } from './DocumentVersionHistory';
 import { PrivateFileViewer } from './PrivateFileViewer';
 import { Button } from '@/components/ui/Button';
@@ -34,6 +37,36 @@ export function DocumentArchive({ registrationId }) {
   const [error, setError] = useState('');
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  // Penerbit mengisi survei kepuasan dulu sebelum STT dapat dibuka atau diunduh.
+  const auth = useOptionalAuth();
+  const roles = auth?.currentUser?.roles || (auth?.currentUser?.role ? [auth.currentUser.role] : []);
+  const isPublisher = roles.includes('PENERBIT') && !roles.includes('SUPERADMIN');
+  const [surveysPending, setSurveysPending] = useState([]);
+  const [surveyAction, setSurveyAction] = useState(null); // aksi yang ditunda sampai survei terisi
+
+  useEffect(() => {
+    if (!isPublisher || !registrationId) return undefined;
+    let active = true;
+    publisherSurveyApi.listForRegistration(registrationId)
+      .then((res) => { if (active) setSurveysPending((res.data || []).filter((item) => !item.answered)); })
+      .catch(() => { if (active) setSurveysPending([]); });
+    return () => { active = false; };
+  }, [isPublisher, registrationId]);
+
+  const needsSurvey = (document) => isPublisher && surveysPending.length > 0
+    && document?.source === 'OFFICIAL' && document?.document_type === 'SURAT_TANDA_TASHIH';
+
+  // Jalankan aksinya, atau tahan dulu dengan pop-up survei bila STT belum boleh dibuka.
+  const guarded = (document, action) => () => {
+    if (needsSurvey(document)) { setSurveyAction(() => action); return; }
+    action();
+  };
+
+  const downloadOfficial = (document) => () => {
+    setError('');
+    fileApi.downloadDocument(document.id, `${document.document_no || document.document_type}.pdf`)
+      .catch((reason) => setError(reason.message || 'Dokumen tidak dapat diunduh.'));
+  };
 
   useEffect(() => () => {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
@@ -114,7 +147,9 @@ export function DocumentArchive({ registrationId }) {
     }, {});
   }, [documents]);
 
-  const selected = documents.find((item) => item.id === selectedId) || documents[0];
+  // Tanpa pilihan manual, buka langsung STT bila sudah terbit: itu dokumen yang dicari penerbit.
+  const issuedStt = documents.find((item) => item.document_type === 'SURAT_TANDA_TASHIH' && item.status === 'ISSUED');
+  const selected = documents.find((item) => item.id === selectedId) || issuedStt || documents[0];
   const snapshot = selected?.content_snapshot || {};
   const text = snapshot.letter_text || snapshot.notes || (selected?.document_type === 'NOTA_DINAS_VERIFIKASI'
     ? `Penugasan verifikasi naskah ${snapshot.title || '-'} kepada ${snapshot.verifier_name || 'verifikator'}. Batas penyelesaian: ${snapshot.due_at ? new Date(snapshot.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'}.`
@@ -244,11 +279,11 @@ export function DocumentArchive({ registrationId }) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => fileApi.downloadDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`)}
+                  onClick={guarded(selected, downloadOfficial(selected))}
                   className="text-xs font-semibold"
                 >
                   <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Unduh Dokumen
+                  {needsSurvey(selected) ? 'Isi Survei untuk Unduh' : 'Unduh Dokumen'}
                 </Button>
               )}
             </div>
@@ -318,14 +353,26 @@ export function DocumentArchive({ registrationId }) {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <a
-                  href={pdfUrl}
-                  download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`}
-                  className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-brand-700" />
-                  Unduh Salinan PDF
-                </a>
+                {/* Menyimpan salinan tetap melewati gerbang survei, meski pratinjaunya sudah terbuka. */}
+                {needsSurvey(selected) ? (
+                  <button
+                    type="button"
+                    onClick={guarded(selected, downloadOfficial(selected))}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 transition-colors hover:bg-brand-100 cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-brand-700" />
+                    Isi Survei untuk Unduh
+                  </button>
+                ) : (
+                  <a
+                    href={pdfUrl}
+                    download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`}
+                    className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Download className="w-3.5 h-3.5 text-brand-700" />
+                    Unduh Salinan PDF
+                  </a>
+                )}
                 <button
                   type="button"
                   onClick={() => setPdfUrl(null)}
@@ -343,6 +390,18 @@ export function DocumentArchive({ registrationId }) {
           </div>
         </div>
       )}
+
+      <PublisherSurveyDialog
+        registrationId={registrationId}
+        isOpen={!!surveyAction}
+        onClose={() => setSurveyAction(null)}
+        onCompleted={() => {
+          const lanjutkan = surveyAction;
+          setSurveyAction(null);
+          setSurveysPending([]);
+          lanjutkan?.();
+        }}
+      />
     </section>
   );
 }

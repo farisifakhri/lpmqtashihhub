@@ -1774,19 +1774,9 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
   return updated;
 };
 
-export const listRegistrations = async ({
-  user,
-  myTasks = false,
-  status,
-  search,
-  segment,
-  queueOnly = false,
-  page = 1,
-  limit = 10,
-}) => {
+// Cakupan permohonan yang boleh dilihat tiap peran; dipakai bersama oleh daftar permohonan dan badge sidebar.
+export const buildRegistrationScopeWhere = (user) => {
   const where = {};
-
-  // Scope filter berdasarkan Role
   const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
   if (publisherScope) {
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
@@ -1798,6 +1788,21 @@ export const listRegistrations = async ({
     else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
     else if (user.roles.includes('PENTASHIH')) where.assignments = { some: { assignee_id: user.id } };
   }
+  return where;
+};
+
+export const listRegistrations = async ({
+  user,
+  myTasks = false,
+  status,
+  search,
+  segment,
+  queueOnly = false,
+  page = 1,
+  limit = 10,
+}) => {
+  const where = buildRegistrationScopeWhere(user);
+  const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
 
   // Filter Tugas Saya (Assignment-based, bukan status)
   if (myTasks === 'true' || myTasks === true) {

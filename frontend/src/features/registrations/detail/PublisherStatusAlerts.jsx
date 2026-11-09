@@ -312,10 +312,10 @@ export function PublisherStatusAlerts({
             </div>
             <button
               type="button"
-              onClick={() => handleTabChange('dokumen')}
+              onClick={() => handleTabChange('dokumen', 'official')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
             >
-              Unduh Dokumen STT
+              Buka Dokumen STT
             </button>
           </div>
         </section>

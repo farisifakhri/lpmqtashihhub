@@ -766,10 +766,10 @@ export const DokumentatorArchivePage = () => {
                           <div key={file.id} className="p-2.5 border border-line rounded-lg flex items-center justify-between hover:bg-surface-subtle text-xs">
                             <div className="truncate pr-2">
                               <div className="font-medium text-ink truncate">
-                                {file.file_name || `Berkas ${file.file_type}`}
+                                {`Berkas ${file.type}`}
                               </div>
                               <div className="text-ink-muted text-[11px]">
-                                Tipe: {file.file_type} • {(file.file_size ? `${Math.round(file.file_size / 1024)} KB` : 'PDF')}
+                                Tipe: {file.type} • {(file.file_size ? `${Math.round(file.file_size / 1024)} KB` : 'PDF')}
                               </div>
                             </div>
                             <a

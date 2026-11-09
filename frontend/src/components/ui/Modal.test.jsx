@@ -65,5 +65,31 @@ describe('Modal Component', () => {
     unmount();
     expect(document.body.style.overflow).toBe('');
   });
+
+  it('tidak memindahkan fokus ke tombol Tutup saat pengguna mengetik dengan onClose inline', async () => {
+    vi.useFakeTimers();
+    const Form = () => {
+      const [name, setName] = useState('');
+      return (
+        // onClose inline = fungsi baru tiap render, seperti pemakaian umum di halaman.
+        <Modal isOpen onClose={() => setName('')} title="Buat Survei">
+          <input aria-label="Nama survei" value={name} onChange={(e) => setName(e.target.value)} />
+        </Modal>
+      );
+    };
+    render(<Form />);
+    vi.advanceTimersByTime(100); // fokus awal saat modal dibuka
+
+    const input = screen.getByLabelText('Nama survei');
+    input.focus();
+    fireEvent.change(input, { target: { value: 'S' } });
+    vi.advanceTimersByTime(100);
+    fireEvent.change(input, { target: { value: 'Su' } });
+    vi.advanceTimersByTime(100);
+
+    expect(document.activeElement).toBe(input);
+    expect(input).toHaveValue('Su');
+    vi.useRealTimers();
+  });
 });
 

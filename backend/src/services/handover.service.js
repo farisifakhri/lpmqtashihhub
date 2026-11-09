@@ -25,7 +25,7 @@ export const createHandover = (registrationId, data, user, req) =>
     if (!distributorId) fail(409, 'Distributor tim inti belum ditetapkan untuk pengajuan ini. Hubungi administrator.');
     if (!reg.core_team_number && !user.roles.includes('SUPERADMIN')) {
       const latestAssignment = await tx.verificationAssignment.findFirst({
-        where: { registration_id: reg.id }, orderBy: { created_at: 'desc' }, select: { verifier_id: true },
+        where: { registration_id: reg.id }, orderBy: { assigned_at: 'desc' }, select: { verifier_id: true },
       });
       if (latestAssignment?.verifier_id !== user.id) fail(403, 'Hanya verifikator yang ditugaskan pada pengajuan ini yang dapat menyerahkan master fisik.');
     }
@@ -386,11 +386,8 @@ export const getRegistrationHandovers = async (registrationId, user) => {
 /**
  * Antrean serah-terima fisik untuk Distributor dan Verifikator
  */
-export const listHandovers = async (query, user) => {
-  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
-
-  const { page, limit, skip } = queuePagination(query);
-
+// Filter antrean serah-terima fisik; dipakai bersama oleh daftar antrean dan badge sidebar.
+export const buildHandoverWhere = (query, user) => {
   const where = {};
   if (!user.roles.some(role => ['KEPALA_LPMQ', 'SUPERADMIN'].includes(role))) {
     if (user.roles.includes('DISTRIBUTOR')) where.to_user_id = user.id;
@@ -422,6 +419,14 @@ export const listHandovers = async (query, user) => {
       { registration: { publisher: { legal_name: { contains: query.search } } } },
     ];
   }
+  return where;
+};
+
+export const listHandovers = async (query, user) => {
+  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+
+  const { page, limit, skip } = queuePagination(query);
+  const where = buildHandoverWhere(query, user);
 
   const [total, items] = await Promise.all([
     prisma.physicalManuscriptHandover.count({ where }),

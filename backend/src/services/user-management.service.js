@@ -415,6 +415,7 @@ export const deleteUser = async (id, currentUser, req) => {
       core_roster_documenter: { select: { version: true } },
       publisher: {
         select: {
+          id: true, // wajib: tanpa ini deleteMany di bawah tidak terfilter dan menyasar SEMUA penerbit
           registrations: { select: { id: true }, take: 1 },
           documents: { select: { id: true }, take: 1 },
         },
@@ -582,7 +583,7 @@ export const requestPasswordResetForUser = async (id, currentUser, req) => {
     },
   });
 
-  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:5173';
+  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
   const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
 
   let sentEmail = false;

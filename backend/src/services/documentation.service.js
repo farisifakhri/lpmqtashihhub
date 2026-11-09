@@ -8,10 +8,10 @@ export async function getDocumentationDetail(id, user) {
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: {
-      publisher: { select: { id: true, legal_name: true, brand_name: true, email: true } },
+      publisher: { select: { id: true, legal_name: true, user: { select: { email: true } } } },
       service_type: { select: { id: true, name: true, duration_initial: true } },
       manuscript_files: {
-        select: { id: true, file_type: true, file_id: true, file_name: true, file_size: true, created_at: true },
+        select: { id: true, type: true, file_id: true, file_size: true, created_at: true },
         orderBy: { created_at: 'desc' },
       },
       physical_master_intake: true,
@@ -163,7 +163,7 @@ export async function getPrintingReports(id, user) {
   const reg = await prisma.registration.findUnique({
     where: { id },
     include: {
-      publisher: { select: { id: true, legal_name: true, brand_name: true, email: true, phone: true } },
+      publisher: { select: { id: true, legal_name: true, phone: true, user: { select: { email: true } } } },
       service_type: { select: { id: true, name: true, service_kind: true } },
       official_documents: {
         where: { document_type: 'SURAT_TANDA_TASHIH' },
@@ -297,33 +297,19 @@ export const createPrintingReport = (id, data, user, req) => prisma.$transaction
     where: { registration_id: id, item_type: 'PHYSICAL_EXEMPLAR_RECEIVED' },
   });
 
-  if (data.exemplar_sent) {
-    if (docItem) {
-      if (docItem.status !== 'RECEIVED') {
-        docItem = await tx.documentationItem.update({
-          where: { id: docItem.id },
-          data: {
-            status: 'PENDING',
-            notes: data.exemplar_tracking_no
-              ? 'Dilaporkan terkirim oleh penerbit dengan resi: ' + data.exemplar_tracking_no
-              : (docItem.notes || 'Dilaporkan siap / diserahkan oleh penerbit.'),
-          },
-        });
-      }
-    } else {
-      docItem = await tx.documentationItem.create({
-        data: {
-          registration_id: id,
-          item_type: 'PHYSICAL_EXEMPLAR_RECEIVED',
-          quantity_target: 5,
-          quantity_actual: 0,
-          status: 'PENDING',
-          notes: data.exemplar_tracking_no
-            ? 'Dilaporkan terkirim oleh penerbit dengan resi: ' + data.exemplar_tracking_no
-            : 'Dilaporkan siap / diserahkan oleh penerbit.',
-        },
-      });
-    }
+  // documentation_items tidak punya kolom notes; nomor resi sudah tersimpan di printing_reports.
+  if (data.exemplar_sent && docItem && docItem.status !== 'RECEIVED') {
+    docItem = await tx.documentationItem.update({ where: { id: docItem.id }, data: { status: 'PENDING' } });
+  } else if (data.exemplar_sent && !docItem) {
+    docItem = await tx.documentationItem.create({
+      data: {
+        registration_id: id,
+        item_type: 'PHYSICAL_EXEMPLAR_RECEIVED',
+        quantity_target: 5,
+        quantity_actual: 0,
+        status: 'PENDING',
+      },
+    });
   }
 
   const internalStaff = await tx.userRole.findMany({

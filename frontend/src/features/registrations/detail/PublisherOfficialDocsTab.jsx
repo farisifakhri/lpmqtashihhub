@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileText,
   Eye,
@@ -15,6 +15,8 @@ import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { PrintingReportSection } from './PrintingReportSection';
+import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
+import { showToast } from '@/components/ui/toast';
 
 export function PublisherOfficialDocsTab({
   data,
@@ -25,6 +27,11 @@ export function PublisherOfficialDocsTab({
     (d) => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED'
   );
   const isSttIssued = Boolean(issuedStt) || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+
+  // Backend menolak unduhan STT (409) selama survei belum terisi; tampilkan pop-up survei lalu ulangi unduhan.
+  const downloadStt = () => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)
+    .catch((err) => (err.status === 409 && /survei/i.test(err.message) ? setSurveyOpen(true) : showToast(err.message, 'danger')));
 
   const scrollToPrintingReport = () => {
     const el = document.getElementById('printing-report-section');
@@ -61,7 +68,7 @@ export function PublisherOfficialDocsTab({
               <Button
                 variant="primary"
                 size="md"
-                onClick={() => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)}
+                onClick={downloadStt}
                 className="font-bold shrink-0 shadow-xs flex items-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-brand-100" />
@@ -285,6 +292,13 @@ export function PublisherOfficialDocsTab({
           <PrintingReportSection registrationId={data.id} isPublisher={true} />
         </div>
       )}
+
+      <PublisherSurveyDialog
+        registrationId={data.id}
+        isOpen={surveyOpen}
+        onClose={() => setSurveyOpen(false)}
+        onCompleted={() => { setSurveyOpen(false); downloadStt(); }}
+      />
     </div>
   );
 }

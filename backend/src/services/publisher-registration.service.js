@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database.js';
+import { ENV } from '../config/env.js';
 import { fail, audit } from './workflow-utils.js';
 import { emailProvider } from './email-provider.service.js';
 import { renderPublisherCertificatePdf } from './publisher-certificate-pdf.service.js';
@@ -64,7 +65,7 @@ export function validateRequiredDocuments(jenisPenerbit, files = {}) {
  * Kirim email notifikasi untuk 4 peristiwa pendaftaran penerbit
  */
 export async function sendPublisherRegistrationEmail(event, { email, name, code, reason, revisionToken }) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const frontendUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
   let subject = '';
   let template = event;
   let payload = { email, name, code };

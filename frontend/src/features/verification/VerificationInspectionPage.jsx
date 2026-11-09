@@ -28,6 +28,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { showToast } from '@/components/ui/toast';
 import {
+  ArrowRight,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -89,6 +90,14 @@ const CHECKLIST_DEFINITIONS = [
     description: 'Pemeriksaan pedoman transliterasi Arab-Latin SKB Menteri Agama dan Mendikbud (bila memuat transliterasi).',
   },
 ];
+
+// Urutan langkah meja kerja untuk tombol "Lanjutkan" (issue log #10).
+const NEXT_WORKBENCH_STEP = {
+  naskah: { tab: 'checklist', label: 'Checklist' },
+  checklist: { tab: 'konten', label: 'Konten Mushaf' },
+  konten: { tab: 'kalkulator', label: 'Kalkulator Tarif & SLA' },
+  kalkulator: { tab: 'hasil', label: 'Hasil & Draf Surat' },
+};
 
 export const VerificationInspectionPage = () => {
   const { id } = useParams(); // assignmentId
@@ -159,7 +168,8 @@ export const VerificationInspectionPage = () => {
     }
 
     if (data.registration?.manuscript_files?.length > 0 && !selectedFileId) {
-      setSelectedFileId(data.registration.manuscript_files[0].id);
+      const [first] = [...data.registration.manuscript_files].sort((a, b) => (b.version || 1) - (a.version || 1));
+      setSelectedFileId(first.id);
     }
     if (data.registration?.physical_master_intake?.volume_count) {
       setHandoverVolumeCount(data.registration.physical_master_intake.volume_count);
@@ -189,9 +199,17 @@ export const VerificationInspectionPage = () => {
   }, [detail, currentUser]);
 
   const allFiles = useMemo(() => {
-    const list = [...(detail?.registration?.manuscript_files || [])];
+    const files = detail?.registration?.manuscript_files || [];
+    // Satu tab per jenis berkas, versi terbaru saja (issue log #4: v1 dan v2 tampil bersamaan).
+    const latestByType = new Map();
+    for (const f of files) {
+      const key = f.type || f.file_type || f.id;
+      const current = latestByType.get(key);
+      if (!current || (f.version || 1) > (current.version || 1)) latestByType.set(key, f);
+    }
+    const list = [...latestByType.values()];
     const meta = detail?.registration?.foreign_metadata || {};
-    const knownFileIds = new Set(list.map((f) => f.file_id || f.id));
+    const knownFileIds = new Set(files.map((f) => f.file_id || f.id));
 
     if (meta.surat_permohonan_file_id && !knownFileIds.has(meta.surat_permohonan_file_id)) {
       list.unshift({
@@ -716,6 +734,26 @@ export const VerificationInspectionPage = () => {
     return f.file_name || 'PDF Berkas';
   };
 
+  const renderNextStepButton = (from) => {
+    const next = NEXT_WORKBENCH_STEP[from];
+    return (
+      <div className="flex justify-end pt-2">
+        <Button
+          variant="primary"
+          className="text-xs"
+          onClick={() => {
+            setActiveWorkbenchTab(next.tab);
+            setActiveMobileTab(next.tab);
+            document.getElementById('inspection-workbench')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          Lanjutkan ke {next.label}
+          <ArrowRight className="w-4 h-4 ml-1.5" />
+        </Button>
+      </div>
+    );
+  };
+
   
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
@@ -1046,6 +1084,8 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
+      {/* Meja kerja bertumpuk: penampil naskah dan lembar pemeriksaan sama-sama lebar penuh. */}
+      <div data-testid="inspection-workstation" className="block space-y-6">
       {/* ========================================================
        * STACKED WORKSTATION (OPSI B):
        * 1. Studio Berkas & Naskah Digital (Full-Width di Atas)
@@ -1071,7 +1111,7 @@ export const VerificationInspectionPage = () => {
       </div>
 
       {/* 2. LEMBAR KERJA PEMERIKSAAN (FULL WIDTH DI BAWAH) */}
-      <div className={`${activeMobileTab !== 'naskah' ? 'block' : 'hidden lg:block'} w-full space-y-4`}>
+      <div id="inspection-workbench" className={`${activeMobileTab !== 'naskah' ? 'block' : 'hidden lg:block'} w-full space-y-4 scroll-mt-6`}>
         {/* Smart PNBP & SLA Summary Strip */}
         <div className="p-3 bg-gradient-to-r from-brand-50/80 via-white to-surface-subtle rounded-2xl border border-brand-100 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
           <div className="flex items-center gap-2.5">
@@ -1189,6 +1229,7 @@ export const VerificationInspectionPage = () => {
             definitions={CHECKLIST_DEFINITIONS}
             className="space-y-4"
           />
+          {renderNextStepButton('checklist')}
         </div>
 
         {/* TAB 2: AUDIT KONTEN MUSHAF */}
@@ -1202,11 +1243,13 @@ export const VerificationInspectionPage = () => {
             }}
             isReadOnly={isReadOnly}
           />
+          {renderNextStepButton('konten')}
         </div>
 
         {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN */}
         <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'} pb-28`}>
           <VerificationCalculatorTab registration={registration} />
+          {renderNextStepButton('kalkulator')}
         </div>
 
         {/* TAB 3: HASIL & DRAF SURAT */}
@@ -1293,6 +1336,7 @@ export const VerificationInspectionPage = () => {
             className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
           />
         </div>
+      </div>
       </div>
 
       <InspectionActionPanel
