@@ -41,7 +41,8 @@ model User {
   physical_handovers_received      PhysicalManuscriptHandover[]    @relation("PhysicalHandoverReceiver")
   team_memberships                 TeamMember[]
   teams_led                        DistributionTeam[]
-  assignments                      Assignment[]
+  assignments                      Assignment[]                    @relation("AssignmentAssignee")
+  assignments_revoked              Assignment[]                    @relation("AssignmentRevoker")
   document_signatories             DocumentSignatory[]
   verification_signatures          VerificationDocumentSignatory[] @relation("VerificationSignatures")
   notifications                    Notification[]
@@ -784,18 +785,23 @@ model Assignment {
   assignee_id     String
   stage           AssignmentStage // INITIAL, REVISION, DUMMY
   iteration       Int              @default(1)
-  due_at          DateTime?
-  status          AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
+  due_at            DateTime?
+  status            AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE, REVOKED
+  revocation_reason String?          @db.Text
+  revoked_at        DateTime?
+  revoked_by_id     String?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
 
   // Relations
   registration Registration      @relation(fields: [registration_id], references: [id], onDelete: Cascade)
   team         DistributionTeam? @relation(fields: [team_id], references: [id], onDelete: SetNull)
-  assignee     User              @relation(fields: [assignee_id], references: [id])
+  assignee     User              @relation("AssignmentAssignee", fields: [assignee_id], references: [id])
+  revoked_by   User?             @relation("AssignmentRevoker", fields: [revoked_by_id], references: [id])
   reviews      TashihReview[]
   juz_items    AssignmentJuz[]
 
+  @@index([revoked_by_id])
   @@map("assignments")
 }
 
@@ -1100,6 +1106,7 @@ enum AssignmentStatus {
   IN_PROGRESS
   COMPLETED
   OVERDUE
+  REVOKED
 }
 
 enum DocumentationStatus {
