@@ -541,17 +541,35 @@ export async function documentPdf(document, user = null, { forDownload = false }
 }
 
 export const requestSttFromAdmin = (id, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL']);
   const reg = await registration(tx, id);
-  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN')) {
+  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN') && !user.roles.includes('ADMIN_INTERNAL')) {
     fail(403, 'Hanya distributor tim inti yang dapat mengajukan STT.');
   }
 
-  await assertReadyForSttEligibility(tx, id);
+  if (reg.status !== 'READY_FOR_STT') {
+    await assertReadyForSttEligibility(tx, id);
+  }
 
   if (reg.status === 'TASHIH_IN_PROGRESS') {
     await move(tx, reg, 'READY_FOR_STT', user, 'Sidang pentashihan selesai, distributor mengajukan STT ke Admin', req);
   }
+
+  const meta = reg.foreign_metadata || {};
+  await tx.registration.update({
+    where: { id },
+    data: {
+      foreign_metadata: {
+        ...meta,
+        stt_request: {
+          requested_by_id: user.id,
+          requested_at: new Date().toISOString(),
+          status: 'REQUESTED',
+          notes: data?.notes || null,
+        },
+      },
+    },
+  });
 
   const admins = await tx.userRole.findMany({
     where: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } },
@@ -876,12 +894,13 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
   return updated;
 }, { isolationLevel: 'ReadCommitted' });
 
-export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
+export const signDocument = async (id, user, req) => {
   requireRole(user, ['KEPALA_LPMQ']);
-  const doc = await tx.officialDocument.findUnique({
-    where: { id },
-    include: { signatories: true, registration: true },
-  });
+  return prisma.$transaction(async tx => {
+    const doc = await tx.officialDocument.findUnique({
+      where: { id },
+      include: { signatories: true, registration: true },
+    });
   if (!doc) fail(404, 'Dokumen tidak ditemukan.');
   if (doc.document_type !== 'SURAT_TANDA_TASHIH') {
     fail(409, 'Dokumen belum dapat ditetapkan karena format resmi dan alur penandatanganan masih menunggu keputusan stakeholder. Dokumen tetap berstatus draf; hubungi pengelola layanan untuk informasi tindak lanjut.');
@@ -1006,3 +1025,4 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
   await audit(tx, user, 'SIGN_OFFICIAL_DOCUMENT', 'OfficialDocument', id, { document_no: officialDocNo, valid_until: validUntil }, req);
   return updatedDoc;
 }, { isolationLevel: 'ReadCommitted' });
+};

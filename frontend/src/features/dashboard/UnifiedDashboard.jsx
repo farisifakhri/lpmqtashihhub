@@ -790,6 +790,7 @@ export const UnifiedDashboard = () => {
                   <th className="py-3.5 px-6">Referensi & Tanggal</th>
                   <th className="py-3.5 px-6">Entitas & Naskah</th>
                   <th className="py-3.5 px-6">Profil Layanan</th>
+                  {!isPublisher && <th className="py-3.5 px-6">Penanggung Jawab</th>}
                   <th className="py-3.5 px-6">Status Sistem</th>
                   <th className="py-3.5 px-6 text-right">Aksi</th>
                 </tr>
@@ -825,6 +826,34 @@ export const UnifiedDashboard = () => {
                         {item.service_type?.category?.name || 'Mushaf Cetak'}
                       </span>
                     </td>
+                    {!isPublisher && (
+                      <td className="py-4 px-6 text-xs">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-1.5" title="Verifikator Berkas">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-brand-50 text-brand-900 border border-brand-200 shrink-0">
+                              Verifikator
+                            </span>
+                            <span className="font-semibold text-ink truncate max-w-[130px]">
+                              {item.assigned_verifier?.name || item.core_verifier?.name || item.verification_assignments?.[0]?.verifier?.name || (
+                                <span className="text-ink-muted italic font-normal">Belum ditugaskan</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5" title="Distributor Sidang">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-civic-infoSoft text-civic-info border border-civic-infoLine shrink-0">
+                              Distributor
+                            </span>
+                            <span className="font-semibold text-ink truncate max-w-[130px]">
+                              {item.core_distributor?.name || (
+                                item.core_team_number ? `Tim Inti #${item.core_team_number}` : (
+                                  <span className="text-ink-muted italic font-normal">Belum ditetapkan</span>
+                                )
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                    )}
                     <td className="py-4 px-6">
                       <StatusBadge registration={item} status={item.status} />
                       <div className="mt-2"><QueueItemMeta item={item} /></div>

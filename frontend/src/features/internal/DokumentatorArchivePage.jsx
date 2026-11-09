@@ -703,7 +703,7 @@ export const DokumentatorArchivePage = () => {
                   {detail.physical_intake && (
                     <div className="p-3 bg-surface-subtle border border-line rounded-lg text-xs space-y-1">
                       <div className="font-semibold text-ink flex items-center justify-between">
-                        <span>Penerimaan Master Fisik di Loket:</span>
+                        <span>Penerimaan Master Fisik:</span>
                         <span className="font-mono text-ink-muted">{detail.physical_intake.receipt_no}</span>
                       </div>
                       <div className="text-ink-muted flex flex-wrap gap-4">

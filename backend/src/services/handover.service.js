@@ -19,11 +19,12 @@ export const createHandover = (registrationId, data, user, req) =>
       });
       if (previousHandover?.status !== 'RETURNED') fail(409, 'BAST pengganti hanya dapat dibuat setelah master fisik dikembalikan distributor.');
     }
-    if (reg.core_team_number && user.id !== reg.core_verifier_id) fail(403, 'Hanya verifikator tim inti pengajuan ini yang dapat membuat BAST.');
-    if (reg.core_team_number && data.to_user_id && data.to_user_id !== reg.core_distributor_id) fail(400, 'BAST harus ditujukan kepada distributor tim inti pengajuan ini.');
+    const isSuperAdmin = user.roles.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+    if (reg.core_team_number && !isSuperAdmin && user.id !== reg.core_verifier_id) fail(403, 'Hanya verifikator tim inti pengajuan ini yang dapat membuat BAST.');
+    if (reg.core_team_number && !isSuperAdmin && data.to_user_id && data.to_user_id !== reg.core_distributor_id) fail(400, 'BAST harus ditujukan kepada distributor tim inti pengajuan ini.');
     const distributorId = reg.core_distributor_id || data.to_user_id;
     if (!distributorId) fail(409, 'Distributor tim inti belum ditetapkan untuk pengajuan ini. Hubungi administrator.');
-    if (!reg.core_team_number && !user.roles.includes('SUPERADMIN')) {
+    if (!reg.core_team_number && !isSuperAdmin) {
       const latestAssignment = await tx.verificationAssignment.findFirst({
         where: { registration_id: reg.id }, orderBy: { assigned_at: 'desc' }, select: { verifier_id: true },
       });
@@ -110,7 +111,7 @@ export const createHandover = (registrationId, data, user, req) =>
         type: 'HANDOVER_PENDING',
         title: 'Master Fisik Menunggu Konfirmasi Diterima',
         payload: {
-          message: `Master fisik mushaf untuk pengajuan ${reg.registration_no} telah diserahkan oleh Verifikator. Silakan periksa kelengkapan fisik di loket dan konfirmasi penerimaan.`,
+          message: `Master fisik mushaf untuk pengajuan ${reg.registration_no} telah diserahkan oleh Verifikator. Silakan periksa kelengkapan naskah fisik dan konfirmasi penerimaan.`,
         },
       },
     });
@@ -129,7 +130,7 @@ export const createHandover = (registrationId, data, user, req) =>
  */
 export const receiveHandover = (handoverId, data, user, req) =>
   prisma.$transaction(async (tx) => {
-    requireRole(user, ['DISTRIBUTOR']);
+    requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
 
     const handover = await tx.physicalManuscriptHandover.findUnique({
       where: { id: handoverId },
@@ -146,8 +147,9 @@ export const receiveHandover = (handoverId, data, user, req) =>
       );
     }
 
-    // Pastikan hak akses distributor penerima
-    if (handover.to_user_id !== user.id) {
+    // Pastikan hak akses distributor penerima (Super Admin berwenang melakukan intervensi/penerimaan)
+    const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+    if (handover.to_user_id !== user.id && !isSuperAdmin) {
       fail(403, 'Anda bukan petugas Distributor tujuan serah-terima ini.');
     }
 
@@ -241,7 +243,7 @@ export const receiveHandover = (handoverId, data, user, req) =>
  */
 export const returnHandover = (handoverId, data, user, req) =>
   prisma.$transaction(async (tx) => {
-    requireRole(user, ['DISTRIBUTOR']);
+    requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
 
     const handover = await tx.physicalManuscriptHandover.findUnique({
       where: { id: handoverId },
@@ -255,8 +257,9 @@ export const returnHandover = (handoverId, data, user, req) =>
       fail(409, 'Serah-terima master fisik ini sudah tidak dalam status menunggu konfirmasi.');
     }
 
-    // Pastikan hak akses distributor penerima
-    if (handover.to_user_id !== user.id) {
+    // Pastikan hak akses distributor penerima (Super Admin berwenang melakukan intervensi/penerimaan)
+    const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+    if (handover.to_user_id !== user.id && !isSuperAdmin) {
       fail(403, 'Anda bukan petugas Distributor tujuan serah-terima ini.');
     }
 
@@ -423,7 +426,7 @@ export const buildHandoverWhere = (query, user) => {
 };
 
 export const listHandovers = async (query, user) => {
-  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL']);
 
   const { page, limit, skip } = queuePagination(query);
   const where = buildHandoverWhere(query, user);

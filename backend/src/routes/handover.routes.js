@@ -42,7 +42,7 @@ router.get(
 router.get(
   '/physical-master/handovers',
   authenticate,
-  authorize('DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'),
+  authorize('DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(handoverQuerySchema),
   action((req) => handoverService.listHandovers(req.query, req.user))
 );
@@ -70,7 +70,7 @@ router.get('/physical-master/handovers/:id/pdf', authenticate, async (req, res, 
 router.post(
   '/physical-master/handovers/:id/receive',
   authenticate,
-  authorize('DISTRIBUTOR'),
+  authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(receiveHandoverSchema),
   action((req) => handoverService.receiveHandover(req.params.id, req.body, req.user, req))
 );
@@ -79,7 +79,7 @@ router.post(
 router.post(
   '/physical-master/handovers/:id/return',
   authenticate,
-  authorize('DISTRIBUTOR'),
+  authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(returnHandoverSchema),
   action((req) => handoverService.returnHandover(req.params.id, req.body, req.user, req))
 );
@@ -88,7 +88,7 @@ router.post(
 router.get(
   '/master/distributors',
   authenticate,
-  authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'),
+  authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   action(() => handoverService.listDistributors())
 );
 

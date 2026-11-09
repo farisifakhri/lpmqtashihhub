@@ -21,7 +21,7 @@ export function PublisherRegistrationCard({ registration }) {
   // Phase 1: Permohonan (DRAFT or SUBMITTED)
   const isPhase1Done = status !== 'DRAFT';
   
-  // Phase 2: Verifikasi & Loket
+  // Phase 2: Verifikasi & Penerimaan Naskah
   const isPhase2Done = [
     'AWAITING_PAYMENT',
     'PAYMENT_VERIFICATION',

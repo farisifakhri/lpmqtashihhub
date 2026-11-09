@@ -31,7 +31,7 @@ export const login = async ({ email, password, req }) => {
 
   // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
   if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
-    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi Sekretariat LPMQ.');
     error.statusCode = 403;
     error.code = 'PUBLISHER_NOT_APPROVED';
     error.data = {
@@ -42,7 +42,7 @@ export const login = async ({ email, password, req }) => {
 
   // Penerbit hanya dapat masuk jika profilnya secara eksplisit berstatus VERIFIED.
   if (roles.includes('PENERBIT') && user.publisher?.verification_status !== 'VERIFIED') {
-    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi loket LPMQ.');
+    const error = new Error('Akun penerbit Anda belum disetujui atau masih dalam proses verifikasi petugas. Silakan pantau status pendaftaran Anda secara mandiri atau hubungi Sekretariat LPMQ.');
     error.statusCode = 403;
     error.code = 'PUBLISHER_NOT_APPROVED';
     error.data = {

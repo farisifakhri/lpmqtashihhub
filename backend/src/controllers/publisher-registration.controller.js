@@ -117,6 +117,20 @@ export async function decideRegistration(req, res, next) {
   }
 }
 
+export async function resendRevisionToken(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await publisherRegistrationService.resendPublisherRegistrationRevisionToken(id, req.user, req);
+    return res.status(200).json({
+      success: true,
+      message: 'Token perbaikan baru berhasil diterbitkan dan dikirimkan ke email penerbit.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function getCertificate(req, res, next) {
   try {
     const { id } = req.params;

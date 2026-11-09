@@ -37,7 +37,7 @@ export function getWorkflowPhaseStatus(registration) {
   const activeLabel = status === 'REVISION_REQUIRED' && activeKey === 'TASHIH'
     ? 'Perlu Perbaikan Naskah Sidang'
     : status === 'READY_FOR_VERIFICATION' && registration?.physical_master_intake?.status !== 'RECEIVED' && registration?.physical_master?.status !== 'RECEIVED'
-      ? 'Menunggu master fisik diterima loket'
+      ? 'Menunggu master fisik diterima petugas'
       : TOKENS.registrationStatus[status]?.label || status;
 
   return WORKFLOW_PHASES.map((phase, index) => ({

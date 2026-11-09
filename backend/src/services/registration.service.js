@@ -1836,6 +1836,7 @@ export const listRegistrations = async ({
       { registration_no: { contains: search } },
       { title: { contains: search } },
       { publisher: { legal_name: { contains: search } } },
+      { verification_assignments: { some: { verifier: { name: { contains: search } } } } },
     ] }];
   }
 
@@ -1903,10 +1904,44 @@ export const listRegistrations = async ({
     publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { AND: where.AND } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
   ]);
 
+  const teamUserIds = [...new Set(
+    items.flatMap(item => [item.core_verifier_id, item.core_distributor_id, item.core_documenter_id]).filter(Boolean)
+  )];
+
+  const teamUsers = teamUserIds.length > 0 && prisma.user?.findMany
+    ? await prisma.user.findMany({
+        where: { id: { in: teamUserIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : [];
+  const teamUserMap = new Map(teamUsers.map(u => [u.id, u]));
+
+  const enrichedItems = items.map(item => {
+    const assignedVerifier = item.verification_assignments?.[0]?.verifier || teamUserMap.get(item.core_verifier_id) || null;
+    const coreDistributor = teamUserMap.get(item.core_distributor_id) || null;
+    const coreVerifier = teamUserMap.get(item.core_verifier_id) || null;
+    const coreDocumenter = teamUserMap.get(item.core_documenter_id) || null;
+
+    return {
+      ...item,
+      assigned_verifier: assignedVerifier,
+      core_verifier: coreVerifier,
+      core_distributor: coreDistributor,
+      core_documenter: coreDocumenter,
+      core_team: item.core_team_number ? {
+        teamNumber: item.core_team_number,
+        rotationVersion: item.core_team_version,
+        verifier: coreVerifier,
+        distributor: coreDistributor,
+        documenter: coreDocumenter,
+      } : null,
+    };
+  });
+
   return {
     items: queueItems(
       publisherScope
-        ? items.map(item => ({
+        ? enrichedItems.map(item => ({
             ...item,
             assignments: item.assignments?.map(a => ({
               id: a.id,
@@ -1916,7 +1951,7 @@ export const listRegistrations = async ({
               due_at: a.due_at,
             })) || [],
           }))
-        : items,
+        : enrichedItems,
       item => item.stage_entered_at,
       skip,
       fifo
@@ -2013,7 +2048,7 @@ export const getDetail = async (id, user) => {
 
   if (reg.core_team_number) {
     const members = await prisma.user.findMany({
-      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id] } },
+      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].filter(Boolean) } },
       select: { id: true, name: true },
     });
     const memberById = new Map(members.map(member => [member.id, member]));
@@ -2025,6 +2060,8 @@ export const getDetail = async (id, user) => {
       documenter: memberById.get(reg.core_documenter_id) || null,
     };
   }
+  reg.assigned_verifier = reg.verification_assignments?.[0]?.verifier || reg.core_team?.verifier || null;
+  reg.core_distributor = reg.core_team?.distributor || null;
 
   try { await assertManuscriptAccess(reg, user); }
   catch (error) {
