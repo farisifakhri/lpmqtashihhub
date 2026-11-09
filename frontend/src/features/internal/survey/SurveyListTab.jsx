@@ -70,15 +70,18 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
                 </ol>
               )}
             </QuestionnaireSection>
-            <p className="text-xs text-ink-muted">Bagian 4–6 ditanyakan sekali saja, di akhir survei terakhir yang diisi penerbit.</p>
+            <p className="text-xs text-ink-muted">Bagian 4–7 ditanyakan sekali saja, di akhir survei terakhir yang diisi penerbit.</p>
             <QuestionnaireSection title="4. Kepuasan Secara Keseluruhan (skala 1–5)">
               <p>{Object.values(SATISFACTION_LABELS).join(' · ')}</p>
             </QuestionnaireSection>
-            <QuestionnaireSection title="5. Pengukuran Perilaku Anti-Korupsi (skala 1–5: Sangat tidak setuju – Sangat setuju)">
+            <QuestionnaireSection title="5. Loyalitas (skala 1–10)">
+              <p>"Saya akan merekomendasikan layanan pada unit ini ke orang lain" — 1 Tidak merekomendasikan, 10 Sangat merekomendasikan.</p>
+            </QuestionnaireSection>
+            <QuestionnaireSection title="6. Pengukuran Perilaku Anti-Korupsi (skala 1–5: Sangat tidak setuju – Sangat setuju)">
               <ul className="list-disc pl-5 space-y-0.5">{Object.values(ANTI_CORRUPTION_STATEMENTS).map((s) => <li key={s.text}>{s.text}</li>)}</ul>
             </QuestionnaireSection>
-            <QuestionnaireSection title="6. Kritik dan Saran"><p>Isian bebas.</p></QuestionnaireSection>
-            <QuestionnaireSection title="7. Kalimat Penutup"><p>{CLOSING_TEXT}</p></QuestionnaireSection>
+            <QuestionnaireSection title="7. Kritik dan Saran"><p>Isian bebas.</p></QuestionnaireSection>
+            <QuestionnaireSection title="8. Kalimat Penutup"><p>{CLOSING_TEXT}</p></QuestionnaireSection>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onClose}>Tutup</Button>

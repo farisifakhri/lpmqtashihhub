@@ -83,12 +83,11 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat Survei IKM 2027' }));
     expect(await screen.findByRole('heading', { name: 'Detail Survei' })).toBeInTheDocument();
-    // Struktur mengikuti form yang benar-benar dilihat penerbit (tanpa loyalitas/NPS dan disabilitas).
-    for (const section of ['1. Kalimat Pembuka', '2. Data Responden (diisi sekali)', '4. Kepuasan Secara Keseluruhan (skala 1–5)', '7. Kalimat Penutup']) {
+    // Struktur mengikuti form yang benar-benar dilihat penerbit (tanpa disabilitas).
+    for (const section of ['1. Kalimat Pembuka', '2. Data Responden (diisi sekali)', '4. Kepuasan Secara Keseluruhan (skala 1–5)', '5. Loyalitas (skala 1–10)', '8. Kalimat Penutup']) {
       expect(await screen.findByText(section)).toBeInTheDocument();
     }
     expect(screen.getByText('Nama responden')).toBeInTheDocument();
-    expect(screen.queryByText(/Loyalitas/)).not.toBeInTheDocument();
     expect(screen.queryByText(/disabilitas/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Susun Pertanyaan/ }));
     expect(await screen.findByRole('heading', { name: 'Pemilihan Survei' })).toBeInTheDocument();
@@ -127,8 +126,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     expect(getReport).toHaveBeenCalledWith('s1');
     expect(screen.getByText('Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)')).toBeInTheDocument();
     expect(screen.getByText('Kepuasan secara keseluruhan (1–5)')).toBeInTheDocument();
-    // NPS (loyalitas 1–10) tidak lagi ditanyakan ke penerbit, jadi tidak ditampilkan di laporan.
-    expect(screen.queryByText(/Net Promoter Score/)).not.toBeInTheDocument();
+    expect(screen.getByText('1 promotor (9–10) · 0 pasif (7–8) · 1 detraktor (1–6)')).toBeInTheDocument();
     expect(screen.getByText('Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.')).toBeInTheDocument();
     expect(screen.getByText('Layanan cepat.')).toBeInTheDocument();
   });

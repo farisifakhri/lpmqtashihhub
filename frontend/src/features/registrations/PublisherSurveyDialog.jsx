@@ -14,7 +14,7 @@ const OCCUPATIONS = [['PNS', 'PNS'], ['TNI/POLRI', 'TNI/Polri'], ['SWASTA', 'Peg
 
 const emptyForm = () => ({
   answers: {}, essays: {}, respondent_name: '', gender: '', age: '', education: '', occupation: '',
-  overall_satisfaction: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
+  overall_satisfaction: '', nps_score: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
   feedback: '',
 });
 
@@ -86,7 +86,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
   }, [groups]);
   const questionNo = useMemo(() => new Map(groups.flatMap((g) => g.questions).map((q, i) => [q.id, i + 1])), [groups]);
   const [skipResponden] = useState(() => Boolean(respondent)); // diputuskan saat form dibuka
-  // Kepuasan dan anti-korupsi cukup ditanyakan sekali, di survei terakhir.
+  // Kepuasan, loyalitas, dan anti-korupsi cukup ditanyakan sekali, di survei terakhir.
   const [closing] = useState(withClosing);
   const steps = useMemo(() => [...(skipResponden ? [] : ['responden']), ...pages, ...(closing ? ['penilaian'] : [])], [pages, skipResponden, closing]);
   const [step, setStep] = useState(0);
@@ -112,7 +112,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
       .filter(([, v]) => !filled(v)).map(([label]) => label)
     : atPage
       ? (unansweredCount ? [`${unansweredCount} pertanyaan`] : [])
-      : [['Kepuasan keseluruhan', form.overall_satisfaction],
+      : [['Kepuasan keseluruhan', form.overall_satisfaction], ['Rekomendasi', form.nps_score],
         ...Object.keys(ANTI_CORRUPTION_STATEMENTS).map((key) => ['pernyataan anti-korupsi', form[key]]),
         ['Kritik dan saran', form.feedback]]
         .filter(([, v]) => !filled(v)).map(([label]) => label)
@@ -153,6 +153,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
       education: form.education || null,
       occupation: form.occupation || null,
       overall_satisfaction: num(form.overall_satisfaction),
+      nps_score: num(form.nps_score),
       ak_transparency: num(form.ak_transparency),
       ak_no_extortion: num(form.ak_no_extortion),
       ak_no_broker: num(form.ak_no_broker),
@@ -244,13 +245,19 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
       {atPenilaian && (
       <section className="space-y-4 rounded-xl border border-line bg-white p-4">
         <div className="space-y-0.5">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">Kepuasan dan anti-korupsi</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">Kepuasan, loyalitas, dan anti-korupsi</h3>
           <p className="text-xs text-ink-muted">Pertanyaan penutup, cukup sekali. Seberapa setuju Anda dengan pernyataan berikut?</p>
         </div>
         <div className="space-y-2">
           <p className="text-sm text-ink">Secara keseluruhan, seberapa puas Anda terhadap layanan pentashihan?</p>
           <ScaleRow name={`puas-${survey.id}`} value={form.overall_satisfaction} onChange={(v) => set({ overall_satisfaction: v })}
             options={Object.entries(SATISFACTION_LABELS).map(([v, l]) => [v, l])} scale />
+        </div>
+        <div className="space-y-2">
+          <p className="text-sm text-ink">Seberapa besar kemungkinan Anda merekomendasikan layanan ini?</p>
+          <ScaleRow name={`nps-${survey.id}`} value={form.nps_score} onChange={(v) => set({ nps_score: v })}
+            options={Array.from({ length: 10 }, (_, i) => [i + 1, String(i + 1)])} scale
+            hint="1 = tidak merekomendasikan, 10 = sangat merekomendasikan" />
         </div>
         {Object.entries(ANTI_CORRUPTION_STATEMENTS).map(([key, s]) => (
           <div key={key} className="space-y-2">

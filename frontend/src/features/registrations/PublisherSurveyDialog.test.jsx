@@ -72,7 +72,7 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
     await screen.findByText('Bagian 3 dari 3');
     screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
-    expect(screen.queryByText(/Kepuasan dan anti-korupsi/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Kepuasan, loyalitas, dan anti-korupsi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
 
     // Survei kedua (terakhir): langsung ke pertanyaan, jawaban kosong, lalu penilaian akhir.
@@ -81,7 +81,7 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     expect(screen.queryByLabelText('Nama responden')).not.toBeInTheDocument();
     expect(screen.getAllByRole('radio').every((r) => !r.checked)).toBe(true);
     expect(publisherSurveyApi.submit).toHaveBeenCalledWith('reg-1', 's1', expect.objectContaining({
-      respondent_name: 'Budi', age: 40, overall_satisfaction: null, feedback: null,
+      respondent_name: 'Budi', age: 40, overall_satisfaction: null, nps_score: null, feedback: null,
     }));
   });
 

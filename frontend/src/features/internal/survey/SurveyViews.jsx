@@ -325,6 +325,8 @@ export function ReportView({ surveyId }) {
       <div className="grid gap-3 md:grid-cols-2">
         <StatCard label="Kepuasan secara keseluruhan (1–5)" value={report.satisfaction.average}
           hint={report.satisfaction.average != null ? SATISFACTION_LABELS[Math.round(report.satisfaction.average)] : 'Belum ada data.'} />
+        <StatCard label="Loyalitas — Net Promoter Score (−100 s.d. 100)" value={report.nps.score}
+          hint={report.nps.respondents ? `${report.nps.promoters} promotor (9–10) · ${report.nps.passives} pasif (7–8) · ${report.nps.detractors} detraktor (1–6)` : 'Belum ada data.'} />
       </div>
 
       <section className="space-y-2">
@@ -390,7 +392,7 @@ export function ResponsesView({ surveyId }) {
             <tr>
               <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">No. Pendaftaran</th>
               <th className="p-3">JK</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
-              <th className="p-3">Kepuasan</th><th className="p-3" />
+              <th className="p-3">Kepuasan</th><th className="p-3">NPS</th><th className="p-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -401,7 +403,7 @@ export function ResponsesView({ surveyId }) {
                   <td className="p-3">{r.registration?.publisher?.legal_name || r.respondent_name || '-'}</td>
                   <td className="p-3 font-mono text-xs">{r.registration?.registration_no || '-'}</td>
                   <td className="p-3">{r.gender || '-'}</td><td className="p-3">{r.age ?? '-'}</td><td className="p-3">{r.education || '-'}</td><td className="p-3">{r.occupation || '-'}</td>
-                  <td className="p-3">{r.overall_satisfaction ?? '-'}</td>
+                  <td className="p-3">{r.overall_satisfaction ?? '-'}</td><td className="p-3">{r.nps_score ?? '-'}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
                       <Button size="sm" variant="ghost" onClick={() => setOpen(open === r.id ? null : r.id)}>{open === r.id ? 'Tutup' : 'Lihat jawaban'}</Button>
@@ -413,10 +415,11 @@ export function ResponsesView({ surveyId }) {
                   </td>
                 </tr>
                 {open === r.id && (
-                  <tr><td colSpan={9} className="bg-surface-subtle/50 p-3">
+                  <tr><td colSpan={10} className="bg-surface-subtle/50 p-3">
                     <div className="grid gap-4 md:grid-cols-2 text-xs">
                       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
                         <dt className="text-ink-muted">Kepuasan keseluruhan</dt><dd>{r.overall_satisfaction ? `${r.overall_satisfaction} — ${SATISFACTION_LABELS[r.overall_satisfaction]}` : '-'}</dd>
+                        <dt className="text-ink-muted">Loyalitas (1–10)</dt><dd>{r.nps_score ?? '-'}</dd>
                         {Object.entries(ANTI_CORRUPTION_STATEMENTS).map(([key, s]) => (
                           <React.Fragment key={key}><dt className="text-ink-muted">{s.text}</dt><dd>{r[key] ?? '-'}</dd></React.Fragment>
                         ))}
