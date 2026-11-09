@@ -73,7 +73,8 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     await screen.findByText('Bagian 3 dari 3');
     screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
     expect(screen.queryByText(/Kepuasan, loyalitas, dan anti-korupsi/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
+    expect(screen.queryByRole('button', { name: 'Kirim Survei' })).not.toBeInTheDocument(); // masih ada survei berikutnya
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan & Lanjut ke Survei Berikutnya' }));
 
     // Survei kedua (terakhir): langsung ke pertanyaan, jawaban kosong, lalu penilaian akhir.
     expect(await screen.findByText('Bagian 1 dari 3')).toBeInTheDocument(); // 2 halaman pertanyaan + penilaian

@@ -284,7 +284,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
             </p>
           )}
           <Button type="submit" disabled={saving || blocked}>
-            {saving ? 'Mengirim…' : isLast ? 'Kirim Survei' : 'Lanjut'}
+            {saving ? 'Menyimpan…' : !isLast ? 'Lanjut' : closing ? 'Kirim Survei' : 'Simpan & Lanjut ke Survei Berikutnya'}
           </Button>
         </div>
       </div>
