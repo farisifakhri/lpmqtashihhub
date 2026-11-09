@@ -220,7 +220,7 @@ export async function workload(id, user) {
 }
 
 export const revokeAssignment = (id, data, user, req = null) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN', 'DISTRIBUTOR']);
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const assignment = await tx.assignment.findUnique({
     where: { id },
     include: {
@@ -234,7 +234,7 @@ export const revokeAssignment = (id, data, user, req = null) => prisma.$transact
   const reg = assignment.registration;
   if (!reg) fail(404, 'Pengajuan naskah tidak ditemukan.');
 
-  if (reg.core_team_number && user.roles?.includes('DISTRIBUTOR') && !user.roles?.includes('SUPERADMIN') && !user.roles?.includes('ADMIN_INTERNAL')) {
+  if (reg.core_team_number && user.roles?.includes('DISTRIBUTOR') && !user.roles?.includes('SUPERADMIN')) {
     if (reg.core_distributor_id !== user.id) {
       fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mencabut penugasan pentashih.');
     }
@@ -558,7 +558,6 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   }
   const assignments = await tx.assignment.findMany({
     where: { registration_id: registrationId, iteration: last.iteration },
-    include: { reviews: true },
     include: { reviews: true, juz_items: true },
   });
 

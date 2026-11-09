@@ -129,7 +129,7 @@ export const reviewSchema = { params, body: z.object({
 export const revokePentashihAssignmentSchema = {
   params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
   body: z.object({
-    reason: z.string().trim().min(5, 'Alasan pelepasan/pencabutan penugasan wajib diisi (minimal 5 karakter).').max(2000),
+    reason: z.string().trim().min(10, 'Alasan pelepasan/pencabutan penugasan wajib diisi (minimal 10 karakter).').max(2000),
   }).strict(),
 };
 
