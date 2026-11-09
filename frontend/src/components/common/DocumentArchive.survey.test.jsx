@@ -35,7 +35,7 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
     render(<DocumentArchive registrationId="reg-1" />);
 
-    const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Membuka STT/ });
+    const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ });
     // Sebelum survei terisi, STT tidak bisa ditinjau dan nomornya pun tidak tampil.
     expect(screen.queryByRole('button', { name: /Lihat Dokumen PDF/ })).not.toBeInTheDocument();
     expect(screen.queryByText('STT/LPMQ/2026/001', { exact: false })).not.toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     });
     render(<DocumentArchive registrationId="reg-1" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka STT/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ }));
     await screen.findByRole('dialog');
 
     // Data responden kosong: Lanjut terkunci dan isian yang kurang disebutkan.
@@ -96,7 +96,7 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     const pertama = { ...survei, id: 's0', name: 'kepuasan langganan' };
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [pertama, survei] });
     render(<DocumentArchive registrationId="reg-1" />);
-    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka STT/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ }));
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('tab', { name: /kepuasan langganan/ })).toBeEnabled();

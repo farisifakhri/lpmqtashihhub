@@ -322,7 +322,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
       setSurveys(list);
       const sisa = list.filter((s) => !s.answered);
       if (!sisa.length) {
-        showToast('Terima kasih. Survei selesai, STT sedang diunduh.', 'success');
+        showToast('Terima kasih. Survei selesai, Surat Tanda Tashih sedang diunduh.', 'success');
         onCompleted?.();
         return;
       }
@@ -356,13 +356,13 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
               : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-civic-success" />}
             <div className="space-y-0.5">
               <p className="text-sm font-bold text-ink">
-                {belum ? 'Satu langkah lagi untuk membuka STT Anda' : 'Terima kasih, seluruh survei sudah terisi.'}
+                {belum ? 'Satu langkah lagi untuk membuka Surat Tanda Tashih Anda' : 'Terima kasih, seluruh survei sudah terisi.'}
               </p>
               {belum > 0 && (
                 <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-muted">
                   <span>{belum} survei singkat</span>
                   <span aria-hidden="true">·</span>
-                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />±{estimateMinutes(sisaPertanyaan)} menit</span>
+                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />sekitar {estimateMinutes(sisaPertanyaan)} menit</span>
                   <span aria-hidden="true">·</span>
                   <span>jawaban Anda membantu kami meningkatkan layanan.</span>
                 </p>
@@ -403,7 +403,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
               <div className="space-y-0.5">
                 <h3 className="text-base font-bold text-ink">{dipilih.name}</h3>
                 {dipilih.description && <p className="text-xs text-ink-muted">{dipilih.description}</p>}
-                <p className="text-xs text-ink-muted">{dipilih.items.length} pertanyaan · ±{estimateMinutes(dipilih.items.length)} menit</p>
+                <p className="text-xs text-ink-muted">{dipilih.items.length} pertanyaan · sekitar {estimateMinutes(dipilih.items.length)} menit</p>
               </div>
               {dipilih.answered ? (
                 <p className="flex items-center gap-2 rounded-xl border border-civic-successLine bg-civic-successSoft p-3 text-sm text-civic-success">

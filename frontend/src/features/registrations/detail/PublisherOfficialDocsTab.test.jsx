@@ -24,7 +24,7 @@ describe('PublisherOfficialDocsTab: banner STT terkunci survei', () => {
     const unduh = vi.spyOn(fileApi, 'downloadDocument');
     renderTab();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka STT/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ }));
     expect(screen.queryByText('STT/1')).not.toBeInTheDocument();
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(unduh).not.toHaveBeenCalled();
@@ -35,7 +35,7 @@ describe('PublisherOfficialDocsTab: banner STT terkunci survei', () => {
     vi.spyOn(fileApi, 'downloadDocument').mockResolvedValue();
     renderTab();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Unduh STT Resmi/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Unduh Surat Tanda Tashih Resmi/ }));
     expect(screen.getByText('STT/1')).toBeInTheDocument();
     expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/1.pdf');
   });
@@ -45,7 +45,7 @@ describe('PublisherOfficialDocsTab: banner STT terkunci survei', () => {
     vi.spyOn(fileApi, 'downloadDocument').mockRejectedValue(new ApiError('Isi survei kepuasan layanan terlebih dahulu sebelum mengunduh STT: X.', 409));
     renderTab();
 
-    fireEvent.click(await screen.findByRole('button', { name: /Unduh STT Resmi/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Unduh Surat Tanda Tashih Resmi/ }));
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 });

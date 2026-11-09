@@ -351,7 +351,7 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
     expect(await screen.findByText('042/LPMQ.01/TL.00/11/2026')).toBeInTheDocument();
 
     // Tombol unduh STT resmi
-    expect(screen.getByRole('button', { name: /Unduh STT Resmi \(PDF\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unduh Surat Tanda Tashih Resmi \(PDF\)/i })).toBeInTheDocument();
 
     // Peringatan kewajiban 5 eksemplar fisik
     expect(screen.getByText(/Kewajiban Pengiriman 5 Eksemplar Fisik \(Batas Waktu: 30 Hari Kalender\)/i)).toBeInTheDocument();

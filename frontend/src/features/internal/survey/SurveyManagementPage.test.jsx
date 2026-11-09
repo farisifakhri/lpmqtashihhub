@@ -124,7 +124,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
     expect((await screen.findAllByText('B · Baik')).length).toBe(2); // mutu keseluruhan + mutu per unsur
     expect(getReport).toHaveBeenCalledWith('s1');
-    expect(screen.getByText('Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)')).toBeInTheDocument();
+    expect(screen.getByText('Kategori Indeks Kepuasan Masyarakat (Pedoman PANRB Nomor 9 Tahun 2024 halaman 22)')).toBeInTheDocument();
     expect(screen.getByText('Kepuasan secara keseluruhan (1–5)')).toBeInTheDocument();
     expect(screen.getByText('1 promotor (9–10) · 0 pasif (7–8) · 1 detraktor (1–6)')).toBeInTheDocument();
     expect(screen.getByText('Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.')).toBeInTheDocument();

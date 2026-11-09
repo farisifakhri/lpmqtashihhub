@@ -250,7 +250,7 @@ export function RespondentsView({ surveyId }) {
       <div className="rounded-xl border border-line bg-white p-4">
         <p className="text-xs text-ink-muted">Total responden</p>
         <p className="text-2xl font-bold text-ink">{report.respondents}</p>
-        <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB No. 9/2024. Persentase dihitung per responden.</p>
+        <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB Nomor 9 Tahun 2024. Persentase dihitung per responden.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <DistributionCard title="Jenis kelamin" rows={d.gender} />
@@ -304,7 +304,7 @@ export function ReportView({ surveyId }) {
       </section>
 
       <section className="space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kategori Indeks Kepuasan Masyarakat (Pedoman PANRB Nomor 9 Tahun 2024 halaman 22)</h4>
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
@@ -319,7 +319,7 @@ export function ReportView({ surveyId }) {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-ink-muted">IKM = rata-rata nilai persepsi seluruh unsur terisi × 25 (nilai penimbang sama untuk setiap unsur).</p>
+        <p className="text-xs text-ink-muted">Indeks Kepuasan Masyarakat = rata-rata nilai persepsi seluruh unsur terisi × 25 (nilai penimbang sama untuk setiap unsur).</p>
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
@@ -390,9 +390,9 @@ export function ResponsesView({ surveyId }) {
         <table className="w-full text-sm">
           <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
-              <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">No. Pendaftaran</th>
-              <th className="p-3">JK</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
-              <th className="p-3">Kepuasan</th><th className="p-3">NPS</th><th className="p-3" />
+              <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">Nomor Pendaftaran</th>
+              <th className="p-3">Jenis kelamin</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
+              <th className="p-3">Kepuasan</th><th className="p-3">Rekomendasi (1–10)</th><th className="p-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-line">

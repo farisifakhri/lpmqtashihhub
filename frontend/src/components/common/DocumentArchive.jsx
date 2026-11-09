@@ -196,12 +196,12 @@ export function DocumentArchive({ registrationId }) {
       {loading && <p role="status" className="text-xs text-ink-muted">Memuat arsip dokumen…</p>}
       {error && <p role="alert" className="text-xs text-civic-danger font-medium p-3 bg-civic-dangerSoft rounded-lg border border-civic-dangerLine">{error}</p>}
       {!loading && lockedStt && (
-        <div className="rounded-xl border border-civic-successLine bg-civic-successSoft/40 p-5 text-center space-y-3" aria-label="STT terkunci survei">
+        <div className="rounded-xl border border-civic-successLine bg-civic-successSoft/40 p-5 text-center space-y-3" aria-label="Surat Tanda Tashih terkunci survei">
           <ShieldCheck className="w-10 h-10 mx-auto text-civic-success" />
           <div className="space-y-1">
             <p className="text-sm font-bold text-ink">Surat Tanda Tashih Anda sudah terbit</p>
             <p className="text-xs text-ink-muted max-w-md mx-auto">
-              Isi survei kepuasan layanan terlebih dahulu. Setelah seluruh survei terkirim, STT dapat Anda tinjau dan unduh.
+              Isi survei kepuasan layanan terlebih dahulu. Setelah seluruh survei terkirim, Surat Tanda Tashih dapat Anda tinjau dan unduh.
             </p>
           </div>
           <Button
@@ -211,7 +211,7 @@ export function DocumentArchive({ registrationId }) {
             className="text-xs font-bold"
             onClick={() => { setSelectedId(lockedStt.id); setSurveyAction(() => () => printPdf(lockedStt)); }}
           >
-            Isi Survei untuk Membuka STT
+            Isi Survei untuk Membuka Surat Tanda Tashih
           </Button>
         </div>
       )}
@@ -220,7 +220,7 @@ export function DocumentArchive({ registrationId }) {
           <FileText className="w-8 h-8 text-ink-muted/50 mx-auto" />
           <p className="text-xs font-semibold text-ink">Belum Ada Dokumen Resmi</p>
           <p className="text-xs text-ink-muted">
-            Dokumen resmi (Disposisi, Surat Hasil, Berita Acara, STT) akan muncul secara otomatis saat tahapan verifikasi dan pentashihan diproses.
+            Dokumen resmi (Disposisi, Surat Hasil, Berita Acara, Surat Tanda Tashih) akan muncul secara otomatis saat tahapan verifikasi dan pentashihan diproses.
           </p>
         </div>
       )}

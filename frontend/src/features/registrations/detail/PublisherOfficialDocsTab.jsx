@@ -83,7 +83,7 @@ export function PublisherOfficialDocsTab({
                 className="font-bold shrink-0 shadow-xs flex items-center gap-2"
               >
                 <ShieldCheck className="w-4 h-4 text-brand-100" />
-                <span>{surveyLocked ? 'Isi Survei untuk Membuka STT' : 'Unduh STT Resmi (PDF)'}</span>
+                <span>{surveyLocked ? 'Isi Survei untuk Membuka Surat Tanda Tashih' : 'Unduh Surat Tanda Tashih Resmi (PDF)'}</span>
               </Button>
             )}
           </div>
@@ -119,7 +119,7 @@ export function PublisherOfficialDocsTab({
                   Kewajiban Pengiriman 5 Eksemplar Fisik (Batas Waktu: 30 Hari Kalender)
                 </strong>
                 <span className="text-ink-muted text-[11px] block mt-0.5">
-                  Penerbit wajib mengirimkan 5 eksemplar cetak fisik hasil penerbitan dan mengisi pelaporan realisasi oplah ke LPMQ dalam waktu 30 hari kalender sejak STT terbit.
+                  Penerbit wajib mengirimkan 5 eksemplar cetak fisik hasil penerbitan dan mengisi pelaporan realisasi oplah ke LPMQ dalam waktu 30 hari kalender sejak Surat Tanda Tashih terbit.
                 </span>
               </div>
             </div>
