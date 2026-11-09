@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, distributorReviewSchema, outgoingDispatchSchema, documentSchema, calendarSchema, revokePentashihAssignmentSchema } from '../validators/workflow.validator.js';
+import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, distributorReviewSchema, outgoingDispatchSchema, documentSchema, calendarSchema, revokePentashihAssignmentSchema, submitToTuSchema, parafDocumentSchema } from '../validators/workflow.validator.js';
 import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
 import * as documentation from '../services/documentation.service.js';
@@ -47,9 +47,9 @@ router.post('/registrations/batch-remind-publishers', authenticate, authorize('A
 router.post('/registrations/:id/official-documents', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
 router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/send-to-distributor', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.sendDraftToDistributor(req.params.id, req.user, req)));
-router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
-router.post('/official-documents/:id/paraf-1', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ'), action(req => documents.parafDocument(req.params.id, 1, req.body, req.user, req)));
-router.post('/official-documents/:id/paraf-2', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ'), action(req => documents.parafDocument(req.params.id, 2, req.body, req.user, req)));
+router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(submitToTuSchema), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
+router.post('/official-documents/:id/paraf-1', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, 1, req.body, req.user, req)));
+router.post('/official-documents/:id/paraf-2', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, 2, req.body, req.user, req)));
 router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => documents.signDocument(req.params.id, req.user, req)));
 
 // Halaman Dokumentator & Pengarsipan Fisik (5 Eksemplar & Lokasi Arsip)

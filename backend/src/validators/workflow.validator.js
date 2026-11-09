@@ -184,6 +184,25 @@ export const myTasksQuerySchema = {
 
 
 
+export const submitToTuSchema = {
+  params,
+  body: z.object({
+    signer_1_id: z.string().uuid('ID Penandatangan Paraf 1 harus berupa UUID valid.').optional(),
+    signer_2_id: z.string().uuid('ID Penandatangan Paraf 2 harus berupa UUID valid.').optional(),
+    notes: z.string().trim().max(1000).optional(),
+  }).strict().refine(data => !data.signer_1_id || !data.signer_2_id || data.signer_1_id !== data.signer_2_id, {
+    message: 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.',
+    path: ['signer_2_id'],
+  }),
+};
+
+export const parafDocumentSchema = {
+  params,
+  body: z.object({
+    notes: z.string().trim().max(1000).optional(),
+  }).strict(),
+};
+
 export const printingReportSchema = {
   params,
   body: z.object({
