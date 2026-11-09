@@ -59,6 +59,7 @@ model User {
   information_guides_created       InformationGuide[]              @relation("InformationGuideCreatedBy")
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
+  distributor_comparisons          DistributorComparison[]
 
   @@map("users")
 }
@@ -442,6 +443,7 @@ model Registration {
   official_documents       OfficialDocument[]
   notifications            Notification[]
   publisher_revision_recaps PublisherRevisionRecap[]
+  distributor_comparisons   DistributorComparison[]
 
   @@index([status, stage_entered_at, id])
   @@index([core_verifier_id, status])
@@ -499,6 +501,23 @@ model PublisherRevisionRecap {
   @@unique([registration_id, round_number])
   @@index([recap_file_id])
   @@map("publisher_revision_recaps")
+}
+
+model DistributorComparison {
+  id              String       @id @default(uuid())
+  registration_id String
+  round_number    Int
+  distributor_id  String
+  notes           String       @db.Text
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  distributor     User         @relation(fields: [distributor_id], references: [id])
+
+  @@unique([registration_id, round_number])
+  @@index([distributor_id])
+  @@map("distributor_comparisons")
 }
 
 // -------------------------------------------------------------

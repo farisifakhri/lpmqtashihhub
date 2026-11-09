@@ -1,6 +1,6 @@
 import { prisma } from '../config/database.js';
 import { calculateDueAt } from './sla.service.js';
-import { fail, requireRole, registration, requireStatus, move, audit } from './workflow-utils.js';
+import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
@@ -14,31 +14,56 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   requireStatus(reg, ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);
   if (!await tx.paymentRecord.findFirst({ where: { registration_id: id, status: 'VERIFIED' } })) fail(409, 'Penugasan belum dapat dibuat karena pembayaran belum dinyatakan lunas. Minta verifikator memeriksa bukti pembayaran terlebih dahulu.');
   const previous = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
-  const lastRevLetter = await tx.officialDocument?.findFirst({
-    where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
-    orderBy: { created_at: 'desc' },
-  });
-  // B-16 Titik Kontrol (c): Penugasan naskah revisi memblokir bila berkas rekapitulasi penerbit belum diunggah
-  if (lastRevLetter) {
-    const requiredRound = lastRevLetter.content_snapshot?.revision_round || lastRevLetter.version || 1;
+  const roundInfo = await resolveTashihRound(tx, reg);
+
+  // B-16, B-17 & B-19a: Penugasan naskah revisi memblokir bila berkas rekapitulasi penerbit belum diunggah
+  if (roundInfo.isTashihRevision) {
     const recap = await tx.publisherRevisionRecap?.findUnique({
       where: {
         registration_id_round_number: {
           registration_id: id,
-          round_number: requiredRound,
+          round_number: roundInfo.roundNumber,
         },
       },
     });
     if (!recap) {
       fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
     }
+
+    // B-19a N4: Telaah pembanding distributor wajib pada penugasan awal ronde naskah masuk (sebelum didistribusikan ke pentashih)
+    const isInitialRoundAssignment = reg.status === 'WAITING_DISTRIBUTION' || !roundInfo.hasAssignmentsForRound;
+    if (isInitialRoundAssignment) {
+      if (!data.comparison_notes || data.comparison_notes.trim().length < 20) {
+        fail(400, 'Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) saat menugaskan naskah revisi/dumi masuk.');
+      }
+      if (tx.distributorComparison?.upsert) {
+        await tx.distributorComparison.upsert({
+          where: {
+            registration_id_round_number: {
+              registration_id: id,
+              round_number: roundInfo.roundNumber,
+            },
+          },
+          create: {
+            registration_id: id,
+            round_number: roundInfo.roundNumber,
+            distributor_id: user.id,
+            notes: data.comparison_notes.trim(),
+          },
+          update: {
+            distributor_id: user.id,
+            notes: data.comparison_notes.trim(),
+          },
+        });
+      }
+    }
   }
 
-  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
+  const isDummyRevision = roundInfo.lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
   const expectedStage = isDummyRevision
     ? 'DUMMY'
-    : previous
-    ? (data.stage === 'DUMMY' ? 'DUMMY' : (reg.status === 'TASHIH_IN_PROGRESS' ? (previous.stage || 'INITIAL') : 'REVISION'))
+    : (previous || roundInfo.isTashihRevision)
+    ? (data.stage === 'DUMMY' ? 'DUMMY' : (reg.status === 'TASHIH_IN_PROGRESS' ? (previous?.stage || 'INITIAL') : 'REVISION'))
     : reg.registration_type === 'EXTENSION'
     ? 'DUMMY'
     : 'INITIAL';
@@ -219,6 +244,12 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   }
   if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
     fail(400, 'Berkas rekapan yang diunggah tidak boleh berupa berkas kosong (0 byte).');
+  }
+  if (recapFile.owner_id && recapFile.owner_id !== user.id) {
+    fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
+  }
+  if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
+    fail(400, 'Format berkas rekapan tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
   }
 
   // B-15: Penentuan lingkup rekap (recap_scope: TEAM vs SELF)
@@ -425,13 +456,6 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
     : 0;
 
-  // B-17: Catatan telaah pembanding distributor wajib diisi untuk naskah revisi atau dumi
-  if (previousLetters > 0) {
-    if (!data.comparison_notes || data.comparison_notes.trim().length < 5) {
-      fail(400, 'Catatan telaah pembanding distributor wajib diisi (minimal 5 karakter) untuk naskah revisi/dumi.');
-    }
-  }
-
   // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
   const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
 
@@ -441,9 +465,10 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
 
   // Finalisasi status assignment pada iterasi ini saat distributor menyimpan keputusan (Item 6)
+  // B-19b guard: penugasan yang berstatus REVOKED tidak boleh ditimpa menjadi COMPLETED
   if (tx.assignment?.update) {
     for (const item of assignments) {
-      if (item.status !== 'COMPLETED') {
+      if (item.status !== 'COMPLETED' && item.status !== 'REVOKED') {
         await tx.assignment.update({ where: { id: item.id }, data: { status: 'COMPLETED' } });
       }
     }
@@ -511,7 +536,6 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
             revision_round: revisionRound,
             revision_kind: revisionKind,
             notes: data.notes,
-            comparison_notes: data.comparison_notes || null,
             distributor_name: user.name,
             created_at: new Date().toISOString(),
           },
@@ -524,7 +548,6 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     ...data,
     revision_round: revisionRound,
     revision_kind: revisionKind,
-    comparison_notes: data.comparison_notes || null,
   });
 
   if (status === 'REVISION_REQUIRED' && reg.publisher_id) {
