@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
-import { fail, registration as lockRegistration, audit, requireStatus, requireOwner } from './workflow-utils.js';
+import { fail, registration as lockRegistration, audit, requireStatus, requireOwner, resolveTashihRound } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
@@ -1156,14 +1156,10 @@ export const dispatchPhysical = async (id, data, user, req) => {
       fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
-    // B-16 & B-17 Titik Kontrol (a): Kewajiban unggah dokumen rekapitulasi revisi penerbit per ronde
-    if (reg.status === 'REVISION_REQUIRED') {
-      const lastRevLetter = await tx.officialDocument?.findFirst({
-        where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
-        orderBy: { created_at: 'desc' },
-      });
-      const roundNumber = lastRevLetter?.content_snapshot?.revision_round || lastRevLetter?.version || 1;
-      const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
+    // B-16, B-17 & B-19a: Kewajiban unggah dokumen rekapitulasi revisi penerbit HANYA untuk naskah hasil revisi tashih
+    const roundInfo = await resolveTashihRound(tx, reg);
+    if (reg.status === 'REVISION_REQUIRED' && roundInfo.isTashihRevision) {
+      const { roundNumber, revisionKind } = roundInfo;
 
       if (data.recap_file_id) {
         if (tx.storedFile?.findUnique) {
@@ -1176,8 +1172,11 @@ export const dispatchPhysical = async (id, data, user, req) => {
           if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
             fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
           }
-          if (recapFile.owner_id && recapFile.owner_id !== user.id && recapFile.owner_id !== reg.publisher_id) {
+          if (recapFile.owner_id && recapFile.owner_id !== user.id) {
             fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+          }
+          if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
+            fail(400, 'Format berkas rekapitulasi tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
           }
         }
 
@@ -1268,12 +1267,29 @@ export const uploadPublisherRevisionRecap = async (id, data, user, req) => {
   return prisma.$transaction(async (tx) => {
     const reg = await lockRegistration(tx, id);
     requireOwner(reg, user);
-    requireStatus(reg, ['REVISION_REQUIRED']);
+
+    // B-19a N1: Izinkan upload selama status REVISION_REQUIRED, WAITING_DISTRIBUTOR_RECEIPT, atau WAITING_DISTRIBUTION
+    requireStatus(reg, ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION']);
+
+    // B-19a N3: Guard asal revisi tashih
+    const roundInfo = await resolveTashihRound(tx, reg);
+    if (!roundInfo.isTashihRevision) {
+      fail(400, 'Pengunggahan rekapitulasi perbaikan hanya berlaku untuk naskah hasil revisi pentashihan.');
+    }
+    if (reg.status === 'REVISION_REQUIRED' && reg.revision_source !== 'TASHIH_REVISION') {
+      fail(400, 'Pengunggahan rekapitulasi perbaikan hanya berlaku untuk naskah hasil revisi pentashihan.');
+    }
+
+    // B-19a N1 Lock: Jika penugasan ronde ini sudah dibuat oleh Distributor, kunci unggahan
+    if (roundInfo.hasAssignmentsForRound) {
+      fail(409, 'Penugasan pentashih untuk ronde ini telah dibuat; berkas rekapitulasi perbaikan terkunci.');
+    }
 
     if (!data.recap_file_id) {
       fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah.');
     }
 
+    // B-19a N5: Validasi kepemilikan dan tipe berkas
     if (tx.storedFile?.findUnique) {
       const recapFile = await tx.storedFile.findUnique({
         where: { id: data.recap_file_id },
@@ -1284,17 +1300,15 @@ export const uploadPublisherRevisionRecap = async (id, data, user, req) => {
       if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
         fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
       }
-      if (recapFile.owner_id && recapFile.owner_id !== user.id && recapFile.owner_id !== reg.publisher_id) {
+      if (recapFile.owner_id && recapFile.owner_id !== user.id) {
         fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+      }
+      if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
+        fail(400, 'Format berkas rekapitulasi tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
       }
     }
 
-    const lastRevLetter = await tx.officialDocument?.findFirst({
-      where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' },
-      orderBy: { created_at: 'desc' },
-    });
-    const roundNumber = lastRevLetter?.content_snapshot?.revision_round || lastRevLetter?.version || 1;
-    const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'DUMMY' : 'CORRECTION';
+    const { roundNumber, revisionKind } = roundInfo;
 
     let recapRecord = null;
     if (tx.publisherRevisionRecap?.upsert) {
@@ -2032,8 +2046,13 @@ export const getDetail = async (id, user) => {
             })),
           };
         }
+        if (snap && snap.comparison_notes !== undefined) {
+          const { comparison_notes, ...restSnap } = snap;
+          snap = restSnap;
+        }
         return { ...doc, content_snapshot: snap };
       });
+    delete reg.distributor_comparisons;
     if (reg.verification_assignments) {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
         id: a.id,
