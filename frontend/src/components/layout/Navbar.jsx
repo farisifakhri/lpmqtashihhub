@@ -552,10 +552,12 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                           </button>
                         )}
 
-                        {/* Hanya penerbit bernomor induk yang punya sertifikat untuk diverifikasi. */}
-                        {currentUser?.publisher?.nomor_induk_penerbit && (
+                        {/* Penerbit membuka sertifikatnya sendiri; petugas internal membuka halaman pencarian nomor induk. */}
+                        {(currentUser?.publisher?.nomor_induk_penerbit || currentUser?.role !== 'PENERBIT') && (
                           <Link
-                            to={`/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}`}
+                            to={currentUser?.publisher?.nomor_induk_penerbit
+                              ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}`
+                              : '/verifikasi/sertifikat'}
                             onClick={() => setProfileDropdownOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
                           >

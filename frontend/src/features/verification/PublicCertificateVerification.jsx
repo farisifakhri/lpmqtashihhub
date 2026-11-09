@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useOptionalAuth } from '@/features/auth/AuthContext';
 import {
   ShieldCheck,
   ShieldX,
@@ -39,7 +40,15 @@ export const PublicCertificateVerification = () => {
 
   const formattedNomor = nomorInduk ? decodeURIComponent(nomorInduk) : '';
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentUser = useOptionalAuth()?.currentUser;
   const [cari, setCari] = useState('');
+  // Kembali ke halaman sebelumnya; bila dibuka langsung (scan QR), pengguna login ke dashboard, tamu ke beranda.
+  const goBack = () => {
+    if (location.key !== 'default') { navigate(-1); return; }
+    if (!currentUser) { navigate('/'); return; }
+    navigate(currentUser.role === 'PENERBIT' ? '/publisher' : '/internal');
+  };
   // Alamat QR mengikuti host aplikasi (localhost saat uji, domain resmi saat produksi).
   const verifyUrl = (nomor) => `${window.location.origin}/verifikasi/sertifikat/${encodeURIComponent(nomor)}`;
   const submitCari = (e) => {
@@ -86,7 +95,9 @@ export const PublicCertificateVerification = () => {
     if (formattedNomor) {
       verify();
     } else {
-      setResult({ valid: false, status: 'TIDAK_VALID' });
+      // Tanpa nomor: halaman pencarian saja (dibuka dari menu petugas).
+      setResult(null);
+      setFetchError(null);
       setLoading(false);
     }
   }, [formattedNomor]);
@@ -106,11 +117,9 @@ export const PublicCertificateVerification = () => {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Back navigation */}
         <div>
-          <Link to="/">
-            <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />}>
-              Kembali ke Portal LPMQ
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" icon={<ArrowLeft className="w-4 h-4" />} onClick={goBack}>
+            Kembali
+          </Button>
         </div>
 
         {/* Cek nomor induk lain tanpa mengetik URL */}
@@ -127,6 +136,17 @@ export const PublicCertificateVerification = () => {
             Cek
           </Button>
         </form>
+
+        {/* Tanpa nomor: petunjuk pencarian */}
+        {!loading && !formattedNomor && (
+          <div className="bg-white rounded-xl shadow-lg border border-line p-8 text-center space-y-2">
+            <ShieldCheck className="w-12 h-12 mx-auto text-brand-700" />
+            <h1 className="text-base font-bold text-ink">Verifikasi Sertifikat Penerbit</h1>
+            <p className="text-sm text-ink-muted max-w-md mx-auto">
+              Ketik nomor induk penerbit pada kolom di atas untuk memeriksa keaslian dan status sertifikatnya.
+            </p>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -480,13 +500,14 @@ export const PublicCertificateVerification = () => {
                 <FileText className="w-4 h-4" />
                 Laporkan ke LPMQ
               </a>
-              <Link
-                to="/"
+              <button
+                type="button"
+                onClick={goBack}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-line bg-surface text-ink font-semibold text-sm hover:bg-surface-subtle transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Kembali ke Beranda
-              </Link>
+                Kembali
+              </button>
             </div>
           </div>
         )}

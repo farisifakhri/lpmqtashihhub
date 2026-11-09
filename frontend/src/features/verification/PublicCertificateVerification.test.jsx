@@ -121,4 +121,31 @@ describe('PublicCertificateVerification (Verifikasi QR Publik Sertifikat Penerbi
     fireEvent.click(screen.getByRole('button', { name: /Cek/ }));
     await waitFor(() => expect(apiClient).toHaveBeenLastCalledWith('/public/verify-certificate/31.74.26.11.06.014'));
   });
+  it('tanpa nomor induk menampilkan halaman pencarian, bukan status palsu', async () => {
+    render(
+      <MemoryRouter initialEntries={['/verifikasi/sertifikat']}>
+        <Routes>
+          <Route path="/verifikasi/sertifikat" element={<PublicCertificateVerification />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    expect(await screen.findByText('Verifikasi Sertifikat Penerbit')).toBeInTheDocument();
+    expect(screen.queryByText(/TERINDIKASI TIDAK SAH/)).not.toBeInTheDocument();
+    expect(apiClient).not.toHaveBeenCalled();
+  });
+
+  it('tombol Kembali kembali ke halaman sebelumnya, bukan ke beranda', async () => {
+    apiClient.mockResolvedValue({ valid: false, status: 'TIDAK_TERDAFTAR' });
+    render(
+      <MemoryRouter initialEntries={['/internal/surveys', '/verifikasi/sertifikat/99.99.99.99.99.999']} initialIndex={1}>
+        <Routes>
+          <Route path="/internal/surveys" element={<p>Halaman sebelumnya</p>} />
+          <Route path="/verifikasi/sertifikat/:nomorInduk" element={<PublicCertificateVerification />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    await screen.findByText('SERTIFIKAT TIDAK TERDAFTAR');
+    fireEvent.click(screen.getAllByRole('button', { name: /Kembali/ })[0]);
+    expect(await screen.findByText('Halaman sebelumnya')).toBeInTheDocument();
+  });
 });
