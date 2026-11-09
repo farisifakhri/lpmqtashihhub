@@ -19,6 +19,7 @@ export const assignmentSchema = { params, body: z.object({
   reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
+  comparison_notes: z.string().trim().min(20, 'Catatan telaah pembanding minimal 20 karakter.').max(5000).optional(),
 }).strict().superRefine((data, ctx) => {
   if (!data.assignee_ids && !data.juz_assignments) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });
@@ -125,10 +126,16 @@ export const reviewSchema = { params, body: z.object({
   recap_scope: z.enum(['TEAM', 'SELF']).default('SELF'),
 }).strict() };
 
+export const revokePentashihAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
+  body: z.object({
+    reason: z.string().trim().min(5, 'Alasan pelepasan/pencabutan penugasan wajib diisi (minimal 5 karakter).').max(2000),
+  }).strict(),
+};
+
 export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
   notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
-  comparison_notes: z.string().trim().min(5, 'Catatan telaah pembanding minimal 5 karakter.').max(2000, 'Catatan telaah pembanding maksimal 2000 karakter.').optional(),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
   outgoing_courier: z.string().trim().max(100).optional(),
   outgoing_tracking_no: z.string().trim().max(100).optional(),
@@ -176,6 +183,25 @@ export const myTasksQuerySchema = {
 };
 
 
+
+export const submitToTuSchema = {
+  params,
+  body: z.object({
+    signer_1_id: z.string().uuid('ID Penandatangan Paraf 1 harus berupa UUID valid.').optional(),
+    signer_2_id: z.string().uuid('ID Penandatangan Paraf 2 harus berupa UUID valid.').optional(),
+    notes: z.string().trim().max(1000).optional(),
+  }).strict().refine(data => !data.signer_1_id || !data.signer_2_id || data.signer_1_id !== data.signer_2_id, {
+    message: 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.',
+    path: ['signer_2_id'],
+  }),
+};
+
+export const parafDocumentSchema = {
+  params,
+  body: z.object({
+    notes: z.string().trim().max(1000).optional(),
+  }).strict(),
+};
 
 export const printingReportSchema = {
   params,

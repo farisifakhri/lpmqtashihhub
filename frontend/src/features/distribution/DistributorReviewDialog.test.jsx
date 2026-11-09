@@ -57,13 +57,13 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-initial', expect.objectContaining({
         result: 'PASSED',
-        comparison_notes: undefined,
       }));
+      expect(approveSpy.mock.calls[0][1]).not.toHaveProperty('comparison_notes');
       expect(onSuccess).toHaveBeenCalled();
     });
   });
 
-  it('mewajibkan dan mengirimkan comparison_notes pada ronde revisi (previousRevLetters > 0)', async () => {
+  it('menyimpan keputusan distributor pada ronde revisi tanpa menyertakan comparison_notes (B-19a)', async () => {
     vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
       success: true,
       data: {
@@ -106,29 +106,21 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     render(<DistributorReviewDialog registrationId="reg-rev-2" onClose={onClose} onSuccess={onSuccess} />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Catatan Telaah Pembanding Distributor/i)).toBeInTheDocument();
-      expect(screen.getByText(/SRV-REG001-1/i)).toBeInTheDocument();
-      expect(screen.getByText(/Tersedia \(Ronde #1\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Reviu Hasil Sidang Pentashihan/i)).toBeInTheDocument();
     });
 
+    // Catatan pembanding tidak ada di dialog ini (dipindah ke penugasan masuk naskah B-19a)
+    expect(screen.queryByPlaceholderText(/Tuliskan analisis perbandingan/i)).not.toBeInTheDocument();
+
     const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
-
-    // Tombol submit dinonaktifkan jika catatan pembanding belum diisi (min 5 karakter)
-    expect(submitBtn).toBeDisabled();
-
-    // Isi catatan telaah pembanding
-    const comparisonInput = screen.getByPlaceholderText(/Tuliskan analisis perbandingan/i);
-    fireEvent.change(comparisonInput, { target: { value: 'Penerbit telah memperbaiki harakat fathah pada ayat 3 dengan tepat.' } });
-
-    // Tombol kini aktif
     expect(submitBtn).not.toBeDisabled();
     fireEvent.click(submitBtn);
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-rev-2', expect.objectContaining({
         result: 'PASSED',
-        comparison_notes: 'Penerbit telah memperbaiki harakat fathah pada ayat 3 dengan tepat.',
       }));
+      expect(approveSpy.mock.calls[0][1]).not.toHaveProperty('comparison_notes');
       expect(onSuccess).toHaveBeenCalled();
     });
   });

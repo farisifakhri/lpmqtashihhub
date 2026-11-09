@@ -1,10 +1,10 @@
 import React from 'react';
-import { ShieldCheck, RefreshCw, BookOpen, CheckCircle2, Clock, Check, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, RefreshCw, BookOpen, CheckCircle2, Clock, Check, AlertTriangle, UserX } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { getReviewProgress } from '../distribution-view-model';
 
-export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetchDistributionData, setReviewDialogRegId }) => (
+export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetchDistributionData, setReviewDialogRegId, onRevokePentashih }) => (
         <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -45,7 +45,7 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
           ) : (
             <div className="divide-y divide-line">
               {inProgressRegistrations.map((reg) => {
-                const { iteration: maxIter, currentAssignments, totalMembers, completedMembers, isReadyToReview } = getReviewProgress(reg);
+                const { iteration: maxIter, currentAssignments, totalMembers, completedMembers, hasRevoked, isReadyToReview } = getReviewProgress(reg);
 
                 return (
                   <div
@@ -69,6 +69,11 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                             <Clock className="w-3 h-3" /> Sidang Berjalan: {completedMembers} dari {totalMembers} Selesai
                           </span>
                         )}
+                        {hasRevoked && (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+                            <UserX className="w-3 h-3" /> Penugasan Dicabut
+                          </span>
+                        )}
                       </div>
 
                       <div>
@@ -90,19 +95,24 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                         {currentAssignments.map((a) => {
                           const rev = a.reviews?.[0];
                           const isDone = a.status === 'COMPLETED' && rev;
+                          const isRevoked = a.status === 'REVOKED';
                           return (
                             <span
                               key={a.id}
                               className={clsx(
                                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs',
-                                isDone
-                                  ? rev.result === 'PASSED'
-                                    ? 'bg-brand-50 text-brand-800 border border-brand-100 font-semibold'
-                                    : 'bg-civic-warningSoft text-civic-warning border border-civic-warningLine font-semibold'
-                                  : 'bg-surface-subtle text-ink-muted border border-line'
+                                isRevoked
+                                  ? 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
+                                  : isDone
+                                    ? rev.result === 'PASSED'
+                                      ? 'bg-brand-50 text-brand-800 border border-brand-100 font-semibold'
+                                      : 'bg-civic-warningSoft text-civic-warning border border-civic-warningLine font-semibold'
+                                    : 'bg-surface-subtle text-ink-muted border border-line'
                               )}
                             >
-                              {isDone ? (
+                              {isRevoked ? (
+                                <UserX className="w-3 h-3 text-civic-danger" />
+                              ) : isDone ? (
                                 rev.result === 'PASSED' ? (
                                   <Check className="w-3 h-3 text-brand-700" />
                                 ) : (
@@ -111,7 +121,28 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                               ) : (
                                 <Clock className="w-3 h-3 text-ink-muted" />
                               )}
-                              <span>{a.assignee?.name || 'Pentashih'}</span>
+                              <span className={isRevoked ? 'line-through opacity-75' : ''}>
+                                {a.assignee?.name || 'Pentashih'}
+                              </span>
+                              {isRevoked && (
+                                <span className="font-bold text-xs text-civic-danger ml-0.5">
+                                  (Dicabut)
+                                </span>
+                              )}
+                              {!isDone && !isRevoked && onRevokePentashih && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onRevokePentashih(a, reg);
+                                  }}
+                                  title={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
+                                  aria-label={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
+                                  className="ml-0.5 p-0.5 rounded text-ink-muted hover:text-civic-danger hover:bg-surface-subtle transition-colors"
+                                >
+                                  <UserX className="w-3 h-3" />
+                                </button>
+                              )}
                             </span>
                           );
                         })}

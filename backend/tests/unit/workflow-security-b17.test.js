@@ -23,6 +23,7 @@ test('B17-01: Upload rekap penerbit mandiri sukses walau status intake fisik sud
       findUnique: async () => ({
         id: regId,
         status: 'REVISION_REQUIRED',
+        revision_source: 'TASHIH_REVISION',
         publisher_id: 'pub-b17',
       }),
     },
@@ -36,8 +37,9 @@ test('B17-01: Upload rekap penerbit mandiri sukses walau status intake fisik sud
     storedFile: {
       findUnique: async () => ({
         id: 'file-recap-valid',
-        owner_id: 'pub-b17',
+        owner_id: 'usr-pub',
         file_size: 2048,
+        mime_type: 'application/pdf',
       }),
     },
     officialDocument: {
@@ -94,13 +96,14 @@ test('B17-02: Upload rekap menolak berkas 0-byte atau file yang tidak ada di Sto
       findUnique: async () => ({
         id: regId,
         status: 'REVISION_REQUIRED',
+        revision_source: 'TASHIH_REVISION',
         publisher_id: 'pub-b17',
       }),
     },
     storedFile: {
       findUnique: async ({ where }) => {
-        if (where.id === 'file-zero-byte') return { id: 'file-zero-byte', owner_id: 'pub-b17', file_size: 0 };
-        if (where.id === 'file-foreign-owner') return { id: 'file-foreign-owner', owner_id: 'other-pub', file_size: 1024 };
+        if (where.id === 'file-zero-byte') return { id: 'file-zero-byte', owner_id: 'usr-pub', file_size: 0, mime_type: 'application/pdf' };
+        if (where.id === 'file-foreign-owner') return { id: 'file-foreign-owner', owner_id: 'other-pub', file_size: 1024, mime_type: 'application/pdf' };
         return null;
       },
     },
@@ -283,7 +286,7 @@ test('B17-05: createDocument tidak membocorkan nama pentashih (assignee) dan rev
   assert.ok(snapshotAssignment.due_at);
 });
 
-test('B17-06: Distributor wajib menyertakan comparison_notes pada ronde perbaikan/dumi (previousLetters > 0)', async () => {
+test('B17-06 (Updated B-19a): approveDistribution tidak lagi menyimpan comparison_notes pada content_snapshot surat pengembalian', async () => {
   const regId = 'reg-b17-06';
   let createdRevLetterSnapshot = null;
 
@@ -337,26 +340,15 @@ test('B17-06: Distributor wajib menyertakan comparison_notes pada ronde perbaika
   prisma.$transaction = async (fn) => fn(mockTx);
   const distributorUser = { id: 'usr-dist', roles: ['DISTRIBUTOR'], name: 'Distributor 1' };
 
-  // 1. Ditolak jika comparison_notes kosong atau kurang dari 5 karakter
-  await assert.rejects(
-    approveDistribution(regId, {
-      result: 'REVISION_REQUIRED',
-      notes: 'Perbaikan putaran kedua masih belum sempurna',
-      comparison_notes: '',
-    }, distributorUser),
-    (err) => err.statusCode === 400 && /catatan telaah pembanding/i.test(err.message)
-  );
-
-  // 2. Berhasil jika comparison_notes disertakan
-  const comparisonText = 'Catatan telaah pembanding: Halaman 5 sudah diperbaiki, namun halaman 12 masih salah harakat fathah.';
+  // Berhasil tanpa comparison_notes
   await approveDistribution(regId, {
     result: 'REVISION_REQUIRED',
     notes: 'Perbaikan putaran kedua masih belum sempurna',
-    comparison_notes: comparisonText,
   }, distributorUser);
 
   assert.ok(createdRevLetterSnapshot);
-  assert.equal(createdRevLetterSnapshot.comparison_notes, comparisonText);
+  // Snapshot surat bersih dari comparison_notes (tidak bocor ke penerbit)
+  assert.equal(createdRevLetterSnapshot.comparison_notes, undefined);
 });
 
 test('B17-07: recordReview mengizinkan perbaikan review lama jika recap_file_id sebelumnya kosong', async () => {

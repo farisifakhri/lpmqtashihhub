@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders } from 'lucide-react';
+import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText } from 'lucide-react';
 import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
@@ -23,6 +23,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   const [groupRange, setGroupRange] = useState({ from: 1, to: 30 });
   const [groupFrom, setGroupFrom] = useState(1);
   const [groupTo, setGroupTo] = useState(30);
+  const [comparisonNotes, setComparisonNotes] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -213,9 +214,31 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
     }
   };
 
+  const isRevisionRound = useMemo(() => {
+    return Boolean(
+      stage === 'REVISION' ||
+      stage === 'DUMMY' ||
+      registration?.official_documents?.some(d => d.document_type === 'REVISION_RETURN_LETTER') ||
+      registration?.revision_source === 'TASHIH_REVISION'
+    );
+  }, [stage, registration]);
+
+  const isInitialRoundAssignment = Boolean(
+    isRevisionRound && (
+      registration?.status === 'WAITING_DISTRIBUTION' ||
+      !registration?.assignments?.some(a => a.stage === stage)
+    )
+  );
+
   const submit = async event => {
     event.preventDefault();
     if (!ready || !allSelectedHaveJuz || saving) return;
+    if (isInitialRoundAssignment) {
+      if (!comparisonNotes.trim() || comparisonNotes.trim().length < 20) {
+        setError('Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) untuk naskah revisi/dumi masuk.');
+        return;
+      }
+    }
     setSaving(true);
     setError('');
 
@@ -229,6 +252,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
           reassignment_reason: reassignmentReason,
           reassignment_notes: reassignmentNotes || undefined,
         } : {}),
+        ...(isInitialRoundAssignment && comparisonNotes.trim() ? { comparison_notes: comparisonNotes.trim() } : {}),
       };
 
       await registrationApi.createAssignments(id, payload);
@@ -697,6 +721,51 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
               )}
             </fieldset>
           </>
+        )}
+
+        {isInitialRoundAssignment && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 space-y-3">
+            <div className="flex items-center justify-between border-b border-brand-200/60 pb-2">
+              <label className="block text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-brand-700" />
+                Catatan Telaah Pembanding Naskah Masuk (Wajib Distributor)
+              </label>
+              <span className="text-[11px] font-bold text-brand-800 bg-brand-100 px-2 py-0.5 rounded border border-brand-200">
+                Wajib Diisi (Min. 20 Karakter)
+              </span>
+            </div>
+
+            <div className="p-2.5 rounded-lg bg-white border border-brand-200 text-xs flex items-center justify-between gap-2">
+              <span className="text-ink-muted font-semibold">Rekapitulasi Perbaikan dari Penerbit:</span>
+              {registration?.publisher_revision_recaps?.[0] ? (
+                <span className="text-brand-900 font-medium flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                  <span>Tersedia (Ronde #{registration.publisher_revision_recaps[0].round_number})</span>
+                </span>
+              ) : (
+                <span className="text-civic-warning font-medium italic">
+                  Belum ada berkas rekap dari penerbit
+                </span>
+              )}
+            </div>
+
+            <div>
+              <textarea
+                rows={3}
+                value={comparisonNotes}
+                maxLength={5000}
+                onChange={(e) => setComparisonNotes(e.target.value)}
+                placeholder="Tuliskan analisis perbandingan antara catatan koreksi ronde sebelumnya dengan perbaikan naskah yang baru diserahkan oleh penerbit... (minimal 20 karakter)"
+                className="w-full p-3 text-xs bg-white border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
+              />
+              <div className="flex items-center justify-between text-[11px] text-ink-muted mt-1">
+                <span>Catatan ini disimpan ke arsip internal distributor dan tidak dipublikasikan ke penerbit.</span>
+                <span className={comparisonNotes.trim().length >= 20 ? 'text-brand-700 font-bold' : 'text-civic-warning font-semibold'}>
+                  {comparisonNotes.length}/5000 karakter (min. 20)
+                </span>
+              </div>
+            </div>
+          </div>
         )}
 
         <p className="text-xs text-ink-muted">
