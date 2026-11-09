@@ -622,13 +622,13 @@ export const AdminMasterIntakePage = () => {
                       <div className="bg-white p-2 rounded-lg border border-line">
                         <span className="text-ink-muted block text-xs">Kurir / Pengantar:</span>
                         <strong className="text-ink font-semibold truncate block">
-                          {selectedReg.dispatch_courier || selectedReg.physical_master_intake?.delivery_method || 'Antar Langsung ke Loket LPMQ'}
+                          {selectedReg.dispatch_courier || selectedReg.physical_master_intake?.delivery_method || 'Antar Langsung ke Kantor LPMQ'}
                         </strong>
                       </div>
                       <div className="bg-white p-2 rounded-lg border border-line">
                         <span className="text-ink-muted block text-xs">Nomor Resi / Tanda Kirim:</span>
                         <strong className="text-ink font-mono font-semibold truncate block">
-                          {selectedReg.dispatch_tracking_no || selectedReg.physical_master_intake?.receipt_no || 'Tercatat di Loket TMII'}
+                          {selectedReg.dispatch_tracking_no || selectedReg.physical_master_intake?.receipt_no || 'Tercatat di Penerimaan Naskah LPMQ'}
                         </strong>
                       </div>
                     </div>
@@ -703,7 +703,7 @@ export const AdminMasterIntakePage = () => {
                     <h3 className="text-sm font-bold text-ink">
                       2. Verifikasi Fisik Aktual Admin Internal
                     </h3>
-                    <p className="text-xs text-ink-muted">Pemeriksaan kondisi fisik paket di loket LPMQ</p>
+                    <p className="text-xs text-ink-muted">Pemeriksaan kondisi fisik paket di Penerimaan Naskah LPMQ</p>
                   </div>
                 </div>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-brand-50 text-brand-900 border border-brand-200">
@@ -765,11 +765,11 @@ export const AdminMasterIntakePage = () => {
                         id="intake-tracking-number"
                         type="text"
                         disabled
-                        value={selectedReg.dispatch_tracking_no || selectedReg.physical_master_intake?.tracking_number || selectedReg.physical_master?.tracking_number || 'Tercatat di Loket LPMQ'}
+                        value={selectedReg.dispatch_tracking_no || selectedReg.physical_master_intake?.tracking_number || selectedReg.physical_master?.tracking_number || 'Tercatat di Penerimaan Naskah LPMQ'}
                         className="w-full p-2.5 rounded-xl border border-line bg-canvas font-mono text-ink text-xs font-semibold"
                       />
                       <span className="text-xs text-ink-muted block mt-1">
-                        Resi kurir penerbit atau pencatatan loket
+                        Resi kurir penerbit atau pencatatan penerimaan
                       </span>
                     </div>
                   </div>
@@ -813,7 +813,7 @@ export const AdminMasterIntakePage = () => {
                     </div>
                   </div>
 
-                  {/* Status & Waktu Penerimaan Loket */}
+                  {/* Status & Waktu Penerimaan Naskah */}
                   <div className="p-3 bg-surface-subtle/80 rounded-xl border border-line flex items-center justify-between text-xs">
                     <div>
                       <span className="text-ink-muted block text-xs">Tanggal Penerimaan Paket Fisik:</span>
@@ -822,7 +822,7 @@ export const AdminMasterIntakePage = () => {
                       </strong>
                     </div>
                     <div className="text-right">
-                      <span className="text-ink-muted block text-xs">Petugas Loket Intake:</span>
+                      <span className="text-ink-muted block text-xs">Petugas Penerima Naskah:</span>
                       <span className="text-brand-900 font-bold text-xs inline-flex items-center gap-1">
                         <UserCheck className="w-3.5 h-3.5 text-brand-700" />
                         {currentUser?.name || 'Petugas Admin Internal'}

@@ -220,7 +220,7 @@ export async function workload(id, user) {
 }
 
 export const revokeAssignment = (id, data, user, req = null) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN', 'DISTRIBUTOR']);
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const assignment = await tx.assignment.findUnique({
     where: { id },
     include: {
@@ -234,7 +234,7 @@ export const revokeAssignment = (id, data, user, req = null) => prisma.$transact
   const reg = assignment.registration;
   if (!reg) fail(404, 'Pengajuan naskah tidak ditemukan.');
 
-  if (reg.core_team_number && user.roles?.includes('DISTRIBUTOR') && !user.roles?.includes('SUPERADMIN') && !user.roles?.includes('ADMIN_INTERNAL')) {
+  if (reg.core_team_number && user.roles?.includes('DISTRIBUTOR') && !user.roles?.includes('SUPERADMIN')) {
     if (reg.core_distributor_id !== user.id) {
       fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mencabut penugasan pentashih.');
     }
@@ -302,13 +302,16 @@ export const revokeAssignment = (id, data, user, req = null) => prisma.$transact
 }, { isolationLevel: 'ReadCommitted' });
 
 export const recordReview = (id, data, user) => prisma.$transaction(async tx => {
-  requireRole(user, ['PENTASHIH']);
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (!isSuperAdmin) {
+    requireRole(user, ['PENTASHIH']);
+  }
   const initial = await tx.assignment.findUnique({ where: { id } });
   if (!initial) fail(404, 'Penugasan tidak ditemukan.');
   const reg = await registration(tx, initial.registration_id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS', 'REVISION_REQUIRED']);
   const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true, juz_items: true } });
-  if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
+  if (!isSuperAdmin && assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
   if (assignment.status === 'REVOKED') {
     fail(409, 'Penugasan pentashih ini telah dicabut sehingga tidak dapat lagi menerima atau mengubah hasil sidang.');
   }
@@ -330,7 +333,7 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
     fail(400, 'Berkas rekapan yang diunggah tidak boleh berupa berkas kosong (0 byte).');
   }
-  if (recapFile.owner_id && recapFile.owner_id !== user.id) {
+  if (!isSuperAdmin && recapFile.owner_id && recapFile.owner_id !== user.id) {
     fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
   }
   if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
@@ -558,7 +561,6 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   }
   const assignments = await tx.assignment.findMany({
     where: { registration_id: registrationId, iteration: last.iteration },
-    include: { reviews: true },
     include: { reviews: true, juz_items: true },
   });
 
@@ -572,7 +574,10 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
-  if (reg.core_team_number && reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mereviu hasil pentashih.');
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (reg.core_team_number && reg.core_distributor_id !== user.id && !isSuperAdmin) {
+    fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mereviu hasil pentashih.');
+  }
   const last = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true, juz_items: true } });

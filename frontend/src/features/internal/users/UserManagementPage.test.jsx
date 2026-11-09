@@ -80,5 +80,57 @@ describe('UserManagementPage Component', () => {
     expect(screen.getByText(/Pilih Semua Role \(Akses Penuh\)/i)).toBeInTheDocument();
     expect(screen.getAllByText('Helper Admin').length).toBeGreaterThanOrEqual(2);
   });
+
+  it('dapat melakukan pencarian, menampilkan ringkasan footer, dan mereset filter', async () => {
+    const listSpy = vi.spyOn(UserApiModule.userApi, 'listUsers');
+
+    render(
+      <MemoryRouter>
+        <UserManagementPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Ahmad Verifikator, S.Ag')).toBeInTheDocument();
+    });
+
+    // Cek ringkasan footer selalu muncul
+    expect(screen.getByText(/Menampilkan/i)).toBeInTheDocument();
+
+    // Input pencarian
+    const searchInput = screen.getByPlaceholderText(/Cari nama, email, atau NIP.../i);
+    fireEvent.change(searchInput, { target: { value: 'Ahmad' } });
+
+    // Submit form pencarian
+    const searchBtn = screen.getByRole('button', { name: 'Cari' });
+    fireEvent.click(searchBtn);
+
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          search: 'Ahmad',
+          page: 1,
+        })
+      );
+    });
+
+    // Indikator filter aktif dan info footer muncul
+    await waitFor(() => {
+      expect(screen.getByText(/Filter Aktif:/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/“Ahmad”/i).length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Reset filter
+    const resetBtn = screen.getByText('Reset Semua Filter');
+    fireEvent.click(resetBtn);
+
+    await waitFor(() => {
+      expect(listSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page: 1,
+        })
+      );
+    });
+  });
 });
 

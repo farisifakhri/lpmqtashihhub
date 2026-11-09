@@ -57,7 +57,7 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
 }, transactionOptions);
 
 export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['VERIFIKATOR']);
+  requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
   });
@@ -141,7 +141,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
 }, transactionOptions);
 
 export const submitVerificationDraft = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['VERIFIKATOR']);
+  requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
   });
@@ -1020,7 +1020,8 @@ export const sendVerificationResult = async (documentId, data, user, req) => {
   if (!['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI'].includes(doc.document_type)) {
     fail(400, 'Hanya dokumen Surat Hasil Verifikasi yang dapat dikirimkan kepada penerbit.');
   }
-  if (doc.assignment && doc.assignment.verifier_id !== user.id) {
+  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+  if (doc.assignment && doc.assignment.verifier_id !== user.id && !isSuperAdmin) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk mengirimkan surat hasil pengajuan ini.');
   }
   if (doc.status === 'SENT') {

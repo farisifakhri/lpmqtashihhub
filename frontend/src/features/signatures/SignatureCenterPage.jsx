@@ -224,8 +224,8 @@ export const SignatureCenterPage = () => {
 
         const sig1 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 1'));
         const sig2 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 2'));
-        const designated1 = sig1?.signer_user_id || tuWorkflow?.designated_signers?.paraf_1?.id;
-        const designated2 = sig2?.signer_user_id || tuWorkflow?.designated_signers?.paraf_2?.id;
+        const designated1 = tuWorkflow?.designated_signers ? tuWorkflow.designated_signers.paraf_1?.id : sig1?.signer_user_id;
+        const designated2 = tuWorkflow?.designated_signers ? tuWorkflow.designated_signers.paraf_2?.id : sig2?.signer_user_id;
 
         const isDesignated1 = !designated1 || designated1 === currentUser?.id || isSuperadmin;
         const isDesignated2 = !designated2 || designated2 === currentUser?.id || isSuperadmin;
@@ -233,8 +233,8 @@ export const SignatureCenterPage = () => {
         const isParafSigner = isParaf1Signer || tuWorkflow?.paraf_2?.signed_by?.id === currentUser?.id;
 
         const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted && isDesignated1;
-        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted && isDesignated2 && (!isParaf1Signer || isSuperadmin);
-        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted && (!isParafSigner || isSuperadmin);
+        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted && isDesignated2 && !isParaf1Signer;
+        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted && !isParafSigner;
         const canUserSign = canUserParaf1 || canUserParaf2 || canUserSignHead;
 
         const signatories = [

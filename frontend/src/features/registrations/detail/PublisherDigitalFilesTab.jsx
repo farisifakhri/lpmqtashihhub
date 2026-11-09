@@ -245,7 +245,7 @@ export function PublisherDigitalFilesTab({
                         <p className="text-xs text-ink-muted leading-relaxed">
                             Seluruh berkas naskah digital awal telah diterima
                             sistem LPMQ. Langkah berikutnya adalah menyerahkan
-                            master fisik naskah (30 jilid A4) ke loket LPMQ
+                            master fisik naskah (30 jilid A4) ke Kantor LPMQ
                             TMII.
                         </p>
                         <div className="pt-1">
