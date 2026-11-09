@@ -552,14 +552,17 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                           </button>
                         )}
 
-                        <Link
-                          to={currentUser?.publisher?.nomor_induk_penerbit ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}` : '/verifikasi/sertifikat/31.74.26.10.19.001'}
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
-                        >
-                          <QrCode className="w-4 h-4 text-brand-700" />
-                          <span>Verifikasi Sertifikat Penerbit (QR)</span>
-                        </Link>
+                        {/* Hanya penerbit bernomor induk yang punya sertifikat untuk diverifikasi. */}
+                        {currentUser?.publisher?.nomor_induk_penerbit && (
+                          <Link
+                            to={`/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}`}
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
+                          >
+                            <QrCode className="w-4 h-4 text-brand-700" />
+                            <span>Verifikasi Sertifikat Penerbit (QR)</span>
+                          </Link>
+                        )}
 
                         <button
                           type="button"

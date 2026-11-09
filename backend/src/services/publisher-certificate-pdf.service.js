@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { formatOfficialDocumentNumber } from './document-number.service.js';
+import { ENV } from '../config/env.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
@@ -209,7 +210,7 @@ export async function renderPublisherCertificatePdf(publisherData) {
   signY -= 12;
 
   // QR Code Keaslian Dokumen & Alamat URL
-  const qrPayload = 'https://tashih.kemenag.go.id/verifikasi/sertifikat/' + encodeURIComponent(nomorInduk);
+  const qrPayload = `${(ENV.PUBLIC_APP_URL || 'https://tashih.kemenag.go.id').replace(/\/$/, '')}/verifikasi/sertifikat/${encodeURIComponent(nomorInduk)}`;
   try {
     const qrDataUrl = await QRCode.toDataURL(qrPayload, {
       margin: 1,

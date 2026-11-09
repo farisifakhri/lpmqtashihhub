@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ShieldCheck,
   ShieldX,
@@ -14,6 +14,8 @@ import {
   ArrowLeft,
   RefreshCw,
   BadgeCheck,
+  Search,
+  Ban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import apiClient from '@/api/client';
@@ -36,6 +38,16 @@ export const PublicCertificateVerification = () => {
   const [fetchError, setFetchError] = useState(null);
 
   const formattedNomor = nomorInduk ? decodeURIComponent(nomorInduk) : '';
+  const navigate = useNavigate();
+  const [cari, setCari] = useState('');
+  // Alamat QR mengikuti host aplikasi (localhost saat uji, domain resmi saat produksi).
+  const verifyUrl = (nomor) => `${window.location.origin}/verifikasi/sertifikat/${encodeURIComponent(nomor)}`;
+  const submitCari = (e) => {
+    e.preventDefault();
+    const nomor = cari.trim();
+    if (nomor && nomor !== formattedNomor) navigate(`/verifikasi/sertifikat/${encodeURIComponent(nomor)}`);
+    setCari('');
+  };
 
   useEffect(() => {
     const verify = async () => {
@@ -51,8 +63,8 @@ export const PublicCertificateVerification = () => {
             nomor_induk_penerbit: '31.74.26.10.19.001',
             legal_name: 'PT Penerbit Al-Huda Nusantara',
             address: 'Jl. Raya Bogor No. 12, Jakarta Timur, DKI Jakarta',
-            npwp: '01.234.567.8-901.000',
-            nib: '1234567890123',
+            npwp: '01.2***********.000',
+            nib: '1234*****0123',
             decided_at: '2026-10-19T07:00:00.000Z',
             verification_status: 'VERIFIED',
           },
@@ -100,6 +112,21 @@ export const PublicCertificateVerification = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Cek nomor induk lain tanpa mengetik URL */}
+        <form onSubmit={submitCari} className="flex gap-2" role="search">
+          <label htmlFor="cari-nomor-induk" className="sr-only">Nomor induk penerbit</label>
+          <input
+            id="cari-nomor-induk"
+            value={cari}
+            onChange={(e) => setCari(e.target.value)}
+            placeholder="Cek nomor induk lain, mis. 31.74.26.11.06.014"
+            className="flex-1 rounded-lg border border-line-strong bg-white px-3 py-2 font-mono text-sm text-ink placeholder:font-sans placeholder:text-ink-muted focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
+          />
+          <Button type="submit" size="sm" icon={<Search className="w-4 h-4" />} disabled={!cari.trim()}>
+            Cek
+          </Button>
+        </form>
 
         {/* Loading State */}
         {loading && (
@@ -245,7 +272,7 @@ export const PublicCertificateVerification = () => {
               <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
                 <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
                 <span className="font-mono text-brand-fg font-semibold break-all text-[11px]">
-                  https://tashih.kemenag.go.id/verifikasi/sertifikat/{encodeURIComponent(result.data?.nomor_induk_penerbit || formattedNomor)}
+                  {verifyUrl(result.data?.nomor_induk_penerbit || formattedNomor)}
                 </span>
               </div>
 
@@ -324,7 +351,7 @@ export const PublicCertificateVerification = () => {
             <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
               <span className="font-mono text-civic-warning font-semibold break-all text-[11px]">
-                https://tashih.kemenag.go.id/verifikasi/sertifikat/{encodeURIComponent(formattedNomor)}
+                {verifyUrl(formattedNomor)}
               </span>
             </div>
 
@@ -340,8 +367,55 @@ export const PublicCertificateVerification = () => {
           </div>
         )}
 
+        {/* Status: TIDAK AKTIF (pendaftaran ditolak / akun penerbit dinonaktifkan) */}
+        {!loading && !fetchError && result?.valid === false && result?.status === 'TIDAK_AKTIF' && (
+          <div className="bg-surface rounded-xl shadow-lg border-2 border-civic-dangerLine p-8 sm:p-10 space-y-5">
+            <div className="text-center pb-5 border-b-2 border-ink">
+              <div className="w-14 h-14 mx-auto mb-2 text-civic-danger">
+                <Ban className="w-full h-full" />
+              </div>
+              <p className="text-xs tracking-widest uppercase font-bold text-ink-muted">
+                KEMENTERIAN AGAMA REPUBLIK INDONESIA
+              </p>
+              <h1 className="text-base font-bold text-brand-fg tracking-wide mt-1">
+                LAJNAH PENTASHIHAN MUSHAF AL-QUR'AN
+              </h1>
+            </div>
+
+            <div className="p-4 rounded-lg bg-civic-dangerSoft border border-civic-dangerLine flex items-center gap-3">
+              <XCircle className="w-6 h-6 text-civic-danger flex-shrink-0" />
+              <div>
+                <h2 className="text-sm font-bold text-civic-danger">SERTIFIKAT TIDAK AKTIF / DICABUT</h2>
+                <p className="text-xs text-civic-danger mt-0.5">
+                  Nomor induk ini pernah tercatat, tetapi status penerbitnya sudah tidak aktif di LPMQ
+                  Kementerian Agama RI. Sertifikat ini tidak berlaku.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center space-y-1">
+              <p className="font-mono text-base font-bold text-ink">{result.data?.nomor_induk_penerbit || formattedNomor}</p>
+              {result.data?.legal_name && <p className="text-sm text-ink-muted">{result.data.legal_name}</p>}
+            </div>
+
+            <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
+              <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
+              <span className="font-mono text-civic-danger font-semibold break-all text-[11px]">
+                {verifyUrl(formattedNomor)}
+              </span>
+            </div>
+
+            <p className="text-xs text-center text-ink-muted">
+              Untuk konfirmasi lebih lanjut, hubungi LPMQ Kemenag RI di{' '}
+              <a href="mailto:lajnah@kemenag.go.id" className="text-brand-fg hover:underline font-semibold">
+                lajnah@kemenag.go.id
+              </a>
+            </p>
+          </div>
+        )}
+
         {/* Status: TIDAK VALID / PALSU */}
-        {!loading && !fetchError && result?.valid === false && result?.status !== 'TIDAK_TERDAFTAR' && (
+        {!loading && !fetchError && result?.valid === false && !['TIDAK_TERDAFTAR', 'TIDAK_AKTIF'].includes(result?.status) && (
           <div className="bg-surface rounded-xl shadow-lg border-2 border-civic-dangerLine p-8 sm:p-10 space-y-5">
             {/* Kop Lembaga */}
             <div className="text-center pb-5 border-b-2 border-ink">
@@ -394,7 +468,7 @@ export const PublicCertificateVerification = () => {
             <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
               <span className="font-mono text-civic-danger font-semibold break-all text-[11px]">
-                https://tashih.kemenag.go.id/verifikasi/sertifikat/{encodeURIComponent(formattedNomor)}
+                {verifyUrl(formattedNomor)}
               </span>
             </div>
 
