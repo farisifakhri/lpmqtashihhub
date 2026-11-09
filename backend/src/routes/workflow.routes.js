@@ -48,7 +48,7 @@ router.post('/registrations/batch-remind-publishers', authenticate, authorize('A
 
 // Alur Penerbitan STT & Dokumen Resmi
 router.post('/registrations/:id/official-documents', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN'), validate(documentSchema), action(req => documents.createDocument(req.params.id, req.body, req.user), 201));
-router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
+router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/send-to-distributor', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.sendDraftToDistributor(req.params.id, req.user, req)));
 router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(submitToTuSchema), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/paraf-1', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, 1, req.body, req.user, req)));

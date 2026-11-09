@@ -212,7 +212,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                 <p className="font-bold text-xs">Rekomendasi Tim Inti {registration.core_team_number}</p>
                 <p className="text-[11px] text-brand-800">
                   {selectedVerifier?.name ? `Petugas terpilih otomatis: ${selectedVerifier.name}. ` : ''}
-                  Anda dapat mengganti verifikator dari daftar di bawah jika diperlukan.
+                  Sesuai regulasi rotasi Tim Inti LPMQ, verifikator telah ditetapkan secara otomatis untuk naskah ini.
                 </p>
               </div>
             </div>

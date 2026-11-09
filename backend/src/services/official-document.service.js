@@ -541,17 +541,35 @@ export async function documentPdf(document, user = null, { forDownload = false }
 }
 
 export const requestSttFromAdmin = (id, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL']);
   const reg = await registration(tx, id);
-  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN')) {
+  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN') && !user.roles.includes('ADMIN_INTERNAL')) {
     fail(403, 'Hanya distributor tim inti yang dapat mengajukan STT.');
   }
 
-  await assertReadyForSttEligibility(tx, id);
+  if (reg.status !== 'READY_FOR_STT') {
+    await assertReadyForSttEligibility(tx, id);
+  }
 
   if (reg.status === 'TASHIH_IN_PROGRESS') {
     await move(tx, reg, 'READY_FOR_STT', user, 'Sidang pentashihan selesai, distributor mengajukan STT ke Admin', req);
   }
+
+  const meta = reg.foreign_metadata || {};
+  await tx.registration.update({
+    where: { id },
+    data: {
+      foreign_metadata: {
+        ...meta,
+        stt_request: {
+          requested_by_id: user.id,
+          requested_at: new Date().toISOString(),
+          status: 'REQUESTED',
+          notes: data?.notes || null,
+        },
+      },
+    },
+  });
 
   const admins = await tx.userRole.findMany({
     where: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } },

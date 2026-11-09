@@ -423,7 +423,7 @@ export const buildHandoverWhere = (query, user) => {
 };
 
 export const listHandovers = async (query, user) => {
-  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL']);
 
   const { page, limit, skip } = queuePagination(query);
   const where = buildHandoverWhere(query, user);

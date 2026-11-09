@@ -42,7 +42,7 @@ router.get(
 router.get(
   '/physical-master/handovers',
   authenticate,
-  authorize('DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'),
+  authorize('DISTRIBUTOR', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   validate(handoverQuerySchema),
   action((req) => handoverService.listHandovers(req.query, req.user))
 );
@@ -88,7 +88,7 @@ router.post(
 router.get(
   '/master/distributors',
   authenticate,
-  authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'),
+  authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN', 'ADMIN_INTERNAL'),
   action(() => handoverService.listDistributors())
 );
 
