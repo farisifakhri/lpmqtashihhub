@@ -39,7 +39,19 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     expect(screen.getByText('Unsur 1')).toBeInTheDocument();
   });
 
-  it('pindah ke survei berikutnya mulai dari form kosong, bukan isian survei sebelumnya', async () => {
+  it('setelah refresh, data responden dari survei yang sudah diisi dipakai ulang: langsung ke pertanyaan', async () => {
+    const respondent = { respondent_name: 'Budi', gender: 'L', age: 40, education: 'S1', occupation: 'SWASTA' };
+    const kedua = { ...survei, id: 's2', name: 'Survei Kedua' };
+    vi.spyOn(publisherSurveyApi, 'listForRegistration')
+      .mockResolvedValue({ data: [{ ...survei, answered: true, answered_at: '2026-11-09T07:00:00.000Z', respondent }, kedua] });
+    render(<PublisherSurveyDialog registrationId="reg-1" isOpen onClose={() => {}} />);
+
+    expect(await screen.findByText('Bagian 1 dari 3')).toBeInTheDocument(); // 2 halaman pertanyaan + penilaian
+    expect(screen.getByText('Pertanyaan 1?')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Nama responden')).not.toBeInTheDocument();
+  });
+
+  it('pindah ke survei berikutnya: responden tidak ditanya ulang, jawaban survei lama tidak ikut', async () => {
     const kedua = { ...survei, id: 's2', name: 'Survei Kedua' };
     vi.spyOn(publisherSurveyApi, 'listForRegistration')
       .mockResolvedValueOnce({ data: [survei, kedua] })
@@ -57,10 +69,12 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Baik.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
 
-    // Survei kedua terbuka dari awal dengan form kosong.
-    expect(await screen.findByText('Bagian 1 dari 4')).toBeInTheDocument();
+    // Survei kedua langsung ke pertanyaan (responden dipakai ulang), dengan jawaban kosong.
+    expect(await screen.findByText('Bagian 1 dari 3')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /Survei Kedua/ })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByLabelText('Nama responden')).toHaveValue('');
+    expect(screen.queryByLabelText('Nama responden')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('radio').every((r) => !r.checked)).toBe(true);
+    expect(publisherSurveyApi.submit).toHaveBeenCalledWith('reg-1', 's1', expect.objectContaining({ respondent_name: 'Budi', age: 40 }));
   });
 
   it('pilihan jawaban urut dari nilai terendah, paling positif di kanan', async () => {

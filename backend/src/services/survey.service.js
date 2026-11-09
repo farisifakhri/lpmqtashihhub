@@ -480,15 +480,23 @@ export async function listSurveysForRegistration(registrationId) {
     orderBy: [{ sort_order: 'asc' }, { created_at: 'asc' }],
     include: {
       ...surveyDetailInclude,
-      responses: { where: { registration_id: registrationId }, select: { id: true, submitted_at: true } },
+      responses: {
+        where: { registration_id: registrationId },
+        select: { id: true, submitted_at: true, respondent_name: true, gender: true, age: true, education: true, occupation: true },
+      },
     },
   });
-  return surveys.map((s) => ({
-    ...present(s),
-    answered: s.responses.length > 0,
-    answered_at: s.responses[0]?.submitted_at || null,
-    responses: undefined,
-  }));
+  return surveys.map((s) => {
+    const r = s.responses[0];
+    return {
+      ...present(s),
+      answered: s.responses.length > 0,
+      answered_at: r?.submitted_at || null,
+      // Data responden survei yang sudah diisi dipakai ulang di survei berikutnya (cukup diisi sekali).
+      respondent: r ? { respondent_name: r.respondent_name, gender: r.gender, age: r.age, education: r.education, occupation: r.occupation } : null,
+      responses: undefined,
+    };
+  });
 }
 
 // Dipakai gerbang cetak STT: daftar nama survei yang belum diisi penerbit.

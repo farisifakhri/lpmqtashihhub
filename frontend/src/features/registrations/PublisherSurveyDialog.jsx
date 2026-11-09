@@ -50,8 +50,16 @@ function ScaleRow({ name, value, onChange, options, hint }) {
   );
 }
 
-function SurveyForm({ survey, onSubmit, saving }) {
-  const [form, setForm] = useState(emptyForm);
+// Data responden yang lengkap dari survei sebelumnya; null bila belum ada.
+const RESPONDENT_FIELDS = ['respondent_name', 'gender', 'age', 'education', 'occupation'];
+const completeRespondent = (r) => (r && RESPONDENT_FIELDS.every((k) => String(r[k] ?? '').trim() !== '') ? r : null);
+
+function SurveyForm({ survey, onSubmit, saving, respondent }) {
+  // Responden sudah diisi di survei sebelumnya: pakai ulang dan lewati bagian Data Responden.
+  const [form, setForm] = useState(() => ({
+    ...emptyForm(),
+    ...(respondent ? Object.fromEntries(RESPONDENT_FIELDS.map((k) => [k, String(respondent[k])])) : {}),
+  }));
   const groups = useMemo(() => groupByUnsur(survey.items), [survey.items]);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
   // Unsur digabung per halaman (±4 pertanyaan): satu unsur satu layar terlalu banyak klik,
@@ -69,7 +77,8 @@ function SurveyForm({ survey, onSubmit, saving }) {
     return result;
   }, [groups]);
   const questionNo = useMemo(() => new Map(groups.flatMap((g) => g.questions).map((q, i) => [q.id, i + 1])), [groups]);
-  const steps = useMemo(() => ['responden', ...pages, 'penilaian'], [pages]);
+  const [skipResponden] = useState(() => Boolean(respondent)); // diputuskan saat form dibuka
+  const steps = useMemo(() => [...(skipResponden ? [] : ['responden']), ...pages, 'penilaian'], [pages, skipResponden]);
   const [step, setStep] = useState(0);
   const formRef = useRef(null);
   // Pindah bagian: mulai dari atas lagi, bukan dari posisi gulungan bagian sebelumnya.
@@ -78,14 +87,15 @@ function SurveyForm({ survey, onSubmit, saving }) {
     while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
     el?.scrollTo?.({ top: 0 });
   }, [step]);
-  const atPage = step > 0 && step < steps.length - 1 ? pages[step - 1] : null;
+  const atResponden = steps[step] === 'responden';
+  const atPage = Array.isArray(steps[step]) ? steps[step] : null;
   const isLast = step === steps.length - 1;
 
   // Seluruh isian pada bagian ini wajib terisi sebelum lanjut/kirim.
   const filled = (v) => String(v ?? '').trim() !== '';
   const unansweredCount = atPage
     ? atPage.flatMap((g) => g.questions).filter((q) => !filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id])).length : 0;
-  const missing = step === 0
+  const missing = atResponden
     ? [['Nama responden', form.respondent_name], ['Usia', form.age], ['Jenis kelamin', form.gender],
       ['Pendidikan terakhir', form.education], ['Pekerjaan', form.occupation]]
       .filter(([, v]) => !filled(v)).map(([label]) => label)
@@ -100,7 +110,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
           if (prev) prev.n += 1; else acc.push({ label, n: 1 });
           return acc;
         }, []).map(({ label, n }) => (n > 1 ? `${n} ${label}` : label));
-  const ageInvalid = step === 0 && filled(form.age) && (Number(form.age) < 10 || Number(form.age) > 100);
+  const ageInvalid = atResponden && filled(form.age) && (Number(form.age) < 10 || Number(form.age) > 100);
   const blocked = missing.length > 0 || ageInvalid;
 
   const next = () => {
@@ -150,7 +160,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
         <span className="shrink-0 text-xs font-semibold text-ink-muted">Bagian {step + 1} dari {steps.length}</span>
       </div>
 
-      {step === 0 && (
+      {atResponden && (
       <section className="space-y-3 rounded-xl border border-line bg-white p-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Data responden</h3>
         <div className="grid gap-3 md:grid-cols-2">
@@ -260,6 +270,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
   const [surveys, setSurveys] = useState(null);
   const [active, setActive] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [lastRespondent, setLastRespondent] = useState(null); // dari survei yang baru saja dikirim
 
   const load = useCallback(() => {
     if (!isOpen || !registrationId) return;
@@ -277,6 +288,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
     setSaving(true);
     try {
       await publisherSurveyApi.submit(registrationId, surveyId, body);
+      setLastRespondent(body);
       const res = await publisherSurveyApi.listForRegistration(registrationId);
       const list = res.data || [];
       setSurveys(list);
@@ -295,6 +307,8 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
 
   const belum = (surveys || []).filter((s) => !s.answered).length;
   const dipilih = (surveys || []).find((s) => s.id === active);
+  const respondent = completeRespondent(lastRespondent)
+    || (surveys || []).map((s) => completeRespondent(s.respondent)).find(Boolean) || null;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="2xl"
@@ -343,7 +357,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
                   <CheckCircle2 className="h-4 w-4 shrink-0" /> Sudah Anda isi pada {formatDateTime(dipilih.answered_at)}.
                 </p>
               ) : (
-                <SurveyForm key={dipilih.id} survey={dipilih} onSubmit={submit} saving={saving} />
+                <SurveyForm key={dipilih.id} survey={dipilih} onSubmit={submit} saving={saving} respondent={respondent} />
               )}
             </div>
           )}
