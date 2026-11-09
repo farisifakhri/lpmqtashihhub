@@ -35,7 +35,7 @@ router.post('/payments/:id/confirm', authenticate, authorize('PENERBIT'), valida
 router.post('/payments/:id/return', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(returnPaymentSchema), action(req => payment.returnPayment(req.params.id, req.body, req.user, req)));
 router.patch('/payments/:id/verify', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(emptyAction), action(req => payment.verifyPayment(req.params.id, req.user, req)));
 
-router.post('/registrations/:id/assignments', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN', 'DISTRIBUTOR'), validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
+router.post('/registrations/:id/assignments', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR'), validate(assignmentSchema), action(req => distribution.createAssignments(req.params.id, req.body, req.user), 201));
 router.get('/assignments/my-tasks', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(myTasksQuerySchema), action(req => distribution.listMyAssignments(req.user, req.query)));
 router.get('/distribution-teams/:id/workload', authenticate, authorize('ADMIN_INTERNAL', 'DISTRIBUTOR', 'SUPERADMIN'), action(req => distribution.workload(req.params.id, req.user)));
 router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(reviewSchema), action(req => distribution.recordReview(req.params.id, req.body, req.user), 201));

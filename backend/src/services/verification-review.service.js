@@ -31,8 +31,7 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
+  if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status === 'IN_PROGRESS') {
@@ -63,8 +62,7 @@ export const saveVerificationDraft = (assignmentId, data, user, req) => prisma.$
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
+  if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status !== 'IN_PROGRESS') {
@@ -148,8 +146,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     where: { id: assignmentId },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  if (assignment.verifier_id !== user.id && !isSuperAdmin) {
+  if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
   if (assignment.status !== 'IN_PROGRESS') {
@@ -793,9 +790,8 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 export const approveVerificationDocument = async (documentId, user, req) => {
 const createdFiles = [];
 try { return await prisma.$transaction(async tx => {
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  if (!user.roles.includes('KEPALA_LPMQ') && !isSuperAdmin) {
-    fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ atau Super Admin.');
+  if (!user.roles.includes('KEPALA_LPMQ')) {
+    fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }
 
   const doc = await tx.verificationDocument.findUnique({
@@ -928,9 +924,8 @@ catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
 };
 
 export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-  if (!user.roles.includes('KEPALA_LPMQ') && !isSuperAdmin) {
-    fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ atau Super Admin.');
+  if (!user.roles.includes('KEPALA_LPMQ')) {
+    fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }
 
   const doc = await tx.verificationDocument.findUnique({

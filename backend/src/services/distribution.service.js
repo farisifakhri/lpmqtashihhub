@@ -5,12 +5,9 @@ import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.midd
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
   const reg = await registration(tx, id);
-  const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
   if (reg.core_team_number) {
-    if (!isSuperAdmin) {
-      requireRole(user, ['DISTRIBUTOR']);
-      if (reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat membagikan tugas pentashih.');
-    }
+    requireRole(user, ['DISTRIBUTOR']);
+    if (reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat membagikan tugas pentashih.');
   } else {
     requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   }
