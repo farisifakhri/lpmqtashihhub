@@ -217,14 +217,24 @@ export const SignatureCenterPage = () => {
       sttDocs.forEach((doc) => {
         const isCompleted = doc.status === 'ISSUED' || reg.status === 'STT_ISSUED';
         const tuWorkflow = doc.content_snapshot?.tu_workflow;
-        const isSubmittedToTu = tuWorkflow?.status === 'SUBMITTED_TO_TU';
+        const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at || tuWorkflow?.status === 'SUBMITTED_TO_TU' || tuWorkflow?.status === 'PARAF_COMPLETED');
         const hasParaf1 = Boolean(tuWorkflow?.paraf_1);
         const hasParaf2 = Boolean(tuWorkflow?.paraf_2);
         const isTuComplete = hasParaf1 && hasParaf2;
 
-        const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted;
-        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted;
-        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted;
+        const sig1 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 1'));
+        const sig2 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 2'));
+        const designated1 = sig1?.signer_user_id || tuWorkflow?.designated_signers?.paraf_1?.id;
+        const designated2 = sig2?.signer_user_id || tuWorkflow?.designated_signers?.paraf_2?.id;
+
+        const isDesignated1 = !designated1 || designated1 === currentUser?.id || isSuperadmin;
+        const isDesignated2 = !designated2 || designated2 === currentUser?.id || isSuperadmin;
+        const isParaf1Signer = tuWorkflow?.paraf_1?.signed_by?.id === currentUser?.id;
+        const isParafSigner = isParaf1Signer || tuWorkflow?.paraf_2?.signed_by?.id === currentUser?.id;
+
+        const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted && isDesignated1;
+        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted && isDesignated2 && (!isParaf1Signer || isSuperadmin);
+        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted && (!isParafSigner || isSuperadmin);
         const canUserSign = canUserParaf1 || canUserParaf2 || canUserSignHead;
 
         const signatories = [
