@@ -888,6 +888,14 @@ export const VerifikatorInboxPage = () => {
                         </p>
                       </div>
 
+                      {/* Verifikator PIC Badge (for Admin / Super Admin monitoring) */}
+                      {isAssignmentAdmin && (item.verifier?.name || reg.core_verifier?.name) && (
+                        <div className="flex items-center gap-1.5 text-xs bg-brand-50/80 border border-brand-200/80 px-2.5 py-1.5 rounded-xl text-brand-900 font-semibold">
+                          <UserCheck className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                          <span className="truncate">Petugas: <strong>{item.verifier?.name || reg.core_verifier?.name}</strong></span>
+                        </div>
+                      )}
+
                       {/* Disposisi Document Info */}
                       {notaDoc?.document_no && (
                         <div className="flex items-center justify-between text-xs bg-canvas dark:bg-surface-subtle p-2.5 rounded-xl border border-line/60">
