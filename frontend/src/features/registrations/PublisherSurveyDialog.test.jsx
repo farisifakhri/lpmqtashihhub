@@ -39,6 +39,30 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     expect(screen.getByText('Unsur 1')).toBeInTheDocument();
   });
 
+  it('pindah ke survei berikutnya mulai dari form kosong, bukan isian survei sebelumnya', async () => {
+    const kedua = { ...survei, id: 's2', name: 'Survei Kedua' };
+    vi.spyOn(publisherSurveyApi, 'listForRegistration')
+      .mockResolvedValueOnce({ data: [survei, kedua] })
+      .mockResolvedValue({ data: [{ ...survei, answered: true, answered_at: '2026-11-09T07:00:00.000Z' }, kedua] });
+    vi.spyOn(publisherSurveyApi, 'submit').mockResolvedValue({ data: { id: 'r1' } });
+    await keHalamanPertanyaan();
+    for (const halaman of ['Bagian 3 dari 4', 'Bagian 4 dari 4']) {
+      screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
+      fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
+      await screen.findByText(halaman);
+    }
+    fireEvent.click(screen.getByLabelText('Sangat Puas'));
+    fireEvent.click(screen.getByLabelText('10'));
+    screen.getAllByLabelText('Sangat Setuju').forEach((el) => fireEvent.click(el));
+    fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Baik.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
+
+    // Survei kedua terbuka dari awal dengan form kosong.
+    expect(await screen.findByText('Bagian 1 dari 4')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Survei Kedua/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByLabelText('Nama responden')).toHaveValue('');
+  });
+
   it('pilihan jawaban urut dari nilai terendah, paling positif di kanan', async () => {
     await keHalamanPertanyaan();
     const blok = screen.getByText('Pertanyaan 1?').closest('div');

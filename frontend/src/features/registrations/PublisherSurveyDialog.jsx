@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, ClipboardList, Lock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
@@ -38,7 +38,7 @@ function ScaleRow({ name, value, onChange, options, hint }) {
       <div className="flex flex-wrap gap-1.5">
         {options.map(([val, label]) => (
           <label key={val}
-            className={`cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+            className={`relative cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-brand-700 ${
               String(value) === String(val) ? 'border-brand-700 bg-brand-700 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
             <input type="radio" className="sr-only" name={name} value={val} checked={String(value) === String(val)} onChange={() => onChange(val)} />
             {label}
@@ -71,6 +71,13 @@ function SurveyForm({ survey, onSubmit, saving }) {
   const questionNo = useMemo(() => new Map(groups.flatMap((g) => g.questions).map((q, i) => [q.id, i + 1])), [groups]);
   const steps = useMemo(() => ['responden', ...pages, 'penilaian'], [pages]);
   const [step, setStep] = useState(0);
+  const formRef = useRef(null);
+  // Pindah bagian: mulai dari atas lagi, bukan dari posisi gulungan bagian sebelumnya.
+  useEffect(() => {
+    let el = formRef.current?.parentElement;
+    while (el && !/(auto|scroll)/.test(getComputedStyle(el).overflowY)) el = el.parentElement;
+    el?.scrollTo?.({ top: 0 });
+  }, [step]);
   const atPage = step > 0 && step < steps.length - 1 ? pages[step - 1] : null;
   const isLast = step === steps.length - 1;
 
@@ -135,7 +142,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-5">
+    <form ref={formRef} onSubmit={submit} className="space-y-5">
       <div className="flex items-center gap-3">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-subtle">
           <div className="h-1.5 rounded-full bg-brand-700 transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
@@ -336,7 +343,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
                   <CheckCircle2 className="h-4 w-4 shrink-0" /> Sudah Anda isi pada {formatDateTime(dipilih.answered_at)}.
                 </p>
               ) : (
-                <SurveyForm survey={dipilih} onSubmit={submit} saving={saving} />
+                <SurveyForm key={dipilih.id} survey={dipilih} onSubmit={submit} saving={saving} />
               )}
             </div>
           )}
