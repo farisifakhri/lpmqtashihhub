@@ -219,6 +219,88 @@ export async function workload(id, user) {
   return prisma.assignment.groupBy({ by: ['assignee_id', 'status'], where: { team_id: id, status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] } }, _count: { _all: true } });
 }
 
+export const revokeAssignment = (id, data, user, req = null) => prisma.$transaction(async tx => {
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN', 'DISTRIBUTOR']);
+  const assignment = await tx.assignment.findUnique({
+    where: { id },
+    include: {
+      registration: true,
+      assignee: { select: { id: true, name: true, email: true } },
+      juz_items: true,
+    },
+  });
+  if (!assignment) fail(404, 'Penugasan pentashih tidak ditemukan.');
+
+  const reg = assignment.registration;
+  if (!reg) fail(404, 'Pengajuan naskah tidak ditemukan.');
+
+  if (reg.core_team_number && user.roles?.includes('DISTRIBUTOR') && !user.roles?.includes('SUPERADMIN') && !user.roles?.includes('ADMIN_INTERNAL')) {
+    if (reg.core_distributor_id !== user.id) {
+      fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mencabut penugasan pentashih.');
+    }
+  }
+
+  if (!['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS'].includes(reg.status)) {
+    fail(409, 'Penugasan hanya dapat dicabut pada naskah yang berada dalam tahap pentashihan aktif.');
+  }
+
+  if (assignment.status === 'COMPLETED') {
+    fail(409, 'Penugasan pentashih sudah selesai dan tidak dapat dicabut.');
+  }
+  if (assignment.status === 'REVOKED') {
+    fail(409, 'Penugasan pentashih sudah dicabut sebelumnya.');
+  }
+  if (!['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'].includes(assignment.status)) {
+    fail(409, `Penugasan tidak dapat dicabut pada status "${assignment.status}".`);
+  }
+
+  const revokedAt = new Date();
+  const reason = data.reason.trim();
+
+  const updated = await tx.assignment.update({
+    where: { id: assignment.id },
+    data: {
+      status: 'REVOKED',
+      revocation_reason: reason,
+      revoked_at: revokedAt,
+      revoked_by_id: user.id,
+    },
+  });
+
+  await audit(tx, user, 'REVOKE_ASSIGNMENT', 'Assignment', assignment.id, {
+    reason,
+    assignee_id: assignment.assignee_id,
+    registration_id: assignment.registration_id,
+    juz_numbers: (assignment.juz_items || []).map(j => j.juz_number),
+    previous_status: assignment.status,
+  }, req, { status: assignment.status });
+
+  if (tx.notification?.create) {
+    await tx.notification.create({
+      data: {
+        user_id: assignment.assignee_id,
+        registration_id: assignment.registration_id,
+        type: 'ASSIGNMENT_REVOKED',
+        title: 'Pemberitahuan Pelepasan Penugasan Pentashihan',
+        payload: {
+          assignment_id: assignment.id,
+          registration_id: assignment.registration_id,
+          registration_no: reg.registration_no,
+          title: reg.title,
+          reason,
+          revoked_at: revokedAt.toISOString(),
+        },
+      },
+    });
+  }
+
+  return {
+    success: true,
+    message: `Penugasan untuk pentashih ${assignment.assignee?.name || ''} berhasil dicabut.`,
+    assignment: updated,
+  };
+}, { isolationLevel: 'ReadCommitted' });
+
 export const recordReview = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['PENTASHIH']);
   const initial = await tx.assignment.findUnique({ where: { id } });
@@ -227,6 +309,9 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   requireStatus(reg, ['TASHIH_IN_PROGRESS', 'REVISION_REQUIRED']);
   const assignment = await tx.assignment.findUnique({ where: { id }, include: { reviews: true, juz_items: true } });
   if (assignment.assignee_id !== user.id) fail(403, 'Penugasan ini bukan tanggung jawab Anda.');
+  if (assignment.status === 'REVOKED') {
+    fail(409, 'Penugasan pentashih ini telah dicabut sehingga tidak dapat lagi menerima atau mengubah hasil sidang.');
+  }
   const isUpdatingMissingRecap = data.recap_file_id && assignment.reviews.length > 0 && assignment.reviews.some(r => !r.recap_file_id);
   if ((assignment.status === 'COMPLETED' || assignment.reviews.length) && reg.status !== 'REVISION_REQUIRED') {
     if (!isUpdatingMissingRecap) {
@@ -360,21 +445,30 @@ export async function listMyAssignments(user, query = {}) {
 }
 
 export const assertDistributionReviewCompleteness = (assignments, { requireAllPassed = false } = {}) => {
-  const teamAssignmentsMap = new Map();
-  const individualAssignments = [];
+  const allJuzInIteration = new Set(
+    assignments.flatMap(a => (a.juz_items || []).map(j => j.juz_number))
+  );
 
-  for (const a of assignments) {
+  const activeAssignments = assignments.filter(a => a.status !== 'REVOKED');
+  if (activeAssignments.length === 0) {
+    fail(409, 'Seluruh penugasan pada iterasi ini telah dicabut. Tugaskan pentashih pengganti sebelum mengambil keputusan.');
+  }
+
+  const activeTeamMap = new Map();
+  const activeIndividual = [];
+
+  for (const a of activeAssignments) {
     if (a.team_id) {
-      if (!teamAssignmentsMap.has(a.team_id)) teamAssignmentsMap.set(a.team_id, []);
-      teamAssignmentsMap.get(a.team_id).push(a);
+      if (!activeTeamMap.has(a.team_id)) activeTeamMap.set(a.team_id, []);
+      activeTeamMap.get(a.team_id).push(a);
     } else {
-      individualAssignments.push(a);
+      activeIndividual.push(a);
     }
   }
 
-  // Tahap 1: Verifikasi kelengkapan status dan keberadaan review
-  const hasIncomplete = individualAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews?.length) ||
-    Array.from(teamAssignmentsMap.values()).some(tAssignments => {
+  // Tahap 1: Verifikasi kelengkapan status dan keberadaan review pada penugasan aktif
+  const hasIncomplete = activeIndividual.some(item => item.status !== 'COMPLETED' || !item.reviews?.length) ||
+    Array.from(activeTeamMap.values()).some(tAssignments => {
       const allReviews = tAssignments.flatMap(a => a.reviews || []);
       const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
       if (teamScopeReview) return false;
@@ -385,13 +479,13 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
     fail(409, 'Keputusan distributor belum dapat disimpan karena masih ada penugasan yang belum selesai atau belum memiliki hasil sidang. Minta seluruh pentashih pada iterasi ini melengkapi hasilnya.');
   }
 
-  // Tahap 2: Verifikasi hasil keputusan telaah (semua review yang masuk wajib PASSED jika requireAllPassed = true)
-  if (requireAllPassed && assignments.some(item => item.reviews?.some(review => review.result !== 'PASSED'))) {
+  // Tahap 2: Verifikasi hasil keputusan telaah (semua review aktif wajib PASSED jika requireAllPassed = true)
+  if (requireAllPassed && activeAssignments.some(item => item.reviews?.some(review => review.result !== 'PASSED'))) {
     fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
   }
 
-  // Tahap 3: Verifikasi keberadaan berkas rekapan internal per unit
-  for (const [, tAssignments] of teamAssignmentsMap.entries()) {
+  // Tahap 3: Verifikasi keberadaan berkas rekapan internal per unit pada penugasan aktif
+  for (const [, tAssignments] of activeTeamMap.entries()) {
     const allReviews = tAssignments.flatMap(a => a.reviews || []);
     const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
     if (!teamScopeReview) {
@@ -402,15 +496,55 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
     }
   }
 
-  for (const indAssignment of individualAssignments) {
+  for (const indAssignment of activeIndividual) {
     if (!indAssignment.reviews?.some(r => r.recap_file_id)) {
       fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
     }
   }
 
-  const hasAnyRecap = assignments.some(item => item.reviews?.some(r => r.recap_file_id));
+  const hasAnyRecap = activeAssignments.some(item => item.reviews?.some(r => r.recap_file_id));
   if (!hasAnyRecap) {
     fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
+  }
+
+  // Tahap 4: Validasi Integritas Cakupan Juz (Juz Coverage Gate)
+  const coveredJuz = new Set();
+  for (const [, tAssignments] of activeTeamMap.entries()) {
+    const allReviews = tAssignments.flatMap(a => a.reviews || []);
+    const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
+    if (teamScopeReview) {
+      for (const a of tAssignments) {
+        for (const j of (a.juz_items || [])) {
+          coveredJuz.add(j.juz_number);
+        }
+      }
+    } else {
+      for (const a of tAssignments) {
+        if (a.status === 'COMPLETED' && a.reviews?.some(r => r.recap_file_id)) {
+          for (const j of (a.juz_items || [])) {
+            coveredJuz.add(j.juz_number);
+          }
+        }
+      }
+    }
+  }
+
+  for (const ind of activeIndividual) {
+    if (ind.status === 'COMPLETED' && ind.reviews?.some(r => r.recap_file_id)) {
+      for (const j of (ind.juz_items || [])) {
+        coveredJuz.add(j.juz_number);
+      }
+    }
+  }
+
+  if (allJuzInIteration.size > 0) {
+    const missingJuz = Array.from(allJuzInIteration)
+      .filter(j => !coveredJuz.has(j))
+      .sort((a, b) => a - b);
+
+    if (missingJuz.length > 0) {
+      fail(409, `Keputusan sidang belum dapat disimpan karena ada juz (${missingJuz.map(j => 'Juz ' + j).join(', ')}) dari penugasan yang dicabut dan belum diselesaikan oleh pentashih pengganti. Tugaskan pentashih pengganti untuk menuntaskan telaah juz tersebut.`);
+    }
   }
 };
 
@@ -425,6 +559,7 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   const assignments = await tx.assignment.findMany({
     where: { registration_id: registrationId, iteration: last.iteration },
     include: { reviews: true },
+    include: { reviews: true, juz_items: true },
   });
 
   if (!assignments.length) fail(409, 'Penugasan belum tersedia.');
@@ -440,7 +575,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   if (reg.core_team_number && reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat mereviu hasil pentashih.');
   const last = await tx.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
-  const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true } });
+  const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true, juz_items: true } });
 
   // Agregasi putusan sidang: jika ada minimal 1 putusan REVISION_REQUIRED / REJECTED, naskah wajib diperbaiki
   const allReviews = assignments.flatMap(a => a.reviews || []);

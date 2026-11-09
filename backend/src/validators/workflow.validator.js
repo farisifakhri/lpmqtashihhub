@@ -126,6 +126,13 @@ export const reviewSchema = { params, body: z.object({
   recap_scope: z.enum(['TEAM', 'SELF']).default('SELF'),
 }).strict() };
 
+export const revokePentashihAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
+  body: z.object({
+    reason: z.string().trim().min(5, 'Alasan pelepasan/pencabutan penugasan wajib diisi (minimal 5 karakter).').max(2000),
+  }).strict(),
+};
+
 export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
   notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
