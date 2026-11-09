@@ -2013,7 +2013,8 @@ export const getDetail = async (id, user) => {
 
   if (reg.core_team_number) {
     const members = await prisma.user.findMany({
-      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id] } },
+      // Anggota tim inti bisa belum lengkap (mis. dokumentator belum ditetapkan); null ditolak oleh Prisma `in`.
+      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].filter(Boolean) } },
       select: { id: true, name: true },
     });
     const memberById = new Map(members.map(member => [member.id, member]));

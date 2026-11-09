@@ -156,6 +156,14 @@ async function main() {
         core_verifier_id: verifier?.id,
         core_distributor_id: distributor?.id,
         stage_entered_at: now,
+        // Snapshot durasi layanan seperti yang dibentuk saat pengajuan dikirim; tanpa ini
+        // konfirmasi serah terima (Tahap 7) gagal menghitung tenggat sidang.
+        fee_sla_snapshot: {
+          service_name: serviceType.name,
+          sla_initial_days: serviceType.duration_initial || 15,
+          sla_revision_days: serviceType.duration_revision || 7,
+          sla_dummy_days: serviceType.duration_dummy || 3,
+        },
         ...extraReg,
       },
     });

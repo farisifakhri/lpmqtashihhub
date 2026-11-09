@@ -55,3 +55,7 @@ backend/storage/
 
 .agent/
 .impeccable/
+# Playwright E2E
+e2e/.auth/
+e2e/.results/
+e2e/.report/
