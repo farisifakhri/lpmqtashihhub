@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { showToast } from '@/components/ui/toast';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import {
-  inputClass, unsurLabel, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, formatDateTime,
+  inputClass, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, formatDateTime,
 } from '@/features/internal/survey/survey-constants';
 
 const GENDERS = [['L', 'Laki-laki'], ['P', 'Perempuan']];
@@ -18,6 +18,8 @@ const emptyForm = () => ({
   overall_satisfaction: '', nps_score: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
   feedback: '',
 });
+
+const QUESTIONS_PER_PAGE = 4;
 
 // Pertanyaan survei dikelompokkan per unsur, urut sesuai susunan Pemilihan Survei.
 const groupByUnsur = (items = []) => {
@@ -52,21 +54,35 @@ function SurveyForm({ survey, onSubmit, saving }) {
   const [form, setForm] = useState(emptyForm);
   const groups = useMemo(() => groupByUnsur(survey.items), [survey.items]);
   const set = (patch) => setForm((f) => ({ ...f, ...patch }));
-  // Satu layar per bagian: kuesioner 11+ pertanyaan terlalu panjang bila ditumpuk jadi satu gulungan.
-  const steps = useMemo(() => ['responden', ...groups.map((g) => g.unsur.id), 'penilaian'], [groups]);
+  // Unsur digabung per halaman (±4 pertanyaan): satu unsur satu layar terlalu banyak klik,
+  // semua sekaligus terlalu panjang digulung.
+  const pages = useMemo(() => {
+    const result = [];
+    let current = [];
+    let count = 0;
+    for (const g of groups) {
+      current.push(g);
+      count += g.questions.length;
+      if (count >= QUESTIONS_PER_PAGE) { result.push(current); current = []; count = 0; }
+    }
+    if (current.length) result.push(current);
+    return result;
+  }, [groups]);
+  const questionNo = useMemo(() => new Map(groups.flatMap((g) => g.questions).map((q, i) => [q.id, i + 1])), [groups]);
+  const steps = useMemo(() => ['responden', ...pages, 'penilaian'], [pages]);
   const [step, setStep] = useState(0);
-  const atUnsur = step > 0 && step < steps.length - 1 ? groups[step - 1] : null;
+  const atPage = step > 0 && step < steps.length - 1 ? pages[step - 1] : null;
   const isLast = step === steps.length - 1;
 
   // Seluruh isian pada bagian ini wajib terisi sebelum lanjut/kirim.
   const filled = (v) => String(v ?? '').trim() !== '';
-  const unansweredCount = atUnsur
-    ? atUnsur.questions.filter((q) => !filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id])).length : 0;
+  const unansweredCount = atPage
+    ? atPage.flatMap((g) => g.questions).filter((q) => !filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id])).length : 0;
   const missing = step === 0
     ? [['Nama responden', form.respondent_name], ['Usia', form.age], ['Jenis kelamin', form.gender],
       ['Pendidikan terakhir', form.education], ['Pekerjaan', form.occupation]]
       .filter(([, v]) => !filled(v)).map(([label]) => label)
-    : atUnsur
+    : atPage
       ? (unansweredCount ? [`${unansweredCount} pertanyaan`] : [])
       : [['Kepuasan keseluruhan', form.overall_satisfaction], ['Rekomendasi', form.nps_score],
         ...Object.keys(ANTI_CORRUPTION_STATEMENTS).map((key) => ['pernyataan anti-korupsi', form[key]]),
@@ -161,15 +177,15 @@ function SurveyForm({ survey, onSubmit, saving }) {
       </section>
       )}
 
-      {atUnsur && [atUnsur].map((g) => (
+      {atPage && atPage.map((g) => (
         <section key={g.unsur.id} className="space-y-4 rounded-xl border border-line bg-white p-4">
           <div className="space-y-1">
-            <h3 className="text-sm font-bold text-ink">{step}. {unsurLabel(g.unsur)}</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">{g.unsur.name}</h3>
             {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
           </div>
           {g.questions.map((q) => (
-            <div key={q.id} className="space-y-2 border-t border-line pt-3 first:border-0 first:pt-0">
-              <p className="text-sm text-ink">{q.text}</p>
+            <div key={q.id} className="space-y-2 border-t border-line pt-3">
+              <p className="text-sm text-ink"><span className="font-semibold">{questionNo.get(q.id)}.</span> {q.text}</p>
               {q.type === 'ESAI' ? (
                 <textarea className={inputClass} rows={3} maxLength={2000} value={form.essays[q.id] || ''}
                   aria-label={q.text}
@@ -177,7 +193,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
               ) : (
                 <ScaleRow name={`q-${q.id}`} value={form.answers[q.id]}
                   onChange={(v) => set({ answers: { ...form.answers, [q.id]: v } })}
-                  options={q.options.map((o) => [o.id, o.label])} />
+                  options={[...q.options].sort((a, b) => a.value - b.value).map((o) => [o.id, o.label])} />
               )}
             </div>
           ))}
