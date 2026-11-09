@@ -56,18 +56,16 @@ export const formatDate = (value) =>
 
 
 // ---- Instrumen kuesioner SKM, Pedoman Menteri PANRB No. 9 Tahun 2024 (BAB III, hlm. 14–22) ----
-export const OPENING_TEXT = 'Ayo berikan suara Anda! Isi survei kami sekarang berdasarkan pengalaman Bapak/Ibu ketika menggunakan layanan kami dan berinteraksi dengan petugas layanan kami. Survei ini hanya membutuhkan waktu ±10 menit untuk penyelesaiannya. Hasil survei akan kami gunakan murni untuk perbaikan kualitas pelayanan yang kami berikan. Terima kasih.';
+export const OPENING_TEXT = 'Ayo berikan suara Anda! Isi survei kami sekarang berdasarkan pengalaman Bapak/Ibu ketika menggunakan layanan kami dan berinteraksi dengan petugas layanan kami. Survei ini hanya membutuhkan waktu beberapa menit. Hasil survei akan kami gunakan murni untuk perbaikan kualitas pelayanan yang kami berikan. Terima kasih.';
 export const CLOSING_TEXT = 'Terima kasih atas partisipasi Bapak/Ibu untuk mengisi survei ini. Seluruh data dan informasi yang Bapak/Ibu berikan akan kami jamin kerahasiaannya dan hanya akan kami gunakan murni untuk perbaikan kualitas pelayanan yang kami berikan.';
 
+// Data responden yang ditanyakan ke penerbit (cukup sekali, dipakai ulang di survei berikutnya).
 export const DEMOGRAPHIC_FIELDS = [
-  'Penyandang disabilitas (ya/tidak) dan jenis disabilitas',
-  'Jenis kelamin',
+  'Nama responden',
   'Usia',
+  'Jenis kelamin',
   'Pendidikan terakhir',
-  'Pekerjaan utama',
-  'Jenis layanan yang diterima',
-  'Kategori layanan (Daring / Luring / Campuran)',
-  'Tanggal dan jam menerima layanan',
+  'Pekerjaan',
 ];
 
 export const DISABILITY_LABELS = {

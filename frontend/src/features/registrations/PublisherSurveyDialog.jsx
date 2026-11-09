@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, ClipboardList, Lock } from 'lucide-react';
+import { Check, CheckCircle2, Clock, Lock, ShieldCheck } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { showToast } from '@/components/ui/toast';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import {
@@ -11,11 +10,11 @@ import {
 
 const GENDERS = [['L', 'Laki-laki'], ['P', 'Perempuan']];
 const EDUCATIONS = ['SD', 'SMP', 'SMA', 'D3', 'S1', 'S2', 'S3'];
-const OCCUPATIONS = ['PNS', 'TNI/POLRI', 'SWASTA', 'WIRASWASTA', 'PELAJAR/MAHASISWA', 'LAINNYA'];
+const OCCUPATIONS = [['PNS', 'PNS'], ['TNI/POLRI', 'TNI/Polri'], ['SWASTA', 'Pegawai Swasta'], ['WIRASWASTA', 'Wiraswasta'], ['PELAJAR/MAHASISWA', 'Pelajar/Mahasiswa'], ['LAINNYA', 'Lainnya']];
 
 const emptyForm = () => ({
   answers: {}, essays: {}, respondent_name: '', gender: '', age: '', education: '', occupation: '',
-  overall_satisfaction: '', nps_score: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
+  overall_satisfaction: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
   feedback: '',
 });
 
@@ -32,29 +31,38 @@ const groupByUnsur = (items = []) => {
   return groups;
 };
 
-function ScaleRow({ name, value, onChange, options, hint }) {
+// scale: pilihan tampil sebagai skala selebar baris (lebar seragam, dari negatif di kiri ke positif di kanan).
+function ScaleRow({ name, value, onChange, options, hint, scale = false }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex flex-wrap gap-1.5">
-        {options.map(([val, label]) => (
-          <label key={val}
-            className={`relative cursor-pointer rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-brand-700 ${
-              String(value) === String(val) ? 'border-brand-700 bg-brand-700 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
-            <input type="radio" className="sr-only" name={name} value={val} checked={String(value) === String(val)} onChange={() => onChange(val)} />
-            {label}
-          </label>
-        ))}
+      <div className={scale ? 'grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none' : 'flex flex-wrap gap-1.5'}>
+        {options.map(([val, label]) => {
+          const on = String(value) === String(val);
+          return (
+            <label key={val}
+              className={`relative flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 text-center text-xs font-semibold transition-colors focus-within:ring-2 focus-within:ring-brand-700 ${
+                scale ? 'min-h-[44px] py-2' : 'py-1.5'} ${
+                on ? 'border-brand-700 bg-brand-700 text-white shadow-xs' : 'border-line-strong bg-white text-ink hover:border-brand-700 hover:bg-brand-50'}`}>
+              <input type="radio" className="sr-only" name={name} value={val} checked={on} onChange={() => onChange(val)} />
+              {on && <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+              {label}
+            </label>
+          );
+        })}
       </div>
       {hint && <p className="text-xs text-ink-muted">{hint}</p>}
     </div>
   );
 }
 
+// Perkiraan waktu jujur (±15 detik per pertanyaan): angka besar membuat orang enggan memulai.
+const estimateMinutes = (questionCount) => Math.max(1, Math.ceil((questionCount * 15) / 60));
+
 // Data responden yang lengkap dari survei sebelumnya; null bila belum ada.
 const RESPONDENT_FIELDS = ['respondent_name', 'gender', 'age', 'education', 'occupation'];
 const completeRespondent = (r) => (r && RESPONDENT_FIELDS.every((k) => String(r[k] ?? '').trim() !== '') ? r : null);
 
-function SurveyForm({ survey, onSubmit, saving, respondent }) {
+function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }) {
   // Responden sudah diisi di survei sebelumnya: pakai ulang dan lewati bagian Data Responden.
   const [form, setForm] = useState(() => ({
     ...emptyForm(),
@@ -78,7 +86,9 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
   }, [groups]);
   const questionNo = useMemo(() => new Map(groups.flatMap((g) => g.questions).map((q, i) => [q.id, i + 1])), [groups]);
   const [skipResponden] = useState(() => Boolean(respondent)); // diputuskan saat form dibuka
-  const steps = useMemo(() => [...(skipResponden ? [] : ['responden']), ...pages, 'penilaian'], [pages, skipResponden]);
+  // Kepuasan dan anti-korupsi cukup ditanyakan sekali, di survei terakhir.
+  const [closing] = useState(withClosing);
+  const steps = useMemo(() => [...(skipResponden ? [] : ['responden']), ...pages, ...(closing ? ['penilaian'] : [])], [pages, skipResponden, closing]);
   const [step, setStep] = useState(0);
   const formRef = useRef(null);
   // Pindah bagian: mulai dari atas lagi, bukan dari posisi gulungan bagian sebelumnya.
@@ -90,6 +100,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
   const atResponden = steps[step] === 'responden';
   const atPage = Array.isArray(steps[step]) ? steps[step] : null;
   const isLast = step === steps.length - 1;
+  const atPenilaian = steps[step] === 'penilaian';
 
   // Seluruh isian pada bagian ini wajib terisi sebelum lanjut/kirim.
   const filled = (v) => String(v ?? '').trim() !== '';
@@ -101,7 +112,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
       .filter(([, v]) => !filled(v)).map(([label]) => label)
     : atPage
       ? (unansweredCount ? [`${unansweredCount} pertanyaan`] : [])
-      : [['Kepuasan keseluruhan', form.overall_satisfaction], ['Rekomendasi', form.nps_score],
+      : [['Kepuasan keseluruhan', form.overall_satisfaction],
         ...Object.keys(ANTI_CORRUPTION_STATEMENTS).map((key) => ['pernyataan anti-korupsi', form[key]]),
         ['Kritik dan saran', form.feedback]]
         .filter(([, v]) => !filled(v)).map(([label]) => label)
@@ -142,7 +153,6 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
       education: form.education || null,
       occupation: form.occupation || null,
       overall_satisfaction: num(form.overall_satisfaction),
-      nps_score: num(form.nps_score),
       ak_transparency: num(form.ak_transparency),
       ak_no_extortion: num(form.ak_no_extortion),
       ak_no_broker: num(form.ak_no_broker),
@@ -162,7 +172,10 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
 
       {atResponden && (
       <section className="space-y-3 rounded-xl border border-line bg-white p-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Data responden</h3>
+        <div className="space-y-0.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">Data responden</h3>
+          <p className="text-xs text-ink-muted">Cukup diisi sekali untuk semua survei. Data Anda dijaga kerahasiaannya.</p>
+        </div>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm">
             <span className="font-semibold text-ink">Nama responden</span>
@@ -187,7 +200,7 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
             <span className="font-semibold text-ink">Pekerjaan</span>
             <select className={inputClass} value={form.occupation} onChange={(e) => set({ occupation: e.target.value })}>
               <option value="">Pilih…</option>
-              {OCCUPATIONS.map((x) => <option key={x} value={x}>{x}</option>)}
+              {OCCUPATIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </label>
         </div>
@@ -200,9 +213,19 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
             <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">{g.unsur.name}</h3>
             {g.unsur.definition && <p className="text-xs leading-relaxed text-ink-muted">{g.unsur.definition}</p>}
           </div>
-          {g.questions.map((q) => (
-            <div key={q.id} className="space-y-2 border-t border-line pt-3">
-              <p className="text-sm text-ink"><span className="font-semibold">{questionNo.get(q.id)}.</span> {q.text}</p>
+          {g.questions.map((q) => {
+            const done = filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id]);
+            return (
+            <div key={q.id} className="space-y-2.5 border-t border-line pt-3">
+              <p className="flex items-start gap-2.5 text-sm text-ink">
+                {/* Nomor berubah jadi centang setelah dijawab: penerbit melihat kemajuannya per pertanyaan. */}
+                <span aria-hidden="true" className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                  done ? 'bg-civic-success text-white' : 'bg-surface-subtle text-ink-muted'}`}>
+                  {done ? <Check className="h-3 w-3" /> : questionNo.get(q.id)}
+                </span>
+                <span className="sr-only">{questionNo.get(q.id)}.</span>
+                <span>{q.text}</span>
+              </p>
               {q.type === 'ESAI' ? (
                 <textarea className={inputClass} rows={3} maxLength={2000} value={form.essays[q.id] || ''}
                   aria-label={q.text}
@@ -210,32 +233,30 @@ function SurveyForm({ survey, onSubmit, saving, respondent }) {
               ) : (
                 <ScaleRow name={`q-${q.id}`} value={form.answers[q.id]}
                   onChange={(v) => set({ answers: { ...form.answers, [q.id]: v } })}
-                  options={[...q.options].sort((a, b) => a.value - b.value).map((o) => [o.id, o.label])} />
+                  options={[...q.options].sort((a, b) => a.value - b.value).map((o) => [o.id, o.label])} scale />
               )}
             </div>
-          ))}
+            );
+          })}
         </section>
       ))}
 
-      {isLast && (
+      {atPenilaian && (
       <section className="space-y-4 rounded-xl border border-line bg-white p-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kepuasan, loyalitas, dan anti-korupsi</h3>
+        <div className="space-y-0.5">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-brand-800">Kepuasan dan anti-korupsi</h3>
+          <p className="text-xs text-ink-muted">Pertanyaan penutup, cukup sekali. Seberapa setuju Anda dengan pernyataan berikut?</p>
+        </div>
         <div className="space-y-2">
           <p className="text-sm text-ink">Secara keseluruhan, seberapa puas Anda terhadap layanan pentashihan?</p>
           <ScaleRow name={`puas-${survey.id}`} value={form.overall_satisfaction} onChange={(v) => set({ overall_satisfaction: v })}
-            options={Object.entries(SATISFACTION_LABELS).map(([v, l]) => [v, l])} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-sm text-ink">Seberapa besar kemungkinan Anda merekomendasikan layanan ini?</p>
-          <ScaleRow name={`nps-${survey.id}`} value={form.nps_score} onChange={(v) => set({ nps_score: v })}
-            options={Array.from({ length: 10 }, (_, i) => [i + 1, String(i + 1)])}
-            hint="1 = tidak merekomendasikan, 10 = sangat merekomendasikan" />
+            options={Object.entries(SATISFACTION_LABELS).map(([v, l]) => [v, l])} scale />
         </div>
         {Object.entries(ANTI_CORRUPTION_STATEMENTS).map(([key, s]) => (
           <div key={key} className="space-y-2">
             <p className="text-sm text-ink"><span className="font-semibold">{s.aspect}:</span> {s.text}</p>
             <ScaleRow name={`${key}-${survey.id}`} value={form[key]} onChange={(v) => set({ [key]: v })}
-              options={[[1, 'Sangat Tidak Setuju'], [2, 'Tidak Setuju'], [3, 'Netral'], [4, 'Setuju'], [5, 'Sangat Setuju']]} />
+              options={[[1, 'Sangat Tidak Setuju'], [2, 'Tidak Setuju'], [3, 'Netral'], [4, 'Setuju'], [5, 'Sangat Setuju']]} scale />
           </div>
         ))}
         <label className="space-y-1 text-sm block">
@@ -306,6 +327,7 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
   };
 
   const belum = (surveys || []).filter((s) => !s.answered).length;
+  const sisaPertanyaan = (surveys || []).filter((s) => !s.answered).reduce((n, s) => n + s.items.length, 0);
   const dipilih = (surveys || []).find((s) => s.id === active);
   const respondent = completeRespondent(lastRespondent)
     || (surveys || []).map((s) => completeRespondent(s.respondent)).find(Boolean) || null;
@@ -318,53 +340,74 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
         <p className="text-sm text-ink-muted">Tidak ada survei yang perlu diisi.</p>
       ) : (
         <div className="space-y-4">
-          <div className={`flex items-center gap-2 rounded-xl border p-3 text-sm ${belum
-            ? 'border-civic-warningLine bg-civic-warningSoft text-civic-warning'
-            : 'border-civic-successLine bg-civic-successSoft text-civic-success'}`}>
-            {belum ? <Lock className="h-4 w-4 shrink-0" /> : <CheckCircle2 className="h-4 w-4 shrink-0" />}
-            {belum ? `${belum} survei belum diisi.` : 'Seluruh survei sudah terisi.'}
+          {/* Sapaan: ajakan, bukan peringatan. */}
+          <div className={`flex items-start gap-3 rounded-xl border p-4 ${belum
+            ? 'border-brand-100 bg-brand-50'
+            : 'border-civic-successLine bg-civic-successSoft'}`}>
+            {belum
+              ? <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-700" />
+              : <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-civic-success" />}
+            <div className="space-y-0.5">
+              <p className="text-sm font-bold text-ink">
+                {belum ? 'Satu langkah lagi untuk membuka STT Anda' : 'Terima kasih, seluruh survei sudah terisi.'}
+              </p>
+              {belum > 0 && (
+                <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-ink-muted">
+                  <span>{belum} survei singkat</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" />±{estimateMinutes(sisaPertanyaan)} menit</span>
+                  <span aria-hidden="true">·</span>
+                  <span>jawaban Anda membantu kami meningkatkan layanan.</span>
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Pembagian per nama survei */}
+          {/* Langkah survei: diisi berurutan, survei berikutnya terkunci sampai yang sebelumnya terkirim. */}
           {surveys.length > 1 && (
-            <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar survei">
+            <ol className="flex flex-wrap items-center gap-x-2 gap-y-2" role="tablist" aria-label="Daftar survei">
               {surveys.map((s, i) => {
-                // Survei diisi berurutan: terkunci selama survei sebelumnya belum terisi.
                 const locked = surveys.slice(0, i).some((prev) => !prev.answered);
+                const current = s.id === active;
                 return (
-                  <button key={s.id} type="button" role="tab" aria-selected={s.id === active} disabled={locked}
-                    title={locked ? 'Isi survei sebelumnya terlebih dahulu' : undefined} onClick={() => setActive(s.id)}
-                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-                      s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink enabled:hover:border-brand-700'}`}>
-                    {s.answered ? <CheckCircle2 className="h-4 w-4" /> : locked ? <Lock className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
-                    {s.name}
-                    <Badge variant={s.answered ? 'success' : locked ? 'default' : 'warning'}>{s.answered ? 'Terisi' : locked ? 'Terkunci' : 'Belum'}</Badge>
-                  </button>
+                  <li key={s.id} className="flex items-center gap-2">
+                    {i > 0 && <span aria-hidden="true" className={`h-px w-4 ${s.answered || current ? 'bg-brand-700' : 'bg-line-strong'}`} />}
+                    <button type="button" role="tab" aria-selected={current} disabled={locked}
+                      title={locked ? 'Isi survei sebelumnya terlebih dahulu' : undefined} onClick={() => setActive(s.id)}
+                      className={`flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 text-xs font-semibold transition-colors disabled:cursor-not-allowed ${
+                        current ? 'border-brand-700 bg-brand-700 text-white'
+                          : s.answered ? 'border-civic-successLine bg-civic-successSoft text-civic-success'
+                            : 'border-line bg-white text-ink-muted'}`}>
+                      <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+                        current ? 'bg-white text-brand-800' : s.answered ? 'bg-civic-success text-white' : 'bg-surface-subtle'}`}>
+                        {s.answered ? <Check className="h-3 w-3" /> : locked ? <Lock className="h-3 w-3" /> : i + 1}
+                      </span>
+                      {s.name}
+                      <span className="sr-only">{s.answered ? '(terisi)' : locked ? '(terkunci)' : '(belum diisi)'}</span>
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ol>
           )}
 
           {dipilih && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-line bg-surface-subtle/40 p-3">
-                <h3 className="text-sm font-bold text-ink">{dipilih.name}</h3>
-                {dipilih.description && <p className="mt-0.5 text-xs text-ink-muted">{dipilih.description}</p>}
-                <p className="mt-0.5 text-xs text-ink-muted">{dipilih.items.length} pertanyaan · perkiraan 10 menit</p>
+              <div className="space-y-0.5">
+                <h3 className="text-base font-bold text-ink">{dipilih.name}</h3>
+                {dipilih.description && <p className="text-xs text-ink-muted">{dipilih.description}</p>}
+                <p className="text-xs text-ink-muted">{dipilih.items.length} pertanyaan · ±{estimateMinutes(dipilih.items.length)} menit</p>
               </div>
               {dipilih.answered ? (
                 <p className="flex items-center gap-2 rounded-xl border border-civic-successLine bg-civic-successSoft p-3 text-sm text-civic-success">
                   <CheckCircle2 className="h-4 w-4 shrink-0" /> Sudah Anda isi pada {formatDateTime(dipilih.answered_at)}.
                 </p>
               ) : (
-                <SurveyForm key={dipilih.id} survey={dipilih} onSubmit={submit} saving={saving} respondent={respondent} />
+                <SurveyForm key={dipilih.id} survey={dipilih} onSubmit={submit} saving={saving} respondent={respondent}
+                  withClosing={belum <= 1} />
               )}
             </div>
           )}
-
-          <div className="flex justify-end border-t border-line pt-3">
-            <Button type="button" variant="outline" onClick={onClose}>Tutup</Button>
-          </div>
         </div>
       )}
     </Modal>

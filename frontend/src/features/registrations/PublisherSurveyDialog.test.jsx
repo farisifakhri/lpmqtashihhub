@@ -51,30 +51,38 @@ describe('PublisherSurveyDialog: halaman pertanyaan', () => {
     expect(screen.queryByLabelText('Nama responden')).not.toBeInTheDocument();
   });
 
-  it('pindah ke survei berikutnya: responden tidak ditanya ulang, jawaban survei lama tidak ikut', async () => {
+  it('pindah ke survei berikutnya: responden tidak ditanya ulang, jawaban lama tidak ikut, penilaian akhir hanya di survei terakhir', async () => {
     const kedua = { ...survei, id: 's2', name: 'Survei Kedua' };
     vi.spyOn(publisherSurveyApi, 'listForRegistration')
       .mockResolvedValueOnce({ data: [survei, kedua] })
       .mockResolvedValue({ data: [{ ...survei, answered: true, answered_at: '2026-11-09T07:00:00.000Z' }, kedua] });
     vi.spyOn(publisherSurveyApi, 'submit').mockResolvedValue({ data: { id: 'r1' } });
-    await keHalamanPertanyaan();
-    for (const halaman of ['Bagian 3 dari 4', 'Bagian 4 dari 4']) {
-      screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
-      fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
-      await screen.findByText(halaman);
-    }
-    fireEvent.click(screen.getByLabelText('Sangat Puas'));
-    fireEvent.click(screen.getByLabelText('10'));
-    screen.getAllByLabelText('Sangat Setuju').forEach((el) => fireEvent.click(el));
-    fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Baik.' } });
+
+    // Survei pertama (bukan terakhir): responden + 2 halaman pertanyaan, tanpa penilaian akhir.
+    render(<PublisherSurveyDialog registrationId="reg-1" isOpen onClose={() => {}} />);
+    await screen.findByText('Bagian 1 dari 3');
+    fireEvent.change(screen.getByLabelText('Nama responden'), { target: { value: 'Budi' } });
+    fireEvent.change(screen.getByLabelText('Usia'), { target: { value: '40' } });
+    fireEvent.click(screen.getByLabelText('Laki-laki'));
+    fireEvent.change(screen.getByLabelText('Pendidikan terakhir'), { target: { value: 'S1' } });
+    fireEvent.change(screen.getByLabelText('Pekerjaan'), { target: { value: 'SWASTA' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
+    await screen.findByText('Bagian 2 dari 3');
+    screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
+    await screen.findByText('Bagian 3 dari 3');
+    screen.getAllByLabelText('Sangat baik').forEach((el) => fireEvent.click(el));
+    expect(screen.queryByText(/Kepuasan dan anti-korupsi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
 
-    // Survei kedua langsung ke pertanyaan (responden dipakai ulang), dengan jawaban kosong.
-    expect(await screen.findByText('Bagian 1 dari 3')).toBeInTheDocument();
+    // Survei kedua (terakhir): langsung ke pertanyaan, jawaban kosong, lalu penilaian akhir.
+    expect(await screen.findByText('Bagian 1 dari 3')).toBeInTheDocument(); // 2 halaman pertanyaan + penilaian
     expect(screen.getByRole('tab', { name: /Survei Kedua/ })).toHaveAttribute('aria-selected', 'true');
     expect(screen.queryByLabelText('Nama responden')).not.toBeInTheDocument();
     expect(screen.getAllByRole('radio').every((r) => !r.checked)).toBe(true);
-    expect(publisherSurveyApi.submit).toHaveBeenCalledWith('reg-1', 's1', expect.objectContaining({ respondent_name: 'Budi', age: 40 }));
+    expect(publisherSurveyApi.submit).toHaveBeenCalledWith('reg-1', 's1', expect.objectContaining({
+      respondent_name: 'Budi', age: 40, overall_satisfaction: null, feedback: null,
+    }));
   });
 
   it('pilihan jawaban urut dari nilai terendah, paling positif di kanan', async () => {

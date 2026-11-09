@@ -81,7 +81,6 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     // Bagian terakhir: semua penilaian dan kritik/saran wajib.
     expect(await screen.findByRole('button', { name: 'Kirim Survei' })).toBeDisabled();
     fireEvent.click(screen.getByLabelText('Sangat Puas'));
-    fireEvent.click(screen.getByLabelText('10'));
     screen.getAllByLabelText('Sangat Setuju').forEach((el) => fireEvent.click(el));
     expect(screen.getByText('Belum diisi: Kritik dan saran.')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Mantap.' } });
