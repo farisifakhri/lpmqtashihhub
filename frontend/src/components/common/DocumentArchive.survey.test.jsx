@@ -59,10 +59,29 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
     await screen.findByRole('dialog');
-    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' })); // lewati data responden
-    fireEvent.click(await screen.findByLabelText('Sangat baik'));
-    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' })); // selesai bagian unsur
-    fireEvent.click(await screen.findByRole('button', { name: 'Kirim Survei' }));
+
+    // Data responden kosong: Lanjut terkunci dan isian yang kurang disebutkan.
+    expect(screen.getByRole('button', { name: 'Lanjut' })).toBeDisabled();
+    expect(screen.getByText(/Belum diisi: Nama pengisi, Usia, Jenis kelamin/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nama pengisi'), { target: { value: 'Budi' } });
+    fireEvent.change(screen.getByLabelText('Usia'), { target: { value: '40' } });
+    fireEvent.click(screen.getByLabelText('Laki-laki'));
+    fireEvent.change(screen.getByLabelText('Pendidikan terakhir'), { target: { value: 'S1' } });
+    fireEvent.change(screen.getByLabelText('Pekerjaan'), { target: { value: 'SWASTA' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
+
+    expect(await screen.findByRole('button', { name: 'Lanjut' })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('Sangat baik'));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut' }));
+
+    // Bagian terakhir: semua penilaian dan kritik/saran wajib.
+    expect(await screen.findByRole('button', { name: 'Kirim Survei' })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText('Sangat Puas'));
+    fireEvent.click(screen.getByLabelText('10'));
+    screen.getAllByLabelText('Sangat Setuju').forEach((el) => fireEvent.click(el));
+    expect(screen.getByText('Belum diisi: Kritik dan saran.')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Mantap.' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
 
     await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/LPMQ/2026/001.pdf'));
   });
