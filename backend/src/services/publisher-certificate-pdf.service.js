@@ -5,6 +5,10 @@ import QRCode from 'qrcode';
 import { formatOfficialDocumentNumber } from './document-number.service.js';
 import { ENV } from '../config/env.js';
 
+// Alamat yang dikodekan QR sertifikat penerbit (PDF maupun halaman verifikasi).
+export const certificateVerifyUrl = (nomorInduk) =>
+  `${(ENV.PUBLIC_APP_URL || 'https://tashih.kemenag.go.id').replace(/\/$/, '')}/verifikasi/sertifikat/${encodeURIComponent(nomorInduk)}`;
+
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
 export const INDONESIAN_MONTHS = [
@@ -210,7 +214,7 @@ export async function renderPublisherCertificatePdf(publisherData) {
   signY -= 12;
 
   // QR Code Keaslian Dokumen & Alamat URL
-  const qrPayload = `${(ENV.PUBLIC_APP_URL || 'https://tashih.kemenag.go.id').replace(/\/$/, '')}/verifikasi/sertifikat/${encodeURIComponent(nomorInduk)}`;
+  const qrPayload = certificateVerifyUrl(nomorInduk);
   try {
     const qrDataUrl = await QRCode.toDataURL(qrPayload, {
       margin: 1,

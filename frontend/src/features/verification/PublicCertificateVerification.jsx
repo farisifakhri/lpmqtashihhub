@@ -21,6 +21,8 @@ import {
 import { Button } from '@/components/ui/Button';
 import apiClient from '@/api/client';
 
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 /**
  * Halaman publik verifikasi keaslian Sertifikat Penerbit Al-Qur'an LPMQ
  * Diakses via QR Code pada sertifikat penerbit fisik/digital.
@@ -288,12 +290,22 @@ export const PublicCertificateVerification = () => {
                 </div>
               </div>
 
-              {/* Tautan URL Verifikasi QR */}
-              <div className="p-3 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span className="text-ink-muted">Alamat URL Verifikasi QR:</span>
-                <span className="font-mono text-brand-fg font-semibold break-all text-[11px]">
-                  {verifyUrl(result.data?.nomor_induk_penerbit || formattedNomor)}
-                </span>
+              {/* QR Code + URL Verifikasi (gambar dari server, sama dengan QR di PDF sertifikat) */}
+              <div className="p-4 rounded-lg bg-surface-subtle border border-line text-xs flex flex-col sm:flex-row items-center gap-4">
+                <img
+                  src={`${API_BASE}/public/verify-certificate/${encodeURIComponent(result.data?.nomor_induk_penerbit || formattedNomor)}/qr`}
+                  alt={`QR Code verifikasi sertifikat ${result.data?.nomor_induk_penerbit || formattedNomor}`}
+                  width={128}
+                  height={128}
+                  className="w-32 h-32 shrink-0 rounded-md border border-line bg-white p-1"
+                />
+                <div className="space-y-1 text-center sm:text-left min-w-0">
+                  <p className="font-semibold text-ink">Pindai untuk memverifikasi keaslian</p>
+                  <p className="text-ink-muted">Alamat URL Verifikasi QR:</p>
+                  <p className="font-mono text-brand-fg font-semibold break-all text-[11px]">
+                    {verifyUrl(result.data?.nomor_induk_penerbit || formattedNomor)}
+                  </p>
+                </div>
               </div>
 
               {/* Footer Otoritas */}
