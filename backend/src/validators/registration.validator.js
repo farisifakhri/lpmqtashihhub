@@ -161,6 +161,16 @@ export const dispatchPhysicalSchema = {
   }),
 };
 
+export const publisherRevisionRecapSchema = {
+  params: z.object({
+    id: z.string().uuid('ID permohonan tidak valid.'),
+  }),
+  body: z.object({
+    recap_file_id: z.string().uuid('ID berkas rekap revisi tidak valid.'),
+    notes: z.string().trim().max(1000).optional().nullable(),
+  }).strict(),
+};
+
 export const transitionStatusSchema = {
   body: z.object({
     from_status: z.string().max(64).optional(),

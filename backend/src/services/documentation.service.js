@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../config/database.js';
-import { fail, requireRole, registration, audit } from './workflow-utils.js';
+import { fail, requireRole, registration, audit, move } from './workflow-utils.js';
 
 export async function getDocumentationDetail(id, user) {
   requireRole(user, ['DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN']);
@@ -120,7 +120,36 @@ export const recordDocumentationArchive = (id, data, user, req) => prisma.$trans
     data: { foreign_metadata: updatedForeignMeta },
   });
 
-  // 3. Catat audit log
+  // 3. Transisi status layanan otomatis:
+  // Jika 5 eksemplar fisik sudah diterima dan kode rak diisi -> COMPLETED
+  // Jika status masih STT_ISSUED dan proses dokumentasi dimulai -> DOCUMENTATION_IN_PROGRESS
+  if (isBothYes && data.storage_location?.archive_code && ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS'].includes(reg.status)) {
+    await move(tx, reg, 'COMPLETED', user, 'Dokumentasi arsip dan penerimaan 5 eksemplar fisik telah tuntas diverifikasi', req);
+
+    const publisherUser = await tx.publisher.findUnique({
+      where: { id: reg.publisher_id },
+      select: { user_id: true },
+    });
+    if (publisherUser?.user_id) {
+      await tx.notification.create({
+        data: {
+          user_id: publisherUser.user_id,
+          registration_id: reg.id,
+          type: 'REGISTRATION_COMPLETED',
+          title: 'Layanan Pentashihan Selesai Paripurna',
+          payload: {
+            link: '/publisher/documents',
+            registration_no: reg.registration_no,
+            message: `Seluruh rangkaian layanan tanda tashih untuk ${reg.title} telah selesai dan terarsip resmi.`,
+          },
+        },
+      });
+    }
+  } else if (reg.status === 'STT_ISSUED' && !isBothYes) {
+    await move(tx, reg, 'DOCUMENTATION_IN_PROGRESS', user, 'Proses pencatatan dokumentasi dan penyerahan eksemplar fisik dimulai', req);
+  }
+
+  // 4. Catat audit log
   await audit(tx, user, 'RECORD_DOCUMENTATION_ARCHIVE', 'Registration', id, documentationArchive, req);
 
   return {

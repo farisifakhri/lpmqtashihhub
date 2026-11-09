@@ -145,7 +145,13 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
     await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai', recap_file_id: file.id }, 201);
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Rekomendasi STT disetujui' });
+    // B-17: Pada ronde revisi/dumi, distributor wajib mengisi comparison_notes (ditolak 400 jika kosong)
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Rekomendasi STT disetujui' }, 400);
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', {
+      result: 'PASSED',
+      notes: 'Rekomendasi STT disetujui',
+      comparison_notes: 'Hasil perbaikan naskah dumi telah diperiksa dan sesuai dengan catatan sidang ronde sebelumnya.',
+    });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'READY_FOR_STT');
   });
 
