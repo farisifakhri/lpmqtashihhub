@@ -309,15 +309,20 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
           {/* Pembagian per nama survei */}
           {surveys.length > 1 && (
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar survei">
-              {surveys.map((s) => (
-                <button key={s.id} type="button" role="tab" aria-selected={s.id === active} onClick={() => setActive(s.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-                    s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
-                  {s.answered ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
-                  {s.name}
-                  <Badge variant={s.answered ? 'success' : 'warning'}>{s.answered ? 'Terisi' : 'Belum'}</Badge>
-                </button>
-              ))}
+              {surveys.map((s, i) => {
+                // Survei diisi berurutan: terkunci selama survei sebelumnya belum terisi.
+                const locked = surveys.slice(0, i).some((prev) => !prev.answered);
+                return (
+                  <button key={s.id} type="button" role="tab" aria-selected={s.id === active} disabled={locked}
+                    title={locked ? 'Isi survei sebelumnya terlebih dahulu' : undefined} onClick={() => setActive(s.id)}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink enabled:hover:border-brand-700'}`}>
+                    {s.answered ? <CheckCircle2 className="h-4 w-4" /> : locked ? <Lock className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+                    {s.name}
+                    <Badge variant={s.answered ? 'success' : locked ? 'default' : 'warning'}>{s.answered ? 'Terisi' : locked ? 'Terkunci' : 'Belum'}</Badge>
+                  </button>
+                );
+              })}
             </div>
           )}
 

@@ -86,6 +86,18 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/LPMQ/2026/001.pdf'));
   });
 
+  it('survei diisi berurutan: survei kedua terkunci sampai survei pertama terisi', async () => {
+    asPublisher();
+    const pertama = { ...survei, id: 's0', name: 'kepuasan langganan' };
+    vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [pertama, survei] });
+    render(<DocumentArchive registrationId="reg-1" />);
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('tab', { name: /kepuasan langganan/ })).toBeEnabled();
+    expect(within(dialog).getByRole('tab', { name: /Indeks Persepsi Kualitas Pelayanan/ })).toBeDisabled();
+  });
+
   it('petugas internal tidak diminta mengisi survei', async () => {
     vi.spyOn(AuthContext, 'useOptionalAuth').mockReturnValue({ currentUser: { roles: ['DOKUMENTATOR'] } });
     const daftar = vi.spyOn(publisherSurveyApi, 'listForRegistration');
