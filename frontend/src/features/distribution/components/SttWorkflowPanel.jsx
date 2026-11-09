@@ -63,10 +63,10 @@ export const SttWorkflowPanel = ({
         <div>
           <h3 className="text-base font-bold text-ink flex items-center gap-2">
             <FileCheck2 className="w-5 h-5 text-brand-700" />
-            4. Pengajuan STT & Alur Pengesahan TU (Tahap Akhir)
+            4. Monitoring Penetapan STT & Alur Pengesahan Tata Usaha
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
-            Setelah pentashihan selesai, ajukan pembuatan STT ke Admin, terima draf resmi, lalu teruskan ke TU (Paraf 1 & 2) dan Kepala LPMQ untuk pengesahan tanda tangan.
+            Pantau status penetapan Surat Tanda Tashih (STT) naskah lolos sidang: penyusunan draf oleh Dokumentator, pembubuhan Paraf 1 & 2 Tata Usaha, dan pengesahan TTE Kepala LPMQ.
           </p>
         </div>
         <Button

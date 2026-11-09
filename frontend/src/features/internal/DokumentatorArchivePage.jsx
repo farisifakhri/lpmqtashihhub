@@ -18,6 +18,13 @@ import {
   MapPin,
   ClipboardList,
   Sparkles,
+  Filter,
+  PenTool,
+  Clock,
+  History,
+  Send,
+  X,
+  FileCheck2,
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { documentationApi } from '@/api/documentation.api';
@@ -45,7 +52,17 @@ export const DokumentatorArchivePage = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tabFilter, setTabFilter] = useState('ALL'); // ALL, PENDING, ARCHIVED
+  const [tabFilter, setTabFilter] = useState('ALL'); // ALL, READY_FOR_STT, WAITING_TU, STT_ISSUED, COMPLETED, PENDING, ARCHIVED
+
+  // Quick Filters (Paket B-11)
+  const [yearFilter, setYearFilter] = useState('ALL');
+  const [monthFilter, setMonthFilter] = useState('ALL');
+  const [standardFilter, setStandardFilter] = useState('ALL');
+  const [categoryFilter, setCategoryFilter] = useState('ALL');
+
+  // Modals state
+  const [createDraftModalReg, setCreateDraftModalReg] = useState(null);
+  const [historyModalReg, setHistoryModalReg] = useState(null);
 
   // Form State
   const [hasMasterDoc, setHasMasterDoc] = useState(null); // true / false / null
@@ -147,14 +164,89 @@ export const DokumentatorArchivePage = () => {
 
   const filteredRegistrations = useMemo(() => {
     return registrations.filter((reg) => {
+      // Search
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchNo = reg.registration_no?.toLowerCase().includes(q);
+        const matchTitle = reg.title?.toLowerCase().includes(q);
+        const matchPub = reg.publisher?.legal_name?.toLowerCase().includes(q);
+        if (!matchNo && !matchTitle && !matchPub) return false;
+      }
+
+      // Year Filter
+      if (yearFilter !== 'ALL') {
+        const regYear = new Date(reg.created_at).getFullYear().toString();
+        if (regYear !== yearFilter) return false;
+      }
+
+      // Month Filter
+      if (monthFilter !== 'ALL') {
+        const regMonth = String(new Date(reg.created_at).getMonth() + 1).padStart(2, '0');
+        if (regMonth !== monthFilter) return false;
+      }
+
+      // Standard Mushaf Filter
+      if (standardFilter !== 'ALL') {
+        const serviceName = (reg.service_type?.name || '').toLowerCase();
+        const title = (reg.title || '').toLowerCase();
+        const std = standardFilter.toLowerCase();
+        if (!serviceName.includes(std) && !title.includes(std)) return false;
+      }
+
+      // Category Filter
+      if (categoryFilter !== 'ALL') {
+        const kind = reg.service_type?.service_kind || '';
+        const name = (reg.service_type?.name || '').toLowerCase();
+        if (categoryFilter === 'BARU' && !name.includes('baru') && kind !== 'REGULAR') return false;
+        if (categoryFilter === 'PERPANJANGAN' && !name.includes('perpanjangan') && kind !== 'PERPANJANGAN') return false;
+        if (categoryFilter === 'LUAR_NEGERI' && !name.includes('luar negeri') && kind !== 'LUAR_NEGERI') return false;
+      }
+
       const isArchived = Boolean(reg.foreign_metadata?.documentation_archive?.storage_location?.archive_code);
+      const sttDoc = reg.official_documents?.find((d) => d.document_type === 'SURAT_TANDA_TASHIH');
+      const isTuSubmitted = sttDoc?.content_snapshot?.tu_workflow?.status === 'SUBMITTED_TO_TU';
+
+      if (tabFilter === 'READY_FOR_STT') return reg.status === 'READY_FOR_STT' && !sttDoc;
+      if (tabFilter === 'WAITING_TU') return sttDoc && sttDoc.status !== 'ISSUED' && reg.status !== 'STT_ISSUED';
+      if (tabFilter === 'STT_ISSUED') return reg.status === 'STT_ISSUED' || reg.status === 'DOCUMENTATION_IN_PROGRESS';
+      if (tabFilter === 'COMPLETED') return reg.status === 'COMPLETED';
       if (tabFilter === 'ARCHIVED') return isArchived;
       if (tabFilter === 'PENDING') return !isArchived;
+
       return true;
     });
-  }, [registrations, tabFilter]);
+  }, [registrations, searchQuery, yearFilter, monthFilter, standardFilter, categoryFilter, tabFilter]);
 
   const isBothYes = hasMasterDoc === true && has5Exemplars === true;
+
+  const handleCreateDraftStt = async (regId) => {
+    setSaving(true);
+    try {
+      await documentationApi.createOfficialDocument(regId, { document_type: 'SURAT_TANDA_TASHIH' });
+      showToast('Draf Surat Tanda Tashih (STT) berhasil dibuat.', 'success');
+      setCreateDraftModalReg(null);
+      await fetchRegistrations();
+      if (selectedId === regId) await loadDetail(regId);
+    } catch (err) {
+      showToast(err.message || 'Gagal membuat draf STT.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSubmitToTu = async (documentId) => {
+    setSaving(true);
+    try {
+      await documentationApi.submitToTu(documentId);
+      showToast('Draf STT berhasil diteruskan ke Tata Usaha untuk pembubuhan paraf.', 'success');
+      await fetchRegistrations();
+      if (selectedId) await loadDetail(selectedId);
+    } catch (err) {
+      showToast(err.message || 'Gagal mengirim draf STT ke Tata Usaha.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSaveArchive = async (e) => {
     e.preventDefault();
@@ -226,11 +318,11 @@ export const DokumentatorArchivePage = () => {
 
       {/* Main Grid: Master List (Left) and Workspace (Right) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Registration List */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-surface rounded-xl shadow-sm border border-line p-4">
+        {/* Left Column: Registration List / Cards per Mushaf (Paket B-11) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-surface rounded-xl shadow-sm border border-line p-4 space-y-3">
             {/* Search Input */}
-            <div className="relative mb-3">
+            <div className="relative">
               <Search className="w-4 h-4 text-ink-muted absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -241,26 +333,125 @@ export const DokumentatorArchivePage = () => {
               />
             </div>
 
+            {/* Quick Filter Bar: Tahun, Bulan, Standar, Kategori (B-11) */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-0.5">Tahun</label>
+                <select
+                  value={yearFilter}
+                  onChange={(e) => setYearFilter(e.target.value)}
+                  className="w-full px-2 py-1.5 border border-line-strong rounded-md text-xs bg-surface"
+                >
+                  <option value="ALL">Semua Tahun</option>
+                  <option value="2026">2026</option>
+                  <option value="2025">2025</option>
+                  <option value="2024">2024</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-0.5">Bulan</label>
+                <select
+                  value={monthFilter}
+                  onChange={(e) => setMonthFilter(e.target.value)}
+                  className="w-full px-2 py-1.5 border border-line-strong rounded-md text-xs bg-surface"
+                >
+                  <option value="ALL">Semua Bulan</option>
+                  <option value="01">Januari</option>
+                  <option value="02">Februari</option>
+                  <option value="03">Maret</option>
+                  <option value="04">April</option>
+                  <option value="05">Mei</option>
+                  <option value="06">Juni</option>
+                  <option value="07">Juli</option>
+                  <option value="08">Agustus</option>
+                  <option value="09">September</option>
+                  <option value="10">Oktober</option>
+                  <option value="11">November</option>
+                  <option value="12">Desember</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-0.5">Standar Mushaf</label>
+                <select
+                  value={standardFilter}
+                  onChange={(e) => setStandardFilter(e.target.value)}
+                  className="w-full px-2 py-1.5 border border-line-strong rounded-md text-xs bg-surface"
+                >
+                  <option value="ALL">Semua Standar</option>
+                  <option value="Usmani">Usmani</option>
+                  <option value="Bahriyah">Bahriyah</option>
+                  <option value="Braille">Braille</option>
+                  <option value="Isyarat">Isyarat</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-ink-muted mb-0.5">Kategori</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-2 py-1.5 border border-line-strong rounded-md text-xs bg-surface"
+                >
+                  <option value="ALL">Semua Kategori</option>
+                  <option value="BARU">Mushaf Baru</option>
+                  <option value="PERPANJANGAN">Perpanjangan STT</option>
+                  <option value="LUAR_NEGERI">Mushaf Luar Negeri</option>
+                </select>
+              </div>
+            </div>
+
             {/* Filter Tabs */}
-            <div className="flex border-b border-line mb-3 text-xs font-medium">
+            <div className="flex flex-wrap border-b border-line pb-1 gap-1 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setTabFilter('ALL')}
-                className={`flex-1 pb-2 text-center border-b-2 transition-colors ${
+                className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'ALL'
-                    ? 'border-brand-700 text-brand-fg font-semibold'
-                    : 'border-transparent text-ink-muted hover:text-ink'
+                    ? 'bg-brand-50 text-brand-800 font-bold border border-brand-200'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 Semua ({registrations.length})
               </button>
               <button
                 type="button"
+                onClick={() => setTabFilter('READY_FOR_STT')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  tabFilter === 'READY_FOR_STT'
+                    ? 'bg-civic-warningSoft text-civic-warning font-bold border border-civic-warningLine'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                Siap Draf STT
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabFilter('WAITING_TU')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  tabFilter === 'WAITING_TU'
+                    ? 'bg-civic-infoSoft text-civic-info font-bold border border-civic-infoLine'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                Proses TU/Kepala
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabFilter('STT_ISSUED')}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  tabFilter === 'STT_ISSUED'
+                    ? 'bg-brand-50 text-brand-800 font-bold border border-brand-200'
+                    : 'text-ink-muted hover:text-ink'
+                }`}
+              >
+                STT Terbit
+              </button>
+              <button
+                type="button"
                 onClick={() => setTabFilter('PENDING')}
-                className={`flex-1 pb-2 text-center border-b-2 transition-colors ${
+                className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'PENDING'
-                    ? 'border-brand-700 text-brand-fg font-semibold'
-                    : 'border-transparent text-ink-muted hover:text-ink'
+                    ? 'bg-brand-50 text-brand-800 font-bold border border-brand-200'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 Belum Arsip
@@ -268,17 +459,17 @@ export const DokumentatorArchivePage = () => {
               <button
                 type="button"
                 onClick={() => setTabFilter('ARCHIVED')}
-                className={`flex-1 pb-2 text-center border-b-2 transition-colors ${
+                className={`px-2.5 py-1 rounded-md transition-colors ${
                   tabFilter === 'ARCHIVED'
-                    ? 'border-brand-700 text-brand-fg font-semibold'
-                    : 'border-transparent text-ink-muted hover:text-ink'
+                    ? 'bg-brand-50 text-brand-800 font-bold border border-brand-200'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 Arsip Rapi
               </button>
             </div>
 
-            {/* Registration Items */}
+            {/* Registration Cards */}
             {loadingList ? (
               <div className="py-12 flex justify-center">
                 <TashihLoader text="Memuat naskah..." />
@@ -289,46 +480,134 @@ export const DokumentatorArchivePage = () => {
                 Tidak ada pengajuan ditemukan.
               </div>
             ) : (
-              <div className="space-y-2 max-h-[calc(100vh-320px)] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
                 {filteredRegistrations.map((item) => {
                   const isSelected = item.id === selectedId;
                   const isArchived = Boolean(item.foreign_metadata?.documentation_archive?.storage_location?.archive_code);
+                  const sttDoc = item.official_documents?.find((d) => d.document_type === 'SURAT_TANDA_TASHIH');
+                  const tuWorkflow = sttDoc?.content_snapshot?.tu_workflow;
+                  const isTuSubmitted = tuWorkflow?.status === 'SUBMITTED_TO_TU';
+                  const hasParaf1 = Boolean(tuWorkflow?.paraf_1);
+                  const hasParaf2 = Boolean(tuWorkflow?.paraf_2);
+
                   return (
-                    <button
+                    <div
                       key={item.id}
-                      type="button"
                       onClick={() => setSelectedId(item.id)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all ${
+                      className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2.5 ${
                         isSelected
-                          ? 'border-brand-700 bg-brand-50/50 shadow-xs ring-1 ring-brand-700'
-                          : 'border-line hover:border-line-strong hover:bg-surface-subtle'
+                          ? 'border-brand-700 bg-brand-50/40 shadow-xs ring-1 ring-brand-700'
+                          : 'border-line hover:border-line-strong bg-white hover:bg-surface-subtle'
                       }`}
                     >
+                      {/* Card Header */}
                       <div className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-xs text-brand-800 font-mono">
-                          {item.registration_no}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-semibold text-xs text-brand-800 font-mono bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+                            {item.registration_no}
+                          </span>
+                          <span className="text-[11px] text-ink-muted font-mono">
+                            {new Date(item.created_at).toLocaleDateString('id-ID')}
+                          </span>
+                        </div>
                         <StatusBadge status={item.status} size="xs" />
                       </div>
-                      <div className="font-medium text-sm text-ink mt-1 line-clamp-1">
-                        {item.title}
+
+                      {/* Title & Publisher */}
+                      <div>
+                        <div className="font-bold text-sm text-ink line-clamp-1">
+                          {item.title}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-ink-muted mt-0.5">
+                          <Building2 className="w-3.5 h-3.5 text-ink-muted shrink-0" />
+                          <span className="truncate max-w-[150px]">{item.publisher?.legal_name || 'Penerbit'}</span>
+                          <span>•</span>
+                          <span className="truncate">{item.service_type?.name || 'Tashih Standar'}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-xs text-ink-muted mt-2">
-                        <span className="truncate max-w-[140px]">
-                          {item.publisher?.legal_name || 'Penerbit'}
-                        </span>
-                        {isArchived ? (
-                          <span className="inline-flex items-center gap-1 text-civic-success font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
-                            Diarsipkan
-                          </span>
-                        ) : (
-                          <span className="text-civic-warning font-medium">
-                            Perlu Dicatat
-                          </span>
+
+                      {/* STT Status & Paraf Tracking */}
+                      <div className="p-2 bg-surface-subtle rounded-md text-[11px] space-y-1 border border-line">
+                        <div className="flex items-center justify-between text-ink font-semibold">
+                          <span>Surat Tanda Tashih:</span>
+                          {sttDoc ? (
+                            <span className="font-mono text-brand-800">{sttDoc.document_no}</span>
+                          ) : item.status === 'READY_FOR_STT' ? (
+                            <span className="text-civic-warning font-bold">Siap Draf STT</span>
+                          ) : (
+                            <span className="text-ink-muted">Belum ada</span>
+                          )}
+                        </div>
+                        {sttDoc && (
+                          <div className="flex items-center gap-2 text-ink-muted pt-1 border-t border-line">
+                            <span>Paraf 1: <strong className={hasParaf1 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf1 ? '✓ Sudah' : 'Menunggu'}</strong></span>
+                            <span>·</span>
+                            <span>Paraf 2: <strong className={hasParaf2 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf2 ? '✓ Sudah' : 'Menunggu'}</strong></span>
+                            <span>·</span>
+                            <span>TTD: <strong className={sttDoc.status === 'ISSUED' ? 'text-civic-success' : 'text-civic-warning'}>{sttDoc.status === 'ISSUED' ? '✓ Sah' : 'Menunggu'}</strong></span>
+                          </div>
                         )}
                       </div>
-                    </button>
+
+                      {/* 5 Exemplar Archive status */}
+                      <div className="text-xs">
+                        {isArchived ? (
+                          <div className="flex items-center gap-1.5 text-civic-success font-medium bg-civic-successSoft px-2.5 py-1 rounded border border-civic-successLine">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">Arsip Tersimpan ({item.foreign_metadata?.documentation_archive?.storage_location?.archive_code})</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-civic-warning font-medium bg-civic-warningSoft px-2.5 py-1 rounded border border-civic-warningLine">
+                            <Clock className="w-3.5 h-3.5 shrink-0" />
+                            <span>Deposit 5 Eksemplar: Belum Dicatat</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-line" onClick={(e) => e.stopPropagation()}>
+                        {item.status === 'READY_FOR_STT' && !sttDoc && (
+                          <Button
+                            size="xs"
+                            variant="primary"
+                            onClick={() => setCreateDraftModalReg(item)}
+                            className="text-xs font-bold"
+                          >
+                            <PenTool className="w-3 h-3 mr-1" />
+                            Buat Draf STT
+                          </Button>
+                        )}
+                        {sttDoc && !isTuSubmitted && sttDoc.status !== 'ISSUED' && (
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={() => handleSubmitToTu(sttDoc.id)}
+                            className="text-xs font-bold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft"
+                          >
+                            <Send className="w-3 h-3 mr-1" />
+                            Kirim ke TU
+                          </Button>
+                        )}
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => setHistoryModalReg(item)}
+                          className="text-xs"
+                        >
+                          <History className="w-3 h-3 mr-1 text-ink-muted" />
+                          Riwayat
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          onClick={() => setSelectedId(item.id)}
+                          className="text-xs text-brand-800 border-brand-200 hover:bg-brand-50"
+                        >
+                          <MapPin className="w-3 h-3 mr-1" />
+                          Catat Arsip
+                        </Button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
@@ -337,7 +616,7 @@ export const DokumentatorArchivePage = () => {
         </div>
 
         {/* Right Column: Detailed Workspace */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-7 space-y-6">
           {loadingDetail ? (
             <div className="bg-surface rounded-xl shadow-sm border border-line p-12 flex justify-center">
               <TashihLoader text="Menyiapkan berkas dan lembar arsip dokumentator..." />
@@ -778,6 +1057,136 @@ export const DokumentatorArchivePage = () => {
           )}
         </div>
       </div>
+
+      {/* Modal: Buat Draf STT (Paket B-11) */}
+      {createDraftModalReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
+                <FileCheck2 className="w-5 h-5 text-brand-700" />
+                Buat Draf Surat Tanda Tashih (STT)
+              </div>
+              <button
+                onClick={() => setCreateDraftModalReg(null)}
+                className="text-ink-muted hover:text-ink p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-ink-muted">
+              Naskah ini telah menyelesaikan sidang pentashihan dan dinyatakan lolos. Anda akan membuat berkas draf STT atomik dengan penomoran draf resmi yang nantinya diteruskan ke Tata Usaha.
+            </p>
+
+            <div className="p-3 bg-canvas border border-line rounded-lg text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Nomor Registrasi:</span>
+                <strong className="font-mono text-ink">{createDraftModalReg.registration_no}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Judul Naskah:</span>
+                <strong className="text-ink text-right">{createDraftModalReg.title}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Penerbit:</span>
+                <strong className="text-ink">{createDraftModalReg.publisher?.legal_name}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Layanan / Standar:</span>
+                <strong className="text-ink">{createDraftModalReg.service_type?.name}</strong>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-line">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateDraftModalReg(null)}
+                disabled={saving}
+              >
+                Batal
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleCreateDraftStt(createDraftModalReg.id)}
+                disabled={saving}
+                className="font-bold"
+              >
+                {saving ? 'Memproses...' : 'Buat Draf STT Sekarang'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Riwayat Dokumen Lengkap (Paket B-11) */}
+      {historyModalReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-xl w-full p-6 space-y-4 shadow-xl border border-line max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
+                <History className="w-5 h-5 text-brand-700" />
+                Riwayat Dokumen Resmi & Arsip Naskah
+              </div>
+              <button
+                onClick={() => setHistoryModalReg(null)}
+                className="text-ink-muted hover:text-ink p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-canvas border border-line rounded-lg text-xs space-y-1">
+              <p>Nomor Registrasi: <strong className="font-mono text-ink">{historyModalReg.registration_no}</strong></p>
+              <p>Judul: <strong className="text-ink">{historyModalReg.title}</strong></p>
+            </div>
+
+            <div className="overflow-y-auto space-y-2 flex-1 pr-1 text-xs">
+              <h5 className="font-bold text-ink uppercase tracking-wider text-[11px]">Daftar Dokumen Resmi:</h5>
+              {historyModalReg.official_documents && historyModalReg.official_documents.length > 0 ? (
+                <div className="divide-y divide-line border border-line rounded-lg overflow-hidden">
+                  {historyModalReg.official_documents.map((doc) => (
+                    <div key={doc.id} className="p-2.5 flex items-center justify-between hover:bg-canvas">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-brand-700 shrink-0" />
+                        <div>
+                          <div className="font-bold text-ink">{doc.document_no || `DOC-${doc.id.slice(0, 6)}`}</div>
+                          <div className="text-[11px] text-ink-muted">
+                            {formatDocumentType(doc.document_type)} · Versi {doc.version} · {formatDocumentStatus(doc.status)}
+                          </div>
+                        </div>
+                      </div>
+                      <a
+                        href={`/api/v1/official-documents/${doc.id}/pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded border border-line text-brand-800 font-semibold hover:bg-brand-50"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Lihat PDF
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-ink-muted italic p-3 bg-canvas rounded-lg">Belum ada dokumen resmi yang diterbitkan untuk naskah ini.</p>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-line">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setHistoryModalReg(null)}
+              >
+                Tutup
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

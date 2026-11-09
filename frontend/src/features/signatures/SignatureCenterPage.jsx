@@ -37,6 +37,8 @@ export const SignatureCenterPage = () => {
 
   const isHead = currentUser?.roles?.includes('KEPALA_LPMQ');
   const isVerifier = currentUser?.roles?.includes('VERIFIKATOR');
+  const isTuStaff = currentUser?.roles?.includes('ADMIN_INTERNAL') || currentUser?.roles?.includes('SUPERADMIN');
+  const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN');
 
   const tabParam = searchParams.get('tab') || 'NEED_MY_SIGN';
   const [activeTab, setActiveTab] = useState(tabParam);
@@ -55,6 +57,8 @@ export const SignatureCenterPage = () => {
 
   // Dialogs state
   const [signDialogDoc, setSignDialogDoc] = useState(null);
+  const [parafDialog, setParafDialog] = useState(null);
+  const [parafNotes, setParafNotes] = useState('');
   const [batchSignOpen, setBatchSignOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
 
@@ -214,26 +218,35 @@ export const SignatureCenterPage = () => {
         const isCompleted = doc.status === 'ISSUED' || reg.status === 'STT_ISSUED';
         const tuWorkflow = doc.content_snapshot?.tu_workflow;
         const isSubmittedToTu = tuWorkflow?.status === 'SUBMITTED_TO_TU';
+        const hasParaf1 = Boolean(tuWorkflow?.paraf_1);
+        const hasParaf2 = Boolean(tuWorkflow?.paraf_2);
+        const isTuComplete = hasParaf1 && hasParaf2;
+
+        const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted;
+        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted;
+        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted;
+        const canUserSign = canUserParaf1 || canUserParaf2 || canUserSignHead;
 
         const signatories = [
           {
             role_label: 'Penandatangan 1 - Tata Usaha (Paraf 1)',
             name: tuWorkflow?.paraf_1?.signed_by?.name || 'Tata Usaha (Penandatangan 1)',
-            status: tuWorkflow?.paraf_1 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
+            status: hasParaf1 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
+            signed_at: tuWorkflow?.paraf_1?.signed_at,
           },
           {
             role_label: 'Penandatangan 2 - Tata Usaha (Paraf 2)',
             name: tuWorkflow?.paraf_2?.signed_by?.name || 'Tata Usaha (Penandatangan 2)',
-            status: tuWorkflow?.paraf_2 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
+            status: hasParaf2 ? 'SIGNED' : (hasParaf1 ? 'PENDING' : 'NOT_READY'),
+            signed_at: tuWorkflow?.paraf_2?.signed_at,
           },
           {
             role_label: 'Kepala LPMQ (Tanda Tangan STT)',
             name: doc.content_snapshot?.final_signature?.signed_by?.name || 'Kepala LPMQ',
-            status: isCompleted ? 'SIGNED' : 'PENDING',
+            status: isCompleted ? 'SIGNED' : (isTuComplete ? 'PENDING' : 'NOT_READY'),
+            signed_at: doc.issued_at,
           },
         ];
-
-        const canUserSign = (isHead || currentUser?.roles?.includes('SUPERADMIN')) && !isCompleted && isSubmittedToTu;
 
         list.push({
           id: doc.id,
@@ -249,13 +262,21 @@ export const SignatureCenterPage = () => {
           publisher_name: reg.publisher?.legal_name || 'Penerbit Terdaftar',
           isAssignedToMe: false,
           canUserSign,
+          canUserParaf1,
+          canUserParaf2,
+          canUserSignHead,
+          hasParaf1,
+          hasParaf2,
+          isTuComplete,
+          isSubmittedToTu,
+          isCompleted,
           signatories,
         });
       });
     });
 
     return list;
-  }, [assignments, sttRegistrations, isHead, isVerifier, currentUser]);
+  }, [assignments, sttRegistrations, isHead, isVerifier, isTuStaff, isSuperadmin, currentUser]);
 
   // Filter documents by active tab and search
   const filteredDocuments = useMemo(() => {
@@ -337,6 +358,24 @@ export const SignatureCenterPage = () => {
       await fetchAssignments();
     } catch (err) {
       setError(err.message || 'Gagal menandatangani dokumen.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Paraf TU handler
+  const handleConfirmParaf = async () => {
+    if (!parafDialog) return;
+    setActionLoading(true);
+    setError(null);
+    try {
+      await documentationApi.parafTu(parafDialog.doc.id, parafDialog.order, { notes: parafNotes.trim() });
+      setSuccessMessage(`Paraf ${parafDialog.order} Tata Usaha berhasil dibubuhkan pada dokumen ${parafDialog.doc.document_no}.`);
+      setParafDialog(null);
+      setParafNotes('');
+      await fetchAssignments();
+    } catch (err) {
+      setError(err.message || 'Gagal membubuhkan paraf Tata Usaha.');
     } finally {
       setActionLoading(false);
     }
@@ -682,13 +721,15 @@ export const SignatureCenterPage = () => {
                           {doc.document_no}
                         </span>
                         <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-surface-subtle text-ink border border-line">
-                          {doc.document_type === 'BERITA_ACARA_VERIFIKASI'
+                          {doc.document_type === 'SURAT_TANDA_TASHIH'
+                            ? 'Surat Tanda Tashih (STT)'
+                            : doc.document_type === 'BERITA_ACARA_VERIFIKASI'
                             ? 'Berita Acara Verifikasi'
                             : 'Surat Hasil Verifikasi'}
                         </span>
                         {doc.status === 'SIGNED' ? (
                           <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-brand-100 text-brand-900 border border-brand-100">
-                            Lengkap Ditandatangani
+                            {doc.document_type === 'SURAT_TANDA_TASHIH' ? 'STT Resmi Terbit' : 'Lengkap Ditandatangani'}
                           </span>
                         ) : (
                           <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
@@ -704,6 +745,36 @@ export const SignatureCenterPage = () => {
                         <span className="text-ink-muted mx-1.5">·</span>
                         <span className="font-mono text-xs text-ink-muted">#{doc.registration_no}</span>
                       </div>
+
+                      {/* STT Prerequisite Indicators */}
+                      {doc.document_type === 'SURAT_TANDA_TASHIH' && (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-civic-successSoft text-civic-success border border-civic-successLine">
+                            <CheckCircle2 className="w-3 h-3 text-civic-success" />
+                            PNBP Lunas
+                          </span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-civic-successSoft text-civic-success border border-civic-successLine">
+                            <CheckCircle2 className="w-3 h-3 text-civic-success" />
+                            Sidang Dumi Lolos
+                          </span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+                            doc.hasParaf1
+                              ? 'bg-civic-successSoft text-civic-success border-civic-successLine'
+                              : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                          }`}>
+                            {doc.hasParaf1 ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {doc.hasParaf1 ? 'Paraf 1 (TU) Selesai' : 'Paraf 1 (TU) Menunggu'}
+                          </span>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
+                            doc.hasParaf2
+                              ? 'bg-civic-successSoft text-civic-success border-civic-successLine'
+                              : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                          }`}>
+                            {doc.hasParaf2 ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {doc.hasParaf2 ? 'Paraf 2 (TU) Selesai' : 'Paraf 2 (TU) Menunggu'}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Signatories progress chips */}
                       <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -740,15 +811,67 @@ export const SignatureCenterPage = () => {
                       Pratinjau
                     </Button>
 
-                    <Link
-                      to={`/internal/verifications/${doc.assignment_id}`}
-                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-line hover:border-line-strong text-ink font-semibold hover:bg-canvas"
-                    >
-                      <span>Lembar Kerja</span>
-                      <ExternalLink className="w-3 h-3 text-ink-muted" />
-                    </Link>
+                    {doc.assignment_id && (
+                      <Link
+                        to={`/internal/verifications/${doc.assignment_id}`}
+                        className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-line hover:border-line-strong text-ink font-semibold hover:bg-canvas"
+                      >
+                        <span>Lembar Kerja</span>
+                        <ExternalLink className="w-3 h-3 text-ink-muted" />
+                      </Link>
+                    )}
 
-                    {doc.canUserSign && doc.status !== 'SIGNED' && (
+                    {/* STT Paraf 1 Action */}
+                    {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf1 && (
+                      <Button
+                        variant="gold"
+                        onClick={() => setParafDialog({ doc, order: 1 })}
+                        disabled={actionLoading}
+                        className="text-xs px-3.5 py-1.5 font-bold"
+                      >
+                        <PenTool className="w-3.5 h-3.5 mr-1" />
+                        Paraf 1 (TU)
+                      </Button>
+                    )}
+
+                    {/* STT Paraf 2 Action */}
+                    {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf2 && (
+                      <Button
+                        variant="gold"
+                        onClick={() => setParafDialog({ doc, order: 2 })}
+                        disabled={actionLoading}
+                        className="text-xs px-3.5 py-1.5 font-bold"
+                      >
+                        <PenTool className="w-3.5 h-3.5 mr-1" />
+                        Paraf 2 (TU)
+                      </Button>
+                    )}
+
+                    {/* STT Head Sign Action */}
+                    {doc.document_type === 'SURAT_TANDA_TASHIH' && (isHead || isSuperadmin) && !doc.isCompleted && (
+                      doc.isTuComplete ? (
+                        <Button
+                          variant="primary"
+                          onClick={() => setSignDialogDoc(doc)}
+                          disabled={actionLoading}
+                          className="text-xs px-3.5 py-1.5 font-bold"
+                        >
+                          <PenTool className="w-3.5 h-3.5 mr-1" />
+                          Tandatangani STT Resmi
+                        </Button>
+                      ) : (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface-subtle text-ink-muted border border-line font-medium cursor-not-allowed"
+                          title="Menunggu pembubuhan Paraf 1 dan Paraf 2 oleh Tata Usaha"
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Menunggu Paraf TU
+                        </span>
+                      )
+                    )}
+
+                    {/* Standard Verification Document Sign Action */}
+                    {doc.document_type !== 'SURAT_TANDA_TASHIH' && doc.canUserSign && doc.status !== 'SIGNED' && (
                       <Button
                         variant="primary"
                         onClick={() => setSignDialogDoc(doc)}
@@ -773,22 +896,83 @@ export const SignatureCenterPage = () => {
           isOpen={Boolean(signDialogDoc)}
           onClose={() => setSignDialogDoc(null)}
           onConfirm={handleConfirmSignSingle}
-          title="Konfirmasi Dokumen Internal"
-          description="Pastikan dokumen telah sesuai sebelum mencatat konfirmasi internal."
-          objectName={`${signDialogDoc.document_type === 'BERITA_ACARA_VERIFIKASI' ? 'Berita Acara' : 'Surat Pemberitahuan'}: ${signDialogDoc.document_no}`}
-          nextActor="Penandatangan Selanjutnya / Penerbit"
-          statusChange="SIGNING -> SIGNED"
-          irreversibleConsequence="Konfirmasi ini tercatat dalam jejak audit sistem LPMQ dan bukan tanda tangan elektronik tersertifikasi."
+          title={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Pengesahan Surat Tanda Tashih (STT) Resmi' : 'Konfirmasi Dokumen Internal'}
+          description={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH'
+            ? 'Dokumen Surat Tanda Tashih ini telah diverifikasi dan diparaf lengkap oleh Tata Usaha. Pengesahan ini akan menerbitkan STT resmi ber-QR definitif.'
+            : 'Pastikan dokumen telah sesuai sebelum mencatat konfirmasi internal.'}
+          objectName={`${signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Surat Tanda Tashih' : signDialogDoc.document_type === 'BERITA_ACARA_VERIFIKASI' ? 'Berita Acara' : 'Surat Pemberitahuan'}: ${signDialogDoc.document_no}`}
+          nextActor={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Penerbit & Dokumentator' : 'Penandatangan Selanjutnya / Penerbit'}
+          statusChange={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'WAITING_SIGNATURE -> STT_ISSUED' : 'SIGNING -> SIGNED'}
+          irreversibleConsequence={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH'
+            ? 'Penerbitan STT definitif memiliki kekuatan hukum resmi dan dapat diunduh langsung oleh pemohon.'
+            : 'Konfirmasi ini tercatat dalam jejak audit sistem LPMQ dan bukan tanda tangan elektronik tersertifikasi.'}
           summaryItems={[
             { label: 'Nomor Dokumen', value: signDialogDoc.document_no },
             { label: 'Naskah Mushaf', value: signDialogDoc.manuscript_title },
             { label: 'Penerbit Pemohon', value: signDialogDoc.publisher_name },
             { label: 'Nomor Registrasi', value: signDialogDoc.registration_no },
           ]}
-          confirmLabel="Catat Konfirmasi Internal"
+          confirmLabel={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Tandatangani STT Resmi' : 'Catat Konfirmasi Internal'}
           confirmVariant="primary"
           loading={actionLoading}
         />
+      )}
+
+      {/* Modal Dialog for Paraf TU */}
+      {parafDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-lg w-full p-6 space-y-4 shadow-xl border border-line">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
+                <PenTool className="w-5 h-5 text-civic-warning" />
+                Pembubuhan Paraf {parafDialog.order} Tata Usaha
+              </div>
+              <button
+                onClick={() => setParafDialog(null)}
+                className="text-ink-muted hover:text-ink p-1 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-canvas border border-line rounded-lg text-xs space-y-1">
+              <p>Dokumen: <strong className="font-mono text-ink">{parafDialog.doc.document_no}</strong></p>
+              <p>Naskah: <strong className="text-ink">{parafDialog.doc.manuscript_title}</strong></p>
+              <p>Penerbit: <strong className="text-ink">{parafDialog.doc.publisher_name}</strong></p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-ink">Catatan Paraf (Opsional):</label>
+              <textarea
+                value={parafNotes}
+                onChange={(e) => setParafNotes(e.target.value)}
+                placeholder="Tambahkan catatan verifikasi kelengkapan berkas jika diperlukan..."
+                rows={3}
+                className="w-full text-xs p-2.5 border border-line-strong rounded-lg focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-line">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setParafDialog(null)}
+                disabled={actionLoading}
+              >
+                Batal
+              </Button>
+              <Button
+                variant="gold"
+                size="sm"
+                onClick={handleConfirmParaf}
+                disabled={actionLoading}
+                className="font-bold"
+              >
+                {actionLoading ? 'Menyimpan...' : `Bubuhkan Paraf ${parafDialog.order}`}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Confirmation Summary Dialog for Batch Sign */}

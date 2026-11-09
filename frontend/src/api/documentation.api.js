@@ -33,6 +33,13 @@ export const documentationApi = {
     });
   },
 
+  createOfficialDocument: async (registrationId, data) => {
+    return apiClient(`/registrations/${encodeURIComponent(registrationId)}/official-documents`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
   parafTu: async (documentId, order, data = {}) => {
     return apiClient(`/official-documents/${encodeURIComponent(documentId)}/paraf-${order}`, {
       method: 'POST',

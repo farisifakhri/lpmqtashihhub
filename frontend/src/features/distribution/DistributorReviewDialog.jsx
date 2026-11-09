@@ -35,6 +35,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   // Form decision state
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [distributorNotes, setDistributorNotes] = useState('');
+  const [comparisonNotes, setComparisonNotes] = useState('');
   const [revisionKind, setRevisionKind] = useState('NASKAH_PERBAIKAN'); // 'NASKAH_PERBAIKAN' | 'NASKAH_DUMI'
   const [outgoingCourier, setOutgoingCourier] = useState('');
   const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
@@ -136,6 +137,12 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       return;
     }
 
+    const isRevisionOrDummyRound = previousRevLetters.length > 0;
+    if (isRevisionOrDummyRound && (!comparisonNotes.trim() || comparisonNotes.trim().length < 5)) {
+      setError('Catatan telaah pembanding distributor wajib diisi (minimal 5 karakter) untuk naskah revisi/dumi.');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
 
@@ -143,6 +150,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       await tashihApi.approveDistribution(registrationId, {
         result: decision,
         notes: distributorNotes.trim(),
+        comparison_notes: isRevisionOrDummyRound ? comparisonNotes.trim() : undefined,
         revision_kind: decision === 'REVISION_REQUIRED' ? revisionKind : undefined,
         outgoing_courier: decision === 'REVISION_REQUIRED' && outgoingCourier.trim() ? outgoingCourier.trim() : undefined,
         outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
@@ -575,6 +583,67 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                       )}
                     </div>
 
+                    {/* B-17: Telaah Pembanding Distributor (Wajib pada ronde revisi / dumi) */}
+                    {previousRevLetters.length > 0 && (
+                      <div className="p-4 rounded-xl border border-brand-200 bg-brand-50/40 space-y-3">
+                        <div className="flex items-center justify-between border-b border-brand-200/60 pb-2">
+                          <label className="block text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-brand-700" />
+                            Catatan Telaah Pembanding Distributor (Wajib Ronde Revisi / Dumi)
+                          </label>
+                          <span className="text-[11px] font-bold text-brand-800 bg-brand-100 px-2 py-0.5 rounded border border-brand-200">
+                            Wajib Diisi (Min. 5 Karakter)
+                          </span>
+                        </div>
+
+                        {/* Rujukan Berkas Pembanding */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div className="p-2.5 rounded-lg bg-white border border-brand-200 space-y-1">
+                            <span className="text-ink-muted block text-[11px] font-semibold">1. Rujukan Risalah Sebelumnya:</span>
+                            <span className="text-ink font-mono font-medium block truncate">
+                              {previousRevLetters[0]?.document_no || `Surat Revisi Ronde #${previousRevLetters.length}`}
+                            </span>
+                            {previousRevLetters[0]?.content_snapshot?.notes && (
+                              <p className="text-[11px] text-ink-muted line-clamp-2 italic">
+                                "{previousRevLetters[0].content_snapshot.notes}"
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="p-2.5 rounded-lg bg-white border border-brand-200 space-y-1">
+                            <span className="text-ink-muted block text-[11px] font-semibold">2. Rekapitulasi Perbaikan Penerbit:</span>
+                            {registration?.publisher_revision_recaps?.[0] ? (
+                              <div className="text-brand-900 font-medium flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                                <span>Tersedia (Ronde #{registration.publisher_revision_recaps[0].round_number})</span>
+                              </div>
+                            ) : (
+                              <span className="text-civic-warning text-[11px] italic">
+                                Belum ada berkas rekap dari penerbit
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <textarea
+                            rows={3}
+                            value={comparisonNotes}
+                            maxLength={2000}
+                            onChange={(e) => setComparisonNotes(e.target.value)}
+                            placeholder="Tuliskan analisis perbandingan antara catatan koreksi ronde sebelumnya dengan perbaikan yang diajukan penerbit pada ronde ini... (minimal 5 karakter)"
+                            className="w-full p-3 text-xs bg-white border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
+                          />
+                          <div className="flex items-center justify-between text-[11px] text-ink-muted mt-1">
+                            <span>Bandingkan secara cermat perbaikan penerbit terhadap catatan sidang.</span>
+                            <span className={comparisonNotes.trim().length >= 5 ? 'text-brand-700 font-bold' : 'text-civic-warning'}>
+                              {comparisonNotes.length}/2000 karakter (min. 5)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Catatan Keputusan / Surat Revisi */}
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
@@ -622,7 +691,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={submitting || !distributorNotes.trim()}
+                disabled={submitting || !distributorNotes.trim() || (previousRevLetters.length > 0 && comparisonNotes.trim().length < 5)}
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >
