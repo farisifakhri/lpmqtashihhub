@@ -66,8 +66,8 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
 
     // Data responden kosong: Lanjut terkunci dan isian yang kurang disebutkan.
     expect(screen.getByRole('button', { name: 'Lanjut' })).toBeDisabled();
-    expect(screen.getByText(/Belum diisi: Nama pengisi, Usia, Jenis kelamin/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Nama pengisi'), { target: { value: 'Budi' } });
+    expect(screen.getByText(/Belum diisi: Nama responden, Usia, Jenis kelamin/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nama responden'), { target: { value: 'Budi' } });
     fireEvent.change(screen.getByLabelText('Usia'), { target: { value: '40' } });
     fireEvent.click(screen.getByLabelText('Laki-laki'));
     fireEvent.change(screen.getByLabelText('Pendidikan terakhir'), { target: { value: 'S1' } });

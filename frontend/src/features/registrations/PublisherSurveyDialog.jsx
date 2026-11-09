@@ -12,12 +12,9 @@ import {
 const GENDERS = [['L', 'Laki-laki'], ['P', 'Perempuan']];
 const EDUCATIONS = ['SD', 'SMP', 'SMA', 'D3', 'S1', 'S2', 'S3'];
 const OCCUPATIONS = ['PNS', 'TNI/POLRI', 'SWASTA', 'WIRASWASTA', 'PELAJAR/MAHASISWA', 'LAINNYA'];
-const DISABILITIES = [['FISIK', 'Fisik (Tuna Daksa)'], ['INTELEKTUAL', 'Intelektual'], ['MENTAL', 'Mental'], ['SENSORIK', 'Sensorik (Tuli/Tuna Netra)']];
-const CATEGORIES = [['DARING', 'Daring'], ['LURING', 'Luring'], ['HYBRID', 'Campuran (Hybrid)']];
 
 const emptyForm = () => ({
   answers: {}, essays: {}, respondent_name: '', gender: '', age: '', education: '', occupation: '',
-  is_disabled: false, disability_type: '', service_category: 'HYBRID',
   overall_satisfaction: '', nps_score: '', ak_transparency: '', ak_no_extortion: '', ak_no_broker: '', ak_no_gratification: '',
   feedback: '',
 });
@@ -66,9 +63,8 @@ function SurveyForm({ survey, onSubmit, saving }) {
   const unansweredCount = atUnsur
     ? atUnsur.questions.filter((q) => !filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id])).length : 0;
   const missing = step === 0
-    ? [['Nama pengisi', form.respondent_name], ['Usia', form.age], ['Jenis kelamin', form.gender],
-      ['Pendidikan terakhir', form.education], ['Pekerjaan', form.occupation], ['Kategori layanan', form.service_category],
-      ...(form.is_disabled ? [['Jenis disabilitas', form.disability_type]] : [])]
+    ? [['Nama responden', form.respondent_name], ['Usia', form.age], ['Jenis kelamin', form.gender],
+      ['Pendidikan terakhir', form.education], ['Pekerjaan', form.occupation]]
       .filter(([, v]) => !filled(v)).map(([label]) => label)
     : atUnsur
       ? (unansweredCount ? [`${unansweredCount} pertanyaan`] : [])
@@ -112,9 +108,6 @@ function SurveyForm({ survey, onSubmit, saving }) {
       age: num(form.age),
       education: form.education || null,
       occupation: form.occupation || null,
-      is_disabled: form.is_disabled,
-      disability_type: form.is_disabled ? (form.disability_type || null) : null,
-      service_category: form.service_category || null,
       overall_satisfaction: num(form.overall_satisfaction),
       nps_score: num(form.nps_score),
       ak_transparency: num(form.ak_transparency),
@@ -139,7 +132,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
         <h3 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Data responden</h3>
         <div className="grid gap-3 md:grid-cols-2">
           <label className="space-y-1 text-sm">
-            <span className="font-semibold text-ink">Nama pengisi</span>
+            <span className="font-semibold text-ink">Nama responden</span>
             <input className={inputClass} maxLength={255} value={form.respondent_name} onChange={(e) => set({ respondent_name: e.target.value })} />
           </label>
           <label className="space-y-1 text-sm">
@@ -164,18 +157,7 @@ function SurveyForm({ survey, onSubmit, saving }) {
               {OCCUPATIONS.map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </label>
-          <div className="space-y-1 text-sm">
-            <span className="font-semibold text-ink">Kategori layanan</span>
-            <ScaleRow name={`kategori-${survey.id}`} value={form.service_category} onChange={(v) => set({ service_category: v })} options={CATEGORIES} />
-          </div>
         </div>
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <input type="checkbox" checked={form.is_disabled} onChange={(e) => set({ is_disabled: e.target.checked })} />
-          Saya penyandang disabilitas
-        </label>
-        {form.is_disabled && (
-          <ScaleRow name={`disabilitas-${survey.id}`} value={form.disability_type} onChange={(v) => set({ disability_type: v })} options={DISABILITIES} />
-        )}
       </section>
       )}
 
