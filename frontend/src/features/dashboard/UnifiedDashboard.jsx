@@ -711,7 +711,7 @@ export const UnifiedDashboard = () => {
                 onClick={() => changeStatusFilter('ALL')}
                 className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                   statusFilter === 'ALL'
-                    ? 'bg-ink text-white shadow-xs'
+                    ? 'bg-ink text-canvas shadow-xs'
                     : 'bg-surface-subtle text-ink-muted hover:bg-surface-strong'
                 }`}
               >
