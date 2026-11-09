@@ -112,16 +112,19 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     return registration.assignments.filter((a) => (a.iteration || 1) === maxIter);
   }, [registration]);
 
-  const allCompleted =
-    currentAssignments.length > 0 &&
-    currentAssignments.every((a) => a.status === 'COMPLETED' && a.reviews?.length > 0);
+  // B-19b: penugasan yang dilepas (REVOKED) tidak lagi menjadi syarat kelengkapan sidang
+  const activeAssignments = currentAssignments.filter((a) => a.status !== 'REVOKED');
 
-  const hasRevisionRequested = currentAssignments.some((a) =>
+  const allCompleted =
+    activeAssignments.length > 0 &&
+    activeAssignments.every((a) => a.status === 'COMPLETED' && a.reviews?.length > 0);
+
+  const hasRevisionRequested = activeAssignments.some((a) =>
     a.reviews?.some((r) => r.result === 'REVISION_REQUIRED')
   );
 
   // B-06: Verifikasi dokumen rekap telaah internal
-  const hasTeamRecap = currentAssignments.some(
+  const hasTeamRecap = activeAssignments.some(
     (a) => Boolean(a.recap_file_id || a.reviews?.[0]?.recap_file_id || a.reviews?.[0]?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i))
   );
 
@@ -277,6 +280,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                                   <AlertTriangle className="w-3 h-3" /> Perlu Perbaikan
                                 </span>
                               )
+                            ) : a.status === 'REVOKED' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-strong text-ink-muted font-semibold text-xs line-through">
+                                <X className="w-3 h-3" /> Dilepas
+                              </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-strong text-ink font-semibold text-xs">
                                 <Clock className="w-3 h-3" /> Belum Selesai
@@ -285,7 +292,11 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                           </div>
                         </div>
 
-                        {rev?.notes ? (
+                        {a.status === 'REVOKED' ? (
+                          <div className="text-xs text-ink-muted">
+                            Penugasan dilepas{a.revocation_reason ? `: ${a.revocation_reason}` : '.'} Tidak dihitung dalam kelengkapan sidang.
+                          </div>
+                        ) : rev?.notes ? (
                           <div className="p-2 rounded-lg bg-white border border-line/80 text-xs text-ink italic font-mono whitespace-pre-line">
                             "{((rev?.notes || '').replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim()) || 'Lolos tanpa catatan.'}"
                           </div>

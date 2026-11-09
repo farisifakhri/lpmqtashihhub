@@ -124,5 +124,45 @@ describe('DistributorReviewDialog Component (B-17)', () => {
       expect(onSuccess).toHaveBeenCalled();
     });
   });
+
+  it('tidak menghitung penugasan yang dilepas (REVOKED) sehingga keputusan tetap bisa diambil (B-19b)', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-revoked',
+        title: 'Mushaf Standar',
+        status: 'TASHIH_IN_PROGRESS',
+        official_documents: [],
+        assignments: [
+          {
+            id: 'asg-revoked',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'REVOKED',
+            revocation_reason: 'Pentashih cuti dinas',
+            assignee: { name: 'Pentashih Lama' },
+            reviews: [],
+          },
+          {
+            id: 'asg-pengganti',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'COMPLETED',
+            assignee: { name: 'Pentashih Pengganti' },
+            reviews: [{ id: 'rev-p', result: 'PASSED', recap_file_id: 'file-p' }],
+          },
+        ],
+      },
+    });
+
+    render(<DistributorReviewDialog registrationId="reg-revoked" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText('Dilepas')).toBeInTheDocument();
+    expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
+    expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
+  });
 });
 
