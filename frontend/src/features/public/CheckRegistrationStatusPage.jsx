@@ -107,7 +107,7 @@ export const CheckRegistrationStatusPage = () => {
                 `Sertifikat-Penerbit-${statusResult.kode_pendaftaran}.pdf`
             );
         } catch (err) {
-            alert(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi loket LPMQ.");
+            alert(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi Sekretariat LPMQ.");
         } finally {
             setIsDownloadingCert(false);
         }
@@ -265,7 +265,7 @@ export const CheckRegistrationStatusPage = () => {
                                     <span>Menunggu Verifikasi Petugas</span>
                                 </div>
                                 <p className="text-xs text-ink-muted leading-relaxed">
-                                    Berkas dan dokumen persyaratan Anda telah diterima secara lengkap dan saat ini berada dalam antrean peninjauan oleh petugas loket/sekretariat LPMQ.
+                                    Berkas dan dokumen persyaratan Anda telah diterima secara lengkap dan saat ini berada dalam antrean peninjauan oleh petugas verifikator / sekretariat LPMQ.
                                 </p>
                                 <p className="text-[11px] text-brand-900/80 pt-1 border-t border-brand-100">
                                     Harap periksa email Anda secara berkala untuk menerima pembaruan status verifikasi.
@@ -297,11 +297,11 @@ export const CheckRegistrationStatusPage = () => {
                                 <div className="pt-2 border-t border-civic-warningLine/60 space-y-3">
                                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                                         <Link
-                                            to="/pendaftaran-penerbit/perbaikan"
+                                            to={`/pendaftaran-penerbit/perbaikan?token=${encodeURIComponent(statusResult.kode_pendaftaran)}`}
                                             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs cursor-pointer"
                                         >
                                             <FileCheck className="w-4 h-4" />
-                                            <span>Buka Formulir Perbaikan Dokumen</span>
+                                            <span>Perbaiki Dokumen Sekarang (Gunakan Kode Pendaftaran)</span>
                                         </Link>
                                     </div>
 
@@ -309,7 +309,7 @@ export const CheckRegistrationStatusPage = () => {
                                     <form onSubmit={handleGoToRevision} className="p-3 rounded-xl bg-surface border border-line space-y-2">
                                         <label htmlFor="quick-token-input" className="block text-[11px] font-bold text-ink flex items-center gap-1.5">
                                             <KeyRound className="w-3.5 h-3.5 text-brand-fg" />
-                                            <span>Sudah Memiliki Token Perbaikan dari Email atau Petugas?</span>
+                                            <span>Atau Masukkan Token Perbaikan / Kode Pendaftaran:</span>
                                         </label>
                                         <div className="flex flex-col sm:flex-row gap-2">
                                             <input
@@ -317,7 +317,7 @@ export const CheckRegistrationStatusPage = () => {
                                                 type="text"
                                                 value={inputToken}
                                                 onChange={(e) => setInputToken(e.target.value.trim())}
-                                                placeholder="Tempel token perbaikan di sini..."
+                                                placeholder="Contoh: REG-PUB-XXXXXX atau token perbaikan..."
                                                 className="flex-1 px-3 py-2 text-xs font-mono bg-canvas focus:bg-surface border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans"
                                             />
                                             <button
@@ -400,7 +400,7 @@ export const CheckRegistrationStatusPage = () => {
                     </div>
                 )}
 
-                {/* Bantuan Loket Info */}
+                {/* Bantuan Layanan Info */}
                 <div className="pt-2 border-t border-line flex flex-col sm:flex-row items-center justify-between text-xs text-ink-muted gap-2">
                     <div className="flex items-center gap-1.5">
                         <HelpCircle className="w-3.5 h-3.5 text-brand-fg" />
@@ -410,7 +410,7 @@ export const CheckRegistrationStatusPage = () => {
                         href="mailto:lpmq@kemenag.go.id"
                         className="font-semibold text-brand-fg hover:underline"
                     >
-                        Hubungi Loket LPMQ
+                        Hubungi Sekretariat LPMQ
                     </a>
                 </div>
             </div>

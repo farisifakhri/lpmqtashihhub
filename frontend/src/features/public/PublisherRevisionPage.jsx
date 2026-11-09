@@ -93,7 +93,7 @@ export const PublisherRevisionPage = () => {
             const code = err.data?.code || err.code;
             if (code === "TOKEN_INVALID_OR_EXPIRED" || err.status === 400 || err.status === 410) {
                 setLoadError(
-                    "Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi petugas loket LPMQ jika Anda memerlukan bantuan."
+                    "Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi Sekretariat LPMQ jika Anda memerlukan bantuan."
                 );
             } else {
                 setLoadError(
@@ -271,10 +271,10 @@ export const PublisherRevisionPage = () => {
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-ink">
-                                    Masukkan Token Perbaikan Pendaftaran
+                                    Masukkan Token Perbaikan atau Kode Pendaftaran
                                 </h3>
                                 <p className="text-xs text-ink-muted">
-                                    Silakan masukkan token perbaikan yang Anda terima melalui email atau dari petugas loket LPMQ.
+                                    Silakan masukkan token perbaikan yang Anda terima melalui email/petugas, ATAU gunakan langsung Kode Pendaftaran Anda (REG-PUB-...).
                                 </p>
                             </div>
                         </div>
@@ -285,14 +285,14 @@ export const PublisherRevisionPage = () => {
                                     htmlFor="manual-token-field"
                                     className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1.5"
                                 >
-                                    Token Perbaikan Dokumen (64 Karakter)
+                                    Token Perbaikan atau Kode Pendaftaran
                                 </label>
                                 <input
                                     id="manual-token-field"
                                     type="text"
                                     value={manualTokenInput}
                                     onChange={(e) => setManualTokenInput(e.target.value.trim())}
-                                    placeholder="Contoh: a1b2c3d4e5f6... (64 karakter acak)"
+                                    placeholder="Contoh: REG-PUB-2026... atau token perbaikan 64-karakter"
                                     className="w-full px-3.5 py-2.5 text-xs font-mono bg-canvas focus:bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans"
                                     required
                                 />
@@ -352,7 +352,7 @@ export const PublisherRevisionPage = () => {
                                 href="mailto:lpmq@kemenag.go.id"
                                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
                             >
-                                Hubungi Loket LPMQ
+                                Hubungi Sekretariat LPMQ
                             </a>
                         </div>
                     </div>

@@ -201,7 +201,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               <span className="font-semibold text-ink">{registration?.title || '-'}</span>
             </div>
             <div>
-              <span className="text-ink-muted block text-xs">Master Fisik Loket:</span>
+              <span className="text-ink-muted block text-xs">Penerimaan Master Fisik:</span>
               <span className="font-mono text-brand-800 font-semibold">
                 {physicalMaster.receipt_no || 'Diterima'} ({physicalMaster.volume_count ?? 30} jilid)
               </span>

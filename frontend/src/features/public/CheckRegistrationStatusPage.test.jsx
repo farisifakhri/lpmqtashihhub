@@ -48,7 +48,7 @@ describe('CheckRegistrationStatusPage (T-S02 Cek Status Pendaftaran)', () => {
     await waitFor(() => {
       expect(screen.getByTestId('status-result-card')).toBeInTheDocument();
       expect(screen.getByText('Menunggu Verifikasi Petugas')).toBeInTheDocument();
-      expect(screen.getByText(/antrean peninjauan oleh petugas loket\/sekretariat LPMQ/i)).toBeInTheDocument();
+      expect(screen.getByText(/antrean peninjauan oleh petugas verifikator \/ sekretariat LPMQ/i)).toBeInTheDocument();
     });
   });
 

@@ -203,9 +203,9 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="sticky bottom-0 bg-canvas border-t border-line p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 z-10">
           <div className="text-xs text-ink-muted">
             {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived ? (
-              <span className="text-brand-fg font-semibold">Master fisik diterima loket. Siap ditugaskan Helper Admin.</span>
+              <span className="text-brand-fg font-semibold">Master fisik diterima petugas penerima. Siap ditugaskan Helper Admin.</span>
             ) : data.status === 'READY_FOR_VERIFICATION' ? (
-              <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di loket LPMQ.</span>
+              <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di Kantor LPMQ.</span>
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (
               <span className="text-civic-info font-semibold">Verifikator telah ditugaskan (Disposisi terbit).</span>
             ) : (
@@ -240,7 +240,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 onClick={onClose}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-civic-warning hover:bg-civic-warning text-white font-bold text-xs shadow-2xs transition-colors"
               >
-                <span>Loket Intake Fisik</span>
+                <span>Penerimaan Fisik Naskah</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}

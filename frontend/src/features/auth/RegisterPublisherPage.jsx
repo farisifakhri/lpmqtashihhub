@@ -381,7 +381,7 @@ export const RegisterPublisherPage = () => {
             const code = err.data?.code || err.code;
             if (code === "DUPLICATE_ACTIVE_REGISTRATION") {
                 setError(
-                    "NPWP, NIB, atau alamat email ini sudah terdaftar pada permohonan yang aktif. Silakan gunakan menu Cek Status atau hubungi loket LPMQ."
+                    "NPWP, NIB, atau alamat email ini sudah terdaftar pada permohonan yang aktif. Silakan gunakan menu Cek Status atau hubungi Sekretariat LPMQ."
                 );
             } else if (code === "FILE_NOT_PDF") {
                 setError("Berkas yang Anda unggah bukan format PDF asli yang valid.");

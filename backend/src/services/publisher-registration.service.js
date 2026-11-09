@@ -100,6 +100,7 @@ export async function sendPublisherRegistrationEmail(event, { email, name, code,
   }
 
   try {
+    console.log(`[NOTIFIKASI LOKAL/DEV] ${event}: Penerbit=${name}, Email=${email}, Kode=${code}${revisionToken ? `, Token=${revisionToken}, Tautan=${payload.revision_url}` : ''}`);
     await emailProvider.sendEmail({
       to: email,
       toName: name,
@@ -320,29 +321,53 @@ export async function getPublisherRegistrationRevision(rawToken) {
     throw err;
   }
 
-  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const tokenRecord = await prisma.publisherRevisionToken.findUnique({
-    where: { token_hash: tokenHash },
-    include: {
-      registration: {
-        include: {
-          documents: {
-            where: { is_replaced: false },
-            orderBy: { created_at: 'desc' },
+  const trimmed = rawToken.trim();
+  let reg = null;
+
+  if (trimmed.toUpperCase().startsWith('REG-PUB-')) {
+    // Mode fallback kode pendaftaran: Memungkinkan perbaikan langsung di lokal/saat email belum disetup
+    reg = await prisma.publisherRegistration.findUnique({
+      where: { registration_code: trimmed.toUpperCase() },
+      include: {
+        documents: {
+          where: { is_replaced: false },
+          orderBy: { created_at: 'desc' },
+        },
+      },
+    });
+
+    if (!reg) {
+      const err = new Error('Kode pendaftaran perbaikan tidak ditemukan.');
+      err.statusCode = 404;
+      err.code = 'REGISTRATION_NOT_FOUND';
+      throw err;
+    }
+  } else {
+    const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
+    const tokenRecord = await prisma.publisherRevisionToken.findUnique({
+      where: { token_hash: tokenHash },
+      include: {
+        registration: {
+          include: {
+            documents: {
+              where: { is_replaced: false },
+              orderBy: { created_at: 'desc' },
+            },
           },
         },
       },
-    },
-  });
+    });
 
-  if (!tokenRecord || tokenRecord.used_at || tokenRecord.expires_at < new Date()) {
-    const err = new Error('Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi petugas loket LPMQ jika Anda memerlukan bantuan.');
-    err.statusCode = 410;
-    err.code = 'TOKEN_INVALID_OR_EXPIRED';
-    throw err;
+    if (!tokenRecord || tokenRecord.used_at || tokenRecord.expires_at < new Date()) {
+      const err = new Error('Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi Sekretariat LPMQ jika Anda memerlukan bantuan.');
+      err.statusCode = 410;
+      err.code = 'TOKEN_INVALID_OR_EXPIRED';
+      throw err;
+    }
+
+    reg = tokenRecord.registration;
   }
 
-  const reg = tokenRecord.registration;
   if (reg.status !== 'PERLU_PERBAIKAN') {
     const err = new Error('Permohonan pendaftaran ini tidak sedang dalam status perlu perbaikan.');
     err.statusCode = 400;
@@ -379,20 +404,39 @@ export async function submitPublisherRegistrationRevision(rawToken, body = {}, f
     throw err;
   }
 
-  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const tokenRecord = await prisma.publisherRevisionToken.findUnique({
-    where: { token_hash: tokenHash },
-    include: { registration: true },
-  });
+  const trimmed = rawToken.trim();
+  let reg = null;
+  let tokenRecord = null;
 
-  if (!tokenRecord || tokenRecord.used_at || tokenRecord.expires_at < new Date()) {
-    const err = new Error('Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi petugas loket LPMQ jika Anda memerlukan bantuan.');
-    err.statusCode = 410;
-    err.code = 'TOKEN_INVALID_OR_EXPIRED';
-    throw err;
+  if (trimmed.toUpperCase().startsWith('REG-PUB-')) {
+    // Mode fallback kode pendaftaran
+    reg = await prisma.publisherRegistration.findUnique({
+      where: { registration_code: trimmed.toUpperCase() },
+    });
+
+    if (!reg) {
+      const err = new Error('Kode pendaftaran perbaikan tidak ditemukan.');
+      err.statusCode = 404;
+      err.code = 'REGISTRATION_NOT_FOUND';
+      throw err;
+    }
+  } else {
+    const tokenHash = crypto.createHash('sha256').update(trimmed).digest('hex');
+    tokenRecord = await prisma.publisherRevisionToken.findUnique({
+      where: { token_hash: tokenHash },
+      include: { registration: true },
+    });
+
+    if (!tokenRecord || tokenRecord.used_at || tokenRecord.expires_at < new Date()) {
+      const err = new Error('Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi Sekretariat LPMQ jika Anda memerlukan bantuan.');
+      err.statusCode = 410;
+      err.code = 'TOKEN_INVALID_OR_EXPIRED';
+      throw err;
+    }
+
+    reg = tokenRecord.registration;
   }
 
-  const reg = tokenRecord.registration;
   if (reg.status !== 'PERLU_PERBAIKAN') {
     const err = new Error('Permohonan pendaftaran ini tidak sedang dalam status perlu perbaikan.');
     err.statusCode = 400;
@@ -428,11 +472,18 @@ export async function submitPublisherRegistrationRevision(rawToken, body = {}, f
   }
 
   const updatedReg = await prisma.$transaction(async tx => {
-    // 1. Hanguskan token perbaikan (single-use)
-    await tx.publisherRevisionToken.update({
-      where: { id: tokenRecord.id },
-      data: { used_at: new Date() },
-    });
+    // 1. Hanguskan token perbaikan jika ada atau seluruh token aktif pendaftaran ini
+    if (tokenRecord) {
+      await tx.publisherRevisionToken.update({
+        where: { id: tokenRecord.id },
+        data: { used_at: new Date() },
+      });
+    } else {
+      await tx.publisherRevisionToken.updateMany({
+        where: { registration_id: reg.id, used_at: null },
+        data: { used_at: new Date() },
+      });
+    }
 
     // 2. Tandai dokumen lama yang diperbarui dengan is_replaced = true
     for (const newDoc of newProcessedDocs) {

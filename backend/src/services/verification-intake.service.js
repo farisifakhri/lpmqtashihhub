@@ -372,7 +372,7 @@ export const getPhysicalMasterReceipt = async (id, user) => {
     fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
   }
   if (reg.physical_master_intake?.status !== 'RECEIVED' || !reg.physical_master_intake.receipt_no) {
-    fail(409, 'Tanda terima master fisik tersedia setelah master diterima di loket.');
+    fail(409, 'Tanda terima master fisik tersedia setelah master fisik diterima petugas.');
   }
   return reg;
 };

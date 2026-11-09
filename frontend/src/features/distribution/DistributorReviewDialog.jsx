@@ -546,7 +546,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                                   type="text"
                                   value={outgoingCourier}
                                   onChange={(e) => setOutgoingCourier(e.target.value)}
-                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Loket"
+                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Antar Langsung"
                                   className="w-full rounded-lg border border-line p-2 text-xs bg-canvas"
                                 />
                               </div>

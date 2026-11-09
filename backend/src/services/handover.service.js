@@ -111,7 +111,7 @@ export const createHandover = (registrationId, data, user, req) =>
         type: 'HANDOVER_PENDING',
         title: 'Master Fisik Menunggu Konfirmasi Diterima',
         payload: {
-          message: `Master fisik mushaf untuk pengajuan ${reg.registration_no} telah diserahkan oleh Verifikator. Silakan periksa kelengkapan fisik di loket dan konfirmasi penerimaan.`,
+          message: `Master fisik mushaf untuk pengajuan ${reg.registration_no} telah diserahkan oleh Verifikator. Silakan periksa kelengkapan naskah fisik dan konfirmasi penerimaan.`,
         },
       },
     });

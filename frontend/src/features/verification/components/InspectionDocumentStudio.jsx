@@ -62,7 +62,7 @@ export function InspectionDocumentStudio({
               <p className="text-[11px] text-ink-muted hidden sm:block">
                 {allFiles.length > 0
                   ? 'Pratinjau naskah & dokumen kelengkapan administrasi pemohon'
-                  : 'Master cetak fisik di loket pentashihan TMII'}
+                  : 'Master cetak fisik di ruang pentashihan TMII'}
               </p>
             </div>
           </div>
@@ -245,7 +245,7 @@ export function InspectionDocumentStudio({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
                       <div className="p-3 rounded-xl border border-line bg-surface-subtle space-y-1">
-                        <span className="text-[10px] font-bold text-ink-muted uppercase">Tanda Terima Loket</span>
+                        <span className="text-[10px] font-bold text-ink-muted uppercase">Tanda Terima Fisik Naskah</span>
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-brand-900 text-xs">
                             {physicalMaster?.receipt_no || 'TT-LPMQ-PENDING'}
@@ -298,7 +298,7 @@ export function InspectionDocumentStudio({
           </>
         )}
 
-        {/* Sleek Horizontal Strip: Metadata & Master Fisik Loket */}
+        {/* Sleek Horizontal Strip: Metadata & Penerimaan Master Fisik */}
         <div className="border-t border-line bg-canvas shrink-0">
           <div className="px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-xs">
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-ink">
@@ -316,7 +316,7 @@ export function InspectionDocumentStudio({
                 </span>
               ) : (
                 <span className="font-mono text-[11px] bg-surface-subtle text-ink-muted border border-line px-2 py-0.5 rounded-full">
-                  Loket: Menunggu Verifikasi Fisik
+                  Penerimaan: Menunggu Verifikasi Fisik
                 </span>
               )}
               <span className="text-ink-muted hidden md:inline">·</span>
@@ -385,7 +385,7 @@ export function InspectionDocumentStudio({
                     </div>
                   ) : (
                     <p className="text-ink-muted text-[11px] italic">
-                      Menunggu verifikasi fisik di loket LPMQ.
+                      Menunggu verifikasi fisik di Penerimaan LPMQ.
                     </p>
                   )}
                 </div>

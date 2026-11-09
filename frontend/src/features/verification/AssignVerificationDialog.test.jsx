@@ -146,7 +146,7 @@ describe('AssignVerificationDialog Component', () => {
       target: { value: 'ND.02/LPMQ.01/HM.01/09/2026' },
     });
     fireEvent.change(screen.getByPlaceholderText(/Tambahkan arahan atau atensi khusus/i), {
-      target: { value: 'Periksa master fisik juz 1-30 sesuai master loket.' },
+      target: { value: 'Periksa master fisik juz 1-30 sesuai master fisik naskah.' },
     });
 
     const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
@@ -158,7 +158,7 @@ describe('AssignVerificationDialog Component', () => {
         {
           verifier_id: 'v-2',
           nota_no: 'ND.02/LPMQ.01/HM.01/09/2026',
-          notes: 'Periksa master fisik juz 1-30 sesuai master loket.',
+          notes: 'Periksa master fisik juz 1-30 sesuai master fisik naskah.',
         }
       );
       expect(onSuccessMock).toHaveBeenCalledWith(

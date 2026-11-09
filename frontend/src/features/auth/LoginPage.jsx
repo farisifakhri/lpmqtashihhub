@@ -166,7 +166,7 @@ export const LoginPage = () => {
                       href="mailto:lpmq@kemenag.go.id"
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink bg-surface border border-line hover:bg-surface-subtle transition-colors"
                     >
-                      Bantuan Loket
+                      Bantuan Layanan
                     </a>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export const LoginPage = () => {
                   >
                     Lupa kata sandi?
                   </button>
-                  <span className="text-xs text-ink-muted">Bantuan loket</span>
+                  <span className="text-xs text-ink-muted">Bantuan layanan</span>
                 </div>
 
                 {/* Tombol Masuk Hijau Muda Segar */}

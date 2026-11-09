@@ -145,7 +145,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       return { parent: 'Penerbit', name: 'Verifikasi Akun Penerbit' };
     }
     if (pathname.startsWith('/internal/master-intake')) {
-      return { parent: 'Loket', name: 'Intake Master Fisik' };
+      return { parent: 'Penerimaan', name: 'Intake Master Fisik' };
     }
     if (pathname.startsWith('/internal/verifications')) {
       return { parent: 'Verifikasi', name: 'Verifikasi Berkas Naskah' };
