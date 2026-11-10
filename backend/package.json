@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "dev:backend": "nodemon src/server.js",
-    "build": "echo Backend is ready (Node.js ES Modules - no build step required)",
+    "build": "prisma generate",
+    "prestart": "prisma migrate deploy",
     "start": "node src/server.js",
     "test": "node scripts/test-isolated.js",
     "prisma:generate": "prisma generate",
@@ -46,6 +47,7 @@
   "license": "UNLICENSED",
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -63,7 +65,6 @@
     "zod": "^4.6.6"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9",
-    "prisma": "^5.22.0"
+    "nodemon": "^3.1.9"
   }
 }

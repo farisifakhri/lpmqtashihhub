@@ -120,6 +120,17 @@ npm run dev
 * **Backend API:** Berjalan di [http://localhost:5000/api/v1](http://localhost:5000/api/v1).
 * **Pemeriksaan Kesehatan Server:** Buka `GET http://localhost:5000/api/v1/health`.
 
+### 6. Deploy Backend ke Server
+Setiap deploy (setelah `git pull`) jalankan dari folder `backend`:
+```sh
+npm ci
+npm run build   # prisma generate
+npm start       # prestart: prisma migrate deploy, lalu node src/server.js
+```
+* `npm start` otomatis menerapkan migrasi yang belum berjalan (`prisma migrate deploy`). Bila migrasi gagal, server **tidak** dinyalakan agar tidak berjalan dengan skema basis data yang tidak cocok; perbaiki migrasinya lalu jalankan ulang.
+* Jangan pernah memakai `prisma migrate dev` atau `prisma migrate reset` di server produksi. Backup basis data (`npm run db:backup`) sebelum deploy yang membawa migrasi baru.
+* Bila server dijalankan langsung dengan `node src/server.js` (misalnya lewat pm2), jalankan `npx prisma migrate deploy` secara manual sebelum me-restart.
+
 ---
 
 ## 🔑 Akun Demo Pengembangan (*Seed Accounts*)
