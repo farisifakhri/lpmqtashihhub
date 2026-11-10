@@ -158,7 +158,7 @@ export const ReviewProgressPanel = ({ distLoading, inProgressRegistrations, fetc
                           'text-xs font-bold',
                           isReadyToReview
                             ? 'bg-brand-700 hover:bg-brand-800 text-white shadow-xs'
-                            : 'bg-ink hover:bg-ink text-white'
+                            : 'bg-ink hover:bg-ink text-canvas'
                         )}
                         icon={<ShieldCheck className="w-4 h-4" />}
                       >

@@ -386,6 +386,10 @@ const router = createBrowserRouter([
     element: <PublicDocumentVerification />,
   },
   {
+    path: '/verifikasi/sertifikat',
+    element: <PublicCertificateVerification />,
+  },
+  {
     path: '/verifikasi/sertifikat/:nomorInduk',
     element: <PublicCertificateVerification />,
   },
