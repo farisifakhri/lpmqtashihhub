@@ -52,6 +52,11 @@ model User {
   core_roster_distributor          CoreTeamRoster[]                @relation("CoreRosterDistributor")
   core_roster_documenter           CoreTeamRoster[]                @relation("CoreRosterDocumenter")
   decided_publisher_registrations  PublisherRegistration[]         @relation("RegistrationDecidedBy")
+  processed_master_requests        MasterMushafRequest[]           @relation("MasterRequestProcessedBy")
+  submitted_master_requests        MasterMushafRequest[]           @relation("MasterRequestSubmittedBy")
+  drafted_master_letters           MasterMushafRequest[]           @relation("MasterLetterDraftedBy")
+  signed_master_letters            MasterMushafRequest[]           @relation("MasterLetterSignedBy")
+  sent_master_letters              MasterMushafRequest[]           @relation("MasterLetterSentBy")
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
@@ -159,6 +164,7 @@ model Publisher {
   documents               PublisherDocument[]
   registrations           Registration[]
   registration_submission PublisherRegistration?
+  master_requests         MasterMushafRequest[]
 
   @@map("publishers")
 }
@@ -257,6 +263,98 @@ model PublisherRegistrationDocument {
 
   @@index([registration_id, document_type], map: "pub_reg_docs_reg_doc_type_idx")
   @@map("publisher_registration_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Permohonan Master Mushaf Al-Qur'an LPMQ oleh masyarakat (formulir publik tanpa akun)
+// ---------------------------------------------------------------------------
+
+// DIAJUKAN (penerbit) -> MENUNGGU_TTE (admin menyusun surat untuk Kepala) -> DITANDATANGANI (Kepala, TTE)
+// -> DIKIRIM (admin mengirim surat ke penerbit). DITOLAK dapat diputuskan admin selama masih DIAJUKAN.
+enum MasterMushafRequestStatus {
+  DIAJUKAN
+  MENUNGGU_TTE
+  DITANDATANGANI
+  DIKIRIM
+  DITOLAK
+}
+
+enum MasterMushafRequestDocumentType {
+  SURAT_PERMOHONAN
+  PROFIL_PEMOHON
+}
+
+model MasterMushafRequest {
+  id                  String                    @id @default(uuid())
+  request_code        String                    @unique(map: "master_req_code_key") @db.VarChar(40)
+  applicant_name      String                    @db.VarChar(255)
+  address             String                    @db.Text
+  province_code       String                    @db.VarChar(16)
+  province_name       String                    @db.VarChar(120)
+  regency_code        String                    @db.VarChar(16)
+  regency_name        String                    @db.VarChar(120)
+  district_code       String                    @db.VarChar(16)
+  district_name       String                    @db.VarChar(120)
+  postal_code         String                    @db.VarChar(10)
+  phone               String                    @db.VarChar(30)
+  email               String                    @db.VarChar(255)
+  institution         String                    @db.VarChar(255)
+  mushaf_type         String                    @db.VarChar(80)
+  mushaf_type_label   String                    @db.VarChar(255)
+  intended_use        String                    @db.Text
+  statement_agreed_at DateTime
+  status              MasterMushafRequestStatus @default(DIAJUKAN)
+  admin_note          String?                   @db.Text
+  processed_at        DateTime?
+  processed_by_id     String?
+  processed_by        User?                     @relation("MasterRequestProcessedBy", fields: [processed_by_id], references: [id], onDelete: SetNull)
+
+  // Penerbit pemohon (null hanya untuk data lama dari formulir publik)
+  publisher_id    String?
+  publisher       Publisher? @relation(fields: [publisher_id], references: [id], onDelete: SetNull)
+  submitted_by_id String?
+  submitted_by    User?      @relation("MasterRequestSubmittedBy", fields: [submitted_by_id], references: [id], onDelete: SetNull)
+
+  // Surat persetujuan master (disusun admin -> ditandatangani Kepala -> dikirim ke penerbit)
+  letter_number        String?   @unique(map: "master_req_letter_number_key") @db.VarChar(80)
+  letter_subject       String?   @db.VarChar(255)
+  letter_body          String?   @db.Text
+  letter_drafted_at    DateTime?
+  letter_drafted_by_id String?
+  letter_drafted_by    User?     @relation("MasterLetterDraftedBy", fields: [letter_drafted_by_id], references: [id], onDelete: SetNull)
+  signed_at            DateTime?
+  signed_by_id         String?
+  signed_by            User?     @relation("MasterLetterSignedBy", fields: [signed_by_id], references: [id], onDelete: SetNull)
+  signature_hash       String?   @db.VarChar(64)
+  sent_at              DateTime?
+  sent_by_id           String?
+  sent_by              User?     @relation("MasterLetterSentBy", fields: [sent_by_id], references: [id], onDelete: SetNull)
+
+  documents MasterMushafRequestDocument[]
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([status, created_at], map: "master_req_status_created_idx")
+  @@index([email], map: "master_req_email_idx")
+  @@index([publisher_id, created_at], map: "master_req_publisher_created_idx")
+  @@map("master_mushaf_requests")
+}
+
+model MasterMushafRequestDocument {
+  id                String                          @id @default(uuid())
+  request_id        String
+  request           MasterMushafRequest             @relation(fields: [request_id], references: [id], onDelete: Cascade)
+  document_type     MasterMushafRequestDocumentType
+  storage_path      String                          @db.VarChar(500)
+  original_filename String                          @db.VarChar(255)
+  file_size         Int
+  file_hash         String                          @db.VarChar(64)
+  mime_type         String                          @default("application/pdf") @db.VarChar(100)
+  created_at        DateTime                        @default(now())
+
+  @@index([request_id, document_type], map: "master_req_docs_req_type_idx")
+  @@map("master_mushaf_request_documents")
 }
 
 model PublisherRevisionToken {
@@ -426,24 +524,24 @@ model Registration {
   updated_at               DateTime           @updatedAt
 
   // Relations
-  publisher                Publisher                    @relation(fields: [publisher_id], references: [id])
-  service_type             ServiceType                  @relation(fields: [service_type_id], references: [id])
-  previous_registration    Registration?                @relation("RegistrationExtensions", fields: [previous_registration_id], references: [id], onDelete: SetNull)
-  extensions               Registration[]               @relation("RegistrationExtensions")
-  addons                   RegistrationAddon[]
-  manuscript_files         ManuscriptFile[]
-  manuscripts              Manuscript[]
-  status_histories         StatusHistory[]
-  verification_assignments VerificationAssignment[]
-  verification_documents   VerificationDocument[]
-  physical_master_intake   PhysicalMasterIntake?
-  physical_handovers       PhysicalManuscriptHandover[]
-  payment_records          PaymentRecord[]
-  assignments              Assignment[]
-  documentation_items      DocumentationItem[]
-  official_documents       OfficialDocument[]
-  notifications            Notification[]
-  survey_responses         SurveyResponse[]
+  publisher                 Publisher                    @relation(fields: [publisher_id], references: [id])
+  service_type              ServiceType                  @relation(fields: [service_type_id], references: [id])
+  previous_registration     Registration?                @relation("RegistrationExtensions", fields: [previous_registration_id], references: [id], onDelete: SetNull)
+  extensions                Registration[]               @relation("RegistrationExtensions")
+  addons                    RegistrationAddon[]
+  manuscript_files          ManuscriptFile[]
+  manuscripts               Manuscript[]
+  status_histories          StatusHistory[]
+  verification_assignments  VerificationAssignment[]
+  verification_documents    VerificationDocument[]
+  physical_master_intake    PhysicalMasterIntake?
+  physical_handovers        PhysicalManuscriptHandover[]
+  payment_records           PaymentRecord[]
+  assignments               Assignment[]
+  documentation_items       DocumentationItem[]
+  official_documents        OfficialDocument[]
+  notifications             Notification[]
+  survey_responses          SurveyResponse[]
   publisher_revision_recaps PublisherRevisionRecap[]
   distributor_comparisons   DistributorComparison[]
 
@@ -490,15 +588,15 @@ model ManuscriptFile {
 }
 
 model PublisherRevisionRecap {
-  id              String       @id @default(uuid())
+  id              String   @id @default(uuid())
   registration_id String
   round_number    Int
-  revision_kind   String       @db.VarChar(20) // "CORRECTION" | "DUMMY"
+  revision_kind   String   @db.VarChar(20) // "CORRECTION" | "DUMMY"
   recap_file_id   String
-  created_at      DateTime     @default(now())
+  created_at      DateTime @default(now())
 
-  recap_file      StoredFile   @relation(fields: [recap_file_id], references: [id])
-  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  recap_file   StoredFile   @relation(fields: [recap_file_id], references: [id])
+  registration Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
 
   @@unique([registration_id, round_number])
   @@index([recap_file_id])
@@ -506,16 +604,16 @@ model PublisherRevisionRecap {
 }
 
 model DistributorComparison {
-  id              String       @id @default(uuid())
+  id              String   @id @default(uuid())
   registration_id String
   round_number    Int
   distributor_id  String
-  notes           String       @db.Text
-  created_at      DateTime     @default(now())
-  updated_at      DateTime     @updatedAt
+  notes           String   @db.Text
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
-  distributor     User         @relation(fields: [distributor_id], references: [id])
+  registration Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  distributor  User         @relation(fields: [distributor_id], references: [id])
 
   @@unique([registration_id, round_number])
   @@index([distributor_id])
@@ -780,12 +878,12 @@ model PaymentRecord {
 // -------------------------------------------------------------
 
 model Assignment {
-  id              String           @id @default(uuid())
-  registration_id String
-  team_id         String?
-  assignee_id     String
-  stage           AssignmentStage // INITIAL, REVISION, DUMMY
-  iteration       Int              @default(1)
+  id                String           @id @default(uuid())
+  registration_id   String
+  team_id           String?
+  assignee_id       String
+  stage             AssignmentStage // INITIAL, REVISION, DUMMY
+  iteration         Int              @default(1)
   due_at            DateTime?
   status            AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE, REVOKED
   revocation_reason String?          @db.Text

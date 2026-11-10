@@ -42,9 +42,18 @@ async function countMyPendingSignatures(user) {
       document: { select: { signatories: { select: { sign_order: true, status: true } } } },
     },
   });
-  return pending.filter(mine =>
+  const verificationCount = pending.filter(mine =>
     !mine.document.signatories.some(other => other.sign_order < mine.sign_order && other.status !== 'SIGNED'),
   ).length;
+
+  // Surat persetujuan permohonan master yang menunggu TTE Kepala (bukan surat yang disusun sendiri)
+  let masterLetterCount = 0;
+  if (user.roles.includes('KEPALA_LPMQ') || user.roles.includes('SUPERADMIN')) {
+    masterLetterCount = await prisma.masterMushafRequest.count({
+      where: { status: 'MENUNGGU_TTE', NOT: { letter_drafted_by_id: user.id } },
+    });
+  }
+  return verificationCount + masterLetterCount;
 }
 
 export const SIDEBAR_BADGES = [
@@ -67,6 +76,12 @@ export const SIDEBAR_BADGES = [
     key: 'publisher_registrations',
     roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
     count: () => prisma.publisherRegistration.count({ where: { status: 'DIAJUKAN' } }),
+  },
+  {
+    // Permohonan master: perlu disusun suratnya (DIAJUKAN) atau dikirim ke penerbit (DITANDATANGANI)
+    key: 'master_requests_pending',
+    roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
+    count: () => prisma.masterMushafRequest.count({ where: { status: { in: ['DIAJUKAN', 'DITANDATANGANI'] } } }),
   },
   {
     key: 'master_intake',

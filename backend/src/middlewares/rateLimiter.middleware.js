@@ -81,6 +81,19 @@ export const publisherStatusCheckRateLimiter = rateLimit({
   },
 });
 
+export const masterRequestRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 10, // Maksimal 10 permohonan master per 15 menit per IP
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak permohonan master mushaf dari IP ini. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
 export default {
   authRateLimiter,
   registrationRateLimiter,
@@ -88,4 +101,5 @@ export default {
   forgotPasswordRateLimiter,
   publisherRegistrationRateLimiter,
   publisherStatusCheckRateLimiter,
+  masterRequestRateLimiter,
 };
