@@ -6,6 +6,7 @@ import { registrationApi } from '@/api/registration.api';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import { fileApi } from '@/api/file.api';
 import * as AuthContext from '@/features/auth/AuthContext';
+import { SURVEY_COMPLETED_EVENT } from '@/features/registrations/PublisherSurveyDialog';
 
 const unsur = { id: 'u1', code: 'A', name: 'Persyaratan', definition: 'Syarat yang harus dipenuhi.' };
 const question = {
@@ -89,6 +90,20 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
 
     await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/official-documents/doc-1/pdf'), expect.anything()));
     expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeInTheDocument();
+  });
+
+  it('ikut terbuka bila survei diselesaikan dari banner STT di halaman yang sama', async () => {
+    asPublisher();
+    vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
+    render(<DocumentArchive registrationId="reg-1" />);
+    await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ });
+
+    window.dispatchEvent(new CustomEvent(SURVEY_COMPLETED_EVENT, { detail: 'reg-lain' }));
+    expect(screen.getByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ })).toBeInTheDocument();
+
+    window.dispatchEvent(new CustomEvent(SURVEY_COMPLETED_EVENT, { detail: 'reg-1' }));
+    expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unduh Dokumen/ })).toBeInTheDocument();
   });
 
   it('survei diisi berurutan: survei kedua terkunci sampai survei pertama terisi', async () => {

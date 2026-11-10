@@ -292,6 +292,8 @@ function SurveyForm({ survey, onSubmit, saving, respondent, withClosing = true }
   );
 }
 
+export const SURVEY_COMPLETED_EVENT = 'publisher-survey-completed';
+
 // Pop-up survei: muncul saat penerbit menekan Unduh STT dan masih ada survei yang belum diisi.
 // Setelah seluruh survei terisi, unduhan STT diteruskan lewat onCompleted().
 export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompleted }) {
@@ -322,6 +324,8 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
       setSurveys(list);
       const sisa = list.filter((s) => !s.answered);
       if (!sisa.length) {
+        // Banner STT dan arsip dokumen di halaman yang sama menyimpan status survei sendiri-sendiri; buka keduanya.
+        window.dispatchEvent(new CustomEvent(SURVEY_COMPLETED_EVENT, { detail: registrationId }));
         showToast('Terima kasih. Survei selesai, Surat Tanda Tashih sedang diunduh.', 'success');
         onCompleted?.();
         return;

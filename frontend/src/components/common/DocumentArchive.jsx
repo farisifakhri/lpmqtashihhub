@@ -5,7 +5,7 @@ import { fileApi } from '@/api/file.api';
 import { getAuthToken } from '@/api/client';
 import { useOptionalAuth } from '@/features/auth/AuthContext';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
-import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
+import { PublisherSurveyDialog, SURVEY_COMPLETED_EVENT } from '@/features/registrations/PublisherSurveyDialog';
 import { DocumentVersionHistory } from './DocumentVersionHistory';
 import { PrivateFileViewer } from './PrivateFileViewer';
 import { Button } from '@/components/ui/Button';
@@ -54,6 +54,13 @@ export function DocumentArchive({ registrationId }) {
       .finally(() => { if (active) setSurveysChecked(true); });
     return () => { active = false; };
   }, [isPublisher, registrationId]);
+
+  // Survei bisa juga diselesaikan dari banner STT di atas arsip ini.
+  useEffect(() => {
+    const unlock = (e) => { if (e.detail === registrationId) setSurveysPending([]); };
+    window.addEventListener(SURVEY_COMPLETED_EVENT, unlock);
+    return () => window.removeEventListener(SURVEY_COMPLETED_EVENT, unlock);
+  }, [registrationId]);
 
   // Selama survei belum terisi, STT disembunyikan seluruhnya dari penerbit (bukan hanya tombol unduhnya).
   const isStt = (item) => item?.source === 'OFFICIAL' && item?.document_type === 'SURAT_TANDA_TASHIH';
