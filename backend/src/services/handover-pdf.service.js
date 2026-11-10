@@ -170,7 +170,7 @@ export async function renderHandoverPdf(handover) {
     handover.status === 'RECEIVED'
       ? 'Telah Diterima Resmi oleh Distributor'
       : handover.status === 'RETURNED'
-      ? 'Dikembalikan ke Loket / Perbaikan Fisik'
+      ? 'Dikembalikan untuk Perbaikan Fisik'
       : 'Menunggu Pemeriksaan dan Penerimaan Distributor';
 
   const tableRows = [

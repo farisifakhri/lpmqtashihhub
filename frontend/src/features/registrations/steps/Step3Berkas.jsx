@@ -154,7 +154,7 @@ export const Step3Berkas = ({
               </div>
             </div>
             <p className="text-[11px] text-ink-muted leading-relaxed">
-              Cetak format surat ini di atas <strong>kop resmi penerbit</strong>, bubuhkan <strong>tanda tangan pimpinan</strong> dan <strong>stempel basah</strong>, lalu scan PDF (maksimal 10 MB) untuk diunggah di bawah ini. Naskah master fisik mushaf dikirimkan ke loket LPMQ bersama bukti registrasi.
+              Cetak format surat ini di atas <strong>kop resmi penerbit</strong>, bubuhkan <strong>tanda tangan pimpinan</strong> dan <strong>stempel basah</strong>, lalu scan PDF (maksimal 10 MB) untuk diunggah di bawah ini. Naskah master fisik mushaf dikirimkan ke Kantor LPMQ bersama bukti registrasi.
             </p>
           </div>
 

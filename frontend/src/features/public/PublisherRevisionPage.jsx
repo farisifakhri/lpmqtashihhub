@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import {
     AlertTriangle,
@@ -12,6 +12,8 @@ import {
     Building2,
     XCircle,
     Info,
+    KeyRound,
+    ArrowRight,
 } from "lucide-react";
 import kemenagLogo from "@/assets/kemenag1.png";
 import lpmqLogo from "@/assets/logo-lpmq1.png";
@@ -42,9 +44,12 @@ const MAX_SIZE_AKTA = 2 * 1024 * 1024;
 export const PublisherRevisionPage = () => {
     const params = useParams();
     const [searchParams] = useSearchParams();
-    const token = params.token || searchParams.get("token") || "";
+    const initialToken = params.token || searchParams.get("token") || "";
 
-    const [isLoading, setIsLoading] = useState(true);
+    const [currentToken, setCurrentToken] = useState(initialToken);
+    const [manualTokenInput, setManualTokenInput] = useState("");
+
+    const [isLoading, setIsLoading] = useState(Boolean(initialToken));
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [revisionData, setRevisionData] = useState(null);
     const [loadError, setLoadError] = useState("");
@@ -62,48 +67,60 @@ export const PublisherRevisionPage = () => {
     const [replacementFiles, setReplacementFiles] = useState({});
     const [fileErrors, setFileErrors] = useState({});
 
-    useEffect(() => {
-        if (!token) {
+    const fetchRevisionData = useCallback(async (tokenToFetch) => {
+        if (!tokenToFetch) {
             setLoadError("Tautan perbaikan tidak memiliki token yang valid.");
             setIsLoading(false);
             return;
         }
 
-        const fetchRevisionData = async () => {
-            setIsLoading(true);
-            setLoadError("");
-            try {
-                const res = await publisherRegistrationApi.getRevision(token);
-                if (res?.success && res?.data) {
-                    setRevisionData(res.data);
-                    setEditableFields({
-                        nama_penerbit: res.data.nama_penerbit || "",
-                        alamat_lengkap: res.data.alamat_lengkap || "",
-                        nama_penanggung_jawab: res.data.nama_penanggung_jawab || "",
-                        telepon_penanggung_jawab: res.data.telepon_penanggung_jawab || "",
-                    });
-                } else {
-                    throw new Error(res?.message || "Data perbaikan gagal dimuat.");
-                }
-            } catch (err) {
-                const code = err.data?.code || err.code;
-                if (code === "TOKEN_INVALID_OR_EXPIRED" || err.status === 400 || err.status === 410) {
-                    setLoadError(
-                        "Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi petugas loket LPMQ jika Anda memerlukan bantuan."
-                    );
-                } else {
-                    setLoadError(
-                        err.message ||
-                            "Gagal memuat formulir perbaikan pendaftaran dari server. Silakan muat ulang halaman."
-                    );
-                }
-            } finally {
-                setIsLoading(false);
+        setIsLoading(true);
+        setLoadError("");
+        try {
+            const res = await publisherRegistrationApi.getRevision(tokenToFetch);
+            if (res?.success && res?.data) {
+                setRevisionData(res.data);
+                setEditableFields({
+                    nama_penerbit: res.data.nama_penerbit || "",
+                    alamat_lengkap: res.data.alamat_lengkap || "",
+                    nama_penanggung_jawab: res.data.nama_penanggung_jawab || "",
+                    telepon_penanggung_jawab: res.data.telepon_penanggung_jawab || "",
+                });
+            } else {
+                throw new Error(res?.message || "Data perbaikan gagal dimuat.");
             }
-        };
+        } catch (err) {
+            const code = err.data?.code || err.code;
+            if (code === "TOKEN_INVALID_OR_EXPIRED" || err.status === 400 || err.status === 410) {
+                setLoadError(
+                    "Tautan perbaikan sudah tidak berlaku atau pernah digunakan. Hubungi Sekretariat LPMQ jika Anda memerlukan bantuan."
+                );
+            } else {
+                setLoadError(
+                    err.message ||
+                        "Gagal memuat formulir perbaikan pendaftaran dari server. Silakan muat ulang halaman."
+                );
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
-        fetchRevisionData();
-    }, [token]);
+    useEffect(() => {
+        if (initialToken) {
+            fetchRevisionData(initialToken);
+        } else {
+            setIsLoading(false);
+        }
+    }, [initialToken, fetchRevisionData]);
+
+    const handleManualTokenSubmit = (e) => {
+        e.preventDefault();
+        const clean = manualTokenInput.trim();
+        if (!clean) return;
+        setCurrentToken(clean);
+        fetchRevisionData(clean);
+    };
 
     const handleTextChange = (e) => {
         const { name, value } = e.target;
@@ -169,7 +186,7 @@ export const PublisherRevisionPage = () => {
 
         setIsSubmitting(true);
         try {
-            const res = await publisherRegistrationApi.submitRevision(token, payload);
+            const res = await publisherRegistrationApi.submitRevision(currentToken, payload);
             if (res?.success) {
                 setSubmitSuccess(true);
             } else {
@@ -245,6 +262,61 @@ export const PublisherRevisionPage = () => {
                     </div>
                 )}
 
+                {/* State: Form Masukkan Token Manual jika dibuka langsung tanpa token */}
+                {!isLoading && !currentToken && !loadError && !revisionData && (
+                    <div className="p-6 rounded-2xl bg-surface-subtle border border-line space-y-4 animate-fadeIn">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-brand-50 text-brand-800 border border-brand-100 flex items-center justify-center shrink-0">
+                                <KeyRound className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-bold text-ink">
+                                    Masukkan Token Perbaikan atau Kode Pendaftaran
+                                </h3>
+                                <p className="text-xs text-ink-muted">
+                                    Silakan masukkan token perbaikan yang Anda terima melalui email/petugas, ATAU gunakan langsung Kode Pendaftaran Anda (REG-PUB-...).
+                                </p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleManualTokenSubmit} className="space-y-3 pt-2">
+                            <div>
+                                <label
+                                    htmlFor="manual-token-field"
+                                    className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted mb-1.5"
+                                >
+                                    Token Perbaikan atau Kode Pendaftaran
+                                </label>
+                                <input
+                                    id="manual-token-field"
+                                    type="text"
+                                    value={manualTokenInput}
+                                    onChange={(e) => setManualTokenInput(e.target.value.trim())}
+                                    placeholder="Contoh: REG-PUB-2026... atau token perbaikan 64-karakter"
+                                    className="w-full px-3.5 py-2.5 text-xs font-mono bg-canvas focus:bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans"
+                                    required
+                                />
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
+                                >
+                                    <span>Muat Berkas Pendaftaran</span>
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                                <Link
+                                    to="/cek-status"
+                                    className="py-2.5 px-4 rounded-xl text-xs font-bold text-center text-ink bg-surface border border-line hover:bg-surface-subtle transition-colors shadow-2xs"
+                                >
+                                    Cek Status Pendaftaran
+                                </Link>
+                            </div>
+                        </form>
+                    </div>
+                )}
+
                 {/* State: Token Error / Expired */}
                 {!isLoading && loadError && (
                     <div className="p-6 rounded-2xl bg-civic-dangerSoft/60 border border-civic-dangerLine text-center space-y-3 animate-fadeIn">
@@ -257,7 +329,19 @@ export const PublisherRevisionPage = () => {
                         <p className="text-xs text-civic-danger max-w-md mx-auto leading-relaxed">
                             {loadError}
                         </p>
-                        <div className="pt-2 flex justify-center gap-3">
+                        <div className="pt-2 flex flex-wrap justify-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setLoadError("");
+                                    setCurrentToken("");
+                                    setManualTokenInput("");
+                                }}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-brand-800 bg-surface border border-brand-200 hover:bg-surface-subtle transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <KeyRound className="w-3.5 h-3.5 text-brand-fg" />
+                                <span>Masukkan Token Lain</span>
+                            </button>
                             <Link
                                 to="/cek-status"
                                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-ink bg-surface border border-line hover:bg-surface-subtle transition-colors shadow-2xs"
@@ -268,7 +352,7 @@ export const PublisherRevisionPage = () => {
                                 href="mailto:lpmq@kemenag.go.id"
                                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
                             >
-                                Hubungi Loket LPMQ
+                                Hubungi Sekretariat LPMQ
                             </a>
                         </div>
                     </div>
@@ -292,6 +376,7 @@ export const PublisherRevisionPage = () => {
                         <div className="pt-2">
                             <Link
                                 to="/cek-status"
+                                state={{ kode: revisionData?.kode_pendaftaran }}
                                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
                             >
                                 <span>Pantau Status di Halaman Cek Status</span>

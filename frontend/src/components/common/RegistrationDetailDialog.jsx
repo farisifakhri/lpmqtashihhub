@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X, Clock, AlertCircle, UserCheck, ArrowRight, Send } from 'lucide-react';
+import { X, Clock, AlertCircle, UserCheck, ArrowRight, Send, Users, Layers } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { reportApi } from '@/api/report.api';
 import { useOptionalAuth } from '@/features/auth/AuthContext';
@@ -94,6 +94,54 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="p-5 sm:p-6 space-y-5">
           {error ? <p role="alert" className="flex gap-2 text-sm text-civic-danger"><AlertCircle className="h-5 w-5 shrink-0" />{error}</p> : !data ? <p role="status" className="text-sm text-ink-muted">Memuat detail naskah…</p> : <>
             <div><p className="font-mono text-xs text-brand-fg">{data.registration_no}</p><h3 className="text-xl font-bold text-ink mt-1">{data.title}</h3><p className="text-sm text-ink-muted mt-1">{data.publisher?.legal_name}</p></div>
+
+            {/* Penanggung Jawab Naskah (Internal & Super Admin Context) */}
+            {(isAdmin || isHead || isVerifier || userRoles.length > 0) && (
+              <div className="rounded-xl bg-surface-subtle/80 border border-line p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-line/60 pb-2">
+                  <h4 className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-brand-700" />
+                    Penanggung Jawab Operasional (PIC)
+                  </h4>
+                  {data.core_team?.teamNumber && (
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-50 text-brand-900 border border-brand-200">
+                      Tim Inti #{data.core_team.teamNumber}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <div className="p-2.5 rounded-lg bg-surface border border-line/60 space-y-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                      Verifikator Berkas
+                    </span>
+                    <p className="font-bold text-ink truncate flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                      <span className="truncate">
+                        {data.assigned_verifier?.name || data.core_team?.verifier?.name || data.verification_assignments?.[0]?.verifier?.name || (
+                          <span className="text-ink-muted italic font-normal">Belum ditugaskan</span>
+                        )}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-surface border border-line/60 space-y-0.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted block">
+                      Distributor Sidang
+                    </span>
+                    <p className="font-bold text-ink truncate flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-civic-info shrink-0" />
+                      <span className="truncate">
+                        {data.core_distributor?.name || data.core_team?.distributor?.name || (
+                          data.core_team_number ? `Tim Inti #${data.core_team_number}` : (
+                            <span className="text-ink-muted italic font-normal">Belum ditetapkan</span>
+                          )
+                        )}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {(isAdmin || userRoles.includes('DOKUMENTATOR')) && <DocumentArchive registrationId={data.id} />}
             <div className="rounded-xl bg-canvas border border-line p-4 space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -155,9 +203,9 @@ export function RegistrationDetailDialog({ id, onClose }) {
         <div className="sticky bottom-0 bg-canvas border-t border-line p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 z-10">
           <div className="text-xs text-ink-muted">
             {data.status === 'READY_FOR_VERIFICATION' && isIntakeReceived ? (
-              <span className="text-brand-fg font-semibold">Master fisik diterima loket. Siap ditugaskan Helper Admin.</span>
+              <span className="text-brand-fg font-semibold">Master fisik diterima petugas penerima. Siap ditugaskan Helper Admin.</span>
             ) : data.status === 'READY_FOR_VERIFICATION' ? (
-              <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di loket LPMQ.</span>
+              <span className="text-civic-warning font-semibold">Menunggu intake master fisik A4 di Kantor LPMQ.</span>
             ) : data.status === 'VERIFICATION_ASSIGNED' ? (
               <span className="text-civic-info font-semibold">Verifikator telah ditugaskan (Disposisi terbit).</span>
             ) : (
@@ -192,7 +240,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
                 onClick={onClose}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-civic-warning hover:bg-civic-warning text-white font-bold text-xs shadow-2xs transition-colors"
               >
-                <span>Loket Intake Fisik</span>
+                <span>Penerimaan Fisik Naskah</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}

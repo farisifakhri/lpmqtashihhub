@@ -61,17 +61,37 @@ function SurveyForm({ survey, onSubmit, saving }) {
   const atUnsur = step > 0 && step < steps.length - 1 ? groups[step - 1] : null;
   const isLast = step === steps.length - 1;
 
-  // Pertanyaan pilihan pada bagian ini wajib terisi sebelum lanjut.
-  const stepIncomplete = atUnsur?.questions.some((q) => q.type !== 'ESAI' && !form.answers[q.id]);
+  // Seluruh isian pada bagian ini wajib terisi sebelum lanjut/kirim.
+  const filled = (v) => String(v ?? '').trim() !== '';
+  const unansweredCount = atUnsur
+    ? atUnsur.questions.filter((q) => !filled(q.type === 'ESAI' ? form.essays[q.id] : form.answers[q.id])).length : 0;
+  const missing = step === 0
+    ? [['Nama pengisi', form.respondent_name], ['Usia', form.age], ['Jenis kelamin', form.gender],
+      ['Pendidikan terakhir', form.education], ['Pekerjaan', form.occupation], ['Kategori layanan', form.service_category],
+      ...(form.is_disabled ? [['Jenis disabilitas', form.disability_type]] : [])]
+      .filter(([, v]) => !filled(v)).map(([label]) => label)
+    : atUnsur
+      ? (unansweredCount ? [`${unansweredCount} pertanyaan`] : [])
+      : [['Kepuasan keseluruhan', form.overall_satisfaction], ['Rekomendasi', form.nps_score],
+        ...Object.keys(ANTI_CORRUPTION_STATEMENTS).map((key) => ['pernyataan anti-korupsi', form[key]]),
+        ['Kritik dan saran', form.feedback]]
+        .filter(([, v]) => !filled(v)).map(([label]) => label)
+        .reduce((acc, label) => { // gabungkan pernyataan anti-korupsi: "2 pernyataan anti-korupsi"
+          const prev = acc.find((x) => x.label === label);
+          if (prev) prev.n += 1; else acc.push({ label, n: 1 });
+          return acc;
+        }, []).map(({ label, n }) => (n > 1 ? `${n} ${label}` : label));
+  const ageInvalid = step === 0 && filled(form.age) && (Number(form.age) < 10 || Number(form.age) > 100);
+  const blocked = missing.length > 0 || ageInvalid;
 
   const next = () => {
-    if (stepIncomplete) { showToast('Jawab seluruh pertanyaan pada bagian ini dulu.', 'danger'); return; }
+    if (blocked) { showToast('Lengkapi seluruh isian pada bagian ini dulu.', 'danger'); return; }
     setStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   const submit = (event) => {
     event.preventDefault();
-    if (!isLast) { next(); return; }
+    if (!isLast || blocked) { next(); return; }
     const answers = [];
     for (const g of groups) {
       for (const q of g.questions) {
@@ -214,9 +234,16 @@ function SurveyForm({ survey, onSubmit, saving }) {
         <Button type="button" variant="outline" disabled={step === 0 || saving} onClick={() => setStep((s) => Math.max(0, s - 1))}>
           Kembali
         </Button>
-        <Button type="submit" disabled={saving}>
-          {saving ? 'Mengirim…' : isLast ? 'Kirim Survei' : 'Lanjut'}
-        </Button>
+        <div className="flex items-center gap-3">
+          {blocked && (
+            <p className="text-right text-xs text-civic-warning" role="status">
+              {ageInvalid ? 'Usia harus 10–100 tahun.' : `Belum diisi: ${missing.join(', ')}.`}
+            </p>
+          )}
+          <Button type="submit" disabled={saving || blocked}>
+            {saving ? 'Mengirim…' : isLast ? 'Kirim Survei' : 'Lanjut'}
+          </Button>
+        </div>
       </div>
     </form>
   );
@@ -282,15 +309,20 @@ export function PublisherSurveyDialog({ registrationId, isOpen, onClose, onCompl
           {/* Pembagian per nama survei */}
           {surveys.length > 1 && (
             <div className="flex flex-wrap gap-2" role="tablist" aria-label="Daftar survei">
-              {surveys.map((s) => (
-                <button key={s.id} type="button" role="tab" aria-selected={s.id === active} onClick={() => setActive(s.id)}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
-                    s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink hover:border-brand-700'}`}>
-                  {s.answered ? <CheckCircle2 className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
-                  {s.name}
-                  <Badge variant={s.answered ? 'success' : 'warning'}>{s.answered ? 'Terisi' : 'Belum'}</Badge>
-                </button>
-              ))}
+              {surveys.map((s, i) => {
+                // Survei diisi berurutan: terkunci selama survei sebelumnya belum terisi.
+                const locked = surveys.slice(0, i).some((prev) => !prev.answered);
+                return (
+                  <button key={s.id} type="button" role="tab" aria-selected={s.id === active} disabled={locked}
+                    title={locked ? 'Isi survei sebelumnya terlebih dahulu' : undefined} onClick={() => setActive(s.id)}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                      s.id === active ? 'border-brand-800 bg-brand-800 text-white' : 'border-line-strong bg-white text-ink enabled:hover:border-brand-700'}`}>
+                    {s.answered ? <CheckCircle2 className="h-4 w-4" /> : locked ? <Lock className="h-4 w-4" /> : <ClipboardList className="h-4 w-4" />}
+                    {s.name}
+                    <Badge variant={s.answered ? 'success' : locked ? 'default' : 'warning'}>{s.answered ? 'Terisi' : locked ? 'Terkunci' : 'Belum'}</Badge>
+                  </button>
+                );
+              })}
             </div>
           )}
 

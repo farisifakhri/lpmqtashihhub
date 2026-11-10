@@ -79,7 +79,6 @@ export const permitPublisherProfileEdit = async (publisherId, { allowed = true, 
       profile_edit_allowed: Boolean(allowed),
       profile_edit_granted_by: req.user.id,
       profile_edit_granted_at: new Date(),
-      profile_edit_notes: notes || null,
     },
   });
 

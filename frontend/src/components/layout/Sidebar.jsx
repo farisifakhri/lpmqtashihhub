@@ -252,7 +252,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
-        // 3. Distributor (Petugas Loket TMII & Manajemen Tim Sidang)
+        // 3. Distributor (Penerimaan Naskah TMII & Manajemen Tim Sidang)
         if (isDistributor && !isSuperAdmin) {
             return [
                 {
@@ -269,7 +269,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/internal/distributions/handover",
                             badgeKey: "handover_pending",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
-                            description: "Konfirmasi master fisik & BAST loket",
+                            description: "Konfirmasi master fisik & BAST naskah",
                         },
                         {
                             label: "Penugasan Tim Sidang",
@@ -435,7 +435,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badgeKey: "master_intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
-                            badge: "Loket",
+                            badge: "Intake",
                         },
                         {
                             label: "3. Verifikasi Berkas",
@@ -530,7 +530,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         badgeKey: "master_intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
-                        badge: "Loket",
+                        badge: "Intake",
                     },
                     {
                         label: "3. Verifikasi Berkas",

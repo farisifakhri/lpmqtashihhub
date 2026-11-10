@@ -42,9 +42,9 @@ describe('Glosarium & Formatters Narasi Resmi (B-12)', () => {
     expect(formatRevisionKind('NASKAH_DUMI')).toBe('Naskah Dumi (Pra-Cetak)');
     expect(formatStage('DUMMY')).toBe('Tashih Tahap Dumi (Pra-Cetak)');
     expect(formatRecapScope('TEAM')).toBe('Mewakili Tim (Kolektif)');
-    expect(formatCourier('LOKET_LPMQ')).toBe('Serah Langsung ke Loket LPMQ');
+    expect(formatCourier('LOKET_LPMQ')).toBe('Serah Langsung ke Kantor LPMQ');
     expect(formatFileType('COVER')).toBe('Sampul / Cover Naskah');
-    expect(formatRole('ADMIN_INTERNAL')).toBe('Helper Admin Loket');
+    expect(formatRole('ADMIN_INTERNAL')).toBe('Helper Admin Penerimaan');
     expect(formatUserStatus('ACTIVE')).toBe('Aktif');
   });
 });

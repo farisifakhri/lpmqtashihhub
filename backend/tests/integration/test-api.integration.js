@@ -4,6 +4,7 @@ import { test as nodeTest } from 'node:test';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/database.js';
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import { assertIsolatedTestDatabase } from '../../src/utils/test-database.js';
 import { runWorkflowTests } from './workflow.integration.js';
 import { runMasterTests } from './master.integration.js';
@@ -342,6 +343,27 @@ async function runTests() {
           }),
         });
         assert.strictEqual(res.status, 409);
+      });
+
+      await test('Penerbit dapat mengirim laporan pencetakan setelah STT terbit (201)', async () => {
+        const { status: originalStatus, foreign_metadata: originalMeta } = await prisma.registration.findUnique({ where: { id: validRegId }, select: { status: true, foreign_metadata: true } });
+        await prisma.registration.update({ where: { id: validRegId }, data: { status: 'STT_ISSUED' } });
+        try {
+          const res = await fetch(`${BASE_URL}/registrations/${validRegId}/printing-reports`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${publisherToken}` },
+            body: JSON.stringify({
+              batch_no: 1, print_date: '2026-11-08', oplah_printed: 5, printer_name: 'PT Cetak',
+              printer_location: 'Kudus', exemplar_sent: true, exemplar_tracking_no: 'JNE-1', notes: 'uji',
+            }),
+          });
+          assert.strictEqual(res.status, 201, await res.text());
+          const item = await prisma.documentationItem.findFirst({ where: { registration_id: validRegId, item_type: 'PHYSICAL_EXEMPLAR_RECEIVED' } });
+          assert.strictEqual(item?.status, 'PENDING');
+        } finally {
+          await prisma.documentationItem.deleteMany({ where: { registration_id: validRegId, item_type: 'PHYSICAL_EXEMPLAR_RECEIVED' } });
+          await prisma.registration.update({ where: { id: validRegId }, data: { status: originalStatus, foreign_metadata: originalMeta ?? Prisma.DbNull } });
+        }
       });
 
       await test('Negative: VERIFIKATOR tidak dapat mengambil sendiri pengajuan yang belum ditugaskan', async () => {

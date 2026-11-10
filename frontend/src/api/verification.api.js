@@ -137,7 +137,7 @@ export const verificationApi = {
   },
 
   /**
-   * Menerima atau mengembalikan master fisik mushaf di loket (Admin Loket Intake)
+   * Menerima atau mengembalikan master fisik mushaf (Admin Penerimaan Naskah)
    * @param {string} registrationId
    * @param {Object} payload - { decision, volume_count, condition, receipt_no, notes }
    */

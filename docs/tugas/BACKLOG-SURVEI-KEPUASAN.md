@@ -72,4 +72,4 @@ cd frontend && npx vitest run # 363 test
 cd frontend && npx vite build # wajib setelah menghapus/menambah berkas rute
 ```
 
-Data percobaan di basis data lokal: penerbit `dummy.penerbit.8180982@contoh.id` dengan permohonan `REG-202611-0008` berstatus `STT_ISSUED` dan STT `STT/LPMQ/2026/C06DB8`.
+Data percobaan di basis data lokal: penerbit `dummy.penerbit.8180982@contoh.id` (kata sandi `password123`) dengan permohonan `REG-202611-0008` berstatus `STT_ISSUED` dan STT `STT/LPMQ/2026/C06DB8`.
