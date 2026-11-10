@@ -224,9 +224,10 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     const detail = await ok(`/admin/surveys/${target.id}`, adminToken, 'GET');
     assert.deepEqual(detail.items.map((i) => [i.question_id, i.unsur_id]), [[q.id, unsurB.id]]);
 
-    // Survei yang sudah dijawab terkunci.
-    const locked = await call('/admin/survey-questions', adminToken, 'POST', { ...body, text: 'Pertanyaan ke survei terkunci', survey_id: survey.id });
-    assert.equal(locked.status, 409);
+    // Survei yang sudah dijawab tetap boleh ditambah pertanyaan di akhir susunannya.
+    const appended = await ok('/admin/survey-questions', adminToken, 'POST', { ...body, text: 'Pertanyaan tambahan ke survei yang sudah dijawab', survey_id: survey.id }, 201);
+    assert.equal((await ok(`/admin/surveys/${survey.id}`, adminToken, 'GET')).items.at(-1).question_id, appended.id);
+    await ok(`/admin/survey-questions/${appended.id}`, adminToken, 'DELETE');
 
     // Pertanyaan yang dipakai survei tanpa jawaban boleh dihapus dan ikut keluar dari susunannya.
     await ok(`/admin/survey-questions/${q.id}`, adminToken, 'DELETE');
@@ -315,7 +316,10 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
 
     assert.equal((await ok(`/registrations/${reg.id}/surveys`, publisherToken, 'GET')).find((s) => s.id === survey.id).answered, true);
     assert.equal((await call(`/registrations/${reg.id}/surveys/${survey.id}/response`, publisherToken, 'POST', { answers })).status, 409);
-    // Pengajuan penerbit lain tidak dapat diintip.
+    // Pengajuan penerbit lain tidak dapat diintip maupun diisikan surveinya (isian itu membuka STT pengajuan tersebut).
+    const otherPublisherToken = (await loginAs('penerbit.b@tenanttest.com')).token;
+    assert.equal((await call(`/registrations/${reg.id}/surveys`, otherPublisherToken, 'GET')).status, 403);
+    assert.equal((await call(`/registrations/${reg.id}/surveys/${survey.id}/response`, otherPublisherToken, 'POST', { answers })).status, 403);
     // Hanya penerbit pemilik (dan Super Admin) yang boleh membuka survei pengajuan ini.
     assert.equal((await call(`/registrations/${reg.id}/surveys`, helperAdminToken, 'GET')).status, 403);
     assert.equal((await call(`/registrations/${reg.id}/surveys`, null, 'GET')).status, 401);

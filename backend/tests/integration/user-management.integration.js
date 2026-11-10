@@ -156,6 +156,23 @@ export async function runUserManagementTests({ test, prisma, base, loginAs, admi
       assert.equal(res.data.action, 'DELETED');
     });
 
+    // 10c. Regresi: hapus akun penerbit tanpa pengajuan hanya menghapus penerbitnya sendiri
+    await test('User Management: hapus akun penerbit tanpa pengajuan tidak menyentuh penerbit lain', async () => {
+      const pubUser = await prisma.user.create({
+        data: {
+          name: 'Penerbit Hapus Test',
+          email: `test.pub.delete.${Date.now()}@contoh.id`,
+          password_hash: 'x',
+          publisher: { create: { legal_name: 'PT Hapus Test', entity_type: 'PT' } },
+        },
+      });
+      const before = await prisma.publisher.count();
+      const res = await expect(`/users/${pubUser.id}`, adminToken, 'DELETE');
+      assert.equal(res.data.action, 'DELETED');
+      assert.equal(await prisma.publisher.count(), before - 1);
+      assert.equal(await prisma.user.findUnique({ where: { id: pubUser.id } }), null);
+    });
+
     // 11. Create Admin Internal & Super Admin explicitly
     let adminInternalId = null;
     let newSuperadminId = null;

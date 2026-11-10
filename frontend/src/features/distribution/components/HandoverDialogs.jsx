@@ -81,13 +81,13 @@ export const HandoverDialogs = ({
 
               <div>
                 <label className="block font-bold text-ink mb-1">
-                  Catatan Penerimaan Loket (Opsional)
+                  Catatan Penerimaan Naskah (Opsional)
                 </label>
                 <textarea
                   value={receiveNotes}
                   maxLength={1000}
                   onChange={(e) => setReceiveNotes(e.target.value)}
-                  placeholder="Catatan kondisi jilid atau penanda naskah saat diterima di loket..."
+                  placeholder="Catatan kondisi jilid atau penanda naskah saat diterima..."
                   rows={3}
                   className="w-full p-2.5 rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
                 />

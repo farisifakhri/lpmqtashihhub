@@ -299,7 +299,7 @@ export const DistributorHandoverInboxPage = () => {
       {/* Top Header & Breadcrumb */}
       <PageHeader
         title="Antrean Serah-Terima Master Fisik"
-        subtitle="Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di loket pentashihan (Langkah 7 & 8 SOP)"
+        subtitle="Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di ruang penerimaan pentashihan (Langkah 7 & 8 SOP)"
         breadcrumbs={[
           { label: 'Portal Petugas', href: '/internal' },
           { label: 'Distribusi Sidang' },

@@ -64,7 +64,7 @@ export const Step4ReviewSubmit = ({
               Langkah 4: Tinjau & Konfirmasi Permohonan
             </h2>
             <p className="text-xs sm:text-sm text-ink-muted">
-              Periksa kembali seluruh data dan berkas persyaratan sebelum mengirimkan permohonan ke loket LPMQ.
+              Periksa kembali seluruh data dan berkas persyaratan sebelum mengirimkan permohonan ke LPMQ.
             </p>
           </div>
         </div>

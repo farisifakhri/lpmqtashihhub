@@ -94,7 +94,7 @@ export const RECAP_SCOPE_LABELS = {
 
 // 8. Kamus Ekspedisi / Metode Penyerahan
 export const COURIER_LABELS = {
-  LOKET_LPMQ: 'Serah Langsung ke Loket LPMQ',
+  LOKET_LPMQ: 'Serah Langsung ke Kantor LPMQ',
   POS_INDONESIA: 'Pos Indonesia',
   JNE: 'JNE Express',
   TIKI: 'TIKI',
@@ -123,7 +123,7 @@ export const FILE_TYPE_LABELS = {
 // 10. Kamus Peran Pengguna (Role)
 export const ROLE_LABELS = {
   SUPERADMIN: 'Administrator Sistem',
-  ADMIN_INTERNAL: 'Helper Admin Loket',
+  ADMIN_INTERNAL: 'Helper Admin Penerimaan',
   VERIFIKATOR: 'Verifikator Dokumen',
   VERIFICATOR: 'Verifikator Dokumen',
   DISTRIBUTOR: 'Koordinator Distribusi',

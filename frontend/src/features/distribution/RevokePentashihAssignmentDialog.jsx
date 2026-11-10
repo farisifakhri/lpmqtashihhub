@@ -17,8 +17,8 @@ export const RevokePentashihAssignmentDialog = ({ assignment, registration, onCl
     e.preventDefault();
     if (!assignment?.id) return;
 
-    if (!reason.trim() || reason.trim().length < 5) {
-      setError('Alasan pelepasan penugasan wajib diisi (minimal 5 karakter).');
+    if (!reason.trim() || reason.trim().length < 10) {
+      setError('Alasan pelepasan penugasan wajib diisi (minimal 10 karakter).');
       return;
     }
 
@@ -127,7 +127,7 @@ export const RevokePentashihAssignmentDialog = ({ assignment, registration, onCl
               required
             />
             <div className="flex justify-between items-center mt-1 text-xs text-ink-muted">
-              <span>Minimal 5 karakter</span>
+              <span>Minimal 10 karakter</span>
               <span>{reason.trim().length} karakter</span>
             </div>
           </div>
@@ -147,7 +147,7 @@ export const RevokePentashihAssignmentDialog = ({ assignment, registration, onCl
               type="submit"
               variant="danger"
               size="sm"
-              disabled={submitting || reason.trim().length < 5}
+              disabled={submitting || reason.trim().length < 10}
             >
               {submitting ? 'Melepaskan...' : 'Lepas Penugasan'}
             </Button>

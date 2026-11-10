@@ -79,7 +79,7 @@ test('B19B-02: Pencabutan penugasan berstatus COMPLETED atau REVOKED ditolak (40
   };
 
   prisma.$transaction = async (fn) => fn(mockTx);
-  const adminUser = { id: 'usr-admin', roles: ['ADMIN_INTERNAL'] };
+  const adminUser = { id: 'usr-admin', roles: ['SUPERADMIN'] };
 
   // 1. Tolak jika status COMPLETED
   await assert.rejects(

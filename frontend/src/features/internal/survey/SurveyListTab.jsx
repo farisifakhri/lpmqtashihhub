@@ -51,12 +51,12 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
           </dl>
           {/* Struktur kuesioner sesuai Pedoman Menteri PANRB No. 9/2024 hlm. 14–21, urut seperti yang dilihat responden. */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Struktur Kuesioner (Pedoman PANRB 9/2024)</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Struktur Kuesioner (Pedoman PANRB Nomor 9 Tahun 2024)</h4>
             <QuestionnaireSection title="1. Kalimat Pembuka"><p>{survey.description || OPENING_TEXT}</p></QuestionnaireSection>
-            <QuestionnaireSection title="2. Data Demografis">
+            <QuestionnaireSection title="2. Data Responden (diisi sekali)">
               <ul className="list-disc pl-5 space-y-0.5">{DEMOGRAPHIC_FIELDS.map((f) => <li key={f}>{f}</li>)}</ul>
             </QuestionnaireSection>
-            <QuestionnaireSection title="3. Data Persepsi (skala 1–4: Tidak baik – Sangat baik)">
+            <QuestionnaireSection title="3. Data Persepsi (skala 1–4, jawaban paling positif di kanan)">
               {!survey.items.length ? (
                 <p className="text-civic-warning">Belum ada pertanyaan. Susun di Pemilihan Survei.</p>
               ) : (
@@ -70,16 +70,17 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
                 </ol>
               )}
             </QuestionnaireSection>
+            <p className="text-xs text-ink-muted">Bagian 4–7 ditanyakan sekali saja, di akhir survei terakhir yang diisi penerbit.</p>
             <QuestionnaireSection title="4. Kepuasan Secara Keseluruhan (skala 1–5)">
               <p>{Object.values(SATISFACTION_LABELS).join(' · ')}</p>
             </QuestionnaireSection>
             <QuestionnaireSection title="5. Loyalitas (skala 1–10)">
               <p>"Saya akan merekomendasikan layanan pada unit ini ke orang lain" — 1 Tidak merekomendasikan, 10 Sangat merekomendasikan.</p>
             </QuestionnaireSection>
-            <QuestionnaireSection title="6. Kritik dan Saran"><p>Isian bebas.</p></QuestionnaireSection>
-            <QuestionnaireSection title="7. Pengukuran Perilaku Anti-Korupsi (skala 1–5: Sangat tidak setuju – Sangat setuju)">
+            <QuestionnaireSection title="6. Pengukuran Perilaku Anti-Korupsi (skala 1–5: Sangat tidak setuju – Sangat setuju)">
               <ul className="list-disc pl-5 space-y-0.5">{Object.values(ANTI_CORRUPTION_STATEMENTS).map((s) => <li key={s.text}>{s.text}</li>)}</ul>
             </QuestionnaireSection>
+            <QuestionnaireSection title="7. Kritik dan Saran"><p>Isian bebas.</p></QuestionnaireSection>
             <QuestionnaireSection title="8. Kalimat Penutup"><p>{CLOSING_TEXT}</p></QuestionnaireSection>
           </div>
           <div className="flex justify-end gap-2">
@@ -206,7 +207,7 @@ export function SurveyListTab({ onOpen }) {
       <Modal isOpen={!!form} onClose={() => setForm(null)} title={form?.id ? 'Edit Survei' : 'Tambah Survei'} size="md">
         {form && (
           <form onSubmit={save} className="space-y-4">
-            <FormField label="Nama survei" required hint="Topik survei, mis. Indeks Persepsi Kualitas Pelayanan atau Survei IKM 2027.">
+            <FormField label="Nama survei" required hint="Topik survei, misalnya Indeks Persepsi Kualitas Pelayanan atau Survei Indeks Kepuasan Masyarakat 2027.">
               <input className={inputClass} value={form.name} minLength={3} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </FormField>
             <FormField label="Status" required hint="Survei Aktif dapat diisi penerbit setelah pertanyaannya disusun di Pemilihan Survei.">

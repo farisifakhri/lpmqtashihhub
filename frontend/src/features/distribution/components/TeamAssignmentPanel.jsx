@@ -11,7 +11,7 @@ export const TeamAssignmentPanel = ({ distLoading, waitingDistRegistrations, fet
                 Naskah Siap Penugasan Tim Pentashih (Langkah 1 SOP)
               </h3>
               <p className="text-xs text-ink-muted mt-0.5">
-                Naskah yang telah lolos verifikasi, lunas PNBP, dan fisik master telah diterima loket distributor.
+                Naskah yang telah lolos verifikasi, lunas PNBP, dan fisik master telah diterima oleh distributor.
               </p>
             </div>
             <Button

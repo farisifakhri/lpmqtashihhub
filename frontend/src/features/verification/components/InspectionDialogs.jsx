@@ -150,7 +150,7 @@ export const InspectionDialogs = ({
                   value={handoverNotes}
                   maxLength={1000}
                   onChange={(e) => setHandoverNotes(e.target.value)}
-                  placeholder="Contoh: Master cetak A4 dijilid spiral per juz lengkap 1-30 juz diserahkan di loket pentashihan..."
+                  placeholder="Contoh: Master cetak A4 dijilid spiral per juz lengkap 1-30 juz diserahkan di ruang penerimaan pentashihan..."
                   rows={3}
                   className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                 />

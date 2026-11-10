@@ -148,6 +148,8 @@ export const syncRegistrationToExistingWebsite = async (registrationId) => {
       };
     }
   } catch (error) {
+    // Sinkronisasi berjalan di latar belakang; pengajuan bisa saja terhapus sebelum status sempat ditulis.
+    if (error?.code === 'P2025') return null;
     console.error('[ExternalSync] Gagal memproses sinkronisasi data pendaftaran:', error);
     return { synced: false, status: 'FAILED', error: error.message };
   }

@@ -153,7 +153,9 @@ export const Modal = ({
         ref={dialogRef}
         tabIndex={-1}
         className={clsx(
-          'bg-surface rounded-2xl w-full shadow-2xl border border-line outline-none max-h-[90vh] flex flex-col animate-dialog-in overflow-hidden',
+          // overflow-clip (bukan hidden): kotak dialog tidak boleh ikut tergulung oleh fokus/scrollIntoView
+          // sehingga judul terdorong keluar dan bawahnya kosong.
+          'bg-surface rounded-2xl w-full shadow-2xl border border-line outline-none max-h-[90vh] flex flex-col animate-dialog-in overflow-clip',
           sizeClasses[size] || sizeClasses.md,
           className
         )}
@@ -186,7 +188,7 @@ export const Modal = ({
           </div>
         )}
 
-        <div className="p-5 sm:p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1 min-h-0">{children}</div>
       </div>
     </div>
   );

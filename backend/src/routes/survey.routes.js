@@ -46,8 +46,14 @@ router.get('/admin/surveys/:id/report', ...superadmin, validate(v.surveyIdSchema
 
 // Survei untuk penerbit: wajib diisi sebelum STT dapat dicetak.
 const penerbit = [authenticate, authorize('PENERBIT', 'SUPERADMIN')];
-router.get('/registrations/:registrationId/surveys', ...penerbit, validate(v.registrationSurveySchema), action(req => survey.listSurveysForRegistration(req.params.registrationId)));
+router.get('/registrations/:registrationId/surveys', ...penerbit, validate(v.registrationSurveySchema), action(async (req) => {
+  await survey.assertSurveyRegistrationAccess(req.params.registrationId, req.user);
+  return survey.listSurveysForRegistration(req.params.registrationId);
+}));
 router.post('/registrations/:registrationId/surveys/:surveyId/response', ...penerbit, validate(v.submitSurveyResponseSchema),
-  action(req => survey.submitSurveyResponse(req.params.surveyId, req.params.registrationId, req.body, req.user, req), 201));
+  action(async (req) => {
+    await survey.assertSurveyRegistrationAccess(req.params.registrationId, req.user);
+    return survey.submitSurveyResponse(req.params.surveyId, req.params.registrationId, req.body, req.user, req);
+  }, 201));
 
 export default router;

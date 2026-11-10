@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
 import { userApi } from '@/api/user.api';
 import { Button } from '@/components/ui/Button';
@@ -45,8 +45,9 @@ export const UserManagementPage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  // Filters
+  // Filters & Search
   const [search, setSearch] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
@@ -70,38 +71,63 @@ export const UserManagementPage = () => {
     publisherName: '',
   });
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = {
-        page: pagination.page,
-        limit: pagination.limit,
-      };
-      if (search.trim()) params.search = search.trim();
-      if (roleFilter) params.role = roleFilter;
-      if (statusFilter) params.status = statusFilter;
+  const fetchUsers = useCallback(
+    async (overrides = {}) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const targetPage = overrides.page ?? pagination.page;
+        const targetSearch = overrides.search !== undefined ? overrides.search : submittedSearch;
+        const targetRole = overrides.role !== undefined ? overrides.role : roleFilter;
+        const targetStatus = overrides.status !== undefined ? overrides.status : statusFilter;
 
-      const res = await userApi.listUsers(params);
-      if (res?.data) {
-        setUsers(res.data.items || []);
-        if (res.data.pagination) setPagination(res.data.pagination);
+        const params = {
+          page: targetPage,
+          limit: pagination.limit,
+        };
+        if (targetSearch && targetSearch.trim()) params.search = targetSearch.trim();
+        if (targetRole) params.role = targetRole;
+        if (targetStatus) params.status = targetStatus;
+
+        const res = await userApi.listUsers(params);
+        if (res?.data) {
+          setUsers(res.data.items || []);
+          if (res.data.pagination) setPagination(res.data.pagination);
+        }
+      } catch (err) {
+        setError(err.message || 'Gagal memuat data pengguna.');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message || 'Gagal memuat data pengguna.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [pagination.page, pagination.limit, submittedSearch, roleFilter, statusFilter]
+  );
 
   useEffect(() => {
     fetchUsers();
-  }, [pagination.page, roleFilter, statusFilter]);
+  }, [pagination.page, submittedSearch, roleFilter, statusFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPagination((prev) => ({ ...prev, page: 1 }));
-    fetchUsers();
+    const query = search.trim();
+    setSubmittedSearch(query);
+    if (pagination.page !== 1) {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    } else {
+      fetchUsers({ page: 1, search: query });
+    }
+  };
+
+  const handleResetFilters = () => {
+    setSearch('');
+    setSubmittedSearch('');
+    setRoleFilter('');
+    setStatusFilter('');
+    if (pagination.page !== 1) {
+      setPagination((prev) => ({ ...prev, page: 1 }));
+    } else {
+      fetchUsers({ page: 1, search: '', role: '', status: '' });
+    }
   };
 
   const openCreateModal = () => {
@@ -324,8 +350,28 @@ export const UserManagementPage = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Cari nama, email, atau NIP..."
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
+                className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
               />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    if (submittedSearch) {
+                      setSubmittedSearch('');
+                      if (pagination.page !== 1) {
+                        setPagination((p) => ({ ...p, page: 1 }));
+                      } else {
+                        fetchUsers({ page: 1, search: '' });
+                      }
+                    }
+                  }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+                  title="Hapus teks pencarian"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             <Button type="submit" variant="secondary" className="text-xs px-3 py-2">
               Cari
@@ -337,8 +383,13 @@ export const UserManagementPage = () => {
             <select
               value={roleFilter}
               onChange={(e) => {
-                setRoleFilter(e.target.value);
-                setPagination((p) => ({ ...p, page: 1 }));
+                const val = e.target.value;
+                setRoleFilter(val);
+                if (pagination.page !== 1) {
+                  setPagination((p) => ({ ...p, page: 1 }));
+                } else {
+                  fetchUsers({ page: 1, role: val });
+                }
               }}
               className="text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
             >
@@ -354,8 +405,13 @@ export const UserManagementPage = () => {
             <select
               value={statusFilter}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setPagination((p) => ({ ...p, page: 1 }));
+                const val = e.target.value;
+                setStatusFilter(val);
+                if (pagination.page !== 1) {
+                  setPagination((p) => ({ ...p, page: 1 }));
+                } else {
+                  fetchUsers({ page: 1, status: val });
+                }
               }}
               className="text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
             >
@@ -368,7 +424,7 @@ export const UserManagementPage = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchUsers}
+              onClick={() => fetchUsers()}
               disabled={loading}
               className="text-xs py-2"
               title="Segarkan Data"
@@ -377,6 +433,80 @@ export const UserManagementPage = () => {
             </Button>
           </div>
         </div>
+
+        {/* Indikator Filter & Status Pencarian Aktif */}
+        {(submittedSearch || roleFilter || statusFilter) && (
+          <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-ink-muted font-medium">Filter Aktif:</span>
+              {submittedSearch && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-brand-50 text-brand-800 border border-brand-200 font-medium">
+                  <Search className="w-3 h-3 text-brand-700" />
+                  <span>&ldquo;{submittedSearch}&rdquo;</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearch('');
+                      setSubmittedSearch('');
+                      if (pagination.page !== 1) setPagination((p) => ({ ...p, page: 1 }));
+                      else fetchUsers({ page: 1, search: '' });
+                    }}
+                    className="ml-1 text-brand-800 hover:text-brand-900"
+                    title="Hapus pencarian kata kunci"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {roleFilter && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-civic-infoSoft text-civic-info border border-civic-infoLine font-medium">
+                  <span>Peran: {ROLE_OPTIONS.find((r) => r.code === roleFilter)?.label || roleFilter}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleFilter('');
+                      if (pagination.page !== 1) setPagination((p) => ({ ...p, page: 1 }));
+                      else fetchUsers({ page: 1, role: '' });
+                    }}
+                    className="ml-1 text-civic-info hover:text-civic-info"
+                    title="Hapus filter peran"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {statusFilter && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-surface-subtle text-ink border border-line font-medium">
+                  <span>
+                    Status: {statusFilter === 'ACTIVE' ? 'Aktif' : statusFilter === 'INACTIVE' ? 'Nonaktif' : 'Ditangguhkan'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatusFilter('');
+                      if (pagination.page !== 1) setPagination((p) => ({ ...p, page: 1 }));
+                      else fetchUsers({ page: 1, status: '' });
+                    }}
+                    className="ml-1 text-ink-muted hover:text-ink"
+                    title="Hapus filter status"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="text-xs text-ink-muted hover:text-civic-danger h-7 px-2"
+            >
+              Reset Semua Filter
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Users Table */}
@@ -403,8 +533,27 @@ export const UserManagementPage = () => {
                 </tr>
               ) : users.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-5">
-                    <EmptyState title="Pengguna tidak ditemukan" description="Tidak ada data pengguna yang sesuai dengan filter pencarian." />
+                  <td colSpan={6} className="p-8">
+                    <EmptyState
+                      title="Pengguna tidak ditemukan"
+                      description={
+                        submittedSearch || roleFilter || statusFilter
+                          ? `Tidak ada data pengguna yang sesuai dengan filter pencarian "${submittedSearch || 'kriteria aktif'}".`
+                          : "Belum ada data pengguna yang terdaftar di sistem."
+                      }
+                      action={
+                        (submittedSearch || roleFilter || statusFilter) && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleResetFilters}
+                            className="text-xs mt-3"
+                          >
+                            Reset Filter & Tampilkan Semua
+                          </Button>
+                        )
+                      }
+                    />
                   </td>
                 </tr>
               ) : (
@@ -508,33 +657,52 @@ export const UserManagementPage = () => {
           </table>
         </div>
 
-        {/* Pagination Controls */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-line text-xs">
+        {/* Pagination & Summary Controls */}
+        {users.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-5 py-3 border-t border-line text-xs bg-canvas/40">
             <p className="text-ink-muted">
-              Menampilkan halaman <span className="font-semibold">{pagination.page}</span> dari{' '}
-              <span className="font-semibold">{pagination.totalPages}</span> (Total {pagination.total} pengguna)
+              Menampilkan{' '}
+              <span className="font-semibold text-ink">
+                {Math.min((pagination.page - 1) * pagination.limit + 1, pagination.total)}
+              </span>
+              {' - '}
+              <span className="font-semibold text-ink">
+                {Math.min(pagination.page * pagination.limit, pagination.total)}
+              </span>{' '}
+              dari <span className="font-semibold text-ink">{pagination.total}</span> pengguna
+              {submittedSearch && (
+                <span className="ml-1 text-brand-800 font-medium">
+                  (hasil pencarian &ldquo;{submittedSearch}&rdquo;)
+                </span>
+              )}
             </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page <= 1}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
-                className="text-xs"
-              >
-                Sebelumnya
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
-                className="text-xs"
-              >
-                Selanjutnya
-              </Button>
-            </div>
+            {pagination.totalPages > 1 ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1 || loading}
+                  onClick={() => setPagination((p) => ({ ...p, page: p.page - 1 }))}
+                  className="text-xs px-2.5 py-1"
+                >
+                  Sebelumnya
+                </Button>
+                <span className="text-ink-muted px-1">
+                  Halaman {pagination.page} dari {pagination.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages || loading}
+                  onClick={() => setPagination((p) => ({ ...p, page: p.page + 1 }))}
+                  className="text-xs px-2.5 py-1"
+                >
+                  Selanjutnya
+                </Button>
+              </div>
+            ) : (
+              <span className="text-xs text-ink-muted">Halaman 1 dari 1</span>
+            )}
           </div>
         )}
       </div>

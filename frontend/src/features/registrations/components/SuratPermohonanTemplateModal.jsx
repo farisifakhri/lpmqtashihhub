@@ -66,7 +66,7 @@ ${namaPenerbit}
 PETUNJUK KELENGKAPAN PENDAFTARAN TASHIH:
 1. Surat ini wajib dicetak di atas kop surat resmi penerbit, ditandatangani oleh pimpinan penerbit, dan dibubuhi stempel basah resmi.
 2. Surat yang telah ditandatangani dan distempel dipindai (scan berwarna) sebagai format PDF (maks. 10 MB) dan diunggah pada Langkah 3 (Berkas Persyaratan).
-3. Naskah master mushaf Al-Qur’an dikirimkan ke Loket LPMQ (Gedung Bayt Al-Qur'an & Museum Istiqlal, TMII Jakarta Timur) bersama bukti registrasi permohonan tanda tashih.
+3. Naskah master mushaf Al-Qur’an dikirimkan ke Kantor LPMQ (Gedung Bayt Al-Qur'an & Museum Istiqlal, TMII Jakarta Timur) bersama bukti registrasi permohonan tanda tashih.
 ================================================================================`;
 }
 
@@ -229,7 +229,7 @@ export function buildSuratPermohonanDocHtml({
     <ol style="margin: 4pt 0 0 16pt; padding: 0;">
       <li>Surat ini dicetak pada kop surat resmi penerbit, ditandatangani oleh pimpinan, dan distempel basah.</li>
       <li>Surat dipindai (scan berwarna) sebagai berkas <strong>PDF</strong> (maksimal 10 MB) dan diunggah pada Langkah 3 formulir pendaftaran tashih online.</li>
-      <li>Naskah master fisik mushaf Al-Qur’an dikirimkan ke loket pelayanan LPMQ bersama cetakan bukti registrasi pendaftaran.</li>
+      <li>Naskah master fisik mushaf Al-Qur’an dikirimkan ke Kantor Layanan LPMQ bersama cetakan bukti registrasi pendaftaran.</li>
     </ol>
   </div>
 </div>

@@ -91,7 +91,7 @@ describe('Badge notifikasi sidebar', () => {
     show('ADMIN_INTERNAL');
     await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
     expect(screen.queryAllByTestId('sidebar-pending-badge')).toHaveLength(0);
-    expect(screen.getByRole('link', { name: /Intake Master Fisik/ }).textContent).toContain('Loket');
+    expect(screen.getByRole('link', { name: /Intake Master Fisik/ }).textContent).toContain('Intake');
   });
 
   it('menampilkan badge pada tiap menu yang memiliki antrean, termasuk 99+ untuk jumlah besar', async () => {

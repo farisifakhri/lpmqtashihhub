@@ -151,7 +151,7 @@ export const InspectionChecklist = ({
                     <label
                       className={`flex-1 py-1.5 px-2 rounded-md text-center cursor-pointer transition-all font-semibold ${
                         currentItem.result === 'TIDAK_BERLAKU'
-                          ? 'bg-ink text-white shadow-2xs'
+                          ? 'bg-ink text-canvas shadow-2xs'
                           : 'text-ink-muted hover:text-ink hover:bg-surface-subtle'
                       } ${isReadOnly ? 'pointer-events-none opacity-80' : ''}`}
                     >

@@ -13,14 +13,10 @@ import {
   Search,
   Building2,
   KeyRound,
-  Maximize2,
-  Minimize2,
   Sparkles,
   Check,
-  SlidersHorizontal,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useDensity } from '@/context/DensityContext';
 import { useAvatar } from '@/context/AvatarContext';
 import { UserAvatar } from '@/components/ui/UserAvatar';
 import { AvatarPickerModal } from '@/components/ui/AvatarPickerModal';
@@ -34,7 +30,6 @@ import lpmqLogo from '@/assets/lpmq.png';
 
 export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
   const { currentUser, logout, switchActiveRole } = useAuth();
-  const { toggleDensity, isCompact } = useDensity();
   const navigate = useNavigate();
   const location = useLocation();
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -150,7 +145,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       return { parent: 'Penerbit', name: 'Verifikasi Akun Penerbit' };
     }
     if (pathname.startsWith('/internal/master-intake')) {
-      return { parent: 'Loket', name: 'Intake Master Fisik' };
+      return { parent: 'Penerimaan', name: 'Intake Master Fisik' };
     }
     if (pathname.startsWith('/internal/verifications')) {
       return { parent: 'Verifikasi', name: 'Verifikasi Berkas Naskah' };
@@ -439,50 +434,6 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                         <span>SOP Pentashihan Mushaf Al-Qur'an LPMQ</span>
                       </div>
 
-                      {/* Density / Display Preference */}
-                      <div className="px-3.5 py-2.5 mx-2 my-2 bg-surface-subtle/60 rounded-xl border border-line/70">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-ink flex items-center gap-1.5">
-                            <SlidersHorizontal className="w-3.5 h-3.5 text-brand-700" />
-                            Kepadatan Antarmuka
-                          </span>
-                          <span className="text-[10px] font-semibold text-ink-muted uppercase tracking-wider">
-                            {isCompact ? 'Ringkas' : 'Nyaman'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-ink-muted leading-tight mb-2">
-                          Atur kerapatan padding dan spasi antarmuka kerja.
-                        </p>
-                        <div className="grid grid-cols-2 gap-1.5 bg-surface p-1 rounded-lg border border-line/80">
-                          <button
-                            type="button"
-                            onClick={() => { if (isCompact) toggleDensity(); }}
-                            className={clsx(
-                              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer",
-                              !isCompact
-                                ? "bg-brand-50 text-brand-900 border border-brand-200 shadow-2xs font-bold"
-                                : "text-ink-muted hover:text-ink hover:bg-surface-subtle"
-                            )}
-                          >
-                            <Maximize2 className="w-3 h-3 text-brand-700" />
-                            <span>Nyaman</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { if (!isCompact) toggleDensity(); }}
-                            className={clsx(
-                              "flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-xs font-semibold transition-all cursor-pointer",
-                              isCompact
-                                ? "bg-brand-50 text-brand-900 border border-brand-200 shadow-2xs font-bold"
-                                : "text-ink-muted hover:text-ink hover:bg-surface-subtle"
-                            )}
-                          >
-                            <Minimize2 className="w-3 h-3 text-brand-700" />
-                            <span>Ringkas</span>
-                          </button>
-                        </div>
-                      </div>
-
                       {/* Ganti Peran Aktif jika memiliki peran ganda */}
                       {currentUser?.roles && currentUser.roles.length > 1 && (
                         <div className="p-2.5 mx-2 my-1.5 bg-brand-50/70 rounded-xl border border-brand-200/80 space-y-1.5">
@@ -552,14 +503,19 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                           </button>
                         )}
 
-                        <Link
-                          to={currentUser?.publisher?.nomor_induk_penerbit ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}` : '/verifikasi/sertifikat/31.74.26.10.19.001'}
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
-                        >
-                          <QrCode className="w-4 h-4 text-brand-700" />
-                          <span>Verifikasi Sertifikat Penerbit (QR)</span>
-                        </Link>
+                        {/* Penerbit membuka sertifikatnya sendiri; petugas internal membuka halaman pencarian nomor induk. */}
+                        {(currentUser?.publisher?.nomor_induk_penerbit || currentUser?.role !== 'PENERBIT') && (
+                          <Link
+                            to={currentUser?.publisher?.nomor_induk_penerbit
+                              ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}`
+                              : '/verifikasi/sertifikat'}
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
+                          >
+                            <QrCode className="w-4 h-4 text-brand-700" />
+                            <span>Verifikasi Sertifikat Penerbit (QR)</span>
+                          </Link>
+                        )}
 
                         <button
                           type="button"

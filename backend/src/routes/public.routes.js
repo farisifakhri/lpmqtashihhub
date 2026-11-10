@@ -4,6 +4,8 @@ import { rateLimit } from 'express-rate-limit';
 import publicController from '../controllers/public.controller.js';
 import { publicVerification } from '../services/verification-document-pdf.service.js';
 import { verifyPublisherCertificate } from '../services/publisher-registration.service.js';
+import { certificateVerifyUrl } from '../services/publisher-certificate-pdf.service.js';
+import QRCode from 'qrcode';
 
 const router = Router();
 
@@ -17,6 +19,19 @@ router.get('/verify-certificate/:nomorInduk', qrLimit, async (req, res, next) =>
     return res.status(200).json({ success: true, ...result });
   } catch (error) {
     return next(error);
+  }
+});
+
+// Gambar QR sertifikat penerbit (PNG) — hanya untuk sertifikat yang SAH, isinya sama dengan QR di PDF.
+router.get('/verify-certificate/:nomorInduk/qr', qrLimit, async (req, res, next) => {
+  try {
+    const nomor = decodeURIComponent(req.params.nomorInduk).trim();
+    const result = await verifyPublisherCertificate(nomor);
+    if (!result.valid) return res.status(404).json({ success: false, message: 'QR hanya tersedia untuk sertifikat yang sah.' });
+    const png = await QRCode.toBuffer(certificateVerifyUrl(nomor), { margin: 1, width: 240, errorCorrectionLevel: 'M' });
+    res.set('Cache-Control', 'no-store').type('png').send(png);
+  } catch (error) {
+    next(error);
   }
 });
 

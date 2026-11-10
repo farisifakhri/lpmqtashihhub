@@ -42,7 +42,7 @@ export const ENV = {
   ALLOWED_ORIGINS: rawAllowedOrigins
     ? rawAllowedOrigins.split(',').map((origin) => origin.trim()).filter(Boolean)
     : defaultOrigins,
-  PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || (isProduction ? null : 'http://localhost:5173'),
+  PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || (isProduction ? null : 'http://localhost:3000'),
   ENABLE_PASSWORD_RESET: process.env.ENABLE_PASSWORD_RESET !== 'false',
   AV_SCAN_MODE: (process.env.AV_SCAN_MODE || (process.env.ENABLE_CLAMAV === 'false' ? 'off' : isProduction ? 'required' : 'optional')).toLowerCase(),
   CLAMAV_HOST: process.env.CLAMAV_HOST || '127.0.0.1',

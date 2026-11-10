@@ -238,7 +238,7 @@ export const VerifikatorInboxPage = () => {
       return {
         label: 'Penugasan Verifikator',
         title: 'Penugasan Verifikator Berkas',
-        subtitle: 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima di loket.',
+        subtitle: 'Helper Admin menugaskan verifikator tim inti dan mencatat Disposisi setelah master fisik diterima petugas penerima.',
       };
     }
     if (activeTab === 'ASSIGNED' || activeTab === 'IN_PROGRESS') {
@@ -560,7 +560,7 @@ export const VerifikatorInboxPage = () => {
                 </div>
                 <p className="text-xs text-ink-muted px-2">
                   {assignmentSubView === 'UNASSIGNED'
-                    ? 'Naskah yang master fisiknya telah diterima di loket dan siap diterbitkan Disposisi.'
+                    ? 'Naskah yang master fisiknya telah diterima petugas penerima dan siap diterbitkan Disposisi.'
                     : 'Naskah yang telah diterbitkan Disposisi dan ditugaskan ke Verifikator tim inti.'}
                 </p>
               </div>
@@ -575,7 +575,7 @@ export const VerifikatorInboxPage = () => {
                     <div className="space-y-1">
                       <h3 className="text-base font-bold text-ink">Semua Naskah Telah Ditugaskan</h3>
                       <p className="text-xs text-ink-muted leading-relaxed">
-                        Seluruh naskah yang master fisiknya telah diterima di loket sudah selesai diterbitkan Disposisinya. Anda dapat memantau penugasan yang telah dibuat pada tab &ldquo;Sudah Ditugaskan&rdquo;.
+                        Seluruh naskah yang master fisiknya telah diterima petugas penerima sudah selesai diterbitkan Disposisinya. Anda dapat memantau penugasan yang telah dibuat pada tab &ldquo;Sudah Ditugaskan&rdquo;.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
@@ -670,7 +670,7 @@ export const VerifikatorInboxPage = () => {
                                 Naskah Siap Ditugaskan ke Verifikator
                               </h4>
                               <p className="text-[11px] text-ink-muted leading-relaxed">
-                                Master fisik telah diterima oleh loket. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).
+                                Master fisik telah diterima oleh petugas penerima. Terbitkan Disposisi dan tetapkan Verifikator untuk memulai pemeriksaan naskah (Langkah 4 SOP).
                               </p>
                             </div>
                           </div>
@@ -887,6 +887,14 @@ export const VerifikatorInboxPage = () => {
                           <span className="truncate">{pub.legal_name || '-'}</span>
                         </p>
                       </div>
+
+                      {/* Verifikator PIC Badge (for Admin / Super Admin monitoring) */}
+                      {isAssignmentAdmin && (item.verifier?.name || reg.core_verifier?.name) && (
+                        <div className="flex items-center gap-1.5 text-xs bg-brand-50/80 border border-brand-200/80 px-2.5 py-1.5 rounded-xl text-brand-900 font-semibold">
+                          <UserCheck className="w-3.5 h-3.5 text-brand-700 shrink-0" />
+                          <span className="truncate">Petugas: <strong>{item.verifier?.name || reg.core_verifier?.name}</strong></span>
+                        </div>
+                      )}
 
                       {/* Disposisi Document Info */}
                       {notaDoc?.document_no && (

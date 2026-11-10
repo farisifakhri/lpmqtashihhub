@@ -218,11 +218,15 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       await tx.$queryRaw`SELECT id, status FROM registrations WHERE id = ${id} FOR UPDATE`;
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
+      const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+      const isOverriding = Boolean(data.override_core_team);
       if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {
-        fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+        if (!isSuperAdmin || !isOverriding) {
+          fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+        }
       }
       if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
-      const targetVerifierId = reg.core_verifier_id || data.verifier_id;
+      const targetVerifierId = (isSuperAdmin && isOverriding && data.verifier_id) ? data.verifier_id : (reg.core_verifier_id || data.verifier_id);
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -368,7 +372,7 @@ export const getPhysicalMasterReceipt = async (id, user) => {
     fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
   }
   if (reg.physical_master_intake?.status !== 'RECEIVED' || !reg.physical_master_intake.receipt_no) {
-    fail(409, 'Tanda terima master fisik tersedia setelah master diterima di loket.');
+    fail(409, 'Tanda terima master fisik tersedia setelah master fisik diterima petugas.');
   }
   return reg;
 };

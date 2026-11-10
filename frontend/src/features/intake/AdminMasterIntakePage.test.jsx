@@ -71,7 +71,7 @@ describe('AdminMasterIntakePage Component', () => {
     });
   });
 
-  it('merender halaman intake loket dan melakukan pencarian nomor registrasi', async () => {
+  it('merender halaman intake master fisik dan melakukan pencarian nomor registrasi', async () => {
     render(
       <MemoryRouter>
         <AdminMasterIntakePage />

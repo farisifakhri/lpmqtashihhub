@@ -1002,7 +1002,7 @@ export const VerificationInspectionPage = () => {
               <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
                 {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'
                   ? 'Master fisik telah diperbaiki. Periksa kembali lalu serahkan ke Distributor dengan BAST baru; pembayaran tetap sah.'
-                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.'}
+                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di ruang penerimaan pentashihan.'}
               </p>
             </div>
           </div>

@@ -146,7 +146,7 @@ describe('AssignVerificationDialog Component', () => {
       target: { value: 'ND.02/LPMQ.01/HM.01/09/2026' },
     });
     fireEvent.change(screen.getByPlaceholderText(/Tambahkan arahan atau atensi khusus/i), {
-      target: { value: 'Periksa master fisik juz 1-30 sesuai master loket.' },
+      target: { value: 'Periksa master fisik juz 1-30 sesuai master fisik naskah.' },
     });
 
     const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
@@ -158,7 +158,7 @@ describe('AssignVerificationDialog Component', () => {
         {
           verifier_id: 'v-2',
           nota_no: 'ND.02/LPMQ.01/HM.01/09/2026',
-          notes: 'Periksa master fisik juz 1-30 sesuai master loket.',
+          notes: 'Periksa master fisik juz 1-30 sesuai master fisik naskah.',
         }
       );
       expect(onSuccessMock).toHaveBeenCalledWith(
@@ -294,5 +294,45 @@ describe('AssignVerificationDialog Component', () => {
     // Admin dapat mengganti verifikator ke v-2
     fireEvent.change(select, { target: { value: 'v-2' } });
     expect(select).toHaveValue('v-2');
+  });
+
+  it('menampilkan badge hak override super admin dan peringatan pengalihan petugas saat mengganti verifikator tim inti', async () => {
+    const registrationWithCore = {
+      ...mockRegistration,
+      core_verifier_id: 'v-1',
+      core_team_number: 1,
+    };
+    render(
+      <AssignVerificationDialog
+        registration={registrationWithCore}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hak Override Super Admin Aktif/i)).toBeInTheDocument();
+    });
+
+    const select = screen.getByRole('combobox');
+    fireEvent.change(select, { target: { value: 'v-2' } });
+
+    expect(screen.getByText(/Dispensasi \/ Intervensi Super Admin/i)).toBeInTheDocument();
+
+    const notaInput = screen.getByRole('textbox', { name: /Nomor Disposisi Penugasan/i });
+    fireEvent.change(notaInput, { target: { value: 'ND-OVERRIDE-01' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Terbitkan Disposisi & Tugaskan/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(VerificationApiModule.verificationApi.createAssignment).toHaveBeenCalledWith(
+        'reg-test-123',
+        expect.objectContaining({
+          verifier_id: 'v-2',
+          override_core_team: true,
+        })
+      );
+    });
   });
 });

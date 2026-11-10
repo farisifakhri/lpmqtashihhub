@@ -45,7 +45,7 @@ describe('WorkflowOwnershipBanner Component', () => {
       nextActionPath: '/internal/verifications',
       dueAt: null,
       isOverdue: false,
-      blockedReason: 'Menunggu penyerahan master fisik A4 di loket.',
+      blockedReason: 'Menunggu penyerahan master fisik A4 di Kantor LPMQ.',
       canUserAct: true,
     };
 
@@ -56,7 +56,7 @@ describe('WorkflowOwnershipBanner Component', () => {
     );
 
     expect(screen.getByRole('alert')).toBeInTheDocument();
-    expect(screen.getByText(/Menunggu penyerahan master fisik A4 di loket/i)).toBeInTheDocument();
+    expect(screen.getByText(/Menunggu penyerahan master fisik A4 di Kantor LPMQ/i)).toBeInTheDocument();
   });
 
   it('menampilkan pesan informatif saat user aktif bukan pemilik tindakan', () => {

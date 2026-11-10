@@ -83,10 +83,12 @@ describe('SurveyManagementPage (Super Admin)', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat Survei IKM 2027' }));
     expect(await screen.findByRole('heading', { name: 'Detail Survei' })).toBeInTheDocument();
-    for (const section of ['1. Kalimat Pembuka', '2. Data Demografis', '4. Kepuasan Secara Keseluruhan (skala 1–5)', '5. Loyalitas (skala 1–10)', '8. Kalimat Penutup']) {
+    // Struktur mengikuti form yang benar-benar dilihat penerbit (tanpa disabilitas).
+    for (const section of ['1. Kalimat Pembuka', '2. Data Responden (diisi sekali)', '4. Kepuasan Secara Keseluruhan (skala 1–5)', '5. Loyalitas (skala 1–10)', '8. Kalimat Penutup']) {
       expect(await screen.findByText(section)).toBeInTheDocument();
     }
-    expect(screen.getByText('Penyandang disabilitas (ya/tidak) dan jenis disabilitas')).toBeInTheDocument();
+    expect(screen.getByText('Nama responden')).toBeInTheDocument();
+    expect(screen.queryByText(/disabilitas/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Susun Pertanyaan/ }));
     expect(await screen.findByRole('heading', { name: 'Pemilihan Survei' })).toBeInTheDocument();
   });
@@ -122,7 +124,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
     expect((await screen.findAllByText('B · Baik')).length).toBe(2); // mutu keseluruhan + mutu per unsur
     expect(getReport).toHaveBeenCalledWith('s1');
-    expect(screen.getByText('Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)')).toBeInTheDocument();
+    expect(screen.getByText('Kategori Indeks Kepuasan Masyarakat (Pedoman PANRB Nomor 9 Tahun 2024 halaman 22)')).toBeInTheDocument();
     expect(screen.getByText('Kepuasan secara keseluruhan (1–5)')).toBeInTheDocument();
     expect(screen.getByText('1 promotor (9–10) · 0 pasif (7–8) · 1 detraktor (1–6)')).toBeInTheDocument();
     expect(screen.getByText('Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.')).toBeInTheDocument();
@@ -243,7 +245,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     await waitFor(() => expect(restore).toHaveBeenCalled());
   });
 
-  it('Responden Survei menampilkan seluruh data demografis Pedoman', async () => {
+  it('Responden Survei menampilkan data responden yang ditanyakan ke penerbit', async () => {
     vi.spyOn(surveyApi, 'getReport').mockResolvedValue({ data: {
       respondents: 1, index: null, mutu: null, essays: [], unsur: [],
       demographics: {
@@ -254,13 +256,12 @@ describe('SurveyManagementPage (Super Admin)', () => {
       satisfaction: { average: null, distribution: [] }, nps: { score: null, respondents: 0, promoters: 0, passives: 0, detractors: 0 }, anti_corruption: [],
     } });
     renderPage('/internal/surveys?tab=responden&survey=s1');
-    expect(await screen.findByText('Penyandang disabilitas')).toBeInTheDocument();
-    expect(screen.getByText('Fisik (Tuna Daksa)')).toBeInTheDocument();
-    expect(screen.getByText('Campuran (Hybrid)')).toBeInTheDocument();
-    expect(screen.getByText('Tanda tashih mushaf cetak')).toBeInTheDocument();
     // Tiap kartu demografi punya diagram donat yang menyebut isinya untuk pembaca layar.
-    expect(screen.getByRole('img', { name: 'Jenis kelamin: Laki-laki 100%' })).toBeInTheDocument();
-    expect(screen.getAllByRole('img').length).toBe(5); // kartu tanpa data tidak menggambar diagram
+    expect(await screen.findByRole('img', { name: 'Jenis kelamin: Laki-laki 100%' })).toBeInTheDocument();
+    // Disabilitas, jenis & kategori layanan tidak lagi ditanyakan, jadi kartunya tidak ditampilkan.
+    expect(screen.queryByText('Penyandang disabilitas')).not.toBeInTheDocument();
+    expect(screen.queryByText('Kategori layanan')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('img').length).toBe(1); // kartu tanpa data tidak menggambar diagram
   });
 
   it('Pertanyaan Survei: unsur wajib di form, dikirim ke API, dan bank soal dikelompokkan per unsur', async () => {

@@ -18,7 +18,7 @@ export const HandoverPanel = ({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-2xl bg-white border border-line shadow-2xs space-y-1">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-civic-warning">Perlu Konfirmasi Loket</span>
+            <span className="text-xs font-semibold text-civic-warning">Perlu Konfirmasi Penerimaan</span>
             <span className="p-2 rounded-xl bg-civic-warningSoft text-civic-warning">
               <Clock className="w-4 h-4" />
             </span>
@@ -156,7 +156,7 @@ export const HandoverPanel = ({
           <h3 className="text-sm font-bold text-ink">Tidak Ada Serah-Terima Fisik</h3>
           <p className="text-xs text-ink-muted max-w-md mx-auto">
             {activeTab === 'PENDING'
-              ? 'Tidak ada master fisik yang sedang menunggu konfirmasi penerimaan loket saat ini.'
+              ? 'Tidak ada master fisik yang sedang menunggu konfirmasi penerimaan saat ini.'
               : `Belum ada data serah-terima dengan status ${activeTab}.`}
           </p>
         </div>

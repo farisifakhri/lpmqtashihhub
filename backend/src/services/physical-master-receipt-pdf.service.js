@@ -104,7 +104,7 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
     : '-';
 
   const introText =
-    `Pada hari ini, bertempat di Loket Pelayanan Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Jakarta, telah diterima master fisik mushaf Al-Qur'an untuk permohonan Surat Tanda Tashih dengan rincian sebagai berikut:`;
+    `Pada hari ini, bertempat di Kantor Layanan Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Jakarta, telah diterima master fisik mushaf Al-Qur'an untuk permohonan Surat Tanda Tashih dengan rincian sebagai berikut:`;
 
   const words = introText.split(' ');
   let lineBuf = '';
@@ -133,11 +133,11 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
     ['6', 'Jumlah Master Fisik', `${intake.volume_count ?? '-'} jilid`],
     ['7', 'Format & Penjilidan', `${intake.format || 'A4'} / ${intake.binding_method || 'Per Juz'}`],
     ['8', 'Kondisi Naskah saat Diterima', intake.condition || 'Baik dan Lengkap'],
-    ['9', 'Petugas Penerima Loket', intake.received_by?.name || '-'],
+    ['9', 'Petugas Penerima Naskah', intake.received_by?.name || '-'],
   ];
 
   if (intake.notes) {
-    rows.push(['10', 'Catatan Pemeriksaan Loket', intake.notes]);
+    rows.push(['10', 'Catatan Pemeriksaan Naskah', intake.notes]);
   }
 
   const colNoW = 24;
@@ -223,7 +223,7 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
 
   // 5. Klausul Pernyataan Resmi
   const statement = [
-    'Master cetak fisik di atas telah diperiksa kelengkapan fisiknya dan dinyatakan diterima di Loket Pelayanan',
+    'Master cetak fisik di atas telah diperiksa kelengkapan fisiknya dan dinyatakan diterima di Penerimaan Naskah',
     'Lajnah Pentashihan Mushaf Al-Qur\'an untuk diproses ke tahapan penugasan verifikator dan pemeriksaan naskah.',
     'Harap simpan lembar tanda terima ini sebagai bukti sah penyerahan dokumen fisik.',
   ];
@@ -274,7 +274,7 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
     font,
     color: black,
   });
-  page.drawText('Petugas Loket Pelayanan LPMQ,', {
+  page.drawText('Petugas Penerima Naskah LPMQ,', {
     x: colRightX,
     y,
     size: 8,
@@ -294,7 +294,7 @@ export async function renderPhysicalMasterReceiptPdf(reg) {
     color: black,
   });
 
-  const officerSigner = printable(intake.received_by?.name || 'Petugas Loket');
+  const officerSigner = printable(intake.received_by?.name || 'Petugas Penerima');
   page.drawText(`( ${officerSigner} )`, {
     x: colRightX,
     y,

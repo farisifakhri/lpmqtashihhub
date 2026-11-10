@@ -60,7 +60,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
           : []),
         ...(isAdmin || isSuperAdmin
           ? [
-              { label: 'Intake Master Fisik Loket', desc: 'Pencocokan print-out master A4 di loket LPMQ', path: '/internal/master-intake', icon: PackageCheck, category: 'Admin Loket' },
+              { label: 'Intake Master Fisik', desc: 'Pencocokan print-out master A4 di Penerimaan Naskah LPMQ', path: '/internal/master-intake', icon: PackageCheck, category: 'Penerimaan Naskah' },
             ]
           : []),
         ...(isDistributor || isSuperAdmin

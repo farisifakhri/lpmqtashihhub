@@ -40,6 +40,7 @@ export const createVerificationAssignmentSchema = {
     verifier_id: z.string().uuid('ID verifikator tidak valid.').optional(),
     nota_no: z.string().trim().min(3).max(191),
     notes: z.string().trim().max(191).optional(),
+    override_core_team: z.boolean().optional(),
   }).strict(),
 };
 

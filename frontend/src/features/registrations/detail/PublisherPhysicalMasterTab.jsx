@@ -72,7 +72,7 @@ export function PublisherPhysicalMasterTab({
 
   return (
     <div className="space-y-6">
-      {/* Petunjuk & Alamat Loket LPMQ */}
+      {/* Petunjuk & Alamat Kantor Penerimaan LPMQ */}
       <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-3">
           <div>
@@ -176,7 +176,7 @@ export function PublisherPhysicalMasterTab({
         </section>
       )}
 
-      {/* Kartu Mandiri Rekapitulasi Revisi Penerbit (B-16 & B-17: Bebas Hambatan Loket) */}
+      {/* Kartu Mandiri Rekapitulasi Revisi Penerbit (B-16 & B-17: Bebas Hambatan Pengiriman Fisik) */}
       {isRevisionRequired && (
         <section className="rounded-xl border border-brand-200 bg-brand-50/40 p-5 space-y-3 shadow-2xs">
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-brand-200/80 pb-3">
@@ -202,7 +202,7 @@ export function PublisherPhysicalMasterTab({
 
           <div className="text-xs text-ink space-y-2">
             <p className="text-ink-muted leading-relaxed">
-              Berkas rekapitulasi dapat diunggah secara mandiri kapan saja, baik sebelum ataupun sesudah master fisik diterima oleh loket TMII LPMQ.
+              Berkas rekapitulasi dapat diunggah secara mandiri kapan saja, baik sebelum ataupun sesudah master fisik diterima oleh Sekretariat LPMQ.
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-1">

@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
 import {
   inputClass, STATUS_BADGE, formatDate, formatDateTime, unsurLabel, unsurForSurvey,
-  DISABILITY_LABELS, SERVICE_CATEGORY_LABELS, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, IKM_CATEGORIES,
+  SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS, IKM_CATEGORIES,
 } from './survey-constants';
 
 // Tampilan per survei untuk sub-menu Pemilihan, Jawaban, Responden, dan Laporan Survei.
@@ -190,7 +190,6 @@ function ItemsEditor({ survey, onSaved }) {
   );
 }
 
-const mapLabels = (rows, labels) => rows.map((r) => ({ ...r, label: labels[r.label] || r.label }));
 
 // Warna irisan diagram; diambil dari token desain lewat `currentColor`, bukan warna lepas.
 const SLICE_COLORS = ['text-brand-700', 'text-civic-info', 'text-civicGold-700', 'text-brand-500',
@@ -251,17 +250,13 @@ export function RespondentsView({ surveyId }) {
       <div className="rounded-xl border border-line bg-white p-4">
         <p className="text-xs text-ink-muted">Total responden</p>
         <p className="text-2xl font-bold text-ink">{report.respondents}</p>
-        <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB No. 9/2024. Persentase dihitung per responden.</p>
+        <p className="text-xs text-ink-muted">Data demografis sesuai Pedoman Menteri PANRB Nomor 9 Tahun 2024. Persentase dihitung per responden.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        <DistributionCard title="Penyandang disabilitas" rows={d.disability} />
-        <DistributionCard title="Jenis disabilitas" rows={mapLabels(d.disability_type, DISABILITY_LABELS)} />
         <DistributionCard title="Jenis kelamin" rows={d.gender} />
         <DistributionCard title="Usia" rows={d.age} />
         <DistributionCard title="Pendidikan" rows={d.education} />
         <DistributionCard title="Pekerjaan" rows={d.occupation} />
-        <DistributionCard title="Jenis layanan yang diterima" rows={d.service_type} />
-        <DistributionCard title="Kategori layanan" rows={mapLabels(d.service_category, SERVICE_CATEGORY_LABELS)} />
       </div>
     </div>
   );
@@ -278,7 +273,6 @@ const StatCard = ({ label, value, hint }) => (
 export function ReportView({ surveyId }) {
   const report = useReport(surveyId);
   if (!report) return <p className="text-sm text-ink-muted">Memuat laporan…</p>;
-  const nps = report.nps;
 
   return (
     <div className="space-y-4">
@@ -310,7 +304,7 @@ export function ReportView({ surveyId }) {
       </section>
 
       <section className="space-y-2">
-        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kategori IKM (Pedoman PANRB 9/2024 hlm. 22)</h4>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Kategori Indeks Kepuasan Masyarakat (Pedoman PANRB Nomor 9 Tahun 2024 halaman 22)</h4>
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
           <table className="w-full text-sm">
             <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
@@ -325,14 +319,14 @@ export function ReportView({ surveyId }) {
             </tbody>
           </table>
         </div>
-        <p className="text-xs text-ink-muted">IKM = rata-rata nilai persepsi seluruh unsur terisi × 25 (nilai penimbang sama untuk setiap unsur).</p>
+        <p className="text-xs text-ink-muted">Indeks Kepuasan Masyarakat = rata-rata nilai persepsi seluruh unsur terisi × 25 (nilai penimbang sama untuk setiap unsur).</p>
       </section>
 
       <div className="grid gap-3 md:grid-cols-2">
         <StatCard label="Kepuasan secara keseluruhan (1–5)" value={report.satisfaction.average}
           hint={report.satisfaction.average != null ? SATISFACTION_LABELS[Math.round(report.satisfaction.average)] : 'Belum ada data.'} />
-        <StatCard label="Loyalitas — Net Promoter Score (−100 s.d. 100)" value={nps.score}
-          hint={nps.respondents ? `${nps.promoters} promotor (9–10) · ${nps.passives} pasif (7–8) · ${nps.detractors} detraktor (1–6)` : 'Belum ada data.'} />
+        <StatCard label="Loyalitas — Net Promoter Score (−100 s.d. 100)" value={report.nps.score}
+          hint={report.nps.respondents ? `${report.nps.promoters} promotor (9–10) · ${report.nps.passives} pasif (7–8) · ${report.nps.detractors} detraktor (1–6)` : 'Belum ada data.'} />
       </div>
 
       <section className="space-y-2">
@@ -367,7 +361,6 @@ export function ReportView({ surveyId }) {
   );
 }
 
-const yesNo = (v) => (v === true ? 'Ya' : v === false ? 'Tidak' : '-');
 
 export function ResponsesView({ surveyId }) {
   const [page, setPage] = useState(1);
@@ -397,9 +390,9 @@ export function ResponsesView({ surveyId }) {
         <table className="w-full text-sm">
           <thead className="bg-surface-subtle text-left text-xs uppercase tracking-wider text-ink-muted">
             <tr>
-              <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">No. Pendaftaran</th>
-              <th className="p-3">JK</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
-              <th className="p-3">Kategori layanan</th><th className="p-3">Kepuasan</th><th className="p-3">NPS</th><th className="p-3" />
+              <th className="p-3">Waktu survei</th><th className="p-3">Responden</th><th className="p-3">Nomor Pendaftaran</th>
+              <th className="p-3">Jenis kelamin</th><th className="p-3">Usia</th><th className="p-3">Pendidikan</th><th className="p-3">Pekerjaan</th>
+              <th className="p-3">Kepuasan</th><th className="p-3">Rekomendasi (1–10)</th><th className="p-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -410,7 +403,6 @@ export function ResponsesView({ surveyId }) {
                   <td className="p-3">{r.registration?.publisher?.legal_name || r.respondent_name || '-'}</td>
                   <td className="p-3 font-mono text-xs">{r.registration?.registration_no || '-'}</td>
                   <td className="p-3">{r.gender || '-'}</td><td className="p-3">{r.age ?? '-'}</td><td className="p-3">{r.education || '-'}</td><td className="p-3">{r.occupation || '-'}</td>
-                  <td className="p-3">{SERVICE_CATEGORY_LABELS[r.service_category] || '-'}</td>
                   <td className="p-3">{r.overall_satisfaction ?? '-'}</td><td className="p-3">{r.nps_score ?? '-'}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
@@ -423,12 +415,9 @@ export function ResponsesView({ surveyId }) {
                   </td>
                 </tr>
                 {open === r.id && (
-                  <tr><td colSpan={11} className="bg-surface-subtle/50 p-3">
+                  <tr><td colSpan={10} className="bg-surface-subtle/50 p-3">
                     <div className="grid gap-4 md:grid-cols-2 text-xs">
                       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                        <dt className="text-ink-muted">Penyandang disabilitas</dt><dd>{yesNo(r.is_disabled)}{r.is_disabled && r.disability_type ? ` — ${DISABILITY_LABELS[r.disability_type] || r.disability_type}` : ''}</dd>
-                        <dt className="text-ink-muted">Jenis layanan</dt><dd>{r.service_type || '-'}</dd>
-                        <dt className="text-ink-muted">Menerima layanan</dt><dd>{formatDateTime(r.service_received_at)}</dd>
                         <dt className="text-ink-muted">Kepuasan keseluruhan</dt><dd>{r.overall_satisfaction ? `${r.overall_satisfaction} — ${SATISFACTION_LABELS[r.overall_satisfaction]}` : '-'}</dd>
                         <dt className="text-ink-muted">Loyalitas (1–10)</dt><dd>{r.nps_score ?? '-'}</dd>
                         {Object.entries(ANTI_CORRUPTION_STATEMENTS).map(([key, s]) => (

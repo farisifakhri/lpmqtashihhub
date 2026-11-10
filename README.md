@@ -116,7 +116,7 @@ Dari root repository:
 ```sh
 npm run dev
 ```
-* **Frontend Portal:** Akses di [http://localhost:5173](http://localhost:5173) (atau port Vite yang tampil di terminal).
+* **Frontend Portal:** Akses di [http://localhost:3000](http://localhost:3000) (atau port Vite yang tampil di terminal).
 * **Backend API:** Berjalan di [http://localhost:5000/api/v1](http://localhost:5000/api/v1).
 * **Pemeriksaan Kesehatan Server:** Buka `GET http://localhost:5000/api/v1/health`.
 

@@ -245,7 +245,7 @@ export const InspectionReferencePanels = ({
               </div>
             ) : (
               <p className="text-ink-muted text-xs">
-                Menunggu verifikasi penerimaan fisik master di loket LPMQ.
+                Menunggu verifikasi penerimaan master fisik di Penerimaan LPMQ.
               </p>
             )}
           </div>
