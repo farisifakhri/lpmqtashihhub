@@ -15,7 +15,7 @@ import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { PrintingReportSection } from './PrintingReportSection';
-import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
+import { PublisherSurveyDialog, SURVEY_COMPLETED_EVENT } from '@/features/registrations/PublisherSurveyDialog';
 import { showToast } from '@/components/ui/toast';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 
@@ -27,7 +27,8 @@ export function PublisherOfficialDocsTab({
   const issuedStt = data.official_documents?.find(
     (d) => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED'
   );
-  const isSttIssued = Boolean(issuedStt) || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status);
+  // Banner & laporan cetak hanya setelah dokumen STT benar-benar terbit (ditandatangani), bukan sekadar dari status pengajuan.
+  const isSttIssued = Boolean(issuedStt);
   const [surveyOpen, setSurveyOpen] = useState(false);
   // Rincian STT (nomor, tanggal) baru tampil setelah seluruh survei terisi; anggap terkunci sampai terbukti tidak.
   const [surveyLocked, setSurveyLocked] = useState(true);
@@ -39,6 +40,13 @@ export function PublisherOfficialDocsTab({
       .catch(() => { if (active) setSurveyLocked(false); }); // backend tetap menegakkan gerbang survei
     return () => { active = false; };
   }, [data.id, issuedStt?.id]);
+
+  // Survei bisa juga diselesaikan dari arsip dokumen di bawah banner ini.
+  useEffect(() => {
+    const unlock = (e) => { if (e.detail === data.id) setSurveyLocked(false); };
+    window.addEventListener(SURVEY_COMPLETED_EVENT, unlock);
+    return () => window.removeEventListener(SURVEY_COMPLETED_EVENT, unlock);
+  }, [data.id]);
 
   // Backend menolak unduhan STT (409) selama survei belum terisi; tampilkan pop-up survei lalu ulangi unduhan.
   const downloadStt = () => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)
@@ -304,7 +312,7 @@ export function PublisherOfficialDocsTab({
         <DocumentArchive registrationId={data.id} />
       </section>
       {/* Bagian 4: Laporan Realisasi Pencetakan & Penyerahan 5 Eksemplar (U-16 / B-10) */}
-      {(data.official_documents?.some(d => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED') || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status)) && (
+      {isSttIssued && (
         <div id="printing-report-section">
           <PrintingReportSection registrationId={data.id} isPublisher={true} />
         </div>

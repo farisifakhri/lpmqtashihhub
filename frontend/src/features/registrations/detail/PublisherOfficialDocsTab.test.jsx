@@ -40,6 +40,15 @@ describe('PublisherOfficialDocsTab: banner STT terkunci survei', () => {
     expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/1.pdf');
   });
 
+  it('banner STT tidak tampil hanya karena status pengajuan bila dokumen STT belum terbit', () => {
+    const daftar = vi.spyOn(publisherSurveyApi, 'listForRegistration');
+    render(<PublisherOfficialDocsTab data={{ ...data, official_documents: [{ ...data.official_documents[0], status: 'DRAFT' }] }}
+      setPreviewFile={() => {}} setShowReceipt={() => {}} />);
+    expect(screen.queryByText(/Selamat! Naskah Anda Telah Resmi/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Surat Tanda Tashih/ })).not.toBeInTheDocument();
+    expect(daftar).not.toHaveBeenCalled();
+  });
+
   it('bila backend tetap menolak karena survei (409), pop-up survei dibuka', async () => {
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [] });
     vi.spyOn(fileApi, 'downloadDocument').mockRejectedValue(new ApiError('Isi survei kepuasan layanan terlebih dahulu sebelum mengunduh STT: X.', 409));
