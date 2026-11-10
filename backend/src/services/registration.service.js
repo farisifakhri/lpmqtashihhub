@@ -2048,10 +2048,6 @@ export const getDetail = async (id, user) => {
 
   if (reg.core_team_number) {
     const members = await prisma.user.findMany({
-<<<<<<< HEAD
-      // Anggota tim inti bisa belum lengkap (mis. dokumentator belum ditetapkan); null ditolak oleh Prisma `in`.
-=======
->>>>>>> 04a2a2a415a64d0f6644f098da9d762c3c5400e2
       where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].filter(Boolean) } },
       select: { id: true, name: true },
     });
