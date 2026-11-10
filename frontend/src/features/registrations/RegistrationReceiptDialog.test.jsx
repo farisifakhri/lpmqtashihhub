@@ -108,6 +108,8 @@ describe('RegistrationReceiptDialog', () => {
     );
 
     await screen.findByTitle('Penampil PDF tanda terima pendaftaran');
+    // jsdom tidak mendukung navigasi tautan unduhan; cukup pastikan tautan diklik.
+    const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     const downloadBtn = screen.getByRole('button', { name: /Unduh PDF/i });
     fireEvent.click(downloadBtn);
@@ -116,12 +118,16 @@ describe('RegistrationReceiptDialog', () => {
     expect(registrationApi.downloadReceiptPdf).not.toHaveBeenCalled();
     // createObjectURL should have been called for download link
     expect(createObjectURLSpy).toHaveBeenCalled();
+    expect(anchorClick).toHaveBeenCalled();
   });
 
-  it('triggers iframe print or window.open when Cetak is clicked', async () => {
+  it('triggers iframe print when Cetak is clicked', async () => {
     const mockBlob = new Blob(['%PDF-1.4 dummy content'], { type: 'application/pdf' });
     vi.spyOn(registrationApi, 'getReceiptPdf').mockResolvedValue(mockBlob);
     const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => {});
+    // jsdom tidak mengimplementasikan print()/focus() pada jendela iframe.
+    const frameWindow = { focus: vi.fn(), print: vi.fn() };
+    vi.spyOn(HTMLIFrameElement.prototype, 'contentWindow', 'get').mockReturnValue(frameWindow);
 
     render(
       <RegistrationReceiptDialog
@@ -136,8 +142,8 @@ describe('RegistrationReceiptDialog', () => {
     const printBtn = screen.getByRole('button', { name: /Cetak/i });
     fireEvent.click(printBtn);
 
-    // In jsdom iframe contentWindow.print might not be implemented, so it calls window.open fallback or print
-    expect(printBtn).toBeEnabled();
+    expect(frameWindow.print).toHaveBeenCalled();
+    expect(windowOpenSpy).not.toHaveBeenCalled();
   });
 
   it('calls onClose when close button or backdrop is clicked, and revokes object URL on unmount', async () => {

@@ -36,6 +36,21 @@ test('archive includes draft verification and tashih versions for the owner and 
   }
 });
 
+test('archive hides draft STT from publishers until it is issued (paraf TU + Kepala), staff still see it', async () => {
+  const stt = status => ({ id: `stt-${status}`, document_type: 'SURAT_TANDA_TASHIH', version: 1, status });
+  const withStt = (...docs) => ({ ...db, officialDocument: { findMany: async () => docs } });
+  const publisher = { id: 'u-pub', roles: ['PENERBIT'], publisherId: 'p1' };
+
+  const draftOnly = await listDocumentArchive('r1', publisher, withStt(stt('DRAFT')));
+  assert.ok(!draftOnly.some(item => item.document_type === 'SURAT_TANDA_TASHIH'));
+
+  const issued = await listDocumentArchive('r1', publisher, withStt(stt('DRAFT'), stt('ISSUED')));
+  assert.deepEqual(issued.filter(item => item.document_type === 'SURAT_TANDA_TASHIH').map(item => item.status), ['ISSUED']);
+
+  const admin = await listDocumentArchive('r1', { id: 'u-admin', roles: ['ADMIN_INTERNAL'] }, withStt(stt('DRAFT')));
+  assert.ok(admin.some(item => item.document_type === 'SURAT_TANDA_TASHIH' && item.status === 'DRAFT'));
+});
+
 test('archive denies another publisher and unrelated staff', async () => {
   for (const user of [
     { id: 'u-pub2', roles: ['PENERBIT'], publisherId: 'p2' },

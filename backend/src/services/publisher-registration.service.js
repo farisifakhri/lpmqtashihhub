@@ -948,6 +948,18 @@ export async function getPublisherCertificatePdf(idOrCode, user = null) {
  * @param {string} nomorInduk - Format: 31.74.YY.MM.DD.SEQ (contoh: 31.74.26.10.19.001)
  * @returns {Promise<{ valid: boolean, status: 'SAH'|'TIDAK_TERDAFTAR'|'TIDAK_VALID', data?: object }>}
  */
+// Halaman verifikasi publik tanpa login: NPWP/NIB tidak boleh tampil utuh.
+export const maskIdentifier = (value) => {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (v.length <= 8) return '*'.repeat(v.length);
+  return v.slice(0, 4) + '*'.repeat(v.length - 8) + v.slice(-4);
+};
+
+// Sertifikat hanya SAH bila pendaftaran disetujui dan akun penerbit masih aktif.
+export const isCertificateActive = ({ registrationStatus, userStatus }) =>
+  (registrationStatus === undefined || registrationStatus === 'DISETUJUI') && userStatus === 'ACTIVE';
+
 export async function verifyPublisherCertificate(nomorInduk) {
   // Validasi format dasar: harus ada segmen angka dipisahkan titik (minimal 4 segmen)
   const formatRegex = /^\d{2,}\.\d{2,}\.\d{2,}\.\d{2,}(\.\d{2,})*(\.\d{3,})?$/;
@@ -957,51 +969,34 @@ export async function verifyPublisherCertificate(nomorInduk) {
     return { valid: false, status: 'TIDAK_VALID' };
   }
 
-  // 1. Cari di PublisherRegistration berdasarkan nomor_induk_penerbit
+  // Cari di PublisherRegistration, lalu fallback ke tabel Publisher langsung.
   const reg = await prisma.publisherRegistration.findFirst({
     where: { nomor_induk_penerbit: cleanNomor },
-    include: {
-      publisher: true,
-    },
+    include: { publisher: { include: { user: { select: { status: true } } } }, user: { select: { status: true } } },
   });
-
-  if (reg) {
-    return {
-      valid: true,
-      status: 'SAH',
-      data: {
-        nomor_induk_penerbit: cleanNomor,
-        legal_name: reg.publisher?.legal_name || reg.name || 'Penerbit Al-Qur\'an',
-        address: reg.publisher?.address || reg.address || '-',
-        npwp: reg.publisher?.npwp || reg.npwp || null,
-        nib: reg.publisher?.nib || reg.nib || null,
-        decided_at: reg.decided_at || reg.updated_at || null,
-        verification_status: reg.status === 'DISETUJUI' ? 'VERIFIED' : reg.status,
-      },
-    };
-  }
-
-  // 2. Fallback: Cari di tabel Publisher langsung
-  const publisher = await prisma.publisher.findFirst({
+  const publisher = reg?.publisher || (reg ? null : await prisma.publisher.findFirst({
     where: { nomor_induk_penerbit: cleanNomor },
-  });
+    include: { user: { select: { status: true } } },
+  }));
+  if (!reg && !publisher) return { valid: false, status: 'TIDAK_TERDAFTAR' };
 
-  if (publisher) {
-    return {
-      valid: true,
-      status: 'SAH',
-      data: {
-        nomor_induk_penerbit: cleanNomor,
-        legal_name: publisher.legal_name || 'Penerbit Al-Qur\'an',
-        address: publisher.address || '-',
-        npwp: publisher.npwp || null,
-        nib: publisher.nib || null,
-        decided_at: publisher.created_at || null,
-        verification_status: publisher.verification_status || 'VERIFIED',
-      },
-    };
+  const legalName = publisher?.legal_name || reg?.name || "Penerbit Al-Qur'an";
+  const userStatus = reg?.user?.status ?? publisher?.user?.status ?? (reg?.user_id || publisher?.user_id ? null : 'ACTIVE');
+  if (!isCertificateActive({ registrationStatus: reg?.status, userStatus })) {
+    return { valid: false, status: 'TIDAK_AKTIF', data: { nomor_induk_penerbit: cleanNomor, legal_name: legalName } };
   }
 
-  // Jika format valid tapi tidak tercatat di basis data
-  return { valid: false, status: 'TIDAK_TERDAFTAR' };
+  return {
+    valid: true,
+    status: 'SAH',
+    data: {
+      nomor_induk_penerbit: cleanNomor,
+      legal_name: legalName,
+      address: publisher?.address || reg?.address || '-',
+      npwp: maskIdentifier(publisher?.npwp || reg?.npwp),
+      nib: maskIdentifier(publisher?.nib || reg?.nib),
+      decided_at: reg?.decided_at || reg?.updated_at || publisher?.created_at || null,
+      verification_status: 'VERIFIED',
+    },
+  };
 }
