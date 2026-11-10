@@ -89,7 +89,7 @@ export const DokumentatorArchivePage = () => {
         search: searchQuery,
         limit: 50,
       });
-      const items = res.data?.items || [];
+      const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
       setRegistrations(items);
       if (!selectedId && items.length > 0) {
         setSelectedId(items[0].id);
