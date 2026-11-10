@@ -18,7 +18,8 @@ export const PUBLIC_NAV_ITEMS = [
       { label: 'Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar', href: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih' },
     ],
   },
-  { label: 'Permohonan Master', href: '#beranda' },
+  // Khusus penerbit terdaftar: tanpa sesi login akan diarahkan ke halaman masuk
+  { label: 'Permohonan Master', href: '/publisher/master-requests' },
   {
     label: 'Pengaduan',
     href: '#',
@@ -33,7 +34,7 @@ export const PUBLIC_NAV_ITEMS = [
 
 export const PUBLIC_INFORMATION_NAV_ITEMS = PUBLIC_NAV_ITEMS.map((item) => ({
   ...item,
-  href: item.label === 'Informasi' || item.label === 'Pengaduan' ? '#' : '/',
+  href: item.label === 'Informasi' || item.label === 'Pengaduan' ? '#' : item.href.startsWith('/') ? item.href : '/',
   children: item.children?.map((child) => ({
     ...child,
     href: item.label === 'Informasi' ? child.href : '/',

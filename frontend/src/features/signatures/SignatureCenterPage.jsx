@@ -4,6 +4,8 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
 import { registrationApi } from '@/api/registration.api';
 import { documentationApi } from '@/api/documentation.api';
+import { masterRequestApi } from '@/api/master-request.api';
+import { showToast } from '@/components/ui/toast';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { SearchField } from '@/components/ui/SearchField';
@@ -29,6 +31,8 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
+
+const MASTER_LETTER_TYPE = 'SURAT_PERSETUJUAN_MASTER';
 
 export const SignatureCenterPage = () => {
   const navigate = useNavigate();
@@ -61,6 +65,8 @@ export const SignatureCenterPage = () => {
   const [parafNotes, setParafNotes] = useState('');
   const [batchSignOpen, setBatchSignOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
+  // Surat persetujuan Permohonan Master yang diajukan Admin untuk TTE Kepala LPMQ
+  const [masterLetters, setMasterLetters] = useState([]);
 
   // Sync activeTab with URL search params
   useEffect(() => {
@@ -80,13 +86,18 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       // Load assignments to extract documents requiring signatures
-      const [resWaitingSig, resReady, resCompleted, resStt, resSttIssued] = await Promise.all([
+      const [resWaitingSig, resReady, resCompleted, resStt, resSttIssued, resMaster] = await Promise.all([
         verificationApi.listAssignments({ status: 'WAITING_SIGNATURE', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'READY_TO_SEND', limit: 50 }).catch(() => ({ data: { items: [] } })),
         verificationApi.listAssignments({ status: 'COMPLETED', limit: 50 }).catch(() => ({ data: { items: [] } })),
         registrationApi.listRegistrations({ status: 'READY_FOR_STT', limit: 50 }).catch(() => ({ data: { items: [] } })),
         registrationApi.listRegistrations({ status: 'STT_ISSUED', limit: 20 }).catch(() => ({ data: { items: [] } })),
+        // Surat persetujuan Permohonan Master hanya relevan bagi Kepala LPMQ (dan Superadmin)
+        (isHead || isSuperadmin)
+          ? masterRequestApi.listForSignature().catch(() => ({ data: [] }))
+          : Promise.resolve({ data: [] }),
       ]);
+      setMasterLetters(Array.isArray(resMaster?.data) ? resMaster.data : []);
 
       const allItems = [
         ...(resWaitingSig?.data?.items || []),
@@ -114,7 +125,7 @@ export const SignatureCenterPage = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isHead, isSuperadmin]);
 
   useEffect(() => {
     fetchAssignments();
@@ -285,8 +296,37 @@ export const SignatureCenterPage = () => {
       });
     });
 
+    // Surat persetujuan Permohonan Master Mushaf (disusun Admin, ditandatangani Kepala LPMQ)
+    masterLetters.forEach((letter) => {
+      const isSigned = ['DITANDATANGANI', 'DIKIRIM'].includes(letter.status);
+      const draftedByMe = letter.letter_drafted_by?.id === currentUser?.id;
+      list.push({
+        id: letter.id,
+        isMasterLetter: true,
+        document_no: letter.letter_number || letter.request_code,
+        document_type: MASTER_LETTER_TYPE,
+        version: 1,
+        status: isSigned ? 'SIGNED' : 'WAITING_SIGNATURE',
+        assignment_status: isSigned ? 'COMPLETED' : 'WAITING_SIGNATURE',
+        created_at: letter.letter_drafted_at || letter.created_at,
+        registration_no: letter.request_code,
+        manuscript_title: letter.mushaf_type_label,
+        publisher_name: letter.publisher?.legal_name || letter.institution,
+        isAssignedToMe: false,
+        canUserSign: (isHead || isSuperadmin) && letter.status === 'MENUNGGU_TTE' && !draftedByMe,
+        signatories: [
+          {
+            role_label: 'Kepala LPMQ',
+            name: letter.signed_by?.name || 'Kepala LPMQ',
+            status: isSigned ? 'SIGNED' : 'PENDING',
+            signed_at: letter.signed_at,
+          },
+        ],
+      });
+    });
+
     return list;
-  }, [assignments, sttRegistrations, isHead, isVerifier, isTuStaff, isSuperadmin, currentUser]);
+  }, [assignments, sttRegistrations, masterLetters, isHead, isVerifier, isTuStaff, isSuperadmin, currentUser]);
 
   // Filter documents by active tab and search
   const filteredDocuments = useMemo(() => {
@@ -357,7 +397,10 @@ export const SignatureCenterPage = () => {
     setActionLoading(true);
     setError(null);
     try {
-      if (signDialogDoc.document_type === 'SURAT_TANDA_TASHIH') {
+      if (signDialogDoc.isMasterLetter) {
+        await masterRequestApi.sign(signDialogDoc.id);
+        setSuccessMessage(`Surat persetujuan master ${signDialogDoc.document_no} berhasil ditandatangani dan dikembalikan ke Admin untuk dikirim ke penerbit.`);
+      } else if (signDialogDoc.document_type === 'SURAT_TANDA_TASHIH') {
         await documentationApi.signStt(signDialogDoc.id);
         setSuccessMessage(`Surat Tanda Tashih (STT) ${signDialogDoc.document_no} resmi disahkan dan ditandatangani oleh Kepala LPMQ.`);
       } else {
@@ -400,7 +443,9 @@ export const SignatureCenterPage = () => {
       let successCount = 0;
       for (const id of selectedDocIds) {
         try {
-          await verificationApi.signDocument(id);
+          const target = allDocuments.find((d) => d.id === id);
+          if (target?.isMasterLetter) await masterRequestApi.sign(id);
+          else await verificationApi.signDocument(id);
           successCount++;
         } catch {
           // continue with remaining
@@ -646,6 +691,7 @@ export const SignatureCenterPage = () => {
               <option value="SURAT_HASIL_VERIFIKASI">Surat Hasil Verifikasi</option>
               <option value="BERITA_ACARA_VERIFIKASI">Berita Acara Verifikasi</option>
               <option value="NOTA_DINAS_VERIFIKASI">Disposisi Penugasan</option>
+              <option value={MASTER_LETTER_TYPE}>Surat Persetujuan Master</option>
             </select>
           </div>
         </div>
@@ -733,6 +779,8 @@ export const SignatureCenterPage = () => {
                         <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-surface-subtle text-ink border border-line">
                           {doc.document_type === 'SURAT_TANDA_TASHIH'
                             ? 'Surat Tanda Tashih (STT)'
+                            : doc.isMasterLetter
+                            ? 'Surat Persetujuan Master'
                             : doc.document_type === 'BERITA_ACARA_VERIFIKASI'
                             ? 'Berita Acara Verifikasi'
                             : 'Surat Hasil Verifikasi'}
@@ -814,7 +862,9 @@ export const SignatureCenterPage = () => {
                   <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-line">
                     <Button
                       variant="outline"
-                      onClick={() => setPreviewDoc(doc)}
+                      onClick={() => (doc.isMasterLetter
+                        ? masterRequestApi.openSignatureLetter(doc.id).catch((err) => showToast(err?.message || 'Surat belum dapat dibuka.'))
+                        : setPreviewDoc(doc))}
                       className="text-xs px-3 py-1.5"
                     >
                       <Eye className="w-3.5 h-3.5 mr-1 text-ink-muted" />
@@ -889,7 +939,7 @@ export const SignatureCenterPage = () => {
                         className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
-                        Konfirmasi
+                        {doc.isMasterLetter ? 'Tandatangani Surat' : 'Konfirmasi'}
                       </Button>
                     )}
                   </div>
@@ -901,7 +951,30 @@ export const SignatureCenterPage = () => {
       </div>
 
       {/* Confirmation Summary Dialog for Single Sign */}
-      {signDialogDoc && (
+      {signDialogDoc?.isMasterLetter && (
+        <ConfirmationSummaryDialog
+          isOpen
+          onClose={() => setSignDialogDoc(null)}
+          onConfirm={handleConfirmSignSingle}
+          title="Tanda Tangan Surat Persetujuan Master"
+          description="Surat ini disusun Admin untuk menyetujui permohonan master mushaf dari penerbit. Pratinjau isi surat sebelum menandatangani."
+          objectName={`Surat Persetujuan Master: ${signDialogDoc.document_no}`}
+          nextActor="Admin (mengirim surat ke penerbit)"
+          statusChange="MENUNGGU_TTE -> DITANDATANGANI"
+          irreversibleConsequence="Tanda tangan elektronik dibubuhkan beserta kode verifikasi isi surat dan tercatat dalam jejak audit; isi surat tidak dapat diubah lagi."
+          summaryItems={[
+            { label: 'Nomor Surat', value: signDialogDoc.document_no },
+            { label: 'Master Mushaf', value: signDialogDoc.manuscript_title },
+            { label: 'Penerbit', value: signDialogDoc.publisher_name },
+            { label: 'Kode Permohonan', value: signDialogDoc.registration_no },
+          ]}
+          confirmLabel="Tandatangani Surat"
+          confirmVariant="primary"
+          loading={actionLoading}
+        />
+      )}
+
+      {signDialogDoc && !signDialogDoc.isMasterLetter && (
         <ConfirmationSummaryDialog
           isOpen={Boolean(signDialogDoc)}
           onClose={() => setSignDialogDoc(null)}

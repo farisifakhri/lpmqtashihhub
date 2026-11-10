@@ -30,6 +30,7 @@ npm run test:e2e:report               # buka laporan HTML hasil run terakhir
 | `03-hak-akses.spec.js` | RBAC: halaman yang boleh/tidak boleh dibuka tiap peran, dan penolakan di level API |
 | `04-alur-tahapan.spec.js` | Alur utama tahap 2–13: tiap naskah demo tampil di antrean peran yang tepat |
 | `05-alur-aksi.spec.js` | Aksi nyata: validasi formulir permohonan, konfirmasi serah terima, reviu sidang terkunci, lepas tugas pentashih (B-19b) |
+| `06-permohonan-master.spec.js` | Permohonan Master: penerbit mengajukan → admin menyusun surat → Kepala TTE di Pusat Tanda Tangan → admin mengirim → penerbit mengunduh surat; pembatasan akses per peran |
 
 ## Data uji
 

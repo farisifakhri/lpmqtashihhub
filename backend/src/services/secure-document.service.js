@@ -294,7 +294,8 @@ export async function saveSecurePublisherDocument(bytes, originalFilename, docTy
   const scanResult = await scanPdfSecurity(bytes);
 
   // 4. Siapkan direktori penyimpanan privat
-  const storageDir = getPublisherDocsDirectory();
+  // options.directory: subfolder lain di bawah storage/private (mis. permohonan master mushaf)
+  const storageDir = options.directory ? path.resolve(options.directory) : getPublisherDocsDirectory();
   await mkdir(storageDir, { recursive: true });
 
   // 5. Nama berkas fisik diacak secara kriptografis (anti-path traversal & anti-overwrite)

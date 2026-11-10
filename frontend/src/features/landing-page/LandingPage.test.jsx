@@ -121,7 +121,7 @@ describe('LandingPage sections and navigation', () => {
     expect(screen.queryByText(/Di mana lokasi penyerahan master naskah fisik/i)).not.toBeInTheDocument();
 
     const mainNavigation = screen.getByRole('navigation', { name: 'Navigasi utama' });
-    expect(within(mainNavigation).getByRole('link', { name: 'Permohonan Master' })).toHaveAttribute('href', '#beranda');
+    expect(within(mainNavigation).getByRole('link', { name: 'Permohonan Master' })).toHaveAttribute('href', '/publisher/master-requests');
     expect(within(mainNavigation).getByRole('link', { name: 'Pengaduan' })).toHaveAttribute('href', '#');
     expect(within(mainNavigation).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#beranda');
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();

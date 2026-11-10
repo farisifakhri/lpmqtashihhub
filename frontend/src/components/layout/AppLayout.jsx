@@ -95,7 +95,8 @@ export const AppLayout = () => {
       <Navbar sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
 
       {/* Main Container */}
-      <div className="flex flex-1 min-h-0 relative overflow-hidden">
+      {/* overflow-clip (bukan hidden): wadah tidak bisa ter-scroll oleh browser saat elemen tersembunyi (sr-only) mendapat fokus */}
+      <div className="flex flex-1 min-h-0 relative overflow-clip">
         {/* Sidebar Component (264px) */}
         <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
 

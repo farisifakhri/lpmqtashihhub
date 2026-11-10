@@ -135,6 +135,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname.startsWith('/publisher/billing')) {
       return { parent: 'Keuangan', name: 'Billing & PNBP' };
     }
+    if (pathname.startsWith('/publisher/master-requests')) {
+      return { parent: 'Layanan', name: 'Permohonan Master' };
+    }
     if (pathname.startsWith('/publisher/documents')) {
       return { parent: 'Dokumen', name: 'Surat Tanda Tashih (STT)' };
     }
@@ -173,6 +176,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     }
     if (pathname.startsWith('/internal/signatures')) {
       return { parent: 'Pengesahan', name: 'Pusat Tanda Tangan' };
+    }
+    if (pathname.startsWith('/internal/master-requests')) {
+      return { parent: 'Tata Kelola Sistem', name: 'Permohonan Master' };
     }
     if (pathname.startsWith('/internal/surveys')) {
       return { parent: 'Tata Kelola Sistem', name: 'Survei' };

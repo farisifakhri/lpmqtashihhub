@@ -30,6 +30,7 @@ export default defineConfig({
   webServer: {
     command: `npm --prefix frontend run dev -- --port ${E2E_PORT} --strictPort`,
     url: BASE_URL,
+    env: { VITE_CACHE_DIR: 'node_modules/.vite-e2e' },
     reuseExistingServer: true,
     timeout: 120_000,
   },

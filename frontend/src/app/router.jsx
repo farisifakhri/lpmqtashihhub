@@ -52,6 +52,9 @@ const InformationGuidePage = withSuspense(lazy(() => import('@/features/informat
 const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
 const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
+const PublisherMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherMasterRequestsPage').then(m => ({ default: m.PublisherMasterRequestsPage }))));
+const PublisherNewMasterRequestPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherNewMasterRequestPage').then(m => ({ default: m.PublisherNewMasterRequestPage }))));
+const AdminMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/AdminMasterRequestsPage').then(m => ({ default: m.AdminMasterRequestsPage }))));
 const SurveyManagementPage = withSuspense(lazy(() => import('@/features/internal/survey/SurveyManagementPage').then(m => ({ default: m.SurveyManagementPage }))));
 
 const router = createBrowserRouter([
@@ -196,6 +199,14 @@ const router = createBrowserRouter([
             <PublisherBillingPage />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: 'publisher/master-requests',
+        element: <ProtectedRoute portalType="publisher"><PublisherMasterRequestsPage /></ProtectedRoute>,
+      },
+      {
+        path: 'publisher/master-requests/new',
+        element: <ProtectedRoute portalType="publisher"><PublisherNewMasterRequestPage /></ProtectedRoute>,
       },
       {
         path: 'publisher/documents',
@@ -348,6 +359,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
             <LandingPageManagementPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/master-requests',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
+            <AdminMasterRequestsPage />
           </ProtectedRoute>
         ),
       },

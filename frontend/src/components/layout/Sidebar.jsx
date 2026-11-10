@@ -6,6 +6,7 @@ import { UserAvatar } from "@/components/ui/UserAvatar";
 import { AvatarPickerModal } from "@/components/ui/AvatarPickerModal";
 import {
     LayoutDashboard,
+    FileSignature,
     AlertTriangle,
     FilePlus,
     FileText,
@@ -182,6 +183,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/publisher/new-registration",
                             icon: <FilePlus className="w-4 h-4 shrink-0" />,
                             description: "Pengajuan naskah mushaf baru",
+                        },
+                        {
+                            label: "Permohonan Master",
+                            path: "/publisher/master-requests",
+                            icon: <FileSignature className="w-4 h-4 shrink-0" />,
+                            description: "Ajukan master mushaf & unduh surat persetujuan",
                         },
                         {
                             label: "Tagihan & Pembayaran",
@@ -482,6 +489,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
                             description: "Konten, berita & regulasi publik",
                         },
+                        {
+                            label: "Permohonan Master",
+                            path: "/internal/master-requests",
+                            badgeKey: "master_requests_pending",
+                            icon: <FileSignature className="w-4 h-4 shrink-0" />,
+                            description: "Permohonan master mushaf dari penerbit",
+                        },
                     ],
                 },
             ];
@@ -587,6 +601,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/landing-page",
                         icon: <PanelsTopLeft className="w-4 h-4 shrink-0" />,
                         description: "Konten dan regulasi landing page",
+                    },
+                    {
+                        label: "Permohonan Master",
+                        path: "/internal/master-requests",
+                        badgeKey: "master_requests_pending",
+                        icon: <FileSignature className="w-4 h-4 shrink-0" />,
+                        description: "Permohonan master mushaf dari penerbit",
                     },
                     {
                         label: "Survei",

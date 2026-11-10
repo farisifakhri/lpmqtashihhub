@@ -41,6 +41,9 @@ export function formatOfficialDocumentNumber(documentType, sequence, date = new 
     case 'NOTA_DINAS_VERIFIKASI':
       return `ND-${pad4}/LPMQ.01/TL.01/${romanMonth}/${year}`;
 
+    case 'SURAT_PERSETUJUAN_MASTER':
+      return `B-${pad4}/LPMQ.01/HM.01/${romanMonth}/${year}`;
+
     case 'SERTIFIKAT_PENERBIT': {
       const yy = String(year).slice(-2);
       const mm = String(date.getMonth() + 1).padStart(2, '0');

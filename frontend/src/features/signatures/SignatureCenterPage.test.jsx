@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SignatureCenterPage } from './SignatureCenterPage';
 import { verificationApi } from '@/api/verification.api';
+import { masterRequestApi } from '@/api/master-request.api';
 
 // Mock dependencies
 vi.mock('@/features/auth/AuthContext', () => ({
@@ -22,6 +23,28 @@ vi.mock('@/api/verification.api', () => ({
     signDocument: vi.fn(),
   },
 }));
+
+vi.mock('@/api/master-request.api', () => ({
+  masterRequestApi: {
+    listForSignature: vi.fn(),
+    sign: vi.fn(),
+    openSignatureLetter: vi.fn(),
+  },
+}));
+
+const mockMasterLetters = [
+  {
+    id: 'mreq-1',
+    request_code: 'PMQ-20261110-ABC234',
+    status: 'MENUNGGU_TTE',
+    letter_number: 'B-0007/LPMQ.01/HM.01/XI/2026',
+    mushaf_type_label: 'Yasin dan Tahlil',
+    institution: 'PT Mushaf Nusantara',
+    publisher: { id: 'pub-1', legal_name: 'PT Mushaf Nusantara' },
+    letter_drafted_at: '2026-11-10T03:00:00.000Z',
+    letter_drafted_by: { id: 'usr-admin-1', name: 'Admin Internal' },
+  },
+];
 
 const mockAssignments = [
   {
@@ -79,6 +102,9 @@ describe('SignatureCenterPage Component', () => {
     verificationApi.signDocument.mockResolvedValue({
       data: { success: true },
     });
+    masterRequestApi.listForSignature.mockResolvedValue({ data: mockMasterLetters });
+    masterRequestApi.sign.mockResolvedValue({ data: { status: 'DITANDATANGANI' } });
+    masterRequestApi.openSignatureLetter.mockResolvedValue();
   });
 
   const renderComponent = (initialPath = '/internal/signatures') => {
@@ -149,5 +175,23 @@ describe('SignatureCenterPage Component', () => {
     expect(screen.getByText(/Mushaf Al-Qur'an Tajwid Warna A4/i)).toBeInTheDocument();
     expect(screen.getByText('Lengkap Ditandatangani')).toBeInTheDocument();
   });
-});
 
+  it('menampilkan surat persetujuan Permohonan Master untuk ditandatangani Kepala', async () => {
+    renderComponent();
+
+    expect(await screen.findByText('B-0007/LPMQ.01/HM.01/XI/2026')).toBeInTheDocument();
+    expect(screen.getByText('Surat Persetujuan Master', { selector: 'span' })).toBeInTheDocument();
+    expect(screen.getAllByText('PT Mushaf Nusantara').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Pratinjau/i }).at(-1));
+    expect(masterRequestApi.openSignatureLetter).toHaveBeenCalledWith('mreq-1');
+
+    fireEvent.click(screen.getByRole('button', { name: /Tandatangani Surat/i }));
+    expect(await screen.findByText('Tanda Tangan Surat Persetujuan Master')).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { name: /^Tandatangani Surat$/i }).at(-1));
+
+    await waitFor(() => expect(masterRequestApi.sign).toHaveBeenCalledWith('mreq-1'));
+    expect(verificationApi.signDocument).not.toHaveBeenCalled();
+    expect(await screen.findByText(/dikembalikan ke Admin/i)).toBeInTheDocument();
+  });
+});

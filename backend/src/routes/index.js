@@ -17,6 +17,7 @@ import regulationRoutes from './regulation.routes.js';
 import informationGuideRoutes from './information-guide.routes.js';
 import surveyRoutes from './survey.routes.js';
 import serviceDocumentRoutes from './service-document.routes.js';
+import masterRequestRoutes from './master-request.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -101,6 +102,7 @@ router.use(regulationRoutes);
 router.use(informationGuideRoutes);
 router.use(surveyRoutes);
 router.use(serviceDocumentRoutes);
+router.use(masterRequestRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 
