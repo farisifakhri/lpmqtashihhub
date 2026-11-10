@@ -6,6 +6,7 @@ import { registrationApi } from '@/api/registration.api';
 import { publisherSurveyApi } from '@/api/publisher-survey.api';
 import { fileApi } from '@/api/file.api';
 import * as AuthContext from '@/features/auth/AuthContext';
+import { SURVEY_COMPLETED_EVENT } from '@/features/registrations/PublisherSurveyDialog';
 
 const unsur = { id: 'u1', code: 'A', name: 'Persyaratan', definition: 'Syarat yang harus dipenuhi.' };
 const question = {
@@ -30,15 +31,15 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     vi.spyOn(fileApi, 'downloadDocument').mockResolvedValue();
   });
 
-  it('menahan unduhan STT dan menampilkan pop-up survei, tetapi pratinjau tetap bebas', async () => {
+  it('menyembunyikan STT (pratinjau maupun unduh) dan menampilkan pop-up survei', async () => {
     asPublisher();
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
     render(<DocumentArchive registrationId="reg-1" />);
 
-    // Meninjau STT tidak dikunci survei.
-    expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeEnabled();
-
-    const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ });
+    const tombol = await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ });
+    // Sebelum survei terisi, STT tidak bisa ditinjau dan nomornya pun tidak tampil.
+    expect(screen.queryByRole('button', { name: /Lihat Dokumen PDF/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('STT/LPMQ/2026/001', { exact: false })).not.toBeInTheDocument();
     fireEvent.click(tombol);
 
     const dialog = await screen.findByRole('dialog');
@@ -48,22 +49,26 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     expect(fileApi.downloadDocument).not.toHaveBeenCalled();
   });
 
-  it('melanjutkan unduhan setelah survei terakhir dikirim', async () => {
+  it('membuka STT setelah survei terakhir dikirim', async () => {
     asPublisher();
     vi.spyOn(publisherSurveyApi, 'listForRegistration')
       .mockResolvedValueOnce({ data: [survei] }) // pemuatan arsip
       .mockResolvedValueOnce({ data: [survei] }) // pemuatan pop-up
       .mockResolvedValue({ data: [{ ...survei, answered: true, answered_at: '2026-11-06T10:00:00.000Z' }] });
     vi.spyOn(publisherSurveyApi, 'submit').mockResolvedValue({ data: { id: 'r1' } });
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:stt');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true, headers: { get: () => 'application/pdf' }, blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' }),
+    });
     render(<DocumentArchive registrationId="reg-1" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ }));
     await screen.findByRole('dialog');
 
     // Data responden kosong: Lanjut terkunci dan isian yang kurang disebutkan.
     expect(screen.getByRole('button', { name: 'Lanjut' })).toBeDisabled();
-    expect(screen.getByText(/Belum diisi: Nama pengisi, Usia, Jenis kelamin/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('Nama pengisi'), { target: { value: 'Budi' } });
+    expect(screen.getByText(/Belum diisi: Nama responden, Usia, Jenis kelamin/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Nama responden'), { target: { value: 'Budi' } });
     fireEvent.change(screen.getByLabelText('Usia'), { target: { value: '40' } });
     fireEvent.click(screen.getByLabelText('Laki-laki'));
     fireEvent.change(screen.getByLabelText('Pendidikan terakhir'), { target: { value: 'S1' } });
@@ -83,7 +88,22 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     fireEvent.change(screen.getByLabelText('Kritik dan saran'), { target: { value: 'Mantap.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Survei' }));
 
-    await waitFor(() => expect(fileApi.downloadDocument).toHaveBeenCalledWith('doc-1', 'STT/LPMQ/2026/001.pdf'));
+    await waitFor(() => expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining('/official-documents/doc-1/pdf'), expect.anything()));
+    expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeInTheDocument();
+  });
+
+  it('ikut terbuka bila survei diselesaikan dari banner STT di halaman yang sama', async () => {
+    asPublisher();
+    vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [survei] });
+    render(<DocumentArchive registrationId="reg-1" />);
+    await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ });
+
+    window.dispatchEvent(new CustomEvent(SURVEY_COMPLETED_EVENT, { detail: 'reg-lain' }));
+    expect(screen.getByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ })).toBeInTheDocument();
+
+    window.dispatchEvent(new CustomEvent(SURVEY_COMPLETED_EVENT, { detail: 'reg-1' }));
+    expect(await screen.findByRole('button', { name: /Lihat Dokumen PDF/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unduh Dokumen/ })).toBeInTheDocument();
   });
 
   it('survei diisi berurutan: survei kedua terkunci sampai survei pertama terisi', async () => {
@@ -91,7 +111,7 @@ describe('DocumentArchive: pop-up survei sebelum STT dibuka penerbit', () => {
     const pertama = { ...survei, id: 's0', name: 'kepuasan langganan' };
     vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [pertama, survei] });
     render(<DocumentArchive registrationId="reg-1" />);
-    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Unduh/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Isi Survei untuk Membuka Surat Tanda Tashih/ }));
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('tab', { name: /kepuasan langganan/ })).toBeEnabled();

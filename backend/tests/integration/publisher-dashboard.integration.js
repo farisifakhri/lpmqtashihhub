@@ -82,7 +82,8 @@ try {
   await call(`/registrations/${processing.id}/manuscripts`, token, 'POST', uploadPayload, 409);
 
   const archive = await call(`/registrations/${draft.id}/document-archive`, token);
-  assert.equal(archive.data.some(item => item.id === draftDoc.id && item.status === 'DRAFT'), true);
+  // Draf STT belum diparaf TU / disahkan Kepala: tidak tampil di arsip penerbit.
+  assert.equal(archive.data.some(item => item.id === draftDoc.id), false);
   await call(`/registrations/${foreignReg.id}/document-archive`, token, 'GET', undefined, 403);
   await call(`/official-documents/${draftDoc.id}/pdf`, token, 'GET', undefined, 409);
   await call(`/official-documents/${foreignDoc.id}/pdf`, token, 'GET', undefined, 403);

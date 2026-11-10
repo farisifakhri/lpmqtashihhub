@@ -248,7 +248,7 @@ export function RegistrationDetailDialog({ id, onClose }) {
               <Link
                 to={`/internal/verifications?id=${data.id}`}
                 onClick={onClose}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink hover:bg-ink text-white font-bold text-xs shadow-2xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink hover:bg-ink text-canvas font-bold text-xs shadow-2xs transition-colors"
               >
                 <span>Buka Pemeriksaan</span>
                 <ArrowRight className="w-3.5 h-3.5" />

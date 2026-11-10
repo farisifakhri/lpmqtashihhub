@@ -62,9 +62,16 @@ export async function listDocumentArchive(registrationId, user, db = prisma) {
     },
   }] : [];
 
+  // Penerbit baru melihat STT setelah resmi terbit (diparaf TU dan disahkan Kepala LPMQ); draf STT tetap internal.
+  const isPublisherOnly = user.roles?.includes('PENERBIT')
+    && !user.roles.some(role => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(role));
+  const visibleOfficial = isPublisherOnly
+    ? official.filter(item => item.document_type !== 'SURAT_TANDA_TASHIH' || item.status === 'ISSUED')
+    : official;
+
   return [
     ...applicationDocs,
     ...verification.map(item => ({ ...item, source: 'VERIFICATION' })),
-    ...official.map(item => ({ ...item, source: 'OFFICIAL' })),
+    ...visibleOfficial.map(item => ({ ...item, source: 'OFFICIAL' })),
   ];
 }

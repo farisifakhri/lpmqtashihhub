@@ -9,6 +9,7 @@ import * as RegistrationApiModule from '@/api/registration.api';
 import * as DocumentationApiModule from '@/api/documentation.api';
 import * as VerificationApiModule from '@/api/verification.api';
 import * as AuthContextModule from '@/features/auth/AuthContext';
+import { publisherSurveyApi } from '@/api/publisher-survey.api';
 
 describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Penerbit', () => {
   beforeEach(() => {
@@ -315,7 +316,9 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
     });
   });
 
-  it('B18-FE-05: PublisherOfficialDocsTab menampilkan banner ucapan selamat dan tombol download STT resmi ber-QR', () => {
+  it('B18-FE-05: PublisherOfficialDocsTab menampilkan banner ucapan selamat dan tombol download STT resmi ber-QR', async () => {
+    // Rincian & tombol unduh STT tampil setelah seluruh survei terisi.
+    vi.spyOn(publisherSurveyApi, 'listForRegistration').mockResolvedValue({ data: [] });
     const mockRegistration = {
       id: 'reg-pub-01',
       registration_no: 'REG-2026-PUB-01',
@@ -345,10 +348,10 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
 
     // Banner ucapan selamat
     expect(screen.getByText(/Selamat! Naskah Anda Telah Resmi Memperoleh Tanda Tashih/i)).toBeInTheDocument();
-    expect(screen.getByText('042/LPMQ.01/TL.00/11/2026')).toBeInTheDocument();
+    expect(await screen.findByText('042/LPMQ.01/TL.00/11/2026')).toBeInTheDocument();
 
     // Tombol unduh STT resmi
-    expect(screen.getByRole('button', { name: /Unduh STT Resmi \(PDF\)/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unduh Surat Tanda Tashih Resmi \(PDF\)/i })).toBeInTheDocument();
 
     // Peringatan kewajiban 5 eksemplar fisik
     expect(screen.getByText(/Kewajiban Pengiriman 5 Eksemplar Fisik \(Batas Waktu: 30 Hari Kalender\)/i)).toBeInTheDocument();
