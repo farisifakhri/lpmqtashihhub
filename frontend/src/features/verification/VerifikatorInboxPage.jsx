@@ -626,9 +626,6 @@ export const VerifikatorInboxPage = () => {
                               <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
                                 {reg.registration_no || '-'}
                               </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
-                                Siap ditugaskan
-                              </span>
                             </div>
 
                             {/* Title & Publisher */}
