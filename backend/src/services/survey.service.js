@@ -161,10 +161,10 @@ const questionInclude = {
 // "Nama survei" di form pertanyaan: tambahkan ke akhir susunan survei itu (seperti Pemilihan Survey sistem lama).
 async function attachToSurvey(tx, questionId, unsurId, surveyId) {
   if (!surveyId) return;
-  const survey = await tx.survey.findUnique({ where: { id: surveyId }, include: { _count: { select: { responses: true } } } });
+  const survey = await tx.survey.findUnique({ where: { id: surveyId }, select: { id: true } });
   if (!survey) fail(400, 'Survei yang dipilih tidak ditemukan. Muat ulang halaman lalu pilih kembali.');
   if (await tx.surveyItem.findFirst({ where: { survey_id: surveyId, question_id: questionId } })) return;
-  if (survey._count.responses) fail(409, 'Susunan survei ini terkunci karena sudah memiliki jawaban. Pilih survei lain atau kosongkan Nama survei.');
+  // Menambah di akhir boleh walau survei sudah dijawab: jawaban lama tidak berubah, indeks dirata-rata dari jawaban yang ada.
   if (!unsurId) fail(400, 'Pilih unsur sebelum menambahkan pertanyaan ke survei.');
   const last = await tx.surveyItem.findFirst({ where: { survey_id: surveyId }, orderBy: { sort_order: 'desc' } });
   await tx.surveyItem.create({ data: { survey_id: surveyId, unsur_id: unsurId, question_id: questionId, sort_order: (last?.sort_order ?? -1) + 1 } });
@@ -473,6 +473,14 @@ export function npsOf(rows) {
 }
 
 // ---------------------------------------------------- Pengisian survei oleh penerbit
+// Penerbit hanya boleh membaca/mengisi survei untuk pengajuannya sendiri (jawaban membuka STT pengajuan itu).
+export async function assertSurveyRegistrationAccess(registrationId, user) {
+  const reg = await prisma.registration.findUnique({ where: { id: registrationId }, select: { publisher_id: true } });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+  if (user.roles.includes('SUPERADMIN')) return;
+  if (!user.publisherId || reg.publisher_id !== user.publisherId) fail(403, 'Pengajuan ini bukan milik penerbit Anda.');
+}
+
 // Survei yang wajib diisi penerbit sebelum mencetak STT: seluruh survei AKTIF yang punya pertanyaan.
 export async function listSurveysForRegistration(registrationId) {
   const surveys = await prisma.survey.findMany({
