@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { handoverApi } from '@/api/handover.api';
 import { useDistributionQueues } from './hooks/useDistributionQueues';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { DistributorReviewDialog } from './DistributorReviewDialog';
+import { RevokePentashihAssignmentDialog } from './RevokePentashihAssignmentDialog';
 import { TeamAssignmentPanel } from './components/TeamAssignmentPanel';
 import { ReviewProgressPanel } from './components/ReviewProgressPanel';
 import { SttWorkflowPanel } from './components/SttWorkflowPanel';
@@ -61,6 +62,7 @@ export const DistributorHandoverInboxPage = () => {
 
   const [assignmentModalId, setAssignmentModalId] = useState(null);
   const [reviewDialogRegId, setReviewDialogRegId] = useState(null);
+  const [revokeTarget, setRevokeTarget] = useState(null);
 
   const [handovers, setHandovers] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
@@ -297,7 +299,7 @@ export const DistributorHandoverInboxPage = () => {
       {/* Top Header & Breadcrumb */}
       <PageHeader
         title="Antrean Serah-Terima Master Fisik"
-        subtitle="Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di loket pentashihan (Langkah 7 & 8 SOP)"
+        subtitle="Pemeriksaan dan penerimaan master mushaf cetak A4 (per juz) dari Verifikator di ruang penerimaan pentashihan (Langkah 7 & 8 SOP)"
         breadcrumbs={[
           { label: 'Portal Petugas', href: '/internal' },
           { label: 'Distribusi Sidang' },
@@ -487,6 +489,7 @@ export const DistributorHandoverInboxPage = () => {
           inProgressRegistrations={inProgressRegistrations}
           fetchDistributionData={fetchDistributionData}
           setReviewDialogRegId={setReviewDialogRegId}
+          onRevokePentashih={(assignment, reg) => setRevokeTarget({ assignment, registration: reg })}
         />
       )}
 
@@ -516,6 +519,18 @@ export const DistributorHandoverInboxPage = () => {
           onClose={() => setReviewDialogRegId(null)}
           onSuccess={() => {
             setReviewDialogRegId(null);
+            fetchDistributionData();
+          }}
+        />
+      )}
+
+      {revokeTarget && (
+        <RevokePentashihAssignmentDialog
+          assignment={revokeTarget.assignment}
+          registration={revokeTarget.registration}
+          onClose={() => setRevokeTarget(null)}
+          onSuccess={() => {
+            setRevokeTarget(null);
             fetchDistributionData();
           }}
         />

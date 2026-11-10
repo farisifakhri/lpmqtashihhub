@@ -3,11 +3,12 @@ import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
+import { formatFileType } from '@/lib/glossary';
 
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
   submitting, modalError, closeReviewModal, handleReviewSubmit, getStageLabel,
-  recapFileId, setRecapFileId,
+  recapFileId, setRecapFileId, recapScope = 'SELF', setRecapScope,
 }) => {
   const [uploadingRecap, setUploadingRecap] = useState(false);
   const [recapFileName, setRecapFileName] = useState('');
@@ -87,20 +88,45 @@ export const ReviewForm = ({
                 </div>
               )}
 
-              {/* Catatan Sidang Ronde Sebelumnya (B-07) */}
+              {/* Catatan Sidang Ronde Sebelumnya & Dokumen Rekap Revisi Penerbit (B-07 & B-16) */}
               {previousRevLetters.length > 0 && (
-                <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2 text-xs">
-                  <div className="flex items-center gap-2 font-bold text-ink">
-                    <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
-                    <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
+                <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between font-bold text-ink">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
+                      <span>Catatan Sidang Ronde Sebelumnya ({previousRevLetters[0].content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'})</span>
+                    </div>
+                    <span className="text-[11px] text-civic-warning font-semibold">Bahan Komparasi Sidang</span>
                   </div>
-                  <div className="bg-white p-3 rounded-lg border border-civic-warningLine text-ink leading-relaxed">
-                    <p className="font-semibold text-ink-muted text-[11px] mb-1">
+                  <div className="bg-white p-3 rounded-lg border border-civic-warningLine text-ink leading-relaxed space-y-2">
+                    <p className="font-semibold text-ink-muted text-[11px]">
                       Ronde #{previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1} • Oleh: {previousRevLetters[0].content_snapshot?.distributor_name || 'Distributor'}
                     </p>
                     <p className="whitespace-pre-line text-xs font-mono bg-canvas p-2 rounded border border-line">
                       {previousRevLetters[0].content_snapshot?.notes || '-'}
                     </p>
+                    {/* Berkas Rekap Hasil Perbaikan Penerbit (B-16) */}
+                    {(() => {
+                      const roundNum = previousRevLetters[0].content_snapshot?.revision_round || previousRevLetters[0].version || 1;
+                      const pubRecap = (selectedAssignment?.registration?.publisher_revision_recaps || []).find((r) => r.round_number === roundNum);
+                      if (pubRecap?.recap_file_id) {
+                        return (
+                          <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] text-ink-muted font-semibold">Tindak Lanjut Butir Perbaikan Penerbit:</span>
+                            <a
+                              href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-brand-700" />
+                              <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
+                            </a>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 </div>
               )}
@@ -129,34 +155,113 @@ export const ReviewForm = ({
                 <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
                   Berkas Master Mushaf Digital
                 </label>
-                {selectedAssignment.registration?.manuscript_files?.length ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {selectedAssignment.registration.manuscript_files.map((file) => (
-                      <a
-                        key={file.id}
-                        href={`/api/v1/uploads/${file.file_id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="p-2.5 rounded-lg border border-line bg-white hover:border-brand-700 hover:bg-brand-50/30 transition-all flex items-center justify-between text-xs group"
-                      >
-                        <div className="flex items-center gap-2 truncate">
-                          <FileText className="w-4 h-4 text-brand-700 shrink-0" />
-                          <span className="font-medium text-ink group-hover:text-brand-800 truncate">
-                            {file.file_type || 'Berkas Naskah'}
-                          </span>
-                        </div>
-                        <Download className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700 shrink-0 ml-1" />
-                      </a>
-                    ))}
-                  </div>
-                ) : (
+                {(() => {
+                  // Satu kartu per jenis berkas (COVER, SAMPLE_PAGE_1_5, ...), versi terbaru saja —
+                  // data mentah bisa punya duplikat yang mengaburkan daftar.
+                  const files = selectedAssignment.registration?.manuscript_files || [];
+                  const terbaru = new Map();
+                  for (const f of files) {
+                    const key = f.type || f.id;
+                    const sekarang = terbaru.get(key);
+                    if (!sekarang || (f.version || 1) > (sekarang.version || 1)) terbaru.set(key, f);
+                  }
+                  const daftar = [...terbaru.values()];
+                  return daftar.length ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {daftar.map((file) => (
+                        <button
+                          type="button"
+                          key={file.id}
+                          onClick={() => fileApi.downloadPrivateFile(file.file_id, `${formatFileType(file.type)}.pdf`)}
+                          className="p-2.5 rounded-lg border border-line bg-white hover:border-brand-700 hover:bg-brand-50/30 transition-all flex items-center justify-between text-xs group text-left cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <FileText className="w-4 h-4 text-brand-700 shrink-0" />
+                            <span className="font-medium text-ink group-hover:text-brand-800 truncate">
+                              {formatFileType(file.type)}
+                            </span>
+                          </div>
+                          <Download className="w-3.5 h-3.5 text-ink-muted group-hover:text-brand-700 shrink-0 ml-1" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
                   <div className="p-3 rounded-lg bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs">
                     Berkas digital belum diunggah atau naskah diperiksa melalui master fisik cetak A4.
                   </div>
-                )}
+                  );
+                })()}
               </div>
 
-              {/* Berkas Rekapan Internal Pentashih (RF-DIST-18, RF-DIST-19) */}
+              {/* Cakupan Rekapitulasi: Kelompok (TEAM) vs Mandiri (SELF) - B-15 */}
+              {selectedAssignment?.team_id || selectedAssignment?.team ? (
+                <div className="space-y-2.5 p-3.5 rounded-xl border border-brand-200/80 bg-brand-50/20">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                      Cakupan Rekapitulasi Sidang
+                    </label>
+                    <span className="text-[11px] font-semibold text-brand-800">
+                      Tim: {selectedAssignment.team?.name || 'Kelompok Aktif'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label
+                      className={clsx(
+                        'p-3 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-2.5 bg-white',
+                        recapScope === 'TEAM'
+                          ? 'border-brand-700 ring-2 ring-brand-700/10 shadow-xs'
+                          : 'border-line hover:border-line-strong'
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="recapScope"
+                        value="TEAM"
+                        checked={recapScope === 'TEAM'}
+                        onChange={(e) => setRecapScope && setRecapScope(e.target.value)}
+                        className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                      />
+                      <div>
+                        <div className="font-bold text-xs text-ink">Rekapan Keseluruhan (Kelompok)</div>
+                        <div className="text-[11px] text-ink-muted mt-0.5 leading-snug">
+                          Mewakili seluruh anggota tim. Kewajiban unggah anggota lain otomatis terpenuhi.
+                        </div>
+                      </div>
+                    </label>
+
+                    <label
+                      className={clsx(
+                        'p-3 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-2.5 bg-white',
+                        recapScope === 'SELF'
+                          ? 'border-brand-700 ring-2 ring-brand-700/10 shadow-xs'
+                          : 'border-line hover:border-line-strong'
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="recapScope"
+                        value="SELF"
+                        checked={recapScope === 'SELF'}
+                        onChange={(e) => setRecapScope && setRecapScope(e.target.value)}
+                        className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                      />
+                      <div>
+                        <div className="font-bold text-xs text-ink">Hanya Rekapan Saya</div>
+                        <div className="text-[11px] text-ink-muted mt-0.5 leading-snug">
+                          Hanya bagian juz saya. Anggota kelompok lain tetap wajib mengunggah rekap mandiri.
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl border border-line bg-canvas text-xs text-ink-muted flex items-center justify-between">
+                  <span>Penugasan Sidang Mandiri (Individu)</span>
+                  <span className="font-semibold text-brand-800">Rekapan Perorangan (SELF)</span>
+                </div>
+              )}
+
+              {/* Berkas Rekapan Internal Pentashih */}
               <div className="space-y-2 p-3.5 rounded-xl border border-line bg-surface">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -193,7 +298,7 @@ export const ReviewForm = ({
                 <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-xs text-brand-900 flex items-start gap-2">
                   <ShieldCheck className="h-4 w-4 shrink-0 text-brand-700 mt-0.5" />
                   <span>
-                    <strong>Kerahasiaan Internal (RF-DIST-19):</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distributor. Berkas ini bersifat internal dan tidak dikirim ke penerbit atau dokumentator.
+                    <strong>Kerahasiaan Dokumen Internal:</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distribusi. Berkas ini bersifat rahasia internal dan tidak dikirim ke penerbit atau dokumentator.
                   </span>
                 </div>
               </div>

@@ -173,4 +173,42 @@ describe('Manual team assignment (B-05)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Status pengajuan telah berubah');
   });
+
+  it('mewajibkan catatan telaah pembanding distributor (min 20 karakter) saat penugasan naskah revisi (B-19a)', async () => {
+    registrationApi.getDetail.mockResolvedValue({
+      data: {
+        id: 'r-rev',
+        status: 'WAITING_DISTRIBUTION',
+        title: 'Naskah Revisi Masuk',
+        payment_records: [{ status: 'VERIFIED' }],
+        official_documents: [{ id: 'doc-1', document_type: 'REVISION_RETURN_LETTER' }],
+        publisher_revision_recaps: [{ id: 'prr-1', round_number: 1 }],
+      },
+    });
+
+    render(<ManualTeamAssignmentDialog id="r-rev" onClose={vi.fn()} onAssigned={vi.fn()} />);
+    await screen.findByText('Naskah Revisi Masuk');
+
+    // Section telaah pembanding ditampilkan
+    expect(screen.getByText(/Catatan Telaah Pembanding Naskah Masuk/i)).toBeInTheDocument();
+
+    // Pilih tim t1
+    fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+
+    // Submit tanpa catatan pembanding (ditolak)
+    fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Catatan telaah pembanding distributor wajib diisi/i);
+    expect(registrationApi.createAssignments).not.toHaveBeenCalled();
+
+    // Isi catatan pembanding >= 20 karakter
+    const textarea = screen.getByPlaceholderText(/Tuliskan analisis perbandingan/i);
+    fireEvent.change(textarea, { target: { value: 'Naskah revisi ronde 1 telah dibandingkan dengan catatan sidang sebelumnya.' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+    await waitFor(() => {
+      expect(registrationApi.createAssignments).toHaveBeenCalledWith('r-rev', expect.objectContaining({
+        comparison_notes: 'Naskah revisi ronde 1 telah dibandingkan dengan catatan sidang sebelumnya.',
+      }));
+    });
+  });
 });

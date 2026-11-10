@@ -404,7 +404,7 @@ export function PublisherDetailHeader({
         )}
       </div>
 
-      {/* 3. Dynamic Workflow Stepper & 5-Phase Pipeline (REV-13 Dinamis) */}
+      {/* 3. Dynamic Workflow Stepper & 5-Phase Pipeline */}
       <div className="pt-4 border-t border-line space-y-4">
         {/* Progress bar overview */}
         <PublisherProgress registration={data} />

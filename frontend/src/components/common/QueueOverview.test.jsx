@@ -12,7 +12,7 @@ describe('Queue UI', () => {
   });
   it('distinguishes FIFO work from archives without invented global positions', () => {
     render(<><QueueOverview total={23} oldest={new Date().toISOString()} /><QueueItemMeta item={{ queue_position: 21, queue_entered_at: new Date().toISOString() }} /></>);
-    expect(screen.getByText('Tertua lebih dahulu · FIFO')).toBeInTheDocument();
+    expect(screen.getByText('Antrean Berdasarkan Waktu Masuk')).toBeInTheDocument();
     expect(screen.getByText('Urutan #21')).toBeInTheDocument();
   });
   it('supports both pagination contracts and disables next on the last page', () => {

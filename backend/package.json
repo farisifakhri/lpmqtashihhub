@@ -23,10 +23,15 @@
     "db:cleanup-preview": "node scripts/cleanup-test-data.js",
     "db:cleanup-perorangan-preview": "node scripts/cleanup-perorangan-publishers.js",
     "db:cleanup-perorangan": "node scripts/cleanup-perorangan-publishers.js --execute",
-    "db:consolidate-staff": "node scripts/consolidate-duplicate-staff.js"
+    "db:consolidate-staff": "node scripts/consolidate-duplicate-staff.js",
+    "seed:demo-stages": "node scripts/seed-demo-stages.js",
+    "clean:demo-stages": "node scripts/seed-demo-stages.js --clean"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
+  },
+  "nodemonConfig": {
+    "watch": ["src", ".env"]
   },
   "keywords": [
     "lpmq",

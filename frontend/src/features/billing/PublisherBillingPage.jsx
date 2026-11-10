@@ -2,9 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { getAuthToken } from '@/api/client';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { formatRegistrationStatus } from '@/lib/glossary';
 import {
   CreditCard,
   Search,
@@ -29,10 +31,13 @@ import {
   X,
 } from 'lucide-react';
 
+const BILLING_TABS = ['ALL', 'UNPAID', 'PAID', 'VERIFIED'];
+
 export const PublisherBillingPage = () => {
   const { currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedRegId = searchParams.get('registration_id');
+  const requestedTab = searchParams.get('tab');
 
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
@@ -41,7 +46,7 @@ export const PublisherBillingPage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNPAID' | 'PAID' | 'VERIFIED'
+  const [activeTab, setActiveTab] = useState(BILLING_TABS.includes(requestedTab) ? requestedTab : 'ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBilling, setCopiedBilling] = useState(null);
   const [downloadingDocId, setDownloadingDocId] = useState(null);
@@ -116,6 +121,12 @@ export const PublisherBillingPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const nextTab = BILLING_TABS.includes(requestedTab) ? requestedTab : 'ALL';
+    setActiveTab((currentTab) => currentTab === nextTab ? currentTab : nextTab);
+    setPagination((current) => current.page === 1 ? current : { ...current, page: 1 });
+  }, [requestedTab]);
 
   useEffect(() => {
     fetchPayments();
@@ -200,7 +211,7 @@ export const PublisherBillingPage = () => {
     if (payment.status !== 'UNPAID') return;
     const allowedStatuses = ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'VERIFICATION_APPROVED'];
     if (payment.registration?.status && !allowedStatuses.includes(payment.registration.status)) {
-      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus "${payment.registration.status}". Formulir konfirmasi pembayaran dibuka setelah verifikasi berkas disetujui LPMQ.`);
+      setError(`Alur Pembayaran Belum Dibuka: Naskah ${payment.registration.registration_no || ''} saat ini berstatus "${formatRegistrationStatus(payment.registration.status)}". Formulir konfirmasi pembayaran dibuka setelah verifikasi berkas disetujui LPMQ.`);
       return;
     }
     setSelectedPayment(payment);
@@ -223,7 +234,7 @@ export const PublisherBillingPage = () => {
       if (payment?.status === 'UNPAID') {
         openConfirmModal(payment);
       } else if (!payment) {
-        setError(`Alur Pembayaran Belum Dibuka: Permohonan ${reg?.registration_no || 'ini'} belum mencapai tahap pembayaran PNBP (Status: ${reg?.status || 'Proses Verifikasi'}). Menu pengisian pembayaran dikunci hingga surat hasil verifikasi diterbitkan.`);
+        setError(`Alur Pembayaran Belum Dibuka: Permohonan ${reg?.registration_no || 'ini'} belum mencapai tahap pembayaran PNBP (Status: ${formatRegistrationStatus(reg?.status)}). Menu pengisian pembayaran dikunci hingga surat hasil verifikasi diterbitkan.`);
       } else {
         setSuccessMessage('Bukti pembayaran naskah ini sudah dikirim atau diverifikasi. Tidak perlu mengirim ulang.');
       }
@@ -285,6 +296,7 @@ export const PublisherBillingPage = () => {
         receipt_file_id: uploaded.id,
         external_ref: ntpn.trim(),
       });
+      invalidateQueueCounts();
 
       setSuccessMessage('Konfirmasi pembayaran berhasil dikirimkan. Petugas LPMQ akan memverifikasi bukti Anda.');
       setConfirmModalOpen(false);
@@ -428,6 +440,12 @@ export const PublisherBillingPage = () => {
                 key={tab.key}
                 onClick={() => {
                   setActiveTab(tab.key);
+                  setSearchParams((previous) => {
+                    const next = new URLSearchParams(previous);
+                    if (tab.key === 'ALL') next.delete('tab');
+                    else next.set('tab', tab.key);
+                    return next;
+                  }, { replace: true });
                   setPagination((p) => ({ ...p, page: 1 }));
                 }}
                 className={`px-3.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
@@ -657,7 +675,7 @@ export const PublisherBillingPage = () => {
                     {isUnpaid && !isPayable && (
                       <div
                         className="inline-flex items-center gap-1.5 text-ink-muted bg-canvas border border-line px-3.5 py-1.5 rounded-xl font-medium text-xs"
-                        title={`Status naskah: ${reg.status || 'Proses Verifikasi'}. Formulir konfirmasi pembayaran dibuka setelah verifikasi disetujui.`}
+                        title={`Status naskah: ${formatRegistrationStatus(reg.status)}. Formulir konfirmasi pembayaran dibuka setelah verifikasi disetujui.`}
                       >
                         <Clock className="w-3.5 h-3.5 text-ink-muted" />
                         Menunggu Pengesahan Verifikasi
@@ -858,4 +876,3 @@ export const PublisherBillingPage = () => {
 };
 
 export default PublisherBillingPage;
-

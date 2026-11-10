@@ -103,6 +103,67 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(screen.getByText('Yth. Pimpinan PT Mushaf Nusantara')).toBeInTheDocument();
   });
 
+  it('menampilkan penampil naskah dan meja kerja checklist secara display block (bertumpuk, lebar penuh)', async () => {
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const workstation = await screen.findByTestId('inspection-workstation');
+    expect(workstation).toHaveClass('block');
+    expect(workstation.className).not.toMatch(/grid/);
+    // Kedua panel (naskah & meja kerja) menempati lebar penuh, tanpa pembagian kolom.
+    for (const panel of workstation.children) {
+      expect(panel.className).not.toMatch(/col-span/);
+    }
+    expect(workstation.children).toHaveLength(2);
+  });
+
+  it('Studio Naskah & Berkas hanya menampilkan versi terbaru tiap jenis berkas', async () => {
+    const base = await VerificationApiModule.verificationApi.getAssignmentDetail();
+    base.data.registration.manuscript_files = [
+      { id: 'cover-v1', file_id: 'f-cover-1', type: 'COVER', version: 1 },
+      { id: 'cover-v2', file_id: 'f-cover-2', type: 'COVER', version: 2 },
+      { id: 'dummy-v1', file_id: 'f-dummy-1', type: 'DUMMY', version: 1 },
+    ];
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue(base);
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const coverTabs = await screen.findAllByRole('button', { name: /Sampul \/ Cover/ });
+    expect(coverTabs).toHaveLength(1);
+    expect(coverTabs[0]).toHaveTextContent('v2');
+    expect(screen.getAllByRole('button', { name: /Dummy Cetak/ })).toHaveLength(1);
+  });
+
+  it('tombol Lanjutkan memindahkan verifikator ke langkah meja kerja berikutnya', async () => {
+    Element.prototype.scrollIntoView = vi.fn(); // jsdom tidak mengimplementasikan scrollIntoView
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const panelOf = (button) => button.closest('[class*="lg:block"], [class*="lg:hidden"]');
+
+    const toKonten = await screen.findByRole('button', { name: /Lanjutkan ke Konten Mushaf/ });
+    expect(panelOf(toKonten)).toHaveClass('lg:block');
+    fireEvent.click(toKonten);
+
+    expect(panelOf(toKonten)).toHaveClass('lg:hidden');
+    expect(panelOf(screen.getByRole('button', { name: /Lanjutkan ke Kalkulator Tarif & SLA/ }))).toHaveClass('block', 'lg:block');
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+  });
+
   it('mengunggah PDF billing PNBP dan menyertakannya pada draf surat', async () => {
     vi.spyOn(fileApi, 'upload').mockResolvedValue({ id: '00000000-0000-0000-0000-000000000123' });
     vi.spyOn(VerificationApiModule.verificationApi, 'saveDraft').mockResolvedValue({ success: true });

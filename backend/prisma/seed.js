@@ -506,7 +506,7 @@ async function main() {
     });
 
     if (!pUser) {
-      const emailSlug = person.name.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.').replace(/^\.|\.$/g, '').slice(0, 30);
+      const emailSlug = person.name.toLowerCase().replace(/[^a-z0-9]/g, '.').replace(/\.+/g, '.').slice(0, 30).replace(/^\.|\.$/g, ''); // trim after slice: the cut can land on a dot
       const email = `${emailSlug}@pentashih.lpmq.go.id`;
       pUser = await prisma.user.upsert({
         where: { email },

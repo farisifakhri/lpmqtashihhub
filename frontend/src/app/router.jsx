@@ -49,7 +49,10 @@ const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/p
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
 const RegulationInfoPage = withSuspense(lazy(() => import('@/features/information/RegulationInfoPage').then(m => ({ default: m.RegulationInfoPage }))));
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
+const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
+const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
+const SurveyManagementPage = withSuspense(lazy(() => import('@/features/internal/survey/SurveyManagementPage').then(m => ({ default: m.SurveyManagementPage }))));
 
 const router = createBrowserRouter([
   // Rute Publik (Landing Page)
@@ -67,19 +70,39 @@ const router = createBrowserRouter([
   },
   {
     path: '/informasi/panduan-permohonan-surat-tanda-tashih',
-    element: <InformationGuidePage />,
+    element: <InformationGuidePage tableLayout />,
   },
   {
     path: '/informasi/panduan-permohonan-surat-tanda-tashih/:id',
-    element: <InformationGuidePage />,
+    element: <InformationGuidePage tableLayout />,
   },
   {
     path: '/informasi/sop-pelayanan-surat-tanda-tashih',
-    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih Izin Edar" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
   },
   {
     path: '/informasi/sop-pelayanan-surat-tanda-tashih/:id',
-    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+    element: <InformationGuidePage section="SOP" basePath="/informasi/sop-pelayanan-surat-tanda-tashih" title="SOP Pelayanan Surat Tanda Tashih Izin Edar" description="Daftar SOP Pelayanan Surat Tanda Tashih Izin Edar" tableLayout />,
+  },
+  {
+    path: '/informasi/direktori-penerbit-mushaf',
+    element: <InformationPlaceholderPage title="Direktori Penerbit Mushaf Al-Qur'an" basePath="/informasi/direktori-penerbit-mushaf" />,
+  },
+  {
+    path: '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih',
+    element: <InformationPlaceholderPage title="Survei IKM dan IPAK Pelayanan Surat Tanda Tashih" basePath="/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih" />,
+  },
+  {
+    path: '/informasi/siaran-pers',
+    element: <InformationGuidePage section="SIARAN_PERS" basePath="/informasi/siaran-pers" title="Siaran Pers" description="Daftar siaran pers LPMQ." tableLayout />,
+  },
+  {
+    path: '/informasi/siaran-pers/:id',
+    element: <InformationGuidePage section="SIARAN_PERS" basePath="/informasi/siaran-pers" title="Siaran Pers" description="Daftar siaran pers LPMQ." tableLayout />,
+  },
+  {
+    path: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih',
+    element: <DownloadDocumentsPage />,
   },
   // Rute Autentikasi Mandiri
   {
@@ -147,6 +170,22 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'publisher/progress',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="progress" defaultView="processing" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'publisher/revisions',
+        element: (
+          <ProtectedRoute portalType="publisher">
+            <PublisherRegistrationsPage key="revisions" defaultView="REVISION_REQUIRED" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'publisher/registrations/:id',
         element: <ProtectedRoute portalType="publisher"><PublisherRegistrationDetailPage /></ProtectedRoute>,
       },
@@ -199,7 +238,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/signatures',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'VERIFIKATOR', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'SUPERADMIN']}>
             <SignatureCenterPage />
           </ProtectedRoute>
         ),
@@ -221,6 +260,30 @@ const router = createBrowserRouter([
         ),
       },
       {
+        path: 'internal/distributions/handover',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="HANDOVER" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/assignment',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="ASSIGNMENT" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/distributions/monitoring',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['DISTRIBUTOR', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
+            <DistributorHandoverInboxPage initialStage="MONITORING" />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'internal/master-intake',
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'SUPERADMIN']}>
@@ -231,7 +294,7 @@ const router = createBrowserRouter([
       {
         path: 'internal/tashih',
         element: (
-          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'SUPERADMIN']}>
+          <ProtectedRoute portalType="internal" allowedRoles={['PENTASHIH', 'ADMIN_INTERNAL', 'SUPERADMIN']}>
             <PentashihWorkspacePage />
           </ProtectedRoute>
         ),
@@ -285,6 +348,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN', 'ADMIN_INTERNAL']}>
             <LandingPageManagementPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/surveys',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
+            <SurveyManagementPage />
           </ProtectedRoute>
         ),
       },

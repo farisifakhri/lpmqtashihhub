@@ -164,7 +164,7 @@ export function MushafContentReviewTable({
         <div>
           <h3 className="text-sm font-bold text-ink flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-brand-800" />
-            Verifikasi & Koreksi Konten Mushaf (REV-16)
+            Verifikasi & Koreksi Konten Mushaf
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
             Tinjau kesesuaian, lakukan penambahan suplemen fisik yang ditemukan, atau kurangi konten yang tidak sesuai.

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { fileApi } from '@/api/file.api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -705,7 +706,7 @@ export const NewRegistrationPage = () => {
     }
   };
 
-  // Trigger modal confirmation (REV-07)
+  // Trigger modal confirmation
   const handleInitiateSubmit = () => {
     setError('');
     const step1Ok = validateStep1();
@@ -963,6 +964,7 @@ export const NewRegistrationPage = () => {
 
       if (isDirectSubmit) {
         await registrationApi.submitRegistration(created.id);
+        invalidateQueueCounts();
         setSuccessMsg(`Permohonan "${namaMushaf}" (${created.registration_no}) berhasil dikirim ke LPMQ.`);
         navigate(`/publisher/registrations/${created.id}`, { state: { showReceipt: true } });
       } else {
@@ -1297,7 +1299,7 @@ export const NewRegistrationPage = () => {
         </div>
       </div>
 
-      {/* Confirmation Modal Before Sending (REV-07) */}
+      {/* Confirmation Modal Before Sending */}
       {showConfirmModal && (
         <div
           role="dialog"
@@ -1320,7 +1322,7 @@ export const NewRegistrationPage = () => {
               </div>
             </div>
 
-            {/* Peringatan Notulasi REV-07 */}
+            {/* Peringatan Konfirmasi */}
             <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-xs text-civic-warning font-semibold flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
               <span>

@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from 'node:crypto';
+import { pendingSurveysForRegistration } from './survey.service.js';
 import { fileURLToPath } from 'node:url';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -8,6 +9,7 @@ import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
+import { assertReadyForSttEligibility } from './distribution.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
@@ -74,7 +76,12 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
     total_oplah: totalOplah,
     fee_sla: reg.fee_sla_snapshot,
     verification: source?.verification_assignments || [],
-    assignments: (source?.assignments || []).map(item => ({ stage: item.stage, iteration: item.iteration, assignee: item.assignee?.name, team: item.team, status: item.status, due_at: item.due_at, reviews: item.reviews })),
+    assignments: (source?.assignments || []).map(item => ({
+      stage: item.stage,
+      iteration: item.iteration,
+      status: item.status,
+      due_at: item.due_at,
+    })),
   };
   const document = await tx.officialDocument.create({ data: {
     registration_id: id, document_type: data.document_type, document_no: `DRAFT-${randomUUID()}`,
@@ -470,8 +477,20 @@ export async function renderDraft(document) {
 
 // Existing issued PDFs are downloaded unchanged: never generate an official
 // document from a draft or bypass the pending issuance/signature SOP.
-export async function documentPdf(document, user = null) {
+export async function documentPdf(document, user = null, { forDownload = false } = {}) {
   const isPublisher = user && user.roles.includes('PENERBIT') && !user.roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'DOKUMENTATOR'].includes(r));
+
+  // Penerbit boleh meninjau STT kapan saja; mengunduh salinannya menunggu Survei Kepuasan
+  // Masyarakat terisi (Pedoman Menteri PANRB 9/2024).
+  if (isPublisher && forDownload && document.document_type === 'SURAT_TANDA_TASHIH') {
+    const belum = await pendingSurveysForRegistration(document.registration_id);
+    if (belum.length) {
+      const error = new Error(`Isi survei kepuasan layanan terlebih dahulu sebelum mengunduh STT: ${belum.join(', ')}.`);
+      error.statusCode = 409;
+      error.code = 'SURVEY_REQUIRED';
+      throw error;
+    }
+  }
 
   if (document.document_type === 'REVISION_RETURN_LETTER' && !document.file_id) {
     return renderDraft(document);
@@ -522,34 +541,35 @@ export async function documentPdf(document, user = null) {
 }
 
 export const requestSttFromAdmin = (id, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL']);
   const reg = await registration(tx, id);
-  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN')) {
+  if (reg.core_team_number && reg.core_distributor_id !== user.id && !user.roles.includes('SUPERADMIN') && !user.roles.includes('ADMIN_INTERNAL')) {
     fail(403, 'Hanya distributor tim inti yang dapat mengajukan STT.');
   }
 
-  const lastAssignment = await tx.assignment.findFirst({
-    where: { registration_id: id },
-    orderBy: { iteration: 'desc' },
-  });
-  if (!lastAssignment) {
-    fail(409, 'Naskah belum memiliki riwayat sidang pentashihan.');
-  }
-
-  const activeAssignments = await tx.assignment.findMany({
-    where: { registration_id: id, iteration: lastAssignment.iteration },
-    include: { reviews: true },
-  });
-  if (activeAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews.length)) {
-    fail(409, 'Masih ada pentashih yang belum menyelesaikan sidang telaah.');
-  }
-  if (activeAssignments.some(item => item.reviews.some(r => r.result !== 'PASSED'))) {
-    fail(409, 'Pengajuan STT tidak dapat diproses karena ada hasil telaah yang belum lulus.');
+  if (reg.status !== 'READY_FOR_STT') {
+    await assertReadyForSttEligibility(tx, id);
   }
 
   if (reg.status === 'TASHIH_IN_PROGRESS') {
     await move(tx, reg, 'READY_FOR_STT', user, 'Sidang pentashihan selesai, distributor mengajukan STT ke Admin', req);
   }
+
+  const meta = reg.foreign_metadata || {};
+  await tx.registration.update({
+    where: { id },
+    data: {
+      foreign_metadata: {
+        ...meta,
+        stt_request: {
+          requested_by_id: user.id,
+          requested_at: new Date().toISOString(),
+          status: 'REQUESTED',
+          notes: data?.notes || null,
+        },
+      },
+    },
+  });
 
   const admins = await tx.userRole.findMany({
     where: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } },
@@ -616,7 +636,7 @@ export const sendDraftToDistributor = (documentId, user, req) => prisma.$transac
 }, { isolationLevel: 'ReadCommitted' });
 
 export const submitToTu = (documentId, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+  requireRole(user, ['DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
   const doc = await tx.officialDocument.findUnique({
     where: { id: documentId },
     include: { registration: true, signatories: true },
@@ -624,23 +644,125 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
   if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
   if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
 
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  if (snapshot.tu_workflow?.submitted_at || snapshot.tu_workflow?.paraf_1) {
+    fail(409, 'Dokumen draf STT sudah diserahkan ke Tata Usaha dan tidak dapat disubmit ulang.');
+  }
+
+  if (data?.signer_1_id && data?.signer_2_id && data.signer_1_id === data.signer_2_id) {
+    fail(400, 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.');
+  }
+
   const existingSigs = doc.signatories || [];
-  
-  const findUserByRole = async (code) => {
-    const ur = await tx.userRole.findFirst({
-      where: { role: { code } },
-      include: { user: true },
-    });
-    return ur?.user;
+
+  const getUserRoles = (u) => {
+    if (!u) return [];
+    if (Array.isArray(u.roles)) {
+      return u.roles.map(r => (typeof r === 'string' ? r : (r.role?.code || r.role_id || r.code))).filter(Boolean);
+    }
+    return [];
   };
 
-  const kepala = await findUserByRole('KEPALA_LPMQ') || user;
-  const penandatangan1 = data?.signer_1_id 
-    ? await tx.user.findUnique({ where: { id: data.signer_1_id } })
-    : await findUserByRole('ADMIN_INTERNAL') || user;
-  const penandatangan2 = data?.signer_2_id
-    ? await tx.user.findUnique({ where: { id: data.signer_2_id } })
-    : await findUserByRole('SUPERADMIN') || user;
+  const getTuSigner = async (userId, slotName) => {
+    const u = await tx.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } } },
+    });
+    if (!u) fail(404, `Pengguna untuk ${slotName} tidak ditemukan.`);
+    if (u.status && u.status !== 'ACTIVE') fail(400, `Pengguna untuk ${slotName} berstatus tidak aktif.`);
+
+    const roles = getUserRoles(u);
+    const hasTuAccess = roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    if (!hasTuAccess) {
+      fail(400, `Penandatangan ${slotName} harus memiliki kewenangan Tata Usaha (ADMIN_INTERNAL atau SUPERADMIN).`);
+    }
+    if (roles.includes('KEPALA_LPMQ') && !roles.includes('SUPERADMIN')) {
+      fail(400, `Kepala LPMQ tidak diperkenankan ditugaskan sebagai pemaraf ${slotName}.`);
+    }
+    return u;
+  };
+
+  const findActiveUserByRole = async (code) => {
+    if (tx.user?.findFirst) {
+      const u = await tx.user.findFirst({
+        where: {
+          status: 'ACTIVE',
+          roles: { some: { role: { code } } },
+        },
+        include: { roles: { include: { role: true } } },
+      });
+      if (u) return u;
+    }
+    if (tx.userRole?.findFirst) {
+      const ur = await tx.userRole.findFirst({
+        where: { role: { code } },
+        include: { user: { include: { roles: { include: { role: true } } } } },
+      });
+      if (ur?.user) return ur.user;
+    }
+    return null;
+  };
+
+  const kepala = await findActiveUserByRole('KEPALA_LPMQ')
+    || (getUserRoles(user).includes('KEPALA_LPMQ') && (user.status ? user.status === 'ACTIVE' : true) ? user : null);
+
+  if (!kepala) {
+    fail(400, 'Akun Kepala LPMQ aktif tidak ditemukan pada sistem. Pastikan akun pimpinan telah dikonfigurasi.');
+  }
+
+  let penandatangan1;
+  let penandatangan2;
+
+  if (data?.signer_1_id) {
+    penandatangan1 = await getTuSigner(data.signer_1_id, 'Paraf 1');
+  }
+  if (data?.signer_2_id) {
+    penandatangan2 = await getTuSigner(data.signer_2_id, 'Paraf 2');
+  }
+
+  const callerRoles = getUserRoles(user);
+  const callerHasTu = callerRoles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r)) && (user.status ? user.status === 'ACTIVE' : true);
+
+  if (!penandatangan1) {
+    penandatangan1 = (callerHasTu ? user : null)
+      || await findActiveUserByRole('ADMIN_INTERNAL')
+      || await findActiveUserByRole('SUPERADMIN');
+  }
+  if (!penandatangan2) {
+    if (tx.user?.findFirst) {
+      penandatangan2 = await tx.user.findFirst({
+        where: {
+          status: 'ACTIVE',
+          id: { not: penandatangan1?.id },
+          roles: { some: { role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } } } },
+        },
+        include: { roles: { include: { role: true } } },
+      });
+    }
+    if (!penandatangan2 && tx.userRole?.findFirst) {
+      const ur = await tx.userRole.findFirst({
+        where: {
+          role: { code: { in: ['ADMIN_INTERNAL', 'SUPERADMIN'] } },
+        },
+        include: { user: { include: { roles: { include: { role: true } } } } },
+      });
+      if (ur?.user && ur.user.id !== penandatangan1?.id) {
+        penandatangan2 = ur.user;
+      }
+    }
+  }
+
+  if (!penandatangan1 || !penandatangan2) {
+    fail(400, 'Daftar penandatangan Tata Usaha tidak lengkap. Diperlukan dua staf TU yang aktif.');
+  }
+
+  if (penandatangan1.id === penandatangan2.id) {
+    fail(400, 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.');
+  }
+
+  if (penandatangan1.id === kepala.id || penandatangan2.id === kepala.id) {
+    fail(400, 'Kepala LPMQ tidak diperkenankan ditugaskan sebagai pemaraf draf STT.');
+  }
 
   const signatoriesConfig = [
     { order: 1, title: 'Penandatangan 1 - Tata Usaha (Paraf 1)', user: penandatangan1 },
@@ -660,14 +782,27 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
           signing_status: 'PENDING',
         },
       });
+    } else if (exists.signer_user_id !== item.user.id && exists.signing_status === 'PENDING') {
+      await tx.documentSignatory.update({
+        where: { id: exists.id },
+        data: {
+          signer_user_id: item.user.id,
+          name_position_snapshot: `${item.user.name} (${item.title})`,
+        },
+      });
     }
   }
 
-  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  const isPoolMode = !data?.signer_1_id && !data?.signer_2_id;
   snapshot.tu_workflow = {
     submitted_at: new Date().toISOString(),
     submitted_by: { id: user.id, name: user.name },
     status: 'SUBMITTED_TO_TU',
+    pool_mode: isPoolMode,
+    designated_signers: {
+      paraf_1: data?.signer_1_id ? { id: penandatangan1.id, name: penandatangan1.name } : null,
+      paraf_2: data?.signer_2_id ? { id: penandatangan2.id, name: penandatangan2.name } : null,
+    },
   };
 
   const updated = await tx.officialDocument.update({
@@ -681,7 +816,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
 }, { isolationLevel: 'ReadCommitted' });
 
 export const parafDocument = (documentId, order, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN', 'KEPALA_LPMQ']);
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   const doc = await tx.officialDocument.findUnique({
     where: { id: documentId },
     include: { signatories: true, registration: true },
@@ -689,14 +824,49 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
   if (!doc) fail(404, 'Dokumen STT tidak ditemukan.');
   if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
 
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+
+  // 1. Dokumen wajib sudah diserahkan ke Tata Usaha
+  if (!snapshot.tu_workflow || (!snapshot.tu_workflow.submitted_at && snapshot.tu_workflow.status !== 'SUBMITTED_TO_TU')) {
+    fail(409, 'Dokumen draf STT belum diteruskan ke Tata Usaha.');
+  }
+
+  // 2. Idempotensi: tolak jika paraf slot ini sudah pernah dibubuhkan
+  if (snapshot.tu_workflow[`paraf_${order}`]) {
+    fail(409, `Paraf ${order} sudah pernah dibubuhkan pada dokumen ini.`);
+  }
+
+  // 3. Penegakan urutan sekuensial: Paraf 2 tidak boleh mendahului Paraf 1
+  if (order === 2 && !snapshot.tu_workflow.paraf_1) {
+    fail(409, 'Paraf 1 harus diselesaikan terlebih dahulu sebelum Paraf 2 dapat dibubuhkan.');
+  }
+
+  // 4. Penegakan kendali ganda (four-eyes principle): Staf yang membubuhkan Paraf 2 tidak boleh sama dengan Pemaraf 1
+  if (order === 2 && snapshot.tu_workflow.paraf_1?.signed_by?.id === user.id) {
+    fail(409, 'Paraf 1 dan Paraf 2 harus dibubuhkan oleh dua orang staf Tata Usaha yang berbeda untuk memenuhi prinsip dual-control.');
+  }
+
+  // 5. Pencocokan identitas pemanggil terhadap slot penandatangan
   const orderTitle = order === 1 ? 'Paraf 1' : 'Paraf 2';
-  const sig = doc.signatories.find(s => s.name_position_snapshot.includes(orderTitle))
-    || doc.signatories[order - 1];
+  const designated = snapshot.tu_workflow?.designated_signers?.[`paraf_${order}`];
+  const isPoolSlot = Boolean(snapshot.tu_workflow?.pool_mode || designated === null);
+
+  const sig = (doc.signatories || []).find(s => s.name_position_snapshot.includes(orderTitle))
+    || (doc.signatories || [])[order - 1];
+
+  if (!isPoolSlot) {
+    const designatedId = designated?.id || sig?.signer_user_id;
+    if (designatedId && designatedId !== user.id && !user.roles?.includes('SUPERADMIN')) {
+      fail(403, `Anda tidak terdaftar sebagai penandatangan ${orderTitle} untuk dokumen ini.`);
+    }
+  }
 
   if (sig) {
     await tx.documentSignatory.update({
       where: { id: sig.id },
       data: {
+        signer_user_id: user.id,
+        name_position_snapshot: `${user.name} (Penandatangan ${order} - Tata Usaha (${orderTitle}))`,
         signing_status: 'SIGNED',
         signed_at: new Date(),
         method: 'INTERNAL_APPROVAL',
@@ -704,13 +874,15 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
     });
   }
 
-  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
-  if (!snapshot.tu_workflow) snapshot.tu_workflow = {};
   snapshot.tu_workflow[`paraf_${order}`] = {
     signed_by: { id: user.id, name: user.name, nip: user.nip || '-' },
     signed_at: new Date().toISOString(),
     notes: data?.notes || 'Disetujui dan dibubuhi paraf resmi Tata Usaha.',
   };
+
+  if (order === 2 && snapshot.tu_workflow.paraf_1) {
+    snapshot.tu_workflow.status = 'PARAF_COMPLETED';
+  }
 
   const updated = await tx.officialDocument.update({
     where: { id: doc.id },
@@ -722,17 +894,35 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
   return updated;
 }, { isolationLevel: 'ReadCommitted' });
 
-export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
+export const signDocument = async (id, user, req) => {
   requireRole(user, ['KEPALA_LPMQ']);
-  const doc = await tx.officialDocument.findUnique({
-    where: { id },
-    include: { signatories: true, registration: true },
-  });
+  return prisma.$transaction(async tx => {
+    const doc = await tx.officialDocument.findUnique({
+      where: { id },
+      include: { signatories: true, registration: true },
+    });
   if (!doc) fail(404, 'Dokumen tidak ditemukan.');
   if (doc.document_type !== 'SURAT_TANDA_TASHIH') {
     fail(409, 'Dokumen belum dapat ditetapkan karena format resmi dan alur penandatanganan masih menunggu keputusan stakeholder. Dokumen tetap berstatus draf; hubungi pengelola layanan untuk informasi tindak lanjut.');
   }
   if (doc.status === 'ISSUED') fail(409, 'Dokumen ini sudah resmi diterbitkan.');
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  const tuWorkflow = snapshot.tu_workflow;
+  if (!tuWorkflow?.paraf_1 || !tuWorkflow?.paraf_2) {
+    fail(409, 'Surat Tanda Tashih (STT) baru dapat disahkan setelah dibubuhi Paraf 1 dan Paraf 2 oleh Tata Usaha.');
+  }
+
+  const paraf1SignerId = tuWorkflow.paraf_1?.signed_by?.id;
+  const paraf2SignerId = tuWorkflow.paraf_2?.signed_by?.id;
+
+  if (paraf1SignerId && paraf2SignerId && paraf1SignerId === paraf2SignerId) {
+    fail(409, 'Paraf 1 dan Paraf 2 harus dibubuhkan oleh dua orang staf Tata Usaha yang berbeda.');
+  }
+
+  if (user.id && (paraf1SignerId === user.id || paraf2SignerId === user.id)) {
+    fail(409, 'Kepala LPMQ tidak dapat mengesahkan dokumen yang diparaf oleh akunnya sendiri. Pisahkan peran verifikator paraf dan penandatangan definitif.');
+  }
 
   const now = new Date();
   const validUntil = new Date(now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000); // 2 tahun kalender
@@ -745,6 +935,9 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
 
   const kepalaSig = doc.signatories.find(s => s.name_position_snapshot.includes('Kepala') || s.name_position_snapshot.includes('LPMQ'));
   if (kepalaSig) {
+    if (kepalaSig.signer_user_id && kepalaSig.signer_user_id !== user.id && !user.roles?.includes('SUPERADMIN')) {
+      fail(403, 'Anda tidak terdaftar sebagai penandatangan Kepala LPMQ untuk dokumen ini.');
+    }
     await tx.documentSignatory.update({
       where: { id: kepalaSig.id },
       data: {
@@ -755,7 +948,6 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
     });
   }
 
-  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
   snapshot.final_signature = {
     signed_by: { id: user.id, name: 'H. Abdul Aziz Sidqi, M.Ag.', nip: '197106061998031006', title: 'Kepala Lajnah Pentashihan Mushaf Al-Qur\'an' },
     signed_at: now.toISOString(),
@@ -833,3 +1025,4 @@ export const signDocument = (id, user, req) => prisma.$transaction(async tx => {
   await audit(tx, user, 'SIGN_OFFICIAL_DOCUMENT', 'OfficialDocument', id, { document_no: officialDocNo, valid_until: validUntil }, req);
   return updatedDoc;
 }, { isolationLevel: 'ReadCommitted' });
+};

@@ -349,7 +349,7 @@ export function calculateRegistrationSummary(manuscriptCalculations = []) {
  * Normalisasi pilihan form lama (jenis_naskah, jenis_mushaf, registration_type)
  * menjadi daftar kode item resmi B-01 (§4.1 & §4.2)
  *
- * Mengeliminasi tebakan teks parsial yang menyebabkan bug UAT U-01.
+ * Menghindari tebakan teks parsial pada nama item.
  *
  * @param {Array<string>} jenisNaskahList - Pilihan checklist form
  * @param {object} [metadata]

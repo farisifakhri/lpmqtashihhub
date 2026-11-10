@@ -227,7 +227,7 @@ export function PublisherStatusAlerts({
             </div>
           </div>
 
-          {/* Durasi & Deadline Naskah Awal (RF-PUB-08 / T-05) */}
+          {/* Durasi & Batas Waktu Naskah Awal */}
           <div className="p-3 bg-white rounded-lg border border-brand-100 text-xs space-y-1.5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-ink-muted font-medium">Estimasi Target Penyelesaian Naskah Awal:</span>
@@ -312,10 +312,10 @@ export function PublisherStatusAlerts({
             </div>
             <button
               type="button"
-              onClick={() => handleTabChange('dokumen')}
+              onClick={() => handleTabChange('dokumen', 'official')}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
             >
-              Unduh Dokumen STT
+              Buka Dokumen STT
             </button>
           </div>
         </section>

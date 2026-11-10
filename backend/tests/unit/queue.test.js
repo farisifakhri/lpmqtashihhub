@@ -159,6 +159,58 @@ test('payment verification count is scoped to the token user and does not change
   assert.equal(QUEUE_CONFIG.SUPERADMIN.some(({ key }) => key === 'payment_verification_pending'), false);
 });
 
+test('publisher queues scope revisions and unpaid bills to the authenticated publisher', () => {
+  const publisher = { id: 'publisher-user-1', publisherId: 'publisher-1', roles: ['PENERBIT'] };
+  const revisionQueue = QUEUE_CONFIG.PENERBIT.find(({ key }) => key === 'publisher_revision_pending');
+  const billingQueue = QUEUE_CONFIG.PENERBIT.find(({ key }) => key === 'publisher_billing_unpaid');
+  const revisionWhere = revisionQueue.buildWhere(publisher);
+  const matchesRevision = registration =>
+    registration.publisher_id === revisionWhere.publisher_id &&
+    revisionWhere.status.in.includes(registration.status);
+  const billingWhere = billingQueue.buildWhere(publisher);
+  const matchesBilling = payment =>
+    payment.status === billingWhere.status &&
+    payment.registration.publisher_id === billingWhere.registration.publisher_id;
+
+  assert.deepEqual(
+    QUEUE_CONFIG.PENERBIT.map(({ key, tab }) => [key, tab]),
+    [
+      ['publisher_revision_pending', 'Perlu Tindakan (revisi saja)'],
+      ['publisher_billing_unpaid', 'Menunggu Bayar (UNPAID)'],
+    ],
+  );
+  assert.equal(revisionQueue.model, 'registration');
+  assert.deepEqual(revisionWhere, {
+    publisher_id: 'publisher-1',
+    status: { in: ['REVISION_REQUIRED', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'] },
+  });
+  assert.equal('revision_source' in revisionWhere, false);
+  assert.equal(matchesRevision({ publisher_id: 'publisher-1', status: 'REVISION_REQUIRED', revision_source: null }), true);
+  assert.equal(matchesRevision({ publisher_id: 'publisher-1', status: 'REVISION_REQUIRED', revision_source: 'OTHER' }), true);
+  assert.equal(matchesRevision({ publisher_id: 'publisher-1', status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED' }), true);
+  const awaitingPayment = { publisher_id: 'publisher-1', status: 'AWAITING_PAYMENT', payment_status: 'UNPAID' };
+  assert.equal(matchesRevision(awaitingPayment), false);
+  assert.equal(matchesRevision({ publisher_id: 'publisher-2', status: 'REVISION_REQUIRED' }), false);
+
+  assert.equal(billingQueue.model, 'paymentRecord');
+  assert.deepEqual(billingWhere, {
+    status: 'UNPAID',
+    registration: { publisher_id: 'publisher-1' },
+  });
+  assert.equal(
+    matchesBilling({ status: awaitingPayment.payment_status, registration: { publisher_id: awaitingPayment.publisher_id } }),
+    true,
+  );
+  assert.equal(matchesBilling({ status: 'UNPAID', registration: { publisher_id: 'publisher-2' } }), false);
+  assert.equal(QUEUE_CONFIG.ADMIN_INTERNAL.some(({ key }) => ['publisher_revision_pending', 'publisher_billing_unpaid'].includes(key)), false);
+  assert.equal(QUEUE_CONFIG.SUPERADMIN.some(({ key }) => ['publisher_revision_pending', 'publisher_billing_unpaid'].includes(key)), false);
+});
+
+test('publisher queue counts reject accounts without a linked publisher', () => {
+  const queue = QUEUE_CONFIG.PENERBIT.find(({ key }) => key === 'publisher_revision_pending');
+  assert.throws(() => queue.buildWhere({ id: 'publisher-user-1', publisherId: null }), { statusCode: 403 });
+});
+
 test('active role middleware accepts only a role owned by the authenticated user', () => {
   const next = () => {};
   const acceptedRequest = { headers: { 'x-active-role': 'ADMIN_INTERNAL' }, user: { roles: ['ADMIN_INTERNAL'] } };

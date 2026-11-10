@@ -4,13 +4,11 @@ import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-do
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
 import {
-  buildUnassignedVerificationWhere,
-  buildVerificationAssignmentsWhere,
+  buildUnassignedVerificationWhere
 } from './queue-filters.js';
 import { calculateDueAt } from './sla.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
-const verificationTargetMs = 2 * 24 * 60 * 60 * 1000;
 
 export const declarePhysicalMaster = (id, data, user, req) => prisma.$transaction(async tx => {
   const reg = await registration(tx, id);
@@ -222,11 +220,15 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       await tx.$queryRaw`SELECT id, status FROM registrations WHERE id = ${id} FOR UPDATE`;
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
+      const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
+      const isOverriding = Boolean(data.override_core_team);
       if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {
-        fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+        if (!isSuperAdmin || !isOverriding) {
+          fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
+        }
       }
       if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
-      const targetVerifierId = reg.core_verifier_id || data.verifier_id;
+      const targetVerifierId = (isSuperAdmin && isOverriding && data.verifier_id) ? data.verifier_id : (reg.core_verifier_id || data.verifier_id);
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -372,14 +374,50 @@ export const getPhysicalMasterReceipt = async (id, user) => {
     fail(403, 'Tanda terima hanya dapat dilihat oleh penerbit pemilik atau petugas LPMQ.');
   }
   if (reg.physical_master_intake?.status !== 'RECEIVED' || !reg.physical_master_intake.receipt_no) {
-    fail(409, 'Tanda terima master fisik tersedia setelah master diterima di loket.');
+    fail(409, 'Tanda terima master fisik tersedia setelah master fisik diterima petugas.');
   }
   return reg;
 };
 
+// Filter antrean penugasan verifikasi; dipakai bersama oleh daftar antrean dan badge sidebar.
+export const buildVerificationAssignmentWhere = (query, user) => {
+  const where = {};
+  const isHead = user.roles.includes('KEPALA_LPMQ');
+  const isAdmin = user.roles.includes('SUPERADMIN') || user.roles.includes('ADMIN_INTERNAL');
+  if (!isHead && !isAdmin) where.verifier_id = user.id;
+  if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
+  if (query.status) where.status = query.status;
+  if (query.registration_status) {
+    where.registration = { ...(where.registration || {}), status: query.registration_status };
+  }
+  if (query.handover_ready === 'true') {
+    where.status = 'COMPLETED';
+    where.registration = {
+      ...(where.registration || {}),
+      core_distributor_id: { not: null },
+      payment_records: { some: { status: 'VERIFIED' } },
+      OR: [
+        { status: 'PAYMENT_VERIFICATION', physical_handovers: { none: { status: 'PENDING' } } },
+        { status: 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED', physical_handovers: { some: { status: 'RETURNED' } } },
+      ],
+    };
+  }
+  if (query.search) {
+    where.registration = {
+      ...(where.registration || {}),
+      AND: [{ OR: [
+        { registration_no: { contains: query.search } },
+        { title: { contains: query.search } },
+        { publisher: { legal_name: { contains: query.search } } },
+      ] }],
+    };
+  }
+  return where;
+};
+
 export const listVerificationAssignments = async (query, user) => {
   requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
-  const where = buildVerificationAssignmentsWhere(query, user);
+  const where = buildVerificationAssignmentWhere(query, user);
   const skip = (query.page - 1) * query.limit;
   const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
   const [total, items] = await Promise.all([
@@ -424,21 +462,43 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
   const query = maybeUser ? (queryOrUser || {}) : {};
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
 
+  // Ambil verifikator dari roster tim inti aktif (9 tim resmi LPMQ)
+  const rotation = await prisma.coreTeamRotation.findFirst();
+  const activeVersion = rotation?.active_version || 1;
+  const coreRosters = await prisma.coreTeamRoster.findMany({
+    where: { version: activeVersion },
+    select: { team_number: true, verifier_id: true },
+  });
+  const coreVerifierIds = coreRosters.map(r => r.verifier_id).filter(Boolean);
+  const coreTeamMap = new Map(coreRosters.map(r => [r.verifier_id, r.team_number]));
+
+  // Prioritaskan verifikator yang sah: tercatat di Roster Tim Inti atau memiliki peran murni VERIFIKATOR.
+  // Kecualikan akun dummy test (@example.test) dan admin yang bukan verifikator.
   const where = {
     status: query.status || 'ACTIVE',
-    roles: {
-      some: {
-        role: {
-          code: { in: ['VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'] },
+    NOT: {
+      email: { endsWith: '@example.test' },
+    },
+    OR: [
+      { id: { in: coreVerifierIds } },
+      {
+        roles: {
+          some: {
+            role: { code: 'VERIFIKATOR' },
+          },
         },
       },
-    },
+    ],
   };
 
   if (query.search) {
-    where.OR = [
-      { name: { contains: query.search } },
-      { nip: { contains: query.search } },
+    where.AND = [
+      {
+        OR: [
+          { name: { contains: query.search } },
+          { nip: { contains: query.search } },
+        ],
+      },
     ];
   }
 
@@ -464,20 +524,30 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
     const activeAssignments = v.verification_assignments || [];
     const count = activeAssignments.length;
     const oldestDueAt = activeAssignments.length > 0 ? activeAssignments[0].due_at : null;
+    const teamNum = coreTeamMap.get(v.id);
 
     return {
       id: v.id,
       name: v.name,
       nip: v.nip,
       status: v.status,
+      core_team_number: teamNum || null,
       active_assignment_count: count,
       active_assignments_count: count,
       oldest_active_due_at: oldestDueAt,
     };
   });
 
-  // Urutkan berdasarkan beban aktif paling ringan lalu nama (P0-02)
+  // Urutkan verifikator Roster Tim Inti di paling atas (Tim 1 s.d. 9), lalu berdasarkan beban aktif
   formatted.sort((a, b) => {
+    const aIsCore = a.core_team_number != null;
+    const bIsCore = b.core_team_number != null;
+    if (aIsCore && !bIsCore) return -1;
+    if (!aIsCore && bIsCore) return 1;
+    if (aIsCore && bIsCore) {
+      return a.core_team_number - b.core_team_number;
+    }
+
     if (a.active_assignment_count !== b.active_assignment_count) {
       return a.active_assignment_count - b.active_assignment_count;
     }
@@ -487,12 +557,13 @@ export const listVerifiers = async (queryOrUser, maybeUser) => {
   return formatted;
 };
 
+// Permohonan siap verifikasi yang master fisiknya sudah diterima namun belum memiliki verifikator aktif.
+
 export const listUnassignedRegistrations = async (query = {}, user) => {
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   const page = Math.max(1, Number(query.page) || 1);
   const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
   const skip = (page - 1) * limit;
-
   const where = buildUnassignedVerificationWhere(query);
 
   const [total, items] = await Promise.all([

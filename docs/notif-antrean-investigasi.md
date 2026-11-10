@@ -45,7 +45,8 @@ Klarifikasi tersebut dipakai sebagai keputusan untuk tabel di bawah; konflik dok
 |---|---|---|---|---|---|---|---|---|
 | `ADMIN_INTERNAL`, `SUPERADMIN` | 1. Pendaftaran Penerbit | `/internal/publishers` → `PublisherVerificationPage` | Menunggu Verifikasi (`DIAJUKAN`) | `publisher_registration_pending` | `GET /api/v1/admin/publisher-registrations?status=DIAJUKAN` | Kedua role ditetapkan sebagai pemilik antrean berdasarkan klarifikasi user dan kontrak API; tidak di-scope per user. List dan count memakai `buildAdminPublisherRegistrationWhere()` yang sama. | `Sidebar.jsx`, `PublisherVerificationPage.jsx`, `publisher-registration.routes.js`, `publisher-registration.service.js`, `queue-filters.js`, `KONTRAK_PENDAFTARAN_PENERBIT.md` | Tahap B |
 | `ADMIN_INTERNAL`, `SUPERADMIN` | 2. Intake Master Fisik | `/internal/master-intake` → `AdminMasterIntakePage` | Item belum diterima di loket; revisi intake awal (`PHYSICAL_MASTER`) | `master_intake_pending` | `GET /api/v1/registrations?segment=MASTER_INTAKE` | Hitung seluruh `READY_FOR_VERIFICATION` dengan intake kosong/bukan `RECEIVED`, ditambah `REVISION_REQUIRED` dengan `revision_source = PHYSICAL_MASTER` dan intake `RETURNED`. Revisi serah-terima distributor `PHYSICAL_HANDOVER` tidak masuk menu ini. List dan count memakai `buildMasterIntakeQueueWhere()` yang sama; list memberi paginasi, count memakai semua baris. | `Sidebar.jsx`, `AdminMasterIntakePage.jsx`, `registration.api.js`, `registration.routes.js`, `registration.service.js`, `queue-filters.js`, `schema.prisma` | Tahap B |
-| `PENERBIT` | Permohonan Saya | `/publisher/registrations` → `PublisherRegistrationsPage` | Daftar tindakan/perbaikan; revisi dari verifikasi dan serah-terima fisik digabung pada satu menu sesuai klarifikasi | `publisher_revision_pending` | `GET /api/v1/registrations?segment=PUBLISHER_ACTIONS` (filter hitungan khusus untuk revisi) | `REVISION_REQUIRED` dari verifikasi (`revision_source = VERIFICATION`) serta `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` dari serah-terima fisik (`revision_source = PHYSICAL_HANDOVER`); scope wajib `publisher_id` dari user login. Count mencakup seluruh baris. Segmen server `PUBLISHER_ACTIONS` juga mencakup DRAFT dan AWAITING_PAYMENT, jadi badge revisi tidak boleh sekadar menghitung semua segmen. Sidebar saat ini membuka view `ALL`, bukan subfilter tindakan/perbaikan. | `Sidebar.jsx`, `PublisherRegistrationsPage.jsx`, `publisher-status.js`, `registration.service.js`, `queue-utils.js`, `handover.service.js`, `verification-review.service.js`, `schema.prisma` | jelas |
+| `PENERBIT` | Permohonan Saya | `/publisher/registrations?view=actions` → `PublisherRegistrationsPage` | Daftar revisi; definisi badge menghitung kedua status revisi, bukan seluruh segmen `PUBLISHER_ACTIONS` | `publisher_revision_pending` | `GET /api/v1/registrations?segment=PUBLISHER_ACTIONS` (endpoint list tetap; badge memakai filter status khusus) | `Registration.status IN (REVISION_REQUIRED, PHYSICAL_HANDOVER_CORRECTION_REQUIRED)`; scope count wajib `publisher_id` dari user login. Tidak menghitung `DRAFT` atau `AWAITING_PAYMENT`. Count mencakup seluruh baris. Tidak ada filter server tunggal yang sama persis: segmen `PUBLISHER_ACTIONS` meliputi DRAFT/AWAITING_PAYMENT dan semua sumber `REVISION_REQUIRED`, sehingga tidak dapat digunakan mentah sebagai definisi badge. Tab “Perlu Tindakan” juga mencakup segmen yang lebih luas dari definisi badge. | `Sidebar.jsx`, `PublisherRegistrationsPage.jsx`, `publisher-status.js`, `registration.service.js`, `queue-utils.js`, `verification-intake.service.js`, `handover.service.js`, `verification-review.service.js`, `distribution.service.js`, `auth.service.js`, `auth.middleware.js`, `schema.prisma` | Tahap D |
+| `PENERBIT` | Tagihan | `/publisher/billing?tab=UNPAID` → `PublisherBillingPage` | Tab `UNPAID` / “Menunggu Bayar” | `publisher_billing_unpaid` | `GET /api/v1/payments?status=UNPAID` | `PaymentRecord.status = UNPAID`; untuk penerbit biasa list membatasi `registration.publisher_id = user.publisherId`. Count memakai cakupan publisher yang sama dan menghitung semua tagihan. `EXPIRED` tidak masuk tab; status yang masih `UNPAID` tetap masuk walau `expires_at` sudah lewat. Kartu ringkas “Menunggu Bayar” hanya menghitung array pembayaran di halaman yang termuat (limit 20), bukan total. | `Sidebar.jsx`, `PublisherBillingPage.jsx`, `payment.api.js`, `payment.service.js`, `auth.service.js`, `auth.middleware.js`, `schema.prisma` | Tahap D |
 | `ADMIN_INTERNAL`, `SUPERADMIN` | 3. Penugasan Verifikator | `/internal/verifications?tab=NEED_ASSIGNMENT` → `VerifikatorInboxPage` | Perlu Penugasan → Belum Ditugaskan | `verification_assignment_pending` | `GET /api/v1/verification-assignment-candidates` (alias server: `/api/v1/verification/unassigned-registrations`) | `Registration.status = READY_FOR_VERIFICATION`, intake `RECEIVED` dengan `receipt_no` terisi, dan tidak ada assignment aktif (`ASSIGNED`, `IN_PROGRESS`, `WAITING_APPROVAL`, `WAITING_SIGNATURE`, `READY_TO_SEND`). Tidak di-scope per user. List dan count memakai `buildUnassignedVerificationWhere()` yang sama. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `queue-filters.js`, `schema.prisma` | Tahap B |
 | `VERIFIKATOR` | Tugas Verifikasi | `/internal/verifications` → `VerifikatorInboxPage` | Tab default `ASSIGNED` | `verification_assigned` | `GET /api/v1/verification-assignments?status=ASSIGNED` | `VerificationAssignment.status = ASSIGNED`; list service memakai `verifier_id = user.id` untuk verifikator biasa. Dalam akun multi-role yang juga memiliki role admin, service dapat memakai cakupan admin/global. | `Sidebar.jsx`, `VerifikatorInboxPage.jsx`, `verification.api.js`, `verification.routes.js`, `verification-intake.service.js`, `schema.prisma` | jelas |
 | `VERIFIKATOR` | Tanda Tangan Saya | `/internal/signatures` | `NEED_MY_SIGN` / “Menunggu konfirmasi internal Anda” (tab default) | `verification_signature_pending` | Gabungan `GET /api/v1/verification-assignments` dan registrasi `READY_FOR_STT`/`STT_ISSUED`; halaman tidak memiliki satu endpoint list tab khusus. | Hitung semua dokumen pada tab yang dapat ditandatangani user saat ini: signatory user berstatus `PENDING`, prasyarat urutan tanda tangan terpenuhi, dan dokumen belum selesai. Role verifikator hanya melihat penandatanganan yang ditugaskan kepadanya. Query halaman saat ini membatasi sumber dengan `limit=50` (dan STT issued `limit=20`), sehingga implementasi badge harus mengambil total penuh, tidak meniru batas tersebut. | `Sidebar.jsx`, `SignatureCenterPage.jsx`, `verification.api.js`, `schema.prisma` | **tidak dikerjakan: bukan antrean verifikator** |
@@ -60,7 +61,7 @@ Klarifikasi tersebut dipakai sebagai keputusan untuk tabel di bawah; konflik dok
 
 ### Role/menu yang bukan antrean
 
-- `PENERBIT`: atas klarifikasi user, “Permohonan Saya” menghitung revisi verifikasi dan revisi serah-terima fisik secara gabungan, dengan scope penerbit pemilik. Perbedaan implementasi: item sidebar saat ini membuka view `ALL`, sedangkan daftar filter “Perlu perbaikan” memilih `REVISION_REQUIRED` saja; segmen “Perlu Tindakan” mencakup status tambahan DRAFT/AWAITING_PAYMENT dan koreksi serah-terima fisik. Saat implementasi, filter count revisi harus didefinisikan secara eksplisit, tidak menggunakan hitungan mentah segmen. “Beranda”, pendaftaran baru, tagihan, dan arsip bukan antrean badge berdasarkan tabel.
+- `PENERBIT`: atas klarifikasi user, “Permohonan Saya” menghitung revisi verifikasi dan revisi serah-terima fisik secara gabungan, dengan scope penerbit pemilik. Perbedaan implementasi: item sidebar saat ini membuka view `ALL`, sedangkan daftar filter “Perlu perbaikan” memilih `REVISION_REQUIRED` saja; segmen “Perlu Tindakan” mencakup status tambahan DRAFT/AWAITING_PAYMENT dan koreksi serah-terima fisik. Saat implementasi, filter count revisi harus didefinisikan secara eksplisit, tidak menggunakan hitungan mentah segmen. “Beranda”, pendaftaran baru, dan arsip bukan antrean badge berdasarkan tabel.
 - `DOKUMENTATOR`: “Arsip Dokumen” dan “Dokumen Tashih” tidak membuka filter pending secara default. Halaman Dokumen Tashih memakai daftar/tab umum; tab pending yang tidak dibuka oleh item sidebar tidak dihitung.
 - `ADMIN_INTERNAL`: selain pendaftaran penerbit, intake, dan penugasan verifikator yang dipastikan user, item verifikasi, hasil verifikasi, pembayaran, distribusi, pentashihan, STT, dan arsip bukan antrean milik role ini berdasarkan alur tindakan yang ditemukan. Item “Pembayaran PNBP” yang tetap tampil juga ditolak oleh service list untuk akun `ADMIN_INTERNAL` saja.
 - `SUPERADMIN`: item 1–3 mengikuti baris tabel. “Pembayaran PNBP” hanya untuk pemantauan, tidak mendapat badge/notifikasi antrean. “Verifikasi Berkas”, “Hasil Verifikasi”, “Distribusi Sidang”, tugas pentashihan, STT, dan arsip tidak otomatis dihitung hanya karena Superadmin melihat menu atau middleware memberi akses umum: halaman/aksi memiliki pemilik role/tahap yang berbeda.
@@ -241,3 +242,123 @@ Sumber kode utama: `frontend/src/features/verification/InternalPaymentQueuePage.
 3. Untuk akun multi-role `KEPALA_LPMQ` dan `SUPERADMIN`, apakah antrean STT yang tampil karena halaman memeriksa `currentUser.roles` harus ikut dihitung saat role aktif Kepala?
 
 Keputusan pembayaran untuk C2: pakai assignment mana pun yang cocok (`some`), mensyaratkan status registrasi `PAYMENT_VERIFICATION` karena diwajibkan aksi `verifyPayment`, dan menerima discrepancy dengan list yang tetap tidak diubah. Catatan pertanyaan di atas hanya tersisa sebagai bahan Tahap F (Kepala), karena tindakan tanda tangan Verifikator bukan bagian C2.
+
+## Usulan D: Role penerbit
+
+Usulan ini berdasarkan implementasi saat ini dan keputusan user untuk Tahap D. Key usulan: `publisher_revision_pending` dan `publisher_billing_unpaid`.
+
+### 1. Permohonan Saya — revisi penerbit
+
+Setelah memeriksa seluruh jalur transisi, definisi count adalah semua `Registration` dengan status `REVISION_REQUIRED` atau `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`, tanpa filter `revision_source`. `DRAFT` dan `AWAITING_PAYMENT` tidak dihitung. Definisi ini tetap berlaku meskipun sebagian jalur menulis source yang tak terduga atau tidak menulis source sama sekali.
+
+Jalur yang memindahkan atau mempertahankan status revisi dan nilai `revision_source`:
+
+| Jalur | Lokasi kode | Nilai `revision_source` |
+|---|---|---|
+| Transisi generic dari `IN_VERIFICATION` ke `REVISION_REQUIRED` | `backend/src/services/registration.service.js:TRANSITION_POLICY` dan `transitionStatus` | Tidak ditulis/diubah oleh transisi; dapat tetap `null` atau nilai sebelumnya. |
+| Hasil verifikasi meminta revisi saat surat dikirim | `backend/src/services/verification-review.service.js:sendVerificationResult` | Mengisi `VERIFICATION`. |
+| Master fisik dikembalikan admin; registrasi dipindah atau sudah berada di `REVISION_REQUIRED` | `backend/src/services/verification-intake.service.js:receivePhysicalMaster` | Mengisi `PHYSICAL_MASTER`. Saat master diterima ulang, nilai dibersihkan ke `null`; cabang penerimaan naskah perbaikan/dumi juga mengosongkan source. |
+| Penerbit submit ulang revisi dengan pembayaran yang sudah `VERIFIED` tetapi intake belum diterima | `backend/src/services/registration.service.js:submitRegistration` | Status dapat tetap `REVISION_REQUIRED`; source tidak ditulis/diubah. Jika intake sudah diterima status menjadi `WAITING_DISTRIBUTOR_RECEIPT`. |
+| Hasil sidang pentashihan memerlukan perbaikan | `backend/src/services/distribution.service.js:approveDistribution` | Mengisi `TASHIH_REVISION`, di luar tiga nilai yang semula dipertimbangkan. Jalur pentashihan hanya dimulai setelah pembayaran diverifikasi. |
+| Distributor mengembalikan master pada serah-terima fisik | `backend/src/services/handover.service.js:returnPhysicalHandover` | Status menjadi `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`; mengisi `PHYSICAL_HANDOVER`. Saat serah-terima ulang diterima, nilai dibersihkan ke `null`. |
+| Definisi kolom | `backend/prisma/schema.prisma:Registration.revision_source` | Kolom `String?`; komentar schema menyebut `VERIFICATION` dan `PHYSICAL_HANDOVER`, sedangkan runtime juga menggunakan `PHYSICAL_MASTER` dan `TASHIH_REVISION`. |
+
+Query Prisma yang diusulkan:
+
+```js
+{
+  publisher_id: user.publisherId,
+  status: { in: ['REVISION_REQUIRED', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'] },
+}
+```
+
+List `GET /api/v1/registrations` di `backend/src/services/registration.service.js:listRegistrations` menetapkan `publisher_id = user.publisherId` untuk user dengan role `PENERBIT` yang bukan `SUPERADMIN`, dan mengembalikan 403 bila `publisherId` tidak ada. Identitas tersebut berasal dari user terautentikasi: `auth.service.js:login` memasukkan publisher ID ke token, lalu `auth.middleware.js:authenticate` memverifikasi token, memuat ulang user beserta relasi publisher, dan menyusun `req.user.publisherId` dari relasi database. Count harus memakai `user.publisherId` dari konteks terverifikasi, bukan input client. Catatan: jika akun memiliki `PENERBIT` sekaligus `SUPERADMIN`, list saat ini melewati publisher scope; badge yang tetap terikat ke publisher login akan berbeda dari list global tersebut.
+
+Yang dapat dan tidak dapat dipakai ulang:
+
+- `backend/src/services/queue-utils.js:REGISTRATION_SEGMENTS.PUBLISHER_ACTIONS` dipakai list untuk empat status `DRAFT`, `REVISION_REQUIRED`, `AWAITING_PAYMENT`, dan `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`.
+- Status segment tidak bisa dipakai mentah untuk count revisi: count mengecualikan `DRAFT`/`AWAITING_PAYMENT`, sementara `REVISION_REQUIRED` harus mencakup semua nilai source termasuk null atau nilai tak terduga. `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` juga dihitung.
+- Filter status granular `REVISION_REQUIRED` di halaman juga tidak cukup karena tidak membatasi `revision_source` dan tidak mencakup status koreksi serah-terima.
+- Pengecekan scope publisher di `listRegistrations` ditulis inline, bukan helper filter bersama. Untuk menghindari perubahan perilaku list, Tahap D mempertahankan list dan menduplikasi syarat `publisher_id = user.publisherId` pada count; tidak mengekstrak helper scope.
+
+Perbedaan angka yang diketahui: tab “Perlu Tindakan” mengirim `segment=PUBLISHER_ACTIONS`, yang mencakup `DRAFT`, `AWAITING_PAYMENT`, semua `REVISION_REQUIRED`, dan `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`. Badge revisi saja sengaja lebih sempit dari angka total tab itu. Link sidebar telah diarahkan ke `view=actions` agar tab tindakan terbuka; perbedaan definisi badge dengan jumlah tab adalah discrepancy yang diketahui.
+
+### 2. Tagihan — Menunggu Bayar
+
+Tab “Menunggu Bayar” di `frontend/src/features/billing/PublisherBillingPage.jsx` mengirim `status=UNPAID`; tab lain adalah `ALL` (“Semua”), `PAID` (“Dalam Verifikasi”), dan `VERIFIED` (“Lunas”). `backend/src/services/payment.service.js:listPayments` hanya menambahkan `where.status = query.status` dan untuk penerbit biasa membatasi relasi registrasi dengan `publisher_id = user.publisherId`. Filter list tidak membatasi `Registration.status`, tidak memeriksa `expires_at`, dan tidak mengecualikan tagihan yang sudah lewat tanggal jatuh tempo.
+
+Query badge yang mengikuti tab:
+
+```js
+prisma.paymentRecord.count({
+  where: {
+    status: 'UNPAID',
+    registration: { publisher_id: user.publisherId },
+  },
+});
+```
+
+`PaymentStatus.EXPIRED` adalah status terpisah di schema sehingga tidak masuk tab `UNPAID`. Pembayaran yang tanggal `expires_at`-nya lewat tetapi statusnya masih `UNPAID` tetap tampil dan terhitung; service menghitung `sla.is_overdue` dari tanggal tersebut tanpa mengubah status pembayaran.
+
+Tab dan kartu ringkas bukan penghitung total yang sama:
+
+- Endpoint list menghitung `pagination.total` dari semua record yang cocok, namun halaman hanya memuat maksimum 20 record per halaman.
+- Kartu “Menunggu Bayar” menghitung `payments.filter(status === 'UNPAID')` atas array yang sedang termuat. Kartu itu dibatasi halaman yang sedang diambil (maksimum 20), bukan total. Pada tab `UNPAID`, kartunya menghitung record UNPAID di halaman itu; pada tab `ALL`, hanya record UNPAID di halaman ALL yang termuat.
+- Link sidebar membuka `/publisher/billing?tab=UNPAID`; halaman menggunakan parameter URL untuk membuka tab itu. Ini tidak mengubah query list.
+
+Pemeriksaan jalur transisi pembayaran menunjukkan:
+
+- Record berstatus `UNPAID` dibuat di `backend/src/services/verification-review.service.js` hanya untuk hasil `PASSED` sebelum registrasi bergerak ke `AWAITING_PAYMENT`; pada pengiriman hasil yang meminta perbaikan (`REVISION_REQUIRED`) tidak dibuat tagihan.
+- `backend/src/services/payment.service.js:createPayment` mensyaratkan registrasi `AWAITING_PAYMENT`.
+- `confirmPayment` hanya menerima registrasi `AWAITING_PAYMENT` atau `VERIFICATION_APPROVED`, lalu mengubah pembayaran menjadi `PAID` dan registrasi menjadi `PAYMENT_VERIFICATION`.
+- `returnPayment` mengubah `PAID` menjadi `UNPAID` dan status registrasi kembali ke `AWAITING_PAYMENT`; status itu tidak memiliki transisi generik ke status revisi.
+- `approveDistribution` mensyaratkan `TASHIH_IN_PROGRESS`, yang dicapai setelah pembayaran `VERIFIED`; hasil sidang revisi karenanya tidak memiliki tagihan `UNPAID` dalam jalur normal.
+- Pengembalian master serah-terima mensyaratkan `WAITING_DISTRIBUTOR_RECEIPT`, yang juga hanya dicapai setelah pembayaran terverifikasi.
+
+Jadi tidak ditemukan jalur transisi aplikasi yang sah yang menghasilkan registrasi revisi bersamaan dengan `PaymentRecord.UNPAID`. Status tagihan dan status revisi tidak dijamin oleh constraint database, sehingga kemungkinan kombinasi tersebut tetap dicatat sebagai discrepancy yang diketahui; tidak ada data yang diperiksa, diubah, atau dibersihkan. Definisi count masing-masing badge tetap sesuai tab/status yang disetujui.
+
+Seperti list registrasi, filter publisher pada list pembayaran saat ini hanya aktif untuk `PENERBIT` tanpa role `SUPERADMIN`. Akun multi-role `PENERBIT` + `SUPERADMIN` karena itu dapat melihat list global, sementara count role aktif `PENERBIT` yang di-scope ke `user.publisherId` tetap milik penerbit tersebut. User menerima discrepancy ini.
+
+### 3. Tabel kondisi dan pemisahan badge
+
+Dengan kondisi status yang berjalan normal, kategori badge saling terpisah: registrasi revisi tanpa tagihan `UNPAID` masuk “Permohonan Saya”; pembayaran `UNPAID` masuk “Tagihan”, bukan “Permohonan Saya”.
+
+| Status registrasi | `revision_source` | Status pembayaran | Permohonan Saya? | Tagihan? | Catatan |
+|---|---|---|---:|---:|---|
+| `DRAFT` | kosong/tidak relevan | tidak ada | Tidak | Tidak | Draf tidak dihitung. |
+| `AWAITING_PAYMENT` | kosong/tidak relevan | `UNPAID`, belum kedaluwarsa | Tidak | Ya | Hanya “Tagihan”. |
+| `AWAITING_PAYMENT` | kosong/tidak relevan | `UNPAID`, `expires_at` lewat | Tidak | Ya | Tetap UNPAID; ditandai overdue, tidak otomatis dikeluarkan dari tab. |
+| status apa pun | tidak relevan | `EXPIRED` | Tidak, kecuali registrasi juga sedang dalam status revisi | Tidak | `EXPIRED` bukan tab `UNPAID`. |
+| `REVISION_REQUIRED` | `VERIFICATION`, `PHYSICAL_MASTER`, `PHYSICAL_HANDOVER`, `TASHIH_REVISION`, null, atau nilai lain | tidak ada / bukan `UNPAID` | Ya | Tidak | Semua source dihitung; termasuk revisi verifikasi, intake, dan sidang pentashihan. |
+| `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` | `PHYSICAL_HANDOVER` | tidak ada / bukan `UNPAID` | Ya | Tidak | Koreksi serah-terima fisik. |
+| `PAYMENT_VERIFICATION` | kosong/tidak relevan | `PAID` | Tidak | Tidak | “Dalam Verifikasi” tidak dibadge. |
+| `REVISION_REQUIRED` atau `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` | source apa pun / null | `UNPAID` | Ya menurut definisi revisi | Ya menurut filter list/tagihan saat ini | Kode list tagihan tidak mengecualikan status revisi. Tidak ditemukan jalur transisi aplikasi yang sah yang menghasilkan kombinasi ini; kemungkinan kombinasi dicatat sebagai discrepancy yang diketahui, tanpa memeriksa/mengubah/membersihkan data. |
+
+### 4. Tujuan link sidebar dibanding definisi badge
+
+| Item sidebar | Link saat ini | Tampilan awal saat diklik | Sesuai badge? | Tujuan yang diusulkan |
+|---|---|---|---|---|
+| Permohonan Saya | `/publisher/registrations?view=actions` | Tab “Perlu Tindakan” | Tidak. Badge revisi lebih sempit daripada segmen “Perlu Tindakan”. | Sudah diarahkan ke `view=actions`; badge tetap hanya revisi sesuai keputusan user. |
+| Tagihan | `/publisher/billing?tab=UNPAID` | Tab “Menunggu Bayar” | Ya untuk filter status dan scope publisher. | Sudah diarahkan ke tab `UNPAID` melalui state URL halaman. |
+
+### 5. Skenario uji dan pertanyaan
+
+Skenario uji turunan dari definisi:
+
+| Skenario | Hasil yang diharapkan |
+|---|---|
+| Penerbit A memiliki revisi `REVISION_REQUIRED/VERIFICATION`, penerbit B memiliki revisi yang sama | Badge A hanya menghitung revisi milik publisher A; B tidak terpengaruh. |
+| `REVISION_REQUIRED` dengan `revision_source` `VERIFICATION`, `PHYSICAL_MASTER`, `PHYSICAL_HANDOVER`, `TASHIH_REVISION`, null, atau nilai lain; serta `PHYSICAL_HANDOVER_CORRECTION_REQUIRED` | Masing-masing dihitung satu kali di `publisher_revision_pending` untuk publisher pemilik. |
+| Hanya ada `DRAFT` atau `AWAITING_PAYMENT` | `publisher_revision_pending` tidak bertambah. |
+| `AWAITING_PAYMENT` dengan `PaymentRecord.UNPAID` | Hanya `publisher_billing_unpaid` bertambah. |
+| `PaymentRecord.UNPAID` dengan `expires_at` di masa lalu | Tetap masuk tab “Menunggu Bayar” dan badge tagihan. |
+| `PaymentRecord.EXPIRED` | Tidak masuk tab “Menunggu Bayar” maupun badge tagihan. |
+| Tab “Dalam Verifikasi”, “Lunas”, atau “Semua” | Tidak menerima badge tersendiri. |
+| Naskah dengan status revisi sekaligus payment `UNPAID` | Tidak ada jalur transisi aplikasi sah yang menghasilkan kondisi ini; kemungkinan kombinasi dicatat sebagai discrepancy yang diketahui. Data tidak diperiksa, diubah, atau dibersihkan. |
+| Penerbit multi-role, akun lain dengan publisher berbeda, ganti role | Count harus berasal dari publisher ID user terautentikasi dan hanya aktif saat role `PENERBIT`; tidak menerima publisher ID client. User menerima discrepancy: list akun `PENERBIT`+`SUPERADMIN` dapat global, sedangkan badge tetap scoped ke publisher akun. |
+| Lebih dari 20 tagihan `UNPAID` | Badge menghitung semua; kartu ringkas halaman hanya menghitung record di halaman termuat (maksimum 20). |
+
+Keputusan user yang berlaku untuk implementasi D:
+
+1. Tidak ada jalur transisi aplikasi sah untuk `UNPAID` + status revisi; catat kemungkinan kombinasi sebagai discrepancy tanpa mengubah atau membersihkan data.
+2. Terima discrepancy pada akun `PENERBIT` + `SUPERADMIN`: endpoint list dapat global, sedangkan badge role aktif `PENERBIT` tetap scoped ke publisher ID akun.

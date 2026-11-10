@@ -157,7 +157,18 @@ export const dispatchPhysicalSchema = {
     tracking_no: z.string().optional(),
     dispatch_date: z.string().optional(),
     notes: z.string().optional(),
+    recap_file_id: z.string().uuid().optional().nullable(),
   }),
+};
+
+export const publisherRevisionRecapSchema = {
+  params: z.object({
+    id: z.string().uuid('ID permohonan tidak valid.'),
+  }),
+  body: z.object({
+    recap_file_id: z.string().uuid('ID berkas rekap revisi tidak valid.'),
+    notes: z.string().trim().max(1000).optional().nullable(),
+  }).strict(),
 };
 
 export const transitionStatusSchema = {

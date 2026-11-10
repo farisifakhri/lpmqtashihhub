@@ -19,7 +19,7 @@ export function QueueOverview({ total, oldest, fifo = true, loading = false }) {
       </div>
       <div className="rounded-xl border border-brand-100 bg-brand-50/60 p-4 flex items-center gap-3">
         <ArrowDownWideNarrow className="h-5 w-5 shrink-0 text-brand-700" />
-        <div><p className="text-sm font-bold text-brand-950">{fifo ? 'Tertua lebih dahulu · FIFO' : 'Riwayat terbaru dahulu'}</p><p className="text-xs text-brand-800 mt-1">{fifo ? 'Urutan berdasarkan waktu masuk tahapan.' : 'Pekerjaan selesai dipisahkan dari antrean aktif.'}</p></div>
+        <div><p className="text-sm font-bold text-brand-950">{fifo ? 'Antrean Berdasarkan Waktu Masuk' : 'Riwayat Terbaru Dahulu'}</p><p className="text-xs text-brand-800 mt-1">{fifo ? 'Naskah yang masuk lebih awal diproses terlebih dahulu.' : 'Pekerjaan selesai dipisahkan dari antrean aktif.'}</p></div>
       </div>
       <div className="rounded-xl border border-line bg-white p-4 flex items-center gap-3">
         <Clock className="h-5 w-5 shrink-0 text-civic-warning" />

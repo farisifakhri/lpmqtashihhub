@@ -1,4 +1,4 @@
-# Backlog Fase Lanjutan ver 0.3 — status bukti 26 Okt 2026
+# Backlog Fase Lanjutan ver 0.3 — status bukti 5 Nov 2026
 
 Tiap paket dibuat sebagai file detail dan branch sendiri **saat akan dikerjakan**, mengikuti pola paket Fase 1. Pemilik awal adalah Fakhri; bagian antarmuka dapat dibagi ke Faisal setelah Fase 1 selesai.
 
@@ -21,8 +21,13 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 |B-11|`ux/dokumentator`|Perbaikan UX dokumentator. buat card per mushaf yang di daftarkan. Ketika di click akan menuku ke halaman yang memberikan dokumen2 hasil dari proses tashih yang dilakukan, seperti surat permohoman stt hingga STT itu sendiri dll. berikan warna dengan tujuan supaya bisa lebih mudah membedakan lihat warnanya pada design.md, karena dibuatnya per card mushaf yg di tashih maka berikan juga filternya seperti filter tahun, bulan, kategori pendaftaran (mushaf baru, perpanjangan STT, mushaf luar negeri), standar mushaf LPMQ (Ustmani, Bahriyah, Braile, Isyarat), dan filter berpotensi bermanfaat lainya.|**Nabil**|B-10|
 |B-12|`chore/glosarium-narasi`|Samakan istilah (penerbit, permohonan) di UI, template surat, dan label pengiriman. Teks label mengikuti nama menu aplikasi baru|**Choirul**|tidak ada|
 |B-13|`feat/dashboard-penerbit`|Dashboard penerbit: tracking status, unggah dokumen tambahan, bayar PNBP, respon Berita Acara|**Choirul**|T-F02, Fase 1|
+|B-14|`feat/b14-integritas-gerbang-stt-dan-kebocoran-tashih`|Integritas Gerbang STT, Penutupan Bypass Transisi Penerbit, dan Proteksi Privasi Identitas Pentashih pada List Registrations (Audit B1, B2, B3)|**Fakhri**|B-06, B-07|
+|B-15|`feat/b15-rekap-kelompok-dan-eliminasi-checklist`|Logika Rekap Kelompok (`recap_scope: TEAM vs SELF`), Penugasan Campuran Kelompok-Individu, dan Eliminasi Checklist Butir Per Juz (Audit A1, A2, A4)|**Fakhri**|B-14|
+|B-16|`feat/b16-rekap-revisi-penerbit-dan-siklus-dumi`|Kewajiban Unggah Berkas Rekap Revisi Penerbit (Per Ronde, Titik a & c) dan Penegakan Siklus Wajib Dumi Sebelum STT (Audit A3)|**Fakhri**|B-14, B-15|
+|B-17|`feat/b17-integritas-siklus-revisi-dan-penutupan-kebocoran`|Integritas Siklus Revisi, Pembanding Distributor, dan Penutupan Kebocoran Dokumen (Audit Pasca-B16 #1 s.d. #9)|**Fakhri**|B-16|
+|B-18|`feat/b18-penetapan-stt-paraf-tu-dan-workspace-dokumentator`|Penetapan STT, Antarmuka Paraf TU, dan Redesain Workspace Dokumentator (Integrasi B-09, B-10, B-11)|**Fakhri**|B-17|
 
-## Status implementasi per 26 Oktober 2026
+## Status implementasi per 5 November 2026
 
 | Paket | Status | Bukti / batas |
 |---|---|---|
@@ -30,14 +35,20 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 | B-02 | **Selesai menurut bukti kode** | Pemisahan tegas alur pengembalian draf internal Kepala LPMQ ke Verifikator vs penerbitan surat naskah tidak lolos ke Penerbit. |
 | B-03 | **Selesai menurut bukti kode** | Kode resmi `TL.01` disahkan. Sequence atomik backend aktif, terintegrasi ke dialog approval `VerificationInspectionPage.jsx` dengan flag `auto_number: true` saat nomor manual kosong. UAT U-04 terselesaikan. |
 | B-04 | **Selesai menurut bukti kode** | Dokumen kode billing menggabungkan surat lolos verifikasi dengan lampiran berkas billing SIMPONI (PDF), dan tagihan/kode billing ditegakkan hanya untuk naskah yang lolos. |
-| B-05 | **Selesai menurut bukti kode** | Backend endpoint master pentashih candidates, alokasi fleksibel kelompok/individu, validasi lengkap 30 juz, alasan pergantian generik, antarmuka dialog dengan live indicator 30 juz dan pencarian pentashih, serta tes lulus 100%. |
-| B-06 | **Selesai menurut bukti kode** | Kewajiban dokumen rekap telaah internal pada pelaporan pentashih, kolom eksplisit recap_file_id, verifikasi kelengkapan rekap oleh distributor, pembatasan kerahasiaan rekap internal, dan tes lolos 100%. |
-| B-07 | **Selesai menurut bukti kode** | Label pengiriman 2 varian resmi (Perbaikan & Dumi), kolom resi keluar distributor outgoing_courier/outgoing_tracking_no, pelacakan resi keluar di dashboard penerbit, form konfirmasi resi masuk naskah perbaikan, penerusan loket TMII, dan pembandingan catatan sidang ronde sebelumnya di modal telaah pentashih & distributor. |
-| B-08 | **Selesai menurut bukti kode** | Status jeda SLA terintegrasi di view model, SlaIndicator, dan StatusBadge; kalkulasi umur tunggu naskah (< 7 normal, 7-14 warning, > 14 danger); endpoint pengingat individual & batch periodic reminders dengan proteksi cooldown 24 jam; tombol aksi pengingat pada tabel dasbor admin dan dialog detail naskah; seluruh tes unit backend & frontend lulus 100%. |
+| B-05 | **Perlu Penyempurnaan (B-15)** | Master pentashih candidates aktif, namun penugasan campuran kelompok-individu atomik disempurnakan di paket B-15. |
+| B-06 | **Perlu Penyempurnaan (B-14 & B-15)** | Kewajiban dokumen rekap aktif, diperketat dengan proteksi rekap scope TEAM vs SELF dan penutupan kebocoran data di B-14 & B-15. |
+| B-07 | **Perlu Penyempurnaan (B-16)** | Label pengiriman 2 varian dan resi aktif; kewajiban berkas rekap revisi penerbit dan penegakan wajib dumi sebelum STT ditambahkan di B-16. |
+| B-08 | **Selesai menurut bukti kode** | Status jeda SLA terintegrasi di view model, SlaIndicator, dan StatusBadge; pengingat berkala aktif. |
 | B-09 | **Selesai menurut bukti kode** | Engine penerbitan STT PDF resmi ber-QR (`renderSttPdf`), validasi placeholder dinamis, sanitasi karakter, serta pengujian lulus 100%. |
 | B-10 | **Selesai menurut bukti kode** | Skema pelaporan realisasi pencetakan oplah oleh penerbit (`printingReportSchema`) dan penerimaan 5 eksemplar fisik. |
 | B-11 | **Dalam Proses / Siap Dikerjakan** | Penyesuaian antarmuka/UX card dan filter dokumen mushaf dokumentator. |
-| B-12–B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
+| B-12 | **Selesai menurut bukti kode** | Modul Glosarium & Formatters (`frontend/src/lib/glossary.js`), eliminasi bahasa sistem di antarmuka (Billing, Dialog, Arsip, Dokumen), dokumen standar [docs/GLOSARIUM.md](../GLOSARIUM.md), dan pembaharuan README utama. |
+| B-13 | **Belum diverifikasi** | Menunggu pengerjaan Choirul. |
+| B-14 | **Selesai menurut bukti kode** | Menutup lubang keamanan B1 (dua jalur STT), B2 (bypass transisi penerbit), dan B3 (kebocoran pentashih di `listRegistrations`), seluruh pengujian lulus 100%. |
+| B-15 | **Selesai menurut bukti kode** | Logika rekap kelompok `recap_scope: TEAM vs SELF`, penugasan campuran kelompok-individu atomik 30 juz, eliminasi form checklist per juz, seluruh pengujian backend & frontend lulus 100%. |
+| B-16 | **Selesai menurut bukti kode** | Wajib berkas rekap revisi penerbit per ronde (titik a & c), pembandingan berkas, dan penegakan siklus wajib dumi sebelum STT (PR #68). |
+| B-17 | **Selesai menurut bukti kode** | Integritas siklus revisi (endpoint mandiri rekap penerbit), pembanding wajib distributor, gerbang rekap sebelum revisi, eliminasi bypass transisi, sanitasi snapshot dokumen resmi, dan pengujian unit & regresi 100% lulus (commit `8e2659f`). |
+| B-18 | **Dalam Proses / Siap Dikerjakan** | Penetapan STT, antarmuka pembubuhan Paraf 1 & 2 Tata Usaha di Signature Center, redesain Card per Mushaf dokumentator B-11, penutupan bypass STT, dan integrasi penyerahan 5 eksemplar fisik B-10. |
 
 **Bukti B-01/B-03 yang diperiksa:** `backend/prisma/schema.prisma`, `backend/src/services/registration.service.js`, `frontend/src/lib/item-calculator.js`, `backend/tests/document-number.test.js`, `backend/src/services/verification-review.service.js`, `frontend/src/features/verification/VerificationInspectionPage.jsx`, dan `frontend/src/features/verification/VerificationInspectionPage.test.jsx`.
 
@@ -45,3 +56,9 @@ Status di bawah menilai bukti yang tampak pada checkout, bukan status merge PR. 
 
 * **Format nomor dinas resmi (B-03 / U-04):** Telah dikonfirmasi resmi menggunakan **`TL.01`** (`B-{seq}/LPMQ.01/TL.01/{roman_month}/{year}`).
 * **Email & Notifikasi:** Driver internal (`MockEmailProvider` / terminal log & outbox) telah disiapkan untuk pengembangan lokal tanpa memblokir alur kerja pendaftaran penerbit.
+* **Aturan Siklus Dumi & Rekap Sidang (Keputusan 5 Nov 2026):**
+  1. Pentashih wajib mengunggah rekapitulasi internal dan memberikan putusan akhir (`PASSED` / `REVISION_REQUIRED`) tanpa perlu mengisi checklist per juz.
+  2. Rekap kelompok mendukung cakupan `TEAM` (satu orang mewakili seluruh tim dan menggugurkan kewajiban anggota lain) atau `SELF` (hanya untuk diri sendiri).
+  3. Kerahasiaan sidang terisolasi penuh dari penerbit (identitas pentashih dan berkas rekap internal tidak boleh bocor ke penerbit).
+  4. Penerbit wajib mengunggah dokumen Rekap Revisi Penerbit per ronde (diblokir di titik penerbit `a` dan titik distributor `c`).
+  5. Seluruh naskah wajib melewati tahap Dumi (`DUMMY`) sebelum berhak memperoleh Surat Tanda Tashih (STT). Naskah tashih awal yang lolos bersih sekalipun wajib masuk ke tahap Dumi terlebih dahulu.

@@ -41,7 +41,8 @@ model User {
   physical_handovers_received      PhysicalManuscriptHandover[]    @relation("PhysicalHandoverReceiver")
   team_memberships                 TeamMember[]
   teams_led                        DistributionTeam[]
-  assignments                      Assignment[]
+  assignments                      Assignment[]                    @relation("AssignmentAssignee")
+  assignments_revoked              Assignment[]                    @relation("AssignmentRevoker")
   document_signatories             DocumentSignatory[]
   verification_signatures          VerificationDocumentSignatory[] @relation("VerificationSignatures")
   notifications                    Notification[]
@@ -54,9 +55,12 @@ model User {
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
+  service_documents_created        ServiceDocument[]               @relation("ServiceDocumentCreatedBy")
+  service_documents_updated        ServiceDocument[]               @relation("ServiceDocumentUpdatedBy")
   information_guides_created       InformationGuide[]              @relation("InformationGuideCreatedBy")
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
+  distributor_comparisons          DistributorComparison[]
 
   @@map("users")
 }
@@ -439,6 +443,9 @@ model Registration {
   documentation_items      DocumentationItem[]
   official_documents       OfficialDocument[]
   notifications            Notification[]
+  survey_responses         SurveyResponse[]
+  publisher_revision_recaps PublisherRevisionRecap[]
+  distributor_comparisons   DistributorComparison[]
 
   @@index([status, stage_entered_at, id])
   @@index([core_verifier_id, status])
@@ -480,6 +487,39 @@ model ManuscriptFile {
   manuscript   Manuscript?  @relation(fields: [manuscript_id], references: [id], onDelete: SetNull)
 
   @@map("manuscript_files")
+}
+
+model PublisherRevisionRecap {
+  id              String       @id @default(uuid())
+  registration_id String
+  round_number    Int
+  revision_kind   String       @db.VarChar(20) // "CORRECTION" | "DUMMY"
+  recap_file_id   String
+  created_at      DateTime     @default(now())
+
+  recap_file      StoredFile   @relation(fields: [recap_file_id], references: [id])
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+
+  @@unique([registration_id, round_number])
+  @@index([recap_file_id])
+  @@map("publisher_revision_recaps")
+}
+
+model DistributorComparison {
+  id              String       @id @default(uuid())
+  registration_id String
+  round_number    Int
+  distributor_id  String
+  notes           String       @db.Text
+  created_at      DateTime     @default(now())
+  updated_at      DateTime     @updatedAt
+
+  registration    Registration @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  distributor     User         @relation(fields: [distributor_id], references: [id])
+
+  @@unique([registration_id, round_number])
+  @@index([distributor_id])
+  @@map("distributor_comparisons")
 }
 
 // -------------------------------------------------------------
@@ -746,18 +786,23 @@ model Assignment {
   assignee_id     String
   stage           AssignmentStage // INITIAL, REVISION, DUMMY
   iteration       Int              @default(1)
-  due_at          DateTime?
-  status          AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE
-  created_at      DateTime         @default(now())
-  updated_at      DateTime         @updatedAt
+  due_at            DateTime?
+  status            AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE, REVOKED
+  revocation_reason String?          @db.Text
+  revoked_at        DateTime?
+  revoked_by_id     String?
+  created_at        DateTime         @default(now())
+  updated_at        DateTime         @updatedAt
 
   // Relations
   registration Registration      @relation(fields: [registration_id], references: [id], onDelete: Cascade)
   team         DistributionTeam? @relation(fields: [team_id], references: [id], onDelete: SetNull)
-  assignee     User              @relation(fields: [assignee_id], references: [id])
+  assignee     User              @relation("AssignmentAssignee", fields: [assignee_id], references: [id])
+  revoked_by   User?             @relation("AssignmentRevoker", fields: [revoked_by_id], references: [id])
   reviews      TashihReview[]
   juz_items    AssignmentJuz[]
 
+  @@index([revoked_by_id])
   @@map("assignments")
 }
 
@@ -782,12 +827,14 @@ model TashihReview {
   result        ReviewResult // PASSED, REVISION_REQUIRED, REJECTED
   notes         String?
   recap_file_id String?
+  recap_scope   String       @default("SELF") @db.VarChar(20)
   completed_at  DateTime     @default(now())
 
   // Relations
   assignment Assignment @relation(fields: [assignment_id], references: [id], onDelete: Cascade)
 
   @@index([recap_file_id])
+  @@index([recap_scope])
   @@map("tashih_reviews")
 }
 
@@ -899,6 +946,8 @@ model StoredFile {
   file_size  Int
   checksum   String
   created_at DateTime @default(now())
+
+  publisher_revision_recaps PublisherRevisionRecap[]
 
   @@index([owner_id])
   @@map("stored_files")
@@ -1058,6 +1107,7 @@ enum AssignmentStatus {
   IN_PROGRESS
   COMPLETED
   OVERDUE
+  REVOKED
 }
 
 enum DocumentationStatus {
@@ -1148,6 +1198,29 @@ model RegulationDocument {
   @@map("regulation_documents")
 }
 
+model ServiceDocument {
+  id            String   @id @default(uuid())
+  title         String   @db.VarChar(255)
+  category      String   @db.VarChar(100)
+  file_name     String   @db.VarChar(255)
+  storage_path  String   @db.VarChar(255)
+  file_size     Int
+  mime_type     String   @db.VarChar(100)
+  is_published  Boolean  @default(true)
+  created_by_id String?
+  updated_by_id String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  created_by User? @relation("ServiceDocumentCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by User? @relation("ServiceDocumentUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@map("service_documents")
+}
+
 model InformationGuide {
   id            String                  @id @default(uuid())
   title         String                  @db.VarChar(255)
@@ -1188,4 +1261,147 @@ model InformationGuideImage {
 
   @@index([guide_id])
   @@map("information_guide_images")
+}
+
+// ============================================================================
+// Survei Layanan (IKM / IPAK) — dikelola Super Admin
+// Unsur & pertanyaan adalah bank global; SurveyItem menyusun pertanyaan per unsur
+// untuk satu survei (pengganti menu "Pemilihan Survey" di sistem lama).
+// ============================================================================
+
+model SurveyUnsur {
+  id          String           @id @default(uuid())
+  code        String?          @unique @db.VarChar(30) // opsional; diisi A–I untuk unsur baku
+  name        String           @db.VarChar(255)
+  kind        String           @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  definition  String?          @db.Text
+  // 9 unsur baku Pedoman Menteri PANRB 9/2024 (diisi migrasi); tidak boleh dihapus, hanya diarsipkan.
+  is_standard Boolean          @default(false)
+  sort_order  Int              @default(100) // 1–9 = urutan unsur di Pedoman; unsur lain di belakangnya
+  is_archived Boolean          @default(false)
+  // Opsional: unsur khusus satu survei (mis. unsur IPAK); kosong = unsur umum untuk semua survei.
+  survey_id   String?
+  survey      Survey?          @relation(fields: [survey_id], references: [id], onDelete: SetNull)
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  items       SurveyItem[]
+  questions   SurveyQuestion[]
+
+  @@index([kind])
+  @@map("survey_unsur")
+}
+
+model SurveyQuestion {
+  id         String         @id @default(uuid())
+  text       String         @db.Text
+  type       String         @default("PILIHAN") @db.VarChar(20) // PILIHAN | ESAI
+  // Bank soal dikelompokkan per unsur agar Pemilihan Survei cukup menampilkan pertanyaan unsur terpilih.
+  unsur_id   String?
+  unsur      SurveyUnsur?   @relation(fields: [unsur_id], references: [id], onDelete: SetNull)
+  created_at DateTime       @default(now())
+  updated_at DateTime       @updatedAt
+  options    SurveyOption[]
+  items      SurveyItem[]
+  answers    SurveyAnswer[]
+
+  @@index([unsur_id])
+  @@map("survey_questions")
+}
+
+model SurveyOption {
+  id          String         @id @default(uuid())
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id], onDelete: Cascade)
+  label       String         @db.VarChar(150)
+  value       Int // 1–4; disimpan eksplisit agar pertanyaan positif/negatif tidak terbalik
+  sort_order  Int            @default(0)
+  answers     SurveyAnswer[]
+
+  @@index([question_id])
+  @@map("survey_options")
+}
+
+model Survey {
+  id          String           @id @default(uuid())
+  name        String           @db.VarChar(255)
+  kind        String           @default("IKM") @db.VarChar(20) // IKM | IPAK | LAINNYA
+  description String?          @db.Text
+  starts_at   DateTime?
+  ends_at     DateTime?
+  status      String           @default("DRAFT") @db.VarChar(20) // DRAFT | AKTIF | NONAKTIF
+  sort_order  Int              @default(0) // urutan tampil, diatur Super Admin lewat seret
+  created_at  DateTime         @default(now())
+  updated_at  DateTime         @updatedAt
+  items       SurveyItem[]
+  responses   SurveyResponse[]
+  unsur       SurveyUnsur[]
+
+  @@index([status])
+  @@map("surveys")
+}
+
+model SurveyItem {
+  id          String         @id @default(uuid())
+  survey_id   String
+  survey      Survey         @relation(fields: [survey_id], references: [id], onDelete: Cascade)
+  unsur_id    String
+  unsur       SurveyUnsur    @relation(fields: [unsur_id], references: [id])
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id])
+  sort_order  Int            @default(0)
+
+  @@unique([survey_id, question_id])
+  @@index([unsur_id])
+  @@index([question_id])
+  @@map("survey_items")
+}
+
+model SurveyResponse {
+  id                   String         @id @default(uuid())
+  survey_id            String
+  survey               Survey         @relation(fields: [survey_id], references: [id])
+  registration_id      String?
+  registration         Registration?  @relation(fields: [registration_id], references: [id], onDelete: SetNull)
+  respondent_name      String?        @db.VarChar(255)
+  gender               String?        @db.VarChar(1) // L | P
+  age                  Int?
+  education            String?        @db.VarChar(50)
+  occupation           String?        @db.VarChar(100)
+  // Data demografis & penilaian tambahan sesuai kuesioner Pedoman Menteri PANRB No. 9/2024 (hlm. 14–20).
+  is_disabled          Boolean?
+  disability_type      String?        @db.VarChar(20) // FISIK | INTELEKTUAL | MENTAL | SENSORIK
+  service_type         String?        @db.VarChar(255) // jenis layanan yang diterima
+  service_category     String?        @db.VarChar(10) // DARING | LURING | HYBRID
+  service_received_at  DateTime? // tanggal & jam menerima layanan
+  overall_satisfaction Int? // kepuasan keseluruhan, 1–5
+  nps_score            Int? // loyalitas, 1–10
+  ak_transparency      Int? // anti-korupsi 1–5: standar & prosedur diinformasikan jelas
+  ak_no_extortion      Int? // tidak ada pungli
+  ak_no_broker         Int? // tidak ada percaloan
+  ak_no_gratification  Int? // tidak ada imbalan di luar ketentuan
+  feedback             String?        @db.Text // kritik dan saran
+  submitted_at         DateTime       @default(now())
+  answers              SurveyAnswer[]
+
+  @@unique([survey_id, registration_id])
+  @@index([survey_id, submitted_at])
+  @@index([registration_id])
+  @@map("survey_responses")
+}
+
+model SurveyAnswer {
+  id          String         @id @default(uuid())
+  response_id String
+  response    SurveyResponse @relation(fields: [response_id], references: [id], onDelete: Cascade)
+  question_id String
+  question    SurveyQuestion @relation(fields: [question_id], references: [id])
+  option_id   String?
+  option      SurveyOption?  @relation(fields: [option_id], references: [id])
+  essay_text  String?        @db.Text
+  value       Int?
+
+  @@unique([response_id, question_id])
+  @@index([question_id])
+  @@index([option_id])
+  @@map("survey_answers")
 }

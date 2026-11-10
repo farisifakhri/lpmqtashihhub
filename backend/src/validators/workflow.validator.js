@@ -6,10 +6,10 @@ export const confirmPaymentSchema = { params, body: z.object({
   receipt_file_id: z.string().uuid(), external_ref: z.string().trim().min(1).max(191).optional(),
 }).strict() };
 export const assignmentSchema = { params, body: z.object({
-  team_id: z.string().min(1).max(191).optional(),
-  team_ids: z.array(z.string().min(1).max(191)).max(10).optional(),
+  team_id: z.string().min(1).max(191).nullable().optional(),
   assignee_ids: z.array(z.string().uuid()).min(1).max(50).optional(),
   juz_assignments: z.array(z.object({
+    team_id: z.string().min(1).max(191).nullable().optional(),
     assignee_id: z.string().uuid(),
     juz_numbers: z.array(z.number().int().min(1).max(30)).min(1).max(30),
   }).strict()).min(1).max(50).optional(),
@@ -19,6 +19,7 @@ export const assignmentSchema = { params, body: z.object({
   reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
+  comparison_notes: z.string().trim().min(20, 'Catatan telaah pembanding minimal 20 karakter.').max(5000).optional(),
 }).strict().superRefine((data, ctx) => {
   if (!data.assignee_ids && !data.juz_assignments) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });
@@ -37,7 +38,48 @@ export const assignmentSchema = { params, body: z.object({
   }
   if (!data.allow_overlap) {
     const juz = data.juz_assignments?.flatMap(item => item.juz_numbers) || [];
-    if (new Set(juz).size !== juz.length) ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Setiap juz hanya boleh ditugaskan kepada satu pentashih pada iterasi ini.' });
+    if (new Set(juz).size !== juz.length) {
+      const teamByAssignee = new Map();
+      const juzSetByAssignee = new Map();
+      for (const item of (data.juz_assignments || [])) {
+        const itemTeam = item.team_id !== undefined ? item.team_id : (data.is_individual ? null : (data.team_id || null));
+        teamByAssignee.set(item.assignee_id, itemTeam);
+        juzSetByAssignee.set(item.assignee_id, new Set(item.juz_numbers));
+      }
+      const juzToAssignees = new Map();
+      for (const item of (data.juz_assignments || [])) {
+        for (const j of item.juz_numbers) {
+          if (!juzToAssignees.has(j)) juzToAssignees.set(j, []);
+          juzToAssignees.get(j).push(item.assignee_id);
+        }
+      }
+      let invalidOverlap = false;
+      for (const [, assigneeList] of juzToAssignees.entries()) {
+        if (assigneeList.length > 1) {
+          const firstTeam = teamByAssignee.get(assigneeList[0]);
+          if (!firstTeam) {
+            invalidOverlap = true;
+            break;
+          }
+          const firstSet = juzSetByAssignee.get(assigneeList[0]);
+          for (const aId of assigneeList) {
+            if (teamByAssignee.get(aId) !== firstTeam) {
+              invalidOverlap = true;
+              break;
+            }
+            const aSet = juzSetByAssignee.get(aId);
+            if (aSet.size !== firstSet.size || ![...aSet].every(j => firstSet.has(j))) {
+              invalidOverlap = true;
+              break;
+            }
+          }
+          if (invalidOverlap) break;
+        }
+      }
+      if (invalidOverlap) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Setiap juz hanya boleh ditugaskan kepada satu pentashih pada iterasi ini.' });
+      }
+    }
   }
 }) };
 
@@ -81,7 +123,15 @@ export const reviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
   notes: z.string().trim().min(1, 'Catatan hasil telaah wajib diisi.').max(10000),
   recap_file_id: z.string().uuid('ID berkas rekap wajib berupa UUID valid.'),
+  recap_scope: z.enum(['TEAM', 'SELF']).default('SELF'),
 }).strict() };
+
+export const revokePentashihAssignmentSchema = {
+  params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
+  body: z.object({
+    reason: z.string().trim().min(10, 'Alasan pelepasan/pencabutan penugasan wajib diisi (minimal 10 karakter).').max(2000),
+  }).strict(),
+};
 
 export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
@@ -133,6 +183,25 @@ export const myTasksQuerySchema = {
 };
 
 
+
+export const submitToTuSchema = {
+  params,
+  body: z.object({
+    signer_1_id: z.string().uuid('ID Penandatangan Paraf 1 harus berupa UUID valid.').optional(),
+    signer_2_id: z.string().uuid('ID Penandatangan Paraf 2 harus berupa UUID valid.').optional(),
+    notes: z.string().trim().max(1000).optional(),
+  }).strict().refine(data => !data.signer_1_id || !data.signer_2_id || data.signer_1_id !== data.signer_2_id, {
+    message: 'Penandatangan Paraf 1 dan Paraf 2 harus merupakan dua orang yang berbeda.',
+    path: ['signer_2_id'],
+  }),
+};
+
+export const parafDocumentSchema = {
+  params,
+  body: z.object({
+    notes: z.string().trim().max(1000).optional(),
+  }).strict(),
+};
 
 export const printingReportSchema = {
   params,

@@ -18,6 +18,9 @@ import {
     X,
     Building,
     Landmark,
+    KeyRound,
+    Copy,
+    Check,
 } from "lucide-react";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
 import { Button } from "@/components/ui/Button";
@@ -96,6 +99,11 @@ export const PublisherVerificationPage = () => {
     const [isSubmittingDecision, setIsSubmittingDecision] = useState(false);
     const [decisionError, setDecisionError] = useState("");
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+
+    // Token Perbaikan Output State (untuk kemudahan admin menyalin token/tautan)
+    const [issuedRevisionInfo, setIssuedRevisionInfo] = useState(null);
+    const [isResendingToken, setIsResendingToken] = useState(false);
+    const [copiedRevisionLink, setCopiedRevisionLink] = useState(false);
 
     // Load list from backend
     const loadRegistrations = useCallback(async () => {
@@ -187,7 +195,7 @@ export const PublisherVerificationPage = () => {
         setIsSubmittingDecision(true);
 
         try {
-            await publisherRegistrationApi.decideAdmin(detailData.id, {
+            const res = await publisherRegistrationApi.decideAdmin(detailData.id, {
                 keputusan: decisionType,
                 alasan: decisionReason.trim() || null,
                 versi: detailData.versi,
@@ -204,6 +212,17 @@ export const PublisherVerificationPage = () => {
             setSuccessMessage(
                 `Pendaftaran ${detailData.nama_penerbit} (${detailData.kode_pendaftaran}) berhasil ${decisionLabel}.`
             );
+
+            // Simpan info token perbaikan jika ada
+            if (decisionType === "PERLU_PERBAIKAN" && res?.data?.revision_token) {
+                setIssuedRevisionInfo({
+                    token: res.data.revision_token,
+                    url: res.data.revision_url,
+                    publisherName: detailData.nama_penerbit,
+                    code: detailData.kode_pendaftaran,
+                });
+            }
+
             closeDetailModal();
             setShowConfirmDialog(false);
             loadRegistrations();
@@ -226,6 +245,39 @@ export const PublisherVerificationPage = () => {
             }
         } finally {
             setIsSubmittingDecision(false);
+        }
+    };
+
+    const handleCopyRevisionUrl = async (url) => {
+        if (!url) return;
+        try {
+            await navigator.clipboard.writeText(url);
+            setCopiedRevisionLink(true);
+            setTimeout(() => setCopiedRevisionLink(false), 2500);
+        } catch {
+            // fallback
+        }
+    };
+
+    const handleResendRevisionToken = async () => {
+        if (!detailData?.id) return;
+        setIsResendingToken(true);
+        try {
+            const res = await publisherRegistrationApi.resendRevisionToken(detailData.id);
+            if (res?.success && res?.data) {
+                setIssuedRevisionInfo({
+                    token: res.data.revision_token,
+                    url: res.data.revision_url,
+                    publisherName: detailData.nama_penerbit,
+                    code: detailData.kode_pendaftaran,
+                });
+                setSuccessMessage(`Token perbaikan baru untuk ${detailData.nama_penerbit} berhasil diterbitkan.`);
+                openDetailModal(detailData.id);
+            }
+        } catch (err) {
+            alert(err.message || "Gagal menerbitkan ulang token perbaikan.");
+        } finally {
+            setIsResendingToken(false);
         }
     };
 
@@ -300,6 +352,67 @@ export const PublisherVerificationPage = () => {
                     >
                         Tutup
                     </button>
+                </div>
+            )}
+
+            {/* Banner Khusus: Token & Tautan Perbaikan Diterbitkan */}
+            {issuedRevisionInfo && (
+                <div
+                    role="region"
+                    aria-label="Informasi Tautan Perbaikan"
+                    className="p-4 sm:p-5 rounded-2xl bg-civic-warningSoft border border-civic-warningLine text-ink space-y-3 animate-fadeIn shadow-2xs"
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-surface border border-civic-warningLine flex items-center justify-center text-civic-warning shrink-0">
+                                <KeyRound className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs sm:text-sm font-bold text-ink">
+                                    Tautan & Token Perbaikan Resmi Diterbitkan
+                                </h3>
+                                <p className="text-[11px] text-ink-muted">
+                                    Pemohon: <strong>{issuedRevisionInfo.publisherName}</strong> ({issuedRevisionInfo.code}) · Berlaku 14 hari
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIssuedRevisionInfo(null)}
+                            className="p-1 rounded-lg text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                            aria-label="Tutup Informasi Token"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-surface border border-line space-y-2">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                            <span className="text-xs font-mono text-ink truncate select-all">
+                                {issuedRevisionInfo.url}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => handleCopyRevisionUrl(issuedRevisionInfo.url)}
+                                className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-2xs"
+                            >
+                                {copiedRevisionLink ? (
+                                    <>
+                                        <Check className="w-3.5 h-3.5" />
+                                        <span>Tersalin!</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="w-3.5 h-3.5" />
+                                        <span>Salin Tautan</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                        <p className="text-[11px] text-ink-muted">
+                            Token: <code className="font-mono text-xs text-brand-fg select-all">{issuedRevisionInfo.token}</code>
+                        </p>
+                    </div>
                 </div>
             )}
 
@@ -628,6 +741,61 @@ export const PublisherVerificationPage = () => {
                                                 </span>
                                             </div>
                                         </div>
+
+                                        {/* Status Token Perbaikan & Aksi Terbitkan Ulang (Jika status PERLU_PERBAIKAN) */}
+                                        {detailData.status === "PERLU_PERBAIKAN" && (
+                                            <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-1.5 font-bold text-civic-warning">
+                                                        <KeyRound className="w-4 h-4" />
+                                                        <span>Status Token Perbaikan</span>
+                                                    </div>
+                                                    <p className="text-[11px] text-ink-muted">
+                                                        {detailData.revision_token_info ? (
+                                                            <>
+                                                                Status:{" "}
+                                                                <strong className="text-ink">
+                                                                    {detailData.revision_token_info.is_active
+                                                                        ? "Aktif (Menunggu Penerbit Unggah Revisi)"
+                                                                        : detailData.revision_token_info.used_at
+                                                                        ? "Telah Digunakan"
+                                                                        : "Kedaluwarsa"}
+                                                                </strong>
+                                                                {detailData.revision_token_info.expires_at && (
+                                                                    <span>
+                                                                        {" "}· Masa berlaku hingga:{" "}
+                                                                        {new Date(detailData.revision_token_info.expires_at).toLocaleDateString("id-ID", {
+                                                                            day: "numeric",
+                                                                            month: "short",
+                                                                            year: "numeric",
+                                                                            hour: "2-digit",
+                                                                            minute: "2-digit",
+                                                                        })}
+                                                                    </span>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            "Token perbaikan telah digenerate saat permohonan diminta perbaikan."
+                                                        )}
+                                                    </p>
+                                                </div>
+
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={isResendingToken}
+                                                    onClick={handleResendRevisionToken}
+                                                    className="cursor-pointer text-xs shrink-0"
+                                                >
+                                                    {isResendingToken ? (
+                                                        <RefreshCw className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                                                    ) : (
+                                                        <KeyRound className="w-3.5 h-3.5 mr-1.5 text-brand-fg" />
+                                                    )}
+                                                    <span>{isResendingToken ? "Menerbitkan..." : "Terbitkan Ulang Token"}</span>
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* 2. DAFTAR DOKUMEN & PENGAWASAN KEAMANAN BERKAS */}

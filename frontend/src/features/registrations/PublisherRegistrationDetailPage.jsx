@@ -24,6 +24,7 @@ import { fileApi } from "@/api/file.api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { publisherAction } from "./publisher-status";
+import { invalidateQueueCounts } from "@/api/queue.api";
 
 import { PublisherDetailHeader } from "./detail/PublisherDetailHeader";
 import { PublisherStatusAlerts } from "./detail/PublisherStatusAlerts";
@@ -56,6 +57,7 @@ export function PublisherRegistrationDetailPage() {
     const [dispatchData, setDispatchData] = useState({
         courier: "LOKET_LPMQ",
         tracking_no: "",
+        recap_file_id: null,
     });
 
     // Modals & Dialogs State
@@ -596,10 +598,10 @@ export function PublisherRegistrationDetailPage() {
                                     upload={upload}
                                     onSubmitRegistration={() =>
                                         run(
-                                            () =>
-                                                registrationApi.submitRegistration(
-                                                    id,
-                                                ),
+                                            async () => {
+                                                await registrationApi.submitRegistration(id);
+                                                invalidateQueueCounts();
+                                            },
                                             revision
                                                 ? "Perbaikan berhasil diajukan ulang."
                                                 : "Permohonan berhasil dikirim.",

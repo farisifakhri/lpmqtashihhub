@@ -28,6 +28,12 @@ export const Modal = ({
 }) => {
   const dialogRef = useRef(null);
   const previousActiveElementRef = useRef(null);
+  // onClose sering dikirim inline (fungsi baru tiap render); simpan di ref agar efek fokus
+  // tidak berjalan ulang setiap pengguna mengetik dan memindahkan fokus ke tombol Tutup.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   const sizeClasses = {
     sm: 'max-w-md',
@@ -67,7 +73,7 @@ export const Modal = ({
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && closeOnEscape) {
         e.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
         return;
       }
 
@@ -123,7 +129,7 @@ export const Modal = ({
       window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timer);
     };
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen, closeOnEscape]);
 
   if (!isOpen) return null;
 

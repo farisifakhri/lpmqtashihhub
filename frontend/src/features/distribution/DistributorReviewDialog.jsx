@@ -335,28 +335,51 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 </div>
               )}
 
-              {/* Pembandingan Catatan Sidang Ronde Sebelumnya (B-07) */}
-              {previousRevLetters.length > 0 && (
+              {/* Pembandingan Catatan Sidang LPMQ vs Rekapitulasi Perbaikan Penerbit (B-07 & B-16) */}
+              {(previousRevLetters.length > 0 || (registration?.publisher_revision_recaps && registration.publisher_revision_recaps.length > 0)) && (
                 <div className="p-4 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xs text-ink uppercase tracking-wider flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
-                      Catatan & Hasil Sidang Ronde Sebelumnya ({previousRevLetters.length} Ronde)
+                      Komparasi Catatan Sidang & Rekapitulasi Perbaikan Penerbit
                     </span>
-                    <span className="text-[11px] text-civic-warning font-medium">Bahan Komparasi Perbaikan</span>
+                    <span className="text-[11px] text-civic-warning font-medium">Bahan Verifikasi Komparatif</span>
                   </div>
-                  <div className="space-y-2">
-                    {previousRevLetters.map((doc) => (
-                      <div key={doc.id} className="p-3 bg-white rounded-lg border border-civic-warningLine text-xs space-y-1.5">
-                        <div className="flex items-center justify-between font-semibold text-ink">
-                          <span>Ronde #{doc.content_snapshot?.revision_round || doc.version} • {doc.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'}</span>
-                          <span className="text-[11px] text-ink-muted">{doc.content_snapshot?.distributor_name || 'Distributor'}</span>
+                  <div className="space-y-3">
+                    {previousRevLetters.map((doc) => {
+                      const roundNum = doc.content_snapshot?.revision_round || doc.version || 1;
+                      const pubRecap = (registration?.publisher_revision_recaps || []).find((r) => r.round_number === roundNum);
+                      return (
+                        <div key={doc.id} className="p-3 bg-white rounded-lg border border-civic-warningLine text-xs space-y-2">
+                          <div className="flex items-center justify-between font-semibold text-ink border-b border-line pb-1.5">
+                            <span>Ronde #{roundNum} • {doc.content_snapshot?.revision_kind === 'NASKAH_DUMI' ? 'Naskah Dumi' : 'Naskah Perbaikan'}</span>
+                            <span className="text-[11px] text-ink-muted">{doc.content_snapshot?.distributor_name || 'Distributor'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-ink-muted block mb-1 font-semibold">1. Arahan Koreksi Sidang LPMQ:</span>
+                            <p className="text-ink font-mono text-[11px] bg-canvas p-2 rounded border border-line whitespace-pre-line">
+                              {doc.content_snapshot?.notes || '-'}
+                            </p>
+                          </div>
+                          <div className="pt-1 flex flex-wrap items-center justify-between gap-2 border-t border-line/60">
+                            <span className="text-[11px] text-ink-muted font-semibold">2. Dokumen Rekap Perbaikan Penerbit:</span>
+                            {pubRecap?.recap_file_id ? (
+                              <a
+                                href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                              >
+                                <FileText className="w-3.5 h-3.5 text-brand-700" />
+                                <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
+                              </a>
+                            ) : (
+                              <span className="text-xs text-civic-warning italic">Penerbit belum mengunggah berkas rekapitulasi untuk ronde ini</span>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-ink font-mono text-[11px] bg-canvas p-2 rounded border border-line whitespace-pre-line">
-                          {doc.content_snapshot?.notes || '-'}
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -370,7 +393,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         Keputusan Tindak Lanjut Distributor
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Opsi Lanjut STT */}
+                        {/* Opsi Lulus (STT jika DUMMY, atau Alihkan ke Tahap DUMMY jika INITIAL/REVISION) - B-16 */}
                         <label
                           className={clsx(
                             'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3',
@@ -392,10 +415,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                           />
                           <div>
                             <div className="font-bold text-xs text-ink">
-                              Rekomendasikan Penetapan STT
+                              {currentAssignments[0]?.stage === 'DUMMY'
+                                ? 'Rekomendasikan Penetapan STT'
+                                : 'Loloskan Telaah & Alihkan ke Tahap Dumi'}
                             </div>
-                            <div className="text-xs text-ink-muted mt-0.5">
-                              Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.
+                            <div className="text-xs text-ink-muted mt-0.5 leading-snug">
+                              {currentAssignments[0]?.stage === 'DUMMY'
+                                ? <span>Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.</span>
+                                : <span>Status beralih ke <code>REVISION_REQUIRED (NASKAH_DUMI)</code> agar penerbit mencetak & mengirimkan master dumi fisik.</span>}
                             </div>
                           </div>
                         </label>
@@ -519,7 +546,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                                   type="text"
                                   value={outgoingCourier}
                                   onChange={(e) => setOutgoingCourier(e.target.value)}
-                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Loket"
+                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Antar Langsung"
                                   className="w-full rounded-lg border border-line p-2 text-xs bg-canvas"
                                 />
                               </div>

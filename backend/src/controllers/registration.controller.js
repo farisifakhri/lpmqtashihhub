@@ -182,10 +182,25 @@ export const createPrintingReport = async (req, res, next) => {
   }
 };
 
+export const uploadPublisherRevisionRecap = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await registrationService.uploadPublisherRevisionRecap(id, req.body, req.user, req);
+    res.status(200).json({
+      success: true,
+      message: 'Berkas rekapitulasi perbaikan naskah berhasil diunggah.',
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   createDraft,
   submitRegistration,
   dispatchPhysical,
+  uploadPublisherRevisionRecap,
   transitionStatus,
   listRegistrations,
   getDetail,

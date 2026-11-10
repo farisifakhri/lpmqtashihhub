@@ -457,7 +457,7 @@ export function InformationGuideEditor({ content = '', guideId, onChange, readOn
       attributes: {
         class:
           'min-h-64 max-w-none px-4 py-3 text-sm leading-7 text-ink focus:outline-none [&_h2]:mb-3 [&_h2]:mt-5 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-lg [&_h3]:font-semibold [&_li]:ml-5 [&_ol]:list-decimal [&_p]:my-3 [&_table]:my-4 [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:border-line [&_td]:p-2 [&_th]:border [&_th]:border-line [&_th]:bg-surface-subtle [&_th]:p-2 [&_ul]:list-disc [&_img]:max-w-full',
-        'aria-label': `Konten ${section === 'SOP' ? 'SOP' : 'panduan'}`,
+        'aria-label': `Konten ${section === 'SOP' ? 'SOP' : section === 'SIARAN_PERS' ? 'Siaran Pers' : 'panduan'}`,
       },
     },
   });
@@ -508,13 +508,13 @@ export function InformationGuideEditor({ content = '', guideId, onChange, readOn
     setImageUploading(true);
     try {
       for (const file of files) {
-        const response = section === 'SOP'
+        const response = section
           ? await informationGuideApi.uploadImage(guideId, file, { section })
           : await informationGuideApi.uploadImage(guideId, file);
         const image = response.data;
         const blobUrl = await informationGuideApi.fetchImageBlobUrl(
           image.id,
-          section === 'SOP' ? { admin: true, section } : { admin: true }
+          section ? { admin: true, section } : { admin: true }
         );
         imageObjectUrls.current.add(blobUrl);
         editor.chain().focus().setImage({

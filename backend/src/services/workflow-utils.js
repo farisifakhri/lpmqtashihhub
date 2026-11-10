@@ -57,3 +57,38 @@ export function requireOwner(reg, user) {
     fail(403, 'Pengajuan bukan milik penerbit Anda.');
   }
 }
+
+export async function resolveTashihRound(tx, reg) {
+  const lastRevLetter = await tx.officialDocument?.findFirst({
+    where: { registration_id: reg.id, document_type: 'REVISION_RETURN_LETTER' },
+    orderBy: { created_at: 'desc' },
+  });
+
+  const isTashihRevision = !!lastRevLetter;
+  const roundNumber = lastRevLetter
+    ? (lastRevLetter.content_snapshot?.revision_round || lastRevLetter.version || 1)
+    : 1;
+  const revisionKind = lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI'
+    ? 'DUMMY'
+    : 'CORRECTION';
+
+  let hasAssignmentsForRound = false;
+  if (lastRevLetter && tx.assignment?.findFirst) {
+    const existing = await tx.assignment.findFirst({
+      where: {
+        registration_id: reg.id,
+        created_at: { gt: lastRevLetter.created_at },
+      },
+      select: { id: true },
+    });
+    hasAssignmentsForRound = !!existing;
+  }
+
+  return {
+    lastRevLetter,
+    isTashihRevision,
+    roundNumber,
+    revisionKind,
+    hasAssignmentsForRound,
+  };
+}

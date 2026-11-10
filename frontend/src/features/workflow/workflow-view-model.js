@@ -31,7 +31,7 @@ export const STATUS_DEFINITIONS = {
   VERIFICATION_ASSIGNED: {
     phase: 'VERIFICATION',
     statusLabel: 'Verifikator Ditugaskan',
-    statusDescription: 'Nota Dinas telah terbit; verifikator yang ditugaskan dapat memulai pemeriksaan berkas & rasm.',
+    statusDescription: 'Nota Dinas telah terbit; verifikator yang ditugaskan dapat memulai pemeriksaan berkas naskah.',
     ownerRole: 'VERIFIKATOR',
     ownerRoleLabel: 'Verifikator',
     nextActionLabel: 'Mulai pemeriksaan naskah',

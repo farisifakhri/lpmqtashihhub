@@ -135,12 +135,12 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
               Kalkulator PNBP & Acuan Waktu Layanan (SLA)
             </h2>
             <p className="text-xs sm:text-sm text-ink-muted">
-              Acuan simulasi tarif dan SLA berbasis item naskah sesuai B-01 & PP No. 59 Tahun 2020.
+              Acuan simulasi tarif dan SLA berbasis item naskah sesuai PP No. 59 Tahun 2020.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {registration && (
             <button
               type="button"
@@ -266,7 +266,7 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
             >
               {/* Manuscript Top Row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-1 min-w-0 items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-brand-100 text-brand-900 font-bold text-xs flex items-center justify-center shrink-0">
                     {idx + 1}
                   </span>
@@ -278,7 +278,8 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
                       next[idx] = { ...next[idx], title: e.target.value };
                       setSimulatedManuscripts(next);
                     }}
-                    className="text-xs sm:text-sm font-bold text-ink bg-white px-2.5 py-1 rounded-md border border-line focus:outline-none focus:ring-1 focus:ring-brand-700"
+                    aria-label={`Nama naskah ${idx + 1}`}
+                    className="w-full sm:max-w-md text-xs sm:text-sm font-bold text-ink bg-white px-2.5 py-1 rounded-md border border-line focus:outline-none focus:ring-1 focus:ring-brand-700"
                     placeholder={`Nama Naskah ${idx + 1}`}
                   />
                 </div>
@@ -325,7 +326,7 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
                           <CheckCircle2 className="w-3.5 h-3.5 text-brand-700 shrink-0" />
                         )}
                       </div>
-                      <div className="text-2xs text-ink-muted mt-1">
+                      <div className="text-[11px] text-ink-muted mt-1">
                         {formatRupiah(dasar.fee)} • {dasar.sla_initial} HK
                       </div>
                     </button>
@@ -340,7 +341,7 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
                     2. Item Tambahan (Kelompok 3 — Pilih materi terkait):
                   </label>
                   {hasAbsorbedTerjemah && (
-                    <span className="inline-flex items-center gap-1 text-2xs font-bold text-brand-900 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-900 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
                       <Sparkles className="w-3 h-3 text-brand-700" />
                       Terjemah diserap (Rp 0 & 0 HK) oleh Perkata/Tafsir
                     </span>
@@ -374,12 +375,12 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
                           <div className="flex items-center gap-1">
                             <span className="truncate">{tamb.name}</span>
                             {isCoveredByOther && (
-                              <span className="text-3xs bg-civic-warningSoft text-civic-warning px-1 rounded font-normal">
+                              <span className="text-[10px] bg-civic-warningSoft text-civic-warning px-1 rounded font-normal">
                                 Absorpsi
                               </span>
                             )}
                           </div>
-                          <div className="text-2xs text-ink-muted">
+                          <div className="text-[11px] text-ink-muted">
                             +{formatRupiah(isCoveredByOther ? 0 : tamb.fee)} • +{isCoveredByOther ? 0 : tamb.delta_initial} HK
                           </div>
                         </div>

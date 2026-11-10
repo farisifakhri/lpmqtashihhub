@@ -29,6 +29,7 @@ import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSumma
 import { showToast } from '@/components/ui/toast';
 import { invalidateQueueCounts } from '@/api/queue.api';
 import {
+  ArrowRight,
   CheckCircle2,
   AlertTriangle,
   Clock,
@@ -91,6 +92,14 @@ const CHECKLIST_DEFINITIONS = [
   },
 ];
 
+// Urutan langkah meja kerja untuk tombol "Lanjutkan" (issue log #10).
+const NEXT_WORKBENCH_STEP = {
+  naskah: { tab: 'checklist', label: 'Checklist' },
+  checklist: { tab: 'konten', label: 'Konten Mushaf' },
+  konten: { tab: 'kalkulator', label: 'Kalkulator Tarif & SLA' },
+  kalkulator: { tab: 'hasil', label: 'Hasil & Draf Surat' },
+};
+
 export const VerificationInspectionPage = () => {
   const { id } = useParams(); // assignmentId
   const navigate = useNavigate();
@@ -103,7 +112,7 @@ export const VerificationInspectionPage = () => {
   // Tab state for mobile/tablet responsive layout (<1024px)
   const [activeMobileTab, setActiveMobileTab] = useState('checklist'); // 'naskah' | 'checklist' | 'konten' | 'hasil' | 'arsip'
   const [activeWorkbenchTab, setActiveWorkbenchTab] = useState('checklist'); // 'checklist' | 'konten' | 'hasil' | 'arsip'
-  const [contentReview, setContentReview] = useState(null);
+    const [contentReview, setContentReview] = useState(null);
 
   // Document preview selection
   const [activeDocTab, setActiveDocTab] = useState('digital'); // 'digital' | 'receipt' | 'letter'
@@ -160,7 +169,8 @@ export const VerificationInspectionPage = () => {
     }
 
     if (data.registration?.manuscript_files?.length > 0 && !selectedFileId) {
-      setSelectedFileId(data.registration.manuscript_files[0].id);
+      const [first] = [...data.registration.manuscript_files].sort((a, b) => (b.version || 1) - (a.version || 1));
+      setSelectedFileId(first.id);
     }
     if (data.registration?.physical_master_intake?.volume_count) {
       setHandoverVolumeCount(data.registration.physical_master_intake.volume_count);
@@ -190,9 +200,17 @@ export const VerificationInspectionPage = () => {
   }, [detail, currentUser]);
 
   const allFiles = useMemo(() => {
-    const list = [...(detail?.registration?.manuscript_files || [])];
+    const files = detail?.registration?.manuscript_files || [];
+    // Satu tab per jenis berkas, versi terbaru saja (issue log #4: v1 dan v2 tampil bersamaan).
+    const latestByType = new Map();
+    for (const f of files) {
+      const key = f.type || f.file_type || f.id;
+      const current = latestByType.get(key);
+      if (!current || (f.version || 1) > (current.version || 1)) latestByType.set(key, f);
+    }
+    const list = [...latestByType.values()];
     const meta = detail?.registration?.foreign_metadata || {};
-    const knownFileIds = new Set(list.map((f) => f.file_id || f.id));
+    const knownFileIds = new Set(files.map((f) => f.file_id || f.id));
 
     if (meta.surat_permohonan_file_id && !knownFileIds.has(meta.surat_permohonan_file_id)) {
       list.unshift({
@@ -720,6 +738,27 @@ export const VerificationInspectionPage = () => {
     return f.file_name || 'PDF Berkas';
   };
 
+  const renderNextStepButton = (from) => {
+    const next = NEXT_WORKBENCH_STEP[from];
+    return (
+      <div className="flex justify-end pt-2">
+        <Button
+          variant="primary"
+          className="text-xs"
+          onClick={() => {
+            setActiveWorkbenchTab(next.tab);
+            setActiveMobileTab(next.tab);
+            document.getElementById('inspection-workbench')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }}
+        >
+          Lanjutkan ke {next.label}
+          <ArrowRight className="w-4 h-4 ml-1.5" />
+        </Button>
+      </div>
+    );
+  };
+
+  
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-24">
       {/* Top Header & Breadcrumb */}
@@ -761,17 +800,19 @@ export const VerificationInspectionPage = () => {
               ))}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
-            className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer"
-          >
-            {showWorkflowGuide ? (
-              <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
-            ) : (
-              <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowWorkflowGuide(!showWorkflowGuide)}
+              className="text-xs font-semibold text-brand-800 hover:text-brand-900 inline-flex items-center gap-1 cursor-pointer px-2.5 py-1.5 rounded-lg border border-brand-200 bg-brand-50/50 hover:bg-brand-50 transition-colors"
+            >
+              {showWorkflowGuide ? (
+                <>Sembunyikan Panduan SOP <ChevronUp className="w-3.5 h-3.5" /></>
+              ) : (
+                <>Petunjuk Alur SOP Verifikasi <ChevronDown className="w-3.5 h-3.5" /></>
+              )}
+            </button>
+          </div>
         </div>
 
         <div className={showWorkflowGuide ? 'pt-3 border-t border-line space-y-3 animate-fadeIn' : 'hidden'}>
@@ -965,7 +1006,7 @@ export const VerificationInspectionPage = () => {
               <p className="text-xs text-ink-muted mt-0.5 leading-relaxed">
                 {registration.status === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'
                   ? 'Master fisik telah diperbaiki. Periksa kembali lalu serahkan ke Distributor dengan BAST baru; pembayaran tetap sah.'
-                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di loket pentashihan.'}
+                  : 'Pembayaran PNBP telah diverifikasi sah. Serahkan master cetak fisik mushaf kepada petugas Distributor di ruang penerimaan pentashihan.'}
               </p>
             </div>
           </div>
@@ -1047,229 +1088,259 @@ export const VerificationInspectionPage = () => {
         </button>
       </div>
 
-      {/* THE SPLIT-STUDIO WORKSTATION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (6 cols): Inspection Document Studio */}
-        <div className={`lg:col-span-6 space-y-4 ${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'}`}>
-          <InspectionDocumentStudio
-            allFiles={allFiles}
-            activeFile={activeFile}
-            selectedFileId={selectedFileId}
-            setSelectedFileId={setSelectedFileId}
-            getFileLabel={getFileLabel}
-            registration={registration}
-            publisher={publisher}
-            physicalMaster={physicalMaster}
-            assignment={assignment}
-            formatDate={formatDate}
-            handleCopyReceipt={handleCopyReceipt}
-            copiedReceipt={copiedReceipt}
-          />
-        </div>
+      {/* Meja kerja bertumpuk: penampil naskah dan lembar pemeriksaan sama-sama lebar penuh. */}
+      <div data-testid="inspection-workstation" className="block space-y-6">
+      {/* ========================================================
+       * STACKED WORKSTATION (OPSI B):
+       * 1. Studio Berkas & Naskah Digital (Full-Width di Atas)
+       * 2. Lembar Kerja Pemeriksaan & Hasil (Full-Width di Bawah)
+       * ======================================================== */}
 
-        {/* RIGHT COLUMN (6 cols): Interactive Workbench */}
-        <div className="lg:col-span-6 space-y-4">
-          {/* Desktop Tab Selector Header */}
-          <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
-            <div className="flex items-center gap-1 w-full">
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('checklist')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'checklist'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
-                <span>Checklist ({CHECKLIST_DEFINITIONS.length} Butir)</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                  {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS.length}
-                </span>
-              </button>
+      {/* 1. STUDIO BERKAS DIGITAL (FULL WIDTH DI ATAS) */}
+      <div className={`${activeMobileTab === 'naskah' ? 'block' : 'hidden lg:block'} w-full`}>
+        <InspectionDocumentStudio
+          allFiles={allFiles}
+          activeFile={activeFile}
+          selectedFileId={selectedFileId}
+          setSelectedFileId={setSelectedFileId}
+          getFileLabel={getFileLabel}
+          registration={registration}
+          publisher={publisher}
+          physicalMaster={physicalMaster}
+          assignment={assignment}
+          formatDate={formatDate}
+          handleCopyReceipt={handleCopyReceipt}
+          copiedReceipt={copiedReceipt}
+        />
+      </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('konten')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'konten'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <BookOpen className="w-3.5 h-3.5 text-brand-700" />
-                <span>Konten Mushaf</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-civic-infoSoft text-civic-info border border-civic-infoLine">
-                  REV-16
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('kalkulator')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'kalkulator'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <Calculator className="w-3.5 h-3.5 text-brand-700" />
-                <span>Kalkulator Tarif & SLA</span>
-                <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
-                  U-14
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveWorkbenchTab('hasil')}
-                className={`flex-1 py-2 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeWorkbenchTab === 'hasil'
-                    ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
-                    : 'text-ink-muted hover:text-ink hover:bg-canvas'
-                }`}
-              >
-                <FileText className="w-3.5 h-3.5 text-brand-700" />
-                <span>Hasil & Draf Surat</span>
-                <span className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
-                  decision === 'PASSED'
-                    ? 'bg-brand-50 text-brand-800 border border-brand-200'
-                    : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
-                }`}>
-                  {decision === 'PASSED' ? 'Lolos' : 'Ditolak / Perbaikan'}
-                </span>
-              </button>
+      {/* 2. LEMBAR KERJA PEMERIKSAAN (FULL WIDTH DI BAWAH) */}
+      <div id="inspection-workbench" className={`${activeMobileTab !== 'naskah' ? 'block' : 'hidden lg:block'} w-full space-y-4 scroll-mt-6`}>
+        {/* Smart PNBP & SLA Summary Strip */}
+        <div className="p-3 bg-gradient-to-r from-brand-50/80 via-white to-surface-subtle rounded-2xl border border-brand-100 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-1.5 rounded-lg bg-brand-800 text-white shadow-2xs">
+              <Calculator className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-xs">
+              <span className="text-ink-muted">Estimasi PNBP: </span>
+              <span className="font-mono font-bold text-brand-900">
+                {(() => {
+                  const baseFee = Number(registration?.fee_sla_snapshot?.base_fee ?? registration?.service_type?.base_fee ?? 1000000);
+                  const addonsFee = Number(registration?.fee_sla_snapshot?.addons_fee ?? 0);
+                  const total = Number(registration?.fee_sla_snapshot?.total_fee ?? (baseFee + addonsFee));
+                  return total === 0 ? 'Rp 0' : `Rp ${total.toLocaleString('id-ID')}`;
+                })()}
+              </span>
+              <span className="text-ink-muted mx-1.5">·</span>
+              <span className="text-ink-muted">Target SLA: </span>
+              <span className="font-bold text-ink">
+                {registration?.fee_sla_snapshot?.working_days || 10} Hari Kerja
+              </span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveWorkbenchTab('kalkulator');
+              setActiveMobileTab('kalkulator');
+            }}
+            className="text-xs font-bold text-brand-800 hover:text-brand-900 hover:underline flex items-center gap-1 cursor-pointer"
+          >
+            <span>Simulasi Tarif & SLA</span>
+            <span className="text-xs">↗</span>
+          </button>
+        </div>
 
-          {/* TAB 1: CHECKLIST */}
-          <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'}`}>
-            <InspectionChecklist
-              activeMobileTab="checklist"
-              sesuaiCount={sesuaiCount}
-              tidakSesuaiCount={tidakSesuaiCount}
-              tidakBerlakuCount={tidakBerlakuCount}
-              checklist={checklist}
-              validationErrors={validationErrors}
-              isReadOnly={isReadOnly}
-              handleChecklistChange={handleChecklistChange}
-              definitions={CHECKLIST_DEFINITIONS}
-              className="space-y-4"
-            />
-          </div>
+        {/* Desktop Tab Selector Header */}
+        <div className="hidden lg:flex items-center justify-between p-1 bg-surface-subtle border border-line rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1 w-full">
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('checklist')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'checklist'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <CheckSquare className="w-3.5 h-3.5 text-brand-700" />
+              <span>Checklist ({CHECKLIST_DEFINITIONS.length} Butir)</span>
+              <span className="text-xs px-1.5 py-0.2 rounded-full bg-brand-50 text-brand-800 border border-brand-200">
+                {sesuaiCount + tidakBerlakuCount}/{CHECKLIST_DEFINITIONS.length}
+              </span>
+            </button>
 
-          {/* TAB 2: AUDIT KONTEN MUSHAF (REV-16) */}
-          <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'}`}>
-            <MushafContentReviewTable
-              registration={registration}
-              contentReview={contentReview}
-              onChange={(data) => {
-                setIsDirty(true);
-                setContentReview(data);
-              }}
-              isReadOnly={isReadOnly}
-            />
-          </div>
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('konten')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'konten'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-brand-700" />
+              <span>Konten Mushaf</span>
+            </button>
 
-          {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN (U-14) */}
-          <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'}`}>
-            <VerificationCalculatorTab registration={registration} />
-          </div>
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('kalkulator')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'kalkulator'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <Calculator className="w-3.5 h-3.5 text-brand-700" />
+              <span>Kalkulator Tarif & SLA</span>
+            </button>
 
-          {/* TAB 3: HASIL & DRAF SURAT */}
-          <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4`}>
-            {/* Multi-Signatory Progress & Email Status Banners */}
-            {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
-              <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
-                Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
-              </div>
-            )}
-            {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
-              <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
-                <SignatoryProgress
-                  signatories={[
-                    ...(latestResultDoc?.signatories || []).map(sig => ({
-                      role_label: `Surat Hasil - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                    ...baSignatories.map((sig) => ({
-                      role_label: `Berita Acara - Urutan ${sig.sign_order}`,
-                      name: sig.name_position_snapshot,
-                      status: sig.status,
-                      signed_at: sig.signed_at,
-                    })),
-                  ]}
-                />
-
-                <div className="flex flex-wrap items-center gap-3">
-                  {canUserSignLatest && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(latestResultDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Surat Pemberitahuan
-                    </Button>
-                  )}
-                  {canUserSignBa && (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleSignDocument(beritaAcaraDoc.id)}
-                      disabled={actionLoading}
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Konfirmasi Internal Berita Acara
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {isEmailFailed && (
-              <EmailDeliveryStatus
-                status="FAILED"
-                recipient={publisher.email || 'penerbit@mushaf.id'}
-                errorMessage={latestResultDoc?.email_delivery_error}
-                onRetry={() => handleRetryEmail(latestResultDoc?.id)}
-                retrying={actionLoading}
-              />
-            )}
-
-            <ResultLetterPanel
-              activeMobileTab="hasil"
-              decision={decision}
-              setDecision={setDecision}
-              loadOfficialTemplate={loadOfficialTemplate}
-              setIsDirty={setIsDirty}
-              isReadOnly={isReadOnly}
-              validationErrors={validationErrors}
-              notes={notes}
-              setNotes={setNotes}
-              letterTab={letterTab}
-              setLetterTab={setLetterTab}
-              letterText={letterText}
-              setLetterText={setLetterText}
-              billingNo={billingNo}
-              setBillingNo={setBillingNo}
-              billingFileId={billingFileId}
-              billingFileName={billingFileName}
-              billingUploading={billingUploading}
-              handleBillingFile={handleBillingFile}
-              resultDocumentId={latestResultDoc?.id}
-              registration={registration}
-              publisher={publisher}
-              showDocumentPdf={showDocumentPdf}
-              tidakSesuaiCount={tidakSesuaiCount}
-              checklist={checklist}
-              className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
-            />
+            <button
+              type="button"
+              onClick={() => setActiveWorkbenchTab('hasil')}
+              className={`flex-1 py-2.5 px-3 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                activeWorkbenchTab === 'hasil'
+                  ? 'bg-white text-brand-900 shadow-2xs font-bold border border-line'
+                  : 'text-ink-muted hover:text-ink hover:bg-canvas'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5 text-brand-700" />
+              <span>Hasil & Draf Surat</span>
+              <span className={`text-xs px-1.5 py-0.2 rounded-full font-bold ${
+                decision === 'PASSED'
+                  ? 'bg-brand-50 text-brand-800 border border-brand-200'
+                  : 'bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine'
+              }`}>
+                {decision === 'PASSED' ? 'Lolos' : 'Ditolak / Perbaikan'}
+              </span>
+            </button>
           </div>
         </div>
+
+        {/* TAB 1: CHECKLIST */}
+        <div className={`${activeMobileTab === 'checklist' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'checklist' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <InspectionChecklist
+            activeMobileTab="checklist"
+            sesuaiCount={sesuaiCount}
+            tidakSesuaiCount={tidakSesuaiCount}
+            tidakBerlakuCount={tidakBerlakuCount}
+            checklist={checklist}
+            validationErrors={validationErrors}
+            isReadOnly={isReadOnly}
+            handleChecklistChange={handleChecklistChange}
+            definitions={CHECKLIST_DEFINITIONS}
+            className="space-y-4"
+          />
+          {renderNextStepButton('checklist')}
+        </div>
+
+        {/* TAB 2: AUDIT KONTEN MUSHAF */}
+        <div className={`${activeMobileTab === 'konten' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'konten' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <MushafContentReviewTable
+            registration={registration}
+            contentReview={contentReview}
+            onChange={(data) => {
+              setIsDirty(true);
+              setContentReview(data);
+            }}
+            isReadOnly={isReadOnly}
+          />
+          {renderNextStepButton('konten')}
+        </div>
+
+        {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN */}
+        <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'} pb-28`}>
+          <VerificationCalculatorTab registration={registration} />
+          {renderNextStepButton('kalkulator')}
+        </div>
+
+        {/* TAB 3: HASIL & DRAF SURAT */}
+        <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4 pb-28`}>
+          {/* Multi-Signatory Progress & Email Status Banners */}
+          {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+            <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
+              Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
+            </div>
+          )}
+          {(['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status) || ['SUBMITTED', 'APPROVED', 'SIGNING', 'SIGNED'].includes(beritaAcaraDoc?.status)) && (
+            <div className="p-4 bg-white rounded-xl border border-line shadow-2xs space-y-4">
+              <SignatoryProgress
+                signatories={[
+                  latestSignatory,
+                  ...(baSignatories || []),
+                ].filter(Boolean)}
+                title="Progres Penandatanganan Internal"
+              />
+
+              <div className="flex flex-wrap items-center gap-3">
+                {canUserSignLatest && (
+                  <Button
+                    variant="primary"
+                    onClick={() => handleSignDocument(latestResultDoc.id)}
+                    disabled={actionLoading}
+                    className="text-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Konfirmasi Internal Surat Pemberitahuan
+                  </Button>
+                )}
+                {canUserSignBa && (
+                  <Button
+                    variant="primary"
+                    onClick={() => handleSignDocument(beritaAcaraDoc.id)}
+                    disabled={actionLoading}
+                    className="text-xs"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+                    Konfirmasi Internal Berita Acara
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isEmailFailed && (
+            <EmailDeliveryStatus
+              status="FAILED"
+              recipient={publisher.email || 'penerbit@mushaf.id'}
+              errorMessage={latestResultDoc?.email_delivery_error}
+              onRetry={() => handleRetryEmail(latestResultDoc?.id)}
+              retrying={actionLoading}
+            />
+          )}
+
+          <ResultLetterPanel
+            activeMobileTab="hasil"
+            decision={decision}
+            setDecision={setDecision}
+            loadOfficialTemplate={loadOfficialTemplate}
+            setIsDirty={setIsDirty}
+            isReadOnly={isReadOnly}
+            validationErrors={validationErrors}
+            notes={notes}
+            setNotes={setNotes}
+            letterTab={letterTab}
+            setLetterTab={setLetterTab}
+            letterText={letterText}
+            setLetterText={setLetterText}
+            billingNo={billingNo}
+            setBillingNo={setBillingNo}
+            billingFileId={billingFileId}
+            billingFileName={billingFileName}
+            billingUploading={billingUploading}
+            handleBillingFile={handleBillingFile}
+            resultDocumentId={latestResultDoc?.id}
+            registration={registration}
+            publisher={publisher}
+            showDocumentPdf={showDocumentPdf}
+            tidakSesuaiCount={tidakSesuaiCount}
+            checklist={checklist}
+            className="p-5 bg-white rounded-xl border border-line shadow-2xs space-y-5"
+          />
+        </div>
+      </div>
       </div>
 
       <InspectionActionPanel

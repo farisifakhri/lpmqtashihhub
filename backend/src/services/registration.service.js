@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
-import { fail, registration as lockRegistration, audit, requireStatus, requireOwner } from './workflow-utils.js';
+import { fail, registration as lockRegistration, audit, requireStatus, requireOwner, resolveTashihRound } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
 import { buildMasterIntakeQueueWhere } from './queue-filters.js';
@@ -200,12 +200,13 @@ export const TRANSITION_POLICY = {
     READY_FOR_VERIFICATION: {
       allowedRoles: ['PENERBIT', 'SUPERADMIN'],
       ownershipGuard: true,
+      domainAction: true,
       description: 'Penerbit mengajukan ulang perbaikan dokumen/naskah verifikasi',
     },
     TASHIH_IN_PROGRESS: {
-      allowedRoles: ['PENERBIT', 'PENTASHIH', 'SUPERADMIN'],
-      ownershipGuard: true,
-      description: 'Penerbit menyerahkan perbaikan naskah kembali ke sidang pentashihan (siklus revisi tashih)',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor menetapkan penugasan kembali ke pentashih pada siklus revisi',
     },
     CANCELLED: {
       allowedRoles: ['PENERBIT', 'SUPERADMIN'],
@@ -275,34 +276,45 @@ export const TRANSITION_POLICY = {
   WAITING_DISTRIBUTION: {
     TASHIH_IN_PROGRESS: {
       allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Distributor menetapkan tim pentashih dan memulai sidang pentashihan',
     },
   },
   TASHIH_IN_PROGRESS: {
     READY_FOR_STT: {
-      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
-      description: 'Sidang pentashihan selesai dengan rekomendasi penerbitan STT',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor mengesahkan hasil sidang pentashihan dan merekomendasikan penerbitan STT',
     },
     REVISION_REQUIRED: {
-      allowedRoles: ['PENTASHIH', 'SUPERADMIN'],
-      description: 'Pentashih menemukan koreksi teks mushaf yang harus diperbaiki penerbit',
+      allowedRoles: ['DISTRIBUTOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Distributor menerbitkan surat pengembalian naskah dan meminta perbaikan kepada penerbit',
     },
   },
   READY_FOR_STT: {
     STT_ISSUED: {
       allowedRoles: ['KEPALA_LPMQ', 'SUPERADMIN'],
-      description: 'Kepala LPMQ menandatangani dan menerbitkan Surat Tanda Tashih',
+      domainAction: true,
+      description: 'Kepala LPMQ menandatangani dan menerbitkan Surat Tanda Tashih melalui pengesahan dokumen resmi',
     },
   },
   STT_ISSUED: {
     DOCUMENTATION_IN_PROGRESS: {
       allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Dokumentator memulai proses pencatatan dan dokumentasi arsip mushaf',
+    },
+    COMPLETED: {
+      allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
+      description: 'Dokumentasi arsip dan 5 eksemplar fisik tuntas, pengajuan selesai sepenuhnya',
     },
   },
   DOCUMENTATION_IN_PROGRESS: {
     COMPLETED: {
       allowedRoles: ['DOKUMENTATOR', 'SUPERADMIN'],
+      domainAction: true,
       description: 'Pendokumentasian arsip tuntas, pengajuan selesai sepenuhnya',
     },
   },
@@ -1145,6 +1157,67 @@ export const dispatchPhysical = async (id, data, user, req) => {
       fail(409, 'Master fisik sudah diterima oleh LPMQ. Hubungi petugas Admin Internal bila data pengiriman perlu diperbaiki.');
     }
 
+    // B-16, B-17 & B-19a: Kewajiban unggah dokumen rekapitulasi revisi penerbit HANYA untuk naskah hasil revisi tashih
+    const roundInfo = await resolveTashihRound(tx, reg);
+    if (reg.status === 'REVISION_REQUIRED' && roundInfo.isTashihRevision) {
+      const { roundNumber, revisionKind } = roundInfo;
+
+      if (data.recap_file_id) {
+        if (tx.storedFile?.findUnique) {
+          const recapFile = await tx.storedFile.findUnique({
+            where: { id: data.recap_file_id },
+          });
+          if (!recapFile) {
+            fail(400, 'Berkas rekapitulasi perbaikan tidak ditemukan pada sistem penyimpanan.');
+          }
+          if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
+            fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
+          }
+          if (recapFile.owner_id && recapFile.owner_id !== user.id) {
+            fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+          }
+          if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
+            fail(400, 'Format berkas rekapitulasi tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
+          }
+        }
+
+        if (tx.publisherRevisionRecap?.upsert) {
+          await tx.publisherRevisionRecap.upsert({
+            where: {
+              registration_id_round_number: {
+                registration_id: id,
+                round_number: roundNumber,
+              },
+            },
+            create: {
+              registration_id: id,
+              round_number: roundNumber,
+              revision_kind: revisionKind,
+              recap_file_id: data.recap_file_id,
+            },
+            update: {
+              revision_kind: revisionKind,
+              recap_file_id: data.recap_file_id,
+            },
+          });
+        }
+      } else {
+        const existingRecap = tx.publisherRevisionRecap?.findUnique
+          ? await tx.publisherRevisionRecap.findUnique({
+              where: {
+                registration_id_round_number: {
+                  registration_id: id,
+                  round_number: roundNumber,
+                },
+              },
+            })
+          : null;
+        if (!existingRecap || !existingRecap.recap_file_id) {
+          fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah untuk pengiriman fisik revisi/dumi.');
+        }
+      }
+    }
+
     const dispatchDate = data.dispatch_date ? new Date(data.dispatch_date) : new Date();
     const courier = data.courier || 'LOKET_LPMQ';
     const trackingNo = data.tracking_no || null;
@@ -1189,6 +1262,91 @@ export const dispatchPhysical = async (id, data, user, req) => {
   syncRegistrationToExistingWebsite(id).catch(() => {});
 
   return updated;
+};
+
+export const uploadPublisherRevisionRecap = async (id, data, user, req) => {
+  return prisma.$transaction(async (tx) => {
+    const reg = await lockRegistration(tx, id);
+    requireOwner(reg, user);
+
+    // B-19a N1: Izinkan upload selama status REVISION_REQUIRED, WAITING_DISTRIBUTOR_RECEIPT, atau WAITING_DISTRIBUTION
+    requireStatus(reg, ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION']);
+
+    // B-19a N3: Guard asal revisi tashih
+    const roundInfo = await resolveTashihRound(tx, reg);
+    if (!roundInfo.isTashihRevision) {
+      fail(400, 'Pengunggahan rekapitulasi perbaikan hanya berlaku untuk naskah hasil revisi pentashihan.');
+    }
+    if (reg.status === 'REVISION_REQUIRED' && reg.revision_source !== 'TASHIH_REVISION') {
+      fail(400, 'Pengunggahan rekapitulasi perbaikan hanya berlaku untuk naskah hasil revisi pentashihan.');
+    }
+
+    // B-19a N1 Lock: Jika penugasan ronde ini sudah dibuat oleh Distributor, kunci unggahan
+    if (roundInfo.hasAssignmentsForRound) {
+      fail(409, 'Penugasan pentashih untuk ronde ini telah dibuat; berkas rekapitulasi perbaikan terkunci.');
+    }
+
+    if (!data.recap_file_id) {
+      fail(400, 'Dokumen rekapitulasi perbaikan dari penerbit wajib diunggah.');
+    }
+
+    // B-19a N5: Validasi kepemilikan dan tipe berkas
+    if (tx.storedFile?.findUnique) {
+      const recapFile = await tx.storedFile.findUnique({
+        where: { id: data.recap_file_id },
+      });
+      if (!recapFile) {
+        fail(400, 'Berkas rekapitulasi perbaikan tidak ditemukan pada sistem penyimpanan.');
+      }
+      if (recapFile.file_size !== undefined && recapFile.file_size <= 0) {
+        fail(400, 'Berkas rekapitulasi perbaikan tidak boleh berupa berkas kosong (0 byte).');
+      }
+      if (recapFile.owner_id && recapFile.owner_id !== user.id) {
+        fail(403, 'Berkas rekapitulasi bukan milik akun penerbit Anda.');
+      }
+      if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
+        fail(400, 'Format berkas rekapitulasi tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
+      }
+    }
+
+    const { roundNumber, revisionKind } = roundInfo;
+
+    let recapRecord = null;
+    if (tx.publisherRevisionRecap?.upsert) {
+      recapRecord = await tx.publisherRevisionRecap.upsert({
+        where: {
+          registration_id_round_number: {
+            registration_id: id,
+            round_number: roundNumber,
+          },
+        },
+        create: {
+          registration_id: id,
+          round_number: roundNumber,
+          revision_kind: revisionKind,
+          recap_file_id: data.recap_file_id,
+        },
+        update: {
+          revision_kind: revisionKind,
+          recap_file_id: data.recap_file_id,
+        },
+      });
+    }
+
+    await audit(tx, user, 'UPLOAD_PUBLISHER_REVISION_RECAP', 'Registration', id, {
+      round_number: roundNumber,
+      revision_kind: revisionKind,
+      recap_file_id: data.recap_file_id,
+      notes: data.notes || null,
+    }, req);
+
+    return recapRecord || {
+      registration_id: id,
+      round_number: roundNumber,
+      revision_kind: revisionKind,
+      recap_file_id: data.recap_file_id,
+    };
+  });
 };
 
 export const submitRegistration = async (id, user, req) => {
@@ -1617,19 +1775,9 @@ export const transitionStatus = async (id, toStatus, notes, user, req, expectedF
   return updated;
 };
 
-export const listRegistrations = async ({
-  user,
-  myTasks = false,
-  status,
-  search,
-  segment,
-  queueOnly = false,
-  page = 1,
-  limit = 10,
-}) => {
+// Cakupan permohonan yang boleh dilihat tiap peran; dipakai bersama oleh daftar permohonan dan badge sidebar.
+export const buildRegistrationScopeWhere = (user) => {
   const where = {};
-
-  // Scope filter berdasarkan Role
   const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
   if (publisherScope) {
     if (!user.publisherId) fail(403, 'Akun Anda belum terhubung ke penerbit. Hubungi pengelola layanan.');
@@ -1641,6 +1789,21 @@ export const listRegistrations = async ({
     else if (user.roles.includes('DOKUMENTATOR')) where.core_documenter_id = user.id;
     else if (user.roles.includes('PENTASHIH')) where.assignments = { some: { assignee_id: user.id } };
   }
+  return where;
+};
+
+export const listRegistrations = async ({
+  user,
+  myTasks = false,
+  status,
+  search,
+  segment,
+  queueOnly = false,
+  page = 1,
+  limit = 10,
+}) => {
+  const where = buildRegistrationScopeWhere(user);
+  const publisherScope = user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN');
 
   // Filter Tugas Saya (Assignment-based, bukan status)
   if (myTasks === 'true' || myTasks === true) {
@@ -1676,6 +1839,7 @@ export const listRegistrations = async ({
       { registration_no: { contains: search } },
       { title: { contains: search } },
       { publisher: { legal_name: { contains: search } } },
+      { verification_assignments: { some: { verifier: { name: { contains: search } } } } },
     ] }];
   }
 
@@ -1690,13 +1854,29 @@ export const listRegistrations = async ({
       skip,
       take,
       include: {
-        ...(publisherScope || segment === 'PUBLISHER_DOCUMENTS' ? {
-          official_documents: {
-            where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
-            select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
-            orderBy: { version: 'desc' },
-          },
-        } : {}),
+        official_documents: publisherScope
+          ? {
+              where: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' },
+              select: { id: true, document_no: true, document_type: true, status: true, file_id: true, issued_at: true, valid_until: true },
+              orderBy: { version: 'desc' },
+            }
+          : {
+              select: {
+                id: true,
+                document_no: true,
+                document_type: true,
+                version: true,
+                status: true,
+                file_id: true,
+                issued_at: true,
+                valid_until: true,
+                content_snapshot: true,
+                signatories: {
+                  select: { id: true, name_position_snapshot: true, signing_status: true, signed_at: true },
+                },
+              },
+              orderBy: { version: 'desc' },
+            },
         publisher: { select: { id: true, legal_name: true, entity_type: true } },
         service_type: { select: { id: true, name: true, service_kind: true } },
         verification_assignments: {
@@ -1727,8 +1907,58 @@ export const listRegistrations = async ({
     publisherScope ? prisma.registration.count({ where: { ...summaryWhere, ...(search ? { AND: where.AND } : {}), official_documents: { some: { document_type: 'SURAT_TANDA_TASHIH', status: 'ISSUED' } } } }) : Promise.resolve(null),
   ]);
 
+  const teamUserIds = [...new Set(
+    items.flatMap(item => [item.core_verifier_id, item.core_distributor_id, item.core_documenter_id]).filter(Boolean)
+  )];
+
+  const teamUsers = teamUserIds.length > 0 && prisma.user?.findMany
+    ? await prisma.user.findMany({
+        where: { id: { in: teamUserIds } },
+        select: { id: true, name: true, email: true },
+      })
+    : [];
+  const teamUserMap = new Map(teamUsers.map(u => [u.id, u]));
+
+  const enrichedItems = items.map(item => {
+    const assignedVerifier = item.verification_assignments?.[0]?.verifier || teamUserMap.get(item.core_verifier_id) || null;
+    const coreDistributor = teamUserMap.get(item.core_distributor_id) || null;
+    const coreVerifier = teamUserMap.get(item.core_verifier_id) || null;
+    const coreDocumenter = teamUserMap.get(item.core_documenter_id) || null;
+
+    return {
+      ...item,
+      assigned_verifier: assignedVerifier,
+      core_verifier: coreVerifier,
+      core_distributor: coreDistributor,
+      core_documenter: coreDocumenter,
+      core_team: item.core_team_number ? {
+        teamNumber: item.core_team_number,
+        rotationVersion: item.core_team_version,
+        verifier: coreVerifier,
+        distributor: coreDistributor,
+        documenter: coreDocumenter,
+      } : null,
+    };
+  });
+
   return {
-    items: queueItems(items, item => item.stage_entered_at, skip, fifo),
+    items: queueItems(
+      publisherScope
+        ? enrichedItems.map(item => ({
+            ...item,
+            assignments: item.assignments?.map(a => ({
+              id: a.id,
+              stage: a.stage,
+              iteration: a.iteration,
+              status: a.status,
+              due_at: a.due_at,
+            })) || [],
+          }))
+        : enrichedItems,
+      item => item.stage_entered_at,
+      skip,
+      fifo
+    ),
     summary: { by_status: Object.fromEntries(counts.map(item => [item.status, item._count])), ...(issuedSTT !== null ? { issued_stt: issuedSTT } : {}) },
     pagination: {
       total,
@@ -1777,6 +2007,10 @@ export const getDetail = async (id, user) => {
         orderBy: { created_at: 'desc' },
       },
       payment_records: true,
+      publisher_revision_recaps: {
+        include: { recap_file: true },
+        orderBy: { round_number: 'desc' },
+      },
       assignments: {
         include: {
           assignee: { select: { id: true, name: true } },
@@ -1817,7 +2051,7 @@ export const getDetail = async (id, user) => {
 
   if (reg.core_team_number) {
     const members = await prisma.user.findMany({
-      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id] } },
+      where: { id: { in: [reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].filter(Boolean) } },
       select: { id: true, name: true },
     });
     const memberById = new Map(members.map(member => [member.id, member]));
@@ -1829,6 +2063,8 @@ export const getDetail = async (id, user) => {
       documenter: memberById.get(reg.core_documenter_id) || null,
     };
   }
+  reg.assigned_verifier = reg.verification_assignments?.[0]?.verifier || reg.core_team?.verifier || null;
+  reg.core_distributor = reg.core_team?.distributor || null;
 
   try { await assertManuscriptAccess(reg, user); }
   catch (error) {
@@ -1836,7 +2072,32 @@ export const getDetail = async (id, user) => {
     reg.manuscript_files = [];
   }
   if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
-    reg.official_documents = reg.official_documents.filter(document => document.status === 'ISSUED');
+    reg.official_documents = (reg.official_documents || [])
+      .filter(document => document.status === 'ISSUED')
+      .map(doc => {
+        if (!doc.content_snapshot) return doc;
+        let snap = doc.content_snapshot;
+        if (typeof snap === 'string') {
+          try { snap = JSON.parse(snap); } catch { snap = {}; }
+        }
+        if (snap && snap.assignments && Array.isArray(snap.assignments)) {
+          snap = {
+            ...snap,
+            assignments: snap.assignments.map(a => ({
+              stage: a.stage,
+              iteration: a.iteration,
+              status: a.status,
+              due_at: a.due_at,
+            })),
+          };
+        }
+        if (snap && snap.comparison_notes !== undefined) {
+          const { comparison_notes, ...restSnap } = snap;
+          snap = restSnap;
+        }
+        return { ...doc, content_snapshot: snap };
+      });
+    delete reg.distributor_comparisons;
     if (reg.verification_assignments) {
       reg.verification_assignments = reg.verification_assignments.map(a => ({
         id: a.id,
@@ -2155,6 +2416,7 @@ export default {
   createDraft,
   submitRegistration,
   dispatchPhysical,
+  uploadPublisherRevisionRecap,
   transitionStatus,
   listRegistrations,
   getDetail,

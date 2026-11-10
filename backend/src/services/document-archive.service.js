@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { fail } from './workflow-utils.js';
+import { buildRegistrationScopeWhere } from './registration.service.js';
 
 export async function listDocumentArchive(registrationId, user, db = prisma) {
   const registration = await db.registration.findUnique({
@@ -21,11 +22,9 @@ export async function listDocumentArchive(registrationId, user, db = prisma) {
   });
   if (!registration) fail(404, 'Pengajuan tidak ditemukan.');
 
-  const roles = user.roles || [];
-  const internal = roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role));
-  const owner = roles.includes('PENERBIT') && user.publisherId === registration.publisher_id;
-  const assignedVerifier = roles.includes('VERIFIKATOR') && Boolean(await db.verificationAssignment.findFirst({ where: { registration_id: registrationId, verifier_id: user.id }, select: { id: true } }));
-  if (!internal && !owner && !assignedVerifier) fail(403, 'Akses arsip dokumen ditolak.');
+  // Cakupan sama dengan daftar permohonan: naskah yang tampil di Arsip Dokumen selalu bisa dibuka arsipnya.
+  const inScope = await db.registration.findFirst({ where: { id: registrationId, ...buildRegistrationScopeWhere(user) }, select: { id: true } });
+  if (!inScope) fail(403, 'Akses arsip dokumen ditolak.');
 
   const [verification, official] = await Promise.all([
     db.verificationDocument.findMany({

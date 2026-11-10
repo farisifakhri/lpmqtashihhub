@@ -41,7 +41,7 @@ Saat ini menu "Intake Master Fisik" menampilkan badge statis berlabel "LOKET". I
 6. Jangan menebak. Jika filter status, nama kolom, atau definisi antrian tidak jelas, tulis "perlu konfirmasi" dan berhenti bertanya ke user.
 7. Setelah tahap selesai: jalankan lint (dan type-check hanya jika proyek memang punya konfigurasinya), lalu ringkas file yang diubah dan cara mengujinya.
 8. Semua teks tampilan untuk user memakai Bahasa Indonesia.
-9. **Dokumen acuan proyek** (file docs/SOP/PRD/kontrak API yang sudah ada di repo) tidak boleh diubah, ditimpa, atau dihapus oleh agent. Jika rencana ini bertentangan dengan dokumen acuan (alur status, nama role, definisi antrian, konvensi API, struktur folder, aturan penamaan), **jangan memilih sendiri**. Catat konflik secara spesifik (kutip nama file dan bagian dokumennya), lalu berhenti dan tanyakan ke user. Dokumen acuan dan kode yang sudah berjalan bisa saling berbeda; perbedaan itu juga dilaporkan, bukan diselesaikan sendiri oleh agent.
+9. **Dokumen acuan proyek** (file docs/SOP/PRD/kontrak API yang sudah ada di repo) tidak boleh diubah, ditimpa, atau dihapus oleh agent. Jika rencana ini bertentangan dengan dokumen acuan (alur status, nama role, definisi antrian, konvensi API, struktur folder, aturan penamaan), **jangan memilih sendiri**. Catat konflik secara spesifik (kutip nama file dan bagian dokumennya), lalu berhenti dan tanyakan ke user. Dokumen acuan dan kode yang sudah berjalan bisa saling berbeda; perbedaan itu juga dilaporkan, bukan diputuskan sendiri oleh agent.
 10. File baru yang dibuat agent tidak boleh memakai nama yang sudah ada di repo. Periksa dulu sebelum membuat file.
 11. Jangan mengubah `prisma/schema.prisma`; jangan membuat, mengubah, atau menghapus file migrasi; jangan menjalankan perintah `prisma migrate` atau `prisma db push`. Satu-satunya cara menyentuh database adalah `npm test` di backend (database sementara). Kebutuhan indeks hanya dicatat dan dibahas di Tahap I, menunggu persetujuan user.
 
@@ -165,6 +165,24 @@ Tambahkan `countKey` pada item sidebar “Verifikasi Pembayaran”. Badge merah 
 Jangan mengubah endpoint/list pembayaran. List saat ini hanya memfilter `PAID` (dan tetap dapat bersifat global untuk akun multi-role), sedangkan badge di-scope ke assignment user aktif; selisih tersebut diketahui dan diterima. Tes unit di `tests/unit/queue.test.js` harus memastikan key baru, scoping memakai `user.id`, dan role lain tidak terpengaruh.
 
 ## TAHAP D: Role penerbit
+
+Item `PENERBIT` yang dikerjakan:
+
+- “Permohonan Saya” — key `publisher_revision_pending`. Badge menghitung seluruh registrasi berstatus `REVISION_REQUIRED` ditambah `PHYSICAL_HANDOVER_CORRECTION_REQUIRED`, tanpa filter `revision_source`, karena beberapa jalur tidak mengisinya atau menulis nilai lain. Semua jenis revisi digabung dalam satu angka. `DRAFT` dan `AWAITING_PAYMENT` tidak masuk badge ini.
+- “Tagihan” — key `publisher_billing_unpaid`. Badge mengikuti tab “Menunggu Bayar”, yaitu pembayaran berstatus `UNPAID`. Tagihan dengan status `EXPIRED` tidak masuk; tagihan yang masih `UNPAID` tetap masuk meskipun `expires_at` sudah lewat.
+- “Beranda”, “Permohonan Tanda Tashih Baru”, dan “Arsip Dokumen” tidak diberi badge.
+
+Satu naskah menunggu bayar hanya dihitung di “Tagihan”, bukan “Permohonan Saya”. Badge “Permohonan Saya” memang berbeda dari angka tab “Perlu Tindakan”: tab tersebut mencakup segmen `PUBLISHER_ACTIONS` yang lebih luas, termasuk `DRAFT` dan `AWAITING_PAYMENT`. Ini discrepancy yang diketahui dan disengaja.
+
+1. Tambahkan hanya entri `PENERBIT` dengan key di atas ke `queue.config.js`; jangan mengubah entri role lain.
+2. Count revisi memakai `Registration.count()` dan count tagihan memakai `PaymentRecord.count()`. Ambil `publisher_id` dari user penerbit terautentikasi dan role aktif `PENERBIT`; jangan menerima ID penerbit dari parameter client.
+3. Gunakan kembali scoping/filter list yang memang sama. Segmen `PUBLISHER_ACTIONS` tidak bisa dipakai mentah untuk count revisi karena memasukkan `DRAFT`/`AWAITING_PAYMENT` dan tidak membatasi sumber revisi. Definisikan filter count revisi secara eksplisit; jangan mengubah endpoint list.
+4. Count menghitung seluruh baris yang cocok, tanpa paginasi maupun pencarian. Tidak ditemukan jalur transisi aplikasi yang sah yang menghasilkan `UNPAID` bersamaan dengan status revisi; kemungkinan kombinasi tersebut dicatat sebagai discrepancy yang diketahui, tanpa mengubah atau membersihkan data.
+5. Arahkan “Permohonan Saya” ke tampilan “Perlu Tindakan” dan “Tagihan” ke tab “Menunggu Bayar”. Ambil ulang counts setelah kirim perbaikan, konfirmasi pembayaran, kirim permohonan, dan saat ganti peran.
+6. Tambahkan tes unit di `tests/unit/queue.test.js` (import melalui `../../src/...`) untuk key, scope penerbit, isolasi penerbit lain, dan memastikan `AWAITING_PAYMENT` tidak dihitung pada “Permohonan Saya”.
+
+Jangan menyentuh Prisma/schema/migrasi dan jangan mengubah endpoint list. Laporkan hasil `npm test` (backend), tes frontend, dan `npm run build`, beserta discrepancy yang diketahui. Berhenti setelah Tahap D; jangan membuat commit.
+
 ## TAHAP E: Role pentashih
 ## TAHAP F: Role kepala
 ## TAHAP G: Role distributor

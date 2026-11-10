@@ -1,22 +1,124 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileText,
   Eye,
   Download,
   Printer,
+  CheckCircle2,
+  ShieldCheck,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  ArrowDown,
 } from 'lucide-react';
 import { fileApi } from '@/api/file.api';
 import { Button } from '@/components/ui/Button';
 import { DocumentArchive } from '@/components/common/DocumentArchive';
 import { PrintingReportSection } from './PrintingReportSection';
+import { PublisherSurveyDialog } from '@/features/registrations/PublisherSurveyDialog';
+import { showToast } from '@/components/ui/toast';
 
 export function PublisherOfficialDocsTab({
   data,
   setPreviewFile,
   setShowReceipt,
 }) {
+  const issuedStt = data.official_documents?.find(
+    (d) => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED'
+  );
+  const isSttIssued = Boolean(issuedStt) || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+
+  // Backend menolak unduhan STT (409) selama survei belum terisi; tampilkan pop-up survei lalu ulangi unduhan.
+  const downloadStt = () => fileApi.downloadDocument(issuedStt.id, `${issuedStt.document_no || 'STT-LPMQ'}.pdf`)
+    .catch((err) => (err.status === 409 && /survei/i.test(err.message) ? setSurveyOpen(true) : showToast(err.message, 'danger')));
+
+  const scrollToPrintingReport = () => {
+    const el = document.getElementById('printing-report-section');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="space-y-6">
+      {/* Banner Ucapan Selamat & Download STT Resmi (Paket B-18) */}
+      {isSttIssued && (
+        <div className="rounded-2xl border border-civic-successLine bg-civic-successSoft/30 p-6 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-3.5">
+              <div className="p-3 bg-brand-fill text-white rounded-xl shadow-xs shrink-0 mt-0.5">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-civic-successSoft text-civic-success border border-civic-successLine">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Surat Tanda Tashih Resmi Diterbitkan
+                </div>
+                <h2 className="text-lg font-black text-ink">
+                  Selamat! Naskah Anda Telah Resmi Memperoleh Tanda Tashih
+                </h2>
+                <p className="text-xs text-ink-muted max-w-2xl leading-relaxed">
+                  Mushaf Al-Qur'an ini telah dinyatakan sah dan memenuhi standar tashih LPMQ Kementerian Agama Republik Indonesia. Dokumen tanda tashih resmi telah dilengkapi kode QR verifikasi publik dan berkekuatan hukum penuh.
+                </p>
+              </div>
+            </div>
+
+            {issuedStt && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={downloadStt}
+                className="font-bold shrink-0 shadow-xs flex items-center gap-2"
+              >
+                <ShieldCheck className="w-4 h-4 text-brand-100" />
+                <span>Unduh STT Resmi (PDF)</span>
+              </Button>
+            )}
+          </div>
+
+          {issuedStt && (
+            <div className="flex flex-wrap items-center gap-4 pt-3 border-t border-civic-successLine text-xs text-ink-muted">
+              <div>
+                Nomor Dokumen: <strong className="font-mono text-ink">{issuedStt.document_no}</strong>
+              </div>
+              <span>•</span>
+              <div>
+                Tanggal Terbit: <strong className="text-ink">{issuedStt.issued_at ? new Date(issuedStt.issued_at).toLocaleDateString('id-ID') : '-'}</strong>
+              </div>
+              <span>•</span>
+              <div>
+                Masa Berlaku: <strong className="text-ink">{issuedStt.valid_until ? new Date(issuedStt.valid_until).toLocaleDateString('id-ID') : '3 Tahun'}</strong>
+              </div>
+            </div>
+          )}
+
+          {/* Kartu Peringatan Kewajiban 5 Eksemplar Fisik (Batas Waktu: 30 Hari Kalender) */}
+          <div className="p-4 bg-white/80 border border-civic-warningLine rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-ink font-bold block">
+                  Kewajiban Pengiriman 5 Eksemplar Fisik (Batas Waktu: 30 Hari Kalender)
+                </strong>
+                <span className="text-ink-muted text-[11px] block mt-0.5">
+                  Penerbit wajib mengirimkan 5 eksemplar cetak fisik hasil penerbitan dan mengisi pelaporan realisasi oplah ke LPMQ dalam waktu 30 hari kalender sejak STT terbit.
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={scrollToPrintingReport}
+              className="text-xs font-semibold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft shrink-0"
+            >
+              <ArrowDown className="w-3.5 h-3.5 mr-1" />
+              Isi Laporan Cetak
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Bagian 1: Dokumen Permohonan Penerbit */}
       <section className="rounded-xl border border-line bg-white p-5 space-y-4 shadow-2xs">
         <div className="border-b border-line pb-3">
@@ -186,8 +288,17 @@ export function PublisherOfficialDocsTab({
       </section>
       {/* Bagian 4: Laporan Realisasi Pencetakan & Penyerahan 5 Eksemplar (U-16 / B-10) */}
       {(data.official_documents?.some(d => d.document_type === 'SURAT_TANDA_TASHIH' && d.status === 'ISSUED') || ['STT_ISSUED', 'DOCUMENTATION_IN_PROGRESS', 'COMPLETED'].includes(data.status)) && (
-        <PrintingReportSection registrationId={data.id} isPublisher={true} />
+        <div id="printing-report-section">
+          <PrintingReportSection registrationId={data.id} isPublisher={true} />
+        </div>
       )}
+
+      <PublisherSurveyDialog
+        registrationId={data.id}
+        isOpen={surveyOpen}
+        onClose={() => setSurveyOpen(false)}
+        onCompleted={() => { setSurveyOpen(false); downloadStt(); }}
+      />
     </div>
   );
 }

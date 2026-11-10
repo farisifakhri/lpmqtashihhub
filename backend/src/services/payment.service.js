@@ -251,13 +251,12 @@ export const getRegistrationPayment = async (registrationId, user) => {
   return getPaymentDetail(payment.id, user);
 };
 
-export const listPayments = async (query, user) => {
+// Filter antrean pembayaran sesuai cakupan peran; dipakai bersama oleh daftar antrean dan badge sidebar.
+export const buildPaymentWhere = (query, user) => {
   const isHead = user.roles.includes('KEPALA_LPMQ');
   const isAdmin = user.roles.includes('SUPERADMIN');
   const isVerifier = user.roles.includes('VERIFIKATOR');
   const isOwnerPublisher = user.roles.includes('PENERBIT');
-
-  const { page, limit, skip } = queuePagination(query);
 
   const where = {};
   if (isOwnerPublisher && !isAdmin) {
@@ -279,6 +278,13 @@ export const listPayments = async (query, user) => {
       { registration: { publisher: { legal_name: { contains: query.search } } } },
     ];
   }
+  return where;
+};
+
+export const listPayments = async (query, user) => {
+  const isOwnerPublisher = user.roles.includes('PENERBIT');
+  const { page, limit, skip } = queuePagination(query);
+  const where = buildPaymentWhere(query, user);
 
   const [total, items] = await Promise.all([
     prisma.paymentRecord.count({ where }),

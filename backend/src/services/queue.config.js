@@ -72,8 +72,41 @@ const verifierQueues = [
   },
 ];
 
+const getPublisherId = user => {
+  if (!user?.publisherId) {
+    const error = new Error('Akun penerbit belum terhubung ke profil penerbit.');
+    error.statusCode = 403;
+    throw error;
+  }
+  return user.publisherId;
+};
+
+const publisherQueues = [
+  {
+    key: 'publisher_revision_pending',
+    model: 'registration',
+    sidebarItem: 'Permohonan Saya',
+    tab: 'Perlu Tindakan (revisi saja)',
+    buildWhere: user => ({
+      publisher_id: getPublisherId(user),
+      status: { in: ['REVISION_REQUIRED', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED'] },
+    }),
+  },
+  {
+    key: 'publisher_billing_unpaid',
+    model: 'paymentRecord',
+    sidebarItem: 'Tagihan',
+    tab: 'Menunggu Bayar (UNPAID)',
+    buildWhere: user => ({
+      status: 'UNPAID',
+      registration: { publisher_id: getPublisherId(user) },
+    }),
+  },
+];
+
 export const QUEUE_CONFIG = {
   ADMIN_INTERNAL: adminQueues,
   SUPERADMIN: adminQueues,
   VERIFIKATOR: verifierQueues,
+  PENERBIT: publisherQueues,
 };
