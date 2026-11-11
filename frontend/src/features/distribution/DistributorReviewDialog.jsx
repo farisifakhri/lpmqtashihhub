@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registrationApi } from '@/api/registration.api';
 import { tashihApi } from '@/api/tashih.api';
+import { fileApi } from '@/api/file.api';
+import { showToast } from '@/components/ui/toast';
+
+// Berkas privat butuh header token, jadi tidak bisa lewat <a href> biasa
+const downloadFile = (id, name) => fileApi.downloadPrivateFile(id, name)
+  .catch((err) => showToast(err.message || 'Gagal mengunduh berkas.', 'error'));
 import { Button } from '@/components/ui/Button';
 import {
   CheckCircle2,
@@ -348,15 +354,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         )}
                         {Boolean(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)) && (
                           <div className="pt-1.5 flex items-center gap-2">
-                            <a
-                              href={`/api/v1/uploads/${a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1]}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            <button
+                              type="button"
+                              onClick={() => downloadFile(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1], `Rekap-Internal-${a.assignee?.name || 'Pentashih'}.pdf`)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
                             >
                               <FileText className="w-3.5 h-3.5 text-brand-700" />
                               <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
-                            </a>
+                            </button>
                             <span className="text-xs text-ink-muted">Kerahasiaan Internal</span>
                           </div>
                         )}
@@ -416,15 +421,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                           <div className="pt-1 flex flex-wrap items-center justify-between gap-2 border-t border-line/60">
                             <span className="text-[11px] text-ink-muted font-semibold">2. Dokumen Rekap Perbaikan Penerbit:</span>
                             {pubRecap?.recap_file_id ? (
-                              <a
-                                href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                              <button
+                                type="button"
+                                onClick={() => downloadFile(pubRecap.recap_file_id, `Rekap-Revisi-Penerbit-Ronde-${roundNum}.pdf`)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
                               >
                                 <FileText className="w-3.5 h-3.5 text-brand-700" />
                                 <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
-                              </a>
+                              </button>
                             ) : (
                               <span className="text-xs text-civic-warning italic">Penerbit belum mengunggah berkas rekapitulasi untuk ronde ini</span>
                             )}
