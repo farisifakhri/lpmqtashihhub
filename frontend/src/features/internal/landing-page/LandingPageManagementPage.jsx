@@ -27,6 +27,7 @@ import { regulationApi } from '@/api/regulation.api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { InformationGuideManagement } from './InformationGuideManagement';
 import { ServiceDocumentManagement } from './ServiceDocumentManagement';
+import { ComplaintManagement } from '@/features/complaints/ComplaintManagement';
 
 const CATEGORIES = [
   'Ketentuan Pentashihan',
@@ -83,10 +84,10 @@ const INFORMATION_SUBMENUS = [
   },
 ];
 
+// Lacak Pengaduan sengaja tidak ada di sini: halaman publik untuk pengadu.
 const COMPLAINT_SUBMENUS = [
-  { id: 'saluran-pengaduan', label: 'Saluran Pengaduan Masyarakat' },
-  { id: 'cek-status-laporan', label: 'Cek Status Laporan Naskah' },
-  { id: 'kontak-bantuan', label: 'Kontak Pusat Bantuan LPMQ' },
+  { id: 'kesalahan-cetak', label: "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an", type: 'KESALAHAN_CETAK' },
+  { id: 'pelayanan', label: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar', type: 'PELAYANAN' },
 ];
 
 export const LandingPageManagementPage = () => {
@@ -94,7 +95,7 @@ export const LandingPageManagementPage = () => {
 
   const [activeMainMenu, setActiveMainMenu] = useState('informasi');
   const [activeInformationSubmenu, setActiveInformationSubmenu] = useState('regulasi');
-  const [activeComplaintSubmenu, setActiveComplaintSubmenu] = useState('saluran-pengaduan');
+  const [activeComplaintSubmenu, setActiveComplaintSubmenu] = useState('kesalahan-cetak');
 
   // Data states
   const [regulations, setRegulations] = useState([]);
@@ -489,7 +490,11 @@ export const LandingPageManagementPage = () => {
         </nav>
       )}
 
-      {activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop', 'siaran-pers', 'unduh-dokumen'].includes(activeInformationSubmenu) ? (
+      {activeMainMenu === 'pengaduan' && (
+        <ComplaintManagement type={COMPLAINT_SUBMENUS.find((item) => item.id === activeComplaintSubmenu)?.type || 'KESALAHAN_CETAK'} />
+      )}
+
+      {activeMainMenu !== 'pengaduan' && (activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop', 'siaran-pers', 'unduh-dokumen'].includes(activeInformationSubmenu)) ? (
         <div className="rounded-2xl border border-line bg-surface p-8 sm:p-12 text-center space-y-3">
           <div className="inline-flex p-3 rounded-full bg-surface-subtle text-ink-muted">
             <Sparkles className="h-6 w-6" />

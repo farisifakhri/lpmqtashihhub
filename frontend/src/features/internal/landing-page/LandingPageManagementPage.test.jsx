@@ -6,6 +6,7 @@ import * as AuthContext from '@/features/auth/AuthContext';
 import { regulationApi } from '@/api/regulation.api';
 import { informationGuideApi } from '@/api/information-guide.api';
 import { serviceDocumentApi } from '@/api/service-document.api';
+import { complaintApi } from '@/api/complaint.api';
 
 const informationSubmenus = [
   "Regulasi Penerbit Mushaf Al-Qur'an",
@@ -35,6 +36,12 @@ describe('LandingPageManagementPage navigation', () => {
     vi.spyOn(informationGuideApi, 'listAdmin').mockResolvedValue({
       success: true,
       data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+    });
+    vi.spyOn(complaintApi, 'listAdmin').mockResolvedValue({
+      success: true,
+      data: [],
+      counts: {},
       pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
     });
     vi.spyOn(serviceDocumentApi, 'listAdmin').mockResolvedValue({
@@ -90,13 +97,18 @@ describe('LandingPageManagementPage navigation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Pengaduan' }));
     const complaintNavigation = within(screen.getByRole('navigation', { name: 'Submenu Pengaduan' }));
+    // Lacak Pengaduan adalah halaman publik, bukan menu pengelolaan
     expect(complaintNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
-      'Saluran Pengaduan Masyarakat',
-      'Cek Status Laporan Naskah',
-      'Kontak Pusat Bantuan LPMQ',
+      "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an",
+      'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar',
     ]);
-    fireEvent.click(complaintNavigation.getByRole('button', { name: 'Cek Status Laporan Naskah' }));
-    expect(screen.getByRole('heading', { name: 'Cek Status Laporan Naskah' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an" })).toBeInTheDocument();
+    expect(screen.queryByText('Segera Hadir')).not.toBeInTheDocument();
+    await waitFor(() => expect(complaintApi.listAdmin).toHaveBeenCalledWith(expect.objectContaining({ type: 'KESALAHAN_CETAK' })));
+    fireEvent.click(complaintNavigation.getByRole('button', { name: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar' }));
+    expect(screen.getByRole('heading', { name: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar' })).toBeInTheDocument();
+    expect(await screen.findByRole('columnheader', { name: 'Nomor Pendaftaran Mushaf' })).toBeInTheDocument();
+    await waitFor(() => expect(complaintApi.listAdmin).toHaveBeenCalledWith(expect.objectContaining({ type: 'PELAYANAN' })));
 
     fireEvent.click(screen.getByRole('button', { name: 'Informasi' }));
     fireEvent.click(screen.getByRole('button', { name: informationSubmenus[0] }));
