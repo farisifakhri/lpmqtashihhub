@@ -3,6 +3,7 @@ import {
   buildMasterIntakeQueueWhere,
   buildUnassignedVerificationWhere,
   buildVerificationAssignmentsWhere,
+  buildMyAssignmentsWhere,
 } from './queue-filters.js';
 
 const adminQueues = [
@@ -104,9 +105,23 @@ const publisherQueues = [
   },
 ];
 
+const pentashihQueues = [
+  {
+    key: 'tashih_active',
+    model: 'assignment',
+    sidebarItem: 'Tugas Saya',
+    tab: 'Tugas Sidang Awal + Tashih Revisi & Dumi (aktif)',
+    buildWhere: user => ({
+      ...buildMyAssignmentsWhere(user, { status: 'ACTIVE' }),
+      reviews: { none: {} },
+    }),
+  },
+];
+
 export const QUEUE_CONFIG = {
   ADMIN_INTERNAL: adminQueues,
   SUPERADMIN: adminQueues,
   VERIFIKATOR: verifierQueues,
   PENERBIT: publisherQueues,
+  PENTASHIH: pentashihQueues,
 };

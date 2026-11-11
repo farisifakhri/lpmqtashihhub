@@ -5,6 +5,19 @@ const ACTIVE_VERIFICATION_ASSIGNMENT_STATUSES = [
   'WAITING_SIGNATURE',
   'READY_TO_SEND',
 ];
+const ACTIVE_TASHIH_ASSIGNMENT_STATUSES = ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'];
+
+export function buildMyAssignmentsWhere(user, query = {}) {
+  const where = { assignee_id: user.id };
+  if (query.status === 'COMPLETED') {
+    where.status = 'COMPLETED';
+  } else if (query.status === 'ACTIVE') {
+    where.status = { in: ACTIVE_TASHIH_ASSIGNMENT_STATUSES };
+  } else if (query.status) {
+    where.status = query.status;
+  }
+  return where;
+}
 
 export function buildAdminPublisherRegistrationWhere({ status, search } = {}) {
   const where = {};

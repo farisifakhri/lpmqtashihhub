@@ -178,8 +178,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/publisher/revisions",
                             icon: <AlertTriangle className="w-4 h-4 shrink-0 text-civic-warning" />,
                             description: "Naskah yang dikembalikan untuk revisi",
-                            badge: "Revisi",
-                            badgeVariant: "danger",
+                            countKey: "publisher_revision_pending",
                         },
                         {
                             label: "Pendaftaran Naskah Baru",
@@ -196,7 +195,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Tagihan & Pembayaran",
                             path: "/publisher/billing?tab=UNPAID",
-                            badgeKey: "publisher_billing",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & bukti bayar",
                             countKey: "publisher_billing_unpaid",
@@ -321,9 +319,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Sidang Pentashihan",
                             path: "/internal/tashih",
-                            badgeKey: ["tashih_initial", "tashih_revision"],
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & tanda baca",
+                            countKey: "tashih_active",
                         },
                         {
                             label: "Arsip Dokumen",

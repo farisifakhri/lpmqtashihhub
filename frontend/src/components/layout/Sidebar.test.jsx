@@ -158,11 +158,16 @@ describe('Badge notifikasi sidebar', () => {
     expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(3);
   });
 
-  it('menjumlahkan antrean sidang awal dan revisi pada menu pentashih', async () => {
-    mockBadges({ tashih_initial: 2, tashih_revision: 3 });
+  it('menampilkan hitungan aktif gabungan pada menu pentashih', async () => {
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { tashih_active: 5 },
+      error: null,
+    });
     show('PENTASHIH');
     const link = screen.getByRole('link', { name: /Sidang Pentashihan/ });
-    expect((await within(link).findByTestId('sidebar-pending-badge')).textContent).toContain('5');
+    expect(await within(link).findByLabelText('5 entri antrean menunggu tindakan')).toHaveTextContent('5');
+    expect(link.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    countsSpy.mockRestore();
   });
 
   it('memuat ulang badge setelah ada perubahan data', async () => {
@@ -188,24 +193,35 @@ describe('Badge notifikasi sidebar', () => {
 describe('Publisher navigation', () => {
   it('links to revision actions and unpaid billing, with separate live badges', () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
-      currentUser: { name: 'Penerbit', role: 'PENERBIT', roles: ['PENERBIT'] },
+      currentUser: { id: 'publisher-user', name: 'Penerbit', role: 'PENERBIT', roles: ['PENERBIT'] },
     });
     const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
       counts: { publisher_revision_pending: 1, publisher_billing_unpaid: 100 },
       error: null,
     });
-    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+    const legacyBadgesSpy = vi.spyOn(notificationApi, 'getSidebarBadges').mockResolvedValue({
+      data: { publisher_billing: 1 },
+    });
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
 
     const registrations = screen.getByRole('link', { name: /Permohonan Saya/ });
+    const revisions = screen.getByRole('link', { name: /Perbaikan Naskah/ });
     const billing = screen.getByRole('link', { name: /Tagihan/ });
     expect(registrations).toHaveAttribute('href', '/publisher/registrations?view=actions');
+    expect(revisions).toHaveAttribute('href', '/publisher/revisions');
     expect(billing).toHaveAttribute('href', '/publisher/billing?tab=UNPAID');
     expect(registrations).toHaveTextContent('1');
+    expect(revisions).toHaveTextContent('1');
+    expect(revisions.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    expect(revisions).not.toHaveTextContent('Revisi');
     expect(billing).toHaveTextContent('99+');
-    for (const label of ['Beranda', 'Permohonan Tanda Tashih Baru', 'Arsip Dokumen']) {
-      expect(screen.getByRole('link', { name: new RegExp(label) }).querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
+    expect(billing.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    for (const path of ['/publisher', '/publisher/new-registration', '/publisher/documents']) {
+      expect(document.querySelector(`a[href="${path}"]`)?.querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
     }
+    unmount();
     countsSpy.mockRestore();
+    legacyBadgesSpy.mockRestore();
   });
 });
 

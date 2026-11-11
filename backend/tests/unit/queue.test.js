@@ -9,6 +9,7 @@ import {
   buildMasterIntakeQueueWhere,
   buildUnassignedVerificationWhere,
   buildVerificationAssignmentsWhere,
+  buildMyAssignmentsWhere,
 } from '../../src/services/queue-filters.js';
 import { requireActiveRole } from '../../src/middlewares/active-role.middleware.js';
 import { authenticate } from '../../src/middlewares/auth.middleware.js';
@@ -209,6 +210,40 @@ test('publisher queues scope revisions and unpaid bills to the authenticated pub
 test('publisher queue counts reject accounts without a linked publisher', () => {
   const queue = QUEUE_CONFIG.PENERBIT.find(({ key }) => key === 'publisher_revision_pending');
   assert.throws(() => queue.buildWhere({ id: 'publisher-user-1', publisherId: null }), { statusCode: 403 });
+});
+
+test('pentashih active count matches actionable assignments across both stages and all pages', () => {
+  const pentashih = { id: 'pentashih-1', roles: ['PENTASHIH'] };
+  const queue = QUEUE_CONFIG.PENTASHIH.find(({ key }) => key === 'tashih_active');
+  const countWhere = queue.buildWhere(pentashih);
+
+  assert.deepEqual(QUEUE_CONFIG.PENTASHIH.map(({ key, tab }) => [key, tab]), [
+    ['tashih_active', 'Tugas Sidang Awal + Tashih Revisi & Dumi (aktif)'],
+  ]);
+  assert.equal(queue.model, 'assignment');
+  assert.deepEqual(buildMyAssignmentsWhere(pentashih, { status: 'ACTIVE' }), {
+    assignee_id: 'pentashih-1',
+    status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] },
+  });
+  assert.deepEqual(countWhere, {
+    assignee_id: 'pentashih-1',
+    status: { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] },
+    reviews: { none: {} },
+  });
+
+  const matches = assignment =>
+    assignment.assignee_id === countWhere.assignee_id &&
+    countWhere.status.in.includes(assignment.status) &&
+    assignment.reviews.length === 0;
+  assert.equal(matches({ assignee_id: 'pentashih-1', status: 'ASSIGNED', stage: 'INITIAL', reviews: [] }), true);
+  assert.equal(matches({ assignee_id: 'pentashih-1', status: 'OVERDUE', stage: 'REVISION', reviews: [] }), true);
+  assert.equal(matches({ assignee_id: 'pentashih-1', status: 'IN_PROGRESS', stage: 'DUMMY', reviews: [] }), true);
+  assert.equal(matches({ assignee_id: 'pentashih-1', status: 'ASSIGNED', stage: 'INITIAL', reviews: [{ id: 'review-1' }] }), false);
+  assert.equal(matches({ assignee_id: 'pentashih-2', status: 'ASSIGNED', stage: 'INITIAL', reviews: [] }), false);
+  assert.equal(matches({ assignee_id: 'pentashih-1', status: 'COMPLETED', stage: 'INITIAL', reviews: [] }), false);
+
+  assert.equal(QUEUE_CONFIG.PENERBIT.some(({ key }) => key === 'tashih_active'), false);
+  assert.equal(QUEUE_CONFIG.SUPERADMIN.some(({ key }) => key === 'tashih_active'), false);
 });
 
 test('active role middleware accepts only a role owned by the authenticated user', () => {
