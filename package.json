@@ -13,9 +13,13 @@
     "test": "concurrently \"npm run test:backend\" \"npm run test:frontend\"",
     "test:backend": "npm --prefix backend test",
     "test:frontend": "npm --prefix frontend test",
-    "prisma:studio": "npm --prefix backend run prisma:studio"
+    "prisma:studio": "npm --prefix backend run prisma:studio",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report e2e/.report"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "concurrently": "^9.2.1",
     "prisma": "7.10.1"
   },

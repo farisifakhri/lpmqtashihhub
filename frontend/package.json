@@ -34,6 +34,7 @@
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@vitejs/plugin-react": "^6.1.2",
