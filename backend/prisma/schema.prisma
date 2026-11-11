@@ -981,6 +981,21 @@ model OfficialDocument {
   @@map("official_documents")
 }
 
+// Paraf Pemaraf sebelum persetujuan Kepala LPMQ, dan keputusan reviu distributor yang menunggu paraf.
+model ApprovalParaf {
+  id              String    @id @default(uuid())
+  subject_type    String // VERIFICATION_RESULT, MASTER_LETTER, DISTRIBUTOR_REVIEW
+  subject_id      String
+  pemaraf_id      String? // pemaraf yang ditunjuk / yang membubuhkan paraf
+  requested_by_id String?
+  payload         Json? // keputusan distributor yang ditunda sampai diparaf
+  signed_at       DateTime?
+  created_at      DateTime  @default(now())
+
+  @@unique([subject_type, subject_id])
+  @@map("approval_parafs")
+}
+
 model DocumentSignatory {
   id                     String        @id @default(uuid())
   official_document_id   String
@@ -1090,6 +1105,7 @@ enum RoleCode {
   DOKUMENTATOR
   KEPALA_LPMQ
   PENANDATANGAN
+  PEMARAF
 }
 
 enum UserStatus {

@@ -17,6 +17,7 @@ async function main() {
     { code: 'PENTASHIH', name: 'Pentashih / Pembaca Naskah' },
     { code: 'DOKUMENTATOR', name: 'Dokumentator Mushaf' },
     { code: 'KEPALA_LPMQ', name: 'Kepala LPMQ Kemenag RI' },
+    { code: 'PEMARAF', name: 'Pemaraf (sebelum Kepala LPMQ)' },
   ];
 
   const roles = {};

@@ -5,6 +5,7 @@ import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { logAudit } from './audit.service.js';
 import { emailProvider } from './email-provider.service.js';
+import { withPemaraf } from '../utils/pemaraf.js';
 
 export const login = async ({ email, password, req }) => {
   const normalizedEmail = email ? email.trim().toLowerCase() : '';
@@ -27,7 +28,7 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
-  const roles = user.roles.map((r) => r.role.code);
+  const { roles, isPemaraf } = withPemaraf(user.roles.map((r) => r.role.code));
 
   // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
   if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
@@ -85,6 +86,7 @@ export const login = async ({ email, password, req }) => {
       email: user.email,
       nip: user.nip,
       roles,
+      isPemaraf,
       publisherId: user.publisher ? user.publisher.id : null,
       publisher: user.publisher,
     },

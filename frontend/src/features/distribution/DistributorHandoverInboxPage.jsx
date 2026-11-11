@@ -61,7 +61,8 @@ export const DistributorHandoverInboxPage = () => {
   } = useDistributionQueues(hubStage);
 
   const [assignmentModalId, setAssignmentModalId] = useState(null);
-  const [reviewDialogRegId, setReviewDialogRegId] = useState(null);
+  // ?review=<id> (tautan notifikasi pemaraf) langsung membuka dialog reviu
+  const [reviewDialogRegId, setReviewDialogRegId] = useState(searchParams.get('review'));
   const [revokeTarget, setRevokeTarget] = useState(null);
 
   const [handovers, setHandovers] = useState([]);

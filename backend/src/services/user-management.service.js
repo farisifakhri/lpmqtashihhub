@@ -15,6 +15,7 @@ export const ALL_ROLE_CODES = [
   'PENTASHIH',
   'DOKUMENTATOR',
   'KEPALA_LPMQ',
+  'PEMARAF',
 ];
 
 export const getAvailableRoles = async () => {
@@ -157,7 +158,7 @@ export const createUser = async (data, currentUser, req) => {
   requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
   if (!currentUser.roles.includes('SUPERADMIN')) {
-    const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'PEMARAF'].includes(r));
     if (disallowedRoles.length > 0) {
       fail(403, 'Admin Internal hanya berwenang membuat akun staf operasional (Verifikator, Distributor, Pentashih, Dokumentator, Penerbit).');
     }
@@ -253,12 +254,12 @@ export const updateUser = async (id, data, currentUser, req) => {
 
   if (!currentUser.roles.includes('SUPERADMIN')) {
     const targetRoles = user.roles.map((r) => r.role.code);
-    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'PEMARAF'].includes(r));
     if (hasPrivilegedRole) {
       fail(403, 'Admin Internal tidak memiliki izin untuk mengubah akun administrator atau pimpinan.');
     }
     if (Array.isArray(data.roles)) {
-      const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+      const disallowedRoles = data.roles.filter((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'PEMARAF'].includes(r));
       if (disallowedRoles.length > 0) {
         fail(403, 'Admin Internal tidak berwenang memberikan hak akses administrator atau pimpinan.');
       }
@@ -429,7 +430,7 @@ export const deleteUser = async (id, currentUser, req) => {
 
   if (!currentUser.roles.includes('SUPERADMIN')) {
     const targetRoles = user.roles.map((r) => r.role.code);
-    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'PEMARAF'].includes(r));
     if (hasPrivilegedRole) {
       fail(403, 'Admin Internal tidak memiliki izin untuk menonaktifkan atau menghapus akun administrator atau pimpinan.');
     }
@@ -559,7 +560,7 @@ export const requestPasswordResetForUser = async (id, currentUser, req) => {
 
   if (!currentUser.roles.includes('SUPERADMIN')) {
     const targetRoles = user.roles.map((r) => r.role.code);
-    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ'].includes(r));
+    const hasPrivilegedRole = targetRoles.some((r) => ['SUPERADMIN', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'PEMARAF'].includes(r));
     if (hasPrivilegedRole) {
       fail(403, 'Admin Internal tidak memiliki izin untuk mereset kata sandi akun administrator atau pimpinan.');
     }

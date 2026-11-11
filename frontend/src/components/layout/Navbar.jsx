@@ -113,7 +113,8 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     }
   };
 
-  const roleConfig = getRoleConfig(role);
+  // Pemaraf memakai layar Kepala LPMQ, tetapi tetap dilabeli sebagai Pemaraf
+  const roleConfig = currentUser?.isPemaraf && role === 'KEPALA_LPMQ' ? { ...getRoleConfig(role), label: 'Pemaraf' } : getRoleConfig(role);
 
   // Dynamic breadcrumb mapping (clean hierarchy)
   const getBreadcrumb = (pathname) => {

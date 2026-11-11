@@ -34,6 +34,7 @@ const ROLE_OPTIONS = [
   { code: 'PENTASHIH', label: 'Pentashih', desc: 'Penelaahan lafazh, ayat, rasm, dan harakat' },
   { code: 'DOKUMENTATOR', label: 'Dokumentator', desc: 'Pemberkasan eksemplar pasca-STT' },
   { code: 'KEPALA_LPMQ', label: 'Kepala LPMQ', desc: 'Disposisi penugasan dan pengesahan STT' },
+  { code: 'PEMARAF', label: 'Pemaraf', desc: 'Akses setara Kepala; membubuhkan paraf sebelum persetujuan Kepala' },
 ];
 
 export const UserManagementPage = () => {
@@ -278,6 +279,8 @@ export const UserManagementPage = () => {
         return { label: 'Dokumentator', className: 'bg-surface-subtle text-ink border-line' };
       case 'KEPALA_LPMQ':
         return { label: 'Kepala LPMQ', className: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
+      case 'PEMARAF':
+        return { label: 'Pemaraf', className: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine' };
       default:
         return { label: roleCode, className: 'bg-surface-subtle text-ink border-line' };
     }

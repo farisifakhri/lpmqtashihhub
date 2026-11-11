@@ -18,6 +18,7 @@ import {
   saveSecurePublisherDocument,
   readSecurePublisherDocument,
 } from './secure-document.service.js';
+import { requireParaf, recordParaf, clearParaf } from './paraf.service.js';
 import {
   createMasterRequestSchema,
   MASTER_MUSHAF_TYPES,
@@ -447,6 +448,7 @@ export async function submitLetterForSignature(id, { perihal, isi }, user, req) 
       processed_at: new Date(),
       processed_by_id: user.id,
     });
+    await clearParaf(tx, 'MASTER_LETTER', id);
     await audit(tx, user, current.status === 'DIAJUKAN' ? 'MASTER_LETTER_SUBMITTED_FOR_TTE' : 'MASTER_LETTER_REVISED',
       'MasterMushafRequest', id, { letter_number: letterNumber, perihal }, req, { status: current.status });
   });
@@ -490,7 +492,7 @@ export async function getInternalLetterPdf(id) {
 // ---------------------------------------------------------------------------
 
 export async function listLettersForSignature() {
-  return prisma.masterMushafRequest.findMany({
+  const letters = await prisma.masterMushafRequest.findMany({
     where: { status: { in: ['MENUNGGU_TTE', 'DITANDATANGANI', 'DIKIRIM'] } },
     select: {
       id: true,
@@ -511,6 +513,12 @@ export async function listLettersForSignature() {
     orderBy: [{ letter_drafted_at: 'desc' }],
     take: 100,
   });
+  const parafs = await prisma.approvalParaf.findMany({
+    where: { subject_type: 'MASTER_LETTER', subject_id: { in: letters.map(l => l.id) }, signed_at: { not: null } },
+    select: { subject_id: true, signed_at: true },
+  });
+  const parafAt = new Map(parafs.map(p => [p.subject_id, p.signed_at]));
+  return letters.map(l => ({ ...l, paraf_signed_at: parafAt.get(l.id) || null }));
 }
 
 export async function signMasterLetter(id, user, req) {
@@ -521,6 +529,12 @@ export async function signMasterLetter(id, user, req) {
   if (current.letter_drafted_by_id === user.id) {
     fail(403, 'Penyusun surat tidak dapat menandatangani surat yang disusunnya sendiri.');
   }
+  // Pemaraf membubuhkan paraf lebih dulu; TTE tetap oleh Kepala LPMQ.
+  if (user.isPemaraf) {
+    await prisma.$transaction(tx => recordParaf(tx, 'MASTER_LETTER', id, user, req));
+    return { id, status: current.status, letter_number: current.letter_number, paraf_only: true };
+  }
+  await requireParaf(prisma, 'MASTER_LETTER', id);
   const signedAt = new Date();
   const signatureHash = computeLetterHash(current, user.id, signedAt);
   await prisma.$transaction(async (tx) => {

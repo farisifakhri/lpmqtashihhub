@@ -41,7 +41,8 @@ export const SignatureCenterPage = () => {
 
   const isHead = currentUser?.roles?.includes('KEPALA_LPMQ');
   const isVerifier = currentUser?.roles?.includes('VERIFIKATOR');
-  const isTuStaff = currentUser?.roles?.includes('ADMIN_INTERNAL') || currentUser?.roles?.includes('SUPERADMIN');
+  const isPemaraf = Boolean(currentUser?.isPemaraf);
+  const isTuStaff = currentUser?.roles?.includes('ADMIN_INTERNAL') || currentUser?.roles?.includes('SUPERADMIN') || isPemaraf;
   const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN');
 
   const tabParam = searchParams.get('tab') || 'NEED_MY_SIGN';
@@ -245,7 +246,7 @@ export const SignatureCenterPage = () => {
 
         const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted && isDesignated1;
         const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted && isDesignated2 && !isParaf1Signer;
-        const canUserSignHead = (isHead || isSuperadmin) && isSubmittedToTu && isTuComplete && !isCompleted && !isParafSigner;
+        const canUserSignHead = (isHead || isSuperadmin) && !isPemaraf && isSubmittedToTu && isTuComplete && !isCompleted && !isParafSigner;
         const canUserSign = canUserParaf1 || canUserParaf2 || canUserSignHead;
 
         const signatories = [
@@ -313,8 +314,14 @@ export const SignatureCenterPage = () => {
         manuscript_title: letter.mushaf_type_label,
         publisher_name: letter.publisher?.legal_name || letter.institution,
         isAssignedToMe: false,
-        canUserSign: (isHead || isSuperadmin) && letter.status === 'MENUNGGU_TTE' && !draftedByMe,
+        canUserSign: (isHead || isSuperadmin) && letter.status === 'MENUNGGU_TTE' && !draftedByMe && !(isPemaraf && letter.paraf_signed_at),
         signatories: [
+          ...(letter.paraf_signed_at || isPemaraf ? [{
+            role_label: 'Pemaraf',
+            name: 'Pemaraf',
+            status: letter.paraf_signed_at ? 'SIGNED' : 'PENDING',
+            signed_at: letter.paraf_signed_at,
+          }] : []),
           {
             role_label: 'Kepala LPMQ',
             name: letter.signed_by?.name || 'Kepala LPMQ',
@@ -399,7 +406,9 @@ export const SignatureCenterPage = () => {
     try {
       if (signDialogDoc.isMasterLetter) {
         await masterRequestApi.sign(signDialogDoc.id);
-        setSuccessMessage(`Surat persetujuan master ${signDialogDoc.document_no} berhasil ditandatangani dan dikembalikan ke Admin untuk dikirim ke penerbit.`);
+        setSuccessMessage(isPemaraf
+          ? `Paraf dibubuhkan pada surat persetujuan master ${signDialogDoc.document_no}. Surat diteruskan ke Kepala LPMQ untuk ditandatangani.`
+          : `Surat persetujuan master ${signDialogDoc.document_no} berhasil ditandatangani dan dikembalikan ke Admin untuk dikirim ke penerbit.`);
       } else if (signDialogDoc.document_type === 'SURAT_TANDA_TASHIH') {
         await documentationApi.signStt(signDialogDoc.id);
         setSuccessMessage(`Surat Tanda Tashih (STT) ${signDialogDoc.document_no} resmi disahkan dan ditandatangani oleh Kepala LPMQ.`);

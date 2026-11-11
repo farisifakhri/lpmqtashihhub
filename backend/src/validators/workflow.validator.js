@@ -141,6 +141,7 @@ export const distributorReviewSchema = { params, body: z.object({
   outgoing_tracking_no: z.string().trim().max(100).optional(),
   outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
   outgoing_notes: z.string().trim().max(1000).optional(),
+  pemaraf_id: z.string().uuid('Pemaraf tidak valid.').optional(),
 }).strict() };
 
 export const outgoingDispatchSchema = { params, body: z.object({
