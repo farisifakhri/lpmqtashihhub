@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { calculateDueAt } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
+import { buildMyAssignmentsWhere } from './queue-filters.js';
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
   const reg = await registration(tx, id);
@@ -410,14 +411,7 @@ export async function listMyAssignments(user, query = {}) {
   requireRole(user, ['PENTASHIH', 'SUPERADMIN']);
   const page = query.page ?? 1;
   const limit = query.limit ?? 20;
-  const where = { assignee_id: user.id };
-  if (query.status === 'COMPLETED') {
-    where.status = 'COMPLETED';
-  } else if (query.status === 'ACTIVE') {
-    where.status = { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] };
-  } else if (query.status) {
-    where.status = query.status;
-  }
+  const where = buildMyAssignmentsWhere(user, query);
 
   return prisma.assignment.findMany({
     where,

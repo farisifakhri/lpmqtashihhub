@@ -35,6 +35,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { invalidateQueueCounts } from '@/api/queue.api';
 
 function formatWaitingTime(dateString) {
   if (!dateString) return null;
@@ -221,6 +222,7 @@ export const VerifikatorInboxPage = () => {
     setStartingId(assignmentId);
     try {
       await verificationApi.startVerification(assignmentId);
+      invalidateQueueCounts();
       navigate(`/internal/verifications/${assignmentId}`);
     } catch (err) {
       setError(err.message || 'Gagal memulai pemeriksaan.');
@@ -1035,6 +1037,7 @@ export const VerifikatorInboxPage = () => {
           }}
           onSuccess={(newAssignment) => {
             setAssignDialogOpen(false);
+            invalidateQueueCounts();
             const assignedRegId = targetRegistrationForAssign?.id || selectedAssignment?.id;
             setTargetRegistrationForAssign(null);
             const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
@@ -1058,6 +1061,7 @@ export const VerifikatorInboxPage = () => {
           onClose={() => setRevokeDialogOpen(false)}
           onSuccess={() => {
             setRevokeDialogOpen(false);
+            invalidateQueueCounts();
             setSuccessMessage({
               text: 'Penugasan verifikasi berhasil dicabut. Pengajuan dikembalikan ke antrean penugasan.',
             });
@@ -1073,6 +1077,7 @@ export const VerifikatorInboxPage = () => {
           onClose={() => setReassignDialogOpen(false)}
           onSuccess={(res) => {
             setReassignDialogOpen(false);
+            invalidateQueueCounts();
             const docNo = res?.nota_dinas?.document_no || '';
             setSuccessMessage({
               text: `Penugasan berhasil dialihkan${docNo ? ` dengan Disposisi ${docNo}` : ''}.`,

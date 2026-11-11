@@ -717,17 +717,6 @@ export const RegisterPublisherPage = () => {
                                 onSubmit={handleSubmit}
                                 className="p-5 sm:p-7 rounded-2xl bg-surface border border-line shadow-xs space-y-6"
                             >
-                                {/* Alert Error Pesan */}
-                                {error && (
-                                    <div
-                                        role="alert"
-                                        className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn"
-                                    >
-                                        <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                        <span className="leading-relaxed">{error}</span>
-                                    </div>
-                                )}
-
                                 {/* 1. PEMILIHAN JENIS BADAN HUKUM (PT/CV, Yayasan, Lembaga Pemerintah) */}
                                 <div className="space-y-2.5">
                                     <label className="block text-xs font-bold text-ink uppercase tracking-wider">
@@ -1250,6 +1239,15 @@ export const RegisterPublisherPage = () => {
 
                                 {/* TOMBOL SUBMIT PENDAFTARAN */}
                                 <div className="pt-4 border-t border-line space-y-3">
+                                    {error && (
+                                        <div
+                                            role="alert"
+                                            className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-2.5 animate-fadeIn"
+                                        >
+                                            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                            <span className="leading-relaxed">{error}</span>
+                                        </div>
+                                    )}
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}

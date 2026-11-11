@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { PentashihWorkspacePage } from './PentashihWorkspacePage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as TashihApiModule from '@/api/tashih.api';
+import { queueCountsInvalidatedEvent } from '@/api/queue.api';
 
 describe('PentashihWorkspacePage Component', () => {
   const mockAssignments = [
@@ -149,6 +150,8 @@ describe('PentashihWorkspacePage Component', () => {
   });
 
   it('dapat membuka dialog input hasil sidang dan mencatat hasil evaluasi', async () => {
+    const invalidationSpy = vi.fn();
+    window.addEventListener(queueCountsInvalidatedEvent, invalidationSpy);
     render(
       <MemoryRouter>
         <PentashihWorkspacePage />
@@ -184,7 +187,9 @@ describe('PentashihWorkspacePage Component', () => {
         })
       );
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(invalidationSpy).toHaveBeenCalledTimes(1);
     });
+    window.removeEventListener(queueCountsInvalidatedEvent, invalidationSpy);
   });
 
   it('dapat beralih ke tab riwayat selesai', async () => {

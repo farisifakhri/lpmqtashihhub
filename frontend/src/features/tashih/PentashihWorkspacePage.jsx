@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { tashihApi } from '@/api/tashih.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { ReviewForm } from './components/ReviewForm';
 import { AssignmentListPanel } from './components/AssignmentListPanel';
 import { useAssignments } from './hooks/useAssignments';
@@ -166,6 +167,7 @@ export const PentashihWorkspacePage = () => {
         recap_file_id: recapFileId || undefined,
         recap_scope: recapScope,
       });
+      invalidateQueueCounts();
 
       setSuccessMessage(
         `Hasil telaah untuk naskah ${selectedAssignment.registration?.registration_no} berhasil disimpan.`
@@ -176,6 +178,7 @@ export const PentashihWorkspacePage = () => {
       fetchAssignments();
     } catch (err) {
       if (err.status === 409 || err.message?.includes('sudah disimpan')) {
+        invalidateQueueCounts();
         setSuccessMessage(
           `Hasil telaah untuk naskah ${selectedAssignment.registration?.registration_no} sudah tercatat.`
         );

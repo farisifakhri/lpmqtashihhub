@@ -24,9 +24,9 @@ export const PUBLIC_NAV_ITEMS = [
     label: 'Pengaduan',
     href: '#',
     children: [
-      { label: 'Saluran Pengaduan Masyarakat', href: '#' },
-      { label: 'Cek Status Laporan Naskah', href: '#' },
-      { label: 'Kontak Pusat Bantuan LPMQ', href: '#' },
+      { label: "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an", href: '/pengaduan/kesalahan-cetak-mushaf' },
+      { label: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar', href: '/pengaduan/pelayanan-surat-tanda-tashih' },
+      { label: 'Lacak Pengaduan', href: '/pengaduan/lacak' },
     ],
   },
   { label: 'FAQ', href: '#beranda' },
@@ -37,7 +37,7 @@ export const PUBLIC_INFORMATION_NAV_ITEMS = PUBLIC_NAV_ITEMS.map((item) => ({
   href: item.label === 'Informasi' || item.label === 'Pengaduan' ? '#' : item.href.startsWith('/') ? item.href : '/',
   children: item.children?.map((child) => ({
     ...child,
-    href: item.label === 'Informasi' ? child.href : '/',
+    href: item.label === 'Informasi' || item.label === 'Pengaduan' ? child.href : '/',
   })),
 }));
 
