@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { REGISTRATION_SEGMENTS } from './queue-utils.js';
-import { buildVerificationAssignmentWhere, buildUnassignedRegistrationWhere } from './verification-intake.service.js';
+import { buildVerificationAssignmentWhere } from './verification-intake.service.js';
+import { buildUnassignedVerificationWhere } from './queue-filters.js';
 import { buildPaymentWhere } from './payment.service.js';
 import { buildHandoverWhere } from './handover.service.js';
 import { buildRegistrationScopeWhere } from './registration.service.js';
@@ -96,7 +97,7 @@ export const SIDEBAR_BADGES = [
   {
     key: 'verification_need_assignment',
     roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
-    count: () => prisma.registration.count({ where: buildUnassignedRegistrationWhere() }),
+    count: () => prisma.registration.count({ where: buildUnassignedVerificationWhere() }),
   },
   {
     key: 'verification_assigned',

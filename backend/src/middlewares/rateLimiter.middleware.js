@@ -94,6 +94,45 @@ export const masterRequestRateLimiter = rateLimit({
   },
 });
 
+export const complaintSubmitRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 10, // Maksimal 10 pengiriman pengaduan per 15 menit per IP
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak pengaduan dari jaringan Anda. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
+export const complaintTrackRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 30, // Mencegah penebakan kode pengaduan
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak percobaan pelacakan. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
+export const captchaRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 60,
+  skip: shouldSkipRateLimit,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    code: 'RATE_LIMITED',
+    message: 'Terlalu banyak permintaan kode verifikasi. Silakan coba lagi setelah 15 menit.',
+  },
+});
+
 export default {
   authRateLimiter,
   registrationRateLimiter,
@@ -102,4 +141,7 @@ export default {
   publisherRegistrationRateLimiter,
   publisherStatusCheckRateLimiter,
   masterRequestRateLimiter,
+  complaintSubmitRateLimiter,
+  complaintTrackRateLimiter,
+  captchaRateLimiter,
 };

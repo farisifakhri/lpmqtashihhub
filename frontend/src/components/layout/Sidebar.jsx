@@ -39,12 +39,14 @@ import {
     Circle,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useQueueCounts } from "@/features/queue/useQueueCounts";
 import { useSidebarBadges, getBadgeCount, formatBadgeCount } from "./useSidebarBadges";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
     const { currentUser, logout, switchActiveRole } = useAuth();
+    const { counts } = useQueueCounts();
     const navigate = useNavigate();
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
@@ -159,10 +161,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "Permohonan Saya",
-                            path: "/publisher/registrations",
+                            path: "/publisher/registrations?view=actions",
                             badgeKey: "publisher_registrations",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
-                            description: "Seluruh portofolio naskah",
+                            description: "Portofolio naskah & riwayat",
+                            countKey: "publisher_revision_pending",
                         },
                         {
                             label: "Lacak Status & Progres",
@@ -175,8 +178,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/publisher/revisions",
                             icon: <AlertTriangle className="w-4 h-4 shrink-0 text-civic-warning" />,
                             description: "Naskah yang dikembalikan untuk revisi",
-                            badge: "Revisi",
-                            badgeVariant: "danger",
+                            countKey: "publisher_revision_pending",
                         },
                         {
                             label: "Pendaftaran Naskah Baru",
@@ -192,10 +194,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "Tagihan & Pembayaran",
-                            path: "/publisher/billing",
-                            badgeKey: "publisher_billing",
+                            path: "/publisher/billing?tab=UNPAID",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Billing SIMPONI & bukti setor",
+                            description: "Billing SIMPONI & bukti bayar",
+                            countKey: "publisher_billing_unpaid",
                         },
                         {
                             label: "Arsip Dokumen",
@@ -317,9 +319,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Sidang Pentashihan",
                             path: "/internal/tashih",
-                            badgeKey: ["tashih_initial", "tashih_revision"],
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & tanda baca",
+                            countKey: "tashih_active",
                         },
                         {
                             label: "Arsip Dokumen",
@@ -434,6 +436,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badgeKey: "publisher_registrations",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
+                            countKey: "publisher_registration_pending",
                         },
                         {
                             label: "2. Intake Master Fisik",
@@ -441,11 +444,18 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badgeKey: "master_intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
-                            badge: "Intake",
+                            countKey: "master_intake_pending",
                         },
                         {
-                            label: "3. Verifikasi Berkas",
-                            path: "/internal/verifications",
+                            label: "3. Penugasan Verifikator",
+                            path: "/internal/verifications?tab=NEED_ASSIGNMENT",
+                            icon: <UserCheck className="w-4 h-4 shrink-0" />,
+                            description: "Disposisi tim verifikator berkas",
+                            countKey: "verification_assignment_pending",
+                        },
+                        {
+                            label: "4. Verifikasi Berkas",
+                            path: "/internal/verifications?tab=ASSIGNED",
                             badgeKey: "verification_assigned",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Penugasan & telaah berkas naskah",
@@ -507,6 +517,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
+        if (!isSuperAdmin) return [];
+
         // 8. Superadmin (Akses Penuh Tanpa Redundansi)
         return [
             {
@@ -529,6 +541,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         badgeKey: "publisher_registrations",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
+                        countKey: "publisher_registration_pending",
                     },
                     {
                         label: "2. Intake Master Fisik",
@@ -536,12 +549,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         badgeKey: "master_intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
+                        countKey: "master_intake_pending",
                         badge: "Intake",
                     },
                     {
                         label: "3. Verifikasi Berkas",
                         path: "/internal/verifications",
                         badgeKey: "verification_assigned",
+                        countKey: "verification_assignment_pending",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Penugasan & pemeriksaan naskah",
                     },
@@ -893,6 +908,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             {item.badge}
                                                         </span>
                                                     ) : null}
+                                                    {item.countKey &&
+                                                        Number.isInteger(counts[item.countKey]) &&
+                                                        counts[item.countKey] > 0 && (
+                                                            <span
+                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-civic-danger text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
+                                                                aria-label={`${counts[item.countKey]} entri antrean menunggu tindakan`}
+                                                            >
+                                                                {counts[item.countKey] > 99 ? "99+" : counts[item.countKey]}
+                                                            </span>
+                                                        )}
                                                 </>
                                             )}
                                         </NavLink>

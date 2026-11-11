@@ -31,6 +31,7 @@ npm run test:e2e:report               # buka laporan HTML hasil run terakhir
 | `04-alur-tahapan.spec.js` | Alur utama tahap 2–13: tiap naskah demo tampil di antrean peran yang tepat |
 | `05-alur-aksi.spec.js` | Aksi nyata: validasi formulir permohonan, konfirmasi serah terima, reviu sidang terkunci, lepas tugas pentashih (B-19b) |
 | `06-permohonan-master.spec.js` | Permohonan Master: penerbit mengajukan → admin menyusun surat → Kepala TTE di Pusat Tanda Tangan → admin mengirim → penerbit mengunduh surat; pembatasan akses per peran |
+| `07-pengaduan.spec.js` | Sistem Pengaduan: navbar 3 submenu, kirim pengaduan kesalahan cetak (2 kesalahan + lampiran) & pelayanan dengan CAPTCHA, admin menerima/menolak, ubah status, laporan akhir, pelacakan publik tanpa data pribadi; pembatasan akses API |
 
 ## Data uji
 

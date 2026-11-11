@@ -57,6 +57,9 @@ model User {
   drafted_master_letters           MasterMushafRequest[]           @relation("MasterLetterDraftedBy")
   signed_master_letters            MasterMushafRequest[]           @relation("MasterLetterSignedBy")
   sent_master_letters              MasterMushafRequest[]           @relation("MasterLetterSentBy")
+  complaint_decisions              Complaint[]                     @relation("ComplaintDecidedBy")
+  complaint_final_reports          Complaint[]                     @relation("ComplaintFinalReportBy")
+  complaint_status_changes         ComplaintStatusHistory[]        @relation("ComplaintStatusChangedBy")
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
@@ -355,6 +358,147 @@ model MasterMushafRequestDocument {
 
   @@index([request_id, document_type], map: "master_req_docs_req_type_idx")
   @@map("master_mushaf_request_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Pengaduan masyarakat (publik, tanpa login) — dilacak dengan kode pengaduan.
+// Alur: MENUNGGU_VERIFIKASI -> DITERIMA | DITOLAK; DITERIMA -> DALAM_PROSES <-> MENUNGGU_TINDAK_LANJUT
+//       -> SELESAI (melalui laporan akhir).
+// ---------------------------------------------------------------------------
+enum ComplaintType {
+  KESALAHAN_CETAK
+  PELAYANAN
+}
+
+enum ComplaintStatus {
+  MENUNGGU_VERIFIKASI
+  DITERIMA
+  DITOLAK
+  DALAM_PROSES
+  MENUNGGU_TINDAK_LANJUT
+  SELESAI
+}
+
+enum ComplaintGender {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum ComplaintServiceCategory {
+  BIAYA_PNBP
+  KETERLAMBATAN_PENTASHIHAN
+  LAINNYA
+}
+
+enum ComplaintAttachmentType {
+  SURAT_TANDA_TASHIH
+  COVER_MUSHAF
+  HALAMAN_SALAH
+}
+
+model Complaint {
+  id             String          @id @default(uuid())
+  complaint_code String          @unique(map: "complaints_code_key") @db.VarChar(40)
+  type           ComplaintType
+  status         ComplaintStatus @default(MENUNGGU_VERIFIKASI)
+
+  // Identitas pengadu
+  reporter_name       String          @db.VarChar(255)
+  reporter_gender     ComplaintGender
+  reporter_age        Int
+  reporter_occupation String          @db.VarChar(120)
+  address             String          @db.Text
+  province_code       String          @db.VarChar(16)
+  province_name       String          @db.VarChar(120)
+  regency_code        String          @db.VarChar(16)
+  regency_name        String          @db.VarChar(120)
+  district_code       String          @db.VarChar(16)
+  district_name       String          @db.VarChar(120)
+  postal_code         String          @db.VarChar(10)
+  phone               String          @db.VarChar(30)
+  email               String          @db.VarChar(255)
+
+  // Pengaduan kesalahan cetak mushaf
+  publisher_name String? @db.VarChar(255)
+  mushaf_name    String? @db.VarChar(255)
+  tashih_number  String? @db.VarChar(120)
+
+  // Pengaduan pelayanan Surat Tanda Tashih/Izin Edar
+  registration_number  String?                   @db.VarChar(120)
+  registrant_publisher String?                   @db.VarChar(255)
+  service_category     ComplaintServiceCategory?
+  description          String?                   @db.Text
+
+  // Keputusan verifikasi (terima/tolak)
+  rejection_reason String?   @db.Text
+  decided_at       DateTime?
+  decided_by_id    String?
+  decided_by       User?     @relation("ComplaintDecidedBy", fields: [decided_by_id], references: [id], onDelete: SetNull)
+
+  // Laporan akhir penanganan
+  final_result       String?   @db.VarChar(255)
+  final_explanation  String?   @db.Text
+  resolved_on        DateTime? @db.Date
+  final_report_at    DateTime?
+  final_report_by_id String?
+  final_report_by    User?     @relation("ComplaintFinalReportBy", fields: [final_report_by_id], references: [id], onDelete: SetNull)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  error_items ComplaintErrorItem[]
+  attachments ComplaintAttachment[]
+  histories   ComplaintStatusHistory[]
+
+  @@index([type, status, created_at], map: "complaints_type_status_created_idx")
+  @@index([email], map: "complaints_email_idx")
+  @@map("complaints")
+}
+
+model ComplaintErrorItem {
+  id           String                @id @default(uuid())
+  complaint_id String
+  complaint    Complaint             @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  position     Int
+  surah_ayat   String                @db.VarChar(255)
+  error_type   String                @db.VarChar(120)
+  description  String                @db.Text
+  attachments  ComplaintAttachment[]
+
+  @@unique([complaint_id, position], map: "complaint_error_items_position_key")
+  @@map("complaint_error_items")
+}
+
+model ComplaintAttachment {
+  id                String                  @id @default(uuid())
+  complaint_id      String
+  complaint         Complaint               @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  error_item_id     String?
+  error_item        ComplaintErrorItem?     @relation(fields: [error_item_id], references: [id], onDelete: Cascade)
+  attachment_type   ComplaintAttachmentType
+  storage_path      String                  @db.VarChar(500)
+  original_filename String                  @db.VarChar(255)
+  file_size         Int
+  file_hash         String                  @db.VarChar(64)
+  mime_type         String                  @db.VarChar(100)
+  created_at        DateTime                @default(now())
+
+  @@index([complaint_id, attachment_type], map: "complaint_attachments_type_idx")
+  @@map("complaint_attachments")
+}
+
+model ComplaintStatusHistory {
+  id            String          @id @default(uuid())
+  complaint_id  String
+  complaint     Complaint       @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  status        ComplaintStatus
+  note          String?         @db.Text
+  changed_by_id String?
+  changed_by    User?           @relation("ComplaintStatusChangedBy", fields: [changed_by_id], references: [id], onDelete: SetNull)
+  created_at    DateTime        @default(now())
+
+  @@index([complaint_id, created_at], map: "complaint_histories_created_idx")
+  @@map("complaint_status_histories")
 }
 
 model PublisherRevisionToken {

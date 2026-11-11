@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { getAuthToken } from '@/api/client';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -30,10 +31,13 @@ import {
   X,
 } from 'lucide-react';
 
+const BILLING_TABS = ['ALL', 'UNPAID', 'PAID', 'VERIFIED'];
+
 export const PublisherBillingPage = () => {
   const { currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectedRegId = searchParams.get('registration_id');
+  const requestedTab = searchParams.get('tab');
 
   const [payments, setPayments] = useState([]);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 20, totalPages: 1 });
@@ -42,7 +46,7 @@ export const PublisherBillingPage = () => {
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  const [activeTab, setActiveTab] = useState('ALL'); // 'ALL' | 'UNPAID' | 'PAID' | 'VERIFIED'
+  const [activeTab, setActiveTab] = useState(BILLING_TABS.includes(requestedTab) ? requestedTab : 'ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedBilling, setCopiedBilling] = useState(null);
   const [downloadingDocId, setDownloadingDocId] = useState(null);
@@ -117,6 +121,12 @@ export const PublisherBillingPage = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const nextTab = BILLING_TABS.includes(requestedTab) ? requestedTab : 'ALL';
+    setActiveTab((currentTab) => currentTab === nextTab ? currentTab : nextTab);
+    setPagination((current) => current.page === 1 ? current : { ...current, page: 1 });
+  }, [requestedTab]);
 
   useEffect(() => {
     fetchPayments();
@@ -286,6 +296,7 @@ export const PublisherBillingPage = () => {
         receipt_file_id: uploaded.id,
         external_ref: ntpn.trim(),
       });
+      invalidateQueueCounts();
 
       setSuccessMessage('Konfirmasi pembayaran berhasil dikirimkan. Petugas LPMQ akan memverifikasi bukti Anda.');
       setConfirmModalOpen(false);
@@ -429,6 +440,12 @@ export const PublisherBillingPage = () => {
                 key={tab.key}
                 onClick={() => {
                   setActiveTab(tab.key);
+                  setSearchParams((previous) => {
+                    const next = new URLSearchParams(previous);
+                    if (tab.key === 'ALL') next.delete('tab');
+                    else next.set('tab', tab.key);
+                    return next;
+                  }, { replace: true });
                   setPagination((p) => ({ ...p, page: 1 }));
                 }}
                 className={`px-3.5 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
@@ -859,4 +876,3 @@ export const PublisherBillingPage = () => {
 };
 
 export default PublisherBillingPage;
-

@@ -15,9 +15,11 @@ import lpmqQuranRoutes from './lpmq-quran.routes.js';
 import publisherRegistrationRoutes from './publisher-registration.routes.js';
 import regulationRoutes from './regulation.routes.js';
 import informationGuideRoutes from './information-guide.routes.js';
+import queueRoutes from './queue.routes.js';
 import surveyRoutes from './survey.routes.js';
 import serviceDocumentRoutes from './service-document.routes.js';
 import masterRequestRoutes from './master-request.routes.js';
+import complaintRoutes from './complaint.routes.js';
 import { getHealth } from '../controllers/system.controller.js';
 
 const router = Router();
@@ -46,6 +48,7 @@ router.get('/', (req, res) => {
         registerPublisher: 'POST /api/v1/auth/register-publisher',
         me: 'GET /api/v1/auth/me',
       },
+      queueCounts: 'GET /api/v1/me/queue-counts',
       publishers: {
         myProfile: 'GET /api/v1/publishers/me',
         list: 'GET /api/v1/publishers',
@@ -100,9 +103,11 @@ router.use(lpmqQuranRoutes);
 router.use(publisherRegistrationRoutes);
 router.use(regulationRoutes);
 router.use(informationGuideRoutes);
+router.use(queueRoutes);
 router.use(surveyRoutes);
 router.use(serviceDocumentRoutes);
 router.use(masterRequestRoutes);
+router.use(complaintRoutes);
 router.use('/public', publicRoutes);
 router.use('/system', systemRoutes);
 

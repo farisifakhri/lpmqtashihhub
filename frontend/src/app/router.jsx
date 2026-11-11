@@ -55,6 +55,9 @@ const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/int
 const PublisherMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherMasterRequestsPage').then(m => ({ default: m.PublisherMasterRequestsPage }))));
 const PublisherNewMasterRequestPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherNewMasterRequestPage').then(m => ({ default: m.PublisherNewMasterRequestPage }))));
 const AdminMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/AdminMasterRequestsPage').then(m => ({ default: m.AdminMasterRequestsPage }))));
+const PrintErrorComplaintPage = withSuspense(lazy(() => import('@/features/complaints/PrintErrorComplaintPage').then(m => ({ default: m.PrintErrorComplaintPage }))));
+const ServiceComplaintPage = withSuspense(lazy(() => import('@/features/complaints/ServiceComplaintPage').then(m => ({ default: m.ServiceComplaintPage }))));
+const TrackComplaintPage = withSuspense(lazy(() => import('@/features/complaints/TrackComplaintPage').then(m => ({ default: m.TrackComplaintPage }))));
 const SurveyManagementPage = withSuspense(lazy(() => import('@/features/internal/survey/SurveyManagementPage').then(m => ({ default: m.SurveyManagementPage }))));
 
 const router = createBrowserRouter([
@@ -106,6 +109,19 @@ const router = createBrowserRouter([
   {
     path: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih',
     element: <DownloadDocumentsPage />,
+  },
+  // Pengaduan masyarakat (publik, tanpa login)
+  {
+    path: '/pengaduan/kesalahan-cetak-mushaf',
+    element: <PrintErrorComplaintPage />,
+  },
+  {
+    path: '/pengaduan/pelayanan-surat-tanda-tashih',
+    element: <ServiceComplaintPage />,
+  },
+  {
+    path: '/pengaduan/lacak',
+    element: <TrackComplaintPage />,
   },
   // Rute Autentikasi Mandiri
   {

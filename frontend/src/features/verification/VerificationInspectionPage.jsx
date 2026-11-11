@@ -27,6 +27,7 @@ import { EmailDeliveryStatus } from '@/components/common/EmailDeliveryStatus';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { showToast } from '@/components/ui/toast';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import {
   ArrowRight,
   CheckCircle2,
@@ -291,6 +292,7 @@ export const VerificationInspectionPage = () => {
     setError(null);
     try {
       await verificationApi.startVerification(assignmentId);
+      invalidateQueueCounts();
       await fetchDetail();
       setSuccessMessage('Pemeriksaan berhasil dimulai. Lembar kerja verifikasi kini aktif.');
     } catch (err) {
@@ -621,6 +623,7 @@ export const VerificationInspectionPage = () => {
     setSuccessMessage(null);
     try {
       await verificationApi.sendDocument(latestResultDoc.id, { channel: 'IN_APP' });
+      invalidateQueueCounts();
       setSuccessMessage('Surat hasil verifikasi telah berhasil dikirimkan kepada penerbit dan tagihan pembayaran PNBP aktif terbit.');
       await fetchDetail();
     } catch (err) {
@@ -648,6 +651,7 @@ export const VerificationInspectionPage = () => {
       };
 
       await handoverApi.createHandover(detail.registration.id, payload);
+      invalidateQueueCounts();
       setSuccessMessage(
         'Master fisik mushaf berhasil diserahkan kepada Distributor. Nomor BAST telah terbit dan status naskah berpindah ke "Menunggu Distributor".'
       );
