@@ -4,6 +4,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import * as AuthContext from '@/features/auth/AuthContext';
+import * as QueueCounts from '@/features/queue/useQueueCounts';
 import { notificationApi } from '@/api/notification.api';
 import { DATA_MUTATED_EVENT } from '@/api/client';
 
@@ -36,6 +37,59 @@ describe('Helper Admin navigation', () => {
     for (const path of ['/internal/settings', '/internal/users', '/internal/signatures', '/internal/surveys', '/publisher']) {
       expect(document.querySelector(`a[href="${path}"]`)).toBeNull();
     }
+  });
+
+  it('shows live queue badges for the active admin role and keeps navigation role-specific', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'admin-1',
+        name: 'Petugas',
+        role: 'ADMIN_INTERNAL',
+        roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
+      },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: {
+        publisher_registration_pending: 101,
+        master_intake_pending: 2,
+        verification_assignment_pending: 0,
+      },
+      error: null,
+    });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    expect(screen.getByText('99+')).toBeInTheDocument();
+    expect(screen.getByText('2', { selector: 'span' })).toBeInTheDocument();
+    expect(document.querySelector('a[href="/internal/settings"]')).toBeNull();
+    expect(screen.queryByText('Loket')).toBeNull();
+    countsSpy.mockRestore();
+  });
+
+  it('hides admin counts when another role is active', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: {
+        id: 'admin-1',
+        name: 'Petugas',
+        role: 'PENERBIT',
+        roles: ['ADMIN_INTERNAL', 'PENERBIT'],
+      },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { publisher_registration_pending: 3, master_intake_pending: 2 },
+      error: null,
+    });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    expect(screen.getByRole('link', { name: /Permohonan Saya/ })).toBeInTheDocument();
+    expect(screen.queryByText('2', { selector: 'span' })).toBeNull();
+    expect(screen.queryByText('3', { selector: 'span' })).toBeNull();
+    expect(document.querySelector('a[href="/internal/master-intake"]')).toBeNull();
+    countsSpy.mockRestore();
+  });
+
+  it('does not create sidebar entries for PENANDATANGAN', () => {
+    show('PENANDATANGAN');
+    expect(document.querySelectorAll('nav a')).toHaveLength(0);
   });
   it('keeps SUPERADMIN navigation available', () => {
     show('SUPERADMIN');
@@ -104,11 +158,16 @@ describe('Badge notifikasi sidebar', () => {
     expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(3);
   });
 
-  it('menjumlahkan antrean sidang awal dan revisi pada menu pentashih', async () => {
-    mockBadges({ tashih_initial: 2, tashih_revision: 3 });
+  it('menampilkan hitungan aktif gabungan pada menu pentashih', async () => {
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { tashih_active: 5 },
+      error: null,
+    });
     show('PENTASHIH');
     const link = screen.getByRole('link', { name: /Sidang Pentashihan/ });
-    expect((await within(link).findByTestId('sidebar-pending-badge')).textContent).toContain('5');
+    expect(await within(link).findByLabelText('5 entri antrean menunggu tindakan')).toHaveTextContent('5');
+    expect(link.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    countsSpy.mockRestore();
   });
 
   it('memuat ulang badge setelah ada perubahan data', async () => {
@@ -128,6 +187,41 @@ describe('Badge notifikasi sidebar', () => {
     await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
     expect(screen.getByRole('link', { name: /Tugas Verifikasi/ })).toBeInTheDocument();
     expect(screen.queryAllByTestId('sidebar-pending-badge')).toHaveLength(0);
+  });
+});
+
+describe('Publisher navigation', () => {
+  it('links to revision actions and unpaid billing, with separate live badges', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'publisher-user', name: 'Penerbit', role: 'PENERBIT', roles: ['PENERBIT'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { publisher_revision_pending: 1, publisher_billing_unpaid: 100 },
+      error: null,
+    });
+    const legacyBadgesSpy = vi.spyOn(notificationApi, 'getSidebarBadges').mockResolvedValue({
+      data: { publisher_billing: 1 },
+    });
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const registrations = screen.getByRole('link', { name: /Permohonan Saya/ });
+    const revisions = screen.getByRole('link', { name: /Perbaikan Naskah/ });
+    const billing = screen.getByRole('link', { name: /Tagihan/ });
+    expect(registrations).toHaveAttribute('href', '/publisher/registrations?view=actions');
+    expect(revisions).toHaveAttribute('href', '/publisher/revisions');
+    expect(billing).toHaveAttribute('href', '/publisher/billing?tab=UNPAID');
+    expect(registrations).toHaveTextContent('1');
+    expect(revisions).toHaveTextContent('1');
+    expect(revisions.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    expect(revisions).not.toHaveTextContent('Revisi');
+    expect(billing).toHaveTextContent('99+');
+    expect(billing.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    for (const path of ['/publisher', '/publisher/new-registration', '/publisher/documents']) {
+      expect(document.querySelector(`a[href="${path}"]`)?.querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
+    }
+    unmount();
+    countsSpy.mockRestore();
+    legacyBadgesSpy.mockRestore();
   });
 });
 

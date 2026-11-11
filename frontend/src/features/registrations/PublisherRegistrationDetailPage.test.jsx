@@ -35,6 +35,19 @@ describe('Publisher detail and revision', () => {
     fireEvent.click(submit);
     await waitFor(() => expect(registrationApi.submitRegistration).toHaveBeenCalledWith('r1'));
   }, 15000);
+  it('shows resubmission errors directly above the resubmit button', async () => {
+    registrationApi.submitRegistration.mockRejectedValueOnce(new Error('Berkas wajib belum lengkap'));
+    show();
+    await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    const submit = screen.getByRole('button', { name: 'Ajukan ulang perbaikan' });
+
+    fireEvent.click(submit);
+
+    const error = await screen.findByRole('alert');
+    expect(error).toHaveTextContent('Berkas wajib belum lengkap');
+    expect(error.nextElementSibling).toBe(submit);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
   it('renders manuscript and variant details', async () => {
     registrationApi.getDetail.mockResolvedValue({ data: {
       ...data,

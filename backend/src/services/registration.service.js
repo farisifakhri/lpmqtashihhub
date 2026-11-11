@@ -5,6 +5,7 @@ import { ownedFile } from './storage.service.js';
 import { fail, registration as lockRegistration, audit, requireStatus, requireOwner, resolveTashihRound } from './workflow-utils.js';
 import { statusLabel, roleLabel } from '../utils/user-messages.js';
 import { ACTIVE_REGISTRATION_STATUSES, REGISTRATION_SEGMENTS, queuePagination, queueItems } from './queue-utils.js';
+import { buildMasterIntakeQueueWhere } from './queue-filters.js';
 import { syncRegistrationToExistingWebsite } from './external-sync.service.js';
 import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
@@ -1825,6 +1826,8 @@ export const listRegistrations = async ({
     ];
   } else if (status) {
     where.status = status;
+  } else if (segment === 'MASTER_INTAKE') {
+    Object.assign(where, buildMasterIntakeQueueWhere());
   } else if (REGISTRATION_SEGMENTS[segment]) {
     where.status = { in: REGISTRATION_SEGMENTS[segment] };
   } else if (queueOnly === true || queueOnly === 'true') {

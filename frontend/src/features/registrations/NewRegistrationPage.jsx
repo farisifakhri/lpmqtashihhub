@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { fileApi } from '@/api/file.api';
 import { useAuth } from '@/features/auth/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -963,6 +964,7 @@ export const NewRegistrationPage = () => {
 
       if (isDirectSubmit) {
         await registrationApi.submitRegistration(created.id);
+        invalidateQueueCounts();
         setSuccessMsg(`Permohonan "${namaMushaf}" (${created.registration_no}) berhasil dikirim ke LPMQ.`);
         navigate(`/publisher/registrations/${created.id}`, { state: { showReceipt: true } });
       } else {
