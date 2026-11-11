@@ -275,7 +275,7 @@ export const CaptchaField = forwardRef(({ value, onChange, error }, ref) => {
     <Field id="captcha_jawaban" label="Kode Verifikasi" error={error || loadError}
       hint="Ketik huruf/angka pada gambar (tidak membedakan huruf besar/kecil).">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-16 w-[200px] items-center justify-center overflow-hidden rounded-xl border border-line bg-[#f4f1e8]">
+        <div className="flex h-16 w-[200px] items-center justify-center overflow-hidden rounded-xl border border-line bg-surface-subtle">
           {captcha?.image
             ? <img src={captcha.image} alt="Gambar kode verifikasi" width={200} height={64} draggable={false} />
             : <Loader2 className="h-5 w-5 animate-spin text-ink-muted" aria-hidden="true" />}
