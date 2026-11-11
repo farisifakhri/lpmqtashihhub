@@ -31,12 +31,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
       fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
     }
 
-    // B-19a N4: Telaah pembanding distributor wajib pada penugasan awal ronde naskah masuk (sebelum didistribusikan ke pentashih)
+    // B-19a N4: Telaah pembanding distributor pada penugasan awal ronde naskah masuk bersifat opsional; disimpan hanya bila diisi
     const isInitialRoundAssignment = reg.status === 'WAITING_DISTRIBUTION' || !roundInfo.hasAssignmentsForRound;
-    if (isInitialRoundAssignment) {
-      if (!data.comparison_notes || data.comparison_notes.trim().length < 20) {
-        fail(400, 'Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) saat menugaskan naskah revisi/dumi masuk.');
-      }
+    if (isInitialRoundAssignment && data.comparison_notes?.trim()) {
       if (tx.distributorComparison?.upsert) {
         await tx.distributorComparison.upsert({
           where: {
