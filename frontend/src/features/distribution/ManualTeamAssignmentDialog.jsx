@@ -3,6 +3,7 @@ import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText, C
 import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
+import { getAssignmentStage } from './distribution-view-model';
 
 // Periode penugasan: pilih salah satu dari 12 bulan tahun berjalan, lalu masuk ke Pekan 1-5 bulan itu.
 // shortcut: periode hanya pengelompokan tampilan dan belum dikirim ke server; tambahkan field
@@ -16,7 +17,7 @@ const PERIOD_MONTHS = Array.from({ length: 12 }, (_, index) => {
 });
 const PERIOD_WEEKS = [1, 2, 3, 4, 5];
 
-export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
+export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
   const dialog = useRef(null);
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -77,9 +78,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   }, [id]);
 
   const previous = registration?.assignments?.length > 0;
-  const lastRevLetter = registration?.official_documents?.find(d => d.document_type === 'REVISION_RETURN_LETTER');
-  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASHKAH_DUMI' || registration?.revision_kind === 'NASKAH_DUMI';
-  const stage = isDummyRevision ? 'DUMMY' : previous ? 'REVISION' : registration?.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
+  const stage = chosenStage || getAssignmentStage(registration).stage;
 
   const team = teams.find(item => item.id === teamId);
 

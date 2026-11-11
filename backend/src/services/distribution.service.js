@@ -65,9 +65,8 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     : reg.registration_type === 'EXTENSION'
     ? 'DUMMY'
     : 'INITIAL';
-  if (data.stage && data.stage !== expectedStage && reg.status !== 'TASHIH_IN_PROGRESS') {
-    fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
-  }
+  // Jenis penugasan ronde baru (Awal / Perbaikan / Dumi) dipilih distributor di pop-up "Mulai Penugasan";
+  // expectedStage hanya menjadi nilai bawaan bila klien tidak mengirim stage.
   const now = new Date();
   const teamCache = new Map();
   if (data.team_id) {

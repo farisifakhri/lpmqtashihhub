@@ -187,16 +187,21 @@ describe('DistributorHandoverInboxPage Component', () => {
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
     vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });
     render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: /Penugasan Tim/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /Tetapkan Tim Sidang/i }));
-    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Penugasan, Monitoring Sidang/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Mulai Penugasan/i }));
+    // pop-up jenis penugasan: ketiganya bisa dipilih, dan pilihan itu yang dipakai dialog penetapan
+    expect(screen.getByRole('button', { name: /Penugasan Awal/i })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Penugasan Perbaikan/i })).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /Penugasan Dumi/i }));
+    expect(await screen.findByText(/Penetapan Penugasan Pentashihan/i)).toBeInTheDocument();
+    expect(await screen.findByText('DUMMY')).toBeInTheDocument();
   });
 
   it('membuka dialog reviu dari panel monitoring', async () => {
     vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: { items: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] }], pagination: { total: 1 } } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'TASHIH_IN_PROGRESS', assignments: [] } });
     render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
-    fireEvent.click(screen.getByRole('button', { name: /Monitoring Sidang/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Penugasan, Monitoring Sidang/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Lihat Hasil Anggota/i }));
     expect(await screen.findByText(/Reviu Hasil Pentashihan/i)).toBeInTheDocument();
   });
