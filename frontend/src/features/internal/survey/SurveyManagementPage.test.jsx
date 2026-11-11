@@ -124,7 +124,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.change(screen.getByLabelText('Nama Survei'), { target: { value: 's1' } });
     expect((await screen.findAllByText('B · Baik')).length).toBe(2); // mutu keseluruhan + mutu per unsur
     expect(getReport).toHaveBeenCalledWith('s1');
-    expect(screen.getByText('Kategori Indeks Kepuasan Masyarakat (Pedoman PANRB Nomor 9 Tahun 2024 halaman 22)')).toBeInTheDocument();
+    expect(screen.getByText('Kategori Indeks Kepuasan Masyarakat')).toBeInTheDocument();
     expect(screen.getByText('Kepuasan secara keseluruhan (1–5)')).toBeInTheDocument();
     expect(screen.getByText('1 promotor (9–10) · 0 pasif (7–8) · 1 detraktor (1–6)')).toBeInTheDocument();
     expect(screen.getByText('Tidak ada pungutan liar (pungli) oleh petugas pada unit ini.')).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     const update = vi.spyOn(surveyApi, 'updateUnsur').mockResolvedValue({ data: unsur });
     renderPage('/internal/surveys?tab=unsur');
     expect(await screen.findByText('Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan.')).toBeInTheDocument();
-    expect(screen.getByText('Baku PANRB')).toBeInTheDocument();
+    expect(screen.getByText('Baku')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hapus Persyaratan Pelayanan' })).not.toBeDisabled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ubah Persyaratan Pelayanan' }));
@@ -241,7 +241,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     renderPage('/internal/surveys?tab=unsur');
     expect(await screen.findByText('1.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Pulihkan Unsur Baku PANRB/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Pulihkan Unsur Baku/ }));
     await waitFor(() => expect(restore).toHaveBeenCalled());
   });
 
@@ -302,21 +302,10 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Simpan Susunan/ }));
     await waitFor(() => expect(setItems).toHaveBeenCalledWith('s1', [{ unsur_id: 'u1', question_id: 'q1' }, { unsur_id: 'u1', question_id: 'q3' }]));
   });
-  it('tombol Isi Pertanyaan Baku PANRB mengisi bank soal dan melaporkan hasilnya', async () => {
-    const toast = vi.spyOn(toastModule, 'showToast');
-    const seed = vi.spyOn(surveyApi, 'seedStandardQuestions')
-      .mockResolvedValueOnce({ data: { created: 12, existing: 0, missing_unsur: [] } })
-      .mockResolvedValueOnce({ data: { created: 0, existing: 10, missing_unsur: ['Sarana dan Prasarana'] } });
+  it('bank soal tidak menyediakan tombol isi pertanyaan baku; super admin menyusun pertanyaan sendiri', async () => {
     renderPage('/internal/surveys?tab=pertanyaan');
-    const button = await screen.findByRole('button', { name: /Isi Pertanyaan Baku PANRB/ });
-
-    fireEvent.click(button);
-    await waitFor(() => expect(toast).toHaveBeenCalledWith('12 pertanyaan baku ditambahkan.', 'success'));
-    await waitFor(() => expect(surveyApi.listQuestions).toHaveBeenCalledTimes(2)); // daftar dimuat ulang
-
-    fireEvent.click(button);
-    await waitFor(() => expect(toast).toHaveBeenLastCalledWith(expect.stringContaining('unsur Sarana dan Prasarana tidak ditemukan'), 'danger'));
-    expect(seed).toHaveBeenCalledTimes(2);
+    expect(await screen.findByRole('button', { name: /Tambah Pertanyaan/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Isi Pertanyaan Baku/ })).not.toBeInTheDocument();
   });
   it('Pertanyaan Survei: Nama survei memasukkan pertanyaan ke survei; hapus tanpa konfirmasi dengan notifikasi 2 detik', async () => {
     const create = vi.spyOn(surveyApi, 'createQuestion').mockResolvedValue({ data: question });

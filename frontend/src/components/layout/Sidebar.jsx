@@ -618,7 +618,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "Survei",
                         icon: <ClipboardList className="w-4 h-4 shrink-0" />,
-                        description: "Survei Kepuasan Masyarakat (PANRB 9/2024)",
+                        description: "Survei Kepuasan Masyarakat",
                         children: [
                             { label: "Nama Survei", path: "/internal/surveys?tab=survei" },
                             { label: "Nama Unsur", path: "/internal/surveys?tab=unsur" },
