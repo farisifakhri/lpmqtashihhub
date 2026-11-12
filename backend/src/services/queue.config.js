@@ -108,6 +108,7 @@ const publisherQueues = [
   },
 ];
 
+<<<<<<< Updated upstream
 const pentashihQueues = [
   {
     key: 'tashih_active',
@@ -146,11 +147,16 @@ const kepalaQueues = [
   },
 ];
 
+=======
+>>>>>>> Stashed changes
 export const QUEUE_CONFIG = {
   ADMIN_INTERNAL: adminQueues,
   SUPERADMIN: adminQueues,
   VERIFIKATOR: verifierQueues,
   PENERBIT: publisherQueues,
+<<<<<<< Updated upstream
   PENTASHIH: pentashihQueues,
   KEPALA_LPMQ: kepalaQueues,
+=======
+>>>>>>> Stashed changes
 };

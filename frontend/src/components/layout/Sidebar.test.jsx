@@ -251,6 +251,30 @@ describe('Publisher navigation', () => {
   });
 });
 
+describe('Publisher navigation', () => {
+  it('links to revision actions and unpaid billing, with separate live badges', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { name: 'Penerbit', role: 'PENERBIT', roles: ['PENERBIT'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { publisher_revision_pending: 1, publisher_billing_unpaid: 100 },
+      error: null,
+    });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const registrations = screen.getByRole('link', { name: /Permohonan Saya/ });
+    const billing = screen.getByRole('link', { name: /Tagihan/ });
+    expect(registrations).toHaveAttribute('href', '/publisher/registrations?view=actions');
+    expect(billing).toHaveAttribute('href', '/publisher/billing?tab=UNPAID');
+    expect(registrations).toHaveTextContent('1');
+    expect(billing).toHaveTextContent('99+');
+    for (const label of ['Beranda', 'Permohonan Tanda Tashih Baru', 'Arsip Dokumen']) {
+      expect(screen.getByRole('link', { name: new RegExp(label) }).querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
+    }
+    countsSpy.mockRestore();
+  });
+});
+
 describe('Multi-role cycling in Sidebar', () => {
   it('renders role switch button and cycles roles when user has multi-roles', () => {
     const switchActiveRole = vi.fn();

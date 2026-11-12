@@ -162,7 +162,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Permohonan Saya",
                             path: "/publisher/registrations?view=actions",
+<<<<<<< Updated upstream
                             badgeKey: "publisher_registrations",
+=======
+>>>>>>> Stashed changes
                             icon: <FileText className="w-4 h-4 shrink-0" />,
                             description: "Portofolio naskah & riwayat",
                             countKey: "publisher_revision_pending",
@@ -187,6 +190,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             description: "Pengajuan naskah mushaf baru",
                         },
                         {
+<<<<<<< Updated upstream
                             label: "Permohonan Master",
                             path: "/publisher/master-requests",
                             icon: <FileSignature className="w-4 h-4 shrink-0" />,
@@ -194,6 +198,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "Tagihan & Pembayaran",
+=======
+                            label: "Tagihan",
+>>>>>>> Stashed changes
                             path: "/publisher/billing?tab=UNPAID",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
                             description: "Billing SIMPONI & bukti bayar",

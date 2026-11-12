@@ -216,6 +216,7 @@ test('publisher queue counts reject accounts without a linked publisher', () => 
   assert.throws(() => queue.buildWhere({ id: 'publisher-user-1', publisherId: null }), { statusCode: 403 });
 });
 
+<<<<<<< Updated upstream
 test('pentashih active count matches actionable assignments across both stages and all pages', () => {
   const pentashih = { id: 'pentashih-1', roles: ['PENTASHIH'] };
   const queue = QUEUE_CONFIG.PENTASHIH.find(({ key }) => key === 'tashih_active');
@@ -330,6 +331,8 @@ test('head queues match approval and actionable signature filters', async () => 
   }
 });
 
+=======
+>>>>>>> Stashed changes
 test('active role middleware accepts only a role owned by the authenticated user', () => {
   const next = () => {};
   const acceptedRequest = { headers: { 'x-active-role': 'ADMIN_INTERNAL' }, user: { roles: ['ADMIN_INTERNAL'] } };

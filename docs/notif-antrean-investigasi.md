@@ -245,7 +245,11 @@ Sumber kode utama: `frontend/src/features/verification/InternalPaymentQueuePage.
 - Badge Kepala hanya ditampilkan pada “Persetujuan Verifikasi” dan “Tanda Tangan”; menu “Monitoring & Paraf Sidang” dan “Penetapan STT” tidak dibadge.
 - Surat persetujuan Permohonan Master pada halaman tanda tangan tidak memiliki relasi signatory eksplisit yang sepadan; sesuai keputusan pertama, tidak masuk badge walaupun UI menampilkannya melalui fallback. Ini discrepancy yang diketahui.
 
+<<<<<<< Updated upstream
 Keputusan pembayaran untuk C2: pakai assignment mana pun yang cocok (`some`), mensyaratkan status registrasi `PAYMENT_VERIFICATION` karena diwajibkan aksi `verifyPayment`, dan menerima discrepancy dengan list yang tetap tidak diubah.
+=======
+Keputusan pembayaran untuk C2: pakai assignment mana pun yang cocok (`some`), mensyaratkan status registrasi `PAYMENT_VERIFICATION` karena diwajibkan aksi `verifyPayment`, dan menerima discrepancy dengan list yang tetap tidak diubah. Catatan pertanyaan di atas hanya tersisa sebagai bahan Tahap F (Kepala), karena tindakan tanda tangan Verifikator bukan bagian C2.
+>>>>>>> Stashed changes
 
 ## Usulan D: Role penerbit
 
