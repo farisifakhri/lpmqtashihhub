@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { SignatureCenterPage } from './SignatureCenterPage';
 import { verificationApi } from '@/api/verification.api';
 import { masterRequestApi } from '@/api/master-request.api';
+import * as QueueApi from '@/api/queue.api';
 
 // Mock dependencies
 vi.mock('@/features/auth/AuthContext', () => ({
@@ -150,6 +151,7 @@ describe('SignatureCenterPage Component', () => {
   });
 
   it('memanggil verificationApi.signDocument saat konfirmasi tanda tangan', async () => {
+    const invalidateSpy = vi.spyOn(QueueApi, 'invalidateQueueCounts');
     renderComponent();
 
     const signButton = await screen.findByRole('button', { name: /^Konfirmasi$/i });
@@ -163,6 +165,8 @@ describe('SignatureCenterPage Component', () => {
     });
 
     expect(await screen.findByText(/berhasil dicatat/i)).toBeInTheDocument();
+    expect(invalidateSpy).toHaveBeenCalled();
+    invalidateSpy.mockRestore();
   });
 
   it('berpindah ke tab Selesai Ditandatangani dan menampilkan arsip', async () => {

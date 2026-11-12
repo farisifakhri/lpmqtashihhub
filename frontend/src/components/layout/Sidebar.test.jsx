@@ -170,6 +170,32 @@ describe('Badge notifikasi sidebar', () => {
     countsSpy.mockRestore();
   });
 
+  it('menampilkan badge dinamis Kepala untuk persetujuan dan tanda tangan saja', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'head-1', name: 'Kepala', role: 'KEPALA_LPMQ', roles: ['KEPALA_LPMQ'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { verification_approval_pending: 2, head_signature_pending: 101 },
+      error: null,
+    });
+    mockBadges({ signatures_pending: 8, stt_ready: 4 });
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const approvals = screen.getByRole('link', { name: /Persetujuan Verifikasi/ });
+    const signatures = screen.getByRole('link', { name: /Pusat Tanda Tangan \(TTE\)/ });
+    const stt = screen.getByRole('link', { name: /Penetapan STT/ });
+    expect(approvals).toHaveAttribute('href', '/internal/verifications?tab=WAITING_APPROVAL');
+    expect(await within(approvals).findByLabelText('2 entri antrean menunggu tindakan')).toHaveTextContent('2');
+    expect(within(signatures).getByLabelText('101 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
+    expect(within(signatures).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(within(stt).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+
+    unmount();
+    countsSpy.mockRestore();
+  });
+
   it('memuat ulang badge setelah ada perubahan data', async () => {
     mockBadges({ verification_assigned: 2 });
     show('VERIFIKATOR');

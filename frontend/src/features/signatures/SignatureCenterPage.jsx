@@ -4,6 +4,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { verificationApi } from '@/api/verification.api';
 import { registrationApi } from '@/api/registration.api';
 import { documentationApi } from '@/api/documentation.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { masterRequestApi } from '@/api/master-request.api';
 import { showToast } from '@/components/ui/toast';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -416,6 +417,7 @@ export const SignatureCenterPage = () => {
         await verificationApi.signDocument(signDialogDoc.id);
         setSuccessMessage(`Persetujuan internal dokumen ${signDialogDoc.document_no} berhasil dicatat.`);
       }
+      invalidateQueueCounts();
       setSignDialogDoc(null);
       await fetchAssignments();
     } catch (err) {
@@ -432,6 +434,7 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       await documentationApi.parafTu(parafDialog.doc.id, parafDialog.order, { notes: parafNotes.trim() });
+      invalidateQueueCounts();
       setSuccessMessage(`Paraf ${parafDialog.order} Tata Usaha berhasil dibubuhkan pada dokumen ${parafDialog.doc.document_no}.`);
       setParafDialog(null);
       setParafNotes('');
@@ -461,6 +464,7 @@ export const SignatureCenterPage = () => {
         }
       }
       setSuccessMessage(`Persetujuan internal ${successCount} dokumen berhasil dicatat.`);
+      if (successCount > 0) invalidateQueueCounts();
       setBatchSignOpen(false);
       setSelectedDocIds([]);
       await fetchAssignments();

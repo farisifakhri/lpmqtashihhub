@@ -185,6 +185,19 @@ Jangan menyentuh Prisma/schema/migrasi dan jangan mengubah endpoint list. Lapork
 
 ## TAHAP E: Role pentashih
 ## TAHAP F: Role kepala
+
+Item `KEPALA_LPMQ` yang dikerjakan:
+
+- “Persetujuan Verifikasi” — key `verification_approval_pending`; hitung `VerificationAssignment` untuk registrasi `WAITING_VERIFICATION_APPROVAL` dengan filter list `buildVerificationAssignmentWhere()` yang sama.
+- “Pusat Tanda Tangan (TTE)” — key `head_signature_pending`; jumlahkan dokumen verifikasi dengan signatory Kepala `PENDING`, status dokumen `APPROVED`/`SIGNING`, dan urutan tanda tangan yang sudah terpenuhi; serta STT yang memiliki signatory Kepala `PENDING`, status dokumen `DRAFT`, kedua paraf TU sudah tercatat, dan tanda tangan Kepala belum dilakukan.
+- Menu Kepala lainnya, termasuk “Monitoring & Paraf Sidang” dan “Penetapan STT”, tidak mendapat badge.
+- Hitung hanya signatory eksplisit; jangan membuat fallback untuk dokumen tanpa relasi signatory atau untuk status dokumen yang hilang. STT yang tampak bagi akun multi-role `KEPALA_LPMQ` + `SUPERADMIN` juga dihitung saat Kepala aktif, mengikuti akses halaman.
+- Surat persetujuan Permohonan Master tanpa record signatory eksplisit tidak termasuk badge, meskipun UI menyediakan fallback yang dapat ditandatangani. Ini discrepancy yang diketahui.
+
+Gunakan `count()` tanpa paginasi/pencarian. Karena tab tanda tangan menggabungkan dokumen verifikasi dan STT dari beberapa sumber yang dipaginasi, badge menjumlahkan dua count server penuh; jangan mengubah endpoint/list. Ambil ulang counts setelah pengajuan hasil verifikasi, persetujuan/pengembalian draf, tanda tangan, dan paraf TU yang dapat membuka antrean STT untuk Kepala.
+
+Tambahkan tes untuk filter status, pemilik signatory dari user terautentikasi, urutan tanda tangan, status STT/paraf, dan role lain. Jangan menyentuh schema/migrasi; jika rekomendasi indeks berlaku, catat untuk Tahap I dan tanyakan sebelum membuat migrasi.
+
 ## TAHAP G: Role distributor
 ## TAHAP H: Role dokumentator
 

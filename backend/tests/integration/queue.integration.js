@@ -6,6 +6,7 @@ import { listRegistrations } from '../../src/services/registration.service.js';
 import { listVerificationAssignments } from '../../src/services/verification-intake.service.js';
 import { listHandovers } from '../../src/services/handover.service.js';
 import { listPayments } from '../../src/services/payment.service.js';
+import { QUEUE_CONFIG } from '../../src/services/queue.config.js';
 import { move } from '../../src/services/workflow-utils.js';
 assertIsolatedTestDatabase(process.env.DATABASE_URL);
 try {
@@ -15,6 +16,11 @@ try {
   const distributor = await prisma.user.findUnique({ where: { email: 'distributor@lpmq.kemenag.go.id' } });
   const head = await prisma.user.findUnique({ where: { email: 'kepala@lpmq.kemenag.go.id' } });
   const admin = { id: head.id, roles: ['SUPERADMIN', 'KEPALA_LPMQ'] };
+  const headCounts = await Promise.all(QUEUE_CONFIG.KEPALA_LPMQ.map(async queue => {
+    if (queue.count) return queue.count(prisma, { id: head.id, roles: ['KEPALA_LPMQ'] });
+    return prisma[queue.model].count({ where: queue.buildWhere({ id: head.id, roles: ['KEPALA_LPMQ'] }) });
+  }));
+  assert.ok(headCounts.every(Number.isInteger), 'Head queue count queries should execute successfully.');
   const old = new Date('2026-09-01T00:00:00Z'), newer = new Date('2026-09-02T00:00:00Z');
   const a = await prisma.registration.create({ data: { registration_no: 'FIFO-PROBE-A', title: 'FIFO probe A', publisher_id: publisher.id, service_type_id: service.id, status: 'WAITING_VERIFICATION_APPROVAL', created_at: old, stage_entered_at: newer } });
   const b = await prisma.registration.create({ data: { registration_no: 'FIFO-PROBE-B', title: 'FIFO probe B', publisher_id: publisher.id, service_type_id: service.id, status: 'WAITING_VERIFICATION_APPROVAL', created_at: newer, stage_entered_at: old } });

@@ -5,6 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { VerificationInspectionPage } from './VerificationInspectionPage';
 import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as VerificationApiModule from '@/api/verification.api';
+import * as QueueApi from '@/api/queue.api';
 import { fileApi } from '@/api/file.api';
 
 describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
@@ -328,6 +329,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
   });
 
   it('meminta nomor surat hasil dan berita acara di dialog persetujuan Kepala LPMQ', async () => {
+    const invalidateSpy = vi.spyOn(QueueApi, 'invalidateQueueCounts');
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
         id: 'head-1',
@@ -402,6 +404,8 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
         },
       });
     });
+    expect(invalidateSpy).toHaveBeenCalled();
+    invalidateSpy.mockRestore();
   });
 
   it('U-04: Kepala LPMQ dapat mengesahkan surat hasil dan berita acara secara otomatis tanpa mengetik nomor manual', async () => {
@@ -560,4 +564,3 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(screen.getByText(/Ditolak \/ Perbaikan/i)).toBeInTheDocument();
   });
 });
-

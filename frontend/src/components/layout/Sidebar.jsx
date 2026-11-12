@@ -379,6 +379,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Persetujuan Verifikasi",
                             path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            countKey: "verification_approval_pending",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Telaah & persetujuan draf verifikasi",
                         },
@@ -391,14 +392,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Pusat Tanda Tangan (TTE)",
                             path: "/internal/signatures",
-                            badgeKey: "signatures_pending",
+                            countKey: "head_signature_pending",
                             icon: <PenTool className="w-4 h-4 shrink-0" />,
                             description: "Tanda tangan digital resmi pimpinan",
                         },
                         {
                             label: "Penetapan STT",
                             path: "/internal/documents",
-                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Pengesahan Surat Tanda Tashih",
                         },
