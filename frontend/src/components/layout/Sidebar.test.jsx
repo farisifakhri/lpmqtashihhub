@@ -48,6 +48,7 @@ describe('Helper Admin navigation', () => {
         roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
       },
     });
+    mockBadges({ publisher_registrations: 1 });
     const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
       counts: {
         publisher_registration_pending: 101,
@@ -59,6 +60,9 @@ describe('Helper Admin navigation', () => {
     render(<MemoryRouter><Sidebar /></MemoryRouter>);
 
     expect(screen.getByText('99+')).toBeInTheDocument();
+    const publisherLink = screen.getByRole('link', { name: /Pendaftaran Penerbit/ });
+    expect(within(publisherLink).getAllByText('99+')).toHaveLength(1);
+    expect(within(publisherLink).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(screen.getByText('2', { selector: 'span' })).toBeInTheDocument();
     expect(document.querySelector('a[href="/internal/settings"]')).toBeNull();
     expect(screen.queryByText('Loket')).toBeNull();
@@ -177,9 +181,9 @@ describe('Badge notifikasi sidebar', () => {
     show('ADMIN_INTERNAL');
     const intake = screen.getByRole('link', { name: /Intake Master Fisik/ });
     expect((await within(intake).findByTestId('sidebar-pending-badge')).textContent).toContain('99+');
-    expect(within(screen.getByRole('link', { name: /Pendaftaran Penerbit/ })).getByTestId('sidebar-pending-badge').textContent).toContain('2');
+    expect(within(screen.getByRole('link', { name: /Pendaftaran Penerbit/ })).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(within(screen.getByRole('link', { name: /Verifikasi Berkas/ })).getByTestId('sidebar-pending-badge').textContent).toContain('3');
-    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(3);
+    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(2);
   });
 
   it('menampilkan hitungan aktif gabungan pada menu pentashih', async () => {
@@ -284,7 +288,7 @@ describe('Publisher navigation', () => {
       counts: { publisher_revision_pending: 1, publisher_billing_unpaid: 100 },
       error: null,
     });
-    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
 
     const registrations = screen.getByRole('link', { name: /Permohonan Saya/ });
     const billing = screen.getByRole('link', { name: /Tagihan/ });
@@ -292,9 +296,10 @@ describe('Publisher navigation', () => {
     expect(billing).toHaveAttribute('href', '/publisher/billing?tab=UNPAID');
     expect(registrations).toHaveTextContent('1');
     expect(billing).toHaveTextContent('99+');
-    for (const label of ['Beranda', 'Permohonan Tanda Tashih Baru', 'Arsip Dokumen']) {
+    for (const label of ['Beranda', 'Pendaftaran Naskah Baru', 'Arsip Dokumen']) {
       expect(screen.getByRole('link', { name: new RegExp(label) }).querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
     }
+    unmount();
     countsSpy.mockRestore();
   });
 });

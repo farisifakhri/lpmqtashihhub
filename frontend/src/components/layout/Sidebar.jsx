@@ -432,7 +432,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "1. Pendaftaran Penerbit",
                             path: "/internal/publishers",
-                            badgeKey: "publisher_registrations",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
                             countKey: "publisher_registration_pending",
@@ -537,7 +536,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "1. Pendaftaran Penerbit",
                         path: "/internal/publishers",
-                        badgeKey: "publisher_registrations",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
                         countKey: "publisher_registration_pending",

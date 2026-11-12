@@ -117,21 +117,19 @@ Kode yang menjadi sumber bukti implementasi: `frontend/src/components/layout/Sid
 
 ## Rekomendasi indeks
 
-Tidak ada perubahan `schema.prisma` atau migrasi pada Tahap B–H. Rekomendasi berikut dicatat untuk usulan tunggal Tahap I; estimasi bersifat kualitatif dan perlu diverifikasi dengan `EXPLAIN` pada database yang representatif. Urutan kolom menempatkan filter equality sebelum kolom status.
+Tidak ada perubahan `schema.prisma` atau migrasi pada Tahap B–H. Pada Tahap I, `SHOW INDEX` dan `EXPLAIN` dijalankan pada database MySQL disposable baru yang dibuat dari migrasi repo lalu diisi dengan `backend/prisma/seed.js`. Database uji dihapus setelah pemeriksaan; database aplikasi tidak disentuh. Seed berukuran kecil, sehingga hasil ini hanya menunjukkan query plan untuk seed tersebut, bukan proyeksi beban produksi. Semua query yang diuji memperkirakan sekitar satu baris per tabel yang dipindai; sesuai kriteria, tidak ada indeks yang saat ini ditandai **perlu**.
 
-| Prioritas | Tabel | Kolom yang disarankan (equality dahulu, status terakhir) | Query count/list yang memakai | Perkiraan dampak |
-|---|---|---|---|---|
-| Tinggi | `verification_assignments` | `[verifier_id, status]` | Count/list antrean `VERIFIKATOR` seperti `verification_assigned`, `verification_ready_to_send`, dan scoped payment; filter `verifier_id = user.id` serta status aktif. Polling 30 detik per pengguna. | Mengurangi baris assignment yang dipindai untuk antrean milik verifikator; manfaat mengikuti volume assignment dan distribusi status. |
-| Tinggi | `assignments` | `[assignee_id, status]` | Count/list `tashih_active`; `assignee_id = user.id` dan status aktif. Polling 30 detik per pengguna. Tahap `INITIAL`/`REVISION` dipisah frontend, bukan filter database. | Menghindari pemindaian assignment lintas petugas; manfaat bergantung banyaknya assignment per pengguna. |
-| Tinggi | `physical_manuscript_handovers` | `[to_user_id, status]` | Count/list `distribution_handover_pending`; `to_user_id = user.id`, status `PENDING`. List tidak memfilter kolom `stage`; endpoint list tidak diubah. Polling 30 detik per distributor. | Mempersempit pencarian ke inbox dan status aktif distributor; estimasi tergantung jumlah BAST. |
-| Tinggi | `verification_document_signatories` | `[signer_user_id, status]` | Count/list `verification_signature_pending` dan `head_signature_pending`; signer `user.id`, status `PENDING`, berikut validasi urutan dokumen. Polling 30 detik per pengguna. | Mempercepat pencarian dokumen yang menunggu konfirmasi signer tertentu; kondisi urutan dokumen tetap memerlukan evaluasi relasional. |
-| Tinggi | `document_signatories` | `[signer_user_id, signing_status]` | Count/list antrean tanda tangan STT; signer `user.id`, `signing_status = PENDING`. Polling 30 detik per pengguna. | Mengurangi scan signatory lintas seluruh dokumen untuk penandatangan aktif. |
-| Tinggi | `payment_records` | `[registration_id, status]` | Count/list `payment_verification_pending`; status `PAID` dan registrasi terhubung ke assignment milik verifikator `user.id`. Polling 30 detik per pengguna. | Mempercepat pemeriksaan payment per registrasi setelah assignment user disaring; manfaat bergantung kardinalitas registrasi/status. |
-| Rendah | `registrations` | `[revision_source, status]` | Count/list Intake Master Fisik untuk cabang revisi `revision_source = PHYSICAL_MASTER`, `status = REVISION_REQUIRED`; queue global per role, bukan per user. | Menghindari scan status revisi lain bila cabang revisi fisik awal membesar. Cabang `READY_FOR_VERIFICATION` tetap dilayani indeks status yang sudah ada. |
+| Tabel / indeks yang semula diusulkan | Indeks ditemukan dari `SHOW INDEX` (termasuk indeks FK otomatis) | Query `EXPLAIN` yang diuji dan hasil akses | Hasil berdasarkan seed |
+|---|---|---|---|
+| `verification_assignments` `[verifier_id, status]` | `verification_assignments_verifier_id_fkey(verifier_id)`; `verification_assignments_registration_id_status_idx(registration_id, status)` | Count assignment `verifier_id = ? AND status = ?` memakai indeks FK `verifier_id` (`ref`, estimasi 1 baris). | **Belum perlu**; belum ada pemindaian banyak baris. |
+| `assignments` `[assignee_id, status]` | `assignments_assignee_id_fkey(assignee_id)`; `assignments_revoked_by_id_idx(revoked_by_id)` | Count assignment aktif memakai FK `assignee_id` (`ref`, estimasi 1 baris); pengecekan tanpa review memakai FK `tashih_reviews_assignment_id_fkey` (estimasi 1 baris). | **Belum perlu**; kedua akses mengestimasi satu baris. Penundaan migrasi yang dipilih user pada Tahap E tetap dihormati. |
+| `physical_manuscript_handovers` `[to_user_id, status]` | `physical_manuscript_handovers_to_user_id_fkey(to_user_id)`, `..._from_user_id_fkey(from_user_id)`, dan `physical_manuscript_handovers_registration_id_status_idx(registration_id, status)` | Count `to_user_id = ? AND status = 'PENDING'` memakai indeks FK `to_user_id` (`ref`, estimasi 1 baris). | **Belum perlu**; belum ada pemindaian banyak baris. |
+| `verification_document_signatories` `[signer_user_id, status]` | `verification_document_signatories_signer_user_id_fkey(signer_user_id)` dan `verification_document_signatories_document_id_signer_user_id_idx(document_id, signer_user_id)` | Count signatory pending per signer memakai indeks FK `signer_user_id` (`ref`, estimasi 1 baris). `verification_signature_pending` bukan antrean Verifikator; pemakaian queue saat ini adalah bagian count Kepala. | **Belum perlu**; belum ada pemindaian banyak baris. |
+| `document_signatories` `[signer_user_id, signing_status]` | `document_signatories_signer_user_id_fkey(signer_user_id)` dan `document_signatories_official_document_id_fkey(official_document_id)` | Count signatory pending per signer memakai indeks FK `signer_user_id` (`ref`, estimasi 1 baris). | **Belum perlu**; belum ada pemindaian banyak baris. |
+| `payment_records` `[registration_id, status]` | `payment_records_registration_id_fkey(registration_id)` dan indeks unik `payment_records_billing_no_key(billing_no)` | Count scoped payment mengestimasi `payment_records` sebagai `ALL` (tanpa key, 1 baris), registrasi melalui `PRIMARY` (`eq_ref`, 1 baris), assignment melalui indeks FK `verifier_id` (1 baris). | **Belum perlu berdasarkan seed**: ada full scan, tetapi hanya satu baris terestimasi, bukan pemindaian banyak baris. Periksa ulang dengan volume payment representatif. |
+| `registrations` `[revision_source, status]` | `registrations_status_stage_entered_at_id_idx(status, stage_entered_at, id)`, indeks `core_*_status`, serta indeks FK/unik lain. Tidak ada indeks `revision_source`. | Count cabang revisi Intake memakai indeks status/FIFO yang ada (estimasi 1 baris); intake diakses melalui indeks unik `physical_master_intakes_registration_id_key` (`eq_ref`, 1 baris). | **Belum perlu**; indeks status yang ada dipilih dan tidak ada pemindaian banyak baris pada seed. |
 
-Indeks yang sudah ada dan relevan: `publisher_registrations(status, created_at)` untuk pendaftaran penerbit; `registrations(status, stage_entered_at, id)` untuk antrean berdasarkan status/FIFO; `verification_assignments(registration_id, status)` untuk pengecekan assignment aktif per registrasi; `physical_master_intakes(registration_id)` unik; `physical_manuscript_handovers(registration_id, status)`. Karena `physical_master_intakes.registration_id` unik, indeks status intake sendiri tidak direkomendasikan. Query `OfficialDocument`/`DocumentationItem` belum direkomendasikan sampai definisi query dan filter antrean role dokumentasi disepakati.
-
-Untuk Tahap E, user memilih menunda migrasi indeks `[assignee_id, status]`; rekomendasi tetap dicatat untuk evaluasi Tahap I dan tidak ada perubahan schema/migrasi.
+`SHOW INDEX` mengonfirmasi bahwa InnoDB menyediakan indeks pada kolom FK yang belum diawali indeks lain; indeks-indeks tersebut tidak seluruhnya dideklarasikan eksplisit sebagai `@@index` pada Prisma. `physical_master_intakes.registration_id` unik, sehingga indeks status intake terpisah tidak direkomendasikan. Query `OfficialDocument`/`DocumentationItem` belum direkomendasikan karena alur antrean Dokumentator belum selesai dan Tahap H ditunda. Jika ukuran tabel produksi jauh lebih besar, jalankan kembali `EXPLAIN` dengan data representatif sebelum mengusulkan indeks. Tidak ada migrasi atau perubahan schema yang dibuat.
 
 ## Konvensi frontend/backend yang relevan
 
@@ -140,13 +138,40 @@ Untuk Tahap E, user memilih menunda migrasi indeks `[assignee_id, status]`; reko
 - CORS mengizinkan header `X-Active-Role` untuk endpoint baru; token akses tetap mengikuti client yang ada.
 - Endpoint list beberapa halaman memakai paginasi dan tab/filter lokal. Sesuai klarifikasi user, count harus mengukur semua baris yang cocok, bukan memakai total halaman yang sedang dimuat atau batas 20/50 baris pada fetch UI.
 
-## Pertanyaan terbuka untuk tahap selanjutnya
+## Catatan status tahap
 
-1. Untuk revisi penerbit, item “Permohonan Saya” saat ini membuka view `ALL`. Apakah link sidebar perlu diarahkan ke tab “Perlu Tindakan”/“Perlu perbaikan” agar badge revisi sesuai prinsip badge mengikuti filter tujuan item, atau badge revisi tetap dipasang pada item yang membuka `ALL`?
+- Tahap H (`DOKUMENTATOR`) ditunda atas keputusan user karena proses Dokumentator belum selesai; jangan tafsirkan penundaan ini sebagai keputusan bahwa role tersebut bukan antrean.
+- Role `PENANDATANGAN` tidak mempunyai item sidebar dan tidak mendapat badge, sesuai klarifikasi terdahulu.
+- Pertanyaan tentang tujuan link revisi Penerbit sudah diselesaikan pada Tahap D; tidak ada pertanyaan terbuka yang menghalangi finalisasi Tahap I.
 
-## Status Tahap B dan batas indeks
+## Audit konfigurasi Tahap I
 
-Tahap B mengimplementasikan queue count `ADMIN_INTERNAL`/`SUPERADMIN` dan header role aktif terverifikasi, termasuk filter Intake yang dapat dipakai bersama count/list. Migrasi serta `schema.prisma` tidak diubah. Usulan indeks final beserta hasil `EXPLAIN` (jika dapat dijalankan dengan data seed) hanya disampaikan pada Tahap I sebagai satu proposal migrasi; migrasi tidak dibuat sebelum persetujuan user.
+`queue.config.js` memetakan 14 key antrean:
+
+| Role | Key |
+|---|---|
+| `ADMIN_INTERNAL`, `SUPERADMIN` | `publisher_registration_pending`, `master_intake_pending`, `verification_assignment_pending` |
+| `VERIFIKATOR` | `verification_assigned`, `verification_ready_to_send`, `verification_bast_ready`, `payment_verification_pending` |
+| `PENERBIT` | `publisher_revision_pending`, `publisher_billing_unpaid` |
+| `PENTASHIH` | `tashih_active` |
+| `KEPALA_LPMQ` | `verification_approval_pending`, `head_signature_pending` |
+| `DISTRIBUTOR` | `distribution_handover_pending`, `distribution_team_pending` |
+| `DOKUMENTATOR` | Ditunda; alur belum selesai dikonfirmasi, bukan dinyatakan bukan antrean. |
+| `PENANDATANGAN` | Tidak ada item sidebar/badge, sesuai klarifikasi user. |
+
+`getQueueCounts` menjalankan count tiap key role aktif melalui `Promise.all`; `head_signature_pending` juga menghitung sumber dokumen verifikasi dan STT secara paralel. Tidak ditemukan loop `findMany()`/`.length` atau query N+1 berbasis baris. Filter yang sudah memiliki builder list memakai builder tersebut; definisi khusus yang tidak sama dengan list tetap eksplisit untuk revisi Penerbit, pembayaran Verifikator yang di-scope ke assignee, dan gabungan tanda tangan Kepala. Discrepancy scope dan tampilan halaman yang sudah diterima user tetap berlaku.
+
+Tahap B–I tidak mengubah `schema.prisma` maupun migrasi. Dari hasil `SHOW INDEX`/`EXPLAIN` seed, belum ada indeks yang memenuhi kriteria “perlu”; hasil ini harus ditinjau ulang dengan data representatif sebelum menyimpulkan performa pada produksi.
+
+### Hasil verifikasi Tahap I
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Backend `npm run test:backend` | Lulus; 326 tes unit, tes integrasi termasuk queue/FIFO lulus. Database disposable dibuat dan dihapus oleh test runner. |
+| Frontend `npm run test:frontend` | Lulus; 460 tes lulus, 3 dilewati (85 berkas tes, 1 dilewati). |
+| `npm run build` | Lulus; Vite memberi peringatan bahwa beberapa chunk melebihi 500 kB. |
+| Lint / type-check | Tidak ada script lint maupun type-check di root, backend, atau frontend. |
+| Diff whitespace | Bersih dengan konfigurasi `cr-at-eol` karena file dokumentasi memakai CRLF. |
 
 ## Usulan C2: Verifikasi Pembayaran
 
