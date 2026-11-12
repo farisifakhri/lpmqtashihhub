@@ -5,16 +5,12 @@ import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
 import { getAssignmentStage } from './distribution-view-model';
 
-// Periode penugasan: pilih salah satu dari 12 bulan tahun berjalan, lalu masuk ke Pekan 1-5 bulan itu.
+// Periode penugasan: pilih tahun, lalu salah satu dari 12 bulan, lalu masuk ke Pekan 1-5 bulan itu.
 // shortcut: periode hanya pengelompokan tampilan dan belum dikirim ke server; tambahkan field
-// di endpoint penugasan bila bulan/pekan perlu tersimpan.
-const PERIOD_MONTHS = Array.from({ length: 12 }, (_, index) => {
-  const date = new Date(new Date().getFullYear(), index, 1);
-  return {
-    key: `${date.getFullYear()}-${index + 1}`,
-    label: date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
-  };
-});
+// di endpoint penugasan bila tahun/bulan/pekan perlu tersimpan.
+const CURRENT_YEAR = new Date().getFullYear();
+const PERIOD_YEARS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
+const MONTH_NAMES = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleDateString('id-ID', { month: 'long' }));
 const PERIOD_WEEKS = [1, 2, 3, 4, 5];
 
 export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
@@ -37,7 +33,9 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [groupFrom, setGroupFrom] = useState(1);
   const [groupTo, setGroupTo] = useState(30);
   const [comparisonNotes, setComparisonNotes] = useState('');
+  const [periodYear, setPeriodYear] = useState(CURRENT_YEAR);
   const [openMonth, setOpenMonth] = useState(null); // bulan yang dipilih (null = layar pilih bulan)
+  const periodMonths = MONTH_NAMES.map((name, index) => ({ key: `${periodYear}-${index + 1}`, name, label: `${name} ${periodYear}` }));
   const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
   const [confirmClosePeriod, setConfirmClosePeriod] = useState(false);
 
@@ -348,9 +346,20 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
             {/* Daftar card bulan & pekan; form penugasan baru tampil setelah salah satu card dibuka */}
             {!openMonth && (
               <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label htmlFor="period-year-select" className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Tahun</label>
+                  <select
+                    id="period-year-select"
+                    value={periodYear}
+                    onChange={event => setPeriodYear(Number(event.target.value))}
+                    className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-semibold bg-surface"
+                  >
+                    {PERIOD_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </div>
                 <p className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Bulan</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {PERIOD_MONTHS.map(month => (
+                  {periodMonths.map(month => (
                     <button
                       key={month.key}
                       type="button"
@@ -358,13 +367,13 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                       className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-left text-sm font-bold text-ink hover:border-brand-700 hover:bg-brand-50/40 cursor-pointer"
                     >
                       <CalendarDays className="h-4 w-4 shrink-0 text-brand-700" />
-                      {month.label}
+                      {month.name}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-            {PERIOD_MONTHS.filter(month => month.key === openMonth).map(month => (
+            {periodMonths.filter(month => month.key === openMonth).map(month => (
               <section key={month.key} aria-label={month.label} className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
