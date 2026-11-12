@@ -13,6 +13,7 @@ import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSumma
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDocumentStatus, formatDocumentType } from '@/lib/glossary';
+import { accessRoles } from '@/lib/roles';
 import {
   PenTool,
   FileCheck,
@@ -39,7 +40,7 @@ export const SignatureCenterPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
 
-  const isHead = currentUser?.roles?.includes('KEPALA_LPMQ');
+  const isHead = accessRoles(currentUser?.roles).includes('KEPALA_LPMQ');
   const isVerifier = currentUser?.roles?.includes('VERIFIKATOR');
   const isPemaraf = Boolean(currentUser?.isPemaraf);
   const isTuStaff = currentUser?.roles?.includes('ADMIN_INTERNAL') || currentUser?.roles?.includes('SUPERADMIN') || isPemaraf;

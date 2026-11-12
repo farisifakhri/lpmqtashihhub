@@ -105,6 +105,8 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
       case 'KEPALA_LPMQ':
       case 'HEAD_OF_LPMQ':
         return { label: 'Kepala LPMQ', color: 'bg-civicGold-100 text-civicGold-700 border-civicGold-700/40' };
+      case 'PEMARAF':
+        return { label: 'Pemaraf', color: 'bg-civicGold-100 text-civicGold-700 border-civicGold-700/40' };
       case 'PENERBIT':
       case 'PUBLISHER':
         return { label: 'Penerbit Terverifikasi', color: 'bg-brand-50 text-brand-900 border-brand-200' };
@@ -113,8 +115,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     }
   };
 
-  // Pemaraf memakai layar Kepala LPMQ, tetapi tetap dilabeli sebagai Pemaraf
-  const roleConfig = currentUser?.isPemaraf && role === 'KEPALA_LPMQ' ? { ...getRoleConfig(role), label: 'Pemaraf' } : getRoleConfig(role);
+  const roleConfig = getRoleConfig(role);
 
   // Dynamic breadcrumb mapping (clean hierarchy)
   const getBreadcrumb = (pathname) => {

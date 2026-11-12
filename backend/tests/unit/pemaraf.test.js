@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withPemaraf } from '../../src/utils/pemaraf.js';
+import { withPemaraf, toAccessRole } from '../../src/utils/pemaraf.js';
 import { requireParaf, recordParaf } from '../../src/services/paraf.service.js';
 
 // tx tiruan: satu tabel paraf di memori, dengan jumlah akun Pemaraf aktif yang bisa diatur.
@@ -21,11 +21,14 @@ const fakeTx = (activePemaraf) => {
   };
 };
 
-test('Pemaraf mendapat akses setara Kepala LPMQ tetapi ditandai sebagai pemaraf', () => {
-  assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'] });
-  assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'] });
+test('Pemaraf mendapat akses setara Kepala LPMQ tetapi tampil sebagai role Pemaraf sendiri', () => {
+  assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'], identityRoles: ['PEMARAF'] });
+  assert.deepEqual(withPemaraf(['DISTRIBUTOR', 'PEMARAF']), { isPemaraf: true, roles: ['DISTRIBUTOR', 'KEPALA_LPMQ'], identityRoles: ['DISTRIBUTOR', 'PEMARAF'] });
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
   // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala
-  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'] });
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
+  assert.equal(toAccessRole('PEMARAF', true), 'KEPALA_LPMQ');
+  assert.equal(toAccessRole('DISTRIBUTOR', true), 'DISTRIBUTOR');
 });
 
 test('Persetujuan Kepala ditolak sebelum paraf, dan lolos setelah Pemaraf membubuhkan paraf', async () => {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 import { verificationApi } from '@/api/verification.api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -52,7 +53,7 @@ export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
-  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN_INTERNAL';

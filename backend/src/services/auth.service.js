@@ -28,7 +28,7 @@ export const login = async ({ email, password, req }) => {
     throw error;
   }
 
-  const { roles, isPemaraf } = withPemaraf(user.roles.map((r) => r.role.code));
+  const { roles, isPemaraf, identityRoles } = withPemaraf(user.roles.map((r) => r.role.code));
 
   // Penghalang Login: Jika kredensial benar tetapi pendaftaran penerbit belum DISETUJUI
   if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
@@ -85,7 +85,7 @@ export const login = async ({ email, password, req }) => {
       name: user.name,
       email: user.email,
       nip: user.nip,
-      roles,
+      roles: identityRoles,
       isPemaraf,
       publisherId: user.publisher ? user.publisher.id : null,
       publisher: user.publisher,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 
 export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null }) => {
   const { currentUser, isInitializing } = useAuth();
@@ -14,7 +15,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRoles = currentUser.roles || (currentUser.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser.roles || (currentUser.role ? [currentUser.role] : []));
   const isPublisher = userRoles.includes('PENERBIT') || currentUser.role === 'PENERBIT';
   const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
 
