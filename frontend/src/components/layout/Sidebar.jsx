@@ -268,14 +268,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Penerimaan Master Fisik",
                             path: "/internal/distributions/handover",
-                            badgeKey: "handover_pending",
+                            countKey: "distribution_handover_pending",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Konfirmasi master fisik & BAST naskah",
                         },
                         {
                             label: "Penugasan Tim Sidang",
                             path: "/internal/distributions/assignment",
-                            badgeKey: "distribution_waiting",
+                            countKey: "distribution_team_pending",
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Distribusi naskah ke 9 tim inti",
                         },

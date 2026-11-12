@@ -117,6 +117,30 @@ describe('Helper Admin navigation', () => {
 });
 
 describe('Distributor navigation', () => {
+  it('menampilkan badge dinamis untuk penerimaan fisik dan penugasan tim', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'dist-1', name: 'Distributor', role: 'DISTRIBUTOR', roles: ['DISTRIBUTOR'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { distribution_handover_pending: 3, distribution_team_pending: 102 },
+      error: null,
+    });
+    mockBadges({ handover_pending: 7, distribution_waiting: 9 });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const handover = screen.getByRole('link', { name: /Penerimaan Master Fisik/ });
+    const assignments = screen.getByRole('link', { name: /Penugasan Tim Sidang/ });
+    expect(handover).toHaveAttribute('href', '/internal/distributions/handover');
+    expect(assignments).toHaveAttribute('href', '/internal/distributions/assignment');
+    expect(within(handover).getByLabelText('3 entri antrean menunggu tindakan')).toHaveTextContent('3');
+    expect(within(assignments).getByLabelText('102 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
+    expect(within(handover).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(within(assignments).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+    countsSpy.mockRestore();
+  });
+
   it('membuka antrean penerimaan dan penugasan tim pada tab yang berbeda', () => {
     show('DISTRIBUTOR');
     expect(screen.getByRole('link', { name: /Penerimaan Master Fisik/ })).toHaveAttribute('href', '/internal/distributions/handover');

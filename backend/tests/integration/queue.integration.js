@@ -21,6 +21,11 @@ try {
     return prisma[queue.model].count({ where: queue.buildWhere({ id: head.id, roles: ['KEPALA_LPMQ'] }) });
   }));
   assert.ok(headCounts.every(Number.isInteger), 'Head queue count queries should execute successfully.');
+  const distributorUser = { id: distributor.id, roles: ['DISTRIBUTOR'] };
+  const distributorCounts = await Promise.all(QUEUE_CONFIG.DISTRIBUTOR.map(queue =>
+    prisma[queue.model].count({ where: queue.buildWhere(distributorUser) })
+  ));
+  assert.ok(distributorCounts.every(Number.isInteger), 'Distributor queue count queries should execute successfully.');
   const old = new Date('2026-09-01T00:00:00Z'), newer = new Date('2026-09-02T00:00:00Z');
   const a = await prisma.registration.create({ data: { registration_no: 'FIFO-PROBE-A', title: 'FIFO probe A', publisher_id: publisher.id, service_type_id: service.id, status: 'WAITING_VERIFICATION_APPROVAL', created_at: old, stage_entered_at: newer } });
   const b = await prisma.registration.create({ data: { registration_no: 'FIFO-PROBE-B', title: 'FIFO probe B', publisher_id: publisher.id, service_type_id: service.id, status: 'WAITING_VERIFICATION_APPROVAL', created_at: newer, stage_entered_at: old } });

@@ -7,6 +7,7 @@ import * as AuthContextModule from '@/features/auth/AuthContext';
 import * as HandoverApiModule from '@/api/handover.api';
 import * as RegistrationApiModule from '@/api/registration.api';
 import * as MasterApiModule from '@/api/master.api';
+import * as QueueApiModule from '@/api/queue.api';
 
 describe('DistributorHandoverInboxPage Component', () => {
   beforeEach(() => {
@@ -115,7 +116,20 @@ describe('DistributorHandoverInboxPage Component', () => {
     });
   });
 
+  it('membuka tab distribusi saat route menetapkan initialStage ASSIGNMENT', async () => {
+    render(
+      <MemoryRouter>
+        <DistributorHandoverInboxPage initialStage="ASSIGNMENT" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Penugasan, Monitoring Sidang/i })).toHaveClass('bg-white');
+    });
+  });
+
   it('dapat menerima fisik dengan tenggat pentashihan otomatis', async () => {
+    const invalidateSpy = vi.spyOn(QueueApiModule, 'invalidateQueueCounts');
     render(
       <MemoryRouter>
         <DistributorHandoverInboxPage />
@@ -147,9 +161,12 @@ describe('DistributorHandoverInboxPage Component', () => {
       );
       expect(HandoverApiModule.handoverApi.receiveHandover.mock.calls[0][1]).not.toHaveProperty('tashih_due_at');
     });
+    expect(invalidateSpy).toHaveBeenCalledOnce();
+    invalidateSpy.mockRestore();
   }, 15000);
 
   it('dapat membuka modal pengembalian fisik cacat dan mengirimkan alasan penolakan', async () => {
+    const invalidateSpy = vi.spyOn(QueueApiModule, 'invalidateQueueCounts');
     render(
       <MemoryRouter>
         <DistributorHandoverInboxPage />
@@ -179,6 +196,8 @@ describe('DistributorHandoverInboxPage Component', () => {
         })
       );
     });
+    expect(invalidateSpy).toHaveBeenCalledOnce();
+    invalidateSpy.mockRestore();
   });
 
   it('membuka dialog penugasan dari antrean distributor untuk admin', async () => {
@@ -206,4 +225,3 @@ describe('DistributorHandoverInboxPage Component', () => {
     expect(await screen.findByText(/Reviu Hasil Pentashihan/i)).toBeInTheDocument();
   });
 });
-

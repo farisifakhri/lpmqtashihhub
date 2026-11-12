@@ -8,6 +8,8 @@ import {
   buildHeadSttSignatureWhere,
 } from './queue-filters.js';
 import { buildVerificationAssignmentWhere } from './verification-intake.service.js';
+import { buildHandoverWhere } from './handover.service.js';
+import { buildRegistrationScopeWhere } from './registration.service.js';
 
 const adminQueues = [
   {
@@ -108,7 +110,6 @@ const publisherQueues = [
   },
 ];
 
-<<<<<<< Updated upstream
 const pentashihQueues = [
   {
     key: 'tashih_active',
@@ -147,16 +148,33 @@ const kepalaQueues = [
   },
 ];
 
-=======
->>>>>>> Stashed changes
 export const QUEUE_CONFIG = {
   ADMIN_INTERNAL: adminQueues,
   SUPERADMIN: adminQueues,
   VERIFIKATOR: verifierQueues,
   PENERBIT: publisherQueues,
-<<<<<<< Updated upstream
   PENTASHIH: pentashihQueues,
   KEPALA_LPMQ: kepalaQueues,
-=======
->>>>>>> Stashed changes
+  DISTRIBUTOR: [
+    {
+      key: 'distribution_handover_pending',
+      model: 'physicalManuscriptHandover',
+      sidebarItem: 'Penerimaan Master Fisik',
+      tab: 'HANDOVER / PENDING',
+      buildWhere: user => buildHandoverWhere(
+        { status: 'PENDING' },
+        { id: user.id, roles: ['DISTRIBUTOR'] },
+      ),
+    },
+    {
+      key: 'distribution_team_pending',
+      model: 'registration',
+      sidebarItem: 'Penugasan Tim Sidang',
+      tab: 'ASSIGNMENT / WAITING_DISTRIBUTION',
+      buildWhere: user => ({
+        ...buildRegistrationScopeWhere({ id: user.id, roles: ['DISTRIBUTOR'] }),
+        status: 'WAITING_DISTRIBUTION',
+      }),
+    },
+  ],
 };

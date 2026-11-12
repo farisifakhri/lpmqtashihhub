@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText, ChevronDown, CalendarDays, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
 import { getAssignmentStage } from './distribution-view-model';
 
@@ -264,6 +265,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
       };
 
       await registrationApi.createAssignments(id, payload);
+      invalidateQueueCounts();
       onAssigned();
     } catch (err) {
       setError(err.message || 'Penugasan gagal. Muat ulang untuk memeriksa status terbaru.');

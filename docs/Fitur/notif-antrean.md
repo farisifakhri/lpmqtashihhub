@@ -199,6 +199,15 @@ Gunakan `count()` tanpa paginasi/pencarian. Karena tab tanda tangan menggabungka
 Tambahkan tes untuk filter status, pemilik signatory dari user terautentikasi, urutan tanda tangan, status STT/paraf, dan role lain. Jangan menyentuh schema/migrasi; jika rekomendasi indeks berlaku, catat untuk Tahap I dan tanyakan sebelum membuat migrasi.
 
 ## TAHAP G: Role distributor
+
+Item `DISTRIBUTOR` yang dikerjakan:
+
+- “Penerimaan Master Fisik” — key `distribution_handover_pending`; hitung handover berstatus `PENDING` yang ditujukan ke `user.id` Distributor aktif.
+- “Penugasan Tim Sidang” — key `distribution_team_pending`; hitung registrasi `WAITING_DISTRIBUTION` dengan `core_distributor_id = user.id`.
+- Gunakan ulang filter list `buildHandoverWhere()` dan `buildRegistrationScopeWhere()`. Untuk badge, scope role Distributor dipaksa ke pengguna aktif, termasuk akun multi-role `DISTRIBUTOR` + `SUPERADMIN`.
+- Ambil ulang counts setelah penerimaan/pengembalian master dan setelah penugasan tim berhasil. Discrepancy yang diketahui: list untuk akun multi-role yang juga `SUPERADMIN` dapat menampilkan cakupan global; badge tetap hanya menghitung distributor aktif.
+- Indeks `[to_user_id, status]` direkomendasikan untuk evaluasi Tahap I karena list tidak memfilter kolom `stage`. Tidak ada perubahan schema atau migrasi pada Tahap G.
+
 ## TAHAP H: Role dokumentator
 
 Prasyarat tiap tahap: baris tabel role tersebut di `docs/notif-antrean-investigasi.md` sudah dikonfirmasi user. Jika statusnya masih "perlu konfirmasi", berhenti dan tanyakan.

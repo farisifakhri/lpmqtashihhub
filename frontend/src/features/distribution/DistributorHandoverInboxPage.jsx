@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { handoverApi } from '@/api/handover.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { useDistributionQueues } from './hooks/useDistributionQueues';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -27,10 +28,10 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
-export const DistributorHandoverInboxPage = () => {
+export const DistributorHandoverInboxPage = ({ initialStage }) => {
   const { currentUser } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlTab = searchParams.get('tab') || searchParams.get('stage');
+  const urlTab = searchParams.get('tab') || searchParams.get('stage') || initialStage;
   const [hubStage, setHubStage] = useState(
     urlTab === 'STT' || urlTab === 'STT_LIFECYCLE'
       ? 'STT_LIFECYCLE'
@@ -196,6 +197,7 @@ export const DistributorHandoverInboxPage = () => {
       };
 
       await handoverApi.receiveHandover(selectedHandover.id, payload);
+      invalidateQueueCounts();
       setSuccessMessage(
         `Master fisik ${selectedHandover.receipt_no} resmi diterima. Naskah berpindah status ke 'Menunggu Distribusi' (WAITING_DISTRIBUTION).`
       );
@@ -231,6 +233,7 @@ export const DistributorHandoverInboxPage = () => {
       await handoverApi.returnHandover(selectedHandover.id, {
         reason: returnReason.trim(),
       });
+      invalidateQueueCounts();
       setSuccessMessage(
         `Master fisik ${selectedHandover.receipt_no} dikembalikan ke Verifikator untuk perbaikan fisik.`
       );
@@ -550,4 +553,3 @@ export const DistributorHandoverInboxPage = () => {
 };
 
 export default DistributorHandoverInboxPage;
-

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { registrationApi } from '@/api/registration.api';
+import * as QueueApiModule from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
 
 describe('Manual team assignment (B-05)', () => {
@@ -62,6 +63,7 @@ describe('Manual team assignment (B-05)', () => {
 
   it('automatically checks all active team members upon team selection and allows unchecking absent members', async () => {
     const assigned = vi.fn();
+    const invalidateSpy = vi.spyOn(QueueApiModule, 'invalidateQueueCounts');
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
     fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
@@ -95,6 +97,8 @@ describe('Manual team assignment (B-05)', () => {
       stage: 'INITIAL',
     }));
     expect(assigned).toHaveBeenCalledOnce();
+    expect(invalidateSpy).toHaveBeenCalledOnce();
+    invalidateSpy.mockRestore();
   });
 
   it('supports assigning group and individual juz range using quick preset buttons', async () => {

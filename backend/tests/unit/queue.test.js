@@ -14,6 +14,8 @@ import {
   buildHeadVerificationSignatureWhere,
   buildHeadSttSignatureWhere,
 } from '../../src/services/queue-filters.js';
+import { buildHandoverWhere } from '../../src/services/handover.service.js';
+import { buildRegistrationScopeWhere } from '../../src/services/registration.service.js';
 import { buildVerificationAssignmentWhere } from '../../src/services/verification-intake.service.js';
 import { requireActiveRole } from '../../src/middlewares/active-role.middleware.js';
 import { authenticate } from '../../src/middlewares/auth.middleware.js';
@@ -216,7 +218,46 @@ test('publisher queue counts reject accounts without a linked publisher', () => 
   assert.throws(() => queue.buildWhere({ id: 'publisher-user-1', publisherId: null }), { statusCode: 403 });
 });
 
-<<<<<<< Updated upstream
+test('distributor queues reuse list filters and stay scoped to the active distributor', () => {
+  const firstUser = { id: 'distributor-1', roles: ['DISTRIBUTOR'] };
+  const multiRoleUser = { id: 'distributor-1', roles: ['DISTRIBUTOR', 'SUPERADMIN'] };
+  const otherUser = { id: 'distributor-2', roles: ['DISTRIBUTOR'] };
+  const handoverQueue = QUEUE_CONFIG.DISTRIBUTOR.find(({ key }) => key === 'distribution_handover_pending');
+  const registrationQueue = QUEUE_CONFIG.DISTRIBUTOR.find(({ key }) => key === 'distribution_team_pending');
+
+  assert.deepEqual(QUEUE_CONFIG.DISTRIBUTOR.map(({ key, tab }) => [key, tab]), [
+    ['distribution_handover_pending', 'HANDOVER / PENDING'],
+    ['distribution_team_pending', 'ASSIGNMENT / WAITING_DISTRIBUTION'],
+  ]);
+  assert.equal(handoverQueue.model, 'physicalManuscriptHandover');
+  assert.equal(registrationQueue.model, 'registration');
+  assert.deepEqual(handoverQueue.buildWhere(firstUser), buildHandoverWhere(
+    { status: 'PENDING' },
+    firstUser,
+  ));
+  assert.deepEqual(handoverQueue.buildWhere(firstUser), { to_user_id: firstUser.id, status: 'PENDING' });
+  assert.deepEqual(handoverQueue.buildWhere(multiRoleUser), handoverQueue.buildWhere(firstUser));
+  assert.deepEqual(handoverQueue.buildWhere(otherUser), { to_user_id: otherUser.id, status: 'PENDING' });
+
+  assert.deepEqual(registrationQueue.buildWhere(firstUser), {
+    ...buildRegistrationScopeWhere(firstUser),
+    status: 'WAITING_DISTRIBUTION',
+  });
+  assert.deepEqual(registrationQueue.buildWhere(firstUser), {
+    core_distributor_id: firstUser.id,
+    status: 'WAITING_DISTRIBUTION',
+  });
+  assert.deepEqual(registrationQueue.buildWhere(multiRoleUser), registrationQueue.buildWhere(firstUser));
+  assert.deepEqual(registrationQueue.buildWhere(otherUser), {
+    core_distributor_id: otherUser.id,
+    status: 'WAITING_DISTRIBUTION',
+  });
+
+  for (const role of ['ADMIN_INTERNAL', 'SUPERADMIN', 'VERIFIKATOR', 'PENERBIT', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ']) {
+    assert.equal((QUEUE_CONFIG[role] || []).some(({ key }) => key.startsWith('distribution_')), false);
+  }
+});
+
 test('pentashih active count matches actionable assignments across both stages and all pages', () => {
   const pentashih = { id: 'pentashih-1', roles: ['PENTASHIH'] };
   const queue = QUEUE_CONFIG.PENTASHIH.find(({ key }) => key === 'tashih_active');
@@ -331,8 +372,6 @@ test('head queues match approval and actionable signature filters', async () => 
   }
 });
 
-=======
->>>>>>> Stashed changes
 test('active role middleware accepts only a role owned by the authenticated user', () => {
   const next = () => {};
   const acceptedRequest = { headers: { 'x-active-role': 'ADMIN_INTERNAL' }, user: { roles: ['ADMIN_INTERNAL'] } };
