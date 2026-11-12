@@ -235,7 +235,10 @@ describe('Manual team assignment (B-05)', () => {
     expect(screen.getByText('Pilih Bulan').nextSibling.querySelectorAll('button')).toHaveLength(12);
     // card bulan tanpa tahun; tahun dipilih lewat dropdown dan tampil di judul bulan yang dibuka
     const nextYear = new Date().getFullYear() + 1;
-    fireEvent.change(screen.getByRole('combobox', { name: 'Pilih Tahun' }), { target: { value: String(nextYear) } });
+    fireEvent.click(screen.getByRole('button', { name: 'Pilih Tahun' }));
+    fireEvent.click(screen.getByRole('button', { name: String(nextYear + 1) }));
+    expect(screen.queryByRole('group', { name: 'Daftar tahun' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tahun sebelumnya' }));
     fireEvent.click(screen.getByRole('button', { name: 'Maret' }));
     expect(screen.getByRole('region', { name: `Maret ${nextYear}` })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^Pekan [1-5]$/ })).toHaveLength(5);

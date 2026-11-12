@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText, ChevronDown, CalendarDays, ArrowLeft } from 'lucide-react';
+import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText, ChevronDown, ChevronLeft, ChevronRight, CalendarDays, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
@@ -9,7 +9,7 @@ import { getAssignmentStage } from './distribution-view-model';
 // shortcut: periode hanya pengelompokan tampilan dan belum dikirim ke server; tambahkan field
 // di endpoint penugasan bila tahun/bulan/pekan perlu tersimpan.
 const CURRENT_YEAR = new Date().getFullYear();
-const PERIOD_YEARS = [CURRENT_YEAR - 1, CURRENT_YEAR, CURRENT_YEAR + 1];
+const PERIOD_YEARS = Array.from({ length: 201 }, (_, index) => CURRENT_YEAR - 100 + index);
 const MONTH_NAMES = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleDateString('id-ID', { month: 'long' }));
 const PERIOD_WEEKS = [1, 2, 3, 4, 5];
 
@@ -34,6 +34,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [groupTo, setGroupTo] = useState(30);
   const [comparisonNotes, setComparisonNotes] = useState('');
   const [periodYear, setPeriodYear] = useState(CURRENT_YEAR);
+  const [yearPickerOpen, setYearPickerOpen] = useState(false);
   const [openMonth, setOpenMonth] = useState(null); // bulan yang dipilih (null = layar pilih bulan)
   const periodMonths = MONTH_NAMES.map((name, index) => ({ key: `${periodYear}-${index + 1}`, name, label: `${name} ${periodYear}` }));
   const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
@@ -346,16 +347,54 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
             {/* Daftar card bulan & pekan; form penugasan baru tampil setelah salah satu card dibuka */}
             {!openMonth && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label htmlFor="period-year-select" className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Tahun</label>
-                  <select
-                    id="period-year-select"
-                    value={periodYear}
-                    onChange={event => setPeriodYear(Number(event.target.value))}
-                    className="rounded-lg border border-line-strong px-3 py-1.5 text-sm font-semibold bg-surface"
+                {/* Kepala kalender: panah geser tahun, pop-up kisi tahun di tengah untuk lompat jauh */}
+                <div className="relative flex items-center justify-between gap-2 rounded-xl border border-line bg-white px-2 py-1.5">
+                  <button
+                    type="button"
+                    aria-label="Tahun sebelumnya"
+                    disabled={periodYear <= PERIOD_YEARS[0]}
+                    onClick={() => setPeriodYear(periodYear - 1)}
+                    className="rounded-lg p-2 text-ink hover:bg-surface-subtle disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
                   >
-                    {PERIOD_YEARS.map(year => <option key={year} value={year}>{year}</option>)}
-                  </select>
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Pilih Tahun"
+                    aria-haspopup="true"
+                    aria-expanded={yearPickerOpen}
+                    onClick={() => setYearPickerOpen(open => !open)}
+                    className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-sm font-bold text-ink hover:bg-surface-subtle cursor-pointer"
+                  >
+                    {periodYear}
+                    <ChevronDown className={clsx('h-4 w-4 text-ink-muted transition-transform', yearPickerOpen && 'rotate-180')} />
+                  </button>
+                  {yearPickerOpen && (
+                    <div role="group" aria-label="Daftar tahun" className="absolute left-0 right-0 top-full z-10 mt-1 grid max-h-56 grid-cols-3 gap-1.5 overflow-y-auto rounded-xl border border-line bg-white p-2 shadow-lg">
+                      {PERIOD_YEARS.map(year => (
+                        <button
+                          key={year}
+                          type="button"
+                          aria-pressed={year === periodYear}
+                          // daftar tahun panjang: gulir pop-up ke tahun terpilih saat dibuka
+                          ref={year === periodYear ? el => el?.scrollIntoView?.({ block: 'nearest' }) : undefined}
+                          onClick={() => { setPeriodYear(year); setYearPickerOpen(false); }}
+                          className={clsx('rounded-lg px-3 py-2 text-sm font-semibold cursor-pointer', year === periodYear ? 'bg-brand-700 text-white' : 'text-ink hover:bg-brand-50')}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Tahun berikutnya"
+                    disabled={periodYear >= PERIOD_YEARS[PERIOD_YEARS.length - 1]}
+                    onClick={() => setPeriodYear(periodYear + 1)}
+                    className="rounded-lg p-2 text-ink hover:bg-surface-subtle disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
                 <p className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Bulan</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
