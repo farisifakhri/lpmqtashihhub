@@ -5,6 +5,61 @@ import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.midd
 import { ACTIVE_PEMARAF, pemarafGateActive, findParaf, parafKey } from './paraf.service.js';
 import { buildMyAssignmentsWhere } from './queue-filters.js';
 
+const STAGE_LABELS = { INITIAL: 'Penugasan Awal', REVISION: 'Penugasan Perbaikan', DUMMY: 'Penugasan Dumi' };
+
+// Jenis penugasan ronde baru dikunci sesuai tahap: Awal hanya sidang pertama; Perbaikan/Dumi hanya setelah
+// keputusan reviu yang sesuai DAN penerbit sudah mengirim naskahnya (resi kurir atau diterima di loket).
+export function assignmentStageOptions({ isTashihRevision, revisionKind, hasAssignmentsForRound, previousStage, registrationType, hasDispatchProof }) {
+  const newRevisionRound = isTashihRevision && !hasAssignmentsForRound;
+  const stage = newRevisionRound
+    ? (revisionKind === 'DUMMY' ? 'DUMMY' : 'REVISION')
+    : previousStage || (registrationType === 'EXTENSION' ? 'DUMMY' : 'INITIAL');
+  const waitingProof = newRevisionRound && !hasDispatchProof;
+  const lockReason = {
+    INITIAL: !previousStage && !isTashihRevision && registrationType === 'EXTENSION'
+      ? 'Pengajuan perpanjangan langsung masuk tahap dumi.'
+      : 'Hanya untuk sidang pertama; naskah ini sudah pernah disidangkan.',
+    REVISION: stage === 'DUMMY'
+      ? 'Keputusan terakhir mengalihkan naskah ke tahap dumi, bukan perbaikan.'
+      : 'Belum ada keputusan perbaikan dari reviu hasil sidang.',
+    DUMMY: stage === 'REVISION'
+      ? 'Keputusan terakhir meminta perbaikan naskah; tahap dumi dibuka setelah telaah teks lulus.'
+      : 'Tahap dumi dibuka setelah telaah teks dinyatakan lulus.',
+  };
+  const waitingReason = `Menunggu penerbit mengirim naskah ${stage === 'DUMMY' ? 'dumi' : 'perbaikan'}: nomor resi kurir belum diisi atau naskah belum diterima di loket LPMQ.`;
+  return ['INITIAL', 'REVISION', 'DUMMY'].map(key => {
+    const allowed = key === stage && !waitingProof;
+    return { key, allowed, reason: allowed ? null : key === stage ? waitingReason : lockReason[key] };
+  });
+}
+
+// Bukti pengiriman naskah ronde perbaikan/dumi: diterima Admin Internal di loket, dan bila dikirim lewat
+// kurir (bukan antar langsung) wajib ada nomor resi. Penerimaan loket sudah mencatat petugas, waktu, dan BAST.
+async function hasDispatchProof(tx, reg) {
+  const intake = await tx.physicalMasterIntake?.findUnique({ where: { registration_id: reg.id } });
+  const viaCourier = reg.dispatch_courier && reg.dispatch_courier !== 'LOKET_LPMQ';
+  return intake?.status === 'RECEIVED' && (!viaCourier || Boolean(reg.dispatch_tracking_no?.trim()));
+}
+
+async function loadAssignmentStageOptions(tx, reg, round, previous) {
+  const newRevisionRound = round.isTashihRevision && !round.hasAssignmentsForRound;
+  return assignmentStageOptions({
+    ...round,
+    previousStage: previous?.stage || null,
+    registrationType: reg.registration_type,
+    hasDispatchProof: newRevisionRound ? await hasDispatchProof(tx, reg) : true,
+  });
+}
+
+// Dibaca pop-up "Mulai Penugasan" agar pilihan yang terkunci tampil beserta alasannya.
+export const getAssignmentStages = async (id) => {
+  const reg = await prisma.registration.findUnique({ where: { id } });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+  const round = await resolveTashihRound(prisma, reg);
+  const previous = await prisma.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' }, select: { stage: true } });
+  return loadAssignmentStageOptions(prisma, reg, round, previous);
+};
+
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
   const reg = await registration(tx, id);
   if (reg.core_team_number) {
@@ -67,7 +122,12 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     ? 'DUMMY'
     : 'INITIAL';
   // Jenis penugasan ronde baru (Awal / Perbaikan / Dumi) dipilih distributor di pop-up "Mulai Penugasan";
-  // expectedStage hanya menjadi nilai bawaan bila klien tidak mengirim stage.
+  // expectedStage hanya menjadi nilai bawaan bila klien tidak mengirim stage. Pilihan yang terkunci ditolak.
+  if (reg.status === 'WAITING_DISTRIBUTION') {
+    const chosenStage = data.stage || expectedStage;
+    const option = (await loadAssignmentStageOptions(tx, reg, roundInfo, previous)).find(item => item.key === chosenStage);
+    if (!option?.allowed) fail(409, `${STAGE_LABELS[chosenStage] || 'Penugasan'} belum dapat dibuka: ${option?.reason || 'jenis penugasan tidak dikenal.'}`);
+  }
   const now = new Date();
   const teamCache = new Map();
   if (data.team_id) {

@@ -248,7 +248,8 @@ test('B19A-06: comparison_notes opsional pada penugasan naskah revisi masuk; dis
       findFirst: async () => ({ status: 'VERIFIED' }),
     },
     assignment: {
-      findFirst: async () => ({ id: 'asg-round-1', iteration: 1, stage: 'INITIAL' }),
+      // Ronde perbaikan baru: belum ada penugasan setelah surat pengembalian (filter created_at)
+      findFirst: async ({ where }) => (where?.created_at ? null : { id: 'asg-round-1', iteration: 1, stage: 'INITIAL' }),
       create: async ({ data }) => ({ id: 'asg-new-1', ...data }),
     },
     officialDocument: {
@@ -261,6 +262,10 @@ test('B19A-06: comparison_notes opsional pada penugasan naskah revisi masuk; dis
     },
     publisherRevisionRecap: {
       findUnique: async () => ({ id: 'prr-1', round_number: 1, recap_file_id: 'file-pub-1' }),
+    },
+    // Naskah perbaikan sudah diterima di loket, syarat Penugasan Perbaikan terbuka
+    physicalMasterIntake: {
+      findUnique: async () => ({ registration_id: regId, status: 'RECEIVED' }),
     },
     distributorComparison: {
       upsert: async ({ create }) => {
@@ -310,6 +315,14 @@ test('B19A-06: comparison_notes opsional pada penugasan naskah revisi masuk; dis
   assert.equal(savedComparison.registration_id, regId);
   assert.equal(savedComparison.round_number, 1);
   assert.equal(savedComparison.notes, validNotes);
+
+  // 3. Penugasan Awal / Dumi pada ronde perbaikan ditolak
+  for (const stage of ['INITIAL', 'DUMMY']) {
+    await assert.rejects(
+      createAssignments(regId, { stage, is_individual: true, assignee_ids: ['usr-p-1'] }, distributorUser),
+      (err) => err.statusCode === 409 && /belum dapat dibuka/.test(err.message)
+    );
+  }
 });
 
 test('B19A-07: getDetail menyaring comparison_notes dari snapshot dokumen saat dibaca akun penerbit', async () => {
