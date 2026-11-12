@@ -146,15 +146,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/physical-master/handovers/${pending.id}/receive`, distributor, 'POST', { condition: 'BAIK' });
     assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTION');
 
-    // B-19a: Penugasan revisi awal mewajibkan catatan telaah pembanding distributor (minimal 20 karakter)
-    await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 400);
-
-    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', {
-      team_id: team.id,
-      assignee_ids: [assignee.id],
-      stage: 'DUMMY',
-      comparison_notes: 'Catatan telaah pembanding distributor terhadap naskah revisi ronde ini (minimal 20 karakter).',
-    }, 201);
+    // B-19a: Catatan telaah pembanding distributor bersifat opsional; penugasan tanpa catatan tetap diterima
+    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 201);
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);

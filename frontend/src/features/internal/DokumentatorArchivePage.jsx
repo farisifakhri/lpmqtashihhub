@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { documentationApi } from '@/api/documentation.api';
+import { fileApi } from '@/api/file.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/ui/toast';
@@ -89,7 +90,7 @@ export const DokumentatorArchivePage = () => {
         search: searchQuery,
         limit: 50,
       });
-      const items = res.data?.items || [];
+      const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
       setRegistrations(items);
       if (!selectedId && items.length > 0) {
         setSelectedId(items[0].id);
@@ -772,15 +773,16 @@ export const DokumentatorArchivePage = () => {
                                 Tipe: {file.type} • {(file.file_size ? `${Math.round(file.file_size / 1024)} KB` : 'PDF')}
                               </div>
                             </div>
-                            <a
-                              href={`/api/v1/uploads/${file.file_id}/download`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-ink-muted hover:text-brand-fg p-1 rounded"
+                            <button
+                              type="button"
+                              onClick={() => fileApi.downloadPrivateFile(file.file_id, `${detail.registration_no}-${file.type}-v${file.version || 1}.pdf`)
+                                .catch((err) => showToast(err.message || 'Gagal mengunduh berkas.', 'error'))}
+                              className="text-ink-muted hover:text-brand-fg p-1 rounded cursor-pointer"
                               title="Unduh Berkas"
+                              aria-label={`Unduh berkas ${file.type}`}
                             >
                               <Download className="w-4 h-4" />
-                            </a>
+                            </button>
                           </div>
                         ))}
                       </div>

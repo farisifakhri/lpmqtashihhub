@@ -76,10 +76,10 @@ export function UnsurTab() {
             Tampilkan yang diarsipkan
           </label>
           <Button size="sm" variant="outline"
-            title="Membuat ulang unsur baku yang terhapus dan mengembalikan urutan 1–9 sesuai Pedoman Menteri PANRB No. 9/2024"
-            onClick={() => window.confirm('Pulihkan 9 unsur baku PANRB dan urutannya? Unsur baku yang terhapus akan dibuat ulang; unsur bernama sama dijadikan unsur baku.')
-              && run(() => surveyApi.restoreStandardUnsur(), 'Unsur baku PANRB dipulihkan sesuai urutan Pedoman.')}>
-            <RotateCcw className="w-4 h-4" /> Pulihkan Unsur Baku PANRB
+            title="Membuat ulang unsur baku yang terhapus dan mengembalikan urutan 1–9"
+            onClick={() => window.confirm('Pulihkan 9 unsur baku dan urutannya? Unsur baku yang terhapus akan dibuat ulang; unsur bernama sama dijadikan unsur baku.')
+              && run(() => surveyApi.restoreStandardUnsur(), 'Unsur baku dipulihkan sesuai urutannya.')}>
+            <RotateCcw className="w-4 h-4" /> Pulihkan Unsur Baku
           </Button>
           <Button size="sm" onClick={() => setForm({ ...EMPTY })}><Plus className="w-4 h-4" /> Tambah Unsur</Button>
         </div>
@@ -104,7 +104,7 @@ export function UnsurTab() {
                   <td className="p-3 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
                       {u.name}
-                      {u.is_standard && <Badge variant="success">Baku PANRB</Badge>}
+                      {u.is_standard && <Badge variant="success">Baku</Badge>}
                       {u.is_archived && <Badge>Diarsipkan</Badge>}
                       <Badge variant={u.survey ? 'info' : 'default'}>{u.survey ? `Survei: ${u.survey.name}` : 'Semua survei'}</Badge>
                     </div>
@@ -141,7 +141,7 @@ export function UnsurTab() {
         {form && (
           <form onSubmit={save} className="space-y-4">
             <FormField label="Nama survei" hint={form.is_standard
-              ? 'Unsur baku PANRB selalu berlaku untuk semua survei sehingga tidak dapat dikhususkan.'
+              ? 'Unsur baku selalu berlaku untuk semua survei sehingga tidak dapat dikhususkan.'
               : 'Opsional. Pilih survei bila unsur ini khusus untuk survei tersebut; kosongkan agar unsur bisa dipakai di semua survei.'}>
               <select className={inputClass} disabled={form.is_standard} value={form.survey_id} onChange={(e) => setForm({ ...form, survey_id: e.target.value })}>
                 <option value="">Semua survei (unsur umum)</option>
@@ -151,7 +151,7 @@ export function UnsurTab() {
             <FormField label="Nama unsur" required>
               <input className={inputClass} value={form.name} minLength={3} maxLength={255} required onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </FormField>
-            <FormField label="Definisi" hint={form.is_standard ? 'Definisi baku dari Pedoman Menteri PANRB No. 9/2024; boleh disesuaikan dengan layanan pentashihan.' : 'Penjelasan singkat unsur agar penyusun pertanyaan dan pembaca laporan memahami maksudnya.'}>
+            <FormField label="Definisi" hint={form.is_standard ? 'Definisi baku; boleh disesuaikan dengan layanan pentashihan.' : 'Penjelasan singkat unsur agar penyusun pertanyaan dan pembaca laporan memahami maksudnya.'}>
               <textarea className={inputClass} rows={4} maxLength={2000} value={form.definition} onChange={(e) => setForm({ ...form, definition: e.target.value })} />
             </FormField>
             <div className="flex justify-end gap-2">

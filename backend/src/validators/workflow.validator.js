@@ -19,7 +19,7 @@ export const assignmentSchema = { params, body: z.object({
   reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
-  comparison_notes: z.string().trim().min(20, 'Catatan telaah pembanding minimal 20 karakter.').max(5000).optional(),
+  comparison_notes: z.string().trim().max(5000).optional(),
 }).strict().superRefine((data, ctx) => {
   if (!data.assignee_ids && !data.juz_assignments) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });
@@ -141,6 +141,7 @@ export const distributorReviewSchema = { params, body: z.object({
   outgoing_tracking_no: z.string().trim().max(100).optional(),
   outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
   outgoing_notes: z.string().trim().max(1000).optional(),
+  pemaraf_id: z.string().uuid('Pemaraf tidak valid.').optional(),
 }).strict() };
 
 export const outgoingDispatchSchema = { params, body: z.object({

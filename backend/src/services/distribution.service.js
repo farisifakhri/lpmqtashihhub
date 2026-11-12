@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { calculateDueAt } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
+import { ACTIVE_PEMARAF, pemarafGateActive, findParaf, parafKey } from './paraf.service.js';
 import { buildMyAssignmentsWhere } from './queue-filters.js';
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
@@ -31,12 +32,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
       fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
     }
 
-    // B-19a N4: Telaah pembanding distributor wajib pada penugasan awal ronde naskah masuk (sebelum didistribusikan ke pentashih)
+    // B-19a N4: Telaah pembanding distributor pada penugasan awal ronde naskah masuk bersifat opsional; disimpan hanya bila diisi
     const isInitialRoundAssignment = reg.status === 'WAITING_DISTRIBUTION' || !roundInfo.hasAssignmentsForRound;
-    if (isInitialRoundAssignment) {
-      if (!data.comparison_notes || data.comparison_notes.trim().length < 20) {
-        fail(400, 'Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) saat menugaskan naskah revisi/dumi masuk.');
-      }
+    if (isInitialRoundAssignment && data.comparison_notes?.trim()) {
       if (tx.distributorComparison?.upsert) {
         await tx.distributorComparison.upsert({
           where: {
@@ -68,9 +66,8 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     : reg.registration_type === 'EXTENSION'
     ? 'DUMMY'
     : 'INITIAL';
-  if (data.stage && data.stage !== expectedStage && reg.status !== 'TASHIH_IN_PROGRESS') {
-    fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
-  }
+  // Jenis penugasan ronde baru (Awal / Perbaikan / Dumi) dipilih distributor di pop-up "Mulai Penugasan";
+  // expectedStage hanya menjadi nilai bawaan bila klien tidak mengirim stage.
   const now = new Date();
   const teamCache = new Map();
   if (data.team_id) {
@@ -564,7 +561,8 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   return { lastIteration: last.iteration, assignments };
 };
 
-export const approveDistribution = (id, data, user) => prisma.$transaction(async tx => {
+// dryRun: hanya menjalankan seluruh validasi tanpa mengubah data (keputusan masih menunggu paraf).
+const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, pemarafName = null } = {}) => {
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
@@ -597,6 +595,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     await assertReadyForSttEligibility(tx, id);
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
+  if (dryRun) return reg;
 
   // Finalisasi status assignment pada iterasi ini saat distributor menyimpan keputusan (Item 6)
   // B-19b guard: penugasan yang berstatus REVOKED tidak boleh ditimpa menjadi COMPLETED
@@ -671,6 +670,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
             revision_kind: revisionKind,
             notes: data.notes,
             distributor_name: user.name,
+            pemaraf_name: pemarafName,
             created_at: new Date().toISOString(),
           },
         },
@@ -722,6 +722,57 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   }
 
   return tx.registration.findUnique({ where: { id } });
+};
+
+// Bila sudah ada akun Pemaraf aktif, keputusan distributor ditahan sampai diparaf Pemaraf yang ditunjuk.
+export const approveDistribution = (id, { pemaraf_id, ...decision }, user) => prisma.$transaction(async tx => {
+  if (!(await pemarafGateActive(tx))) return applyDistributionDecision(tx, id, decision, user);
+  if (!pemaraf_id) fail(400, 'Pilih Pemaraf yang akan membubuhkan paraf atas keputusan ini.');
+  const pemaraf = await tx.user.findFirst({ where: { id: pemaraf_id, ...ACTIVE_PEMARAF }, select: { id: true, name: true } });
+  if (!pemaraf) fail(400, 'Pemaraf yang dipilih tidak ditemukan atau tidak aktif.');
+
+  const reg = await applyDistributionDecision(tx, id, decision, user, { dryRun: true });
+  const pending = { pemaraf_id, requested_by_id: user.id, payload: decision, signed_at: null };
+  await tx.approvalParaf.upsert({
+    where: parafKey('DISTRIBUTOR_REVIEW', id),
+    create: { subject_type: 'DISTRIBUTOR_REVIEW', subject_id: id, ...pending },
+    update: pending,
+  });
+  await tx.notification.create({ data: {
+    user_id: pemaraf.id,
+    registration_id: id,
+    type: 'PARAF_REQUIRED',
+    title: `Keputusan sidang menunggu paraf Anda: ${reg.registration_no || reg.title}`,
+    payload: { link: `/internal/distributions/monitoring?review=${id}` },
+  } });
+  await audit(tx, user, 'DISTRIBUTOR_REVIEW_WAITING_PARAF', 'Registration', id, { ...decision, pemaraf: pemaraf.name });
+  return { ...reg, pending_paraf: { pemaraf } };
+}, { isolationLevel: 'ReadCommitted' });
+
+export const getDistributionParaf = async (id) => {
+  const gate_active = await pemarafGateActive(prisma);
+  const paraf = await findParaf(prisma, 'DISTRIBUTOR_REVIEW', id);
+  if (!paraf || paraf.signed_at) return { gate_active, pending: null };
+  const [pemaraf, requested_by] = await Promise.all([paraf.pemaraf_id, paraf.requested_by_id].map(userId =>
+    (userId ? prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } }) : null)));
+  return { gate_active, pending: { pemaraf, requested_by, decision: paraf.payload, requested_at: paraf.created_at } };
+};
+
+// Paraf Pemaraf menjalankan keputusan distributor yang ditahan, atas nama distributor yang memutuskan.
+export const parafDistribution = (id, user, req) => prisma.$transaction(async tx => {
+  const paraf = await findParaf(tx, 'DISTRIBUTOR_REVIEW', id);
+  if (!paraf || paraf.signed_at) fail(409, 'Tidak ada keputusan distributor yang menunggu paraf untuk pengajuan ini.');
+  if (!user.roles.includes('SUPERADMIN') && !(user.isPemaraf && paraf.pemaraf_id === user.id)) {
+    fail(403, 'Hanya Pemaraf yang ditunjuk distributor yang dapat membubuhkan paraf atas keputusan ini.');
+  }
+  const requester = await tx.user.findUnique({ where: { id: paraf.requested_by_id }, include: { roles: { include: { role: true } } } });
+  if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
+  const actor = { id: requester.id, name: requester.name, roles: requester.roles.map(r => r.role.code) };
+
+  const result = await applyDistributionDecision(tx, id, paraf.payload, actor, { pemarafName: user.name });
+  await tx.approvalParaf.update({ where: { id: paraf.id }, data: { signed_at: new Date(), pemaraf_id: user.id } });
+  await audit(tx, user, 'PARAF_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
+  return result;
 }, { isolationLevel: 'ReadCommitted' });
 
 

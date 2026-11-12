@@ -1,10 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText } from 'lucide-react';
+import { X, Users, User, AlertCircle, Search, CheckCircle2, Sliders, FileText, ChevronDown, CalendarDays, ArrowLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 import { registrationApi } from '@/api/registration.api';
 import { masterApi } from '@/api/master.api';
+import { getAssignmentStage } from './distribution-view-model';
 
-export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
+// Periode penugasan: pilih salah satu dari 12 bulan tahun berjalan, lalu masuk ke Pekan 1-5 bulan itu.
+// shortcut: periode hanya pengelompokan tampilan dan belum dikirim ke server; tambahkan field
+// di endpoint penugasan bila bulan/pekan perlu tersimpan.
+const PERIOD_MONTHS = Array.from({ length: 12 }, (_, index) => {
+  const date = new Date(new Date().getFullYear(), index, 1);
+  return {
+    key: `${date.getFullYear()}-${index + 1}`,
+    label: date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+  };
+});
+const PERIOD_WEEKS = [1, 2, 3, 4, 5];
+
+export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
   const dialog = useRef(null);
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -24,6 +37,9 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   const [groupFrom, setGroupFrom] = useState(1);
   const [groupTo, setGroupTo] = useState(30);
   const [comparisonNotes, setComparisonNotes] = useState('');
+  const [openMonth, setOpenMonth] = useState(null); // bulan yang dipilih (null = layar pilih bulan)
+  const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
+  const [confirmClosePeriod, setConfirmClosePeriod] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -62,9 +78,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   }, [id]);
 
   const previous = registration?.assignments?.length > 0;
-  const lastRevLetter = registration?.official_documents?.find(d => d.document_type === 'REVISION_RETURN_LETTER');
-  const isDummyRevision = lastRevLetter?.content_snapshot?.revision_kind === 'NASHKAH_DUMI' || registration?.revision_kind === 'NASKAH_DUMI';
-  const stage = isDummyRevision ? 'DUMMY' : previous ? 'REVISION' : registration?.registration_type === 'EXTENSION' ? 'DUMMY' : 'INITIAL';
+  const stage = chosenStage || getAssignmentStage(registration).stage;
 
   const team = teams.find(item => item.id === teamId);
 
@@ -233,12 +247,6 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
   const submit = async event => {
     event.preventDefault();
     if (!ready || !allSelectedHaveJuz || saving) return;
-    if (isInitialRoundAssignment) {
-      if (!comparisonNotes.trim() || comparisonNotes.trim().length < 20) {
-        setError('Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) untuk naskah revisi/dumi masuk.');
-        return;
-      }
-    }
     setSaving(true);
     setError('');
 
@@ -337,6 +345,73 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
               </p>
             )}
 
+            {/* Daftar card bulan & pekan; form penugasan baru tampil setelah salah satu card dibuka */}
+            {!openMonth && (
+              <div className="space-y-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Bulan</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {PERIOD_MONTHS.map(month => (
+                    <button
+                      key={month.key}
+                      type="button"
+                      onClick={() => setOpenMonth(month.key)}
+                      className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-left text-sm font-bold text-ink hover:border-brand-700 hover:bg-brand-50/40 cursor-pointer"
+                    >
+                      <CalendarDays className="h-4 w-4 shrink-0 text-brand-700" />
+                      {month.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {PERIOD_MONTHS.filter(month => month.key === openMonth).map(month => (
+              <section key={month.key} aria-label={month.label} className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-ink">
+                    <CalendarDays className="h-3.5 w-3.5 text-brand-700" />
+                    {month.label}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Tidak kembali ke daftar bulan diam-diam selagi ada pekan terbuka: minta konfirmasi di card pekannya
+                      if (openPeriod) setConfirmClosePeriod(true);
+                      else setOpenMonth(null);
+                    }}
+                    className="flex items-center gap-1 rounded-lg border border-line-strong px-3 py-1.5 text-xs font-semibold text-ink hover:bg-surface-subtle cursor-pointer"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    Ganti bulan
+                  </button>
+                </div>
+                {PERIOD_WEEKS.map(week => {
+                  const periodKey = `${month.key}-${week}`;
+                  const isOpen = openPeriod === periodKey;
+                  return (
+                    <div key={periodKey} className={clsx('rounded-xl border', isOpen ? 'border-brand-700 bg-brand-50/20' : 'border-line bg-white')}>
+                      <button
+                        type="button"
+                        aria-expanded={isOpen}
+                        onClick={() => {
+                          if (isOpen) setConfirmClosePeriod(true);
+                          else { setOpenPeriod(periodKey); setConfirmClosePeriod(false); }
+                        }}
+                        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-bold text-ink cursor-pointer"
+                      >
+                        <span>Pekan {week}</span>
+                        <ChevronDown className={clsx('h-4 w-4 text-ink-muted transition-transform', isOpen && 'rotate-180')} />
+                      </button>
+                      {isOpen && confirmClosePeriod && (
+                        <div role="alertdialog" aria-label={`Konfirmasi tutup Pekan ${week}`} className="mx-4 mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-civic-warningLine bg-civic-warningSoft p-3 text-xs text-ink">
+                          <span>Tutup Pekan {week}? Isian penugasan tidak hilang selama dialog ini masih terbuka.</span>
+                          <span className="flex gap-2">
+                            <button type="button" onClick={() => setConfirmClosePeriod(false)} className="rounded-lg border border-line-strong bg-white px-3 py-1.5 font-semibold cursor-pointer">Tetap buka</button>
+                            <button type="button" onClick={() => { setOpenPeriod(null); setConfirmClosePeriod(false); }} className="rounded-lg bg-brand-700 px-3 py-1.5 font-bold text-white hover:bg-brand-800 cursor-pointer">Ya, tutup</button>
+                          </span>
+                        </div>
+                      )}
+                      {isOpen && (
+                        <div className="space-y-5 border-t border-line p-4">
             {/* Pilihan Mode Penugasan: Tim Kelompok vs Pentashih Pribadi (Item 2) */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-ink">
@@ -720,6 +795,13 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                 </p>
               )}
             </fieldset>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </section>
+            ))}
           </>
         )}
 
@@ -728,11 +810,8 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
             <div className="flex items-center justify-between border-b border-brand-200/60 pb-2">
               <label className="block text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5 text-brand-700" />
-                Catatan Telaah Pembanding Naskah Masuk (Wajib Distributor)
+                Catatan Telaah Pembanding Naskah Masuk
               </label>
-              <span className="text-[11px] font-bold text-brand-800 bg-brand-100 px-2 py-0.5 rounded border border-brand-200">
-                Wajib Diisi (Min. 20 Karakter)
-              </span>
             </div>
 
             <div className="p-2.5 rounded-lg bg-white border border-brand-200 text-xs flex items-center justify-between gap-2">
@@ -755,14 +834,12 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
                 value={comparisonNotes}
                 maxLength={5000}
                 onChange={(e) => setComparisonNotes(e.target.value)}
-                placeholder="Tuliskan analisis perbandingan antara catatan koreksi ronde sebelumnya dengan perbaikan naskah yang baru diserahkan oleh penerbit... (minimal 20 karakter)"
+                placeholder="Tuliskan analisis perbandingan antara catatan koreksi ronde sebelumnya dengan perbaikan naskah yang baru diserahkan oleh penerbit..."
                 className="w-full p-3 text-xs bg-white border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
               />
               <div className="flex items-center justify-between text-[11px] text-ink-muted mt-1">
                 <span>Catatan ini disimpan ke arsip internal distributor dan tidak dipublikasikan ke penerbit.</span>
-                <span className={comparisonNotes.trim().length >= 20 ? 'text-brand-700 font-bold' : 'text-civic-warning font-semibold'}>
-                  {comparisonNotes.length}/5000 karakter (min. 20)
-                </span>
+                <span>{comparisonNotes.length}/5000 karakter</span>
               </div>
             </div>
           </div>
@@ -783,7 +860,7 @@ export function ManualTeamAssignmentDialog({ id, onClose, onAssigned }) {
           </button>
           <button
             type="submit"
-            disabled={loading || saving || !ready || !allSelectedHaveJuz}
+            disabled={loading || saving || !ready || !allSelectedHaveJuz || !openPeriod}
             className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-bold text-white hover:bg-brand-800 disabled:opacity-40 cursor-pointer"
           >
             {saving ? 'Menyimpan…' : 'Tetapkan penugasan'}

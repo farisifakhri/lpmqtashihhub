@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
+import { requireParaf, recordParaf, clearParaf } from './paraf.service.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
@@ -809,6 +810,14 @@ try { return await prisma.$transaction(async tx => {
   const reg = await registration(tx, doc.registration_id);
   requireStatus(reg, ['WAITING_VERIFICATION_APPROVAL']);
 
+  // Pemaraf berdiri sebelum Kepala: aksinya dicatat sebagai paraf, pengesahan tetap oleh Kepala LPMQ.
+  const parafSubject = doc.assignment_id || documentId;
+  if (user.isPemaraf) {
+    await recordParaf(tx, 'VERIFICATION_RESULT', parafSubject, user, req);
+    return { ...doc, paraf_only: true };
+  }
+  await requireParaf(tx, 'VERIFICATION_RESULT', parafSubject);
+
   const now = new Date();
 
   // Cari seluruh dokumen hasil verifikasi pada assignment ini yang SUBMITTED
@@ -949,6 +958,7 @@ export const returnVerificationDocument = (documentId, data, user, req) => prism
       status: 'RETURNED',
     },
   });
+  await clearParaf(tx, 'VERIFICATION_RESULT', doc.assignment_id || documentId);
 
   if (doc.assignment_id) {
     // Kembalikan seluruh dokumen hasil verifikasi terkait dalam penugasan ini secara atomik

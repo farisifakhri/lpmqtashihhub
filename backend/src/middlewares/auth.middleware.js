@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env.js';
 import { prisma } from '../config/database.js';
+import { withPemaraf } from '../utils/pemaraf.js';
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -49,7 +50,7 @@ export const authenticate = async (req, res, next) => {
       }
     }
 
-    const roleCodes = user.roles.map((ur) => ur.role.code);
+    const { roles: roleCodes, isPemaraf } = withPemaraf(user.roles.map((ur) => ur.role.code));
     // Peran aktif dikirim dari client via header X-Active-Role; backend memakainya untuk
     // menyaring badge dan menu agar pengguna multi-role bisa berganti peran dengan benar.
     const headerRole = (req.headers['x-active-role'] || '').toString().trim();
@@ -62,6 +63,7 @@ export const authenticate = async (req, res, next) => {
       nip: user.nip,
       status: user.status,
       roles: roleCodes,
+      isPemaraf,
       activeRole,
       publisherId: user.publisher ? user.publisher.id : null,
       publisher: user.publisher || null,

@@ -383,6 +383,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             description: "Telaah & persetujuan draf verifikasi",
                         },
                         {
+                            label: "Monitoring & Paraf Sidang",
+                            path: "/internal/distributions/monitoring",
+                            icon: <ShieldCheck className="w-4 h-4 shrink-0" />,
+                            description: "Keputusan sidang yang menunggu paraf",
+                        },
+                        {
                             label: "Pusat Tanda Tangan (TTE)",
                             path: "/internal/signatures",
                             badgeKey: "signatures_pending",
@@ -627,7 +633,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "Survei",
                         icon: <ClipboardList className="w-4 h-4 shrink-0" />,
-                        description: "Survei Kepuasan Masyarakat (PANRB 9/2024)",
+                        description: "Survei Kepuasan Masyarakat",
                         children: [
                             { label: "Nama Survei", path: "/internal/surveys?tab=survei" },
                             { label: "Nama Unsur", path: "/internal/surveys?tab=unsur" },

@@ -61,7 +61,7 @@ test.describe('Alur utama per tahapan', () => {
   test('Tahap 8 — Sidang tashih: distributor memantau sidang yang berjalan', async ({ bukaSebagai }) => {
     const page = await bukaSebagai('DISTRIBUTOR');
     await buka(page, '/internal/distributions');
-    await pilihTab(page, '3. Monitoring Sidang');
+    await pilihTab(page, '2. Penugasan, Monitoring Sidang');
     await harusTampil(page, DEMO.SEDANG_TASHIH);
   });
 
@@ -80,7 +80,7 @@ test.describe('Alur utama per tahapan', () => {
   test('Tahap 10 — Siap STT: naskah tampil di pengajuan STT distributor', async ({ bukaSebagai }) => {
     const page = await bukaSebagai('DISTRIBUTOR');
     await buka(page, '/internal/distributions');
-    await pilihTab(page, '4. Pengajuan STT');
+    await pilihTab(page, '3. Pengajuan STT');
     await harusTampil(page, DEMO.SIAP_STT);
   });
 

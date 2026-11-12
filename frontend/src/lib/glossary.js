@@ -132,6 +132,7 @@ export const ROLE_LABELS = {
   DOKUMENTATOR: 'Administrator Dokumen',
   DOCUMENTATOR: 'Administrator Dokumen',
   KEPALA_LPMQ: 'Kepala LPMQ',
+  PEMARAF: 'Pemaraf',
   HEAD_OF_LPMQ: 'Kepala LPMQ',
   PENERBIT: 'Penerbit Terverifikasi',
   PUBLISHER: 'Penerbit Terverifikasi',

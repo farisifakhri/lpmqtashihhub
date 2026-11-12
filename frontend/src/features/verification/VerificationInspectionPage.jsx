@@ -488,7 +488,9 @@ export const VerificationInspectionPage = () => {
         ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : { auto_number: true, auto_generate: true }),
       });
       setApproveConfirmOpen(false);
-      setSuccessMessage('Surat hasil dan Berita Acara telah disahkan. Nomor resmi dan kode billing diterbitkan otomatis pada dokumen.');
+      setSuccessMessage(currentUser?.isPemaraf
+        ? 'Paraf dibubuhkan. Surat hasil verifikasi diteruskan ke Kepala LPMQ untuk disahkan.'
+        : 'Surat hasil dan Berita Acara telah disahkan. Nomor resmi dan kode billing diterbitkan otomatis pada dokumen.');
       await fetchDetail();
     } catch (err) {
       setApproveModalError(err.message || 'Gagal menyetujui surat hasil verifikasi.');

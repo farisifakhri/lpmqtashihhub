@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { registrationApi } from '@/api/registration.api';
 import { tashihApi } from '@/api/tashih.api';
+import { fileApi } from '@/api/file.api';
+import { showToast } from '@/components/ui/toast';
+
+// Berkas privat butuh header token, jadi tidak bisa lewat <a href> biasa
+const downloadFile = (id, name) => fileApi.downloadPrivateFile(id, name)
+  .catch((err) => showToast(err.message || 'Gagal mengunduh berkas.', 'error'));
 import { Button } from '@/components/ui/Button';
 import {
   CheckCircle2,
@@ -14,6 +20,7 @@ import {
   Clock,
   ShieldCheck,
   Check,
+  Info,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
@@ -35,7 +42,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   // Form decision state
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [distributorNotes, setDistributorNotes] = useState('');
-  const [revisionKind, setRevisionKind] = useState('NASKAH_PERBAIKAN'); // 'NASKAH_PERBAIKAN' | 'NASKAH_DUMI'
+  // Pemaraf: keputusan distributor ditahan sampai diparaf (hanya bila sudah ada akun Pemaraf aktif)
+  const [parafState, setParafState] = useState({ gate_active: false, pending: null });
+  const [pemarafOptions, setPemarafOptions] = useState([]);
+  const [pemarafId, setPemarafId] = useState('');
   const [outgoingCourier, setOutgoingCourier] = useState('');
   const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
   const [outgoingNotes, setOutgoingNotes] = useState('');
@@ -49,7 +59,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
         if (!active) return;
         const reg = res.data;
         setRegistration(reg);
-        if (reg.revision_kind) setRevisionKind(reg.revision_kind);
 
         // Cari iterasi terakhir
         const assignments = reg.assignments || [];
@@ -99,6 +108,40 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     };
   }, [registrationId]);
 
+  useEffect(() => {
+    let active = true;
+    tashihApi.getDistributionParaf(registrationId)
+      .then(async (res) => {
+        if (!active || !res?.data) return;
+        setParafState(res.data);
+        if (res.data.pending?.pemaraf?.id) setPemarafId(res.data.pending.pemaraf.id);
+        if (res.data.gate_active) {
+          const list = await tashihApi.listPemaraf();
+          if (active) setPemarafOptions(list?.data || []);
+        }
+      })
+      .catch(() => {}); // tanpa data paraf, dialog tetap berjalan dengan alur lama
+    return () => { active = false; };
+  }, [registrationId]);
+
+  const pendingParaf = parafState.pending;
+  const canParaf = Boolean(pendingParaf) && (
+    userRoles.includes('SUPERADMIN') || (currentUser?.isPemaraf && pendingParaf.pemaraf?.id === currentUser?.id)
+  );
+
+  const handleParaf = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await tashihApi.parafDistribution(registrationId);
+      onSuccess?.();
+    } catch (err) {
+      setError(err.message || 'Gagal membubuhkan paraf.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Evaluasi kelayakan submit
   const previousRevLetters = React.useMemo(() => {
     return (registration?.official_documents || [])
@@ -138,6 +181,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
       return;
     }
+    if (parafState.gate_active && !pemarafId) {
+      setError('Pilih Pemaraf yang akan membubuhkan paraf atas keputusan ini.');
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -146,7 +193,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       await tashihApi.approveDistribution(registrationId, {
         result: decision,
         notes: distributorNotes.trim(),
-        revision_kind: decision === 'REVISION_REQUIRED' ? revisionKind : undefined,
+        pemaraf_id: parafState.gate_active ? pemarafId : undefined,
         outgoing_courier: decision === 'REVISION_REQUIRED' && outgoingCourier.trim() ? outgoingCourier.trim() : undefined,
         outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
         outgoing_notes: decision === 'REVISION_REQUIRED' && outgoingNotes.trim() ? outgoingNotes.trim() : undefined,
@@ -307,15 +354,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         )}
                         {Boolean(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)) && (
                           <div className="pt-1.5 flex items-center gap-2">
-                            <a
-                              href={`/api/v1/uploads/${a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1]}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            <button
+                              type="button"
+                              onClick={() => downloadFile(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1], `Rekap-Internal-${a.assignee?.name || 'Pentashih'}.pdf`)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
                             >
                               <FileText className="w-3.5 h-3.5 text-brand-700" />
                               <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
-                            </a>
+                            </button>
                             <span className="text-xs text-ink-muted">Kerahasiaan Internal</span>
                           </div>
                         )}
@@ -375,15 +421,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                           <div className="pt-1 flex flex-wrap items-center justify-between gap-2 border-t border-line/60">
                             <span className="text-[11px] text-ink-muted font-semibold">2. Dokumen Rekap Perbaikan Penerbit:</span>
                             {pubRecap?.recap_file_id ? (
-                              <a
-                                href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                              <button
+                                type="button"
+                                onClick={() => downloadFile(pubRecap.recap_file_id, `Rekap-Revisi-Penerbit-Ronde-${roundNum}.pdf`)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
                               >
                                 <FileText className="w-3.5 h-3.5 text-brand-700" />
                                 <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
-                              </a>
+                              </button>
                             ) : (
                               <span className="text-xs text-civic-warning italic">Penerbit belum mengunggah berkas rekapitulasi untuk ronde ini</span>
                             )}
@@ -392,6 +437,33 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                       );
                     })}
                   </div>
+                </div>
+              )}
+
+              {pendingParaf && (
+                <div className="p-3.5 rounded-xl bg-civic-infoSoft border border-civic-infoLine text-xs text-ink space-y-2">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-civic-info" />
+                    <span>Menunggu paraf {pendingParaf.pemaraf?.name || 'Pemaraf'}</span>
+                  </div>
+                  <div>
+                    Keputusan {pendingParaf.requested_by?.name || 'distributor'}:{' '}
+                    <strong>{pendingParaf.decision?.result === 'PASSED' ? 'Lolos telaah' : 'Kembalikan ke penerbit (perbaikan)'}</strong>
+                  </div>
+                  <p className="font-mono whitespace-pre-line bg-white border border-line rounded p-2">{pendingParaf.decision?.notes}</p>
+                  {canParaf && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleParaf}
+                      disabled={submitting}
+                      className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                      icon={<Check className="w-3.5 h-3.5" />}
+                    >
+                      {submitting ? 'Menyimpan...' : 'Bubuhkan Paraf'}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -477,70 +549,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                             </span>
                           </div>
 
-                          <div>
-                            <label className="block text-xs font-bold text-ink mb-1.5">
-                              Pilih Jenis Naskah Pengembalian (SRS v3.1 / T-04)
-                            </label>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                              <label
-                                className={clsx(
-                                  'p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2',
-                                  revisionKind === 'NASKAH_PERBAIKAN'
-                                    ? 'border-brand-700 bg-brand-50/50 font-bold text-brand-900 shadow-2xs'
-                                    : 'border-line bg-white text-ink'
-                                )}
-                              >
-                                <input
-                                  type="radio"
-                                  name="revisionKind"
-                                  value="NASKAH_PERBAIKAN"
-                                  checked={revisionKind === 'NASKAH_PERBAIKAN'}
-                                  onChange={(e) => setRevisionKind(e.target.value)}
-                                  className="mt-0.5 text-brand-700 focus:ring-brand-700"
-                                />
-                                <div>
-                                  <div>Naskah Perbaikan</div>
-                                  <div className="text-xs text-ink-muted font-normal mt-0.5">
-                                    Siklus koreksi naskah berkala (tahap awal / revisi lanjutan).
-                                  </div>
-                                </div>
-                              </label>
-
-                              <label
-                                className={clsx(
-                                  'p-2.5 rounded-lg border cursor-pointer transition-all flex items-start gap-2',
-                                  revisionKind === 'NASKAH_DUMI'
-                                    ? 'border-brand-700 bg-brand-50/50 font-bold text-brand-900 shadow-2xs'
-                                    : 'border-line bg-white text-ink'
-                                )}
-                              >
-                                <input
-                                  type="radio"
-                                  name="revisionKind"
-                                  value="NASKAH_DUMI"
-                                  checked={revisionKind === 'NASKAH_DUMI'}
-                                  onChange={(e) => setRevisionKind(e.target.value)}
-                                  className="mt-0.5 text-brand-700 focus:ring-brand-700"
-                                />
-                                <div>
-                                  <div>Naskah Dumi</div>
-                                  <div className="text-xs text-ink-muted font-normal mt-0.5">
-                                    Format mock-up / dumi cetak akhir sebelum cetak massal.
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-                          </div>
-
-                          <div className="p-2.5 rounded-lg bg-white border border-civic-warningLine/70 text-xs text-ink space-y-1">
-                            <strong className="text-civic-warning block font-bold">
-                              Panduan Ketentuan Naskah Dumi (T-04):
-                            </strong>
-                            <p className="text-ink-muted leading-relaxed">
-                              Naskah Dumi dipilih setelah naskah bersih dari kesalahan pada tashih tahap awal atau tahap revisi. Di tahap dumi tetap dilakukan pemeriksaan terakhir. Apabila masih ditemukan kesalahan minor di akhir, naskah tidak perlu dikembalikan dalam siklus baru ke penerbit, melainkan diterbitkan notice catatan kesalahan.
-                            </p>
-                          </div>
-
                           {/* Resi Keluar Pengembalian Naskah ke Penerbit (B-07) */}
                           <div className="p-3.5 rounded-lg bg-white border border-civic-warningLine/70 space-y-2.5">
                             <div className="flex items-center gap-1.5 font-bold text-xs text-ink">
@@ -573,6 +581,31 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                               </div>
                             </div>
                           </div>
+                        </div>
+                      )}
+
+                      {(
+                        <div className="mt-3.5">
+                          <label htmlFor="pemaraf-select" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
+                            Pemaraf
+                          </label>
+                          <select
+                            id="pemaraf-select"
+                            value={pemarafId}
+                            onChange={(e) => setPemarafId(e.target.value)}
+                            disabled={!parafState.gate_active}
+                            className="w-full rounded-xl border border-line-strong p-2.5 text-xs bg-canvas/70 outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
+                          >
+                            <option value="">Pilih pemaraf...</option>
+                            {pemarafOptions.map((p) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-ink-muted mt-1">
+                            {parafState.gate_active
+                              ? 'Keputusan baru berlaku setelah pemaraf yang dipilih membubuhkan paraf.'
+                              : 'Belum ada akun dengan peran Pemaraf yang aktif, sehingga keputusan langsung berlaku saat disimpan.'}
+                          </p>
                         </div>
                       )}
 
@@ -637,7 +670,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >
-                {submitting ? 'Menyimpan...' : 'Simpan Keputusan Distributor'}
+                {submitting ? 'Menyimpan...' : parafState.gate_active ? 'Kirim ke Pemaraf' : 'Simpan Keputusan Distributor'}
               </Button>
             )}
           </div>

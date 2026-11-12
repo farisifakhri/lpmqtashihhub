@@ -15,7 +15,7 @@ const statusLabels = {
 export const statusLabel = status => statusLabels[status] || 'Tidak dikenali';
 const roleLabels = {
   SUPERADMIN: 'administrator sistem', PENERBIT: 'admin penerbit', VERIFIKATOR: 'verifikator',
-  ADMIN_INTERNAL: 'Helper Admin', DISTRIBUTOR: 'distributor', PENTASHIH: 'pentashih', DOKUMENTATOR: 'dokumentator', KEPALA_LPMQ: 'Kepala LPMQ',
+  ADMIN_INTERNAL: 'Helper Admin', DISTRIBUTOR: 'distributor', PENTASHIH: 'pentashih', DOKUMENTATOR: 'dokumentator', KEPALA_LPMQ: 'Kepala LPMQ', PEMARAF: 'Pemaraf',
 };
 export const roleLabel = role => roleLabels[role] || 'petugas yang berwenang';
 

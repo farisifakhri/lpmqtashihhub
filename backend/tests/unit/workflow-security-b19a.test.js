@@ -227,7 +227,7 @@ test('B19A-05: recordReview menolak berkas rekap jika bukan milik pentashih bers
   );
 });
 
-test('B19A-06: createAssignments mewajibkan comparison_notes minimal 20 karakter pada penugasan naskah revisi masuk (N4)', async () => {
+test('B19A-06: comparison_notes opsional pada penugasan naskah revisi masuk; disimpan hanya bila diisi (N4)', async () => {
   const regId = 'reg-b19a-06';
   let savedComparison = null;
 
@@ -289,18 +289,15 @@ test('B19A-06: createAssignments mewajibkan comparison_notes minimal 20 karakter
   prisma.$transaction = async (fn) => fn(mockTx);
   const distributorUser = { id: 'usr-dist', roles: ['DISTRIBUTOR'], name: 'Distributor 1' };
 
-  // 1. Ditolak jika comparison_notes kosong atau < 20 karakter
-  await assert.rejects(
-    createAssignments(regId, {
-      stage: 'REVISION',
-      is_individual: true,
-      assignee_ids: ['usr-p-1'],
-      comparison_notes: 'Terlalu pendek',
-    }, distributorUser),
-    (err) => err.statusCode === 400 && /minimal 20 karakter/i.test(err.message)
-  );
+  // 1. Boleh dilewati: tanpa comparison_notes penugasan tetap berhasil dan tidak ada telaah yang disimpan
+  await createAssignments(regId, {
+    stage: 'REVISION',
+    is_individual: true,
+    assignee_ids: ['usr-p-1'],
+  }, distributorUser);
+  assert.equal(savedComparison, null);
 
-  // 2. Berhasil jika comparison_notes >= 20 karakter
+  // 2. Bila diisi, catatan tersimpan
   const validNotes = 'Catatan telaah pembanding: Naskah revisi ronde 1 telah diperiksa kesesuaiannya terhadap surat pengembalian sebelumnya.';
   await createAssignments(regId, {
     stage: 'REVISION',

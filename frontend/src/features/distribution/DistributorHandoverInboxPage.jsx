@@ -9,7 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { DistributorReviewDialog } from './DistributorReviewDialog';
 import { RevokePentashihAssignmentDialog } from './RevokePentashihAssignmentDialog';
-import { TeamAssignmentPanel } from './components/TeamAssignmentPanel';
+import { AssignmentStageDialog } from './components/AssignmentStageDialog';
 import { ReviewProgressPanel } from './components/ReviewProgressPanel';
 import { SttWorkflowPanel } from './components/SttWorkflowPanel';
 import { HandoverPanel } from './components/HandoverPanel';
@@ -34,20 +34,16 @@ export const DistributorHandoverInboxPage = () => {
   const [hubStage, setHubStage] = useState(
     urlTab === 'STT' || urlTab === 'STT_LIFECYCLE'
       ? 'STT_LIFECYCLE'
-      : urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+      : ['MONITORING_SIDANG', 'MONITORING', 'PENUGASAN_TIM', 'ASSIGNMENT'].includes(urlTab)
       ? 'MONITORING'
-      : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT'
-      ? 'ASSIGNMENT'
       : 'HANDOVER'
   );
   useEffect(() => {
     setHubStage(
       urlTab === 'STT' || urlTab === 'STT_LIFECYCLE'
         ? 'STT_LIFECYCLE'
-        : urlTab === 'MONITORING_SIDANG' || urlTab === 'MONITORING'
+        : ['MONITORING_SIDANG', 'MONITORING', 'PENUGASAN_TIM', 'ASSIGNMENT'].includes(urlTab)
         ? 'MONITORING'
-        : urlTab === 'PENUGASAN_TIM' || urlTab === 'ASSIGNMENT'
-        ? 'ASSIGNMENT'
         : 'HANDOVER'
     );
   }, [urlTab]);
@@ -61,7 +57,10 @@ export const DistributorHandoverInboxPage = () => {
   } = useDistributionQueues(hubStage);
 
   const [assignmentModalId, setAssignmentModalId] = useState(null);
-  const [reviewDialogRegId, setReviewDialogRegId] = useState(null);
+  const [stageChoiceReg, setStageChoiceReg] = useState(null); // pop-up "Mulai Penugasan"
+  const [assignmentStage, setAssignmentStage] = useState(null); // jenis penugasan yang dipilih di pop-up
+  // ?review=<id> (tautan notifikasi pemaraf) langsung membuka dialog reviu
+  const [reviewDialogRegId, setReviewDialogRegId] = useState(searchParams.get('review'));
   const [revokeTarget, setRevokeTarget] = useState(null);
 
   const [handovers, setHandovers] = useState([]);
@@ -381,26 +380,6 @@ export const DistributorHandoverInboxPage = () => {
         <button
           type="button"
           onClick={() => {
-            setHubStage('ASSIGNMENT');
-            setSearchParams({ stage: 'ASSIGNMENT' });
-          }}
-          className={clsx(
-            'flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer',
-            hubStage === 'ASSIGNMENT'
-              ? 'bg-white text-brand-800 shadow-xs'
-              : 'text-ink-muted hover:text-ink'
-          )}
-        >
-          <Users className="w-4 h-4" />
-          <span>2. Siap Penugasan Tim SK</span>
-          <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
-            {waitingDistRegistrations.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
             setHubStage('MONITORING');
             setSearchParams({ stage: 'MONITORING' });
           }}
@@ -412,9 +391,9 @@ export const DistributorHandoverInboxPage = () => {
           )}
         >
           <ShieldCheck className="w-4 h-4" />
-          <span>3. Monitoring Sidang & Reviu</span>
+          <span>2. Penugasan, Monitoring Sidang & Review Hasil Pentashihan</span>
           <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
-            {inProgressRegistrations.length}
+            {waitingDistRegistrations.length + inProgressRegistrations.length}
           </span>
         </button>
 
@@ -432,7 +411,7 @@ export const DistributorHandoverInboxPage = () => {
           )}
         >
           <FileCheck2 className="w-4 h-4" />
-          <span>4. Pengajuan STT & TU</span>
+          <span>3. Pengajuan STT & TU</span>
           <span className="px-2 py-0.5 rounded-full bg-surface-strong text-ink text-xs">
             {readyForSttRegistrations.length}
           </span>
@@ -471,24 +450,15 @@ export const DistributorHandoverInboxPage = () => {
       )}
 
 
-      {hubStage === 'ASSIGNMENT' && (
-        <TeamAssignmentPanel
-          distLoading={distLoading}
-          waitingDistRegistrations={waitingDistRegistrations}
-          fetchDistributionData={fetchDistributionData}
-          isAdmin={isAdmin}
-          isDistributor={isDistributor}
-          currentUserId={currentUser?.id}
-          setAssignmentModalId={setAssignmentModalId}
-        />
-      )}
-
       {hubStage === 'MONITORING' && (
         <ReviewProgressPanel
           distLoading={distLoading}
+          waitingDistRegistrations={waitingDistRegistrations}
           inProgressRegistrations={inProgressRegistrations}
           fetchDistributionData={fetchDistributionData}
           setReviewDialogRegId={setReviewDialogRegId}
+          canAssign={(reg) => (reg.core_team_number ? isDistributor && reg.core_distributor_id === currentUser?.id : isAdmin)}
+          onStartAssignment={setStageChoiceReg}
           onRevokePentashih={(assignment, reg) => setRevokeTarget({ assignment, registration: reg })}
         />
       )}
@@ -502,9 +472,22 @@ export const DistributorHandoverInboxPage = () => {
       )}
 
 
+      {stageChoiceReg && (
+        <AssignmentStageDialog
+          registration={stageChoiceReg}
+          onClose={() => setStageChoiceReg(null)}
+          onChoose={(stage) => {
+            setAssignmentStage(stage);
+            setAssignmentModalId(stageChoiceReg.id);
+            setStageChoiceReg(null);
+          }}
+        />
+      )}
+
       {assignmentModalId && (
         <ManualTeamAssignmentDialog
           id={assignmentModalId}
+          stage={assignmentStage}
           onClose={() => setAssignmentModalId(null)}
           onAssigned={() => {
             setAssignmentModalId(null);

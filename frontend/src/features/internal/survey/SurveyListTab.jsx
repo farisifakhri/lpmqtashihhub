@@ -51,7 +51,7 @@ function SurveyViewModal({ surveyId, onClose, onArrange }) {
           </dl>
           {/* Struktur kuesioner sesuai Pedoman Menteri PANRB No. 9/2024 hlm. 14–21, urut seperti yang dilihat responden. */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Struktur Kuesioner (Pedoman PANRB Nomor 9 Tahun 2024)</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">Struktur Kuesioner</h4>
             <QuestionnaireSection title="1. Kalimat Pembuka"><p>{survey.description || OPENING_TEXT}</p></QuestionnaireSection>
             <QuestionnaireSection title="2. Data Responden (diisi sekali)">
               <ul className="list-disc pl-5 space-y-0.5">{DEMOGRAPHIC_FIELDS.map((f) => <li key={f}>{f}</li>)}</ul>

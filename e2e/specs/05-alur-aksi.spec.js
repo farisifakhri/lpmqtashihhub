@@ -50,13 +50,13 @@ test.describe.serial('Distributor — serah terima & sidang tashih', () => {
     await expect(page.getByText('Konfirmasi Penerimaan Master Fisik (Langkah 8 SOP)')).toHaveCount(0);
     await expect(kartuNaskah(page, DEMO.SERAH_TERIMA, /Konfirmasi Diterima/)).toHaveCount(0);
     // ... dan siap dibagikan ke tim pentashih
-    await pilihTab(page, '2. Siap Penugasan Tim');
+    await pilihTab(page, '2. Penugasan, Monitoring Sidang');
     await expect(page.getByText(DEMO.SERAH_TERIMA).first()).toBeVisible();
   });
 
   test('Tahap 8: reviu distributor terkunci selama pentashih belum menyerahkan hasil', async ({ page }) => {
     await buka(page, '/internal/distributions');
-    await pilihTab(page, '3. Monitoring Sidang');
+    await pilihTab(page, '2. Penugasan, Monitoring Sidang');
     await kartuNaskah(page, DEMO.SEDANG_TASHIH, /Lihat Hasil Anggota|Reviu Hasil Sidang/)
       .getByRole('button', { name: /Lihat Hasil Anggota|Reviu Hasil Sidang/ }).click();
 
@@ -70,7 +70,7 @@ test.describe.serial('Distributor — serah terima & sidang tashih', () => {
 
   test('Tahap 8 (B-19b): distributor melepas penugasan pentashih yang berhalangan', async ({ page }) => {
     await buka(page, '/internal/distributions');
-    await pilihTab(page, '3. Monitoring Sidang');
+    await pilihTab(page, '2. Penugasan, Monitoring Sidang');
     const kartu = page.locator('div').filter({ hasText: DEMO.SEDANG_TASHIH })
       .filter({ has: page.getByRole('button', { name: /^Lepas tugas/ }) }).last();
     await kartu.getByRole('button', { name: /^Lepas tugas/ }).first().click();

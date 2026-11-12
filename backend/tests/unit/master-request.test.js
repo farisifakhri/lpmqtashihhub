@@ -297,6 +297,8 @@ function fakeStore(initial) {
     notification: { create: async ({ data }) => state.notifications.push(data) },
     documentNumberSequence: { upsert: async () => ({ last_number: 7 }) },
     verificationDocument: { findFirst: async () => null, count: async () => 0 },
+    // Tanpa akun Pemaraf aktif (gerbang paraf mati), supaya tes tidak bergantung pada isi database lokal
+    user: { count: async () => 0 },
     $transaction: async (fn) => fn({ ...tx, documentNumberSequence: delegates.documentNumberSequence, verificationDocument: delegates.verificationDocument }),
   };
   return { state, delegates };
