@@ -252,6 +252,11 @@ test('active role middleware accepts only a role owned by the authenticated user
   requireActiveRole(acceptedRequest, {}, next);
   assert.equal(acceptedRequest.activeRole, 'ADMIN_INTERNAL');
 
+  // Pemaraf mengirim role identitas PEMARAF; antreannya memakai antrean Kepala LPMQ
+  const pemarafRequest = { headers: { 'x-active-role': 'PEMARAF' }, user: { roles: ['KEPALA_LPMQ'], isPemaraf: true } };
+  requireActiveRole(pemarafRequest, {}, next);
+  assert.equal(pemarafRequest.activeRole, 'KEPALA_LPMQ');
+
   let statusCode;
   let body;
   const rejectedResponse = {
@@ -269,6 +274,12 @@ test('active role middleware accepts only a role owned by the authenticated user
   assert.equal(statusCode, 403);
   assert.equal(body.success, false);
   assert.equal(rejectedRequest.activeRole, undefined);
+
+  // Akun bukan pemaraf tidak bisa memakai PEMARAF untuk masuk antrean Kepala
+  statusCode = undefined;
+  const fakePemaraf = { headers: { 'x-active-role': 'PEMARAF' }, user: { roles: ['KEPALA_LPMQ'], isPemaraf: false } };
+  requireActiveRole(fakePemaraf, rejectedResponse, next);
+  assert.equal(statusCode, 403);
 });
 
 test('authentication rejects a queue request without a token', async () => {
