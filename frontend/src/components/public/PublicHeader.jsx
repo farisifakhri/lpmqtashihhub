@@ -18,8 +18,6 @@ export const PUBLIC_NAV_ITEMS = [
       { label: 'Unduh Dokumen Seputar Pelayanan Surat Tanda Tashih/Izin Edar', href: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih' },
     ],
   },
-  // Khusus penerbit terdaftar: tanpa sesi login akan diarahkan ke halaman masuk
-  { label: 'Permohonan Master', href: '/publisher/master-requests' },
   {
     label: 'Pengaduan',
     href: '#',
@@ -29,7 +27,7 @@ export const PUBLIC_NAV_ITEMS = [
       { label: 'Lacak Pengaduan', href: '/pengaduan/lacak' },
     ],
   },
-  { label: 'FAQ', href: '#beranda' },
+  { label: 'FAQ', href: '/faq' },
 ];
 
 export const PUBLIC_INFORMATION_NAV_ITEMS = PUBLIC_NAV_ITEMS.map((item) => ({
@@ -76,8 +74,8 @@ export const PublicHeader = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-lpmq-border bg-white backdrop-blur">
-      <div className="mx-auto flex h-[76px] max-w-[1400px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Navigasi utama">
+      <div className="mx-auto grid h-[76px] max-w-[1400px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-4 px-5 sm:px-8 lg:px-12">
+        <nav className="col-start-1 hidden items-center gap-6 2xl:gap-8 xl:flex" aria-label="Navigasi utama">
           {navItems.map((item, index) => {
             const hasChildren = item.children?.length > 0;
             const isOpen = activeDropdown === item.label;
@@ -96,7 +94,7 @@ export const PublicHeader = ({
                     onClick={(event) => {
                       if (!item.href || item.href === '#') event.preventDefault();
                     }}
-                    className={`inline-flex items-center gap-1.5 text-[13px] font-medium transition-colors ${
+                    className={`inline-flex items-center gap-2 text-[13px] font-medium transition-colors ${
                       isOpen || isActive
                         ? 'text-lpmq-green font-semibold'
                         : 'text-lpmq-nav hover:text-lpmq-green'
@@ -173,13 +171,13 @@ export const PublicHeader = ({
           onClick={(event) => {
             if (logoHref.startsWith('/')) handleInternalNavigation(logoHref, event);
           }}
-          className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2"
+          className="col-start-2 flex items-center gap-2 justify-self-center"
           aria-label="LPMQ Kemenag RI"
         >
           <img src={logoTashih} alt="Logo Tashih LPMQ" className="h-10 w-auto object-contain" />
         </a>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="col-start-3 hidden items-center justify-self-end gap-3 xl:flex">
           <a
             href="https://wa.me/628111997125"
             target="_blank"
@@ -202,7 +200,7 @@ export const PublicHeader = ({
         <button
           type="button"
           onClick={() => setMenuOpen((value) => !value)}
-          className="ml-auto rounded-xl p-2 text-lpmq-green lg:hidden"
+          className="col-start-3 rounded-xl p-2 text-lpmq-green justify-self-end xl:hidden"
           aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
           aria-expanded={menuOpen}
         >
@@ -211,7 +209,7 @@ export const PublicHeader = ({
       </div>
 
       {menuOpen && (
-        <div className="border-t border-lpmq-border bg-white px-5 py-4 lg:hidden">
+        <div className="border-t border-lpmq-border bg-white px-5 py-4 xl:hidden">
           <div className="flex flex-col gap-1">
             {navItems.map((item) => {
               const hasChildren = item.children?.length > 0;

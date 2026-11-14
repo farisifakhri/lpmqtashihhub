@@ -36,7 +36,7 @@ const socialMediaLinks = [
 const footerLinks = [
   { label: 'Regulasi', key: 'regulation', href: '/informasi/regulasi-penerbit-mushaf', emphasized: false },
   { label: 'Pengaduan', key: 'complaint', href: '#beranda', emphasized: false },
-  { label: 'FAQ', key: 'faq', href: '#beranda', emphasized: false },
+  { label: 'FAQ', key: 'faq', href: '/faq', emphasized: false },
   { label: 'Portal Penerbit', key: 'portal', href: '/login', emphasized: true },
 ];
 
