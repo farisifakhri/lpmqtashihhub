@@ -15,14 +15,15 @@ export const publisherRegistrationApi = {
   },
 
   /**
-   * Memeriksa status pendaftaran secara mandiri via HTTP Body (anti-enumeration)
+   * Memeriksa status pendaftaran secara mandiri via HTTP Body (kode pendaftaran atau email)
    * POST /api/v1/publisher-registrations/check-status
    */
-  checkStatus: async (kodePendaftaran) => {
+  checkStatus: async (identifier) => {
     return apiClient('/publisher-registrations/check-status', {
       method: 'POST',
       body: {
-        kode_pendaftaran: kodePendaftaran,
+        identifier: identifier,
+        kode_pendaftaran: identifier,
       },
     });
   },
@@ -92,6 +93,17 @@ export const publisherRegistrationApi = {
   resendRevisionToken: async (id) => {
     return apiClient(`/admin/publisher-registrations/${encodeURIComponent(id)}/resend-revision-token`, {
       method: 'POST',
+    });
+  },
+
+  /**
+   * Mengedit data permohonan pendaftaran penerbit oleh Super Admin (B24-03)
+   * PATCH /api/v1/admin/publisher-registrations/:id/admin-edit
+   */
+  adminEditRegistration: async (id, data) => {
+    return apiClient(`/admin/publisher-registrations/${encodeURIComponent(id)}/admin-edit`, {
+      method: 'PATCH',
+      body: data,
     });
   },
 

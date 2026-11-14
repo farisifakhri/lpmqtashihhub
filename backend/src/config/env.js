@@ -71,4 +71,15 @@ if (ENV.MAIL_DRIVER === 'smtp' && (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP
   throw new Error('MAIL_DRIVER=smtp memerlukan SMTP_HOST, SMTP_USER, dan SMTP_PASS.');
 }
 
+if (
+  ENV.PUBLIC_APP_URL &&
+  !ENV.PUBLIC_APP_URL.includes('localhost') &&
+  !ENV.PUBLIC_APP_URL.includes('127.0.0.1') &&
+  ENV.MAIL_DRIVER !== 'smtp'
+) {
+  console.warn(
+    `⚠️  MAIL WARNING: PUBLIC_APP_URL (${ENV.PUBLIC_APP_URL}) bukan localhost, tetapi MAIL_DRIVER diatur ke "${ENV.MAIL_DRIVER}". Email tidak akan terkirim ke pengguna nyata via SMTP.`
+  );
+}
+
 export default ENV;

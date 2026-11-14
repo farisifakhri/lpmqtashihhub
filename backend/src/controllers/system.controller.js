@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { ENV } from '../config/env.js';
 
 /**
  * Controller untuk diagnostik sistem, pemeriksaan kesehatan BE dan DB (MySQL Laragon)
@@ -31,6 +32,7 @@ export const getHealth = async (req, res, next) => {
     timestamp: new Date().toISOString(),
     uptime_seconds: Math.floor(process.uptime()),
     latency_ms: totalLatency,
+    mail_driver: ENV.MAIL_DRIVER,
     database: {
       status: dbStatus,
       latency_ms: dbLatency,

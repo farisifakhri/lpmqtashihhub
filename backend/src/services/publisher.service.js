@@ -1,5 +1,6 @@
 import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
+import { forbidPemaraf } from '../utils/pemaraf.js';
 
 export const getProfile = async (publisherId) => {
   const publisher = await prisma.publisher.findUnique({
@@ -63,6 +64,8 @@ export const updateProfile = async (publisherId, data, req) => {
 };
 
 export const permitPublisherProfileEdit = async (publisherId, { allowed = true, notes = '' }, req) => {
+  forbidPemaraf(req?.user, 'mengatur izin perubahan profil penerbit');
+
   const existing = await prisma.publisher.findUnique({
     where: { id: publisherId },
   });
@@ -165,9 +168,80 @@ export const verifyPublisher = async (publisherId, { verification_status, notes 
   return updated;
 };
 
+export const adminUpdatePublisher = async (publisherId, data, req) => {
+  const existing = await prisma.publisher.findUnique({
+    where: { id: publisherId },
+  });
+
+  if (!existing) {
+    const error = new Error('Data penerbit tidak ditemukan.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const { reason, legal_name, entity_type, address, phone, npwp, nib } = data;
+
+  // Cek keunikan NPWP jika diubah
+  if (npwp && npwp !== existing.npwp) {
+    const conflict = await prisma.publisher.findFirst({
+      where: {
+        npwp,
+        id: { not: publisherId },
+      },
+    });
+    if (conflict) {
+      const error = new Error('NPWP ini sudah digunakan oleh penerbit lain yang terdaftar.');
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  // Cek keunikan NIB jika diubah
+  if (nib && nib !== existing.nib) {
+    const conflictNib = await prisma.publisher.findFirst({
+      where: {
+        nib,
+        id: { not: publisherId },
+      },
+    });
+    if (conflictNib) {
+      const error = new Error('NIB ini sudah digunakan oleh penerbit lain yang terdaftar.');
+      error.statusCode = 409;
+      throw error;
+    }
+  }
+
+  const updateData = {};
+  if (legal_name !== undefined) updateData.legal_name = legal_name;
+  if (entity_type !== undefined) updateData.entity_type = entity_type;
+  if (address !== undefined) updateData.address = address;
+  if (phone !== undefined) updateData.phone = phone;
+  if (npwp !== undefined) updateData.npwp = npwp;
+  if (nib !== undefined) updateData.nib = nib;
+
+  const updated = await prisma.publisher.update({
+    where: { id: publisherId },
+    data: updateData,
+  });
+
+  await logAudit({
+    actorId: req.user.id,
+    action: 'ADMIN_EDIT_PUBLISHER',
+    subjectType: 'Publisher',
+    subjectId: publisherId,
+    details: { reason },
+    beforeJson: existing,
+    afterJson: updated,
+    req,
+  });
+
+  return updated;
+};
+
 export default {
   getProfile,
   updateProfile,
   listPublishers,
   verifyPublisher,
+  adminUpdatePublisher,
 };

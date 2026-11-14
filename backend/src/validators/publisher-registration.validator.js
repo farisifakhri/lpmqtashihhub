@@ -56,9 +56,19 @@ export const createPublisherRegistrationSchema = {
 };
 
 export const checkPublisherRegistrationStatusSchema = {
-  body: z.object({
-    kode_pendaftaran: z.string().trim().min(1, 'Kode pendaftaran wajib diisi'),
-  }),
+  body: z
+    .object({
+      kode_pendaftaran: z.string().trim().optional(),
+      email: z.string().trim().optional(),
+      identifier: z.string().trim().optional(),
+    })
+    .refine(
+      (data) => Boolean((data.identifier && data.identifier.length > 0) || (data.kode_pendaftaran && data.kode_pendaftaran.length > 0) || (data.email && data.email.length > 0)),
+      {
+        message: 'Masukkan kode pendaftaran resmi atau alamat email yang didaftarkan.',
+        path: ['identifier'],
+      }
+    ),
 };
 
 export const decisionPublisherRegistrationSchema = {
@@ -76,6 +86,20 @@ export const decisionPublisherRegistrationSchema = {
   }, {
     message: 'Alasan wajib diisi jika keputusan adalah PERLU_PERBAIKAN atau TOLAK',
     path: ['alasan'],
+  }),
+};
+
+export const adminEditRegistrationSchema = {
+  body: z.object({
+    name: z.string().trim().min(3, 'Nama penerbit minimal 3 karakter').max(255).optional(),
+    publisher_type: z.enum(['SWASTA', 'INSTANSI_PEMERINTAH', 'YAYASAN_LEMBAGA', 'PERORANGAN']).optional(),
+    address: z.string().trim().max(500).optional(),
+    pic_name: z.string().trim().max(255).optional(),
+    pic_phone: z.string().trim().max(50).optional(),
+    email: z.string().trim().email('Format email tidak valid').max(255).optional(),
+    npwp: z.string().trim().max(50).optional(),
+    nib: z.string().trim().max(50).optional().nullable(),
+    reason: z.string().trim().min(10, 'Alasan perubahan data wajib diisi minimal 10 karakter'),
   }),
 };
 

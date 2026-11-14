@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { logAudit } from './audit.service.js';
-import { emailProvider } from './email-provider.service.js';
+import { emailProvider, sendOutboxEmail } from './email-provider.service.js';
 import { withPemaraf } from '../utils/pemaraf.js';
 
 export const login = async ({ email, password, req }) => {
@@ -246,11 +246,16 @@ export const forgotPassword = async ({ email, req }) => {
   // sends the portable code so recovery does not depend on localhost links.
   const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
 
+  const idempotencyKey = `pwd_reset_${user.id}_${Date.now()}`;
+
   try {
-    const result = await emailProvider.sendEmail({
-      to: user.email,
-      toName: user.name,
-      subject: 'Petunjuk Pemulihan Kata Sandi - LPMQ Tashih Hub',
+    const result = await sendOutboxEmail(prisma, {
+      registrationId: null,
+      documentId: null,
+      idempotencyKey,
+      recipientEmail: user.email,
+      recipientName: user.name,
+      subject: 'Petunjuk Pemulihan Kata Sandi - Layanan Tashih LPMQ',
       template: 'PASSWORD_RESET',
       payload: {
         resetCode: rawToken,
@@ -258,13 +263,24 @@ export const forgotPassword = async ({ email, req }) => {
         expiresMinutes: 30,
       },
     });
-    console.info(`[PasswordReset] Email diterima provider. MessageId: ${result.messageId || 'tidak tersedia'}`);
+    console.info(`[PasswordReset] Email masuk outbox dan dikirim. Outbox ID: ${result?.outbox?.id || 'tersimpan'}`);
   } catch (emailErr) {
     // Jangan biarkan kegagalan email mengekspos token ke respons HTTP
-    console.error('[PasswordReset] SMTP/provider gagal mengirim email:', {
+    console.error('[PasswordReset] Provider outbox gagal mengirim email reset sandi:', {
       code: emailErr.code || 'UNKNOWN',
       responseCode: emailErr.responseCode || null,
       message: emailErr.message,
+    });
+    await logAudit({
+      actorId: user.id,
+      action: 'PASSWORD_RESET_EMAIL_FAILED',
+      subjectType: 'User',
+      subjectId: user.id,
+      details: {
+        error: (emailErr.message || '').slice(0, 255),
+        outbox_id: emailErr.outbox?.id || null,
+      },
+      req,
     });
   }
 

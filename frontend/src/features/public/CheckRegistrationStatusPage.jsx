@@ -15,6 +15,7 @@ import {
     Download,
     KeyRound,
     ArrowRight,
+    Mail,
 } from "lucide-react";
 import kemenagLogo from "@/assets/kemenag1.png";
 import lpmqLogo from "@/assets/logo-lpmq1.png";
@@ -36,10 +37,10 @@ export const CheckRegistrationStatusPage = () => {
     const [isDownloadingCert, setIsDownloadingCert] = useState(false);
 
     const performSearch = useCallback(async (codeToSearch) => {
-        const cleanCode = (codeToSearch || "").trim().toUpperCase();
+        const cleanInput = (codeToSearch || "").trim();
 
-        if (!cleanCode) {
-            setError("Harap masukkan kode pendaftaran Anda.");
+        if (!cleanInput) {
+            setError("Harap masukkan kode pendaftaran atau alamat email Anda.");
             return;
         }
 
@@ -48,7 +49,7 @@ export const CheckRegistrationStatusPage = () => {
         setStatusResult(null);
 
         try {
-            const res = await publisherRegistrationApi.checkStatus(cleanCode);
+            const res = await publisherRegistrationApi.checkStatus(cleanInput);
             if (res?.success && res?.data) {
                 setStatusResult(res.data);
             } else {
@@ -58,7 +59,7 @@ export const CheckRegistrationStatusPage = () => {
             const code = err.data?.code || err.code;
             if (code === "REGISTRATION_NOT_FOUND" || err.status === 404) {
                 setError(
-                    "Kode pendaftaran tidak ditemukan. Pastikan Anda memasukkan kode dengan benar sesuai email konfirmasi pendaftaran."
+                    "Data pendaftaran tidak ditemukan. Pastikan Anda memasukkan kode pendaftaran resmi atau alamat email yang didaftarkan."
                 );
             } else if (code === "RATE_LIMITED" || err.status === 429) {
                 setError(
@@ -78,7 +79,7 @@ export const CheckRegistrationStatusPage = () => {
     // Auto-search jika parameter kode ada di URL
     useEffect(() => {
         if (urlKode) {
-            setKodePendaftaran(urlKode.toUpperCase());
+            setKodePendaftaran(urlKode.includes('@') ? urlKode.trim() : urlKode.toUpperCase());
             performSearch(urlKode);
         }
     }, [urlKode, performSearch]);
@@ -171,34 +172,37 @@ export const CheckRegistrationStatusPage = () => {
                         Cek Status Pendaftaran Penerbit
                     </h1>
                     <p className="text-xs text-ink-muted max-w-md mx-auto leading-relaxed">
-                        Pantau proses verifikasi permohonan pendaftaran akun penerbit mushaf Al-Qur'an secara mandiri menggunakan kode pendaftaran resmi.
+                        Pantau proses verifikasi permohonan pendaftaran akun penerbit mushaf Al-Qur'an secara mandiri menggunakan kode pendaftaran resmi atau email yang didaftarkan.
                     </p>
                 </div>
 
-                {/* Form Input Kode */}
+                {/* Form Input Kode / Email */}
                 <form onSubmit={handleSearch} className="space-y-3">
                     <div>
                         <label
                             htmlFor="kode-pendaftaran-input"
                             className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5"
                         >
-                            Kode Pendaftaran Penerbit
+                            Kode Pendaftaran atau Email Terdaftar
                         </label>
                         <div className="relative flex items-center">
                             <input
                                 id="kode-pendaftaran-input"
                                 type="text"
                                 value={kodePendaftaran}
-                                onChange={(e) => setKodePendaftaran(e.target.value.toUpperCase())}
-                                placeholder="Contoh: REG-PUB-7K9M2X4F"
-                                maxLength={24}
-                                className="w-full pl-4 pr-11 py-3 text-sm font-mono tracking-wider bg-canvas focus:bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans uppercase"
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    setKodePendaftaran(val.includes('@') ? val.trim() : val.toUpperCase());
+                                }}
+                                placeholder="Contoh: REG-PUB-7K9M2X4F atau email@penerbit.com"
+                                maxLength={100}
+                                className="w-full pl-4 pr-11 py-3 text-sm font-mono tracking-wider bg-canvas focus:bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted placeholder:font-sans"
                                 required
                             />
                             <Search className="w-4 h-4 text-ink-muted absolute right-4 pointer-events-none" />
                         </div>
                         <p className="text-[11px] text-ink-muted mt-1">
-                            Kode pendaftaran terdiri atas awalan REG-PUB- diikuti 8 karakter acak sesuai konfirmasi pendaftaran.
+                            Masukkan kode pendaftaran resmi (diawali REG-PUB-) atau alamat email aktif yang digunakan saat pendaftaran.
                         </p>
                     </div>
 
@@ -244,7 +248,7 @@ export const CheckRegistrationStatusPage = () => {
                                     Kode Pendaftaran
                                 </span>
                                 <p className="font-mono text-base font-extrabold text-ink">
-                                    {statusResult.kode_pendaftaran}
+                                    {statusResult.kode_pendaftaran || '-'}
                                 </p>
                             </div>
                             <div className="text-left sm:text-right">
@@ -256,6 +260,21 @@ export const CheckRegistrationStatusPage = () => {
                                 </span>
                             </div>
                         </div>
+
+                        {/* Banner Pencarian Email */}
+                        {statusResult.is_email_search && (
+                            <div className="p-3.5 rounded-xl bg-brand-50 border border-brand-200 text-ink text-xs flex items-start gap-2.5">
+                                <Mail className="w-4 h-4 text-brand-fg shrink-0 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="font-semibold text-brand-900">
+                                        Pencarian Berdasarkan Email: {statusResult.masked_email}
+                                    </p>
+                                    <p className="text-ink-muted leading-relaxed">
+                                        {statusResult.message}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
 
                         {/* STATUS: DIAJUKAN (Menunggu Verifikasi) */}
                         {statusResult.status === "DIAJUKAN" && (
@@ -397,6 +416,62 @@ export const CheckRegistrationStatusPage = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* STATUS FALLBACK LAINNYA (MENCEGAH KARTU KOSONG) */}
+                        {!["DIAJUKAN", "PERLU_PERBAIKAN", "DISETUJUI", "DITOLAK"].includes(statusResult.status) && statusResult.status && (
+                            <div className="p-4 rounded-xl bg-surface border border-line text-ink space-y-2">
+                                <div className="flex items-center gap-2 text-brand-fg font-bold text-sm">
+                                    <Clock className="w-4 h-4" />
+                                    <span>{statusResult.status_label || statusResult.status}</span>
+                                </div>
+                                <p className="text-xs text-ink-muted leading-relaxed">
+                                    Permohonan pendaftaran Anda saat ini berstatus <strong>{statusResult.status_label || statusResult.status}</strong> dan sedang dalam proses penanganan oleh sekretariat LPMQ.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* TIMELINE ALUR & PROGRES PENDAFTARAN */}
+                        {Array.isArray(statusResult.timeline) && statusResult.timeline.length > 0 && (
+                            <div className="pt-4 border-t border-line space-y-3">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-ink">
+                                    Alur & Progres Pendaftaran
+                                </h4>
+                                <div className="space-y-3">
+                                    {statusResult.timeline.map((item, idx) => (
+                                        <div key={idx} className="flex items-start gap-3 text-xs">
+                                            <div className="mt-0.5 shrink-0">
+                                                {item.status === 'COMPLETED' ? (
+                                                    <CheckCircle2 className="w-4 h-4 text-civic-success" />
+                                                ) : item.status === 'IN_PROGRESS' ? (
+                                                    <Clock className="w-4 h-4 text-brand-fg animate-pulse" />
+                                                ) : item.status === 'WARNING' ? (
+                                                    <AlertTriangle className="w-4 h-4 text-civic-warning" />
+                                                ) : item.status === 'FAILED' ? (
+                                                    <XCircle className="w-4 h-4 text-civic-danger" />
+                                                ) : (
+                                                    <div className="w-3.5 h-3.5 rounded-full border-2 border-line-strong ml-0.5 mt-0.5" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className={`font-semibold ${item.status === 'COMPLETED' ? 'text-ink' : item.status === 'IN_PROGRESS' ? 'text-brand-fg font-bold' : item.status === 'WARNING' ? 'text-civic-warning font-bold' : item.status === 'FAILED' ? 'text-civic-danger font-bold' : 'text-ink-muted'}`}>
+                                                        {item.title}
+                                                    </span>
+                                                    {item.timestamp && (
+                                                        <span className="text-[10px] text-ink-muted font-mono">
+                                                            {formatDate(item.timestamp)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-ink-muted leading-relaxed mt-0.5">
+                                                    {item.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -407,10 +482,12 @@ export const CheckRegistrationStatusPage = () => {
                         <span>Mengalami kendala kode pendaftaran?</span>
                     </div>
                     <a
-                        href="mailto:lpmq@kemenag.go.id"
-                        className="font-semibold text-brand-fg hover:underline"
+                        href="https://wa.me/628111997125"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-fg hover:underline inline-flex items-center gap-1"
                     >
-                        Hubungi Sekretariat LPMQ
+                        <span>Hubungi Loket LPMQ (WhatsApp)</span>
                     </a>
                 </div>
             </div>

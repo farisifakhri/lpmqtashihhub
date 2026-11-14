@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { fail, audit } from './workflow-utils.js';
-import { emailProvider } from './email-provider.service.js';
+import { emailProvider, sendOutboxEmail } from './email-provider.service.js';
 import { renderPublisherCertificatePdf } from './publisher-certificate-pdf.service.js';
 import { getNextDocumentNumber } from './document-number.service.js';
 import {
@@ -269,15 +269,135 @@ export async function registerPublisher(body, files = {}) {
 // 2. CEK STATUS PUBLIK
 // ---------------------------------------------------------------------------
 
-export async function checkPublisherRegistrationStatus(kodePendaftaran) {
-  if (!kodePendaftaran || typeof kodePendaftaran !== 'string') {
-    const err = new Error('Kode pendaftaran wajib disertakan.');
+function buildRegistrationTimeline(status, createdAt, updatedAt) {
+  const isApproved = status === 'DISETUJUI';
+  const isRevision = status === 'PERLU_PERBAIKAN';
+  const isRejected = status === 'DITOLAK';
+  const isSubmitted = status === 'DIAJUKAN';
+
+  return [
+    {
+      step: 1,
+      title: 'Pendaftaran Berkas',
+      description: 'Permohonan pendaftaran akun penerbit dan dokumen kelengkapan berhasil diajukan.',
+      status: 'COMPLETED',
+      timestamp: createdAt,
+    },
+    {
+      step: 2,
+      title: 'Verifikasi Administrasi & Legalitas',
+      description: isSubmitted
+        ? 'Dokumen persyaratan sedang dalam antrean verifikasi petugas internal LPMQ.'
+        : 'Verifikasi berkas persyaratan telah selesai diperiksa oleh petugas.',
+      status: isSubmitted ? 'IN_PROGRESS' : 'COMPLETED',
+      timestamp: isSubmitted ? null : updatedAt,
+    },
+    {
+      step: 3,
+      title: isApproved
+        ? 'Pendaftaran Disetujui'
+        : isRevision
+        ? 'Perlu Perbaikan Dokumen'
+        : isRejected
+        ? 'Permohonan Ditolak'
+        : 'Penetapan Keputusan',
+      description: isApproved
+        ? 'Akun penerbit resmi aktif dan sertifikat tanda terdaftar diterbitkan.'
+        : isRevision
+        ? 'Terdapat berkas yang memerlukan revisi sesuai catatan petugas.'
+        : isRejected
+        ? 'Permohonan pendaftaran tidak memenuhi kriteria dan ditolak.'
+        : 'Menunggu penetapan persetujuan dan penerbitan akun resmi.',
+      status: isApproved ? 'COMPLETED' : isRevision ? 'WARNING' : isRejected ? 'FAILED' : 'PENDING',
+      timestamp: isSubmitted ? null : updatedAt,
+    },
+  ];
+}
+
+export async function checkPublisherRegistrationStatus(queryInput) {
+  if (!queryInput || typeof queryInput !== 'string') {
+    const err = new Error('Kode pendaftaran atau email wajib disertakan.');
     err.statusCode = 400;
     throw err;
   }
 
+  const query = queryInput.trim();
+  const isEmail = query.includes('@');
+
+  if (isEmail) {
+    const normalizedEmail = query.toLowerCase();
+    const regs = await prisma.publisherRegistration.findMany({
+      where: { email: normalizedEmail },
+      orderBy: { created_at: 'desc' },
+      select: {
+        id: true,
+        registration_code: true,
+        name: true,
+        status: true,
+        reason: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    if (regs.length === 0) {
+      // Respons anti-enumerasi aman jika email belum terdaftar
+      return {
+        is_email_search: true,
+        email_sent: false,
+        message: 'Jika email terdaftar, informasi status pendaftaran dan kode akses telah dikirimkan ke email tersebut.',
+      };
+    }
+
+    const latest = regs[0];
+    const statusLabel = STATUS_LABELS[latest.status] || latest.status;
+
+    // Masked email: z***@gmail.com
+    const [userPart, domainPart] = normalizedEmail.split('@');
+    const maskedEmail = userPart.length > 2
+      ? `${userPart[0]}***${userPart.slice(-1)}@${domainPart}`
+      : `${userPart[0]}***@${domainPart}`;
+
+    // Kirim notifikasi status dan kode pendaftaran ke email via Outbox
+    try {
+      await sendOutboxEmail(prisma, {
+        registrationId: latest.id,
+        documentId: null,
+        idempotencyKey: `pub_status_email_${latest.id}_${Math.floor(Date.now() / 60000)}`,
+        recipientEmail: normalizedEmail,
+        recipientName: latest.name,
+        subject: `Status Pendaftaran Akun Penerbit - ${latest.registration_code}`,
+        template: 'PUBLISHER_STATUS_INFO',
+        payload: {
+          registration_code: latest.registration_code,
+          status: latest.status,
+          status_label: statusLabel,
+        },
+      });
+      console.info(`[StatusCheck] Email status dikirim via outbox ke ${maskedEmail}`);
+    } catch (emailErr) {
+      console.warn('[StatusCheck] Gagal kirim email outbox status:', emailErr.message);
+    }
+
+    return {
+      is_email_search: true,
+      email_sent: true,
+      masked_email: maskedEmail,
+      kode_pendaftaran: latest.registration_code,
+      status: latest.status,
+      status_label: statusLabel,
+      alasan: ['PERLU_PERBAIKAN', 'DITOLAK'].includes(latest.status) ? latest.reason : null,
+      tanggal_pengajuan: latest.created_at,
+      tanggal_pembaruan: latest.updated_at,
+      message: `Informasi kode pendaftaran dan status telah dikirimkan ke email ${maskedEmail}.`,
+      total_pendaftaran: regs.length,
+      timeline: buildRegistrationTimeline(latest.status, latest.created_at, latest.updated_at),
+    };
+  }
+
+  // Pencarian dengan kode pendaftaran resmi
   const reg = await prisma.publisherRegistration.findUnique({
-    where: { registration_code: kodePendaftaran.trim() },
+    where: { registration_code: query.toUpperCase() },
     select: {
       registration_code: true,
       status: true,
@@ -301,6 +421,7 @@ export async function checkPublisherRegistrationStatus(kodePendaftaran) {
     alasan: ['PERLU_PERBAIKAN', 'DITOLAK'].includes(reg.status) ? reg.reason : null,
     tanggal_pengajuan: reg.created_at,
     tanggal_pembaruan: reg.updated_at,
+    timeline: buildRegistrationTimeline(reg.status, reg.created_at, reg.updated_at),
   };
 
   if (reg.status === 'PERLU_PERBAIKAN') {
@@ -999,4 +1120,77 @@ export async function verifyPublisherCertificate(nomorInduk) {
       verification_status: 'VERIFIED',
     },
   };
+}
+
+export async function adminEditPublisherRegistration(registrationId, data, user, req) {
+  const existing = await prisma.publisherRegistration.findUnique({
+    where: { id: registrationId },
+  });
+
+  if (!existing) {
+    fail(404, 'Permohonan pendaftaran penerbit tidak ditemukan.');
+  }
+
+  const { reason, name, publisher_type, address, pic_name, pic_phone, email, npwp, nib } = data;
+
+  const targetNpwp = npwp !== undefined ? npwp.trim() : existing.npwp;
+  const targetNib = nib !== undefined ? (nib ? nib.trim() : null) : existing.nib;
+
+  if (targetNpwp !== existing.npwp && existing.status !== 'DITOLAK') {
+    const conflict = await prisma.publisherRegistration.findFirst({
+      where: {
+        active_npwp: targetNpwp,
+        id: { not: registrationId },
+      },
+    });
+    if (conflict) {
+      fail(409, 'NPWP ini sudah digunakan oleh permohonan pendaftaran lain yang sedang aktif.');
+    }
+  }
+
+  if (targetNib && targetNib !== existing.nib && existing.status !== 'DITOLAK') {
+    const conflictNib = await prisma.publisherRegistration.findFirst({
+      where: {
+        active_nib: targetNib,
+        id: { not: registrationId },
+      },
+    });
+    if (conflictNib) {
+      fail(409, 'NIB ini sudah digunakan oleh permohonan pendaftaran lain yang sedang aktif.');
+    }
+  }
+
+  const activeIds = computeActiveIdentifiers(existing.status, targetNpwp, targetNib);
+
+  const updateData = {
+    version: { increment: 1 },
+    active_npwp: activeIds.active_npwp,
+    active_nib: activeIds.active_nib,
+  };
+
+  if (name !== undefined) updateData.name = name;
+  if (publisher_type !== undefined) updateData.publisher_type = publisher_type;
+  if (address !== undefined) updateData.address = address;
+  if (pic_name !== undefined) updateData.pic_name = pic_name;
+  if (pic_phone !== undefined) updateData.pic_phone = pic_phone;
+  if (email !== undefined) updateData.email = email.toLowerCase();
+  if (npwp !== undefined) updateData.npwp = targetNpwp;
+  if (nib !== undefined) updateData.nib = targetNib;
+
+  const updated = await prisma.publisherRegistration.update({
+    where: { id: registrationId },
+    data: updateData,
+  });
+
+  await audit(
+    prisma,
+    user,
+    'ADMIN_EDIT_REGISTRATION',
+    'PublisherRegistration',
+    registrationId,
+    { reason, before: existing, after: updated },
+    req
+  );
+
+  return updated;
 }

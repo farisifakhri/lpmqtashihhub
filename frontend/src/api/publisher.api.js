@@ -26,6 +26,11 @@ export const publisherApi = {
       method: 'PATCH',
       body: payload,
     }),
+  adminUpdate: async (id, payload) =>
+    apiClient(`/publishers/${id}`, {
+      method: 'PATCH',
+      body: payload,
+    }),
 };
 
 export default publisherApi;
