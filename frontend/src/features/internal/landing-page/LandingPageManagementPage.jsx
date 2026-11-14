@@ -28,6 +28,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { InformationGuideManagement } from './InformationGuideManagement';
 import { ServiceDocumentManagement } from './ServiceDocumentManagement';
 import { ComplaintManagement } from '@/features/complaints/ComplaintManagement';
+import { FaqManagement } from './FaqManagement';
 
 const CATEGORIES = [
   'Ketentuan Pentashihan',
@@ -41,7 +42,6 @@ const CATEGORIES = [
 
 const MAIN_NAV_ITEMS = [
   { id: 'informasi', label: 'Informasi' },
-  { id: 'permohonan-master', label: 'Permohonan Master' },
   { id: 'pengaduan', label: 'Pengaduan' },
   { id: 'faq', label: 'FAQ' },
 ];
@@ -494,7 +494,8 @@ export const LandingPageManagementPage = () => {
         <ComplaintManagement type={COMPLAINT_SUBMENUS.find((item) => item.id === activeComplaintSubmenu)?.type || 'KESALAHAN_CETAK'} />
       )}
 
-      {activeMainMenu !== 'pengaduan' && (activeMainMenu !== 'informasi' || !['regulasi', 'panduan', 'sop', 'siaran-pers', 'unduh-dokumen'].includes(activeInformationSubmenu)) ? (
+      {activeMainMenu === 'informasi' &&
+      !['regulasi', 'panduan', 'sop', 'siaran-pers', 'unduh-dokumen'].includes(activeInformationSubmenu) ? (
         <div className="rounded-2xl border border-line bg-surface p-8 sm:p-12 text-center space-y-3">
           <div className="inline-flex p-3 rounded-full bg-surface-subtle text-ink-muted">
             <Sparkles className="h-6 w-6" />
@@ -503,16 +504,10 @@ export const LandingPageManagementPage = () => {
             Segera Hadir
           </span>
           <h2 className="text-base font-bold text-ink">
-            {activeMainMenu === 'informasi'
-              ? INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.label
-              : activeMainMenu === 'pengaduan'
-                ? COMPLAINT_SUBMENUS.find((item) => item.id === activeComplaintSubmenu)?.label
-                : MAIN_NAV_ITEMS.find((item) => item.id === activeMainMenu)?.label}
+            {INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.label}
           </h2>
           <p className="text-xs text-ink-muted max-w-md mx-auto">
-            {activeMainMenu === 'informasi'
-              ? INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.description
-              : 'Pengelolaan konten untuk bagian ini akan tersedia pada pembaruan berikutnya.'}
+            {INFORMATION_SUBMENUS.find((item) => item.id === activeInformationSubmenu)?.description}
           </p>
         </div>
       ) : null}
@@ -619,6 +614,7 @@ export const LandingPageManagementPage = () => {
                       <X className="h-3 w-3" />
                     </button>
                   )}
+
                 </div>
               </div>
 
@@ -878,6 +874,8 @@ export const LandingPageManagementPage = () => {
           </div>
         </div>
       )}
+
+      {activeMainMenu === 'faq' && <FaqManagement />}
 
       {/* MODAL 1: Tambah Dokumen Regulasi */}
       {isCreateOpen && (

@@ -2,9 +2,23 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS } from './PublicHeader';
+import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS, PUBLIC_NAV_ITEMS } from './PublicHeader';
 
 describe('PublicHeader', () => {
+  it('does not show Permohonan Master in desktop or mobile navigation', () => {
+    render(
+      <MemoryRouter>
+        <PublicHeader navItems={PUBLIC_NAV_ITEMS} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('link', { name: 'Permohonan Master' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Buka menu' }));
+    expect(screen.queryByRole('link', { name: 'Permohonan Master' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'FAQ' }).every((link) => link.getAttribute('href') === '/faq')).toBe(true);
+  });
+
   it('keeps menu hover feedback color-only and preserves the active submenu indicator', () => {
     render(
       <MemoryRouter>
