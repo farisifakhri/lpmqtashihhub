@@ -262,7 +262,7 @@ export function FaqManagement() {
               {[5, 10, 20, 50].map((value) => <option key={value} value={value}>{value}</option>)}
             </select>
           </label>
-          <button type="button" onClick={resetFilters} className="rounded-lg px-2 py-2 text-xs font-semibold text-brand-700 hover:bg-brand-50">Reset</button>
+          <button type="button" onClick={resetFilters} className="rounded-lg px-2 py-2 text-xs font-semibold text-brand-fg hover:bg-brand-50">Reset</button>
         </div>
       </div>
 
@@ -373,7 +373,7 @@ export function FaqManagement() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-line bg-surface p-5 shadow-xl sm:p-6">
             <div className="flex items-start justify-between border-b border-line pb-4">
               <div>
-                <p className="text-xs font-semibold text-brand-700">{getCategoryLabel(viewFaq.category)}</p>
+                <p className="text-xs font-semibold text-brand-fg">{getCategoryLabel(viewFaq.category)}</p>
                 <h3 id="faq-detail-title" className="mt-1 text-lg font-bold text-ink">{viewFaq.question}</h3>
               </div>
               <button type="button" onClick={() => setViewFaq(null)} aria-label="Tutup detail FAQ" className="rounded-lg p-2 text-ink-muted hover:bg-surface-subtle"><X className="h-5 w-5" /></button>

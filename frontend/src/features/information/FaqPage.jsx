@@ -212,7 +212,7 @@ export function FaqPage() {
                               <div className="min-h-0 overflow-hidden">
                                 <div className="px-5 py-5 sm:px-8">
                                   <div className="border-l-2 border-brand-600 pl-4">
-                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-brand-700">Jawaban</p>
+                                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-brand-fg">Jawaban</p>
                                     <FaqAnswer answer={faq.answer} />
                                   </div>
                                 </div>
