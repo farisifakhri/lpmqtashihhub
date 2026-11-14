@@ -69,6 +69,8 @@ model User {
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
   distributor_comparisons          DistributorComparison[]
+  landing_page_faqs_created        LandingPageFaq[]                @relation("LandingPageFaqCreatedBy")
+  landing_page_faqs_updated        LandingPageFaq[]                @relation("LandingPageFaqUpdatedBy")
 
   @@map("users")
 }
@@ -1519,6 +1521,31 @@ model InformationGuideImage {
 
   @@index([guide_id])
   @@map("information_guide_images")
+}
+
+enum LandingPageFaqCategory {
+  LAYANAN_TASHIH_ONLINE
+  MUSHAF_STANDAR_INDONESIA
+  REGULASI
+}
+
+model LandingPageFaq {
+  id            String                 @id @default(uuid())
+  category      LandingPageFaqCategory
+  question      String                 @db.VarChar(255)
+  answer        String                 @db.Text
+  is_published  Boolean                @default(false)
+  created_by_id String?
+  created_by    User?                  @relation("LandingPageFaqCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by_id String?
+  updated_by    User?                  @relation("LandingPageFaqUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+  created_at    DateTime               @default(now())
+  updated_at    DateTime               @updatedAt
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@map("landing_page_faqs")
 }
 
 // ============================================================================

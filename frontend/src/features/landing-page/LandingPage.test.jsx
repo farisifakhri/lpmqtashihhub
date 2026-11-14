@@ -105,7 +105,7 @@ describe('LandingPage sections and navigation', () => {
       'href',
       '#beranda'
     );
-    expect(within(footer).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#beranda');
+    expect(within(footer).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/faq');
     expect(within(footer).getByRole('link', { name: 'Portal Penerbit' })).toHaveAttribute(
       'href',
       '/login'
@@ -121,9 +121,9 @@ describe('LandingPage sections and navigation', () => {
     expect(screen.queryByText(/Di mana lokasi penyerahan master naskah fisik/i)).not.toBeInTheDocument();
 
     const mainNavigation = screen.getByRole('navigation', { name: 'Navigasi utama' });
-    expect(within(mainNavigation).getByRole('link', { name: 'Permohonan Master' })).toHaveAttribute('href', '/publisher/master-requests');
+    expect(within(mainNavigation).queryByRole('link', { name: 'Permohonan Master' })).not.toBeInTheDocument();
     expect(within(mainNavigation).getByRole('link', { name: 'Pengaduan' })).toHaveAttribute('href', '#');
-    expect(within(mainNavigation).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#beranda');
+    expect(within(mainNavigation).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/faq');
     expect(screen.getByRole('contentinfo')).toBeInTheDocument();
 
     document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
@@ -448,7 +448,7 @@ describe('LandingPage sections and navigation', () => {
       'href',
       '#beranda'
     );
-    expect(within(footer).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '#beranda');
+    expect(within(footer).getByRole('link', { name: 'FAQ' })).toHaveAttribute('href', '/faq');
     expect(within(footer).getByRole('link', { name: 'Portal Penerbit' })).toHaveAttribute(
       'href',
       '/login'
