@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withPemaraf } from '../../src/utils/pemaraf.js';
+import { withPemaraf, toAccessRole, forbidPemaraf } from '../../src/utils/pemaraf.js';
 import { requireParaf, recordParaf } from '../../src/services/paraf.service.js';
 
 // tx tiruan: satu tabel paraf di memori, dengan jumlah akun Pemaraf aktif yang bisa diatur.
@@ -21,11 +21,14 @@ const fakeTx = (activePemaraf) => {
   };
 };
 
-test('Pemaraf mendapat akses setara Kepala LPMQ tetapi ditandai sebagai pemaraf', () => {
-  assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'] });
-  assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'] });
+test('Pemaraf mendapat akses setara Kepala LPMQ tetapi tampil sebagai role Pemaraf sendiri', () => {
+  assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'], identityRoles: ['PEMARAF'] });
+  assert.deepEqual(withPemaraf(['DISTRIBUTOR', 'PEMARAF']), { isPemaraf: true, roles: ['DISTRIBUTOR', 'KEPALA_LPMQ'], identityRoles: ['DISTRIBUTOR', 'PEMARAF'] });
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
   // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala
-  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'] });
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
+  assert.equal(toAccessRole('PEMARAF', true), 'KEPALA_LPMQ');
+  assert.equal(toAccessRole('DISTRIBUTOR', true), 'DISTRIBUTOR');
 });
 
 test('Persetujuan Kepala ditolak sebelum paraf, dan lolos setelah Pemaraf membubuhkan paraf', async () => {
@@ -38,4 +41,17 @@ test('Persetujuan Kepala ditolak sebelum paraf, dan lolos setelah Pemaraf membub
 
 test('Tanpa akun Pemaraf aktif, alur lama tetap berjalan tanpa paraf', async () => {
   await requireParaf(fakeTx(0), 'MASTER_LETTER', 'm1');
+});
+
+test('forbidPemaraf menolak user dengan isPemaraf: true dan meloloskan user lain', () => {
+  const pemarafUser = { id: 'p1', isPemaraf: true, roles: ['KEPALA_LPMQ'] };
+  const kepalaUser = { id: 'k1', isPemaraf: false, roles: ['KEPALA_LPMQ'] };
+
+  assert.throws(
+    () => forbidPemaraf(pemarafUser, 'mengembalikan draf surat'),
+    (err) => err.statusCode === 403 && err.message.includes('tidak berwenang')
+  );
+
+  assert.doesNotThrow(() => forbidPemaraf(kepalaUser, 'mengembalikan draf surat'));
+  assert.doesNotThrow(() => forbidPemaraf({ id: 's1', roles: ['SUPERADMIN'] }, 'mengembalikan draf surat'));
 });

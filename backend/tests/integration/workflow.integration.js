@@ -130,29 +130,72 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(submitted.status, 'REVISION_REQUIRED');
     assert.deepEqual(submitted.fee_sla_snapshot, before.fee_sla_snapshot);
 
-    // Penerbit mengirim fisik naskah perbaikan, Admin Internal menerima, Distributor konfirmasi serah-terima
-    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'JNE', tracking_no: 'REVISE123', recap_file_id: file.id });
-    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
-      decision: 'RECEIVED',
-      receipt_no: `TT-REV-${reg.id.slice(0, 8)}`,
-      condition: 'BAIK',
-      volume_count: 30,
-    });
-    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTOR_RECEIPT');
+    // Penerbit mengirim fisik naskah, Admin Internal menerima, Distributor konfirmasi serah-terima
+    const sendPhysicalRound = async (trackingNo) => {
+      // Lewat kurir tanpa nomor resi ditolak
+      await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'JNE', recap_file_id: file.id }, 400);
+      await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'JNE', tracking_no: trackingNo, recap_file_id: file.id });
+      await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
+        decision: 'RECEIVED',
+        receipt_no: `TT-${trackingNo}`,
+        condition: 'BAIK',
+        volume_count: 30,
+      });
+      assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTOR_RECEIPT');
+      const handovers = await expect(`/registrations/${reg.id}/physical-master/handovers`, distributor);
+      const pending = handovers.find(h => h.status === 'PENDING' && h.stage === 'ADMIN_TO_DISTRIBUTOR');
+      assert.ok(pending);
+      await expect(`/physical-master/handovers/${pending.id}/receive`, distributor, 'POST', { condition: 'BAIK' });
+      assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTION');
+    };
+    const assign = (stage, status = 201) => expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage }, status);
+    const openStages = async () => (await expect(`/registrations/${reg.id}/assignment-stages`, distributor)).filter(o => o.allowed).map(o => o.key);
 
-    const handovers = await expect(`/registrations/${reg.id}/physical-master/handovers`, distributor);
-    const pending = handovers.find(h => h.status === 'PENDING' && h.stage === 'ADMIN_TO_DISTRIBUTOR');
-    assert.ok(pending);
-    await expect(`/physical-master/handovers/${pending.id}/receive`, distributor, 'POST', { condition: 'BAIK' });
-    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'WAITING_DISTRIBUTION');
+    const review = async (assignmentId, result, notes) => {
+      const recap = await uploadAs(pentashih);
+      await expect(`/assignments/${assignmentId}/review`, pentashih, 'POST', { result, notes, recap_file_id: recap.id }, 201);
+    };
 
+    // Ronde perbaikan #1: hanya Penugasan Perbaikan yang terbuka setelah naskah perbaikan diterima
+    await sendPhysicalRound('REVISE123');
+    assert.deepEqual(await openStages(), ['REVISION']);
+    await assign('INITIAL', 409);
+    await assign('DUMMY', 409);
     // B-19a: Catatan telaah pembanding distributor bersifat opsional; penugasan tanpa catatan tetap diterima
-    const next = await expect(`/registrations/${reg.id}/assignments`, distributor, 'POST', { team_id: team.id, assignee_ids: [assignee.id], stage: 'DUMMY' }, 201);
+    const next = await assign('REVISION');
     assert.equal(next[0].iteration, 2);
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
-    const pentashihRecapRound2 = await uploadAs(pentashih);
-    await expect(`/assignments/${next[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Perbaikan sesuai', recap_file_id: pentashihRecapRound2.id }, 201);
+
+    // Masih ada kesalahan: distributor tidak boleh meluluskan, naskah dikembalikan -> Perbaikan lagi (ronde #2)
+    await review(next[0].id, 'REVISION_REQUIRED', 'Masih ada kesalahan harakat');
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Coba luluskan' }, 409);
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki lagi' });
+    assert.deepEqual(await openStages(), [], 'sebelum naskah perbaikan #2 dikirim, semua penugasan terkunci');
+    await sendPhysicalRound('REVISE456');
+    assert.deepEqual(await openStages(), ['REVISION']);
+    await assign('DUMMY', 409);
+    const round2 = await assign('REVISION');
+    assert.equal(round2[0].iteration, 3);
+
+    // Naskah sudah sesuai: telaah teks lulus -> distributor meminta naskah dumi
+    await review(round2[0].id, 'PASSED', 'Perbaikan sesuai');
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Telaah teks lulus' });
+    assert.deepEqual(await openStages(), [], 'sebelum naskah dumi dikirim, Dumi masih terkunci');
+
+    // Ronde dumi: hanya Penugasan Dumi yang terbuka setelah naskah dumi diterima
+    await sendPhysicalRound('DUMMY123');
+    assert.deepEqual(await openStages(), ['DUMMY']);
+    await assign('REVISION', 409);
+    const dummy = await assign('DUMMY');
+
+    // Dumi masih ada kesalahan: dikembalikan sebagai dumi lagi (bukan kembali ke Perbaikan)
+    await review(dummy[0].id, 'REVISION_REQUIRED', 'Dumi masih ada salah cetak');
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Cetak ulang dumi' });
+    await sendPhysicalRound('DUMMY456');
+    assert.deepEqual(await openStages(), ['DUMMY']);
+    const dummy2 = await assign('DUMMY');
+    await review(dummy2[0].id, 'PASSED', 'Dumi sesuai');
 
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', {
       result: 'PASSED',

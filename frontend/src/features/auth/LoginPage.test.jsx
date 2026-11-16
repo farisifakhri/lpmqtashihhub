@@ -70,7 +70,7 @@ describe('LoginPage Protected Area Verification', () => {
     expect(screen.getByText('Akses Sistem Pentashihan')).toBeInTheDocument();
     expect(screen.getByText(/Gunakan akun resmi untuk mengakses layanan/i)).toBeInTheDocument();
     expect(screen.getByText(/Lajnah Pentashihan Mushaf Quran RI/i)).toBeInTheDocument();
-    expect(screen.getByText(/SIPNA \(Sistem Informasi Pentashih Mushaf Quran\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sistem Informasi Layanan Surat Tanda Tashih/i)).toBeInTheDocument();
 
     // Form inputs and controls
     expect(screen.getByLabelText(/Alamat email/i)).toBeInTheDocument();

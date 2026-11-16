@@ -115,6 +115,30 @@ export class SmtpEmailProvider {
         messageText = `${text}\n\nTautan berlaku selama ${expiresMinutes} menit dan hanya dapat digunakan satu kali.`;
         html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap;line-height:1.6">${escapeHtml(messageText)}</div>`;
       }
+    } else if (template === 'PUBLISHER_STATUS_INFO') {
+      const name = toName ? ` ${escapeHtml(toName)}` : '';
+      messageText = [
+        `Halo${toName ? ` ${toName}` : ''},`,
+        '',
+        'Berikut adalah ringkasan status permohonan pendaftaran akun penerbit mushaf Al-Qur\'an Anda di Layanan Tashih LPMQ:',
+        `Kode Pendaftaran: ${payload?.registration_code || '-'}`,
+        `Status Saat Ini: ${payload?.status_label || '-'}`,
+        '',
+        'Gunakan kode pendaftaran di atas pada menu Cek Status Pendaftaran untuk melihat rincian progres lengkap.',
+        'Lajnah Pentashihan Mushaf Al-Qur\'an (LPMQ) Kementerian Agama RI',
+      ].join('\n');
+      html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937">
+        <p>Halo${name},</p>
+        <p>Berikut adalah ringkasan status permohonan pendaftaran akun penerbit mushaf Al-Qur'an Anda di Layanan Tashih LPMQ:</p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:16px 0;">
+          <p style="margin:4px 0;font-size:13px;color:#4b5563;">Kode Pendaftaran Resmi:</p>
+          <p style="margin:4px 0;font-family:monospace;font-size:18px;font-weight:bold;color:#14532d;">${escapeHtml(payload?.registration_code || '-')}</p>
+          <p style="margin:8px 0 4px;font-size:13px;color:#4b5563;">Status Terkini:</p>
+          <p style="margin:4px 0;font-weight:bold;color:#1f2937;">${escapeHtml(payload?.status_label || '-')}</p>
+        </div>
+        <p>Simpan kode pendaftaran Anda dengan baik untuk mengakses portal layanan pentashihan.</p>
+        <p>Terima kasih,<br><strong>LPMQ Kementerian Agama RI</strong></p>
+      </div>`;
     }
 
     const result = await this.transporter.sendMail({

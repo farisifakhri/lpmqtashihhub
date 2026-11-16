@@ -593,7 +593,7 @@ export const requestPasswordResetForUser = async (id, currentUser, req) => {
       await emailProvider.sendEmail({
         to: user.email,
         toName: user.name,
-        subject: 'Reset Kata Sandi Akun - LPMQ Tashih Hub',
+        subject: 'Reset Kata Sandi Akun - Layanan Tashih LPMQ',
         template: 'PASSWORD_RESET',
         payload: {
           resetUrl,

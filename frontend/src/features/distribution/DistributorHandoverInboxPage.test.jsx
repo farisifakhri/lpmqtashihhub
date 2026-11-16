@@ -205,12 +205,19 @@ describe('DistributorHandoverInboxPage Component', () => {
     vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({ data: { items: [{ id: 'reg-1', registration_no: 'REG-2026-001', title: 'Mushaf Uji', status: 'WAITING_DISTRIBUTION' }], pagination: { total: 1 } } });
     vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({ data: { id: 'reg-1', status: 'WAITING_DISTRIBUTION', payment_records: [{ status: 'VERIFIED' }] } });
     vi.spyOn(MasterApiModule.masterApi, 'getDistributionTeams').mockResolvedValue({ data: [] });
+    // Server: ronde dumi, naskah dumi sudah diterima -> hanya Dumi terbuka
+    vi.spyOn(RegistrationApiModule.registrationApi, 'getAssignmentStages').mockResolvedValue({ data: [
+      { key: 'INITIAL', allowed: false, reason: 'Hanya untuk sidang pertama; naskah ini sudah pernah disidangkan.' },
+      { key: 'REVISION', allowed: false, reason: 'Keputusan terakhir mengalihkan naskah ke tahap dumi, bukan perbaikan.' },
+      { key: 'DUMMY', allowed: true, reason: null },
+    ] });
     render(<MemoryRouter><DistributorHandoverInboxPage /></MemoryRouter>);
     fireEvent.click(screen.getByRole('button', { name: /Penugasan, Monitoring Sidang/i }));
     fireEvent.click(await screen.findByRole('button', { name: /Mulai Penugasan/i }));
-    // pop-up jenis penugasan: ketiganya bisa dipilih, dan pilihan itu yang dipakai dialog penetapan
-    expect(screen.getByRole('button', { name: /Penugasan Awal/i })).toBeEnabled();
-    expect(screen.getByRole('button', { name: /Penugasan Perbaikan/i })).toBeEnabled();
+    // pop-up jenis penugasan: pilihan yang belum sesuai tahap terkunci, tanpa teks petunjuk
+    expect(await screen.findByRole('button', { name: /Penugasan Awal/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Penugasan Perbaikan/i })).toBeDisabled();
+    expect(screen.queryByText(/mengalihkan naskah ke tahap dumi/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Penugasan Dumi/i }));
     expect(await screen.findByText(/Penetapan Penugasan Pentashihan/i)).toBeInTheDocument();
     expect(await screen.findByText('DUMMY')).toBeInTheDocument();

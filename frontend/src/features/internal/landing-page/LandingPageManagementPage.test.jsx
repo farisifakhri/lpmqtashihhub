@@ -58,10 +58,10 @@ describe('LandingPageManagementPage navigation', () => {
     const mainNavigation = within(screen.getByRole('navigation', { name: 'Navigasi menu landing page' }));
     expect(mainNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
       'Informasi',
-      'Permohonan Master',
       'Pengaduan',
       'FAQ',
     ]);
+    expect(mainNavigation.queryByRole('button', { name: 'Permohonan Master' })).not.toBeInTheDocument();
 
     const informationNavigation = within(screen.getByRole('navigation', { name: 'Submenu Informasi' }));
     expect(informationNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual(
@@ -79,6 +79,21 @@ describe('LandingPageManagementPage navigation', () => {
     });
   });
 
+  it('keeps the same landing-page navigation for helper admins', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { role: 'ADMIN_INTERNAL', roles: ['ADMIN_INTERNAL'] },
+    });
+    render(<LandingPageManagementPage />);
+
+    const mainNavigation = within(await screen.findByRole('navigation', { name: 'Navigasi menu landing page' }));
+    expect(mainNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Informasi',
+      'Pengaduan',
+      'FAQ',
+    ]);
+    expect(mainNavigation.queryByRole('button', { name: 'Permohonan Master' })).not.toBeInTheDocument();
+  });
+
   it('shows guide management, keeps unfinished menus as placeholders, and restores regulation management', async () => {
     render(<LandingPageManagementPage />);
     expect(await screen.findByText('Total Regulasi')).toBeInTheDocument();
@@ -90,10 +105,9 @@ describe('LandingPageManagementPage navigation', () => {
     expect(screen.queryByText('Total Regulasi')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Tambah Dokumen' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Permohonan Master' }));
-    expect(screen.getByRole('heading', { name: 'Permohonan Master' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'FAQ' }));
-    expect(screen.getByRole('heading', { name: 'FAQ' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Kelola FAQ' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tambah FAQ' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pengaduan' }));
     const complaintNavigation = within(screen.getByRole('navigation', { name: 'Submenu Pengaduan' }));

@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "@/features/auth/AuthContext";
+import { isHeadRole } from "@/lib/roles";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAvatar } from "@/context/AvatarContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -84,7 +85,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const isDistributor = role === "DISTRIBUTOR";
     const isPentashih = role === "PENTASHIH" || role === "TASHIH_MEMBER";
     const isDokumentator = role === "DOKUMENTATOR" || role === "DOCUMENTATOR";
-    const isKepala = role === "KEPALA_LPMQ" || role === "HEAD_OF_LPMQ";
+    const isKepala = isHeadRole(role); // termasuk Pemaraf: menu sama dengan Kepala LPMQ
 
     const getRoleBadge = (userRole) => {
         switch (userRole) {
@@ -125,6 +126,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             case "HEAD_OF_LPMQ":
                 return {
                     label: "Kepala LPMQ",
+                    badgeClass:
+                        "bg-civic-warningSoft text-civic-warning border-civic-warningLine",
+                };
+            case "PEMARAF":
+                return {
+                    label: "Pemaraf",
                     badgeClass:
                         "bg-civic-warningSoft text-civic-warning border-civic-warningLine",
                 };
@@ -413,7 +420,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // 7. Admin Internal (Helper Admin)
-        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
+        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && !isKepala)) {
             return [
                 {
                     title: "KENDALI UTAMA",

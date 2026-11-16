@@ -7,6 +7,7 @@
  */
 
 import { WORKFLOW_PHASES } from '@/features/workflow/workflow-phases';
+import { accessRoles } from '@/lib/roles';
 export { WORKFLOW_PHASES };
 
 export const STATUS_DEFINITIONS = {
@@ -283,7 +284,7 @@ export function getWorkflowViewModel(registration, currentUser) {
   const isOverdue = dueAt ? new Date(dueAt).getTime() < Date.now() : false;
 
   // Evaluasi apakah user yang sedang login berhak mengambil tindakan aktif
-  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
   const effectiveOwnerRole = operationalOwnerRole || def.ownerRole;
   let canUserAct = false;
 

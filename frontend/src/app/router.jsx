@@ -51,6 +51,7 @@ const RegulationInfoPage = withSuspense(lazy(() => import('@/features/informatio
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
 const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
+const FaqPage = withSuspense(lazy(() => import('@/features/information/FaqPage').then(m => ({ default: m.FaqPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 const PublisherMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherMasterRequestsPage').then(m => ({ default: m.PublisherMasterRequestsPage }))));
 const PublisherNewMasterRequestPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherNewMasterRequestPage').then(m => ({ default: m.PublisherNewMasterRequestPage }))));
@@ -111,7 +112,7 @@ const router = createBrowserRouter([
     element: <DownloadDocumentsPage />,
   },
   // Pengaduan masyarakat (publik, tanpa login)
-  {
+   {
     path: '/pengaduan/kesalahan-cetak-mushaf',
     element: <PrintErrorComplaintPage />,
   },
@@ -122,6 +123,11 @@ const router = createBrowserRouter([
   {
     path: '/pengaduan/lacak',
     element: <TrackComplaintPage />,
+  },
+  // FAQ
+  {
+    path: '/faq',
+    element: <FaqPage />,
   },
   // Rute Autentikasi Mandiri
   {
