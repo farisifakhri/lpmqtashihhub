@@ -347,9 +347,18 @@ export function calculateRegistrationSummary(manuscriptCalculations = []) {
 
   return {
     total_fee: totalFee,
+    totalFee,
     sla_initial: maxSlaInitial,
+    slaInitial: maxSlaInitial,
+    slaInitialDays: maxSlaInitial,
     sla_revision: maxSlaRevision,
+    slaRevision: maxSlaRevision,
+    slaRevisionDays: maxSlaRevision,
     sla_dummy: maxSlaDummy,
+    slaDummy: maxSlaDummy,
+    slaDummyDays: maxSlaDummy,
+    manuscript_count: mList.length,
+    is_multi: mList.length > 1,
   };
 }
 

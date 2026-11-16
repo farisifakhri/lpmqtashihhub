@@ -15,6 +15,7 @@ import {
   verificationInboxSchema,
   assignmentIdSchema,
   saveChecklistSchema,
+  feeCalculationSchema,
   verificationDraftSchema,
   verificationAttachmentSchema,
   documentIdSchema,
@@ -58,6 +59,7 @@ router.get('/verification-assignments/:id', authenticate, authorize('KEPALA_LPMQ
 router.post('/verification-assignments/:id/revoke', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(revokeAssignmentSchema), action(req => review.revokeVerificationAssignment(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/reassign', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), validate(reassignAssignmentSchema), action(req => review.reassignVerificationAssignment(req.params.id, req.body, req.user, req)));
 router.put('/verification-assignments/:id/checklist', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(saveChecklistSchema), action(req => review.saveVerificationDraft(req.params.id, req.body, req.user, req)));
+router.put('/verification-assignments/:id/fee-calculation', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(feeCalculationSchema), action(req => review.saveFeeCalculation(req.params.id, req.body, req.user, req)));
 router.post('/verification-assignments/:id/result-drafts', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(verificationDraftSchema), action(req => review.submitVerificationDraft(req.params.id, req.body, req.user, req), 201));
 router.get('/verification-documents/:documentId/attachments/:fileId', authenticate, validate(verificationAttachmentSchema), async (req, res, next) => {
   try {
