@@ -1040,6 +1040,7 @@ model Assignment {
   stage             AssignmentStage // INITIAL, REVISION, DUMMY
   iteration         Int              @default(1)
   due_at            DateTime?
+  due_meta          Json?
   status            AssignmentStatus @default(ASSIGNED) // ASSIGNED, IN_PROGRESS, COMPLETED, OVERDUE, REVOKED
   revocation_reason String?          @db.Text
   revoked_at        DateTime?

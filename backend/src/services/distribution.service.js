@@ -1,5 +1,5 @@
 import { prisma } from '../config/database.js';
-import { calculateDueAt } from './sla.service.js';
+import { calculateDueAt, jakartaDate } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
 import { ACTIVE_PEMARAF, pemarafGateActive, findParaf, parafKey } from './paraf.service.js';
@@ -58,6 +58,206 @@ export const getAssignmentStages = async (id) => {
   const round = await resolveTashihRound(prisma, reg);
   const previous = await prisma.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' }, select: { stage: true } });
   return loadAssignmentStageOptions(prisma, reg, round, previous);
+};
+
+export async function resolvePentashihDueAt(tx, reg, stage, requestedDueAt = null, user = null, dueOverrideReason = null, currentActiveAssignment = null) {
+  // Bila penugasan dilakukan saat tahap sudah TASHIH_IN_PROGRESS (tambah/ganti pentashih) dan tidak ada requestedDueAt eksplisit,
+  // penugasan baru mewarisi due_at dan due_meta ronde yang sedang berjalan
+  if (currentActiveAssignment?.due_at && !requestedDueAt) {
+    return {
+      due_at: currentActiveAssignment.due_at,
+      due_meta: currentActiveAssignment.due_meta || {
+        inherited_from_assignment_id: currentActiveAssignment.id,
+        stage,
+        due_at: currentActiveAssignment.due_at,
+      },
+    };
+  }
+
+  const now = new Date();
+  let startDate = now;
+  let receivedHandover = null;
+
+  if (stage === 'INITIAL') {
+    receivedHandover = await tx.physicalManuscriptHandover?.findFirst({
+      where: { registration_id: reg.id, status: 'RECEIVED' },
+      orderBy: { received_at: 'desc' },
+      select: { received_at: true, tashih_due_at: true },
+    });
+    if (receivedHandover?.received_at) {
+      startDate = receivedHandover.received_at;
+    } else if (reg.stage_entered_at) {
+      startDate = reg.stage_entered_at;
+    }
+  } else {
+    // REVISION / DUMMY:
+    // Tidak boleh merujuk ke verifiedPayment.verified_at!
+    // Gunakan tanggal serah-terima fisik naskah revisi/dumi yang diterima loket,
+    // atau stage_entered_at dari ronde tersebut, atau waktu penugasan sekarang (now).
+    const roundInfo = await resolveTashihRound(tx, reg);
+    const handoverWhere = { registration_id: reg.id, status: 'RECEIVED' };
+    if (roundInfo.lastRevLetter) {
+      handoverWhere.received_at = { gte: roundInfo.lastRevLetter.created_at };
+    }
+    receivedHandover = await tx.physicalManuscriptHandover?.findFirst({
+      where: handoverWhere,
+      orderBy: { received_at: 'desc' },
+      select: { received_at: true, tashih_due_at: true },
+    });
+
+    if (receivedHandover?.received_at) {
+      startDate = receivedHandover.received_at;
+    } else if (reg.stage_entered_at) {
+      startDate = reg.stage_entered_at;
+    } else {
+      startDate = now;
+    }
+  }
+
+  // SLA Days wajib bersumber dari fee_sla_snapshot tanpa fallback 15
+  const slaKey = `sla_${stage.toLowerCase()}_days`;
+  let rawSlaDays = reg.fee_sla_snapshot?.[slaKey];
+  if (!rawSlaDays && reg.service_type) {
+    rawSlaDays = stage === 'INITIAL'
+      ? reg.service_type.duration_initial
+      : stage === 'REVISION'
+      ? reg.service_type.duration_revision
+      : reg.service_type.duration_dummy;
+  }
+  const slaDays = Number(rawSlaDays);
+
+  if (!rawSlaDays || isNaN(slaDays) || slaDays < 1) {
+    fail(409, `SLA tahap ${stage} belum tercatat pada snapshot pendaftaran.`);
+  }
+
+  // Hitung batas maksimal SLA (max_due):
+  // Bila handover sudah memiliki tashih_due_at yang telah dihitung saat penerimaan fisik, gunakan itu;
+  // Jika tidak, hitung melalui calculateDueAt berbasis kalender kerja resmi.
+  let maxDueAt = (stage === 'INITIAL' && receivedHandover?.tashih_due_at) ? receivedHandover.tashih_due_at : null;
+  if (!maxDueAt) {
+    if (tx.workingDay?.findMany) {
+      maxDueAt = await calculateDueAt(tx, startDate, slaDays, { applyCutoff: true });
+    } else {
+      maxDueAt = new Date(startDate.getTime() + slaDays * 86400000);
+    }
+  }
+
+  if (!requestedDueAt) {
+    return {
+      due_at: maxDueAt,
+      due_meta: {
+        start: startDate,
+        sla_days: slaDays,
+        max_due: maxDueAt,
+        chosen_due: maxDueAt,
+        stage,
+      },
+    };
+  }
+
+  // Parsing dan validasi tanggal yang diajukan oleh distributor
+  let targetDate;
+  if (typeof requestedDueAt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(requestedDueAt.trim())) {
+    targetDate = new Date(`${requestedDueAt.trim()}T23:59:59.999+07:00`);
+  } else {
+    targetDate = new Date(requestedDueAt);
+  }
+
+  if (isNaN(targetDate.getTime())) {
+    fail(422, 'Format tanggal tenggat waktu tidak valid.');
+  }
+
+  const targetDateStr = jakartaDate(targetDate);
+  const startDateStr = jakartaDate(startDate);
+  const maxDueDateStr = jakartaDate(maxDueAt);
+
+  // 1. Validasi hari kerja (tidak boleh hari libur / akhir pekan bila workingDay tercatat)
+  if (tx.workingDay?.findUnique) {
+    const calendarDay = await tx.workingDay.findUnique({
+      where: { date: new Date(`${targetDateStr}T00:00:00Z`) },
+    });
+    if (calendarDay && !calendarDay.is_working_day) {
+      fail(422, `Tanggal tenggat waktu yang dipilih (${targetDateStr}) jatuh pada hari libur atau akhir pekan. Pilih hari kerja resmi.`);
+    }
+  }
+
+  // 2. Validasi tidak boleh lebih awal dari startDate
+  if (targetDateStr < startDateStr) {
+    fail(422, 'Tenggat waktu tidak boleh lebih awal dari tanggal mulai penugasan.');
+  }
+
+  // 3. Validasi tidak boleh melebihi batas maksimal SLA kecuali Superadmin dengan alasan valid
+  const isSuperAdmin = Boolean(
+    user?.roles?.includes('SUPERADMIN') ||
+    user?.role === 'SUPERADMIN'
+  );
+
+  const exceedsMaxDue = targetDateStr > maxDueDateStr;
+  if (exceedsMaxDue) {
+    if (!isSuperAdmin) {
+      fail(422, `Tenggat waktu yang dipilih (${targetDateStr}) melebihi batas maksimal SLA (${maxDueDateStr}).`);
+    }
+    if (!dueOverrideReason || dueOverrideReason.trim().length < 10) {
+      fail(422, 'Penetapan tenggat waktu melebihi batas maksimal SLA memerlukan alasan perpanjangan (minimal 10 karakter).');
+    }
+  }
+
+  const finalDueAt = new Date(`${targetDateStr}T23:59:59.999+07:00`);
+
+  return {
+    due_at: finalDueAt,
+    due_meta: {
+      start: startDate,
+      sla_days: slaDays,
+      max_due: maxDueAt,
+      chosen_due: finalDueAt,
+      stage,
+      ...(exceedsMaxDue ? {
+        override_reason: dueOverrideReason.trim(),
+        overridden_by: user?.id || null,
+      } : {}),
+    },
+  };
+}
+
+export const getAssignmentSla = async (id, query = {}, user = null) => {
+  const reg = await prisma.registration.findUnique({
+    where: { id },
+    include: { service_type: true },
+  });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+
+  const roundInfo = await resolveTashihRound(prisma, reg);
+  const previous = await prisma.assignment.findFirst({
+    where: { registration_id: id },
+    orderBy: { iteration: 'desc' },
+    select: { stage: true },
+  });
+
+  const isDummyRevision = roundInfo.lastRevLetter?.content_snapshot?.revision_kind === 'NASKAH_DUMI';
+  const expectedStage = isDummyRevision
+    ? 'DUMMY'
+    : (previous || roundInfo.isTashihRevision)
+    ? (query.stage === 'DUMMY' ? 'DUMMY' : (reg.status === 'TASHIH_IN_PROGRESS' ? (previous?.stage || 'INITIAL') : 'REVISION'))
+    : reg.registration_type === 'EXTENSION'
+    ? 'DUMMY'
+    : 'INITIAL';
+
+  const stage = query.stage || expectedStage;
+  if (!['INITIAL', 'REVISION', 'DUMMY'].includes(stage)) {
+    fail(400, 'Tahap penugasan tidak valid.');
+  }
+
+  const { due_at: max_due_at, due_meta } = await resolvePentashihDueAt(prisma, reg, stage, null, user);
+
+  return {
+    stage,
+    start_date: due_meta.start,
+    sla_days: due_meta.sla_days,
+    max_due_at,
+    service_name: reg.service_type?.name || "Mushaf Al-Qur'an Standar Kemenag",
+    basis_info: `${due_meta.sla_days} Hari Kerja (${STAGE_LABELS[stage] || stage})`,
+  };
 };
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
@@ -200,17 +400,27 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
       fail(400, `Penjatahan juz belum lengkap. Juz berikut belum teralokasi: ${missingJuz.join(', ')}. Pastikan seluruh 30 juz terbagi.`);
     }
   }
-  const verifiedPayment = await tx.paymentRecord.findFirst({
-    where: { registration_id: id, status: 'VERIFIED' },
-    orderBy: { verified_at: 'desc' },
-  });
-  const receivedHandover = data.stage === 'REVISION' ? null : await tx.physicalManuscriptHandover.findFirst({
-    where: { registration_id: id, status: 'RECEIVED' }, orderBy: { received_at: 'desc' }, select: { tashih_due_at: true },
-  });
   const currentStage = data.stage || expectedStage;
-  const slaDays = Number(reg.fee_sla_snapshot?.[`sla_${currentStage.toLowerCase()}_days`]) || 15;
-  const slaBaseDate = verifiedPayment?.verified_at || now;
-  const due_at = receivedHandover?.tashih_due_at || await calculateDueAt(tx, slaBaseDate, slaDays, { applyCutoff: true });
+  const activeAssignment = reg.status === 'TASHIH_IN_PROGRESS'
+    ? await tx.assignment.findFirst({
+        where: {
+          registration_id: id,
+          stage: currentStage,
+          status: { in: ['ASSIGNED', 'IN_PROGRESS'] },
+        },
+        orderBy: { created_at: 'desc' },
+      })
+    : null;
+
+  const { due_at, due_meta } = await resolvePentashihDueAt(
+    tx,
+    reg,
+    currentStage,
+    data.due_at,
+    user,
+    data.due_override_reason,
+    activeAssignment
+  );
 
   const iteration = reg.status === 'TASHIH_IN_PROGRESS' && previous?.iteration
     ? previous.iteration
@@ -252,11 +462,28 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
       stage: currentStage,
       iteration,
       due_at,
+      due_meta,
       ...(juz_numbers && juz_numbers.length ? { juz_items: { create: juz_numbers.map(juz_number => ({ juz_number })) } } : {}),
     } });
     assignments.push(assignment);
     await audit(tx, user, 'CREATE_ASSIGNMENT', 'Assignment', assignment.id, assignment);
+    if (due_meta?.override_reason) {
+      await audit(tx, user, 'OVERRIDE_ASSIGNMENT_SLA', 'Assignment', assignment.id, {
+        due_at,
+        max_due: due_meta.max_due,
+        override_reason: due_meta.override_reason,
+      });
+    }
     await tx.notification.create({ data: { user_id: assignee_id, registration_id: id, type: 'ASSIGNMENT', title: 'Penugasan pentashihan baru', payload: { assignment_id: assignment.id, link: '/internal/tashih' } } });
+  }
+
+  if (due_meta?.override_reason) {
+    await audit(tx, user, 'OVERRIDE_ASSIGNMENT_SLA', 'Registration', reg.id, {
+      stage: currentStage,
+      max_due: due_meta.max_due,
+      chosen_due: due_meta.chosen_due,
+      override_reason: due_meta.override_reason,
+    });
   }
   if (reg.status !== 'TASHIH_IN_PROGRESS') {
     await move(tx, reg, 'TASHIH_IN_PROGRESS', user, 'Kelompok dan pentashih ditetapkan');
