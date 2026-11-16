@@ -61,8 +61,9 @@ export const InspectionActionPanel = ({
               Dokumen Telah Lengkap Ditandatangani — Siap Dikirim ke Penerbit
             </span>
           ) : isSent ? (
-            <span className="font-bold text-brand-900">
-              Surat Resmi Telah Terkirim ke Penerbit
+            <span className="font-bold text-brand-900 flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0" />
+              Surat Resmi & Tagihan PNBP Telah Terkirim Otomatis
             </span>
           ) : null
         }
@@ -148,6 +149,18 @@ export const InspectionActionPanel = ({
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
               {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat Hasil'}
             </Button>
+          ) : latestResultDoc?.status === 'EMAIL_FAILED' ? (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                onClick={handleSendDocument}
+                disabled={actionLoading}
+                className="text-xs bg-civic-warning text-white hover:bg-civic-warning/90"
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                Kirim Ulang Surat ke Penerbit
+              </Button>
+            </div>
           ) : canVerifierSend ? (
             <div className="flex items-center gap-2">
               <Button
@@ -212,11 +225,11 @@ export const InspectionActionPanel = ({
         }}
         onConfirm={handleConfirmApprove}
         title="Sahkan Surat Hasil Verifikasi"
-        description="Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan setujui surat."
+        description="Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan sahkan surat."
         objectName={`Surat Hasil Verifikasi (${registration.registration_no || '-'})`}
-        nextActor="Verifikator untuk pengiriman surat"
-        statusChange="SUBMITTED -> SIGNED (PDF final diarsipkan)"
-        irreversibleConsequence="Setelah disetujui, nomor dokumen dan isi draf dikunci. PDF final dan QR menampilkan nomor ini."
+        nextActor="Penerbit (Terkirim Otomatis)"
+        statusChange="SUBMITTED -> SIGNED & SENT (Terkirim Otomatis ke Penerbit)"
+        irreversibleConsequence="Setelah disahkan, surat hasil resmi dan tagihan PNBP akan langsung dikirimkan ke penerbit secara otomatis, nomor dokumen dikunci, dan tagihan PNBP resmi diterbitkan."
         confirmLabel="Sahkan dan Terbitkan PDF"
         confirmVariant="primary"
         loading={actionLoading}
@@ -226,6 +239,12 @@ export const InspectionActionPanel = ({
           ...(latestResultDoc?.content_snapshot?.billing_no || billingNo
             ? [{ label: 'Kode Billing PNBP (Simponi)', value: latestResultDoc?.content_snapshot?.billing_no || billingNo }]
             : []),
+          {
+            label: 'Total Tagihan PNBP',
+            value: Number(registration?.fee_sla_snapshot?.total_fee || 0) === 0
+              ? 'Rp 0 (Bebas Tarif)'
+              : `Rp ${Number(registration?.fee_sla_snapshot?.total_fee || 0).toLocaleString('id-ID')}`,
+          },
         ]}
       >
         <div className="space-y-3 pt-2 border-t border-line text-xs">
