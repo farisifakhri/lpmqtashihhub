@@ -95,4 +95,13 @@ describe('B-01 Sesi 3: Verifier Workbench Calculator Tab (U-14)', () => {
     // SLA Pengajuan memakai naskah terpanjang = max(15, 5) = 15 HK
     expect(screen.getByTestId('summary-sla-initial')).toHaveTextContent('15');
   });
+
+  it('B-21 CALC-6: Menampilkan label {n} Tanda Tashih (per ukuran naskah)', () => {
+    render(<VerificationCalculatorTab />);
+    expect(screen.getByText('1 Tanda Tashih (per ukuran naskah)')).toBeInTheDocument();
+
+    const addBtn = screen.getByRole('button', { name: /Tambah Naskah/i });
+    fireEvent.click(addBtn);
+    expect(screen.getByText('2 Tanda Tashih (per ukuran naskah)')).toBeInTheDocument();
+  });
 });

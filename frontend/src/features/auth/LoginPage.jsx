@@ -7,6 +7,8 @@ import lpmqLogo from '@/assets/logo-lpmq1.png';
 import quran3dImg from '@/assets/quran-3d.jpg';
 import Switcher from '../darkmode/Switcher';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { BRAND } from '../../lib/brand';
+import { CONTACT } from '../../lib/contact';
 
 export const LoginPage = () => {
   const { login, isLoading, authError } = useAuth();
@@ -88,7 +90,7 @@ export const LoginPage = () => {
             <div className="relative z-10 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-8">
               <div className="bg-black/40 backdrop-blur-md p-3.5 rounded-xl border border-white/15 text-white shadow-2xs">
                 <p className="text-[11px] font-bold text-brand-fg mb-0.5">
-                  SIPNA (Sistem Informasi Pentashih Mushaf Quran)
+                  {BRAND.SYSTEM_NAME}
                 </p>
                 <h3 className="text-xs font-semibold text-white/90 leading-snug">
                   Lajnah Pentashihan Mushaf Quran RI
@@ -163,7 +165,9 @@ export const LoginPage = () => {
                       Cek Status Pendaftaran
                     </Link>
                     <a
-                      href="mailto:lpmq@kemenag.go.id"
+                      href={CONTACT.getWhatsAppHelpLink('Halo LPMQ, saya mengalami kendala saat login akun penerbit.')}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold text-ink bg-surface border border-line hover:bg-surface-subtle transition-colors"
                     >
                       Bantuan Layanan

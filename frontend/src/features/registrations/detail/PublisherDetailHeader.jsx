@@ -322,7 +322,7 @@ export function PublisherDetailHeader({
           {['READY_FOR_VERIFICATION', 'VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'REVISION_REQUIRED'].includes(data.status) && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 text-brand-900 border border-brand-200 text-xs font-semibold">
               <Clock className="w-3.5 h-3.5 text-brand-700" />
-              <span>SLA Waktu Layanan: <strong>{data.fee_sla_snapshot?.sla_hari_kerja || 59} Hari Kerja</strong></span>
+              <span>SLA Verifikasi: <strong>Maks. 2 Hari Kerja</strong></span>
             </span>
           )}
 

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, Minus, Phone, Plus, X } from 'lucide-react';
 import logoTashih from '@/assets/logo-lpmq1.webp';
+import { CONTACT } from '@/lib/contact';
 
 export const PUBLIC_NAV_ITEMS = [
   { label: 'Beranda', href: '#beranda' },
@@ -179,7 +180,7 @@ export const PublicHeader = ({
 
         <div className="col-start-3 hidden items-center justify-self-end gap-3 xl:flex">
           <a
-            href="https://wa.me/628111997125"
+            href={CONTACT.WHATSAPP_LINK}
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"
@@ -290,7 +291,7 @@ export const PublicHeader = ({
             })}
             <div className="mt-2 flex gap-2">
               <a
-                href="https://wa.me/628111997125"
+                href={CONTACT.WHATSAPP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Hubungi Layanan Tashih Online melalui WhatsApp"

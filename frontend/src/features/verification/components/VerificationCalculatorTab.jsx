@@ -191,7 +191,7 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
             {formatRupiah(summary.totalFee)}
           </p>
           <p className="text-xs text-brand-700">
-            {simulatedManuscripts.length} Naskah Terhitung
+            {simulatedManuscripts.length} Tanda Tashih (per ukuran naskah)
           </p>
         </div>
 

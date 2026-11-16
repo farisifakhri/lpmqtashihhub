@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useContext } from "react";
 import {
     Building2,
     ShieldCheck,
@@ -21,7 +21,9 @@ import {
     KeyRound,
     Copy,
     Check,
+    Edit3,
 } from "lucide-react";
+import { AuthContext } from "@/features/auth/AuthContext";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -70,6 +72,11 @@ const DOC_TYPE_LABELS = {
 };
 
 export const PublisherVerificationPage = () => {
+    const authContext = useContext(AuthContext);
+    const currentUser = authContext?.currentUser || null;
+    const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+    const isSuperAdmin = !authContext || userRoles.includes("SUPERADMIN") || currentUser?.role === "SUPERADMIN";
+
     const [selectedStatus, setSelectedStatus] = useState("DIAJUKAN");
     const [searchTerm, setSearchTerm] = useState("");
     const [activeSearch, setActiveSearch] = useState("");
@@ -104,6 +111,59 @@ export const PublisherVerificationPage = () => {
     const [issuedRevisionInfo, setIssuedRevisionInfo] = useState(null);
     const [isResendingToken, setIsResendingToken] = useState(false);
     const [copiedRevisionLink, setCopiedRevisionLink] = useState(false);
+
+    // Super Admin Edit Data State
+    const [editTarget, setEditTarget] = useState(null);
+    const [editForm, setEditForm] = useState({
+        name: "",
+        publisher_type: "SWASTA",
+        address: "",
+        pic_name: "",
+        pic_phone: "",
+        email: "",
+        npwp: "",
+        nib: "",
+        reason: "",
+    });
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+    const [editError, setEditError] = useState("");
+
+    const openEditModal = (reg) => {
+        setEditTarget(reg);
+        setEditError("");
+        setEditForm({
+            name: reg.name || "",
+            publisher_type: reg.publisher_type || "SWASTA",
+            address: reg.address || "",
+            pic_name: reg.pic_name || "",
+            pic_phone: reg.pic_phone || "",
+            email: reg.email || "",
+            npwp: reg.npwp || "",
+            nib: reg.nib || "",
+            reason: "",
+        });
+    };
+
+    const handleSaveEdit = async (e) => {
+        e.preventDefault();
+        if (!editForm.reason || editForm.reason.trim().length < 10) {
+            setEditError("Alasan perbaikan data pendaftaran wajib diisi minimal 10 karakter.");
+            return;
+        }
+
+        setIsSavingEdit(true);
+        setEditError("");
+        try {
+            await publisherRegistrationApi.adminEditRegistration(editTarget.id, editForm);
+            setSuccessMessage(`Data pendaftaran ${editTarget.name} berhasil diperbarui oleh Administrator.`);
+            setEditTarget(null);
+            loadRegistrations();
+        } catch (err) {
+            setEditError(err.message || "Gagal menyimpan perubahan data pendaftaran.");
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
 
     // Load list from backend
     const loadRegistrations = useCallback(async () => {
@@ -560,14 +620,27 @@ export const PublisherVerificationPage = () => {
                                             <span>{statusConfig.label}</span>
                                         </span>
 
-                                        <Button
-                                            size="sm"
-                                            onClick={() => openDetailModal(reg.id)}
-                                            className="cursor-pointer"
-                                        >
-                                            <Eye className="w-4 h-4 mr-1.5" />
-                                            <span>Periksa & Putuskan</span>
-                                        </Button>
+                                        <div className="flex items-center gap-1.5">
+                                            {isSuperAdmin && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => openEditModal(reg)}
+                                                    className="cursor-pointer text-xs"
+                                                >
+                                                    <Edit3 className="w-3.5 h-3.5 mr-1" />
+                                                    <span>Edit Data</span>
+                                                </Button>
+                                            )}
+                                            <Button
+                                                size="sm"
+                                                onClick={() => openDetailModal(reg.id)}
+                                                className="cursor-pointer text-xs"
+                                            >
+                                                <Eye className="w-3.5 h-3.5 mr-1" />
+                                                <span>Periksa & Putuskan</span>
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </article>
@@ -1100,6 +1173,178 @@ export const PublisherVerificationPage = () => {
                 }`}
                 confirmVariant={decisionType === "TOLAK" ? "destructive" : "primary"}
             />
+
+            {/* Modal Edit Data Super Admin */}
+            {editTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
+                    <div className="w-full max-w-2xl bg-surface rounded-2xl shadow-xl border border-line p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 border-b border-line">
+                            <div>
+                                <h3 className="text-base font-extrabold text-ink">
+                                    Edit Data Pendaftaran Penerbit (Super Admin)
+                                </h3>
+                                <p className="text-xs text-ink-muted">
+                                    Perubahan data permohonan <strong>{editTarget.registration_code}</strong>
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setEditTarget(null)}
+                                className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-subtle"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {editError && (
+                            <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                <span>{editError}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        Nama Instansi / Badan Hukum <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.name}
+                                        onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        Jenis Instansi <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <select
+                                        value={editForm.publisher_type}
+                                        onChange={(e) => setEditForm({ ...editForm, publisher_type: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                    >
+                                        <option value="SWASTA">Perusahaan Swasta (PT/CV)</option>
+                                        <option value="INSTANSI_PEMERINTAH">Instansi Pemerintah</option>
+                                        <option value="YAYASAN_LEMBAGA">Yayasan / Lembaga</option>
+                                        <option value="PERORANGAN">Perorangan</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        Nama Penanggung Jawab <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.pic_name}
+                                        onChange={(e) => setEditForm({ ...editForm, pic_name: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        Telepon Penanggung Jawab <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.pic_phone}
+                                        onChange={(e) => setEditForm({ ...editForm, pic_phone: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        Email Akun <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={editForm.email}
+                                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">
+                                        NPWP <span className="text-civic-danger">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={editForm.npwp}
+                                        onChange={(e) => setEditForm({ ...editForm, npwp: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block font-bold text-ink mb-1">NIB</label>
+                                    <input
+                                        type="text"
+                                        value={editForm.nib || ""}
+                                        onChange={(e) => setEditForm({ ...editForm, nib: e.target.value })}
+                                        className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block font-bold text-ink mb-1">Alamat Lengkap</label>
+                                <textarea
+                                    rows={2}
+                                    value={editForm.address}
+                                    onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                                    className="w-full px-3 py-2 bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                />
+                            </div>
+
+                            <div className="p-3 rounded-xl bg-surface-subtle border border-line space-y-1.5">
+                                <label className="block font-bold text-ink">
+                                    Alasan Perubahan Data (Wajib Audit Trail) <span className="text-civic-danger">*</span>
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    value={editForm.reason}
+                                    onChange={(e) => setEditForm({ ...editForm, reason: e.target.value })}
+                                    placeholder="Tuliskan alasan perbaikan data pendaftaran (minimal 10 karakter)..."
+                                    className="w-full px-3 py-2 bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
+                                    required
+                                />
+                                <p className="text-[11px] text-ink-muted">
+                                    Aksi perbaikan data ini akan tercatat dalam log audit resmi LPMQ beserta identitas Super Admin pelaksana.
+                                </p>
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditTarget(null)}
+                                >
+                                    Batal
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="primary"
+                                    size="sm"
+                                    disabled={isSavingEdit}
+                                >
+                                    {isSavingEdit ? "Menyimpan..." : "Simpan Perubahan Data"}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
