@@ -41,8 +41,28 @@ function safeText(value, font) {
   return result;
 }
 
-export async function renderVerificationPdf(document, { draft = false, approver = null, approvedAt = null } = {}) {
+export async function renderVerificationPdf(document, { draft = false, approver = null, approvedAt = null, pemarafName = null } = {}) {
   if (!draft && !ENV.PUBLIC_APP_URL) fail(503, 'PUBLIC_APP_URL perlu diatur sebelum QR dokumen diterbitkan.');
+
+  let effectivePemarafName = pemarafName;
+  if (!draft && !effectivePemarafName && prisma?.approvalParaf) {
+    try {
+      const paraf = await prisma.approvalParaf.findUnique({
+        where: {
+          subject_type_subject_id: {
+            subject_type: 'VERIFICATION_RESULT',
+            subject_id: document.assignment_id || document.id,
+          },
+        },
+      });
+      if (paraf?.pemaraf_id) {
+        const u = await prisma.user.findUnique({ where: { id: paraf.pemaraf_id }, select: { name: true } });
+        effectivePemarafName = u?.name || null;
+      }
+    } catch {
+      // non-fatal
+    }
+  }
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -762,6 +782,9 @@ export async function renderVerificationPdf(document, { draft = false, approver 
   line(draft ? 'Status Dokumen: Draf (Belum Ditetapkan / Belum Disetujui)' : 'Status Dokumen: Disetujui dan Ditetapkan Secara Elektronik', true, 8);
 
   if (!draft) {
+    if (effectivePemarafName) {
+      line(`Pemaraf           : ${effectivePemarafName}`, false, 7.5);
+    }
     line(`Pejabat Penyetuju : ${approver?.name || '-'}`, false, 7.5);
     line(`Waktu Persetujuan : ${approvedAt?.toISOString() || '-'}`, false, 7.5);
     const qrData = await QRCode.toDataURL(verificationUrl(document.qr_token), { errorCorrectionLevel: 'M', margin: 1, width: 256 });

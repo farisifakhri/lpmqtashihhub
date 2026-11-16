@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { withPemaraf } from '../../src/utils/pemaraf.js';
+import { withPemaraf, forbidPemaraf } from '../../src/utils/pemaraf.js';
 import { requireParaf, recordParaf } from '../../src/services/paraf.service.js';
 
 // tx tiruan: satu tabel paraf di memori, dengan jumlah akun Pemaraf aktif yang bisa diatur.
@@ -38,4 +38,17 @@ test('Persetujuan Kepala ditolak sebelum paraf, dan lolos setelah Pemaraf membub
 
 test('Tanpa akun Pemaraf aktif, alur lama tetap berjalan tanpa paraf', async () => {
   await requireParaf(fakeTx(0), 'MASTER_LETTER', 'm1');
+});
+
+test('forbidPemaraf menolak user dengan isPemaraf: true dan meloloskan user lain', () => {
+  const pemarafUser = { id: 'p1', isPemaraf: true, roles: ['KEPALA_LPMQ'] };
+  const kepalaUser = { id: 'k1', isPemaraf: false, roles: ['KEPALA_LPMQ'] };
+
+  assert.throws(
+    () => forbidPemaraf(pemarafUser, 'mengembalikan draf surat'),
+    (err) => err.statusCode === 403 && err.message.includes('tidak berwenang')
+  );
+
+  assert.doesNotThrow(() => forbidPemaraf(kepalaUser, 'mengembalikan draf surat'));
+  assert.doesNotThrow(() => forbidPemaraf({ id: 's1', roles: ['SUPERADMIN'] }, 'mengembalikan draf surat'));
 });

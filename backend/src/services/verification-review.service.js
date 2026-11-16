@@ -8,6 +8,7 @@ import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt } from './sla.service.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
 import { getNextDocumentNumber } from './document-number.service.js';
+import { forbidPemaraf } from '../utils/pemaraf.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -933,6 +934,8 @@ catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
 };
 
 export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  forbidPemaraf(user, 'mengembalikan draf surat hasil verifikasi');
+
   if (!user.roles.includes('KEPALA_LPMQ')) {
     fail(403, 'Pengembalian draf surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }

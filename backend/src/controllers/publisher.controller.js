@@ -82,11 +82,26 @@ export const permitProfileEdit = async (req, res, next) => {
   }
 };
 
+export const adminUpdatePublisher = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await publisherService.adminUpdatePublisher(id, req.body, req);
+    res.status(200).json({
+      success: true,
+      message: 'Data penerbit berhasil diperbarui oleh Administrator.',
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getMyProfile,
   updateMyProfile,
   listPublishers,
   verifyPublisher,
   permitProfileEdit,
+  adminUpdatePublisher,
 };
 
