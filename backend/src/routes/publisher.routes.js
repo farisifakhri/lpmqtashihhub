@@ -9,6 +9,7 @@ const router = Router();
 
 // Rute khusus portal penerbit
 router.get('/me', authenticate, authorize('PENERBIT'), publisherController.getMyProfile);
+router.get('/me/certificate', authenticate, authorize('PENERBIT'), publisherController.getMyCertificate);
 router.put('/me', authenticate, authorize('PENERBIT'), validate(updatePublisherProfileSchema), publisherController.updateMyProfile);
 
 // Rute internal LPMQ

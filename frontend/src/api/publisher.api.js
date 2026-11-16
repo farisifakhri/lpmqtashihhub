@@ -1,4 +1,6 @@
-import apiClient from './client';
+import apiClient, { getAuthToken } from './client';
+
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const publisherApi = {
   list: async (params = {}) => {
@@ -16,6 +18,33 @@ export const publisherApi = {
       body: payload,
     }),
   getMyProfile: async () => apiClient('/publishers/me'),
+  getMyCertificate: async (openInNewTab = true) => {
+    const token = getAuthToken();
+    const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const url = `${cleanBase}/publishers/me/certificate`;
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Sertifikat penerbit belum tersedia atau pendaftaran belum disetujui.');
+    }
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    if (openInNewTab) {
+      window.open(blobUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+    } else {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'sertifikat-penerbit.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    }
+  },
   updateMyProfile: async (payload) =>
     apiClient('/publishers/me', {
       method: 'PUT',

@@ -1,6 +1,7 @@
 import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { forbidPemaraf } from '../utils/pemaraf.js';
+import { getPublisherCertificatePdf } from './publisher-registration.service.js';
 
 export const getProfile = async (publisherId) => {
   const publisher = await prisma.publisher.findUnique({
@@ -238,8 +239,30 @@ export const adminUpdatePublisher = async (publisherId, data, req) => {
   return updated;
 };
 
+export const getMyCertificatePdf = async ({ publisherId, userId, user }) => {
+  const reg = await prisma.publisherRegistration.findFirst({
+    where: {
+      OR: [
+        ...(publisherId ? [{ publisher_id: publisherId }] : []),
+        ...(userId ? [{ user_id: userId }] : []),
+      ],
+      status: 'DISETUJUI',
+    },
+    orderBy: { decided_at: 'desc' },
+  });
+
+  if (!reg) {
+    const error = new Error('Sertifikat penerbit belum tersedia atau pendaftaran belum disetujui.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return getPublisherCertificatePdf(reg.id, user);
+};
+
 export default {
   getProfile,
+  getMyCertificatePdf,
   updateProfile,
   listPublishers,
   verifyPublisher,

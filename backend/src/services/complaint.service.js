@@ -1,4 +1,4 @@
-// Sistem Pengaduan LPMQ Tashih Hub (publik, tanpa login).
+// Sistem Pengaduan Layanan Pentashihan LPMQ (publik, tanpa login).
 //   1. Pengadu mengirim formulir (kesalahan cetak mushaf / pelayanan STT) + CAPTCHA -> MENUNGGU_VERIFIKASI
 //   2. Admin (Helper Admin/ADMIN_INTERNAL, SUPERADMIN) menerima -> DITERIMA, atau menolak dengan alasan -> DITOLAK
 //   3. Penanganan: DITERIMA -> DALAM_PROSES <-> MENUNGGU_TINDAK_LANJUT
@@ -139,7 +139,7 @@ async function emailReporter(complaint, event, extra = '') {
     ? `[LPMQ] Pengaduan Anda Diterima Sistem - ${complaint.complaint_code}`
     : `[LPMQ] Status Pengaduan ${complaint.complaint_code}: ${statusLabel}`;
   const message = event === 'SUBMITTED'
-    ? `Terima kasih, ${typeLabel.toLowerCase()} Anda telah kami terima dengan kode ${complaint.complaint_code}. Simpan kode ini untuk memantau perkembangan pengaduan melalui menu Pengaduan > Lacak Pengaduan di situs LPMQ Tashih Hub.`
+    ? `Terima kasih, ${typeLabel.toLowerCase()} Anda telah kami terima dengan kode ${complaint.complaint_code}. Simpan kode ini untuk memantau perkembangan pengaduan melalui menu Pengaduan > Lacak Pengaduan di portal Layanan Pentashihan LPMQ.`
     : `Status pengaduan Anda dengan kode ${complaint.complaint_code} kini: ${statusLabel}.${extra ? ` ${extra}` : ''} Detail dapat dipantau melalui menu Pengaduan > Lacak Pengaduan.`;
   try {
     await emailProvider.sendEmail({

@@ -421,7 +421,7 @@ export const LandingPageManagementPage = () => {
             Kelola Landing Page
           </h1>
           <p className="text-xs sm:text-sm text-ink-muted mt-0.5">
-            Manajemen konten publikasi landing page dan dokumen regulasi resmi LPMQ Tashih Hub
+            Manajemen konten publikasi landing page dan dokumen regulasi resmi Layanan Pentashihan LPMQ
           </p>
         </div>
       </div>

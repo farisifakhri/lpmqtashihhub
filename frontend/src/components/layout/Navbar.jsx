@@ -15,6 +15,7 @@ import {
   KeyRound,
   Sparkles,
   Check,
+  FileText,
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAvatar } from '@/context/AvatarContext';
@@ -25,6 +26,9 @@ import { NotificationCenter } from './NotificationCenter';
 import { PublisherProfileModal } from '@/features/registrations/PublisherProfileModal';
 import { ChangePasswordModal } from '@/features/auth/ChangePasswordModal';
 import Switcher from '@/features/darkmode/Switcher';
+import { publisherApi } from '@/api/publisher.api';
+import { showToast } from '@/components/ui/toast';
+import { BRAND } from '@/lib/brand';
 import kemenagLogo from '@/assets/kemenag.png';
 import lpmqLogo from '@/assets/lpmq.png';
 
@@ -199,7 +203,7 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname.startsWith('/internal/users')) {
       return { parent: 'Akses', name: 'Manajemen Pengguna' };
     }
-    return { parent: null, name: 'LPMQ Tashih Hub' };
+    return { parent: null, name: BRAND.SHORT_NAME };
   };
 
   const breadcrumb = getBreadcrumb(location.pathname);
@@ -510,17 +514,31 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
                           </button>
                         )}
 
-                        {/* Penerbit membuka sertifikatnya sendiri; petugas internal membuka halaman pencarian nomor induk. */}
-                        {(currentUser?.publisher?.nomor_induk_penerbit || currentUser?.role !== 'PENERBIT') && (
+                        {/* Penerbit membuka sertifikatnya sendiri (PDF); petugas internal membuka halaman pencarian nomor induk. */}
+                        {isPublisher ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setProfileDropdownOpen(false);
+                              try {
+                                await publisherApi.getMyCertificate(true);
+                              } catch (err) {
+                                showToast(err.message || 'Sertifikat belum dapat dibuka.', 'warning');
+                              }
+                            }}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors text-left cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4 text-brand-700" />
+                            <span>Sertifikat Penerbit</span>
+                          </button>
+                        ) : (
                           <Link
-                            to={currentUser?.publisher?.nomor_induk_penerbit
-                              ? `/verifikasi/sertifikat/${encodeURIComponent(currentUser.publisher.nomor_induk_penerbit)}`
-                              : '/verifikasi/sertifikat'}
+                            to="/verifikasi/sertifikat"
                             onClick={() => setProfileDropdownOpen(false)}
                             className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-ink hover:bg-brand-50/80 hover:text-brand-900 rounded-lg transition-colors"
                           >
                             <QrCode className="w-4 h-4 text-brand-700" />
-                            <span>Verifikasi Sertifikat Penerbit (QR)</span>
+                            <span>Sertifikat Penerbit</span>
                           </Link>
                         )}
 
