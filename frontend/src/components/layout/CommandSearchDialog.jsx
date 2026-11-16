@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 import {
   Search,
   FileText,
@@ -25,7 +26,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
   const listRef = useRef(null);
 
   const role = currentUser?.role || '';
-  const roles = currentUser?.roles || [];
+  const roles = accessRoles(currentUser?.roles || []);
   const isPublisher = role === 'PENERBIT' || roles.includes('PENERBIT');
   const isHead = role === 'KEPALA_LPMQ' || roles.includes('KEPALA_LPMQ');
   const isSuperAdmin = role === 'SUPERADMIN' || roles.includes('SUPERADMIN');

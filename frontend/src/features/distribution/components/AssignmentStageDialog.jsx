@@ -1,18 +1,28 @@
-import React from 'react';
-import { X, ChevronRight } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, ChevronRight, Lock } from 'lucide-react';
+import { clsx } from 'clsx';
+import { registrationApi } from '@/api/registration.api';
+
+const OPTIONS = [
+  { key: 'INITIAL', label: '1. Penugasan Awal', desc: 'Sidang pertama atas naskah yang baru diterima.' },
+  { key: 'REVISION', label: '2. Penugasan Perbaikan', desc: 'Sidang atas naskah perbaikan yang dikirim ulang penerbit. Bisa berulang.' },
+  { key: 'DUMMY', label: '3. Penugasan Dumi', desc: 'Pemeriksaan akhir naskah yang sudah final sebelum cetak.' },
+];
 
 // Pop-up "Mulai Penugasan": distributor memilih jenis penugasan sebelum masuk ke penetapan penugasan.
-// Ketiganya bisa dipilih dan tampil setara, tanpa penanda saran.
+// Pilihan yang belum sesuai tahap (mis. Perbaikan sebelum penerbit mengirim naskah perbaikan) dikunci;
+// aturannya ditentukan server, yang juga menolak pilihan terkunci.
 export function AssignmentStageDialog({ registration, onClose, onChoose }) {
-  const options = [
-    { key: 'INITIAL', label: '1. Penugasan Awal', desc: 'Sidang pertama atas naskah yang baru diterima.' },
-    {
-      key: 'REVISION',
-      label: '2. Penugasan Perbaikan',
-      desc: 'Sidang atas naskah perbaikan yang dikirim ulang penerbit. Bisa berulang.',
-    },
-    { key: 'DUMMY', label: '3. Penugasan Dumi', desc: 'Pemeriksaan akhir naskah yang sudah final sebelum cetak.' },
-  ];
+  const [stages, setStages] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    registrationApi.getAssignmentStages(registration.id)
+      .then(res => { if (active) setStages(res.data || []); })
+      .catch(err => { if (active) setError(err.message || 'Gagal memuat jenis penugasan.'); });
+    return () => { active = false; };
+  }, [registration.id]);
 
   return (
     <div
@@ -40,20 +50,30 @@ export function AssignmentStageDialog({ registration, onClose, onChoose }) {
         </div>
         <div className="p-5 space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-ink">Pilih Jenis Penugasan</p>
-          {options.map(option => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => onChoose(option.key)}
-              className="flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-white px-4 py-3 text-left hover:border-line-strong hover:bg-canvas cursor-pointer"
-            >
-              <span>
-                <span className="block text-sm font-bold text-ink">{option.label}</span>
-                <span className="block text-xs text-ink-muted mt-0.5">{option.desc}</span>
-              </span>
-              <ChevronRight className="w-4 h-4 shrink-0 text-ink-muted" />
-            </button>
-          ))}
+          {error && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-xs text-civic-danger">{error}</p>}
+          {!stages && !error && <p role="status" className="py-4 text-center text-xs text-ink-muted">Memeriksa tahap penugasan...</p>}
+          {stages && OPTIONS.map(option => {
+            const state = stages.find(item => item.key === option.key);
+            const allowed = Boolean(state?.allowed);
+            return (
+              <button
+                key={option.key}
+                type="button"
+                disabled={!allowed}
+                onClick={() => onChoose(option.key)}
+                className={clsx(
+                  'flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left',
+                  allowed ? 'border-line bg-white hover:border-line-strong hover:bg-canvas cursor-pointer' : 'border-line bg-surface-subtle cursor-not-allowed'
+                )}
+              >
+                <span>
+                  <span className={clsx('block text-sm font-bold', allowed ? 'text-ink' : 'text-ink-muted')}>{option.label}</span>
+                  <span className="block text-xs text-ink-muted mt-0.5">{option.desc}</span>
+                </span>
+                {allowed ? <ChevronRight className="w-4 h-4 shrink-0 text-ink-muted" /> : <Lock className="w-4 h-4 shrink-0 text-ink-muted" aria-hidden="true" />}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

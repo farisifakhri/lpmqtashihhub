@@ -158,7 +158,11 @@ export const dispatchPhysicalSchema = {
     dispatch_date: z.string().optional(),
     notes: z.string().optional(),
     recap_file_id: z.string().uuid().optional().nullable(),
-  }),
+  }).refine(
+    // Dikirim lewat kurir/ekspedisi: nomor resi wajib sebagai bukti pengiriman. Antar langsung ke loket tidak.
+    (body) => !body.courier || body.courier === 'LOKET_LPMQ' || Boolean(body.tracking_no?.trim()),
+    { message: 'Nomor resi wajib diisi bila naskah dikirim lewat kurir/ekspedisi.', path: ['tracking_no'] },
+  ),
 };
 
 export const publisherRevisionRecapSchema = {

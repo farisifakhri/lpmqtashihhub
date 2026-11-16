@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import {
@@ -40,7 +41,7 @@ import { AssignVerificationDialog } from '@/features/verification/AssignVerifica
 
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
-  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
   const isPublisher = userRoles.includes('PENERBIT') || currentUser?.role === 'PENERBIT';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
   const isAdmin = userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL' || isSuperAdmin;

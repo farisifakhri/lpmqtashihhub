@@ -36,7 +36,8 @@ export const getMe = async (req, res, next) => {
   try {
     res.status(200).json({
       success: true,
-      data: req.user,
+      // Klien menerima role identitas (PEMARAF tetap PEMARAF), bukan role hak akses server
+      data: { ...req.user, roles: req.user.identityRoles || req.user.roles },
     });
   } catch (error) {
     next(error);

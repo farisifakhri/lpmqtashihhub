@@ -233,7 +233,14 @@ describe('Manual team assignment (B-05)', () => {
     // awalnya hanya 12 card bulan; pekan baru muncul setelah bulannya dipilih
     expect(screen.queryByRole('button', { name: /^Pekan/ })).not.toBeInTheDocument();
     expect(screen.getByText('Pilih Bulan').nextSibling.querySelectorAll('button')).toHaveLength(12);
-    fireEvent.click(screen.getByRole('button', { name: /^Maret/ }));
+    // card bulan tanpa tahun; tahun dipilih lewat dropdown dan tampil di judul bulan yang dibuka
+    const nextYear = new Date().getFullYear() + 1;
+    fireEvent.click(screen.getByRole('button', { name: 'Pilih Tahun' }));
+    fireEvent.click(screen.getByRole('button', { name: String(nextYear + 1) }));
+    expect(screen.queryByRole('group', { name: 'Daftar tahun' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tahun sebelumnya' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Maret' }));
+    expect(screen.getByRole('region', { name: `Maret ${nextYear}` })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^Pekan [1-5]$/ })).toHaveLength(5);
     fireEvent.click(screen.getByRole('button', { name: 'Ganti bulan' }));
     fireEvent.click(screen.getByRole('button', { name: /^Maret/ }));
