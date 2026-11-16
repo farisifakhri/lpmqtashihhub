@@ -32,6 +32,7 @@ import lpmqLogo from "@/assets/logo-lpmq1.png";
 import Switcher from "../darkmode/Switcher";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
 import { SuratPendaftaranTemplateModal } from "./components/SuratPendaftaranTemplateModal";
+import { AddressAutocomplete } from "./components/AddressAutocomplete";
 const TEMPLATE_SURAT_URL = "#";
 
 const MAX_SIZE_DEFAULT = 500 * 1024; // 500 KB
@@ -164,6 +165,8 @@ export const RegisterPublisherPage = () => {
         npwp: "",
         nib: "",
     });
+    // Titik kantor dari peta alamat (opsional); tampil di peta persebaran setelah pendaftaran disetujui.
+    const [officeLocation, setOfficeLocation] = useState(null);
 
     // File State (File Objects)
     const [files, setFiles] = useState({
@@ -343,6 +346,10 @@ export const RegisterPublisherPage = () => {
         payload.append("email", formData.email.trim().toLowerCase());
         payload.append("password", formData.password);
         payload.append("npwp", formData.npwp.trim());
+        if (officeLocation) {
+            payload.append("latitude", String(officeLocation.lat));
+            payload.append("longitude", String(officeLocation.lon));
+        }
 
         if (jenisPenerbit === "PERUSAHAAN" && formData.nib) {
             payload.append("nib", formData.nib.trim());
@@ -794,12 +801,13 @@ export const RegisterPublisherPage = () => {
                                         <label htmlFor="alamat-lengkap-input" className="block text-xs font-semibold text-ink mb-1">
                                             Alamat Kantor Resmi (Alamat Pengiriman Fisik) *
                                         </label>
-                                        <textarea
+                                        <AddressAutocomplete
                                             id="alamat-lengkap-input"
                                             rows={2}
                                             name="alamat_lengkap"
                                             value={formData.alamat_lengkap}
-                                            onChange={handleTextChange}
+                                            onChange={(value) => handleTextChange({ target: { name: "alamat_lengkap", value } })}
+                                            onLocationChange={setOfficeLocation}
                                             placeholder="Jl. Percetakan Mushaf No. 12, Kel. TMII, Kec. Cipayung, Jakarta Timur, 13560"
                                             className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-canvas focus:bg-surface border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-600/20 focus:border-brand-fg transition-all text-ink placeholder:text-ink-muted resize-none"
                                             required

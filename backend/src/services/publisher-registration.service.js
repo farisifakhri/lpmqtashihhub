@@ -12,6 +12,7 @@ import {
 } from './secure-document.service.js';
 import {
   computeActiveIdentifiers,
+  coordinatesSchema,
   createPublisherRegistrationSchema,
 } from '../validators/publisher-registration.validator.js';
 import { buildAdminPublisherRegistrationWhere } from './queue-filters.js';
@@ -222,6 +223,8 @@ export async function registerPublisher(body, files = {}) {
         publisher_type: validated.jenis_penerbit,
         name: validated.nama_penerbit,
         address: validated.alamat_lengkap,
+        latitude: validated.latitude ?? null,
+        longitude: validated.longitude ?? null,
         pic_name: validated.nama_penanggung_jawab,
         pic_phone: validated.telepon_penanggung_jawab,
         email: validated.email,
@@ -519,6 +522,8 @@ export async function getPublisherRegistrationRevision(rawToken) {
 }
 
 export async function submitPublisherRegistrationRevision(rawToken, body = {}, files = {}) {
+  // divalidasi sebelum berkas diproses, agar titik yang tidak valid tidak menyisakan unggahan setengah jalan
+  const coordinates = coordinatesSchema.parse(body);
   if (!rawToken || typeof rawToken !== 'string') {
     const err = new Error('Token perbaikan tidak valid.');
     err.statusCode = 400;
@@ -641,6 +646,7 @@ export async function submitPublisherRegistrationRevision(rawToken, body = {}, f
       version: { increment: 1 },
     };
     if (body.alamat_lengkap) updateData.address = body.alamat_lengkap.trim();
+    if (coordinates.latitude !== undefined) Object.assign(updateData, coordinates);
     if (body.nama_penanggung_jawab) updateData.pic_name = body.nama_penanggung_jawab.trim();
     if (body.telepon_penanggung_jawab) updateData.pic_phone = body.telepon_penanggung_jawab.trim();
 
@@ -853,6 +859,8 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
             entity_type: entityType,
             verification_status: 'VERIFIED',
             address: reg.address,
+            latitude: reg.latitude,
+            longitude: reg.longitude,
             phone: reg.pic_phone,
             nomor_induk_penerbit: nipNumber,
             npwp: reg.npwp,
@@ -1080,6 +1088,30 @@ export const maskIdentifier = (value) => {
 // Sertifikat hanya SAH bila pendaftaran disetujui dan akun penerbit masih aktif.
 export const isCertificateActive = ({ registrationStatus, userStatus }) =>
   (registrationStatus === undefined || registrationStatus === 'DISETUJUI') && userStatus === 'ACTIVE';
+
+// Peta persebaran landing page: hanya penerbit yang disetujui admin, akunnya aktif, dan punya titik kantor.
+// Data yang keluar sebatas yang memang tercetak di sertifikat publik (nama & alamat), tanpa NPWP/NIB/kontak.
+export const PUBLISHER_MAP_LIMIT = 2000; // shortcut: tanpa paginasi/klaster, ganti ke bounding-box query bila penerbit > ribuan
+export async function listPublisherMapPoints() {
+  const publishers = await prisma.publisher.findMany({
+    where: {
+      verification_status: 'VERIFIED',
+      latitude: { not: null },
+      longitude: { not: null },
+      user: { status: 'ACTIVE' },
+    },
+    select: { id: true, legal_name: true, address: true, latitude: true, longitude: true },
+    orderBy: { legal_name: 'asc' },
+    take: PUBLISHER_MAP_LIMIT,
+  });
+  return publishers.map((publisher) => ({
+    id: publisher.id,
+    name: publisher.legal_name,
+    address: publisher.address || '',
+    latitude: publisher.latitude,
+    longitude: publisher.longitude,
+  }));
+}
 
 export async function verifyPublisherCertificate(nomorInduk) {
   // Validasi format dasar: harus ada segmen angka dipisahkan titik (minimal 4 segmen)
