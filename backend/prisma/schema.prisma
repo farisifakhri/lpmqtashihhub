@@ -154,6 +154,8 @@ model Publisher {
   entity_type             String // PT, CV, YAYASAN, LEMBAGA_PEMERINTAH, LAINNYA
   verification_status     PublisherVerificationStatus @default(UNVERIFIED) // UNVERIFIED, VERIFIED, REJECTED
   address                 String?
+  latitude                Float? // titik kantor dari peta pendaftaran; tampil di peta persebaran landing page
+  longitude               Float?
   phone                   String?
   nomor_induk_penerbit    String?                     @db.VarChar(50)
   npwp                    String?                     @db.VarChar(50)
@@ -219,6 +221,8 @@ model PublisherRegistration {
   publisher_type       PublisherType
   name                 String                      @db.VarChar(255)
   address              String                      @db.Text
+  latitude             Float?
+  longitude            Float?
   pic_name             String                      @db.VarChar(255)
   pic_phone            String                      @db.VarChar(50)
   email                String                      @db.VarChar(255)

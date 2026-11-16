@@ -3,7 +3,7 @@ import express from 'express';
 import { rateLimit } from 'express-rate-limit';
 import publicController from '../controllers/public.controller.js';
 import { publicVerification } from '../services/verification-document-pdf.service.js';
-import { verifyPublisherCertificate } from '../services/publisher-registration.service.js';
+import { listPublisherMapPoints, verifyPublisherCertificate } from '../services/publisher-registration.service.js';
 import { certificateVerifyUrl } from '../services/publisher-certificate-pdf.service.js';
 import QRCode from 'qrcode';
 
@@ -30,6 +30,17 @@ router.get('/verify-certificate/:nomorInduk/qr', qrLimit, async (req, res, next)
     if (!result.valid) return res.status(404).json({ success: false, message: 'QR hanya tersedia untuk sertifikat yang sah.' });
     const png = await QRCode.toBuffer(certificateVerifyUrl(nomor), { margin: 1, width: 240, errorCorrectionLevel: 'M' });
     res.set('Cache-Control', 'no-store').type('png').send(png);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Titik penerbit terverifikasi untuk peta persebaran di landing page (tanpa otentikasi).
+const mapLimit = rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false });
+router.get('/publisher-map', mapLimit, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ success: true, data: await listPublisherMapPoints() });
   } catch (error) {
     next(error);
   }

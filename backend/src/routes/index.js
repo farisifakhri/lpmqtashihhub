@@ -89,6 +89,7 @@ router.get('/', (req, res) => {
       },
       public: {
         verifyDocument: 'GET /api/v1/public/verify-document/:token',
+        publisherMap: 'GET /api/v1/public/publisher-map',
       },
     },
   });
