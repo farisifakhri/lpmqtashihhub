@@ -447,6 +447,7 @@ export const VerificationInspectionPage = () => {
         mushaf_content_review: contentReview || undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
+      invalidateQueueCounts();
       setSubmitConfirmOpen(false);
       setIsDirty(false);
       setSuccessMessage('Surat hasil telah ditandatangani internal oleh Verifikator dan diajukan bersama kode billing kepada Kepala LPMQ.');
@@ -487,6 +488,7 @@ export const VerificationInspectionPage = () => {
       await verificationApi.approveDocument(targetDoc.id, {
         ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : { auto_number: true, auto_generate: true }),
       });
+      invalidateQueueCounts();
       setApproveConfirmOpen(false);
       setSuccessMessage(currentUser?.isPemaraf
         ? 'Paraf dibubuhkan. Surat hasil verifikasi diteruskan ke Kepala LPMQ untuk disahkan.'
@@ -511,6 +513,7 @@ export const VerificationInspectionPage = () => {
     setSuccessMessage(null);
     try {
       await verificationApi.returnDocument(latestResultDoc.id, { reason: returnReason.trim() });
+      invalidateQueueCounts();
       setSuccessMessage('Draf surat hasil verifikasi berhasil dikembalikan ke verifikator dengan catatan perbaikan.');
       setReturnModalOpen(false);
       setReturnReason('');
@@ -538,6 +541,7 @@ export const VerificationInspectionPage = () => {
     setSuccessMessage(null);
     try {
       await verificationApi.signDocument(docId);
+      invalidateQueueCounts();
       setSuccessMessage('Persetujuan internal berhasil dicatat.');
       await fetchDetail();
     } catch (err) {

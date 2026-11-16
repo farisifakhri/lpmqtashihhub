@@ -4,7 +4,12 @@ import {
   buildUnassignedVerificationWhere,
   buildVerificationAssignmentsWhere,
   buildMyAssignmentsWhere,
+  buildHeadVerificationSignatureWhere,
+  buildHeadSttSignatureWhere,
 } from './queue-filters.js';
+import { buildVerificationAssignmentWhere } from './verification-intake.service.js';
+import { buildHandoverWhere } from './handover.service.js';
+import { buildRegistrationScopeWhere } from './registration.service.js';
 
 const adminQueues = [
   {
@@ -118,10 +123,58 @@ const pentashihQueues = [
   },
 ];
 
+const kepalaQueues = [
+  {
+    key: 'verification_approval_pending',
+    model: 'verificationAssignment',
+    sidebarItem: 'Persetujuan Verifikasi',
+    tab: 'WAITING_APPROVAL',
+    buildWhere: user => buildVerificationAssignmentWhere(
+      { registration_status: 'WAITING_VERIFICATION_APPROVAL' },
+      user,
+    ),
+  },
+  {
+    key: 'head_signature_pending',
+    sidebarItem: 'Pusat Tanda Tangan (TTE)',
+    tab: 'NEED_MY_SIGN',
+    count: async (db, user) => {
+      const [verificationCount, sttCount] = await Promise.all([
+        db.verificationDocument.count({ where: buildHeadVerificationSignatureWhere(user) }),
+        db.officialDocument.count({ where: buildHeadSttSignatureWhere(user) }),
+      ]);
+      return verificationCount + sttCount;
+    },
+  },
+];
+
 export const QUEUE_CONFIG = {
   ADMIN_INTERNAL: adminQueues,
   SUPERADMIN: adminQueues,
   VERIFIKATOR: verifierQueues,
   PENERBIT: publisherQueues,
   PENTASHIH: pentashihQueues,
+  KEPALA_LPMQ: kepalaQueues,
+  DISTRIBUTOR: [
+    {
+      key: 'distribution_handover_pending',
+      model: 'physicalManuscriptHandover',
+      sidebarItem: 'Penerimaan Master Fisik',
+      tab: 'HANDOVER / PENDING',
+      buildWhere: user => buildHandoverWhere(
+        { status: 'PENDING' },
+        { id: user.id, roles: ['DISTRIBUTOR'] },
+      ),
+    },
+    {
+      key: 'distribution_team_pending',
+      model: 'registration',
+      sidebarItem: 'Penugasan Tim Sidang',
+      tab: 'ASSIGNMENT / WAITING_DISTRIBUTION',
+      buildWhere: user => ({
+        ...buildRegistrationScopeWhere({ id: user.id, roles: ['DISTRIBUTOR'] }),
+        status: 'WAITING_DISTRIBUTION',
+      }),
+    },
+  ],
 };

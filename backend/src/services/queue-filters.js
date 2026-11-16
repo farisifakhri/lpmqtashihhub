@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 const ACTIVE_VERIFICATION_ASSIGNMENT_STATUSES = [
   'ASSIGNED',
   'IN_PROGRESS',
@@ -118,4 +120,63 @@ export function buildVerificationAssignmentsWhere(query = {}, user, { scopeToVer
   }
 
   return where;
+}
+
+export function buildHeadVerificationSignatureWhere(user) {
+  return {
+    document_type: {
+      in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'],
+    },
+    status: { in: ['APPROVED', 'SIGNING'] },
+    OR: [
+      {
+        signatories: {
+          some: {
+            signer_user_id: user.id,
+            sign_order: 1,
+            status: 'PENDING',
+          },
+        },
+      },
+      {
+        AND: [
+          {
+            signatories: {
+              some: {
+                signer_user_id: user.id,
+                sign_order: 2,
+                status: 'PENDING',
+              },
+            },
+          },
+          {
+            signatories: {
+              some: { sign_order: 1, status: 'SIGNED' },
+            },
+          },
+        ],
+      },
+    ],
+  };
+}
+
+export function buildHeadSttSignatureWhere(user) {
+  const headSignatory = {
+    signing_status: 'PENDING',
+    name_position_snapshot: { contains: 'Kepala' },
+    ...(user.roles.includes('SUPERADMIN') ? {} : { signer_user_id: user.id }),
+  };
+
+  return {
+    document_type: 'SURAT_TANDA_TASHIH',
+    status: 'DRAFT',
+    registration: { status: { in: ['READY_FOR_STT', 'STT_ISSUED'] } },
+    signatories: { some: headSignatory },
+    AND: [
+      { content_snapshot: { path: '$.tu_workflow.paraf_1', not: Prisma.DbNull } },
+      { content_snapshot: { path: '$.tu_workflow.paraf_2', not: Prisma.DbNull } },
+      { content_snapshot: { path: '$.tu_workflow.paraf_1.signed_by.id', not: user.id } },
+      { content_snapshot: { path: '$.tu_workflow.paraf_2.signed_by.id', not: user.id } },
+    ],
+  };
 }

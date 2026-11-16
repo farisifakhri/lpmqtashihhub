@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { Prisma } from '@prisma/client';
 import { queueItems, queuePagination, ACTIVE_REGISTRATION_STATUSES } from '../../src/services/queue-utils.js';
 import { move } from '../../src/services/workflow-utils.js';
 import { assertIsolatedTestDatabase } from '../../src/utils/test-database.js';
@@ -10,7 +11,12 @@ import {
   buildUnassignedVerificationWhere,
   buildVerificationAssignmentsWhere,
   buildMyAssignmentsWhere,
+  buildHeadVerificationSignatureWhere,
+  buildHeadSttSignatureWhere,
 } from '../../src/services/queue-filters.js';
+import { buildHandoverWhere } from '../../src/services/handover.service.js';
+import { buildRegistrationScopeWhere } from '../../src/services/registration.service.js';
+import { buildVerificationAssignmentWhere } from '../../src/services/verification-intake.service.js';
 import { requireActiveRole } from '../../src/middlewares/active-role.middleware.js';
 import { authenticate } from '../../src/middlewares/auth.middleware.js';
 
@@ -212,6 +218,46 @@ test('publisher queue counts reject accounts without a linked publisher', () => 
   assert.throws(() => queue.buildWhere({ id: 'publisher-user-1', publisherId: null }), { statusCode: 403 });
 });
 
+test('distributor queues reuse list filters and stay scoped to the active distributor', () => {
+  const firstUser = { id: 'distributor-1', roles: ['DISTRIBUTOR'] };
+  const multiRoleUser = { id: 'distributor-1', roles: ['DISTRIBUTOR', 'SUPERADMIN'] };
+  const otherUser = { id: 'distributor-2', roles: ['DISTRIBUTOR'] };
+  const handoverQueue = QUEUE_CONFIG.DISTRIBUTOR.find(({ key }) => key === 'distribution_handover_pending');
+  const registrationQueue = QUEUE_CONFIG.DISTRIBUTOR.find(({ key }) => key === 'distribution_team_pending');
+
+  assert.deepEqual(QUEUE_CONFIG.DISTRIBUTOR.map(({ key, tab }) => [key, tab]), [
+    ['distribution_handover_pending', 'HANDOVER / PENDING'],
+    ['distribution_team_pending', 'ASSIGNMENT / WAITING_DISTRIBUTION'],
+  ]);
+  assert.equal(handoverQueue.model, 'physicalManuscriptHandover');
+  assert.equal(registrationQueue.model, 'registration');
+  assert.deepEqual(handoverQueue.buildWhere(firstUser), buildHandoverWhere(
+    { status: 'PENDING' },
+    firstUser,
+  ));
+  assert.deepEqual(handoverQueue.buildWhere(firstUser), { to_user_id: firstUser.id, status: 'PENDING' });
+  assert.deepEqual(handoverQueue.buildWhere(multiRoleUser), handoverQueue.buildWhere(firstUser));
+  assert.deepEqual(handoverQueue.buildWhere(otherUser), { to_user_id: otherUser.id, status: 'PENDING' });
+
+  assert.deepEqual(registrationQueue.buildWhere(firstUser), {
+    ...buildRegistrationScopeWhere(firstUser),
+    status: 'WAITING_DISTRIBUTION',
+  });
+  assert.deepEqual(registrationQueue.buildWhere(firstUser), {
+    core_distributor_id: firstUser.id,
+    status: 'WAITING_DISTRIBUTION',
+  });
+  assert.deepEqual(registrationQueue.buildWhere(multiRoleUser), registrationQueue.buildWhere(firstUser));
+  assert.deepEqual(registrationQueue.buildWhere(otherUser), {
+    core_distributor_id: otherUser.id,
+    status: 'WAITING_DISTRIBUTION',
+  });
+
+  for (const role of ['ADMIN_INTERNAL', 'SUPERADMIN', 'VERIFIKATOR', 'PENERBIT', 'PENTASHIH', 'DOKUMENTATOR', 'KEPALA_LPMQ']) {
+    assert.equal((QUEUE_CONFIG[role] || []).some(({ key }) => key.startsWith('distribution_')), false);
+  }
+});
+
 test('pentashih active count matches actionable assignments across both stages and all pages', () => {
   const pentashih = { id: 'pentashih-1', roles: ['PENTASHIH'] };
   const queue = QUEUE_CONFIG.PENTASHIH.find(({ key }) => key === 'tashih_active');
@@ -244,6 +290,86 @@ test('pentashih active count matches actionable assignments across both stages a
 
   assert.equal(QUEUE_CONFIG.PENERBIT.some(({ key }) => key === 'tashih_active'), false);
   assert.equal(QUEUE_CONFIG.SUPERADMIN.some(({ key }) => key === 'tashih_active'), false);
+});
+
+test('head queues match approval and actionable signature filters', async () => {
+  const head = { id: 'head-from-token', roles: ['KEPALA_LPMQ'] };
+  const approvalQueue = QUEUE_CONFIG.KEPALA_LPMQ.find(({ key }) => key === 'verification_approval_pending');
+  const signatureQueue = QUEUE_CONFIG.KEPALA_LPMQ.find(({ key }) => key === 'head_signature_pending');
+
+  assert.deepEqual(QUEUE_CONFIG.KEPALA_LPMQ.map(({ key, tab }) => [key, tab]), [
+    ['verification_approval_pending', 'WAITING_APPROVAL'],
+    ['head_signature_pending', 'NEED_MY_SIGN'],
+  ]);
+  assert.equal(approvalQueue.model, 'verificationAssignment');
+  assert.deepEqual(
+    approvalQueue.buildWhere(head),
+    buildVerificationAssignmentWhere({ registration_status: 'WAITING_VERIFICATION_APPROVAL' }, head),
+  );
+  assert.deepEqual(approvalQueue.buildWhere(head), {
+    registration: { status: 'WAITING_VERIFICATION_APPROVAL' },
+  });
+
+  assert.deepEqual(buildHeadVerificationSignatureWhere(head), {
+    document_type: {
+      in: ['SURAT_HASIL_VERIFIKASI', 'SURAT_PEMBERITAHUAN_HASIL_VERIFIKASI', 'BERITA_ACARA_VERIFIKASI'],
+    },
+    status: { in: ['APPROVED', 'SIGNING'] },
+    OR: [
+      {
+        signatories: {
+          some: { signer_user_id: head.id, sign_order: 1, status: 'PENDING' },
+        },
+      },
+      {
+        AND: [
+          { signatories: { some: { signer_user_id: head.id, sign_order: 2, status: 'PENDING' } } },
+          { signatories: { some: { sign_order: 1, status: 'SIGNED' } } },
+        ],
+      },
+    ],
+  });
+
+  const sttWhere = buildHeadSttSignatureWhere(head);
+  assert.equal(sttWhere.document_type, 'SURAT_TANDA_TASHIH');
+  assert.equal(sttWhere.status, 'DRAFT');
+  assert.deepEqual(sttWhere.registration, { status: { in: ['READY_FOR_STT', 'STT_ISSUED'] } });
+  assert.deepEqual(sttWhere.signatories, {
+    some: {
+      signer_user_id: head.id,
+      signing_status: 'PENDING',
+      name_position_snapshot: { contains: 'Kepala' },
+    },
+  });
+  assert.deepEqual(sttWhere.AND, [
+    { content_snapshot: { path: '$.tu_workflow.paraf_1', not: Prisma.DbNull } },
+    { content_snapshot: { path: '$.tu_workflow.paraf_2', not: Prisma.DbNull } },
+    { content_snapshot: { path: '$.tu_workflow.paraf_1.signed_by.id', not: head.id } },
+    { content_snapshot: { path: '$.tu_workflow.paraf_2.signed_by.id', not: head.id } },
+  ]);
+
+  const superadminHead = { id: 'head-admin-from-token', roles: ['KEPALA_LPMQ', 'SUPERADMIN'] };
+  assert.deepEqual(buildHeadSttSignatureWhere(superadminHead).signatories, {
+    some: {
+      signing_status: 'PENDING',
+      name_position_snapshot: { contains: 'Kepala' },
+    },
+  });
+  assert.equal(buildHeadVerificationSignatureWhere(superadminHead).OR[0].signatories.some.signer_user_id, superadminHead.id);
+
+  let verificationWhere;
+  let sttWhereFromCount;
+  const count = await signatureQueue.count({
+    verificationDocument: { count: async ({ where }) => { verificationWhere = where; return 3; } },
+    officialDocument: { count: async ({ where }) => { sttWhereFromCount = where; return 2; } },
+  }, head);
+  assert.equal(count, 5);
+  assert.deepEqual(verificationWhere, buildHeadVerificationSignatureWhere(head));
+  assert.deepEqual(sttWhereFromCount, buildHeadSttSignatureWhere(head));
+
+  for (const role of ['ADMIN_INTERNAL', 'SUPERADMIN', 'VERIFIKATOR', 'PENERBIT', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR']) {
+    assert.equal((QUEUE_CONFIG[role] || []).some(({ key }) => ['verification_approval_pending', 'head_signature_pending'].includes(key)), false);
+  }
 });
 
 test('active role middleware accepts only a role owned by the authenticated user', () => {

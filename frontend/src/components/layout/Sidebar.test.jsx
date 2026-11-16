@@ -48,6 +48,7 @@ describe('Helper Admin navigation', () => {
         roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
       },
     });
+    mockBadges({ publisher_registrations: 1 });
     const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
       counts: {
         publisher_registration_pending: 101,
@@ -59,6 +60,9 @@ describe('Helper Admin navigation', () => {
     render(<MemoryRouter><Sidebar /></MemoryRouter>);
 
     expect(screen.getByText('99+')).toBeInTheDocument();
+    const publisherLink = screen.getByRole('link', { name: /Pendaftaran Penerbit/ });
+    expect(within(publisherLink).getAllByText('99+')).toHaveLength(1);
+    expect(within(publisherLink).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(screen.getByText('2', { selector: 'span' })).toBeInTheDocument();
     expect(document.querySelector('a[href="/internal/settings"]')).toBeNull();
     expect(screen.queryByText('Loket')).toBeNull();
@@ -117,6 +121,30 @@ describe('Helper Admin navigation', () => {
 });
 
 describe('Distributor navigation', () => {
+  it('menampilkan badge dinamis untuk penerimaan fisik dan penugasan tim', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'dist-1', name: 'Distributor', role: 'DISTRIBUTOR', roles: ['DISTRIBUTOR'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { distribution_handover_pending: 3, distribution_team_pending: 102 },
+      error: null,
+    });
+    mockBadges({ handover_pending: 7, distribution_waiting: 9 });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const handover = screen.getByRole('link', { name: /Penerimaan Master Fisik/ });
+    const assignments = screen.getByRole('link', { name: /Penugasan Tim Sidang/ });
+    expect(handover).toHaveAttribute('href', '/internal/distributions/handover');
+    expect(assignments).toHaveAttribute('href', '/internal/distributions/assignment');
+    expect(within(handover).getByLabelText('3 entri antrean menunggu tindakan')).toHaveTextContent('3');
+    expect(within(assignments).getByLabelText('102 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
+    expect(within(handover).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(within(assignments).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+    countsSpy.mockRestore();
+  });
+
   it('membuka antrean penerimaan dan penugasan tim pada tab yang berbeda', () => {
     show('DISTRIBUTOR');
     expect(screen.getByRole('link', { name: /Penerimaan Master Fisik/ })).toHaveAttribute('href', '/internal/distributions/handover');
@@ -153,9 +181,9 @@ describe('Badge notifikasi sidebar', () => {
     show('ADMIN_INTERNAL');
     const intake = screen.getByRole('link', { name: /Intake Master Fisik/ });
     expect((await within(intake).findByTestId('sidebar-pending-badge')).textContent).toContain('99+');
-    expect(within(screen.getByRole('link', { name: /Pendaftaran Penerbit/ })).getByTestId('sidebar-pending-badge').textContent).toContain('2');
+    expect(within(screen.getByRole('link', { name: /Pendaftaran Penerbit/ })).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(within(screen.getByRole('link', { name: /Verifikasi Berkas/ })).getByTestId('sidebar-pending-badge').textContent).toContain('3');
-    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(3);
+    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(2);
   });
 
   it('menampilkan hitungan aktif gabungan pada menu pentashih', async () => {
@@ -167,6 +195,32 @@ describe('Badge notifikasi sidebar', () => {
     const link = screen.getByRole('link', { name: /Sidang Pentashihan/ });
     expect(await within(link).findByLabelText('5 entri antrean menunggu tindakan')).toHaveTextContent('5');
     expect(link.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    countsSpy.mockRestore();
+  });
+
+  it('menampilkan badge dinamis Kepala untuk persetujuan dan tanda tangan saja', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'head-1', name: 'Kepala', role: 'KEPALA_LPMQ', roles: ['KEPALA_LPMQ'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { verification_approval_pending: 2, head_signature_pending: 101 },
+      error: null,
+    });
+    mockBadges({ signatures_pending: 8, stt_ready: 4 });
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const approvals = screen.getByRole('link', { name: /Persetujuan Verifikasi/ });
+    const signatures = screen.getByRole('link', { name: /Pusat Tanda Tangan \(TTE\)/ });
+    const stt = screen.getByRole('link', { name: /Penetapan STT/ });
+    expect(approvals).toHaveAttribute('href', '/internal/verifications?tab=WAITING_APPROVAL');
+    expect(await within(approvals).findByLabelText('2 entri antrean menunggu tindakan')).toHaveTextContent('2');
+    expect(within(signatures).getByLabelText('101 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
+    expect(within(signatures).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(within(stt).queryByTestId('sidebar-pending-badge')).toBeNull();
+    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+
+    unmount();
     countsSpy.mockRestore();
   });
 
@@ -222,6 +276,31 @@ describe('Publisher navigation', () => {
     unmount();
     countsSpy.mockRestore();
     legacyBadgesSpy.mockRestore();
+  });
+});
+
+describe('Publisher navigation', () => {
+  it('links to revision actions and unpaid billing, with separate live badges', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { name: 'Penerbit', role: 'PENERBIT', roles: ['PENERBIT'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { publisher_revision_pending: 1, publisher_billing_unpaid: 100 },
+      error: null,
+    });
+    const { unmount } = render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const registrations = screen.getByRole('link', { name: /Permohonan Saya/ });
+    const billing = screen.getByRole('link', { name: /Tagihan/ });
+    expect(registrations).toHaveAttribute('href', '/publisher/registrations?view=actions');
+    expect(billing).toHaveAttribute('href', '/publisher/billing?tab=UNPAID');
+    expect(registrations).toHaveTextContent('1');
+    expect(billing).toHaveTextContent('99+');
+    for (const label of ['Beranda', 'Pendaftaran Naskah Baru', 'Arsip Dokumen']) {
+      expect(screen.getByRole('link', { name: new RegExp(label) }).querySelector('[aria-label$="entri antrean menunggu tindakan"]')).toBeNull();
+    }
+    unmount();
+    countsSpy.mockRestore();
   });
 });
 

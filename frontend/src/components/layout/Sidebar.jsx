@@ -169,7 +169,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Permohonan Saya",
                             path: "/publisher/registrations?view=actions",
-                            badgeKey: "publisher_registrations",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
                             description: "Portofolio naskah & riwayat",
                             countKey: "publisher_revision_pending",
@@ -276,14 +275,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Penerimaan Master Fisik",
                             path: "/internal/distributions/handover",
-                            badgeKey: "handover_pending",
+                            countKey: "distribution_handover_pending",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Konfirmasi master fisik & BAST naskah",
                         },
                         {
                             label: "Penugasan Tim Sidang",
                             path: "/internal/distributions/assignment",
-                            badgeKey: "distribution_waiting",
+                            countKey: "distribution_team_pending",
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Distribusi naskah ke 9 tim inti",
                         },
@@ -386,6 +385,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Persetujuan Verifikasi",
                             path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            countKey: "verification_approval_pending",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Telaah & persetujuan draf verifikasi",
                         },
@@ -398,14 +398,13 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Pusat Tanda Tangan (TTE)",
                             path: "/internal/signatures",
-                            badgeKey: "signatures_pending",
+                            countKey: "head_signature_pending",
                             icon: <PenTool className="w-4 h-4 shrink-0" />,
                             description: "Tanda tangan digital resmi pimpinan",
                         },
                         {
                             label: "Penetapan STT",
                             path: "/internal/documents",
-                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Pengesahan Surat Tanda Tashih",
                         },
@@ -440,7 +439,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "1. Pendaftaran Penerbit",
                             path: "/internal/publishers",
-                            badgeKey: "publisher_registrations",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
                             countKey: "publisher_registration_pending",
@@ -545,7 +543,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "1. Pendaftaran Penerbit",
                         path: "/internal/publishers",
-                        badgeKey: "publisher_registrations",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
                         countKey: "publisher_registration_pending",
