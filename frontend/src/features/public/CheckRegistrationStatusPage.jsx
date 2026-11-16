@@ -60,7 +60,7 @@ export const CheckRegistrationStatusPage = () => {
             const code = err.data?.code || err.code;
             if (code === "REGISTRATION_NOT_FOUND" || err.status === 404) {
                 setError(
-                    "Data pendaftaran tidak ditemukan. Pastikan Anda memasukkan kode pendaftaran resmi atau alamat email yang didaftarkan."
+                    "Kode pendaftaran tidak ditemukan. Pastikan Anda memasukkan kode dengan benar atau gunakan alamat email yang didaftarkan."
                 );
             } else if (code === "RATE_LIMITED" || err.status === 429) {
                 setError(
@@ -184,7 +184,7 @@ export const CheckRegistrationStatusPage = () => {
                             htmlFor="kode-pendaftaran-input"
                             className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5"
                         >
-                            Kode Pendaftaran atau Email Terdaftar
+                            Kode Pendaftaran Penerbit atau Email Terdaftar
                         </label>
                         <div className="relative flex items-center">
                             <input
