@@ -233,6 +233,7 @@ export const saveFeeCalculation = (assignmentId, data, user, req) => prisma.$tra
 
   return {
     fee_sla_snapshot: newSnapshot,
+    snapshot: newSnapshot,
     summary,
   };
 }, transactionOptions);
@@ -907,7 +908,8 @@ export const getVerificationAttachment = async (documentId, fileId, user) => {
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E)
 export const approveVerificationDocument = async (documentId, user, req) => {
 const createdFiles = [];
-try { return await prisma.$transaction(async tx => {
+let approvedResult;
+try { approvedResult = await prisma.$transaction(async tx => {
   if (!user.roles.includes('KEPALA_LPMQ')) {
     fail(403, 'Persetujuan surat hasil verifikasi hanya dapat dilakukan oleh Kepala LPMQ.');
   }
@@ -1047,6 +1049,23 @@ try { return await prisma.$transaction(async tx => {
   return primaryUpdated;
 }, transactionOptions); }
 catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
+
+  // PR-VER-04 & B-22: Pengiriman otomatis setelah pengesahan Kepala LPMQ (bila auto_dispatch: true dan bukan Pemaraf)
+  if (req?.body?.auto_dispatch === true && !approvedResult.paraf_only && !user.isPemaraf) {
+    try {
+      const dispatchRes = await dispatchVerificationResult(approvedResult.id, user, req);
+      return dispatchRes.document || approvedResult;
+    } catch (dispatchError) {
+      console.error(`[Approve Verification Document] Pengiriman otomatis gagal: ${dispatchError.message}`);
+      const latestDoc = await prisma.verificationDocument.findUnique({
+        where: { id: approvedResult.id },
+        include: { assignment: true, registration: true },
+      });
+      return latestDoc || approvedResult;
+    }
+  }
+
+  return approvedResult;
 };
 
 export const returnVerificationDocument = (documentId, data, user, req) => prisma.$transaction(async tx => {
