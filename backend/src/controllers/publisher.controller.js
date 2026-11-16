@@ -19,6 +19,21 @@ export const getMyProfile = async (req, res, next) => {
   }
 };
 
+export const getMyCertificate = async (req, res, next) => {
+  try {
+    const publisherId = req.user.publisherId;
+    const userId = req.user.id;
+    const file = await publisherService.getMyCertificatePdf({ publisherId, userId, user: req.user });
+
+    const safeFilename = encodeURIComponent(file.filename);
+    res.setHeader('Content-Type', file.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    return res.send(file.content);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateMyProfile = async (req, res, next) => {
   try {
     if (!req.user.publisherId) {
@@ -98,6 +113,7 @@ export const adminUpdatePublisher = async (req, res, next) => {
 
 export default {
   getMyProfile,
+  getMyCertificate,
   updateMyProfile,
   listPublishers,
   verifyPublisher,

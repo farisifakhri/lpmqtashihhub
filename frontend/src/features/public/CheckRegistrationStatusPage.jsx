@@ -21,6 +21,7 @@ import kemenagLogo from "@/assets/kemenag1.png";
 import lpmqLogo from "@/assets/logo-lpmq1.png";
 import Switcher from "../darkmode/Switcher";
 import { publisherRegistrationApi } from "@/api/publisher-registration.api";
+import { CONTACT } from "@/lib/contact";
 
 export const CheckRegistrationStatusPage = () => {
     const [searchParams] = useSearchParams();
@@ -482,12 +483,12 @@ export const CheckRegistrationStatusPage = () => {
                         <span>Mengalami kendala kode pendaftaran?</span>
                     </div>
                     <a
-                        href="https://wa.me/628111997125"
+                        href={CONTACT.getWhatsAppHelpLink('Halo LPMQ, saya mengalami kendala terkait kode pendaftaran penerbit.')}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="font-semibold text-brand-fg hover:underline inline-flex items-center gap-1"
                     >
-                        <span>Hubungi Loket LPMQ (WhatsApp)</span>
+                        <span>Hubungi Sekretariat LPMQ (WhatsApp)</span>
                     </a>
                 </div>
             </div>

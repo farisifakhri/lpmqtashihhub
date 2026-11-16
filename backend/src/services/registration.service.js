@@ -1591,7 +1591,7 @@ export async function sendSubmissionNotifications(reg, user, req) {
         `Permohonan surat tanda tashih untuk mushaf "${reg.title}" dengan Nomor Registrasi *${reg.registration_no}* telah berhasil diterima oleh Lajnah Pentashihan Mushaf Al-Qur'an (LPMQ) Kementerian Agama RI.\n\n` +
         `Jenis Standar: ${jenisMushaf}\n` +
         `Status: ${statusLabel(reg.status || 'READY_FOR_VERIFICATION')}\n\n` +
-        `Tanda terima permohonan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Tashih Hub.\n\n` +
+        `Tanda terima permohonan resmi dan perkembangan status verifikasi dapat dipantau melalui portal Sistem Informasi Layanan Surat Tanda Tashih LPMQ.\n\n` +
         `Wassalamu'alaikum Wr. Wb.\n` +
         `LPMQ Kemenag RI`;
 
