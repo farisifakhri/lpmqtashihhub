@@ -485,13 +485,16 @@ export const VerificationInspectionPage = () => {
       if (resNo) docNumbers[targetDoc.document_type] = resNo;
       if (targetBaDoc && minNo) docNumbers.BERITA_ACARA_VERIFIKASI = minNo;
 
-      await verificationApi.approveDocument(targetDoc.id, {
+      const approved = await verificationApi.approveDocument(targetDoc.id, {
         ...(Object.keys(docNumbers).length > 0 ? { document_numbers: docNumbers } : { auto_number: true, auto_generate: true }),
       });
       invalidateQueueCounts();
       setApproveConfirmOpen(false);
+      // Kedua Pemaraf wajib memaraf; baru setelah paraf terakhir surat diteruskan ke Kepala LPMQ.
       setSuccessMessage(currentUser?.isPemaraf
-        ? 'Paraf dibubuhkan. Surat hasil verifikasi diteruskan ke Kepala LPMQ untuk disahkan.'
+        ? (approved?.data?.paraf_complete
+          ? 'Paraf dibubuhkan. Paraf seluruh Pemaraf lengkap; surat hasil verifikasi diteruskan ke Kepala LPMQ untuk disahkan.'
+          : 'Paraf dibubuhkan. Menunggu paraf Pemaraf lainnya sebelum surat diteruskan ke Kepala LPMQ.')
         : 'Surat hasil dan Berita Acara telah disahkan. Nomor resmi dan kode billing diterbitkan otomatis pada dokumen.');
       await fetchDetail();
     } catch (err) {

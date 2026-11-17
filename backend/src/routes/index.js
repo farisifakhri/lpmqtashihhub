@@ -90,6 +90,7 @@ router.get('/', (req, res) => {
       public: {
         verifyDocument: 'GET /api/v1/public/verify-document/:token',
         publisherMap: 'GET /api/v1/public/publisher-map',
+        publisherDirectory: 'GET /api/v1/public/publisher-directory?letter=&province=&search=&page=1&limit=20',
       },
     },
   });

@@ -44,6 +44,13 @@ const mockMasterLetters = [
     publisher: { id: 'pub-1', legal_name: 'PT Mushaf Nusantara' },
     letter_drafted_at: '2026-11-10T03:00:00.000Z',
     letter_drafted_by: { id: 'usr-admin-1', name: 'Admin Internal' },
+    // kedua Pemaraf sudah memaraf, sehingga surat siap TTE Kepala
+    paraf_signed_at: '2026-11-10T05:00:00.000Z',
+    paraf_required: 2,
+    paraf_signers: [
+      { id: 'p-1', name: 'Pemaraf A', signed_at: '2026-11-10T04:00:00.000Z' },
+      { id: 'p-2', name: 'Pemaraf B', signed_at: '2026-11-10T05:00:00.000Z' },
+    ],
   },
 ];
 

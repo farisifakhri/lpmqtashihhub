@@ -297,7 +297,7 @@ export function PublisherPhysicalMasterTab({
                   />
                 </div>
                 <Button type="submit" variant="outline" size="sm" disabled={busy} className="text-xs">
-                  Simpan pernyataan fisik
+                  {busy ? 'Menyimpan...' : 'Simpan pernyataan fisik'}
                 </Button>
               </form>
             ) : null}
@@ -484,7 +484,7 @@ export function PublisherPhysicalMasterTab({
                     }`}
                   >
                     <Send className="w-3.5 h-3.5 mr-1.5" />
-                    Konfirmasi Pengiriman ke LPMQ
+                    {busy ? 'Mengirim...' : 'Konfirmasi Pengiriman ke LPMQ'}
                   </Button>
                 </div>
               </form>

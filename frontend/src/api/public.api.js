@@ -5,6 +5,15 @@ export const publicApi = {
     return apiClient(`/public/verify-document/${encodeURIComponent(token)}`);
   },
   publisherMap: () => apiClient('/public/publisher-map'),
+  // { letter, province, search, page, limit } — tanpa NPWP/NIB
+  publisherDirectory: (params = {}) => {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') query.append(key, String(value));
+    });
+    const queryString = query.toString();
+    return apiClient(`/public/publisher-directory${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 export default publicApi;

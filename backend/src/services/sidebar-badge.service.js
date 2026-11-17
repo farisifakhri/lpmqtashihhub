@@ -5,6 +5,7 @@ import { buildUnassignedVerificationWhere } from './queue-filters.js';
 import { buildPaymentWhere } from './payment.service.js';
 import { buildHandoverWhere } from './handover.service.js';
 import { buildRegistrationScopeWhere } from './registration.service.js';
+import { parafSigners } from './paraf.service.js';
 
 /**
  * Badge notifikasi sidebar: jumlah pekerjaan yang menunggu tindakan pada tiap menu.
@@ -122,6 +123,19 @@ export const SIDEBAR_BADGES = [
     key: 'verification_bast_ready',
     roles: VERIFICATION_ROLES,
     count: user => prisma.verificationAssignment.count({ where: buildVerificationAssignmentWhere({ handover_ready: 'true' }, user) }),
+  },
+  // Pemaraf: keputusan distributor yang parafnya belum lengkap DAN belum ia paraf sendiri
+  {
+    key: 'distribution_paraf_pending',
+    roles: ['KEPALA_LPMQ'],
+    when: user => Boolean(user.isPemaraf),
+    count: async user => {
+      const pending = await prisma.approvalParaf.findMany({
+        where: { subject_type: 'DISTRIBUTOR_REVIEW', signed_at: null },
+        select: { signers: true, pemaraf_id: true, signed_at: true },
+      });
+      return pending.filter(paraf => !parafSigners(paraf).some(signer => signer.id === user.id)).length;
+    },
   },
   {
     key: 'signatures_pending',
