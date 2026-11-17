@@ -552,6 +552,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/master-intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
+                        countKey: "master_intake_pending",
                         badge: "Intake",
                     },
                     {

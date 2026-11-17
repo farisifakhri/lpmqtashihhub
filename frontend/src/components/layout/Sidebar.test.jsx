@@ -223,7 +223,7 @@ describe('Badge notifikasi sidebar', () => {
     countsSpy.mockRestore();
   });
 
-  it('menu dengan dua sumber tugas hanya menampilkan satu badge berisi jumlahnya', async () => {
+  it('menu alur SUPERADMIN hanya menampilkan satu badge jumlah antrean, bukan badge notifikasi', async () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
       currentUser: { id: 'sa-1', name: 'Super Admin', role: 'SUPERADMIN', roles: ['SUPERADMIN'] },
     });
@@ -235,7 +235,7 @@ describe('Badge notifikasi sidebar', () => {
     render(<MemoryRouter><Sidebar /></MemoryRouter>);
 
     const link = screen.getByRole('link', { name: /3\. Verifikasi Berkas/ });
-    await waitFor(() => expect(within(link).getByTestId('sidebar-pending-badge')).toHaveTextContent('6'));
+    await waitFor(() => expect(within(link).getByTestId('sidebar-pending-badge')).toHaveTextContent('2'));
     expect(within(link).getAllByTestId('sidebar-pending-badge')).toHaveLength(1);
     expect(within(link).queryByText('4')).toBeNull();
     countsSpy.mockRestore();
