@@ -11,6 +11,7 @@ import { runMasterTests } from './master.integration.js';
 import { runVerificationIntakeTests } from './verification-intake.integration.js';
 import { runVerificationReviewTests } from './verification-review.integration.js';
 import { runVerificationApprovalPaymentTests } from './verification-approval-payment.integration.js';
+import { runVerificationDispatchTests } from './b22-verification-dispatch.integration.js';
 import { runHandoverTests } from './handover.integration.js';
 import { runUserManagementTests } from './user-management.integration.js';
 import { runVerificationPerformanceRbacTests } from './verification-performance-rbac.integration.js';
@@ -471,6 +472,7 @@ async function runTests() {
       await runVerificationIntakeTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runVerificationReviewTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runVerificationApprovalPaymentTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
+      await runVerificationDispatchTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runHandoverTests({ test, prisma, base: BASE_URL, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId: selectedService.id });
       await runUserManagementTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken });
       await runVerificationPerformanceRbacTests({ test, prisma, base: BASE_URL, loginAs, adminToken, publisherToken, publisherBToken, serviceId: selectedService.id });

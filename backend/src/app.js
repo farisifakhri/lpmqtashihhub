@@ -22,7 +22,7 @@ app.use((req, res, next) => {
   res.set('Pragma', 'no-cache');
   res.set('Expires', '0');
   res.set('Surrogate-Control', 'no-store');
-  res.set('Vary', 'Authorization, Accept-Encoding');
+  res.set('Vary', 'Authorization, Accept-Encoding, X-Active-Role');
   next();
 });
 

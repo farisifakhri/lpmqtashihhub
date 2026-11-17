@@ -62,10 +62,9 @@ describe('DokumentatorArchivePage Component', () => {
     });
 
     vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockResolvedValue({
-      data: {
-        items: [mockRegistration],
-        pagination: { total: 1, page: 1, limit: 50 },
-      },
+      // Bentuk asli GET /registrations: data berupa array, pagination di level atas
+      data: [mockRegistration],
+      pagination: { total: 1, page: 1, limit: 50 },
     });
 
     vi.spyOn(DocumentationApiModule.documentationApi, 'getDocumentationDetail').mockResolvedValue({

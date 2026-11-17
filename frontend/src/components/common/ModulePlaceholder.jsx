@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { formatUserStatus, formatDocumentStatus } from '@/lib/glossary';
 import { TOKENS } from '@/app/tokens';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 import { systemApi } from '@/api/system.api';
 import {
   ArrowLeft,
@@ -126,6 +127,7 @@ const ROLE_LABELS = {
   DOCUMENTATOR: 'Petugas Dokumentator Mushaf',
   KEPALA_LPMQ: 'Kepala LPMQ Kemenag RI',
   HEAD_OF_LPMQ: 'Kepala LPMQ Kemenag RI',
+  PEMARAF: 'Pemaraf (sebelum Kepala LPMQ)',
 };
 
 export const ModulePlaceholder = ({
@@ -141,7 +143,7 @@ export const ModulePlaceholder = ({
   businessRules = [],
 }) => {
   const { currentUser } = useAuth();
-  const currentRoles = currentUser?.roles || [currentUser?.role].filter(Boolean);
+  const currentRoles = accessRoles(currentUser?.roles || [currentUser?.role].filter(Boolean));
 
   // Mode Tampilan: 'business' (Bahasa Bisnis Layanan, Default) atau 'technical' (Inspeksi Teknis BE & DB)
   const [viewMode, setViewMode] = useState('business');

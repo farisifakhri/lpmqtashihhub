@@ -50,6 +50,7 @@ export const registrationApi = {
       method: 'POST',
       body: { thresholdDays },
     }),
+  getAssignmentStages: async (id) => apiClient(`/registrations/${id}/assignment-stages`),
   createAssignments: async (id, payload) => apiClient(`/registrations/${id}/assignments`, { method: 'POST', body: payload }),
   deleteRegistration: async (id) => apiClient(`/registrations/${id}`, { method: 'DELETE' }),
     getReceiptPdf: async (id) => {

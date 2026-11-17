@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth } from "@/features/auth/AuthContext";
+import { isHeadRole } from "@/lib/roles";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAvatar } from "@/context/AvatarContext";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -39,12 +40,14 @@ import {
     Circle,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useQueueCounts } from "@/features/queue/useQueueCounts";
 import { useSidebarBadges, getBadgeCount, formatBadgeCount } from "./useSidebarBadges";
 import kemenagLogo from "@/assets/kemenag.png";
 import lpmqLogo from "@/assets/lpmq.png";
 
 export const Sidebar = ({ isOpen = true, onClose }) => {
     const { currentUser, logout, switchActiveRole } = useAuth();
+    const { counts } = useQueueCounts();
     const navigate = useNavigate();
     const location = useLocation();
     const { avatarId, setAvatarId } = useAvatar();
@@ -82,7 +85,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
     const isDistributor = role === "DISTRIBUTOR";
     const isPentashih = role === "PENTASHIH" || role === "TASHIH_MEMBER";
     const isDokumentator = role === "DOKUMENTATOR" || role === "DOCUMENTATOR";
-    const isKepala = role === "KEPALA_LPMQ" || role === "HEAD_OF_LPMQ";
+    const isKepala = isHeadRole(role); // termasuk Pemaraf: menu sama dengan Kepala LPMQ
 
     const getRoleBadge = (userRole) => {
         switch (userRole) {
@@ -126,6 +129,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     badgeClass:
                         "bg-civic-warningSoft text-civic-warning border-civic-warningLine",
                 };
+            case "PEMARAF":
+                return {
+                    label: "Pemaraf",
+                    badgeClass:
+                        "bg-civic-warningSoft text-civic-warning border-civic-warningLine",
+                };
             case "PENERBIT":
             case "PUBLISHER":
                 return {
@@ -159,10 +168,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "Permohonan Saya",
-                            path: "/publisher/registrations",
-                            badgeKey: "publisher_registrations",
+                            path: "/publisher/registrations?view=actions",
                             icon: <FileText className="w-4 h-4 shrink-0" />,
-                            description: "Seluruh portofolio naskah",
+                            description: "Portofolio naskah & riwayat",
+                            countKey: "publisher_revision_pending",
                         },
                         {
                             label: "Lacak Status & Progres",
@@ -175,8 +184,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             path: "/publisher/revisions",
                             icon: <AlertTriangle className="w-4 h-4 shrink-0 text-civic-warning" />,
                             description: "Naskah yang dikembalikan untuk revisi",
-                            badge: "Revisi",
-                            badgeVariant: "danger",
+                            countKey: "publisher_revision_pending",
                         },
                         {
                             label: "Pendaftaran Naskah Baru",
@@ -192,10 +200,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         },
                         {
                             label: "Tagihan & Pembayaran",
-                            path: "/publisher/billing",
-                            badgeKey: "publisher_billing",
+                            path: "/publisher/billing?tab=UNPAID",
                             icon: <CreditCard className="w-4 h-4 shrink-0" />,
-                            description: "Billing SIMPONI & bukti setor",
+                            description: "Billing SIMPONI & bukti bayar",
+                            countKey: "publisher_billing_unpaid",
                         },
                         {
                             label: "Arsip Dokumen",
@@ -267,14 +275,14 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Penerimaan Master Fisik",
                             path: "/internal/distributions/handover",
-                            badgeKey: "handover_pending",
+                            countKey: "distribution_handover_pending",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Konfirmasi master fisik & BAST naskah",
                         },
                         {
                             label: "Penugasan Tim Sidang",
                             path: "/internal/distributions/assignment",
-                            badgeKey: "distribution_waiting",
+                            countKey: "distribution_team_pending",
                             icon: <Users className="w-4 h-4 shrink-0" />,
                             description: "Distribusi naskah ke 9 tim inti",
                         },
@@ -317,9 +325,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Sidang Pentashihan",
                             path: "/internal/tashih",
-                            badgeKey: ["tashih_initial", "tashih_revision"],
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & tanda baca",
+                            countKey: "tashih_active",
                         },
                         {
                             label: "Arsip Dokumen",
@@ -377,20 +385,26 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Persetujuan Verifikasi",
                             path: "/internal/verifications?tab=WAITING_APPROVAL",
+                            countKey: "verification_approval_pending",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Telaah & persetujuan draf verifikasi",
                         },
                         {
+                            label: "Monitoring & Paraf Sidang",
+                            path: "/internal/distributions/monitoring",
+                            icon: <ShieldCheck className="w-4 h-4 shrink-0" />,
+                            description: "Keputusan sidang yang menunggu paraf",
+                        },
+                        {
                             label: "Pusat Tanda Tangan (TTE)",
                             path: "/internal/signatures",
-                            badgeKey: "signatures_pending",
+                            countKey: "head_signature_pending",
                             icon: <PenTool className="w-4 h-4 shrink-0" />,
                             description: "Tanda tangan digital resmi pimpinan",
                         },
                         {
                             label: "Penetapan STT",
                             path: "/internal/documents",
-                            badgeKey: "stt_ready",
                             icon: <Award className="w-4 h-4 shrink-0" />,
                             description: "Pengesahan Surat Tanda Tashih",
                         },
@@ -406,7 +420,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
         }
 
         // 7. Admin Internal (Helper Admin)
-        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && role !== "KEPALA_LPMQ")) {
+        if (role === "ADMIN_INTERNAL" || (isAdmin && !isSuperAdmin && role !== "VERIFIKATOR" && role !== "DISTRIBUTOR" && role !== "PENTASHIH" && role !== "DOKUMENTATOR" && !isKepala)) {
             return [
                 {
                     title: "KENDALI UTAMA",
@@ -425,9 +439,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "1. Pendaftaran Penerbit",
                             path: "/internal/publishers",
-                            badgeKey: "publisher_registrations",
                             icon: <Building2 className="w-4 h-4 shrink-0" />,
                             description: "Verifikasi profil & NIP penerbit",
+                            countKey: "publisher_registration_pending",
                         },
                         {
                             label: "2. Intake Master Fisik",
@@ -435,11 +449,18 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                             badgeKey: "master_intake",
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
-                            badge: "Intake",
+                            countKey: "master_intake_pending",
                         },
                         {
-                            label: "3. Verifikasi Berkas",
-                            path: "/internal/verifications",
+                            label: "3. Penugasan Verifikator",
+                            path: "/internal/verifications?tab=NEED_ASSIGNMENT",
+                            icon: <UserCheck className="w-4 h-4 shrink-0" />,
+                            description: "Disposisi tim verifikator berkas",
+                            countKey: "verification_assignment_pending",
+                        },
+                        {
+                            label: "4. Verifikasi Berkas",
+                            path: "/internal/verifications?tab=ASSIGNED",
                             badgeKey: "verification_assigned",
                             icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                             description: "Penugasan & telaah berkas naskah",
@@ -501,6 +522,8 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
             ];
         }
 
+        if (!isSuperAdmin) return [];
+
         // 8. Superadmin (Akses Penuh Tanpa Redundansi)
         return [
             {
@@ -520,50 +543,46 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "1. Pendaftaran Penerbit",
                         path: "/internal/publishers",
-                        badgeKey: "publisher_registrations",
                         icon: <Building2 className="w-4 h-4 shrink-0" />,
                         description: "Verifikasi profil & NIP penerbit",
+                        countKey: "publisher_registration_pending",
                     },
                     {
                         label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
-                        badgeKey: "master_intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
+                        countKey: "master_intake_pending",
                         badge: "Intake",
                     },
                     {
                         label: "3. Verifikasi Berkas",
                         path: "/internal/verifications",
-                        badgeKey: "verification_assigned",
+                        countKey: "verification_assignment_pending",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Penugasan & pemeriksaan naskah",
                     },
                     {
                         label: "4. Pembayaran PNBP",
                         path: "/internal/payments",
-                        badgeKey: "payments_pending_verification",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
                         description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
                         label: "5. Distribusi Sidang Tashih",
                         path: "/internal/distributions",
-                        badgeKey: ["handover_pending", "distribution_waiting"],
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Serah-terima fisik & tim sidang",
                     },
                     {
                         label: "6. Sidang Pentashihan",
                         path: "/internal/tashih",
-                        badgeKey: ["tashih_initial", "tashih_revision"],
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
                         description: "Koreksi lafazh, harakat & naskah dumi",
                     },
                     {
                         label: "7. Pengesahan & Terbit STT",
                         path: "/internal/documents",
-                        badgeKey: "stt_ready",
                         icon: <Award className="w-4 h-4 shrink-0" />,
                         description: "Berita acara final & Surat Tanda Tashih",
                     },
@@ -612,7 +631,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "Survei",
                         icon: <ClipboardList className="w-4 h-4 shrink-0" />,
-                        description: "Survei Kepuasan Masyarakat (PANRB 9/2024)",
+                        description: "Survei Kepuasan Masyarakat",
                         children: [
                             { label: "Nama Survei", path: "/internal/surveys?tab=survei" },
                             { label: "Nama Unsur", path: "/internal/surveys?tab=unsur" },
@@ -887,6 +906,16 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             {item.badge}
                                                         </span>
                                                     ) : null}
+                                                    {item.countKey &&
+                                                        Number.isInteger(counts[item.countKey]) &&
+                                                        counts[item.countKey] > 0 && (
+                                                            <span
+                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-civic-danger text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
+                                                                aria-label={`${counts[item.countKey]} entri antrean menunggu tindakan`}
+                                                            >
+                                                                {counts[item.countKey] > 99 ? "99+" : counts[item.countKey]}
+                                                            </span>
+                                                        )}
                                                 </>
                                             )}
                                         </NavLink>

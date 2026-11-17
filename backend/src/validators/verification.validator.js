@@ -93,6 +93,7 @@ export const verificationDraftSchema = {
     billing_file_id: z.string().uuid().optional(),
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
     mushaf_content_review: z.record(z.any()).optional().nullable(),
+    pemaraf_id: z.string().uuid().optional().nullable(),
   }).strict().superRefine((data, ctx) => {
     const codes = data.checklist.map(item => item.code);
     if (new Set(codes).size !== data.checklist.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Seluruh butir checklist harus diisi masing-masing satu kali tanpa duplikasi.' });
@@ -107,6 +108,23 @@ export const verificationDraftSchema = {
 };
 
 export const assignmentIdSchema = { params: idParams };
+
+export const feeCalculationSchema = {
+  params: idParams,
+  body: z.object({
+    is_extension: z.boolean().optional().default(false),
+    manuscripts: z.array(z.object({
+      id: z.string().optional(),
+      title: z.string().trim().max(255).optional(),
+      dasar: z.string().trim().min(1, 'Item dasar wajib dipilih.'),
+      tambahan: z.array(z.string().trim()).default([]),
+      variants: z.array(z.object({
+        ukuran: z.string().trim().max(100).optional(),
+        oplah: z.number().int().min(0).optional(),
+      })).optional(),
+    })).min(1, 'Minimal satu naskah mushaf dalam kalkulasi.').max(20, 'Maksimal 20 naskah mushaf.'),
+  }).strict(),
+};
 
 export const saveChecklistSchema = {
   params: idParams,

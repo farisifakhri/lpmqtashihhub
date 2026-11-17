@@ -42,6 +42,10 @@ export const tashihApi = {
     });
   },
 
+  listPemaraf: async () => apiClient('/pemaraf'),
+  getDistributionParaf: async (registrationId) => apiClient(`/registrations/${registrationId}/distribution-review/paraf`),
+  parafDistribution: async (registrationId) => apiClient(`/registrations/${registrationId}/distribution-review/paraf`, { method: 'POST', body: {} }),
+
   /**
    * Mengambil beban kerja (workload) tim pentashihan
    * @param {string} teamId - UUID Tim Distribusi

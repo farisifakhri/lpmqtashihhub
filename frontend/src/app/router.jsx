@@ -51,10 +51,14 @@ const RegulationInfoPage = withSuspense(lazy(() => import('@/features/informatio
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
 const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
+const FaqPage = withSuspense(lazy(() => import('@/features/information/FaqPage').then(m => ({ default: m.FaqPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 const PublisherMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherMasterRequestsPage').then(m => ({ default: m.PublisherMasterRequestsPage }))));
 const PublisherNewMasterRequestPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherNewMasterRequestPage').then(m => ({ default: m.PublisherNewMasterRequestPage }))));
 const AdminMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/AdminMasterRequestsPage').then(m => ({ default: m.AdminMasterRequestsPage }))));
+const PrintErrorComplaintPage = withSuspense(lazy(() => import('@/features/complaints/PrintErrorComplaintPage').then(m => ({ default: m.PrintErrorComplaintPage }))));
+const ServiceComplaintPage = withSuspense(lazy(() => import('@/features/complaints/ServiceComplaintPage').then(m => ({ default: m.ServiceComplaintPage }))));
+const TrackComplaintPage = withSuspense(lazy(() => import('@/features/complaints/TrackComplaintPage').then(m => ({ default: m.TrackComplaintPage }))));
 const SurveyManagementPage = withSuspense(lazy(() => import('@/features/internal/survey/SurveyManagementPage').then(m => ({ default: m.SurveyManagementPage }))));
 
 const router = createBrowserRouter([
@@ -106,6 +110,24 @@ const router = createBrowserRouter([
   {
     path: '/informasi/unduh-dokumen-pelayanan-surat-tanda-tashih',
     element: <DownloadDocumentsPage />,
+  },
+  // Pengaduan masyarakat (publik, tanpa login)
+   {
+    path: '/pengaduan/kesalahan-cetak-mushaf',
+    element: <PrintErrorComplaintPage />,
+  },
+  {
+    path: '/pengaduan/pelayanan-surat-tanda-tashih',
+    element: <ServiceComplaintPage />,
+  },
+  {
+    path: '/pengaduan/lacak',
+    element: <TrackComplaintPage />,
+  },
+  // FAQ
+  {
+    path: '/faq',
+    element: <FaqPage />,
   },
   // Rute Autentikasi Mandiri
   {

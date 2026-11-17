@@ -94,6 +94,21 @@ describe('RegisterPublisherPage (T-S01 Form Pendaftaran Penerbit)', () => {
     });
   });
 
+  it('shows required-field validation immediately above the submit button', async () => {
+    render(
+      <MemoryRouter>
+        <RegisterPublisherPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.submit(screen.getByRole('button', { name: /Ajukan Pendaftaran Akun Penerbit/i }).closest('form'));
+
+    const error = await screen.findByRole('alert');
+    const submit = screen.getByRole('button', { name: /Ajukan Pendaftaran Akun Penerbit/i });
+    expect(error).toHaveTextContent('Nama resmi lembaga / penerbit wajib diisi.');
+    expect(error.nextElementSibling).toBe(submit);
+  });
+
   it('successfully submits registration and displays high-entropy registration code with copy option', async () => {
     const registerSpy = vi.spyOn(publisherRegistrationApi, 'register').mockResolvedValue({
       success: true,
@@ -206,5 +221,8 @@ describe('RegisterPublisherPage (T-S01 Form Pendaftaran Penerbit)', () => {
     await waitFor(() => {
       expect(screen.getByText(/sudah terdaftar pada permohonan yang aktif/i)).toBeInTheDocument();
     });
+    const error = screen.getByRole('alert');
+    const submit = screen.getByRole('button', { name: /Ajukan Pendaftaran Akun Penerbit/i });
+    expect(error.nextElementSibling).toBe(submit);
   });
 });

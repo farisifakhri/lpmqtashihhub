@@ -1,3 +1,5 @@
+import { accessRoles } from '@/lib/roles';
+
 export function getInspectionDraft(detail, definitions) {
   const snapshot = detail.latest_result_document?.content_snapshot;
   if (snapshot) {
@@ -53,9 +55,9 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
     assignment.status === 'COMPLETED' || latestResultDoc?.status === 'SUBMITTED';
-  const userRoles = Array.isArray(currentUser?.roles)
+  const userRoles = accessRoles(Array.isArray(currentUser?.roles)
     ? currentUser.roles
-    : (currentUser?.role ? [currentUser.role] : []);
+    : (currentUser?.role ? [currentUser.role] : []));
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL');

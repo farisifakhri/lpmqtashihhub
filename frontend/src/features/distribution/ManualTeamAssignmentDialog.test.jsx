@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { registrationApi } from '@/api/registration.api';
+import * as QueueApiModule from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
 
 describe('Manual team assignment (B-05)', () => {
@@ -62,8 +63,11 @@ describe('Manual team assignment (B-05)', () => {
 
   it('automatically checks all active team members upon team selection and allows unchecking absent members', async () => {
     const assigned = vi.fn();
+    const invalidateSpy = vi.spyOn(QueueApiModule, 'invalidateQueueCounts');
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
     expect(screen.getByRole('button', { name: 'Tetapkan penugasan' })).toBeDisabled();
 
     // Pastikan tidak ada istilah SK pada label
@@ -93,12 +97,16 @@ describe('Manual team assignment (B-05)', () => {
       stage: 'INITIAL',
     }));
     expect(assigned).toHaveBeenCalledOnce();
+    expect(invalidateSpy).toHaveBeenCalledOnce();
+    invalidateSpy.mockRestore();
   });
 
   it('supports assigning group and individual juz range using quick preset buttons', async () => {
     const assigned = vi.fn();
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
 
@@ -125,6 +133,8 @@ describe('Manual team assignment (B-05)', () => {
     const assigned = vi.fn();
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
     await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
 
     // Beralih ke skema Pentashih Pribadi (Mandiri)
     fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
@@ -145,6 +155,8 @@ describe('Manual team assignment (B-05)', () => {
   it('filters pentashih with search box', async () => {
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
 
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
     expect(screen.getByText('Pentashih satu')).toBeInTheDocument();
@@ -160,6 +172,8 @@ describe('Manual team assignment (B-05)', () => {
     registrationApi.getDetail.mockResolvedValue({ data: { status: 'READY_FOR_VERIFICATION', title: 'Belum siap', payment_records: [] } });
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Belum siap');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
     expect(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Tetapkan penugasan' })).toBeDisabled();
     expect(registrationApi.createAssignments).not.toHaveBeenCalled();
@@ -169,12 +183,14 @@ describe('Manual team assignment (B-05)', () => {
     registrationApi.createAssignments.mockRejectedValue(new Error('Status pengajuan telah berubah'));
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Status pengajuan telah berubah');
   });
 
-  it('mewajibkan catatan telaah pembanding distributor (min 20 karakter) saat penugasan naskah revisi (B-19a)', async () => {
+  it('catatan telaah pembanding distributor opsional saat penugasan naskah revisi: boleh dilewati, terkirim bila diisi (B-19a)', async () => {
     registrationApi.getDetail.mockResolvedValue({
       data: {
         id: 'r-rev',
@@ -188,6 +204,8 @@ describe('Manual team assignment (B-05)', () => {
 
     render(<ManualTeamAssignmentDialog id="r-rev" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Naskah Revisi Masuk');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ })); // pilih bulan dulu
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
 
     // Section telaah pembanding ditampilkan
     expect(screen.getByText(/Catatan Telaah Pembanding Naskah Masuk/i)).toBeInTheDocument();
@@ -195,12 +213,12 @@ describe('Manual team assignment (B-05)', () => {
     // Pilih tim t1
     fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
 
-    // Submit tanpa catatan pembanding (ditolak)
+    // Submit tanpa catatan pembanding tetap diterima, tanpa field comparison_notes
     fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Catatan telaah pembanding distributor wajib diisi/i);
-    expect(registrationApi.createAssignments).not.toHaveBeenCalled();
+    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledTimes(1));
+    expect(registrationApi.createAssignments.mock.calls[0][1]).not.toHaveProperty('comparison_notes');
 
-    // Isi catatan pembanding >= 20 karakter
+    // Bila diisi, catatan ikut terkirim
     const textarea = screen.getByPlaceholderText(/Tuliskan analisis perbandingan/i);
     fireEvent.change(textarea, { target: { value: 'Naskah revisi ronde 1 telah dibandingkan dengan catatan sidang sebelumnya.' } });
 
@@ -210,5 +228,37 @@ describe('Manual team assignment (B-05)', () => {
         comparison_notes: 'Naskah revisi ronde 1 telah dibandingkan dengan catatan sidang sebelumnya.',
       }));
     });
+  });
+
+  it('menyembunyikan form sampai card pekan dibuka, dan menutupnya hanya setelah konfirmasi', async () => {
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+    await screen.findByText('Naskah siap distribusi');
+    expect(screen.queryByText('Skema Penugasan Pentashih')).not.toBeInTheDocument();
+    // awalnya hanya 12 card bulan; pekan baru muncul setelah bulannya dipilih
+    expect(screen.queryByRole('button', { name: /^Pekan/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Pilih Bulan').nextSibling.querySelectorAll('button')).toHaveLength(12);
+    // card bulan tanpa tahun; tahun dipilih lewat dropdown dan tampil di judul bulan yang dibuka
+    const nextYear = new Date().getFullYear() + 1;
+    fireEvent.click(screen.getByRole('button', { name: 'Pilih Tahun' }));
+    fireEvent.click(screen.getByRole('button', { name: String(nextYear + 1) }));
+    expect(screen.queryByRole('group', { name: 'Daftar tahun' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tahun sebelumnya' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Maret' }));
+    expect(screen.getByRole('region', { name: `Maret ${nextYear}` })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /^Pekan [1-5]$/ })).toHaveLength(5);
+    fireEvent.click(screen.getByRole('button', { name: 'Ganti bulan' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Maret/ }));
+
+    const pekan2 = screen.getByRole('button', { name: 'Pekan 2' });
+    fireEvent.click(pekan2);
+    expect(screen.getByText('Skema Penugasan Pentashih')).toBeInTheDocument();
+
+    fireEvent.click(pekan2);
+    fireEvent.click(screen.getByRole('button', { name: 'Tetap buka' }));
+    expect(screen.getByText('Skema Penugasan Pentashih')).toBeInTheDocument();
+
+    fireEvent.click(pekan2);
+    fireEvent.click(screen.getByRole('button', { name: 'Ya, tutup' }));
+    expect(screen.queryByText('Skema Penugasan Pentashih')).not.toBeInTheDocument();
   });
 });

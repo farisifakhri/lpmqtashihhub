@@ -672,9 +672,9 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     if (u.status && u.status !== 'ACTIVE') fail(400, `Pengguna untuk ${slotName} berstatus tidak aktif.`);
 
     const roles = getUserRoles(u);
-    const hasTuAccess = roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN'].includes(r));
+    const hasTuAccess = roles.some(r => ['ADMIN_INTERNAL', 'SUPERADMIN', 'PEMARAF'].includes(r));
     if (!hasTuAccess) {
-      fail(400, `Penandatangan ${slotName} harus memiliki kewenangan Tata Usaha (ADMIN_INTERNAL atau SUPERADMIN).`);
+      fail(400, `Penandatangan ${slotName} harus memiliki kewenangan Tata Usaha atau peran Pemaraf.`);
     }
     if (roles.includes('KEPALA_LPMQ') && !roles.includes('SUPERADMIN')) {
       fail(400, `Kepala LPMQ tidak diperkenankan ditugaskan sebagai pemaraf ${slotName}.`);
@@ -816,7 +816,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
 }, { isolationLevel: 'ReadCommitted' });
 
 export const parafDocument = (documentId, order, data, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
+  if (!user.isPemaraf) requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
   const doc = await tx.officialDocument.findUnique({
     where: { id: documentId },
     include: { signatories: true, registration: true },
@@ -896,6 +896,7 @@ export const parafDocument = (documentId, order, data, user, req) => prisma.$tra
 
 export const signDocument = async (id, user, req) => {
   requireRole(user, ['KEPALA_LPMQ']);
+  if (user.isPemaraf) fail(403, 'Pengesahan STT hanya oleh Kepala LPMQ. Pemaraf membubuhkan Paraf 1 atau Paraf 2.');
   return prisma.$transaction(async tx => {
     const doc = await tx.officialDocument.findUnique({
       where: { id },

@@ -13,11 +13,12 @@ import { waitingLabel } from './QueueOverview';
 import { WorkflowPhaseStatus } from './WorkflowPhaseStatus';
 import { DocumentArchive } from './DocumentArchive';
 import { formatRegistrationStatus } from '@/lib/glossary';
+import { accessRoles } from '@/lib/roles';
 
 export function RegistrationDetailDialog({ id, onClose }) {
   const authContext = useOptionalAuth();
   const currentUser = authContext?.currentUser || null;
-  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('ADMIN_INTERNAL') || userRoles.includes('SUPERADMIN') || currentUser?.role === 'ADMIN_INTERNAL' || currentUser?.role === 'SUPERADMIN';

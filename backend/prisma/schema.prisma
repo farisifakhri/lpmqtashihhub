@@ -57,6 +57,9 @@ model User {
   drafted_master_letters           MasterMushafRequest[]           @relation("MasterLetterDraftedBy")
   signed_master_letters            MasterMushafRequest[]           @relation("MasterLetterSignedBy")
   sent_master_letters              MasterMushafRequest[]           @relation("MasterLetterSentBy")
+  complaint_decisions              Complaint[]                     @relation("ComplaintDecidedBy")
+  complaint_final_reports          Complaint[]                     @relation("ComplaintFinalReportBy")
+  complaint_status_changes         ComplaintStatusHistory[]        @relation("ComplaintStatusChangedBy")
   publisher_registration           PublisherRegistration?          @relation("RegistrationUserAccount")
   regulations_created              RegulationDocument[]            @relation("RegulationCreatedBy")
   regulations_updated              RegulationDocument[]            @relation("RegulationUpdatedBy")
@@ -66,6 +69,8 @@ model User {
   information_guides_updated       InformationGuide[]              @relation("InformationGuideUpdatedBy")
   information_guide_images         InformationGuideImage[]         @relation("InformationGuideImageCreatedBy")
   distributor_comparisons          DistributorComparison[]
+  landing_page_faqs_created        LandingPageFaq[]                @relation("LandingPageFaqCreatedBy")
+  landing_page_faqs_updated        LandingPageFaq[]                @relation("LandingPageFaqUpdatedBy")
 
   @@map("users")
 }
@@ -149,6 +154,8 @@ model Publisher {
   entity_type             String // PT, CV, YAYASAN, LEMBAGA_PEMERINTAH, LAINNYA
   verification_status     PublisherVerificationStatus @default(UNVERIFIED) // UNVERIFIED, VERIFIED, REJECTED
   address                 String?
+  latitude                Float? // titik kantor dari peta pendaftaran; tampil di peta persebaran landing page
+  longitude               Float?
   phone                   String?
   nomor_induk_penerbit    String?                     @db.VarChar(50)
   npwp                    String?                     @db.VarChar(50)
@@ -214,6 +221,8 @@ model PublisherRegistration {
   publisher_type       PublisherType
   name                 String                      @db.VarChar(255)
   address              String                      @db.Text
+  latitude             Float?
+  longitude            Float?
   pic_name             String                      @db.VarChar(255)
   pic_phone            String                      @db.VarChar(50)
   email                String                      @db.VarChar(255)
@@ -355,6 +364,147 @@ model MasterMushafRequestDocument {
 
   @@index([request_id, document_type], map: "master_req_docs_req_type_idx")
   @@map("master_mushaf_request_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Pengaduan masyarakat (publik, tanpa login) — dilacak dengan kode pengaduan.
+// Alur: MENUNGGU_VERIFIKASI -> DITERIMA | DITOLAK; DITERIMA -> DALAM_PROSES <-> MENUNGGU_TINDAK_LANJUT
+//       -> SELESAI (melalui laporan akhir).
+// ---------------------------------------------------------------------------
+enum ComplaintType {
+  KESALAHAN_CETAK
+  PELAYANAN
+}
+
+enum ComplaintStatus {
+  MENUNGGU_VERIFIKASI
+  DITERIMA
+  DITOLAK
+  DALAM_PROSES
+  MENUNGGU_TINDAK_LANJUT
+  SELESAI
+}
+
+enum ComplaintGender {
+  LAKI_LAKI
+  PEREMPUAN
+}
+
+enum ComplaintServiceCategory {
+  BIAYA_PNBP
+  KETERLAMBATAN_PENTASHIHAN
+  LAINNYA
+}
+
+enum ComplaintAttachmentType {
+  SURAT_TANDA_TASHIH
+  COVER_MUSHAF
+  HALAMAN_SALAH
+}
+
+model Complaint {
+  id             String          @id @default(uuid())
+  complaint_code String          @unique(map: "complaints_code_key") @db.VarChar(40)
+  type           ComplaintType
+  status         ComplaintStatus @default(MENUNGGU_VERIFIKASI)
+
+  // Identitas pengadu
+  reporter_name       String          @db.VarChar(255)
+  reporter_gender     ComplaintGender
+  reporter_age        Int
+  reporter_occupation String          @db.VarChar(120)
+  address             String          @db.Text
+  province_code       String          @db.VarChar(16)
+  province_name       String          @db.VarChar(120)
+  regency_code        String          @db.VarChar(16)
+  regency_name        String          @db.VarChar(120)
+  district_code       String          @db.VarChar(16)
+  district_name       String          @db.VarChar(120)
+  postal_code         String          @db.VarChar(10)
+  phone               String          @db.VarChar(30)
+  email               String          @db.VarChar(255)
+
+  // Pengaduan kesalahan cetak mushaf
+  publisher_name String? @db.VarChar(255)
+  mushaf_name    String? @db.VarChar(255)
+  tashih_number  String? @db.VarChar(120)
+
+  // Pengaduan pelayanan Surat Tanda Tashih/Izin Edar
+  registration_number  String?                   @db.VarChar(120)
+  registrant_publisher String?                   @db.VarChar(255)
+  service_category     ComplaintServiceCategory?
+  description          String?                   @db.Text
+
+  // Keputusan verifikasi (terima/tolak)
+  rejection_reason String?   @db.Text
+  decided_at       DateTime?
+  decided_by_id    String?
+  decided_by       User?     @relation("ComplaintDecidedBy", fields: [decided_by_id], references: [id], onDelete: SetNull)
+
+  // Laporan akhir penanganan
+  final_result       String?   @db.VarChar(255)
+  final_explanation  String?   @db.Text
+  resolved_on        DateTime? @db.Date
+  final_report_at    DateTime?
+  final_report_by_id String?
+  final_report_by    User?     @relation("ComplaintFinalReportBy", fields: [final_report_by_id], references: [id], onDelete: SetNull)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  error_items ComplaintErrorItem[]
+  attachments ComplaintAttachment[]
+  histories   ComplaintStatusHistory[]
+
+  @@index([type, status, created_at], map: "complaints_type_status_created_idx")
+  @@index([email], map: "complaints_email_idx")
+  @@map("complaints")
+}
+
+model ComplaintErrorItem {
+  id           String                @id @default(uuid())
+  complaint_id String
+  complaint    Complaint             @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  position     Int
+  surah_ayat   String                @db.VarChar(255)
+  error_type   String                @db.VarChar(120)
+  description  String                @db.Text
+  attachments  ComplaintAttachment[]
+
+  @@unique([complaint_id, position], map: "complaint_error_items_position_key")
+  @@map("complaint_error_items")
+}
+
+model ComplaintAttachment {
+  id                String                  @id @default(uuid())
+  complaint_id      String
+  complaint         Complaint               @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  error_item_id     String?
+  error_item        ComplaintErrorItem?     @relation(fields: [error_item_id], references: [id], onDelete: Cascade)
+  attachment_type   ComplaintAttachmentType
+  storage_path      String                  @db.VarChar(500)
+  original_filename String                  @db.VarChar(255)
+  file_size         Int
+  file_hash         String                  @db.VarChar(64)
+  mime_type         String                  @db.VarChar(100)
+  created_at        DateTime                @default(now())
+
+  @@index([complaint_id, attachment_type], map: "complaint_attachments_type_idx")
+  @@map("complaint_attachments")
+}
+
+model ComplaintStatusHistory {
+  id            String          @id @default(uuid())
+  complaint_id  String
+  complaint     Complaint       @relation(fields: [complaint_id], references: [id], onDelete: Cascade)
+  status        ComplaintStatus
+  note          String?         @db.Text
+  changed_by_id String?
+  changed_by    User?           @relation("ComplaintStatusChangedBy", fields: [changed_by_id], references: [id], onDelete: SetNull)
+  created_at    DateTime        @default(now())
+
+  @@index([complaint_id, created_at], map: "complaint_histories_created_idx")
+  @@map("complaint_status_histories")
 }
 
 model PublisherRevisionToken {
@@ -736,6 +886,9 @@ model VerificationAssignment {
   review_submitted_at DateTime?
   assigned_at         DateTime                     @default(now())
   completed_at        DateTime?
+  result_sent_at      DateTime?
+  sla_outcome         VerificationSlaOutcome?
+  sla_working_days_used Int?
 
   // Relations
   registration Registration           @relation(fields: [registration_id], references: [id], onDelete: Cascade)
@@ -745,6 +898,7 @@ model VerificationAssignment {
   documents    VerificationDocument[]
 
   @@index([registration_id, status])
+  @@index([verifier_id, sla_outcome])
   @@map("verification_assignments")
 }
 
@@ -790,6 +944,7 @@ model VerificationDocument {
   sent_at          DateTime?
   sent_channel     String?
   sent_to          String?
+  dispatch_error   String?                    @db.Text
   created_at       DateTime                   @default(now())
   updated_at       DateTime                   @updatedAt
 
@@ -981,6 +1136,21 @@ model OfficialDocument {
   @@map("official_documents")
 }
 
+// Paraf Pemaraf sebelum persetujuan Kepala LPMQ, dan keputusan reviu distributor yang menunggu paraf.
+model ApprovalParaf {
+  id              String    @id @default(uuid())
+  subject_type    String // VERIFICATION_RESULT, MASTER_LETTER, DISTRIBUTOR_REVIEW
+  subject_id      String
+  pemaraf_id      String? // pemaraf yang ditunjuk / yang membubuhkan paraf
+  requested_by_id String?
+  payload         Json? // keputusan distributor yang ditunda sampai diparaf
+  signed_at       DateTime?
+  created_at      DateTime  @default(now())
+
+  @@unique([subject_type, subject_id])
+  @@map("approval_parafs")
+}
+
 model DocumentSignatory {
   id                     String        @id @default(uuid())
   official_document_id   String
@@ -1090,6 +1260,7 @@ enum RoleCode {
   DOKUMENTATOR
   KEPALA_LPMQ
   PENANDATANGAN
+  PEMARAF
 }
 
 enum UserStatus {
@@ -1253,6 +1424,12 @@ enum VerificationDecision {
   REJECTED
 }
 
+enum VerificationSlaOutcome {
+  EARLY
+  ON_TIME
+  LATE
+}
+
 enum DocumentSignatureStatus {
   NOT_REQUESTED
   PENDING
@@ -1359,6 +1536,31 @@ model InformationGuideImage {
 
   @@index([guide_id])
   @@map("information_guide_images")
+}
+
+enum LandingPageFaqCategory {
+  LAYANAN_TASHIH_ONLINE
+  MUSHAF_STANDAR_INDONESIA
+  REGULASI
+}
+
+model LandingPageFaq {
+  id            String                 @id @default(uuid())
+  category      LandingPageFaqCategory
+  question      String                 @db.VarChar(255)
+  answer        String                 @db.Text
+  is_published  Boolean                @default(false)
+  created_by_id String?
+  created_by    User?                  @relation("LandingPageFaqCreatedBy", fields: [created_by_id], references: [id], onDelete: SetNull)
+  updated_by_id String?
+  updated_by    User?                  @relation("LandingPageFaqUpdatedBy", fields: [updated_by_id], references: [id], onDelete: SetNull)
+  created_at    DateTime               @default(now())
+  updated_at    DateTime               @updatedAt
+
+  @@index([category])
+  @@index([is_published])
+  @@index([created_at])
+  @@map("landing_page_faqs")
 }
 
 // ============================================================================

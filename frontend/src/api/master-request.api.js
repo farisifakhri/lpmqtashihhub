@@ -7,7 +7,7 @@ const enc = encodeURIComponent;
  * Buka PDF terproteksi (JWT) di tab baru. Tab dibuka lebih dulu secara sinkron dengan klik
  * agar tidak diblokir popup blocker, lalu diarahkan ke blob PDF setelah selesai diunduh.
  */
-async function openProtectedPdf(path) {
+export async function openProtectedPdf(path) {
   const cleanBase = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
   const tab = window.open('', '_blank');
   const headers = { Authorization: `Bearer ${getAuthToken()}` };

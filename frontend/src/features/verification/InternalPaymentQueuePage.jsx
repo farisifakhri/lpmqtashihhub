@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
 import { paymentApi } from '@/api/payment.api';
+import { invalidateQueueCounts } from '@/api/queue.api';
 import { fileApi } from '@/api/file.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -190,6 +191,7 @@ export const InternalPaymentQueuePage = () => {
     setSuccessMessage(null);
     try {
       await paymentApi.verifyPayment(selectedPayment.id);
+      invalidateQueueCounts();
       setSuccessMessage(
         `Pembayaran untuk nomor billing ${selectedPayment.billing_no} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
       );
@@ -223,6 +225,7 @@ export const InternalPaymentQueuePage = () => {
     setModalError(null);
     try {
       await paymentApi.returnPayment(selectedPayment.id, { reason: rejectReason.trim() });
+      invalidateQueueCounts();
       setSuccessMessage(
         `Bukti pembayaran untuk billing ${selectedPayment.billing_no} berhasil ditolak dan status dikembalikan ke UNPAID.`
       );

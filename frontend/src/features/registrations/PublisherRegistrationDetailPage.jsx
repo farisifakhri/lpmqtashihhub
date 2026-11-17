@@ -24,6 +24,7 @@ import { fileApi } from "@/api/file.api";
 import { useAuth } from "@/features/auth/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { publisherAction } from "./publisher-status";
+import { invalidateQueueCounts } from "@/api/queue.api";
 
 import { PublisherDetailHeader } from "./detail/PublisherDetailHeader";
 import { PublisherStatusAlerts } from "./detail/PublisherStatusAlerts";
@@ -45,6 +46,7 @@ export function PublisherRegistrationDetailPage() {
     const [loading, setLoading] = useState(true);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
+    const [submitError, setSubmitError] = useState("");
     const [success, setSuccess] = useState("");
     const [refresh, setRefresh] = useState(0);
 
@@ -190,17 +192,18 @@ export function PublisherRegistrationDetailPage() {
         data?.manuscript_files?.some((item) => item.type === required),
     );
 
-    const run = async (operation, message) => {
+    const run = async (operation, message, reportError = setError) => {
         if (busy) return;
         setBusy(true);
         setError("");
+        setSubmitError("");
         setSuccess("");
         try {
             await operation();
             setSuccess(message);
             setRefresh((value) => value + 1);
         } catch (err) {
-            setError(
+            reportError(
                 err.message ||
                     "Tindakan gagal. Muat ulang untuk memastikan status terbaru.",
             );
@@ -586,6 +589,7 @@ export function PublisherRegistrationDetailPage() {
                                     editable={editable}
                                     revision={revision}
                                     requiredFiles={requiredFiles}
+                                    submitError={submitError}
                                     type={type}
                                     setType={setType}
                                     file={file}
@@ -594,13 +598,14 @@ export function PublisherRegistrationDetailPage() {
                                     upload={upload}
                                     onSubmitRegistration={() =>
                                         run(
-                                            () =>
-                                                registrationApi.submitRegistration(
-                                                    id,
-                                                ),
+                                            async () => {
+                                                await registrationApi.submitRegistration(id);
+                                                invalidateQueueCounts();
+                                            },
                                             revision
                                                 ? "Perbaikan berhasil diajukan ulang."
                                                 : "Permohonan berhasil dikirim.",
+                                            setSubmitError,
                                         )
                                     }
                                     setPreviewFile={setPreviewFile}

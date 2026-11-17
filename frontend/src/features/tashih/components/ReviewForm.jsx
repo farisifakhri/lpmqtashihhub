@@ -3,6 +3,7 @@ import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
+import { showToast } from '@/components/ui/toast';
 import { formatFileType } from '@/lib/glossary';
 
 export const ReviewForm = ({
@@ -113,15 +114,15 @@ export const ReviewForm = ({
                         return (
                           <div className="pt-2 border-t border-line flex flex-wrap items-center justify-between gap-2">
                             <span className="text-[11px] text-ink-muted font-semibold">Tindak Lanjut Butir Perbaikan Penerbit:</span>
-                            <a
-                              href={`/api/v1/uploads/${pubRecap.recap_file_id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs"
+                            <button
+                              type="button"
+                              onClick={() => fileApi.downloadPrivateFile(pubRecap.recap_file_id, `Rekap-Revisi-Penerbit-Ronde-${roundNum}.pdf`)
+                                .catch((err) => showToast(err.message || 'Gagal mengunduh berkas.', 'error'))}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
                             >
                               <FileText className="w-3.5 h-3.5 text-brand-700" />
                               <span>Unduh Rekap Revisi Penerbit (Ronde #{roundNum})</span>
-                            </a>
+                            </button>
                           </div>
                         );
                       }

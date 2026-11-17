@@ -2,6 +2,63 @@ import { prisma } from '../config/database.js';
 import { calculateDueAt } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
+import { ACTIVE_PEMARAF, pemarafGateActive, findParaf, parafKey } from './paraf.service.js';
+import { buildMyAssignmentsWhere } from './queue-filters.js';
+
+const STAGE_LABELS = { INITIAL: 'Penugasan Awal', REVISION: 'Penugasan Perbaikan', DUMMY: 'Penugasan Dumi' };
+
+// Jenis penugasan ronde baru dikunci sesuai tahap: Awal hanya sidang pertama; Perbaikan/Dumi hanya setelah
+// keputusan reviu yang sesuai DAN penerbit sudah mengirim naskahnya (resi kurir atau diterima di loket).
+export function assignmentStageOptions({ isTashihRevision, revisionKind, hasAssignmentsForRound, previousStage, registrationType, hasDispatchProof }) {
+  const newRevisionRound = isTashihRevision && !hasAssignmentsForRound;
+  const stage = newRevisionRound
+    ? (revisionKind === 'DUMMY' ? 'DUMMY' : 'REVISION')
+    : previousStage || (registrationType === 'EXTENSION' ? 'DUMMY' : 'INITIAL');
+  const waitingProof = newRevisionRound && !hasDispatchProof;
+  const lockReason = {
+    INITIAL: !previousStage && !isTashihRevision && registrationType === 'EXTENSION'
+      ? 'Pengajuan perpanjangan langsung masuk tahap dumi.'
+      : 'Hanya untuk sidang pertama; naskah ini sudah pernah disidangkan.',
+    REVISION: stage === 'DUMMY'
+      ? 'Keputusan terakhir mengalihkan naskah ke tahap dumi, bukan perbaikan.'
+      : 'Belum ada keputusan perbaikan dari reviu hasil sidang.',
+    DUMMY: stage === 'REVISION'
+      ? 'Keputusan terakhir meminta perbaikan naskah; tahap dumi dibuka setelah telaah teks lulus.'
+      : 'Tahap dumi dibuka setelah telaah teks dinyatakan lulus.',
+  };
+  const waitingReason = `Menunggu penerbit mengirim naskah ${stage === 'DUMMY' ? 'dumi' : 'perbaikan'}: nomor resi kurir belum diisi atau naskah belum diterima di loket LPMQ.`;
+  return ['INITIAL', 'REVISION', 'DUMMY'].map(key => {
+    const allowed = key === stage && !waitingProof;
+    return { key, allowed, reason: allowed ? null : key === stage ? waitingReason : lockReason[key] };
+  });
+}
+
+// Bukti pengiriman naskah ronde perbaikan/dumi: diterima Admin Internal di loket, dan bila dikirim lewat
+// kurir (bukan antar langsung) wajib ada nomor resi. Penerimaan loket sudah mencatat petugas, waktu, dan BAST.
+async function hasDispatchProof(tx, reg) {
+  const intake = await tx.physicalMasterIntake?.findUnique({ where: { registration_id: reg.id } });
+  const viaCourier = reg.dispatch_courier && reg.dispatch_courier !== 'LOKET_LPMQ';
+  return intake?.status === 'RECEIVED' && (!viaCourier || Boolean(reg.dispatch_tracking_no?.trim()));
+}
+
+async function loadAssignmentStageOptions(tx, reg, round, previous) {
+  const newRevisionRound = round.isTashihRevision && !round.hasAssignmentsForRound;
+  return assignmentStageOptions({
+    ...round,
+    previousStage: previous?.stage || null,
+    registrationType: reg.registration_type,
+    hasDispatchProof: newRevisionRound ? await hasDispatchProof(tx, reg) : true,
+  });
+}
+
+// Dibaca pop-up "Mulai Penugasan" agar pilihan yang terkunci tampil beserta alasannya.
+export const getAssignmentStages = async (id) => {
+  const reg = await prisma.registration.findUnique({ where: { id } });
+  if (!reg) fail(404, 'Pengajuan tidak ditemukan.');
+  const round = await resolveTashihRound(prisma, reg);
+  const previous = await prisma.assignment.findFirst({ where: { registration_id: id }, orderBy: { iteration: 'desc' }, select: { stage: true } });
+  return loadAssignmentStageOptions(prisma, reg, round, previous);
+};
 
 export const createAssignments = (id, data, user) => prisma.$transaction(async tx => {
   const reg = await registration(tx, id);
@@ -30,12 +87,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
       fail(409, 'Naskah revisi belum dapat ditugaskan karena Penerbit belum mengunggah dokumen rekapitulasi perbaikan untuk ronde ini.');
     }
 
-    // B-19a N4: Telaah pembanding distributor wajib pada penugasan awal ronde naskah masuk (sebelum didistribusikan ke pentashih)
+    // B-19a N4: Telaah pembanding distributor pada penugasan awal ronde naskah masuk bersifat opsional; disimpan hanya bila diisi
     const isInitialRoundAssignment = reg.status === 'WAITING_DISTRIBUTION' || !roundInfo.hasAssignmentsForRound;
-    if (isInitialRoundAssignment) {
-      if (!data.comparison_notes || data.comparison_notes.trim().length < 20) {
-        fail(400, 'Catatan telaah pembanding distributor wajib diisi (minimal 20 karakter) saat menugaskan naskah revisi/dumi masuk.');
-      }
+    if (isInitialRoundAssignment && data.comparison_notes?.trim()) {
       if (tx.distributorComparison?.upsert) {
         await tx.distributorComparison.upsert({
           where: {
@@ -67,8 +121,12 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
     : reg.registration_type === 'EXTENSION'
     ? 'DUMMY'
     : 'INITIAL';
-  if (data.stage && data.stage !== expectedStage && reg.status !== 'TASHIH_IN_PROGRESS') {
-    fail(409, `Tahap penugasan yang diperlukan: ${expectedStage}.`);
+  // Jenis penugasan ronde baru (Awal / Perbaikan / Dumi) dipilih distributor di pop-up "Mulai Penugasan";
+  // expectedStage hanya menjadi nilai bawaan bila klien tidak mengirim stage. Pilihan yang terkunci ditolak.
+  if (reg.status === 'WAITING_DISTRIBUTION') {
+    const chosenStage = data.stage || expectedStage;
+    const option = (await loadAssignmentStageOptions(tx, reg, roundInfo, previous)).find(item => item.key === chosenStage);
+    if (!option?.allowed) fail(409, `${STAGE_LABELS[chosenStage] || 'Penugasan'} belum dapat dibuka: ${option?.reason || 'jenis penugasan tidak dikenal.'}`);
   }
   const now = new Date();
   const teamCache = new Map();
@@ -410,14 +468,7 @@ export async function listMyAssignments(user, query = {}) {
   requireRole(user, ['PENTASHIH', 'SUPERADMIN']);
   const page = query.page ?? 1;
   const limit = query.limit ?? 20;
-  const where = { assignee_id: user.id };
-  if (query.status === 'COMPLETED') {
-    where.status = 'COMPLETED';
-  } else if (query.status === 'ACTIVE') {
-    where.status = { in: ['ASSIGNED', 'IN_PROGRESS', 'OVERDUE'] };
-  } else if (query.status) {
-    where.status = query.status;
-  }
+  const where = buildMyAssignmentsWhere(user, query);
 
   return prisma.assignment.findMany({
     where,
@@ -570,7 +621,8 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   return { lastIteration: last.iteration, assignments };
 };
 
-export const approveDistribution = (id, data, user) => prisma.$transaction(async tx => {
+// dryRun: hanya menjalankan seluruh validasi tanpa mengubah data (keputusan masih menunggu paraf).
+const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, pemarafName = null } = {}) => {
   requireRole(user, ['DISTRIBUTOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
   requireStatus(reg, ['TASHIH_IN_PROGRESS']);
@@ -603,6 +655,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
     await assertReadyForSttEligibility(tx, id);
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
+  if (dryRun) return reg;
 
   // Finalisasi status assignment pada iterasi ini saat distributor menyimpan keputusan (Item 6)
   // B-19b guard: penugasan yang berstatus REVOKED tidak boleh ditimpa menjadi COMPLETED
@@ -677,6 +730,7 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
             revision_kind: revisionKind,
             notes: data.notes,
             distributor_name: user.name,
+            pemaraf_name: pemarafName,
             created_at: new Date().toISOString(),
           },
         },
@@ -728,6 +782,57 @@ export const approveDistribution = (id, data, user) => prisma.$transaction(async
   }
 
   return tx.registration.findUnique({ where: { id } });
+};
+
+// Bila sudah ada akun Pemaraf aktif, keputusan distributor ditahan sampai diparaf Pemaraf yang ditunjuk.
+export const approveDistribution = (id, { pemaraf_id, ...decision }, user) => prisma.$transaction(async tx => {
+  if (!(await pemarafGateActive(tx))) return applyDistributionDecision(tx, id, decision, user);
+  if (!pemaraf_id) fail(400, 'Pilih Pemaraf yang akan membubuhkan paraf atas keputusan ini.');
+  const pemaraf = await tx.user.findFirst({ where: { id: pemaraf_id, ...ACTIVE_PEMARAF }, select: { id: true, name: true } });
+  if (!pemaraf) fail(400, 'Pemaraf yang dipilih tidak ditemukan atau tidak aktif.');
+
+  const reg = await applyDistributionDecision(tx, id, decision, user, { dryRun: true });
+  const pending = { pemaraf_id, requested_by_id: user.id, payload: decision, signed_at: null };
+  await tx.approvalParaf.upsert({
+    where: parafKey('DISTRIBUTOR_REVIEW', id),
+    create: { subject_type: 'DISTRIBUTOR_REVIEW', subject_id: id, ...pending },
+    update: pending,
+  });
+  await tx.notification.create({ data: {
+    user_id: pemaraf.id,
+    registration_id: id,
+    type: 'PARAF_REQUIRED',
+    title: `Keputusan sidang menunggu paraf Anda: ${reg.registration_no || reg.title}`,
+    payload: { link: `/internal/distributions/monitoring?review=${id}` },
+  } });
+  await audit(tx, user, 'DISTRIBUTOR_REVIEW_WAITING_PARAF', 'Registration', id, { ...decision, pemaraf: pemaraf.name });
+  return { ...reg, pending_paraf: { pemaraf } };
+}, { isolationLevel: 'ReadCommitted' });
+
+export const getDistributionParaf = async (id) => {
+  const gate_active = await pemarafGateActive(prisma);
+  const paraf = await findParaf(prisma, 'DISTRIBUTOR_REVIEW', id);
+  if (!paraf || paraf.signed_at) return { gate_active, pending: null };
+  const [pemaraf, requested_by] = await Promise.all([paraf.pemaraf_id, paraf.requested_by_id].map(userId =>
+    (userId ? prisma.user.findUnique({ where: { id: userId }, select: { id: true, name: true } }) : null)));
+  return { gate_active, pending: { pemaraf, requested_by, decision: paraf.payload, requested_at: paraf.created_at } };
+};
+
+// Paraf Pemaraf menjalankan keputusan distributor yang ditahan, atas nama distributor yang memutuskan.
+export const parafDistribution = (id, user, req) => prisma.$transaction(async tx => {
+  const paraf = await findParaf(tx, 'DISTRIBUTOR_REVIEW', id);
+  if (!paraf || paraf.signed_at) fail(409, 'Tidak ada keputusan distributor yang menunggu paraf untuk pengajuan ini.');
+  if (!user.roles.includes('SUPERADMIN') && !(user.isPemaraf && paraf.pemaraf_id === user.id)) {
+    fail(403, 'Hanya Pemaraf yang ditunjuk distributor yang dapat membubuhkan paraf atas keputusan ini.');
+  }
+  const requester = await tx.user.findUnique({ where: { id: paraf.requested_by_id }, include: { roles: { include: { role: true } } } });
+  if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
+  const actor = { id: requester.id, name: requester.name, roles: requester.roles.map(r => r.role.code) };
+
+  const result = await applyDistributionDecision(tx, id, paraf.payload, actor, { pemarafName: user.name });
+  await tx.approvalParaf.update({ where: { id: paraf.id }, data: { signed_at: new Date(), pemaraf_id: user.id } });
+  await audit(tx, user, 'PARAF_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
+  return result;
 }, { isolationLevel: 'ReadCommitted' });
 
 

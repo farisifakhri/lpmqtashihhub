@@ -441,17 +441,22 @@ export function PublisherPhysicalMasterTab({
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold text-ink mb-1">
-                    Nomor Resi / Keterangan Tanda Kirim
+                  <label htmlFor="dispatch-tracking-no" className="block text-xs font-bold text-ink mb-1">
+                    {dispatchData.courier === 'LOKET_LPMQ' ? 'Keterangan Tanda Kirim (opsional)' : 'Nomor Resi Pengiriman (wajib)'}
                   </label>
                   <input
+                    id="dispatch-tracking-no"
                     type="text"
                     disabled={busy}
+                    required={dispatchData.courier !== 'LOKET_LPMQ'}
                     value={dispatchData.tracking_no}
                     onChange={(e) => setDispatchData({ ...dispatchData, tracking_no: e.target.value })}
-                    placeholder="Contoh: Resi JNE12345678 atau Diserahkan Staf PT"
+                    placeholder={dispatchData.courier === 'LOKET_LPMQ' ? 'Contoh: Diserahkan Staf PT' : 'Contoh: JNE12345678'}
                     className="w-full rounded-lg border border-line-strong p-2 text-xs bg-white"
                   />
+                  {dispatchData.courier !== 'LOKET_LPMQ' && (
+                    <p className="mt-1 text-xs text-ink-muted">Nomor resi menjadi bukti pengiriman; LPMQ baru dapat menjadwalkan sidang setelah naskah tercatat terkirim.</p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
                   <Button

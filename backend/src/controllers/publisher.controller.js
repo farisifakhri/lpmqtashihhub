@@ -19,6 +19,21 @@ export const getMyProfile = async (req, res, next) => {
   }
 };
 
+export const getMyCertificate = async (req, res, next) => {
+  try {
+    const publisherId = req.user.publisherId;
+    const userId = req.user.id;
+    const file = await publisherService.getMyCertificatePdf({ publisherId, userId, user: req.user });
+
+    const safeFilename = encodeURIComponent(file.filename);
+    res.setHeader('Content-Type', file.mime_type || 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
+    return res.send(file.content);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateMyProfile = async (req, res, next) => {
   try {
     if (!req.user.publisherId) {
@@ -82,11 +97,27 @@ export const permitProfileEdit = async (req, res, next) => {
   }
 };
 
+export const adminUpdatePublisher = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await publisherService.adminUpdatePublisher(id, req.body, req);
+    res.status(200).json({
+      success: true,
+      message: 'Data penerbit berhasil diperbarui oleh Administrator.',
+      data: updated,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export default {
   getMyProfile,
+  getMyCertificate,
   updateMyProfile,
   listPublishers,
   verifyPublisher,
   permitProfileEdit,
+  adminUpdatePublisher,
 };
 

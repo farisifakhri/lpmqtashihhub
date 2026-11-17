@@ -62,6 +62,21 @@ describe('PublisherBillingPage Component', () => {
     expect(screen.getByText('Konfirmasi Pembayaran')).toBeInTheDocument();
   });
 
+  it('opens the Menunggu Bayar tab from its URL parameter', async () => {
+    render(
+      <MemoryRouter initialEntries={['/publisher/billing?tab=UNPAID']}>
+        <PublisherBillingPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(PaymentApiModule.paymentApi.listPayments).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'UNPAID' })
+      );
+    });
+    expect(screen.getByRole('button', { name: 'Menunggu Bayar' })).toHaveClass('bg-white');
+  });
+
   it('dapat membuka modal konfirmasi pembayaran saat tombol diklik', async () => {
     render(
       <MemoryRouter>

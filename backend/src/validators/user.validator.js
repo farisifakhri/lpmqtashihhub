@@ -18,6 +18,7 @@ export const VALID_ROLES = [
   'PENTASHIH',
   'DOKUMENTATOR',
   'KEPALA_LPMQ',
+  'PEMARAF',
 ];
 
 export const listUsersQuerySchema = {

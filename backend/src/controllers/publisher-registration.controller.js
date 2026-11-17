@@ -20,11 +20,12 @@ export async function registerPublisher(req, res, next) {
 
 export async function checkStatus(req, res, next) {
   try {
-    const { kode_pendaftaran } = req.body;
-    const result = await publisherRegistrationService.checkPublisherRegistrationStatus(kode_pendaftaran);
+    const { kode_pendaftaran, email, identifier } = req.body;
+    const query = (identifier || kode_pendaftaran || email || '').trim();
+    const result = await publisherRegistrationService.checkPublisherRegistrationStatus(query);
     return res.status(200).json({
       success: true,
-      message: 'Status pendaftaran berhasil ditemukan.',
+      message: result?.message || 'Status pendaftaran berhasil ditemukan.',
       data: result,
     });
   } catch (error) {
@@ -140,6 +141,20 @@ export async function getCertificate(req, res, next) {
     res.setHeader('Content-Type', file.mime_type || 'application/pdf');
     res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
     return res.send(file.content);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function adminEditRegistration(req, res, next) {
+  try {
+    const { id } = req.params;
+    const result = await publisherRegistrationService.adminEditPublisherRegistration(id, req.body, req.user, req);
+    return res.status(200).json({
+      success: true,
+      message: 'Data permohonan pendaftaran berhasil diperbarui oleh Administrator.',
+      data: result,
+    });
   } catch (error) {
     next(error);
   }

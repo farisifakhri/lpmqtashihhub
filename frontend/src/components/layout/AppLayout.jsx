@@ -36,7 +36,6 @@ const publisherMobileBottomItems = [
     icon: Award,
   },
 ];
-
 export const AppLayout = () => {
   const { currentUser, isInitializing } = useAuth();
   const location = useLocation();

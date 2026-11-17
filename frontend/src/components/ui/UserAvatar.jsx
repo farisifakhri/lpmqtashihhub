@@ -113,6 +113,12 @@ function getRoleBadgeConfig(role) {
         title: 'Kepala LPMQ',
         bg: 'bg-civicGold-700 text-white border-civicGold-500',
       };
+    case 'PEMARAF':
+      return {
+        icon: PenTool,
+        title: 'Pemaraf',
+        bg: 'bg-civicGold-700 text-white border-civicGold-500',
+      };
     case 'PENERBIT':
     case 'PUBLISHER':
       return {

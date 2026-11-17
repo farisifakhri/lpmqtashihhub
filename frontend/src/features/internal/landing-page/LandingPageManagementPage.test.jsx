@@ -6,6 +6,7 @@ import * as AuthContext from '@/features/auth/AuthContext';
 import { regulationApi } from '@/api/regulation.api';
 import { informationGuideApi } from '@/api/information-guide.api';
 import { serviceDocumentApi } from '@/api/service-document.api';
+import { complaintApi } from '@/api/complaint.api';
 
 const informationSubmenus = [
   "Regulasi Penerbit Mushaf Al-Qur'an",
@@ -37,6 +38,12 @@ describe('LandingPageManagementPage navigation', () => {
       data: [],
       pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
     });
+    vi.spyOn(complaintApi, 'listAdmin').mockResolvedValue({
+      success: true,
+      data: [],
+      counts: {},
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 1 },
+    });
     vi.spyOn(serviceDocumentApi, 'listAdmin').mockResolvedValue({
       success: true,
       data: [],
@@ -51,10 +58,10 @@ describe('LandingPageManagementPage navigation', () => {
     const mainNavigation = within(screen.getByRole('navigation', { name: 'Navigasi menu landing page' }));
     expect(mainNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
       'Informasi',
-      'Permohonan Master',
       'Pengaduan',
       'FAQ',
     ]);
+    expect(mainNavigation.queryByRole('button', { name: 'Permohonan Master' })).not.toBeInTheDocument();
 
     const informationNavigation = within(screen.getByRole('navigation', { name: 'Submenu Informasi' }));
     expect(informationNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual(
@@ -72,6 +79,21 @@ describe('LandingPageManagementPage navigation', () => {
     });
   });
 
+  it('keeps the same landing-page navigation for helper admins', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { role: 'ADMIN_INTERNAL', roles: ['ADMIN_INTERNAL'] },
+    });
+    render(<LandingPageManagementPage />);
+
+    const mainNavigation = within(await screen.findByRole('navigation', { name: 'Navigasi menu landing page' }));
+    expect(mainNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
+      'Informasi',
+      'Pengaduan',
+      'FAQ',
+    ]);
+    expect(mainNavigation.queryByRole('button', { name: 'Permohonan Master' })).not.toBeInTheDocument();
+  });
+
   it('shows guide management, keeps unfinished menus as placeholders, and restores regulation management', async () => {
     render(<LandingPageManagementPage />);
     expect(await screen.findByText('Total Regulasi')).toBeInTheDocument();
@@ -83,20 +105,24 @@ describe('LandingPageManagementPage navigation', () => {
     expect(screen.queryByText('Total Regulasi')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Tambah Dokumen' })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Permohonan Master' }));
-    expect(screen.getByRole('heading', { name: 'Permohonan Master' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'FAQ' }));
-    expect(screen.getByRole('heading', { name: 'FAQ' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Kelola FAQ' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tambah FAQ' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pengaduan' }));
     const complaintNavigation = within(screen.getByRole('navigation', { name: 'Submenu Pengaduan' }));
+    // Lacak Pengaduan adalah halaman publik, bukan menu pengelolaan
     expect(complaintNavigation.getAllByRole('button').map((button) => button.textContent)).toEqual([
-      'Saluran Pengaduan Masyarakat',
-      'Cek Status Laporan Naskah',
-      'Kontak Pusat Bantuan LPMQ',
+      "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an",
+      'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar',
     ]);
-    fireEvent.click(complaintNavigation.getByRole('button', { name: 'Cek Status Laporan Naskah' }));
-    expect(screen.getByRole('heading', { name: 'Cek Status Laporan Naskah' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: "Pengaduan Kesalahan Cetak Mushaf Al-Qur'an" })).toBeInTheDocument();
+    expect(screen.queryByText('Segera Hadir')).not.toBeInTheDocument();
+    await waitFor(() => expect(complaintApi.listAdmin).toHaveBeenCalledWith(expect.objectContaining({ type: 'KESALAHAN_CETAK' })));
+    fireEvent.click(complaintNavigation.getByRole('button', { name: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar' }));
+    expect(screen.getByRole('heading', { name: 'Pengaduan Pelayanan Surat Tanda Tashih/Izin Edar' })).toBeInTheDocument();
+    expect(await screen.findByRole('columnheader', { name: 'Nomor Pendaftaran Mushaf' })).toBeInTheDocument();
+    await waitFor(() => expect(complaintApi.listAdmin).toHaveBeenCalledWith(expect.objectContaining({ type: 'PELAYANAN' })));
 
     fireEvent.click(screen.getByRole('button', { name: 'Informasi' }));
     fireEvent.click(screen.getByRole('button', { name: informationSubmenus[0] }));

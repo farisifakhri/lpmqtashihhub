@@ -5,6 +5,7 @@ import logoyt from '@/assets/logoyt.webp';
 import logox from '@/assets/logox.webp';
 import logoig from '@/assets/logoig.webp';
 import logofb from '@/assets/logofb.webp';
+import { CONTACT } from '@/lib/contact';
 
 const socialMediaLinks = [
   {
@@ -36,7 +37,7 @@ const socialMediaLinks = [
 const footerLinks = [
   { label: 'Regulasi', key: 'regulation', href: '/informasi/regulasi-penerbit-mushaf', emphasized: false },
   { label: 'Pengaduan', key: 'complaint', href: '#beranda', emphasized: false },
-  { label: 'FAQ', key: 'faq', href: '#beranda', emphasized: false },
+  { label: 'FAQ', key: 'faq', href: '/faq', emphasized: false },
   { label: 'Portal Penerbit', key: 'portal', href: '/login', emphasized: true },
 ];
 
@@ -53,7 +54,7 @@ export const PublicFooter = ({
           <p>Jalan Raya TMII Pintu I Jakarta Timur 13560</p>
           <p>Telp: (021) 8416468 - 8416466</p>
           <p>Faks: (021) 8416468</p>
-          <p>Narahubung Layanan Pentashihan: +628111997125</p>
+          <p>Narahubung Layanan Pentashihan: {CONTACT.WHATSAPP_DISPLAY}</p>
         </address>
         <div className="flex items-center gap-3 sm:gap-4">
           {socialMediaLinks.map((social) => (

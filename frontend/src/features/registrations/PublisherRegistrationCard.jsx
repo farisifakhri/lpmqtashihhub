@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { publisherAction, dateLabel } from './publisher-status';
+import { SlaBreakdown } from '@/components/ui/SlaBreakdown';
 
 export function PublisherRegistrationCard({ registration }) {
   const action = publisherAction(registration);
@@ -81,10 +82,11 @@ export function PublisherRegistrationCard({ registration }) {
               </span>
             )}
             {isPhase2Active && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-900 bg-brand-50 border border-brand-200 px-2 py-0.5 rounded-md">
-                <Clock className="w-3 h-3 text-brand-700" />
-                <span>SLA: {registration.fee_sla_snapshot?.sla_hari_kerja || 59} Hari Kerja</span>
-              </span>
+              <SlaBreakdown
+                snapshot={registration.fee_sla_snapshot}
+                status={registration.status}
+                compact
+              />
             )}
           </div>
         </div>

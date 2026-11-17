@@ -246,7 +246,7 @@ export async function assertDocumentFullySigned(tx, documentId) {
 
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
 
-  if (doc.status !== 'SIGNED') {
+  if (!['SIGNED', 'EMAIL_FAILED'].includes(doc.status)) {
     fail(409, `Dokumen belum dapat dikirim karena tanda tangan belum lengkap (status dokumen: ${doc.status}).`);
   }
 

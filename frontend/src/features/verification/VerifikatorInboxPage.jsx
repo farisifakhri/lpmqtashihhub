@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
+import { accessRoles } from '@/lib/roles';
 import { verificationApi } from '@/api/verification.api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -35,6 +36,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { invalidateQueueCounts } from '@/api/queue.api';
 
 function formatWaitingTime(dateString) {
   if (!dateString) return null;
@@ -51,7 +53,7 @@ export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
-  const userRoles = currentUser?.roles || (currentUser?.role ? [currentUser.role] : []);
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN_INTERNAL';
@@ -221,6 +223,7 @@ export const VerifikatorInboxPage = () => {
     setStartingId(assignmentId);
     try {
       await verificationApi.startVerification(assignmentId);
+      invalidateQueueCounts();
       navigate(`/internal/verifications/${assignmentId}`);
     } catch (err) {
       setError(err.message || 'Gagal memulai pemeriksaan.');
@@ -625,9 +628,6 @@ export const VerifikatorInboxPage = () => {
                             <div className="flex items-center justify-between gap-2 flex-wrap">
                               <span className="font-mono font-bold text-ink bg-surface-subtle px-2 py-0.5 rounded border border-line text-xs">
                                 {reg.registration_no || '-'}
-                              </span>
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-100 text-brand-800 border border-brand-100">
-                                Siap ditugaskan
                               </span>
                             </div>
 
@@ -1035,6 +1035,7 @@ export const VerifikatorInboxPage = () => {
           }}
           onSuccess={(newAssignment) => {
             setAssignDialogOpen(false);
+            invalidateQueueCounts();
             const assignedRegId = targetRegistrationForAssign?.id || selectedAssignment?.id;
             setTargetRegistrationForAssign(null);
             const docNo = newAssignment?.nota_dinas?.document_no || newAssignment?.documents?.[0]?.document_no || '';
@@ -1058,6 +1059,7 @@ export const VerifikatorInboxPage = () => {
           onClose={() => setRevokeDialogOpen(false)}
           onSuccess={() => {
             setRevokeDialogOpen(false);
+            invalidateQueueCounts();
             setSuccessMessage({
               text: 'Penugasan verifikasi berhasil dicabut. Pengajuan dikembalikan ke antrean penugasan.',
             });
@@ -1073,6 +1075,7 @@ export const VerifikatorInboxPage = () => {
           onClose={() => setReassignDialogOpen(false)}
           onSuccess={(res) => {
             setReassignDialogOpen(false);
+            invalidateQueueCounts();
             const docNo = res?.nota_dinas?.document_no || '';
             setSuccessMessage({
               text: `Penugasan berhasil dialihkan${docNo ? ` dengan Disposisi ${docNo}` : ''}.`,

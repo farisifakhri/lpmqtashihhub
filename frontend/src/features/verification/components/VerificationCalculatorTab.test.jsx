@@ -95,4 +95,33 @@ describe('B-01 Sesi 3: Verifier Workbench Calculator Tab (U-14)', () => {
     // SLA Pengajuan memakai naskah terpanjang = max(15, 5) = 15 HK
     expect(screen.getByTestId('summary-sla-initial')).toHaveTextContent('15');
   });
+
+  it('B-21 CALC-6: Menampilkan label {n} Tanda Tashih (per ukuran naskah)', () => {
+    render(<VerificationCalculatorTab />);
+    expect(screen.getByText('1 Tanda Tashih (per ukuran naskah)')).toBeInTheDocument();
+
+    const addBtn = screen.getByRole('button', { name: /Tambah Naskah/i });
+    fireEvent.click(addBtn);
+    expect(screen.getByText('2 Tanda Tashih (per ukuran naskah)')).toBeInTheDocument();
+  });
+
+  it('B-22 CALC-7: Menampilkan tombol simpan kalkulasi dan status terkunci jika tagihan sudah terbit', () => {
+    const lockedRegistration = {
+      payment_records: [{ id: 'p1', status: 'UNPAID', amount: 1000000 }],
+    };
+
+    render(
+      <VerificationCalculatorTab
+        registration={lockedRegistration}
+        assignmentId="assign-123"
+      />
+    );
+
+    // Tombol simpan dinonaktifkan karena terkunci
+    const saveButton = screen.getByRole('button', { name: /Terapkan ke Pengajuan/i });
+    expect(saveButton).toBeDisabled();
+    expect(
+      screen.getByText(/Kalkulasi tarif terkunci karena tagihan PNBP resmi telah diterbitkan/i)
+    ).toBeInTheDocument();
+  });
 });

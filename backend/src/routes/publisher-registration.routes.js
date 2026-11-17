@@ -12,6 +12,7 @@ import {
   createPublisherRegistrationSchema,
   checkPublisherRegistrationStatusSchema,
   decisionPublisherRegistrationSchema,
+  adminEditRegistrationSchema,
 } from '../validators/publisher-registration.validator.js';
 
 const router = Router();
@@ -106,6 +107,15 @@ router.post(
   '/admin/publisher-registrations/:id/resend-revision-token',
   ...adminAuth,
   publisherRegistrationController.resendRevisionToken
+);
+
+// 8c. Edit Data Permohonan Pendaftaran oleh Super Admin (B24-03)
+router.patch(
+  '/admin/publisher-registrations/:id/admin-edit',
+  authenticate,
+  authorize('SUPERADMIN'),
+  validate(adminEditRegistrationSchema),
+  publisherRegistrationController.adminEditRegistration
 );
 
 // 9. Unduh / Lihat Sertifikat Penerbit (U-06)

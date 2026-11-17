@@ -105,9 +105,22 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
         )}
 
         {success && (
-          <div className="p-3.5 rounded-xl bg-civic-successSoft border border-civic-successLine text-civic-success text-xs flex items-start gap-2.5 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{success}</span>
+          <div className="space-y-2 animate-fadeIn">
+            <div className="p-3.5 rounded-xl bg-civic-successSoft border border-civic-successLine text-civic-success text-xs flex items-start gap-2.5">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{success}</span>
+            </div>
+            <p className="text-[11px] text-ink-muted leading-relaxed">
+              Periksa kotak masuk (inbox) atau folder spam email Anda. Jika dalam 10 menit belum menerima petunjuk, silakan{' '}
+              <a
+                href="https://wa.me/628111997125"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-fg font-semibold hover:underline"
+              >
+                hubungi Layanan LPMQ via WhatsApp
+              </a>.
+            </p>
           </div>
         )}
 
