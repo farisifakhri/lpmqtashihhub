@@ -392,6 +392,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "Monitoring & Paraf Sidang",
                             path: "/internal/distributions/monitoring",
+                            badgeKey: "distribution_paraf_pending",
                             icon: <ShieldCheck className="w-4 h-4 shrink-0" />,
                             description: "Keputusan sidang yang menunggu paraf",
                         },
@@ -446,10 +447,9 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         {
                             label: "2. Intake Master Fisik",
                             path: "/internal/master-intake",
-                            badgeKey: "master_intake",
+                            badgeKey: "master_intake", // satu sumber saja: master_intake_pending menghitung naskah yang sama
                             icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                             description: "Penerimaan master fisik naskah A4",
-                            countKey: "master_intake_pending",
                         },
                         {
                             label: "3. Penugasan Verifikator",
@@ -614,6 +614,12 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         path: "/internal/settings",
                         icon: <Settings className="w-4 h-4 shrink-0" />,
                         description: "Kategori, tarif, dan SLA",
+                    },
+                    {
+                        label: "Direktori Penerbit",
+                        path: "/internal/publisher-directory",
+                        icon: <BookOpen className="w-4 h-4 shrink-0" />,
+                        description: "Direktori penerbit mushaf Al-Qur'an",
                     },
                     {
                         label: "Kelola Landing Page",
@@ -827,7 +833,10 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                 <nav className="space-y-0.5">
                                     {section.items.map((item) => {
                                         if (item.children) return renderGroup(item);
-                                        const pendingCount = getBadgeCount(badgeCounts, item.badgeKey);
+                                        // Satu menu = satu badge: jumlah tugas dari badge notifikasi (badgeKey) dan antrean (countKey)
+                                        // digabung, mis. Verifikasi Berkas = berkas diverifikasi + berkas menunggu ditugaskan.
+                                        const queueCount = item.countKey && Number.isInteger(counts[item.countKey]) ? counts[item.countKey] : 0;
+                                        const pendingCount = getBadgeCount(badgeCounts, item.badgeKey) + queueCount;
                                         return (
                                         <NavLink
                                             key={item.path + item.label}
@@ -906,16 +915,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                                                             {item.badge}
                                                         </span>
                                                     ) : null}
-                                                    {item.countKey &&
-                                                        Number.isInteger(counts[item.countKey]) &&
-                                                        counts[item.countKey] > 0 && (
-                                                            <span
-                                                                className="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-civic-danger text-white text-[11px] font-extrabold shadow-2xs flex items-center justify-center"
-                                                                aria-label={`${counts[item.countKey]} entri antrean menunggu tindakan`}
-                                                            >
-                                                                {counts[item.countKey] > 99 ? "99+" : counts[item.countKey]}
-                                                            </span>
-                                                        )}
                                                 </>
                                             )}
                                         </NavLink>

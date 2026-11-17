@@ -163,12 +163,13 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
     });
   });
 
-  it('B18-FE-03: SignatureCenterPage menampilkan tombol Paraf 1 dan Paraf 2 untuk role TU/Admin', async () => {
+  it('B18-FE-03: SignatureCenterPage menampilkan satu tombol paraf untuk role Pemaraf saja', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
-        id: 'tu-admin-1',
-        name: 'Siti Tata Usaha',
-        roles: ['ADMIN_INTERNAL'],
+        id: 'pemaraf-1',
+        name: 'Pemaraf Uji LPMQ',
+        roles: ['PENTASHIH', 'KEPALA_LPMQ'],
+        isPemaraf: true,
       },
     });
 
@@ -187,10 +188,8 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
           status: 'DRAFT',
           content_snapshot: {
             tu_workflow: {
-              status: 'SUBMITTED_TO_TU',
+              status: 'SUBMITTED_TO_PEMARAF',
               submitted_at: '2026-11-06T10:00:00Z',
-              paraf_1: null,
-              paraf_2: null,
             },
           },
         },
@@ -212,7 +211,7 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
       success: true,
       data: {
         id: 'doc-stt-paraf-1',
-        tu_workflow: { paraf_1: { signed_at: '2026-11-08T12:00:00Z' } },
+        tu_workflow: { paraf: { signed_at: '2026-11-08T12:00:00Z' } },
       },
     });
 
@@ -222,26 +221,54 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
       </MemoryRouter>
     );
 
-    // Pastikan tombol Paraf 1 (TU) muncul untuk Admin Internal
-    const paraf1Btn = await screen.findByRole('button', { name: /Paraf 1 \(TU\)/i });
-    expect(paraf1Btn).toBeInTheDocument();
-    fireEvent.click(paraf1Btn);
+    // Satu tombol paraf untuk Pemaraf; tidak ada Paraf 1/Paraf 2 dan Pemaraf tidak bisa mengesahkan
+    const parafBtn = await screen.findByRole('button', { name: /Bubuhkan Paraf/i });
+    expect(screen.queryByRole('button', { name: /Paraf 2/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /Tandatangani STT Resmi/i })).toBeNull();
+    fireEvent.click(parafBtn);
 
     // Modal dialog paraf terbuka
-    expect(await screen.findByText(/Pembubuhan Paraf 1 Tata Usaha/i)).toBeInTheDocument();
-    const submitParafBtn = screen.getByRole('button', { name: /Bubuhkan Paraf 1/i });
-    fireEvent.click(submitParafBtn);
+    expect(await screen.findByText('Pembubuhan Paraf')).toBeInTheDocument();
+    const submitButtons = screen.getAllByRole('button', { name: /Bubuhkan Paraf/i });
+    fireEvent.click(submitButtons[submitButtons.length - 1]);
 
     await waitFor(() => {
       expect(DocumentationApiModule.documentationApi.parafTu).toHaveBeenCalledWith(
         'doc-stt-paraf-1',
-        1,
         expect.objectContaining({ notes: '' })
       );
     });
   });
 
-  it('B18-FE-04: Tombol tanda tangan Kepala LPMQ aktif saat Paraf 1 & 2 telah lengkap', async () => {
+  it('B18-FE-03b: Tata Usaha (Admin Internal) tidak lagi mendapat tombol paraf STT', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'tu-admin-1', name: 'Siti Tata Usaha', roles: ['ADMIN_INTERNAL'] },
+    });
+    vi.spyOn(VerificationApiModule.verificationApi, 'listAssignments').mockResolvedValue({ data: { items: [] } });
+    vi.spyOn(RegistrationApiModule.registrationApi, 'listRegistrations').mockImplementation(({ status }) => Promise.resolve({
+      data: {
+        items: status === 'READY_FOR_STT' ? [{
+          id: 'reg-tu',
+          registration_no: 'REG-TU',
+          title: 'Mushaf',
+          status: 'READY_FOR_STT',
+          publisher: { legal_name: 'PT Uji' },
+          official_documents: [{
+            id: 'doc-tu', document_no: 'DRAFT-TU', document_type: 'SURAT_TANDA_TASHIH', version: 1, status: 'DRAFT',
+            content_snapshot: { tu_workflow: { submitted_at: '2026-11-06T10:00:00Z' } },
+          }],
+        }] : [],
+      },
+    }));
+
+    render(<MemoryRouter><SignatureCenterPage /></MemoryRouter>);
+
+    await waitFor(() => expect(RegistrationApiModule.registrationApi.listRegistrations).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByRole('button', { name: /Bubuhkan Paraf/i })).toBeNull();
+  });
+
+  it('B18-FE-04: Tombol tanda tangan Kepala LPMQ aktif setelah diparaf Pemaraf', async () => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
       currentUser: {
         id: 'usr-kepala-1',
@@ -265,9 +292,13 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
           status: 'DRAFT',
           content_snapshot: {
             tu_workflow: {
-              status: 'SUBMITTED_TO_TU',
-              paraf_1: { signed_by: { name: 'Staff TU 1' }, signed_at: '2026-11-07T08:00:00Z' },
-              paraf_2: { signed_by: { name: 'Staff TU 2' }, signed_at: '2026-11-07T09:00:00Z' },
+              status: 'PARAF_COMPLETED',
+              submitted_at: '2026-11-07T07:00:00Z',
+              paraf_required: 2,
+              parafs: [
+                { signed_by: { id: 'p-1', name: 'Pemaraf Uji LPMQ' }, signed_at: '2026-11-07T08:00:00Z' },
+                { signed_by: { id: 'p-2', name: 'dr afdhal' }, signed_at: '2026-11-07T08:30:00Z' },
+              ],
             },
           },
         },
@@ -300,7 +331,7 @@ describe('B-18 Frontend Workflow: Dokumentator, Paraf TU, Kepala LPMQ, dan Pener
       </MemoryRouter>
     );
 
-    // Pastikan tombol "Tandatangani STT Resmi" aktif karena paraf 1 & 2 sudah lengkap
+    // Tombol "Tandatangani STT Resmi" aktif karena Pemaraf sudah membubuhkan paraf
     const signBtn = await screen.findByRole('button', { name: /Tandatangani STT Resmi/i });
     expect(signBtn).toBeInTheDocument();
     fireEvent.click(signBtn);

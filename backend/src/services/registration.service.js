@@ -1919,6 +1919,14 @@ export const listRegistrations = async ({
     : [];
   const teamUserMap = new Map(teamUsers.map(u => [u.id, u]));
 
+  // Keputusan distributor yang sudah dikirim dan masih menunggu paraf Pemaraf (kartu menampilkan "Menunggu Paraf").
+  const parafPendingIds = !publisherScope && items.length > 0 && prisma.approvalParaf?.findMany
+    ? new Set((await prisma.approvalParaf.findMany({
+        where: { subject_type: 'DISTRIBUTOR_REVIEW', subject_id: { in: items.map(item => item.id) }, signed_at: null },
+        select: { subject_id: true },
+      })).map(paraf => paraf.subject_id))
+    : new Set();
+
   const enrichedItems = items.map(item => {
     const assignedVerifier = item.verification_assignments?.[0]?.verifier || teamUserMap.get(item.core_verifier_id) || null;
     const coreDistributor = teamUserMap.get(item.core_distributor_id) || null;
@@ -1928,6 +1936,7 @@ export const listRegistrations = async ({
     return {
       ...item,
       assigned_verifier: assignedVerifier,
+      distribution_paraf_pending: parafPendingIds.has(item.id),
       core_verifier: coreVerifier,
       core_distributor: coreDistributor,
       core_documenter: coreDocumenter,

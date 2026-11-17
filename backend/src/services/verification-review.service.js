@@ -929,11 +929,11 @@ try { approvedResult = await prisma.$transaction(async tx => {
   const reg = await registration(tx, doc.registration_id);
   requireStatus(reg, ['WAITING_VERIFICATION_APPROVAL']);
 
-  // Pemaraf berdiri sebelum Kepala: aksinya dicatat sebagai paraf, pengesahan tetap oleh Kepala LPMQ.
+  // Kedua Pemaraf memaraf lebih dulu (urutan bebas): aksinya dicatat sebagai paraf, pengesahan tetap oleh Kepala LPMQ.
   const parafSubject = doc.assignment_id || documentId;
   if (user.isPemaraf) {
-    await recordParaf(tx, 'VERIFICATION_RESULT', parafSubject, user, req);
-    return { ...doc, paraf_only: true };
+    const paraf = await recordParaf(tx, 'VERIFICATION_RESULT', parafSubject, user, req);
+    return { ...doc, paraf_only: true, paraf_complete: Boolean(paraf.signed_at) };
   }
   await requireParaf(tx, 'VERIFICATION_RESULT', parafSubject);
 

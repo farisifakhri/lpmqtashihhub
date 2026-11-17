@@ -73,6 +73,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
           ? [
               { label: 'Konfigurasi Parameter & Layanan', desc: 'Tarif, SLA, kategori mushaf, dan layanan tambahan', path: '/internal/settings', icon: Settings, category: 'Tata Kelola' },
               { label: 'Manajemen Pengguna & Peran', desc: 'Kelola akun internal dan wewenang pengguna', path: '/internal/users', icon: Users, category: 'Tata Kelola' },
+              { label: 'Direktori Penerbit Mushaf Al-Qur’an', desc: 'Penerbit terverifikasi per alfabet, provinsi, dan pencarian', path: '/internal/publisher-directory', icon: Users, category: 'Tata Kelola' },
             ]
           : []),
       ];

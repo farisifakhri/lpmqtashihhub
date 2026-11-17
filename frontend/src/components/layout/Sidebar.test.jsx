@@ -62,8 +62,10 @@ describe('Helper Admin navigation', () => {
     expect(screen.getByText('99+')).toBeInTheDocument();
     const publisherLink = screen.getByRole('link', { name: /Pendaftaran Penerbit/ });
     expect(within(publisherLink).getAllByText('99+')).toHaveLength(1);
-    expect(within(publisherLink).queryByTestId('sidebar-pending-badge')).toBeNull();
-    expect(screen.getByText('2', { selector: 'span' })).toBeInTheDocument();
+    // badge notifikasi (1) + antrean (101) digabung dalam satu badge
+    expect(within(publisherLink).getAllByTestId('sidebar-pending-badge')).toHaveLength(1);
+    // Intake hanya dihitung dari badge notifikasi (master_intake), bukan juga dari antrean, agar tidak ganda
+    expect(within(screen.getByRole('link', { name: /Intake Master Fisik/ })).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(document.querySelector('a[href="/internal/settings"]')).toBeNull();
     expect(screen.queryByText('Loket')).toBeNull();
     countsSpy.mockRestore();
@@ -136,12 +138,10 @@ describe('Distributor navigation', () => {
     const assignments = screen.getByRole('link', { name: /Penugasan Tim Sidang/ });
     expect(handover).toHaveAttribute('href', '/internal/distributions/handover');
     expect(assignments).toHaveAttribute('href', '/internal/distributions/assignment');
-    expect(within(handover).getByLabelText('3 entri antrean menunggu tindakan')).toHaveTextContent('3');
-    expect(within(assignments).getByLabelText('102 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    expect(within(handover).getByTestId('sidebar-pending-badge')).toHaveTextContent('3');
+    expect(within(assignments).getByTestId('sidebar-pending-badge')).toHaveTextContent('99+');
     await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
-    expect(within(handover).queryByTestId('sidebar-pending-badge')).toBeNull();
-    expect(within(assignments).queryByTestId('sidebar-pending-badge')).toBeNull();
-    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(2);
     countsSpy.mockRestore();
   });
 
@@ -193,8 +193,8 @@ describe('Badge notifikasi sidebar', () => {
     });
     show('PENTASHIH');
     const link = screen.getByRole('link', { name: /Sidang Pentashihan/ });
-    expect(await within(link).findByLabelText('5 entri antrean menunggu tindakan')).toHaveTextContent('5');
-    expect(link.querySelectorAll('[data-testid="sidebar-pending-badge"], [aria-label$="entri antrean menunggu tindakan"]')).toHaveLength(1);
+    expect(await within(link).findByTestId('sidebar-pending-badge')).toHaveTextContent('5');
+    expect(within(link).getAllByTestId('sidebar-pending-badge')).toHaveLength(1);
     countsSpy.mockRestore();
   });
 
@@ -213,14 +213,31 @@ describe('Badge notifikasi sidebar', () => {
     const signatures = screen.getByRole('link', { name: /Pusat Tanda Tangan \(TTE\)/ });
     const stt = screen.getByRole('link', { name: /Penetapan STT/ });
     expect(approvals).toHaveAttribute('href', '/internal/verifications?tab=WAITING_APPROVAL');
-    expect(await within(approvals).findByLabelText('2 entri antrean menunggu tindakan')).toHaveTextContent('2');
-    expect(within(signatures).getByLabelText('101 entri antrean menunggu tindakan')).toHaveTextContent('99+');
+    expect(await within(approvals).findByTestId('sidebar-pending-badge')).toHaveTextContent('2');
+    expect(within(signatures).getByTestId('sidebar-pending-badge')).toHaveTextContent('99+');
     await waitFor(() => expect(notificationApi.getSidebarBadges).toHaveBeenCalled());
-    expect(within(signatures).queryByTestId('sidebar-pending-badge')).toBeNull();
     expect(within(stt).queryByTestId('sidebar-pending-badge')).toBeNull();
-    expect(screen.getAllByLabelText(/entri antrean menunggu tindakan/)).toHaveLength(2);
+    expect(screen.getAllByTestId('sidebar-pending-badge')).toHaveLength(2);
 
     unmount();
+    countsSpy.mockRestore();
+  });
+
+  it('menu alur SUPERADMIN hanya menampilkan satu badge jumlah antrean, bukan badge notifikasi', async () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'sa-1', name: 'Super Admin', role: 'SUPERADMIN', roles: ['SUPERADMIN'] },
+    });
+    const countsSpy = vi.spyOn(QueueCounts, 'useQueueCounts').mockReturnValue({
+      counts: { verification_assignment_pending: 2 },
+      error: null,
+    });
+    mockBadges({ verification_assigned: 4 });
+    render(<MemoryRouter><Sidebar /></MemoryRouter>);
+
+    const link = screen.getByRole('link', { name: /3\. Verifikasi Berkas/ });
+    await waitFor(() => expect(within(link).getByTestId('sidebar-pending-badge')).toHaveTextContent('2'));
+    expect(within(link).getAllByTestId('sidebar-pending-badge')).toHaveLength(1);
+    expect(within(link).queryByText('4')).toBeNull();
     countsSpy.mockRestore();
   });
 

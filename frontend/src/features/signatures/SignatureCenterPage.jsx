@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDocumentStatus, formatDocumentType } from '@/lib/glossary';
 import { accessRoles } from '@/lib/roles';
+import { sttParafProgress } from '@/lib/stt-paraf';
 import {
   PenTool,
   FileCheck,
@@ -44,7 +45,6 @@ export const SignatureCenterPage = () => {
   const isHead = accessRoles(currentUser?.roles).includes('KEPALA_LPMQ');
   const isVerifier = currentUser?.roles?.includes('VERIFIKATOR');
   const isPemaraf = Boolean(currentUser?.isPemaraf);
-  const isTuStaff = currentUser?.roles?.includes('ADMIN_INTERNAL') || currentUser?.roles?.includes('SUPERADMIN') || isPemaraf;
   const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN');
 
   const tabParam = searchParams.get('tab') || 'NEED_MY_SIGN';
@@ -231,43 +231,30 @@ export const SignatureCenterPage = () => {
       sttDocs.forEach((doc) => {
         const isCompleted = doc.status === 'ISSUED' || reg.status === 'STT_ISSUED';
         const tuWorkflow = doc.content_snapshot?.tu_workflow;
-        const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at || tuWorkflow?.status === 'SUBMITTED_TO_TU' || tuWorkflow?.status === 'PARAF_COMPLETED');
-        const hasParaf1 = Boolean(tuWorkflow?.paraf_1);
-        const hasParaf2 = Boolean(tuWorkflow?.paraf_2);
-        const isTuComplete = hasParaf1 && hasParaf2;
-
-        const sig1 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 1'));
-        const sig2 = doc.signatories?.find((s) => s.name_position_snapshot?.includes('Paraf 2'));
-        const designated1 = tuWorkflow?.designated_signers ? tuWorkflow.designated_signers.paraf_1?.id : sig1?.signer_user_id;
-        const designated2 = tuWorkflow?.designated_signers ? tuWorkflow.designated_signers.paraf_2?.id : sig2?.signer_user_id;
-
-        const isDesignated1 = !designated1 || designated1 === currentUser?.id || isSuperadmin;
-        const isDesignated2 = !designated2 || designated2 === currentUser?.id || isSuperadmin;
-        const isParaf1Signer = tuWorkflow?.paraf_1?.signed_by?.id === currentUser?.id;
-        const isParafSigner = isParaf1Signer || tuWorkflow?.paraf_2?.signed_by?.id === currentUser?.id;
-
-        const canUserParaf1 = isTuStaff && isSubmittedToTu && !hasParaf1 && !isCompleted && isDesignated1;
-        const canUserParaf2 = isTuStaff && isSubmittedToTu && hasParaf1 && !hasParaf2 && !isCompleted && isDesignated2 && !isParaf1Signer;
-        const canUserSignHead = (isHead || isSuperadmin) && !isPemaraf && isSubmittedToTu && isTuComplete && !isCompleted && !isParafSigner;
-        const canUserSign = canUserParaf1 || canUserParaf2 || canUserSignHead;
+        // Seluruh Pemaraf (2 akun) memaraf dengan urutan bebas, baru masuk ke TTE Kepala LPMQ.
+        const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at);
+        const progress = sttParafProgress(tuWorkflow);
+        const hasParaf = progress.complete;
+        const canUserParaf = isPemaraf && isSubmittedToTu && !hasParaf && !isCompleted && !progress.signedBy(currentUser?.id);
+        const canUserSignHead = (isHead || isSuperadmin) && !isPemaraf && isSubmittedToTu && hasParaf && !isCompleted;
+        const canUserSign = canUserParaf || canUserSignHead;
 
         const signatories = [
-          {
-            role_label: 'Penandatangan 1 - Tata Usaha (Paraf 1)',
-            name: tuWorkflow?.paraf_1?.signed_by?.name || 'Tata Usaha (Penandatangan 1)',
-            status: hasParaf1 ? 'SIGNED' : (isSubmittedToTu ? 'PENDING' : 'NOT_READY'),
-            signed_at: tuWorkflow?.paraf_1?.signed_at,
-          },
-          {
-            role_label: 'Penandatangan 2 - Tata Usaha (Paraf 2)',
-            name: tuWorkflow?.paraf_2?.signed_by?.name || 'Tata Usaha (Penandatangan 2)',
-            status: hasParaf2 ? 'SIGNED' : (hasParaf1 ? 'PENDING' : 'NOT_READY'),
-            signed_at: tuWorkflow?.paraf_2?.signed_at,
-          },
+          ...progress.parafs.map((paraf) => ({
+            role_label: 'Pemaraf',
+            name: paraf?.signed_by?.name || 'Pemaraf',
+            status: 'SIGNED',
+            signed_at: paraf?.signed_at,
+          })),
+          ...Array.from({ length: Math.max(0, progress.required - progress.done) }, () => ({
+            role_label: 'Pemaraf',
+            name: 'Pemaraf',
+            status: isSubmittedToTu ? 'PENDING' : 'NOT_READY',
+          })),
           {
             role_label: 'Kepala LPMQ (Tanda Tangan STT)',
             name: doc.content_snapshot?.final_signature?.signed_by?.name || 'Kepala LPMQ',
-            status: isCompleted ? 'SIGNED' : (isTuComplete ? 'PENDING' : 'NOT_READY'),
+            status: isCompleted ? 'SIGNED' : (hasParaf ? 'PENDING' : 'NOT_READY'),
             signed_at: doc.issued_at,
           },
         ];
@@ -286,12 +273,11 @@ export const SignatureCenterPage = () => {
           publisher_name: reg.publisher?.legal_name || 'Penerbit Terdaftar',
           isAssignedToMe: false,
           canUserSign,
-          canUserParaf1,
-          canUserParaf2,
+          canUserParaf,
           canUserSignHead,
-          hasParaf1,
-          hasParaf2,
-          isTuComplete,
+          hasParaf,
+          parafDone: progress.done,
+          parafRequired: progress.required,
           isSubmittedToTu,
           isCompleted,
           signatories,
@@ -303,6 +289,13 @@ export const SignatureCenterPage = () => {
     masterLetters.forEach((letter) => {
       const isSigned = ['DITANDATANGANI', 'DIKIRIM'].includes(letter.status);
       const draftedByMe = letter.letter_drafted_by?.id === currentUser?.id;
+      // Kedua Pemaraf memaraf (urutan bebas, masing-masing sekali), baru TTE Kepala LPMQ.
+      const parafSigners = letter.paraf_signers || [];
+      const parafRequired = letter.paraf_required || 2;
+      const parafComplete = Boolean(letter.paraf_signed_at);
+      const waitingTte = letter.status === 'MENUNGGU_TTE' && !draftedByMe;
+      const canParafLetter = isPemaraf && waitingTte && !parafComplete && !parafSigners.some((s) => s.id === currentUser?.id);
+      const canSignLetter = (isHead || isSuperadmin) && !isPemaraf && waitingTte && parafComplete;
       list.push({
         id: letter.id,
         isMasterLetter: true,
@@ -316,14 +309,21 @@ export const SignatureCenterPage = () => {
         manuscript_title: letter.mushaf_type_label,
         publisher_name: letter.publisher?.legal_name || letter.institution,
         isAssignedToMe: false,
-        canUserSign: (isHead || isSuperadmin) && letter.status === 'MENUNGGU_TTE' && !draftedByMe && !(isPemaraf && letter.paraf_signed_at),
+        canUserSign: canParafLetter || canSignLetter,
+        parafDone: parafSigners.length,
+        parafRequired,
         signatories: [
-          ...(letter.paraf_signed_at || isPemaraf ? [{
+          ...parafSigners.map((signer) => ({
+            role_label: 'Pemaraf',
+            name: signer.name || 'Pemaraf',
+            status: 'SIGNED',
+            signed_at: signer.signed_at,
+          })),
+          ...Array.from({ length: Math.max(0, parafRequired - parafSigners.length) }, () => ({
             role_label: 'Pemaraf',
             name: 'Pemaraf',
-            status: letter.paraf_signed_at ? 'SIGNED' : 'PENDING',
-            signed_at: letter.paraf_signed_at,
-          }] : []),
+            status: 'PENDING',
+          })),
           {
             role_label: 'Kepala LPMQ',
             name: letter.signed_by?.name || 'Kepala LPMQ',
@@ -335,7 +335,7 @@ export const SignatureCenterPage = () => {
     });
 
     return list;
-  }, [assignments, sttRegistrations, masterLetters, isHead, isVerifier, isTuStaff, isSuperadmin, currentUser]);
+  }, [assignments, sttRegistrations, masterLetters, isHead, isVerifier, isPemaraf, isSuperadmin, currentUser]);
 
   // Filter documents by active tab and search
   const filteredDocuments = useMemo(() => {
@@ -407,9 +407,11 @@ export const SignatureCenterPage = () => {
     setError(null);
     try {
       if (signDialogDoc.isMasterLetter) {
-        await masterRequestApi.sign(signDialogDoc.id);
+        const signed = await masterRequestApi.sign(signDialogDoc.id);
         setSuccessMessage(isPemaraf
-          ? `Paraf dibubuhkan pada surat persetujuan master ${signDialogDoc.document_no}. Surat diteruskan ke Kepala LPMQ untuk ditandatangani.`
+          ? (signed?.data?.paraf_complete
+            ? `Paraf dibubuhkan pada surat persetujuan master ${signDialogDoc.document_no}. Paraf seluruh Pemaraf lengkap; surat diteruskan ke Kepala LPMQ untuk ditandatangani.`
+            : `Paraf dibubuhkan pada surat persetujuan master ${signDialogDoc.document_no}. Menunggu paraf Pemaraf lainnya sebelum diteruskan ke Kepala LPMQ.`)
           : `Surat persetujuan master ${signDialogDoc.document_no} berhasil ditandatangani dan dikembalikan ke Admin untuk dikirim ke penerbit.`);
       } else if (signDialogDoc.document_type === 'SURAT_TANDA_TASHIH') {
         await documentationApi.signStt(signDialogDoc.id);
@@ -434,14 +436,16 @@ export const SignatureCenterPage = () => {
     setActionLoading(true);
     setError(null);
     try {
-      await documentationApi.parafTu(parafDialog.doc.id, parafDialog.order, { notes: parafNotes.trim() });
+      await documentationApi.parafTu(parafDialog.doc.id, { notes: parafNotes.trim() });
       invalidateQueueCounts();
-      setSuccessMessage(`Paraf ${parafDialog.order} Tata Usaha berhasil dibubuhkan pada dokumen ${parafDialog.doc.document_no}.`);
+      setSuccessMessage(parafDialog.doc.parafDone + 1 >= parafDialog.doc.parafRequired
+        ? `Paraf berhasil dibubuhkan pada dokumen ${parafDialog.doc.document_no}. Paraf seluruh Pemaraf lengkap; dokumen diteruskan ke Kepala LPMQ.`
+        : `Paraf berhasil dibubuhkan pada dokumen ${parafDialog.doc.document_no}. Menunggu paraf Pemaraf lainnya sebelum diteruskan ke Kepala LPMQ.`);
       setParafDialog(null);
       setParafNotes('');
       await fetchAssignments();
     } catch (err) {
-      setError(err.message || 'Gagal membubuhkan paraf Tata Usaha.');
+      setError(err.message || 'Gagal membubuhkan paraf.');
     } finally {
       setActionLoading(false);
     }
@@ -830,20 +834,14 @@ export const SignatureCenterPage = () => {
                             Sidang Dumi Lolos
                           </span>
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
-                            doc.hasParaf1
+                            doc.hasParaf
                               ? 'bg-civic-successSoft text-civic-success border-civic-successLine'
                               : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
                           }`}>
-                            {doc.hasParaf1 ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                            {doc.hasParaf1 ? 'Paraf 1 (TU) Selesai' : 'Paraf 1 (TU) Menunggu'}
-                          </span>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold border ${
-                            doc.hasParaf2
-                              ? 'bg-civic-successSoft text-civic-success border-civic-successLine'
-                              : 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
-                          }`}>
-                            {doc.hasParaf2 ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
-                            {doc.hasParaf2 ? 'Paraf 2 (TU) Selesai' : 'Paraf 2 (TU) Menunggu'}
+                            {doc.hasParaf ? <CheckCircle2 className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+                            {doc.hasParaf
+                              ? `Paraf Pemaraf Lengkap (${doc.parafDone}/${doc.parafRequired})`
+                              : `Paraf Pemaraf ${doc.parafDone}/${doc.parafRequired}`}
                           </span>
                         </div>
                       )}
@@ -895,35 +893,22 @@ export const SignatureCenterPage = () => {
                       </Link>
                     )}
 
-                    {/* STT Paraf 1 Action */}
-                    {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf1 && (
+                    {/* STT Paraf (khusus role Pemaraf) */}
+                    {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf && (
                       <Button
                         variant="gold"
-                        onClick={() => setParafDialog({ doc, order: 1 })}
+                        onClick={() => setParafDialog({ doc })}
                         disabled={actionLoading}
                         className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
-                        Paraf 1 (TU)
-                      </Button>
-                    )}
-
-                    {/* STT Paraf 2 Action */}
-                    {doc.document_type === 'SURAT_TANDA_TASHIH' && doc.canUserParaf2 && (
-                      <Button
-                        variant="gold"
-                        onClick={() => setParafDialog({ doc, order: 2 })}
-                        disabled={actionLoading}
-                        className="text-xs px-3.5 py-1.5 font-bold"
-                      >
-                        <PenTool className="w-3.5 h-3.5 mr-1" />
-                        Paraf 2 (TU)
+                        Bubuhkan Paraf
                       </Button>
                     )}
 
                     {/* STT Head Sign Action */}
-                    {doc.document_type === 'SURAT_TANDA_TASHIH' && (isHead || isSuperadmin) && !doc.isCompleted && (
-                      doc.isTuComplete ? (
+                    {doc.document_type === 'SURAT_TANDA_TASHIH' && (isHead || isSuperadmin) && !isPemaraf && !doc.isCompleted && (
+                      doc.hasParaf ? (
                         <Button
                           variant="primary"
                           onClick={() => setSignDialogDoc(doc)}
@@ -936,10 +921,10 @@ export const SignatureCenterPage = () => {
                       ) : (
                         <span
                           className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface-subtle text-ink-muted border border-line font-medium cursor-not-allowed"
-                          title="Menunggu pembubuhan Paraf 1 dan Paraf 2 oleh Tata Usaha"
+                          title={`Menunggu paraf seluruh Pemaraf (${doc.parafDone}/${doc.parafRequired})`}
                         >
                           <Clock className="w-3.5 h-3.5" />
-                          Menunggu Paraf TU
+                          Menunggu Paraf
                         </span>
                       )
                     )}
@@ -953,7 +938,7 @@ export const SignatureCenterPage = () => {
                         className="text-xs px-3.5 py-1.5 font-bold"
                       >
                         <PenTool className="w-3.5 h-3.5 mr-1" />
-                        {doc.isMasterLetter ? 'Tandatangani Surat' : 'Konfirmasi'}
+                        {doc.isMasterLetter ? (isPemaraf ? 'Bubuhkan Paraf' : 'Tandatangani Surat') : 'Konfirmasi'}
                       </Button>
                     )}
                   </div>
@@ -995,7 +980,7 @@ export const SignatureCenterPage = () => {
           onConfirm={handleConfirmSignSingle}
           title={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Pengesahan Surat Tanda Tashih (STT) Resmi' : 'Konfirmasi Dokumen Internal'}
           description={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH'
-            ? 'Dokumen Surat Tanda Tashih ini telah diverifikasi dan diparaf lengkap oleh Tata Usaha. Pengesahan ini akan menerbitkan STT resmi ber-QR definitif.'
+            ? 'Dokumen Surat Tanda Tashih ini telah diverifikasi dan diparaf oleh Pemaraf. Pengesahan ini akan menerbitkan STT resmi ber-QR definitif.'
             : 'Pastikan dokumen telah sesuai sebelum mencatat konfirmasi internal.'}
           objectName={`${signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Surat Tanda Tashih' : signDialogDoc.document_type === 'BERITA_ACARA_VERIFIKASI' ? 'Berita Acara' : 'Surat Pemberitahuan'}: ${signDialogDoc.document_no}`}
           nextActor={signDialogDoc.document_type === 'SURAT_TANDA_TASHIH' ? 'Penerbit & Dokumentator' : 'Penandatangan Selanjutnya / Penerbit'}
@@ -1022,7 +1007,7 @@ export const SignatureCenterPage = () => {
             <div className="flex items-center justify-between border-b border-line pb-3">
               <div className="flex items-center gap-2 text-brand-950 font-bold text-sm">
                 <PenTool className="w-5 h-5 text-civic-warning" />
-                Pembubuhan Paraf {parafDialog.order} Tata Usaha
+                Pembubuhan Paraf
               </div>
               <button
                 onClick={() => setParafDialog(null)}
@@ -1065,7 +1050,7 @@ export const SignatureCenterPage = () => {
                 disabled={actionLoading}
                 className="font-bold"
               >
-                {actionLoading ? 'Menyimpan...' : `Bubuhkan Paraf ${parafDialog.order}`}
+                {actionLoading ? 'Menyimpan...' : 'Bubuhkan Paraf'}
               </Button>
             </div>
           </div>

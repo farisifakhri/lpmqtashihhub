@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { documentationApi } from '@/api/documentation.api';
+import { sttParafProgress } from '@/lib/stt-paraf';
 import { fileApi } from '@/api/file.api';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Button } from '@/components/ui/Button';
@@ -205,7 +206,7 @@ export const DokumentatorArchivePage = () => {
 
       const isArchived = Boolean(reg.foreign_metadata?.documentation_archive?.storage_location?.archive_code);
       const sttDoc = reg.official_documents?.find((d) => d.document_type === 'SURAT_TANDA_TASHIH');
-      const isTuSubmitted = sttDoc?.content_snapshot?.tu_workflow?.status === 'SUBMITTED_TO_TU';
+      const isTuSubmitted = Boolean(sttDoc?.content_snapshot?.tu_workflow?.submitted_at);
 
       if (tabFilter === 'READY_FOR_STT') return reg.status === 'READY_FOR_STT' && !sttDoc;
       if (tabFilter === 'WAITING_TU') return sttDoc && sttDoc.status !== 'ISSUED' && reg.status !== 'STT_ISSUED';
@@ -239,11 +240,11 @@ export const DokumentatorArchivePage = () => {
     setSaving(true);
     try {
       await documentationApi.submitToTu(documentId);
-      showToast('Draf STT berhasil diteruskan ke Tata Usaha untuk pembubuhan paraf.', 'success');
+      showToast('Draf STT berhasil diteruskan ke Pemaraf untuk dibubuhi paraf.', 'success');
       await fetchRegistrations();
       if (selectedId) await loadDetail(selectedId);
     } catch (err) {
-      showToast(err.message || 'Gagal mengirim draf STT ke Tata Usaha.', 'error');
+      showToast(err.message || 'Gagal mengirim draf STT ke Pemaraf.', 'error');
     } finally {
       setSaving(false);
     }
@@ -433,7 +434,7 @@ export const DokumentatorArchivePage = () => {
                     : 'text-ink-muted hover:text-ink'
                 }`}
               >
-                Proses TU/Kepala
+                Proses Paraf/Kepala
               </button>
               <button
                 type="button"
@@ -487,9 +488,9 @@ export const DokumentatorArchivePage = () => {
                   const isArchived = Boolean(item.foreign_metadata?.documentation_archive?.storage_location?.archive_code);
                   const sttDoc = item.official_documents?.find((d) => d.document_type === 'SURAT_TANDA_TASHIH');
                   const tuWorkflow = sttDoc?.content_snapshot?.tu_workflow;
-                  const isTuSubmitted = tuWorkflow?.status === 'SUBMITTED_TO_TU';
-                  const hasParaf1 = Boolean(tuWorkflow?.paraf_1);
-                  const hasParaf2 = Boolean(tuWorkflow?.paraf_2);
+                  // submitted_at tetap ada setelah diparaf; dokumen lama mencatat paraf di paraf_1
+                  const isTuSubmitted = Boolean(tuWorkflow?.submitted_at);
+                  const paraf = sttParafProgress(tuWorkflow);
 
                   return (
                     <div
@@ -541,9 +542,7 @@ export const DokumentatorArchivePage = () => {
                         </div>
                         {sttDoc && (
                           <div className="flex items-center gap-2 text-ink-muted pt-1 border-t border-line">
-                            <span>Paraf 1: <strong className={hasParaf1 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf1 ? '✓ Sudah' : 'Menunggu'}</strong></span>
-                            <span>·</span>
-                            <span>Paraf 2: <strong className={hasParaf2 ? 'text-civic-success' : 'text-civic-warning'}>{hasParaf2 ? '✓ Sudah' : 'Menunggu'}</strong></span>
+                            <span>Paraf: <strong className={paraf.complete ? 'text-civic-success' : 'text-civic-warning'}>{paraf.complete ? '✓ ' : ''}{paraf.done}/{paraf.required}</strong></span>
                             <span>·</span>
                             <span>TTD: <strong className={sttDoc.status === 'ISSUED' ? 'text-civic-success' : 'text-civic-warning'}>{sttDoc.status === 'ISSUED' ? '✓ Sah' : 'Menunggu'}</strong></span>
                           </div>
@@ -586,7 +585,7 @@ export const DokumentatorArchivePage = () => {
                             className="text-xs font-bold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft"
                           >
                             <Send className="w-3 h-3 mr-1" />
-                            Kirim ke TU
+                            Kirim ke Pemaraf
                           </Button>
                         )}
                         <Button
@@ -1078,7 +1077,7 @@ export const DokumentatorArchivePage = () => {
             </div>
 
             <p className="text-xs text-ink-muted">
-              Naskah ini telah menyelesaikan sidang pentashihan dan dinyatakan lolos. Anda akan membuat berkas draf STT atomik dengan penomoran draf resmi yang nantinya diteruskan ke Tata Usaha.
+              Naskah ini telah menyelesaikan sidang pentashihan dan dinyatakan lolos. Anda akan membuat berkas draf STT atomik dengan penomoran draf resmi yang nantinya diteruskan ke Pemaraf untuk diparaf, lalu ditandatangani Kepala LPMQ.
             </p>
 
             <div className="p-3 bg-canvas border border-line rounded-lg text-xs space-y-1.5">

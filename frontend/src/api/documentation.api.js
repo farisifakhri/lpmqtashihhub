@@ -40,8 +40,9 @@ export const documentationApi = {
     });
   },
 
-  parafTu: async (documentId, order, data = {}) => {
-    return apiClient(`/official-documents/${encodeURIComponent(documentId)}/paraf-${order}`, {
+  // Satu paraf draf STT oleh akun berperan Pemaraf
+  parafTu: async (documentId, data = {}) => {
+    return apiClient(`/official-documents/${encodeURIComponent(documentId)}/paraf`, {
       method: 'POST',
       body: data,
     });

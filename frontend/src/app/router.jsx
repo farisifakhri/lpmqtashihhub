@@ -51,7 +51,9 @@ const RegulationInfoPage = withSuspense(lazy(() => import('@/features/informatio
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
 const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
+const PublisherDirectoryInfoPage = withSuspense(lazy(() => import('@/features/information/PublisherDirectoryInfoPage').then(m => ({ default: m.PublisherDirectoryInfoPage }))));
 const FaqPage = withSuspense(lazy(() => import('@/features/information/FaqPage').then(m => ({ default: m.FaqPage }))));
+const PublisherDirectoryPage = withSuspense(lazy(() => import('@/features/internal/publishers/PublisherDirectoryPage').then(m => ({ default: m.PublisherDirectoryPage }))));
 const LandingPageManagementPage = withSuspense(lazy(() => import('@/features/internal/landing-page/LandingPageManagementPage').then(m => ({ default: m.LandingPageManagementPage }))));
 const PublisherMasterRequestsPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherMasterRequestsPage').then(m => ({ default: m.PublisherMasterRequestsPage }))));
 const PublisherNewMasterRequestPage = withSuspense(lazy(() => import('@/features/master-requests/PublisherNewMasterRequestPage').then(m => ({ default: m.PublisherNewMasterRequestPage }))));
@@ -93,7 +95,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/informasi/direktori-penerbit-mushaf',
-    element: <InformationPlaceholderPage title="Direktori Penerbit Mushaf Al-Qur'an" basePath="/informasi/direktori-penerbit-mushaf" />,
+    element: <PublisherDirectoryInfoPage />,
   },
   {
     path: '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih',
@@ -373,6 +375,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
             <ContentConfiguration />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'internal/publisher-directory',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['SUPERADMIN']}>
+            <PublisherDirectoryPage />
           </ProtectedRoute>
         ),
       },
