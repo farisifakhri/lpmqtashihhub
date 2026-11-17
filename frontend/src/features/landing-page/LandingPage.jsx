@@ -27,6 +27,7 @@ import heroImageFirst from '@/assets/berandaaku.webp';
 import heroImageSecond from '@/assets/berandakii.webp';
 
 const DistributionMap = lazy(() => import('./DistributionMap'));
+const SurveyHighlights = lazy(() => import('./SurveyHighlights'));
 
 const serviceStatistics = [
   {
@@ -724,6 +725,10 @@ export const LandingPage = () => {
           }
         >
           <DistributionMap />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <SurveyHighlights />
         </Suspense>
       </main>
 

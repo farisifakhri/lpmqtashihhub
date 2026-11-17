@@ -9,6 +9,8 @@ import QRCode from 'qrcode';
 import { getPublicPublisherDirectory } from '../services/publisher.service.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import { publisherDirectorySchema } from '../validators/publisher.validator.js';
+import { listPublicSurveys, getPublicSurveyReport } from '../services/survey.service.js';
+import { publicSurveyReportSchema } from '../validators/survey.validator.js';
 
 const router = Router();
 
@@ -55,6 +57,24 @@ router.get('/publisher-directory', mapLimit, validate(publisherDirectorySchema),
     const result = await getPublicPublisherDirectory(req.query);
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ success: true, data: result.items, pagination: result.pagination, summary: result.summary });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Hasil survei IKM/IPAK (agregat) untuk halaman Informasi publik.
+router.get('/surveys', mapLimit, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ success: true, data: await listPublicSurveys() });
+  } catch (error) {
+    next(error);
+  }
+});
+router.get('/surveys/:id/report', mapLimit, validate(publicSurveyReportSchema), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ success: true, data: await getPublicSurveyReport(req.params.id, req.query) });
   } catch (error) {
     next(error);
   }

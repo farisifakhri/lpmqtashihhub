@@ -149,7 +149,7 @@ export function QuestionBankTab() {
               <select className={inputClass} value={form.survey_id} onChange={(e) => {
                 const survey_id = e.target.value;
                 // Unsur khusus survei lain tidak berlaku lagi setelah survei diganti.
-                const keep = unsurForSurvey(unsurList, survey_id).some((u) => u.id === form.unsur_id);
+                const keep = unsurForSurvey(unsurList, survey_id, surveyList.find((sv) => sv.id === survey_id)?.kind).some((u) => u.id === form.unsur_id);
                 setForm({ ...form, survey_id, unsur_id: keep ? form.unsur_id : '' });
               }}>
                 <option value="">Tidak dimasukkan ke survei</option>
@@ -159,7 +159,7 @@ export function QuestionBankTab() {
             <FormField label="Unsur" required hint={formUnsur?.definition || 'Pertanyaan akan muncul di Pemilihan Survei saat unsur ini dipilih.'}>
               <select className={inputClass} required value={form.unsur_id} onChange={(e) => setForm({ ...form, unsur_id: e.target.value })}>
                 <option value="">Pilih unsur…</option>
-                {unsurForSurvey(unsurList, form.survey_id).map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
+                {unsurForSurvey(unsurList, form.survey_id, surveyList.find((sv) => sv.id === form.survey_id)?.kind).map((u) => <option key={u.id} value={u.id}>{unsurLabel(u)}</option>)}
               </select>
             </FormField>
             <FormField label="Teks pertanyaan" required>
@@ -185,12 +185,12 @@ export function QuestionBankTab() {
                     <Button key={p.id} type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, options: p.options })}>{p.label}</Button>
                   ))}
                 </div>
-                <p className="text-xs text-ink-muted">Nilai 4 = jawaban terbaik, 1 = terburuk. Untuk pertanyaan negatif (mis. pungutan liar), "Tidak pernah" bernilai 4.</p>
+                <p className="text-xs text-ink-muted">Nilai tertinggi = jawaban terbaik (4 untuk skala 1–4, 5 untuk skala Likert 1–5), 1 = terburuk. Untuk pertanyaan negatif (mis. pungutan liar), "Tidak pernah" bernilai tertinggi.</p>
                 {form.options.map((o, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <input className={inputClass} aria-label={`Label opsi ${i + 1}`} value={o.label} required maxLength={150} onChange={(e) => setOption(i, { label: e.target.value })} />
                     <select className={`${inputClass} w-24`} aria-label={`Nilai opsi ${i + 1}`} value={o.value} onChange={(e) => setOption(i, { value: Number(e.target.value) })}>
-                      {[4, 3, 2, 1].map((v) => <option key={v} value={v}>{v}</option>)}
+                      {[5, 4, 3, 2, 1].map((v) => <option key={v} value={v}>{v}</option>)}
                     </select>
                     <Button type="button" size="sm" variant="ghost" aria-label={`Hapus opsi ${i + 1}`} disabled={form.options.length <= 2}
                       onClick={() => setForm({ ...form, options: form.options.filter((_, idx) => idx !== i) })}>

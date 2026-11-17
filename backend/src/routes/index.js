@@ -91,6 +91,8 @@ router.get('/', (req, res) => {
         verifyDocument: 'GET /api/v1/public/verify-document/:token',
         publisherMap: 'GET /api/v1/public/publisher-map',
         publisherDirectory: 'GET /api/v1/public/publisher-directory?letter=&province=&search=&page=1&limit=20',
+        surveys: 'GET /api/v1/public/surveys',
+        surveyReport: 'GET /api/v1/public/surveys/:id/report?from=YYYY-MM-DD&to=YYYY-MM-DD',
       },
     },
   });

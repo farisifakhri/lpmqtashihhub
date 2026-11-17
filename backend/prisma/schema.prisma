@@ -1632,6 +1632,8 @@ model Survey {
   ends_at     DateTime?
   status      String           @default("DRAFT") @db.VarChar(20) // DRAFT | AKTIF | NONAKTIF
   sort_order  Int              @default(0) // urutan tampil, diatur Super Admin lewat seret
+  // Label mutu kustom per huruf, mis. {"A":"Sangat Memuaskan"}; kosong = label bawaan.
+  mutu_labels Json?
   created_at  DateTime         @default(now())
   updated_at  DateTime         @updatedAt
   items       SurveyItem[]

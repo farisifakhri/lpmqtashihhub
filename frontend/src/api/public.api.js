@@ -14,6 +14,15 @@ export const publicApi = {
     const queryString = query.toString();
     return apiClient(`/public/publisher-directory${queryString ? `?${queryString}` : ''}`);
   },
+  surveys: () => apiClient('/public/surveys'),
+  // { from, to } dalam format YYYY-MM-DD, opsional
+  surveyReport: (id, { from, to } = {}) => {
+    const query = new URLSearchParams();
+    if (from) query.append('from', from);
+    if (to) query.append('to', to);
+    const queryString = query.toString();
+    return apiClient(`/public/surveys/${encodeURIComponent(id)}/report${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 export default publicApi;
