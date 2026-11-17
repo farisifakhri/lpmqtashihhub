@@ -68,6 +68,15 @@ export const listPublishers = async (req, res, next) => {
   }
 };
 
+export const getPublisherDirectory = async (req, res, next) => {
+  try {
+    const result = await publisherService.getPublisherDirectory(req.query);
+    res.status(200).json({ success: true, data: result.items, pagination: result.pagination, summary: result.summary });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const verifyPublisher = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -116,6 +125,7 @@ export default {
   getMyCertificate,
   updateMyProfile,
   listPublishers,
+  getPublisherDirectory,
   verifyPublisher,
   permitProfileEdit,
   adminUpdatePublisher,

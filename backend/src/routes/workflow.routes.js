@@ -56,8 +56,8 @@ router.post('/registrations/:id/official-documents', authenticate, authorize('AD
 router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/send-to-distributor', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.sendDraftToDistributor(req.params.id, req.user, req)));
 router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(submitToTuSchema), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
-router.post('/official-documents/:id/paraf-1', authenticate, authorize('ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, 1, req.body, req.user, req)));
-router.post('/official-documents/:id/paraf-2', authenticate, authorize('ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, 2, req.body, req.user, req)));
+// Paraf draf STT: satu paraf oleh akun berperan Pemaraf (akses Pemaraf dipetakan ke KEPALA_LPMQ; layanan menolak selain Pemaraf).
+router.post('/official-documents/:id/paraf', authenticate, authorize('KEPALA_LPMQ'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => documents.signDocument(req.params.id, req.user, req)));
 
 // Halaman Dokumentator & Pengarsipan Fisik (5 Eksemplar & Lokasi Arsip)

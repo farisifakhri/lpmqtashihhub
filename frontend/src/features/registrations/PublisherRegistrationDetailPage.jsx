@@ -243,8 +243,8 @@ export function PublisherRegistrationDetailPage() {
         event.preventDefault();
         const existing = data.physical_master_intake;
         run(
-            () =>
-                registrationApi.declarePhysicalMaster(id, {
+            async () => {
+                const res = await registrationApi.declarePhysicalMaster(id, {
                     format: "A4",
                     binding_method: "PER_JUZ",
                     volume_count: Number(volumeCount),
@@ -253,7 +253,14 @@ export function PublisherRegistrationDetailPage() {
                         ? { delivery_method: existing.delivery_method }
                         : {}),
                     ...(existing?.notes ? { notes: existing.notes } : {}),
-                }),
+                });
+                // Status jilid langsung diperbarui tanpa menunggu muat ulang halaman.
+                const saved = res?.data?.volume_count ? res.data : { volume_count: Number(volumeCount) };
+                setData((prev) => prev && {
+                    ...prev,
+                    physical_master_intake: { ...(prev.physical_master_intake || {}), ...saved },
+                });
+            },
             "Pernyataan master fisik berhasil disimpan.",
         );
     };
@@ -261,7 +268,18 @@ export function PublisherRegistrationDetailPage() {
     const handleDispatch = (event) => {
         event.preventDefault();
         run(
-            () => registrationApi.dispatchPhysical(id, dispatchData),
+            async () => {
+                const res = await registrationApi.dispatchPhysical(id, dispatchData);
+                // Tampilan langsung berganti ke "Pengiriman Tercatat" tanpa menunggu muat ulang detail & timeline.
+                const saved = res?.data || {};
+                setData((prev) => prev && {
+                    ...prev,
+                    physical_dispatch_status: saved.physical_dispatch_status || "DISPATCHED",
+                    dispatch_courier: saved.dispatch_courier ?? dispatchData.courier,
+                    dispatch_tracking_no: saved.dispatch_tracking_no ?? (dispatchData.tracking_no || null),
+                    dispatch_date: saved.dispatch_date || new Date().toISOString(),
+                });
+            },
             "Konfirmasi pengiriman berkas fisik ke LPMQ berhasil dicatat. Status diindikasikan sedang diverifikasi.",
         );
     };

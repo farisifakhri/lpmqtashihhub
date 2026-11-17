@@ -1136,10 +1136,12 @@ model ApprovalParaf {
   id              String    @id @default(uuid())
   subject_type    String // VERIFICATION_RESULT, MASTER_LETTER, DISTRIBUTOR_REVIEW
   subject_id      String
-  pemaraf_id      String? // pemaraf yang ditunjuk / yang membubuhkan paraf
+  pemaraf_id      String? // pemaraf terakhir yang membubuhkan paraf
   requested_by_id String?
   payload         Json? // keputusan distributor yang ditunda sampai diparaf
-  signed_at       DateTime?
+  signers         Json? // [{ id, name, signed_at }] seluruh Pemaraf yang sudah memaraf
+  required_count  Int? // jumlah Pemaraf aktif yang wajib memaraf (saat ini 2)
+  signed_at       DateTime? // terisi hanya setelah SELURUH Pemaraf memaraf
   created_at      DateTime  @default(now())
 
   @@unique([subject_type, subject_id])

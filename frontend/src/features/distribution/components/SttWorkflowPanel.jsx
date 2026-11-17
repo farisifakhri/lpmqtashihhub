@@ -17,6 +17,7 @@ import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { documentationApi } from '@/api/documentation.api';
+import { sttParafProgress } from '@/lib/stt-paraf';
 import { showToast } from '@/components/ui/toast';
 
 export const SttWorkflowPanel = ({
@@ -47,10 +48,10 @@ export const SttWorkflowPanel = ({
     setActionLoadingId(regId);
     try {
       await documentationApi.submitToTu(documentId);
-      showToast('Draf STT berhasil diteruskan ke Tata Usaha (TU) untuk pembubuhan paraf dan TTD.', 'success');
+      showToast('Draf STT berhasil diteruskan ke Pemaraf untuk dibubuhi paraf, lalu ditandatangani Kepala LPMQ.', 'success');
       await fetchDistributionData();
     } catch (err) {
-      showToast(err.message || 'Gagal mengirimkan draf STT ke TU.', 'error');
+      showToast(err.message || 'Gagal mengirimkan draf STT ke Pemaraf.', 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -63,10 +64,10 @@ export const SttWorkflowPanel = ({
         <div>
           <h3 className="text-base font-bold text-ink flex items-center gap-2">
             <FileCheck2 className="w-5 h-5 text-brand-700" />
-            4. Monitoring Penetapan STT & Alur Pengesahan Tata Usaha
+            4. Monitoring Penetapan STT & Alur Pengesahan
           </h3>
           <p className="text-xs text-ink-muted mt-0.5">
-            Pantau status penetapan Surat Tanda Tashih (STT) naskah lolos sidang: penyusunan draf oleh Dokumentator, pembubuhan Paraf 1 & 2 Tata Usaha, dan pengesahan TTE Kepala LPMQ.
+            Pantau status penetapan Surat Tanda Tashih (STT) naskah lolos sidang: penyusunan draf oleh Dokumentator, paraf oleh Pemaraf, dan pengesahan TTE Kepala LPMQ.
           </p>
         </div>
         <Button
@@ -103,7 +104,9 @@ export const SttWorkflowPanel = ({
             const meta = reg.foreign_metadata || {};
             const sttRequest = meta.stt_request || null;
             const tuWorkflow = sttDoc?.content_snapshot?.tu_workflow || null;
-            const isSubmittedToTu = tuWorkflow?.status === 'SUBMITTED_TO_TU';
+            // submitted_at tetap ada setelah diparaf (status berubah ke PARAF_COMPLETED)
+            const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at);
+            const paraf = sttParafProgress(tuWorkflow); // seluruh Pemaraf wajib memaraf, urutan bebas
             const isIssued = reg.status === 'STT_ISSUED' || sttDoc?.status === 'ISSUED';
             const isDraftSentToDist = sttDoc && (sttRequest?.status === 'DRAFT_READY' || tuWorkflow);
 
@@ -165,7 +168,7 @@ export const SttWorkflowPanel = ({
                         className="bg-civic-info hover:opacity-90 text-white shadow-xs text-xs font-bold"
                         icon={<UserCheck className="w-3.5 h-3.5" />}
                       >
-                        {actionLoadingId === reg.id ? 'Mengirim...' : 'Kirim ke TU untuk Pengesahan'}
+                        {actionLoadingId === reg.id ? 'Mengirim...' : 'Kirim ke Pemaraf untuk Pengesahan'}
                       </Button>
                     )}
 
@@ -220,9 +223,9 @@ export const SttWorkflowPanel = ({
                       <Clock className="w-4 h-4 text-ink-muted shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <div className="font-bold text-ink">3. Penyerahan ke TU</div>
+                      <div className="font-bold text-ink">3. Penyerahan ke Pemaraf</div>
                       <div className="text-ink-muted text-[11px]">
-                        {isSubmittedToTu ? 'Sedang diparaf TU' : sttDoc ? 'Draf siap dikirim ke TU' : 'Menunggu draf Admin'}
+                        {isSubmittedToTu ? (paraf.complete ? 'Paraf lengkap, menunggu TTD Kepala' : `Menunggu paraf Pemaraf (${paraf.done}/${paraf.required})`) : sttDoc ? 'Draf siap dikirim ke Pemaraf' : 'Menunggu draf Admin'}
                       </div>
                     </div>
                   </div>
@@ -248,19 +251,15 @@ export const SttWorkflowPanel = ({
                   <div className="bg-civic-infoSoft border border-civic-infoLine rounded-xl p-3.5 text-xs text-ink">
                     <div className="font-bold flex items-center gap-1.5 mb-2">
                       <UserCheck className="w-4 h-4 text-civic-info" />
-                      Status Pembubuhan Paraf & Pengesahan Tata Usaha:
+                      Status Paraf & Pengesahan:
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
-                        <span>Penandatangan 1 (Paraf 1):</span>
-                        <span className="font-bold text-civic-success">
-                          {tuWorkflow?.paraf_1 ? '✓ Sudah Paraf' : 'Menunggu'}
-                        </span>
-                      </div>
-                      <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
-                        <span>Penandatangan 2 (Paraf 2):</span>
-                        <span className="font-bold text-civic-success">
-                          {tuWorkflow?.paraf_2 ? '✓ Sudah Paraf' : 'Menunggu'}
+                        <span>Paraf Pemaraf:</span>
+                        <span className={paraf.complete ? 'font-bold text-civic-success' : 'font-bold text-civic-warning'}>
+                          {paraf.done > 0
+                            ? `${paraf.complete ? '✓ ' : ''}${paraf.parafs.map((p) => p?.signed_by?.name || 'Pemaraf').join(', ')} (${paraf.done}/${paraf.required})`
+                            : `Menunggu (0/${paraf.required})`}
                         </span>
                       </div>
                       <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">

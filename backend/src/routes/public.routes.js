@@ -6,6 +6,9 @@ import { publicVerification } from '../services/verification-document-pdf.servic
 import { listPublisherMapPoints, verifyPublisherCertificate } from '../services/publisher-registration.service.js';
 import { certificateVerifyUrl } from '../services/publisher-certificate-pdf.service.js';
 import QRCode from 'qrcode';
+import { getPublicPublisherDirectory } from '../services/publisher.service.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { publisherDirectorySchema } from '../validators/publisher.validator.js';
 
 const router = Router();
 
@@ -41,6 +44,17 @@ router.get('/publisher-map', mapLimit, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'public, max-age=300');
     res.json({ success: true, data: await listPublisherMapPoints() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Direktori penerbit terverifikasi untuk halaman Informasi publik (tanpa NPWP/NIB).
+router.get('/publisher-directory', mapLimit, validate(publisherDirectorySchema), async (req, res, next) => {
+  try {
+    const result = await getPublicPublisherDirectory(req.query);
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ success: true, data: result.items, pagination: result.pagination, summary: result.summary });
   } catch (error) {
     next(error);
   }

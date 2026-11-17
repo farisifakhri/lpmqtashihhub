@@ -334,27 +334,26 @@ test('head queues match approval and actionable signature filters', async () => 
   assert.equal(sttWhere.document_type, 'SURAT_TANDA_TASHIH');
   assert.equal(sttWhere.status, 'DRAFT');
   assert.deepEqual(sttWhere.registration, { status: { in: ['READY_FOR_STT', 'STT_ISSUED'] } });
-  assert.deepEqual(sttWhere.signatories, {
+  const kepalaPending = (extra = {}) => ({
     some: {
-      signer_user_id: head.id,
       signing_status: 'PENDING',
-      name_position_snapshot: { contains: 'Kepala' },
+      name_position_snapshot: { endsWith: "(Kepala Lajnah Pentashihan Mushaf Al-Qur'an)" },
+      ...extra,
     },
   });
-  assert.deepEqual(sttWhere.AND, [
-    { content_snapshot: { path: '$.tu_workflow.paraf_1', not: Prisma.DbNull } },
-    { content_snapshot: { path: '$.tu_workflow.paraf_2', not: Prisma.DbNull } },
-    { content_snapshot: { path: '$.tu_workflow.paraf_1.signed_by.id', not: head.id } },
-    { content_snapshot: { path: '$.tu_workflow.paraf_2.signed_by.id', not: head.id } },
-  ]);
+  const parafCompleted = { path: '$.tu_workflow.status', equals: 'PARAF_COMPLETED' };
+  // Kepala: paraf seluruh Pemaraf lengkap dan baris jabatan Kepala miliknya masih PENDING
+  assert.deepEqual(sttWhere.content_snapshot, parafCompleted);
+  assert.deepEqual(sttWhere.signatories, kepalaPending({ signer_user_id: head.id }));
 
   const superadminHead = { id: 'head-admin-from-token', roles: ['KEPALA_LPMQ', 'SUPERADMIN'] };
-  assert.deepEqual(buildHeadSttSignatureWhere(superadminHead).signatories, {
-    some: {
-      signing_status: 'PENDING',
-      name_position_snapshot: { contains: 'Kepala' },
-    },
-  });
+  assert.deepEqual(buildHeadSttSignatureWhere(superadminHead).signatories, kepalaPending());
+
+  // Pemaraf: draf sudah diserahkan, paraf belum lengkap, dan belum ia paraf sendiri
+  const pemarafWhere = buildHeadSttSignatureWhere({ id: 'pemaraf-1', roles: ['KEPALA_LPMQ'], isPemaraf: true });
+  assert.deepEqual(pemarafWhere.content_snapshot, { path: '$.tu_workflow.submitted_at', not: Prisma.DbNull });
+  assert.deepEqual(pemarafWhere.NOT, [{ content_snapshot: parafCompleted }]);
+  assert.deepEqual(pemarafWhere.signatories, { none: { signer_user_id: 'pemaraf-1', signing_status: 'SIGNED' } });
   assert.equal(buildHeadVerificationSignatureWhere(superadminHead).OR[0].signatories.some.signer_user_id, superadminHead.id);
 
   let verificationWhere;
