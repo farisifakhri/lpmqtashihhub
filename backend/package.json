@@ -12,6 +12,7 @@
     "test": "node scripts/test-isolated.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:seed": "node prisma/seed.js",
     "core-team:seed": "node scripts/seed-core-team-roster.js",
     "prisma:studio": "prisma studio",

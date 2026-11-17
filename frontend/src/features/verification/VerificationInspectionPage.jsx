@@ -1261,7 +1261,15 @@ export const VerificationInspectionPage = () => {
 
         {/* TAB 4: KALKULATOR PNBP & WAKTU LAYANAN */}
         <div className={`${activeMobileTab === 'kalkulator' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'kalkulator' ? 'lg:block' : 'lg:hidden'} pb-28`}>
-          <VerificationCalculatorTab registration={registration} />
+          <VerificationCalculatorTab
+            registration={registration}
+            assignmentId={assignment?.id}
+            onFeeSaved={(newSnap) => setDetail(prev => ({
+              ...prev,
+              registration: { ...(prev?.registration || {}), fee_sla_snapshot: newSnap },
+            }))}
+            isReadOnly={isReadOnly}
+          />
           {renderNextStepButton('kalkulator')}
         </div>
 
@@ -1314,10 +1322,35 @@ export const VerificationInspectionPage = () => {
             <EmailDeliveryStatus
               status="FAILED"
               recipient={publisher.email || 'penerbit@mushaf.id'}
-              errorMessage={latestResultDoc?.email_delivery_error}
+              errorMessage={latestResultDoc?.dispatch_error || latestResultDoc?.email_delivery_error}
               onRetry={() => handleRetryEmail(latestResultDoc?.id)}
               retrying={actionLoading}
             />
+          )}
+
+          {latestResultDoc?.status === 'SENT' && (
+            <div role="status" className="p-4 bg-brand-50/70 border border-brand-200 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs text-brand-900 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0" />
+                <div>
+                  <span className="font-bold">Surat Resmi & Tagihan PNBP Telah Terkirim Otomatis</span>
+                  <p className="text-[11px] text-ink-muted">
+                    Dokumen hasil telaah resmi telah dikirim ke portal penerbit{latestResultDoc.sent_at ? ` pada ${new Date(latestResultDoc.sent_at).toLocaleString('id-ID')}` : ''}.
+                  </p>
+                </div>
+              </div>
+              {assignment?.sla_outcome && (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold font-mono border self-start sm:self-auto ${
+                  assignment.sla_outcome === 'EARLY'
+                    ? 'bg-civic-successSoft text-civic-success border-civic-successLine'
+                    : assignment.sla_outcome === 'ON_TIME'
+                    ? 'bg-brand-100 text-brand-900 border-brand-300'
+                    : 'bg-civic-dangerSoft text-civic-danger border-civic-dangerLine'
+                }`}>
+                  SLA: {assignment.sla_outcome === 'EARLY' ? 'Lebih Cepat (EARLY)' : assignment.sla_outcome === 'ON_TIME' ? 'Tepat Waktu (ON_TIME)' : 'Terlambat (LATE)'} ({assignment.sla_working_days_used ?? 1} HK)
+                </span>
+              )}
+            </div>
           )}
 
           <ResultLetterPanel
@@ -1471,7 +1504,7 @@ export const VerificationInspectionPage = () => {
         objectName={detail?.registration?.title}
         nextActor={detail?.registration?.publisher?.legal_name || 'Penerbit Naskah'}
         statusChange="VERIFICATION_APPROVED → AWAITING_PAYMENT"
-        impactMessage={`Akan mengirimkan surat hasil verifikasi resmi ke portal penerbit dan menerbitkan kewajiban pembayaran tagihan PNBP sebesar Rp ${(detail?.calculated_fee?.total_fee || detail?.registration?.calculated_fee?.total_fee || 0).toLocaleString('id-ID')} kepada ${detail?.registration?.publisher?.legal_name || 'penerbit'}.`}
+        impactMessage={`Akan mengirimkan surat hasil verifikasi resmi ke portal penerbit dan menerbitkan kewajiban pembayaran tagihan PNBP sebesar ${Number(detail?.registration?.fee_sla_snapshot?.total_fee ?? 0) === 0 ? 'Rp 0 (Bebas Tarif)' : `Rp ${Number(detail?.registration?.fee_sla_snapshot?.total_fee ?? 0).toLocaleString('id-ID')}`} kepada ${detail?.registration?.publisher?.legal_name || 'penerbit'}.`}
         confirmLabel="Ya, Kirim & Terbitkan Billing"
         confirmVariant="gold"
       />

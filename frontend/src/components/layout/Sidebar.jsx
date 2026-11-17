@@ -550,7 +550,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "2. Intake Master Fisik",
                         path: "/internal/master-intake",
-                        badgeKey: "master_intake",
                         icon: <PackageCheck className="w-4 h-4 shrink-0" />,
                         description: "Penerimaan master fisik naskah A4",
                         badge: "Intake",
@@ -558,7 +557,6 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "3. Verifikasi Berkas",
                         path: "/internal/verifications",
-                        badgeKey: "verification_assigned",
                         countKey: "verification_assignment_pending",
                         icon: <CheckSquare className="w-4 h-4 shrink-0" />,
                         description: "Penugasan & pemeriksaan naskah",
@@ -566,28 +564,24 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     {
                         label: "4. Pembayaran PNBP",
                         path: "/internal/payments",
-                        badgeKey: "payments_pending_verification",
                         icon: <CreditCard className="w-4 h-4 shrink-0" />,
                         description: "Setoran PNBP SIMPONI & validasi bayar",
                     },
                     {
                         label: "5. Distribusi Sidang Tashih",
                         path: "/internal/distributions",
-                        badgeKey: ["handover_pending", "distribution_waiting"],
                         icon: <Users className="w-4 h-4 shrink-0" />,
                         description: "Serah-terima fisik & tim sidang",
                     },
                     {
                         label: "6. Sidang Pentashihan",
                         path: "/internal/tashih",
-                        badgeKey: ["tashih_initial", "tashih_revision"],
                         icon: <BookOpen className="w-4 h-4 shrink-0" />,
                         description: "Koreksi lafazh, harakat & naskah dumi",
                     },
                     {
                         label: "7. Pengesahan & Terbit STT",
                         path: "/internal/documents",
-                        badgeKey: "stt_ready",
                         icon: <Award className="w-4 h-4 shrink-0" />,
                         description: "Berita acara final & Surat Tanda Tashih",
                     },

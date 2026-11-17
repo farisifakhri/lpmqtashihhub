@@ -59,3 +59,73 @@ export async function markOverdue(now = new Date()) {
     return { count };
   });
 }
+
+/**
+ * Menghitung selisih hari kerja antara dua waktu (from -> to) berbasis kalender kerja resmi (working_days).
+ * @param {object} db Prisma client atau transaction
+ * @param {Date|string} from Waktu mulai (misal: started_at atau assigned_at)
+ * @param {Date|string} to Waktu selesai (misal: result_sent_at)
+ * @param {object} options Opsi perhitungan { applyCutoff: boolean, cutoffHour: number }
+ * @returns {Promise<number>} Jumlah hari kerja yang digunakan
+ */
+export async function countWorkingDays(db, from, to, options = {}) {
+  if (!from || !to) return 0;
+  const fromDate = from instanceof Date ? from : new Date(from);
+  const toDate = to instanceof Date ? to : new Date(to);
+
+  let baseStart = fromDate;
+  const applyCutoff = Boolean(options?.applyCutoff);
+  if (applyCutoff) {
+    const jakartaHour = new Date(fromDate.getTime() + 7 * 3600000).getUTCHours();
+    const cutoff = options.cutoffHour ?? WORK_HOURS_CONFIG.CUTOFF_HOUR_JAKARTA;
+    if (jakartaHour >= cutoff) {
+      baseStart = new Date(fromDate.getTime() + 24 * 3600000);
+    }
+  }
+
+  const startJakarta = jakartaDate(baseStart);
+  const endJakarta = jakartaDate(toDate);
+  const dStart = new Date(`${startJakarta}T00:00:00Z`);
+  const dEnd = new Date(`${endJakarta}T00:00:00Z`);
+
+  if (dEnd < dStart) return 0;
+
+  const count = await db.workingDay.count({
+    where: {
+      date: {
+        gte: dStart,
+        lte: dEnd,
+      },
+      is_working_day: true,
+    },
+  });
+
+  return count;
+}
+
+/**
+ * Menentukan klasifikasi hasil SLA verifikasi (EARLY, ON_TIME, LATE).
+ * Mengacu pada tanggal dan waktu Indonesia Barat (Asia/Jakarta):
+ * - EARLY: tanggal kirim < tanggal due_at
+ * - ON_TIME: tanggal kirim = tanggal due_at DAN waktu kirim <= due_at
+ * - LATE: selebihnya
+ * @param {Date|string} dueAt Tenggat waktu SLA
+ * @param {Date|string} sentAt Waktu pengiriman surat
+ * @returns {'EARLY'|'ON_TIME'|'LATE'}
+ */
+export function determineVerificationSlaOutcome(dueAt, sentAt) {
+  if (!dueAt || !sentAt) return 'ON_TIME';
+  const dDue = dueAt instanceof Date ? dueAt : new Date(dueAt);
+  const dSent = sentAt instanceof Date ? sentAt : new Date(sentAt);
+
+  const sentJakarta = jakartaDate(dSent);
+  const dueJakarta = jakartaDate(dDue);
+
+  if (sentJakarta < dueJakarta) {
+    return 'EARLY';
+  }
+  if (sentJakarta === dueJakarta && dSent.getTime() <= dDue.getTime()) {
+    return 'ON_TIME';
+  }
+  return 'LATE';
+}

@@ -63,6 +63,18 @@ export const verificationApi = {
   },
 
   /**
+   * B-22: Menyimpan hasil kalkulasi tarif PNBP & SLA ke fee_sla_snapshot
+   * @param {string} id - Assignment ID
+   * @param {Object} payload - { manuscripts, is_extension }
+   */
+  saveFeeCalculation: async (id, payload) => {
+    return apiClient(`/verification-assignments/${id}/fee-calculation`, {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+
+  /**
    * Mengajukan draf surat hasil verifikasi ke Kepala LPMQ (status SURAT_HASIL_VERIFIKASI = SUBMITTED)
    * @param {string} id - Assignment ID
    * @param {Object} payload - { checklist, decision, notes, letter_text, attachment_file_ids }

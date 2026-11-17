@@ -171,7 +171,7 @@ export const InspectionReferencePanels = ({
                     <div className="pt-1.5 border-t border-line/60 flex justify-between items-center font-bold text-ink">
                       <span>Total Tagihan Billing:</span>
                       <span className="text-civic-success font-extrabold text-xs">
-                        {totalFee === 0 ? 'Rp 0' : `Rp ${totalFee.toLocaleString('id-ID')}`}
+                        {totalFee === 0 ? 'Rp 0 (Bebas Tarif)' : `Rp ${totalFee.toLocaleString('id-ID')}`}
                       </span>
                     </div>
                   </div>

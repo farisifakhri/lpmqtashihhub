@@ -11,6 +11,7 @@ import {
   Layers,
   Clock,
   Coins,
+  Save,
 } from 'lucide-react';
 import {
   ITEM_DASAR_MAP,
@@ -19,11 +20,27 @@ import {
   calculateRegistrationSummary,
   SLA_INITIAL_CAP_DAYS,
 } from '@/lib/item-calculator';
+import { verificationApi } from '@/api/verification.api';
+import { PnbpBreakdown } from '@/components/verification/PnbpBreakdown';
 
-export const VerificationCalculatorTab = ({ registration = null }) => {
+export const VerificationCalculatorTab = ({
+  registration = null,
+  assignmentId = null,
+  onFeeSaved = null,
+  isReadOnly = false,
+}) => {
   const [isExtension, setIsExtension] = useState(
     registration?.registration_type === 'EXTENSION' || false
   );
+  const [savingFee, setSavingFee] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  const isPaymentLocked = useMemo(() => {
+    return (registration?.payment_records || []).some(
+      (p) => !['CANCELLED', 'EXPIRED'].includes(p.status)
+    );
+  }, [registration]);
 
   // Initial manuscripts simulation state
   const initialManuscripts = useMemo(() => {
@@ -119,6 +136,59 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
     return calculateRegistrationSummary(manuscriptResults.map((r) => r.calc));
   }, [manuscriptResults]);
 
+  const handleSaveFee = async () => {
+    if (!assignmentId || isPaymentLocked || isReadOnly) return;
+    setSavingFee(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      const payload = {
+        is_extension: isExtension,
+        manuscripts: simulatedManuscripts.map((m, idx) => ({
+          id: m.id,
+          title: m.title || `Naskah ${idx + 1}`,
+          dasar: m.dasar,
+          tambahan: m.tambahan || [],
+          variants: m.variants || [],
+        })),
+      };
+
+      const res = await verificationApi.saveFeeCalculation(assignmentId, payload);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 4000);
+      if (onFeeSaved && res?.data?.fee_sla_snapshot) {
+        onFeeSaved(res.data.fee_sla_snapshot);
+      }
+    } catch (err) {
+      setSaveError(err.message || 'Gagal menyimpan kalkulasi tarif.');
+    } finally {
+      setSavingFee(false);
+    }
+  };
+
+  const summarySnapshot = useMemo(() => {
+    return {
+      service_name: registration?.title || "Mushaf Al-Qur'an",
+      layanan_display: `${manuscriptResults.length} Naskah`,
+      base_fee: summary.totalFee,
+      total_fee: summary.totalFee,
+      sla_initial_days: summary.slaInitialDays,
+      sla_revision_days: summary.slaRevisionDays,
+      sla_dummy_days: summary.slaDummyDays,
+      manuscripts: manuscriptResults.map((m, idx) => ({
+        seq_number: idx + 1,
+        title: m.title,
+        dasar: m.dasar,
+        tambahan: m.tambahan,
+        fee: m.calc.fee,
+        sla_initial: m.calc.slaInitial,
+        items: m.calc.items,
+        variants: m.variants || [],
+      })),
+    };
+  }, [manuscriptResults, summary, registration]);
+
   const formatRupiah = (val) =>
     new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val);
 
@@ -141,6 +211,40 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {assignmentId && !isReadOnly && (
+            <button
+              type="button"
+              onClick={handleSaveFee}
+              disabled={savingFee || isPaymentLocked}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs transition-all ${
+                isPaymentLocked
+                  ? 'bg-canvas text-ink-muted border border-line cursor-not-allowed'
+                  : saveSuccess
+                  ? 'bg-civic-success text-white'
+                  : 'bg-brand-900 text-white hover:bg-brand-800'
+              }`}
+              title={
+                isPaymentLocked
+                  ? 'Kalkulasi tarif telah terkunci karena tagihan PNBP sudah diterbitkan'
+                  : 'Simpan hasil kalkulasi ini ke data pengajuan'
+              }
+            >
+              {savingFee ? (
+                <span>Menyimpan...</span>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Tersimpan ke Pengajuan</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Terapkan ke Pengajuan</span>
+                </>
+              )}
+            </button>
+          )}
+
           {registration && (
             <button
               type="button"
@@ -179,6 +283,19 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
           </div>
         </div>
       </div>
+
+      {saveError && (
+        <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl text-xs text-civic-danger">
+          {saveError}
+        </div>
+      )}
+
+      {isPaymentLocked && (
+        <div className="flex items-center gap-2 p-3 bg-civic-warningSoft border border-civic-warningLine rounded-xl text-xs text-civic-warning font-medium">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>Kalkulasi tarif terkunci karena tagihan PNBP resmi telah diterbitkan atau pembayaran sedang diproses.</span>
+        </div>
+      )}
 
       {/* Summary Highlight Card */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 rounded-xl bg-brand-50/50 border border-brand-200">
@@ -402,6 +519,11 @@ export const VerificationCalculatorTab = ({ registration = null }) => {
             </div>
           );
         })}
+      </div>
+
+      {/* Rincian Komponen PnbpBreakdown */}
+      <div className="pt-2">
+        <PnbpBreakdown feeSlaSnapshot={summarySnapshot} />
       </div>
     </div>
   );
