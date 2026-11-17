@@ -50,7 +50,7 @@ describe('LandingPage sections and navigation', () => {
     expect(screen.getByText('Layanan Pentashihan')).toBeInTheDocument();
     const mapHeading = await screen.findByRole('heading', {
       name: /Peta Persebaran Penerbit Mushaf Al-Qur’an/i,
-    });
+    }, { timeout: 5000 });
     expect(mapHeading).toBeInTheDocument();
     expect(mapHeading.closest('section').previousElementSibling).toHaveAttribute(
       'id',

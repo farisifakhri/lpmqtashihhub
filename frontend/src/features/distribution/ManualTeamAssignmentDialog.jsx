@@ -5,10 +5,9 @@ import { registrationApi } from '@/api/registration.api';
 import { invalidateQueueCounts } from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
 import { getAssignmentStage } from './distribution-view-model';
+import { useOptionalAuth } from '@/features/auth/AuthContext';
 
 // Periode penugasan: pilih tahun, lalu salah satu dari 12 bulan, lalu masuk ke Pekan 1-5 bulan itu.
-// shortcut: periode hanya pengelompokan tampilan dan belum dikirim ke server; tambahkan field
-// di endpoint penugasan bila tahun/bulan/pekan perlu tersimpan.
 const CURRENT_YEAR = new Date().getFullYear();
 const PERIOD_YEARS = Array.from({ length: 201 }, (_, index) => CURRENT_YEAR - 100 + index);
 const MONTH_NAMES = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleDateString('id-ID', { month: 'long' }));
@@ -41,6 +40,17 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
   const [confirmClosePeriod, setConfirmClosePeriod] = useState(false);
 
+  const auth = useOptionalAuth ? useOptionalAuth() : null;
+  const currentUser = auth?.currentUser;
+  const isSuperAdmin = Boolean(
+    currentUser?.roles?.includes('SUPERADMIN') ||
+    currentUser?.role === 'SUPERADMIN'
+  );
+
+  const [slaInfo, setSlaInfo] = useState(null);
+  const [dueAt, setDueAt] = useState('');
+  const [dueOverrideReason, setDueOverrideReason] = useState('');
+
   useEffect(() => {
     let active = true;
     const previousFocus = document.activeElement;
@@ -51,8 +61,9 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
       registrationApi.getDetail(id),
       masterApi.getDistributionTeams(),
       masterApi.getPentashihCandidates().catch(() => ({ data: [] })),
+      registrationApi.getAssignmentSla ? registrationApi.getAssignmentSla(id, chosenStage).catch(() => null) : Promise.resolve(null),
     ])
-      .then(([detail, list, candidates]) => {
+      .then(([detail, list, candidates, slaRes]) => {
         if (!active) return;
         setRegistration(detail.data);
         const now = new Date();
@@ -62,6 +73,13 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
           (!team.active_to || new Date(team.active_to) >= now)
         ));
         setAllCandidates(candidates.data || []);
+        if (slaRes?.data) {
+          setSlaInfo(slaRes.data);
+          if (slaRes.data.max_due_at) {
+            const formatted = new Date(slaRes.data.max_due_at).toISOString().slice(0, 10);
+            setDueAt(formatted);
+          }
+        }
       })
       .catch(err => {
         if (active) setError(err.message || 'Data penugasan tidak dapat dimuat.');
@@ -247,6 +265,19 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const submit = async event => {
     event.preventDefault();
     if (!ready || !allSelectedHaveJuz || saving) return;
+
+    if (slaInfo?.max_due_at && dueAt) {
+      const maxStr = new Date(slaInfo.max_due_at).toISOString().slice(0, 10);
+      if (dueAt > maxStr && !isSuperAdmin) {
+        setError(`Tenggat waktu yang dipilih tidak boleh melebihi batas maksimal SLA (${maxStr}).`);
+        return;
+      }
+      if (dueAt > maxStr && isSuperAdmin && (!dueOverrideReason || dueOverrideReason.trim().length < 10)) {
+        setError('Alasan perpanjangan tenggat waktu wajib diisi (minimal 10 karakter) bila melebihi batas maksimal SLA.');
+        return;
+      }
+    }
+
     setSaving(true);
     setError('');
 
@@ -261,6 +292,8 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
           reassignment_notes: reassignmentNotes || undefined,
         } : {}),
         ...(isInitialRoundAssignment && comparisonNotes.trim() ? { comparison_notes: comparisonNotes.trim() } : {}),
+        ...(dueAt ? { due_at: dueAt } : {}),
+        ...(dueOverrideReason?.trim() ? { due_override_reason: dueOverrideReason.trim() } : {}),
       };
 
       await registrationApi.createAssignments(id, payload);
@@ -312,7 +345,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
         </button>
       </div>
 
-      <form onSubmit={submit} className="space-y-5 p-5 sm:p-6">
+      <form onSubmit={submit} noValidate className="space-y-5 p-5 sm:p-6">
         {error && (
           <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
             <AlertCircle className="h-5 w-5 shrink-0" />
@@ -462,6 +495,82 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                       )}
                       {isOpen && (
                         <div className="space-y-5 border-t border-line p-4">
+            {/* Penetapan Tanggal Tenggat Pentashihan oleh Distributor (B-23) */}
+            <div className="rounded-xl border border-brand-200 bg-brand-50/40 p-4 space-y-3">
+              <div className="flex items-center justify-between border-b border-brand-200/60 pb-2">
+                <label htmlFor="tashih-due-date" className="block text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
+                  <CalendarDays className="w-3.5 h-3.5 text-brand-700" />
+                  Tenggat Waktu Pentashihan (Ditentukan Distributor)
+                </label>
+                {slaInfo && (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-brand-100 text-brand-900 border border-brand-300">
+                    Batas Maksimal: {slaInfo.sla_days} Hari Kerja
+                  </span>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                  <div>
+                    <label htmlFor="tashih-due-date" className="block text-xs font-semibold text-ink-muted mb-1">
+                      Tanggal Target Selesai Pentashihan:
+                    </label>
+                    <input
+                      id="tashih-due-date"
+                      type="date"
+                      aria-label="Tanggal Target Selesai Pentashihan"
+                      disabled={!ready || saving}
+                      value={dueAt}
+                      onChange={e => setDueAt(e.target.value)}
+                      min={slaInfo?.start_date ? new Date(slaInfo.start_date).toISOString().slice(0, 10) : undefined}
+                      max={isSuperAdmin ? undefined : (slaInfo?.max_due_at ? new Date(slaInfo.max_due_at).toISOString().slice(0, 10) : undefined)}
+                      className="w-full px-3 py-2 text-xs font-mono rounded-lg border border-line-strong bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
+                    />
+                  </div>
+                  <div className="text-xs text-ink-muted space-y-1">
+                    {slaInfo?.max_due_at ? (
+                      <>
+                        <p>
+                          Batas Maksimal SLA: <strong className="text-ink">{new Date(slaInfo.max_due_at).toLocaleDateString('id-ID', { dateStyle: 'full' })}</strong>
+                        </p>
+                        <p className="text-[11px]">
+                          {isSuperAdmin
+                            ? 'Super Admin dapat menetapkan tanggal melampaui batas maksimal dengan alasan perpanjangan.'
+                            : 'Distributor dapat menentukan tanggal lebih awal atau maksimal hingga batas SLA di atas.'}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-[11px] italic">
+                        Tenggat waktu maksimal dihitung berdasarkan kalender hari kerja resmi Kemenag RI.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Input Alasan Override bila Superadmin memilih tanggal melebihi batas maksimal */}
+                {isSuperAdmin && slaInfo?.max_due_at && dueAt && dueAt > new Date(slaInfo.max_due_at).toISOString().slice(0, 10) && (
+                  <div className="rounded-lg border border-civic-warningLine bg-civic-warningSoft p-3 space-y-2 text-xs">
+                    <label htmlFor="due-override-reason" className="block font-bold text-ink">
+                      Alasan Perpanjangan Tenggat Waktu (Wajib diisi bila melebihi batas maksimal SLA):
+                    </label>
+                    <textarea
+                      id="due-override-reason"
+                      aria-label="Alasan Perpanjangan Tenggat Waktu"
+                      rows={2}
+                      value={dueOverrideReason}
+                      onChange={e => setDueOverrideReason(e.target.value)}
+                      placeholder="Tuliskan justifikasi perpanjangan tenggat waktu (minimal 10 karakter)..."
+                      className="w-full p-2.5 text-xs bg-white border border-line-strong rounded-lg outline-none focus:ring-2 focus:ring-brand-700/20"
+                    />
+                    <div className="flex justify-between text-[11px] text-ink-muted">
+                      <span>Tenggat waktu melampaui standar SLA resmi. Alasan akan dicatat dalam audit trail.</span>
+                      <span>{dueOverrideReason.length}/500 karakter (min. 10)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Pilihan Mode Penugasan: Tim Kelompok vs Pentashih Pribadi (Item 2) */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-ink">

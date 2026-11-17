@@ -5,7 +5,7 @@ import { SlaBreakdown } from './SlaBreakdown';
 import { PublisherRegistrationCard } from '@/features/registrations/PublisherRegistrationCard';
 import { MemoryRouter } from 'react-router-dom';
 
-describe('B-21: SlaBreakdown Component & Fallback 59 Elimination', () => {
+describe('B-21 & B-23: SlaBreakdown Component', () => {
   it('B21-T8: Compact mode displays "Verifikasi: maks. 2 HK" without fallback 59', () => {
     render(<SlaBreakdown status="READY_FOR_VERIFICATION" compact />);
     expect(screen.getByText('Verifikasi: maks. 2 HK')).toBeInTheDocument();
@@ -52,5 +52,19 @@ describe('B-21: SlaBreakdown Component & Fallback 59 Elimination', () => {
 
     expect(screen.getByText('Verifikasi: maks. 2 HK')).toBeInTheDocument();
     expect(screen.queryByText(/59/)).not.toBeInTheDocument();
+  });
+
+  it('B23-T10: Renders active pentashihan deadline when activeDueAt is provided', () => {
+    const snapshot = {
+      sla_initial_days: 22,
+    };
+    render(
+      <SlaBreakdown
+        snapshot={snapshot}
+        status="TASHIH_IN_PROGRESS"
+        activeDueAt="2026-12-16T16:00:00.000Z"
+      />
+    );
+    expect(screen.getByText(/Tenggat Waktu Sidang Berjalan/i)).toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
 import { registrationApi } from '@/api/registration.api';
 import * as QueueApiModule from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
+import * as AuthContextModule from '@/features/auth/AuthContext';
 
 describe('Manual team assignment (B-05)', () => {
   beforeEach(() => {
@@ -260,5 +261,112 @@ describe('Manual team assignment (B-05)', () => {
     fireEvent.click(pekan2);
     fireEvent.click(screen.getByRole('button', { name: 'Ya, tutup' }));
     expect(screen.queryByText('Skema Penugasan Pentashih')).not.toBeInTheDocument();
+  });
+
+  describe('B-23: SLA Pentashihan Ditentukan Distributor', () => {
+    it('B23-T2: Distributor menetapkan due_at <= max_due dan dikirim ke server', async () => {
+      vi.spyOn(registrationApi, 'getAssignmentSla').mockResolvedValue({
+        data: {
+          stage: 'INITIAL',
+          start_date: '2026-11-16T08:00:00.000Z',
+          sla_days: 22,
+          max_due_at: '2026-12-16T16:00:00.000Z',
+          service_name: "Mushaf Al-Qur'an Standar Kemenag",
+          basis_info: '22 Hari Kerja (Penugasan Awal)',
+        },
+      });
+
+      render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+      await screen.findByText('Naskah siap distribusi');
+      fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+
+      // SLA banner tampil
+      expect(screen.getByText(/Batas Maksimal: 22 Hari Kerja/i)).toBeInTheDocument();
+      const dateInput = screen.getByLabelText(/Tanggal Target Selesai Pentashihan/i);
+      expect(dateInput).toHaveValue('2026-12-16');
+
+      // Ubah tanggal menjadi lebih cepat (misal 2026-12-10)
+      fireEvent.change(dateInput, { target: { value: '2026-12-10' } });
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+
+      await waitFor(() => {
+        expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', expect.objectContaining({
+          team_id: 't1',
+          due_at: '2026-12-10',
+          stage: 'INITIAL',
+        }));
+      });
+    });
+
+    it('B23-T3: Distributor dicegah memilih due_at melebihi max_due', async () => {
+      vi.spyOn(registrationApi, 'getAssignmentSla').mockResolvedValue({
+        data: {
+          stage: 'INITIAL',
+          start_date: '2026-11-16T08:00:00.000Z',
+          sla_days: 22,
+          max_due_at: '2026-12-16T16:00:00.000Z',
+          service_name: "Mushaf Al-Qur'an Standar Kemenag",
+          basis_info: '22 Hari Kerja',
+        },
+      });
+
+      render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+      await screen.findByText('Naskah siap distribusi');
+      fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+
+      const dateInput = screen.getByLabelText(/Tanggal Target Selesai Pentashihan/i);
+      fireEvent.change(dateInput, { target: { value: '2026-12-25' } });
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/tidak boleh melebihi batas maksimal SLA/i);
+      expect(registrationApi.createAssignments).not.toHaveBeenCalled();
+    });
+
+    it('B23-T4: Superadmin dapat override due_at melebihi max_due dengan alasan perpanjangan', async () => {
+      vi.spyOn(AuthContextModule, 'useOptionalAuth').mockReturnValue({
+        currentUser: { id: 'sa-1', name: 'Super Admin', roles: ['SUPERADMIN'] },
+      });
+
+      vi.spyOn(registrationApi, 'getAssignmentSla').mockResolvedValue({
+        data: {
+          stage: 'INITIAL',
+          start_date: '2026-11-16T08:00:00.000Z',
+          sla_days: 22,
+          max_due_at: '2026-12-16T16:00:00.000Z',
+          service_name: "Mushaf Al-Qur'an Standar Kemenag",
+          basis_info: '22 Hari Kerja',
+        },
+      });
+
+      render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+      await screen.findByText('Naskah siap distribusi');
+      fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+      fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+
+      const dateInput = screen.getByLabelText(/Tanggal Target Selesai Pentashihan/i);
+      fireEvent.change(dateInput, { target: { value: '2026-12-25' } });
+
+      // Field alasan perpanjangan muncul untuk superadmin
+      const reasonInput = await screen.findByLabelText(/Alasan Perpanjangan Tenggat Waktu/i);
+      fireEvent.change(reasonInput, { target: { value: 'Perpanjangan karena mushaf memiliki 30 juz kaligrafi khusus dan ornamen rumit' } });
+
+      fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+
+      await waitFor(() => {
+        expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', expect.objectContaining({
+          team_id: 't1',
+          due_at: '2026-12-25',
+          due_override_reason: 'Perpanjangan karena mushaf memiliki 30 juz kaligrafi khusus dan ornamen rumit',
+          stage: 'INITIAL',
+        }));
+      });
+    });
   });
 });

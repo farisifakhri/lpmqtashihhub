@@ -10,6 +10,7 @@ import { clsx } from 'clsx';
 export const SlaBreakdown = ({
   snapshot = null,
   status = '',
+  activeDueAt = null,
   compact = false,
   className = '',
 }) => {
@@ -100,6 +101,15 @@ export const SlaBreakdown = ({
           </span>
         </div>
       </div>
+
+      {activeDueAt && (
+        <div className="flex items-center justify-between text-[11px] bg-brand-50 border border-brand-200 px-2.5 py-1.5 rounded-lg text-brand-900 font-medium">
+          <span>Tenggat Waktu Sidang Berjalan (Ditentukan Distributor):</span>
+          <strong className="font-mono font-bold text-brand-800">
+            {new Date(activeDueAt).toLocaleDateString('id-ID', { dateStyle: 'medium' })}
+          </strong>
+        </div>
+      )}
 
       {!hasPentashihanSla && (
         <p className="text-[11px] text-ink-muted italic flex items-center gap-1.5 pt-1">
