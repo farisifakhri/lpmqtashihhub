@@ -2,6 +2,7 @@ import { prisma } from '../config/database.js';
 import { logAudit } from './audit.service.js';
 import { forbidPemaraf } from '../utils/pemaraf.js';
 import { getPublisherCertificatePdf } from './publisher-registration.service.js';
+import { detectProvince, PROVINCE_NAMES, UNKNOWN_PROVINCE } from '../utils/province.js';
 
 export const getProfile = async (publisherId) => {
   const publisher = await prisma.publisher.findUnique({
@@ -260,11 +261,93 @@ export const getMyCertificatePdf = async ({ publisherId, userId, user }) => {
   return getPublisherCertificatePdf(reg.id, user);
 };
 
+// ---------------------------------------------------------------------------
+// Direktori Penerbit Mushaf Al-Qur'an (Super Admin): penerbit terverifikasi, dikelompokkan per huruf & provinsi.
+// shortcut: seluruh penerbit terverifikasi dimuat lalu disaring di memori (ratusan baris), karena provinsi
+// diturunkan dari teks alamat; pindah ke kolom provinsi + query DB bila penerbit mencapai ribuan.
+const DIRECTORY_MAX_ROWS = 5000;
+const LEGAL_PREFIX = /^(?:pt|cv|ud|yayasan|koperasi|perum|penerbit)\.?\s+/i;
+
+export const directoryLetter = (name) => {
+  const first = String(name || '').trim().replace(LEGAL_PREFIX, '').charAt(0).toUpperCase();
+  return /[A-Z]/.test(first) ? first : '#';
+};
+
+const toDirectoryRow = (publisher) => {
+  const submission = publisher.registration_submission;
+  return {
+    id: publisher.id,
+    name: publisher.legal_name,
+    entity_type: publisher.entity_type,
+    address: publisher.address || submission?.address || '',
+    province: detectProvince(publisher.address || submission?.address),
+    pic_name: submission?.pic_name || publisher.user?.name || '',
+    phone: publisher.phone || submission?.pic_phone || '',
+    email: publisher.user?.email || submission?.email || '',
+    nomor_induk_penerbit: publisher.nomor_induk_penerbit || '',
+    npwp: publisher.npwp || '',
+    nib: publisher.nib || '',
+    verified_at: submission?.decided_at || publisher.created_at,
+    letter: directoryLetter(publisher.legal_name),
+  };
+};
+
+export const getPublisherDirectory = async ({ letter, province, search, page = 1, limit = 20 } = {}) => {
+  const publishers = await prisma.publisher.findMany({
+    where: { verification_status: 'VERIFIED' },
+    select: {
+      id: true, legal_name: true, entity_type: true, address: true, phone: true,
+      nomor_induk_penerbit: true, npwp: true, nib: true, created_at: true,
+      user: { select: { name: true, email: true } },
+      registration_submission: { select: { address: true, pic_name: true, pic_phone: true, email: true, decided_at: true } },
+    },
+    take: DIRECTORY_MAX_ROWS,
+  });
+
+  const all = publishers
+    .map(toDirectoryRow)
+    .sort((a, b) => a.name.replace(LEGAL_PREFIX, '').localeCompare(b.name.replace(LEGAL_PREFIX, ''), 'id', { sensitivity: 'base' }));
+
+  const letters = {};
+  const provinceCounts = {};
+  for (const row of all) {
+    letters[row.letter] = (letters[row.letter] || 0) + 1;
+    provinceCounts[row.province] = (provinceCounts[row.province] || 0) + 1;
+  }
+
+  const keyword = search?.toLowerCase();
+  const filtered = all.filter((row) =>
+    (!letter || row.letter === letter)
+    && (!province || row.province === province)
+    && (!keyword || [row.name, row.address, row.pic_name, row.email, row.phone, row.nomor_induk_penerbit]
+      .some((value) => value.toLowerCase().includes(keyword))));
+
+  const start = (page - 1) * limit;
+  return {
+    items: filtered.slice(start, start + limit).map(({ letter: _letter, ...row }, index) => ({ no: start + index + 1, ...row })),
+    pagination: { total: filtered.length, page, limit, totalPages: Math.max(1, Math.ceil(filtered.length / limit)) },
+    summary: {
+      total: all.length,
+      letters,
+      // semua provinsi tetap tercantum (termasuk yang 0) agar admin melihat sebaran lengkap
+      provinces: [...PROVINCE_NAMES, UNKNOWN_PROVINCE]
+        .map((name) => ({ name, count: provinceCounts[name] || 0 })),
+    },
+  };
+};
+
+// Versi publik (halaman Informasi): sama dengan direktori lama di situs LPMQ, tanpa NPWP/NIB.
+export const getPublicPublisherDirectory = async (params) => {
+  const result = await getPublisherDirectory(params);
+  return { ...result, items: result.items.map(({ npwp: _npwp, nib: _nib, ...row }) => row) };
+};
+
 export default {
   getProfile,
   getMyCertificatePdf,
   updateProfile,
   listPublishers,
+  getPublisherDirectory,
   verifyPublisher,
   adminUpdatePublisher,
 };

@@ -18,7 +18,7 @@ import {
   saveSecurePublisherDocument,
   readSecurePublisherDocument,
 } from './secure-document.service.js';
-import { requireParaf, recordParaf, clearParaf } from './paraf.service.js';
+import { requireParaf, recordParaf, clearParaf, parafProgress, ACTIVE_PEMARAF } from './paraf.service.js';
 import {
   createMasterRequestSchema,
   MASTER_MUSHAF_TYPES,
@@ -514,11 +514,21 @@ export async function listLettersForSignature() {
     take: 100,
   });
   const parafs = await prisma.approvalParaf.findMany({
-    where: { subject_type: 'MASTER_LETTER', subject_id: { in: letters.map(l => l.id) }, signed_at: { not: null } },
-    select: { subject_id: true, signed_at: true },
+    where: { subject_type: 'MASTER_LETTER', subject_id: { in: letters.map(l => l.id) } },
   });
-  const parafAt = new Map(parafs.map(p => [p.subject_id, p.signed_at]));
-  return letters.map(l => ({ ...l, paraf_signed_at: parafAt.get(l.id) || null }));
+  const parafBySubject = new Map(parafs.map(p => [p.subject_id, p]));
+  const requiredDefault = await prisma.user.count({ where: ACTIVE_PEMARAF });
+  return letters.map(l => {
+    const paraf = parafBySubject.get(l.id);
+    const { signers } = parafProgress(paraf);
+    return {
+      ...l,
+      // paraf_signed_at terisi hanya bila SELURUH Pemaraf sudah memaraf (siap TTE Kepala)
+      paraf_signed_at: paraf?.signed_at || null,
+      paraf_signers: signers,
+      paraf_required: paraf?.required_count ?? requiredDefault,
+    };
+  });
 }
 
 export async function signMasterLetter(id, user, req) {
@@ -529,10 +539,10 @@ export async function signMasterLetter(id, user, req) {
   if (current.letter_drafted_by_id === user.id) {
     fail(403, 'Penyusun surat tidak dapat menandatangani surat yang disusunnya sendiri.');
   }
-  // Pemaraf membubuhkan paraf lebih dulu; TTE tetap oleh Kepala LPMQ.
+  // Kedua Pemaraf membubuhkan paraf lebih dulu (urutan bebas); TTE tetap oleh Kepala LPMQ.
   if (user.isPemaraf) {
-    await prisma.$transaction(tx => recordParaf(tx, 'MASTER_LETTER', id, user, req));
-    return { id, status: current.status, letter_number: current.letter_number, paraf_only: true };
+    const paraf = await prisma.$transaction(tx => recordParaf(tx, 'MASTER_LETTER', id, user, req));
+    return { id, status: current.status, letter_number: current.letter_number, paraf_only: true, paraf_complete: Boolean(paraf.signed_at) };
   }
   await requireParaf(prisma, 'MASTER_LETTER', id);
   const signedAt = new Date();

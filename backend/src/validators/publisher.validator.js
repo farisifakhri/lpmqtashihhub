@@ -29,3 +29,14 @@ export const adminEditPublisherSchema = {
     reason: z.string().trim().min(10, 'Alasan perubahan data wajib diisi minimal 10 karakter'),
   }),
 };
+
+// Direktori penerbit (Super Admin): filter huruf awal, provinsi, atau kata kunci; limit dibatasi 100.
+export const publisherDirectorySchema = {
+  query: z.object({
+    letter: z.string().trim().toUpperCase().regex(/^([A-Z]|#)$/, 'Huruf awal tidak valid').optional(),
+    province: z.string().trim().max(60).optional(),
+    search: z.string().trim().max(100).optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }),
+};

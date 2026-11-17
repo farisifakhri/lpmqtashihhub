@@ -88,6 +88,8 @@ export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = []
               ))}
               {inProgressRegistrations.map((reg) => {
                 const { iteration: maxIter, currentAssignments, totalMembers, completedMembers, hasRevoked, isReadyToReview } = getReviewProgress(reg);
+                // Keputusan sudah dikirim distributor dan menunggu paraf: kartu tidak lagi meminta reviu ulang.
+                const waitingParaf = Boolean(reg.distribution_paraf_pending);
 
                 return (
                   <div
@@ -102,6 +104,11 @@ export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = []
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-md bg-surface-subtle text-ink border border-line">
                           Iterasi #{maxIter}
                         </span>
+                        {waitingParaf && (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                            <Clock className="w-3 h-3" aria-hidden="true" /> Menunggu Paraf Pemaraf
+                          </span>
+                        )}
                         {isReadyToReview ? (
                           <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-brand-100 text-brand-900 border border-brand-100">
                             <CheckCircle2 className="w-3 h-3" /> Seluruh Pentashih Selesai ({completedMembers}/{totalMembers})
@@ -192,20 +199,32 @@ export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = []
                     </div>
 
                     <div className="flex items-center justify-end gap-2 shrink-0">
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setReviewDialogRegId(reg.id)}
-                        className={clsx(
-                          'text-xs font-bold',
-                          isReadyToReview
-                            ? 'bg-brand-700 hover:bg-brand-800 text-white shadow-xs'
-                            : 'bg-ink hover:bg-ink text-canvas'
-                        )}
-                        icon={<ShieldCheck className="w-4 h-4" />}
-                      >
-                        {isReadyToReview ? 'Reviu Hasil Sidang (Langkah 3)' : 'Lihat Hasil Anggota'}
-                      </Button>
+                      {waitingParaf ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReviewDialogRegId(reg.id)}
+                          className="text-xs font-bold"
+                          icon={<Clock className="w-4 h-4" />}
+                        >
+                          Menunggu Paraf · Lihat Keputusan
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setReviewDialogRegId(reg.id)}
+                          className={clsx(
+                            'text-xs font-bold',
+                            isReadyToReview
+                              ? 'bg-brand-700 hover:bg-brand-800 text-white shadow-xs'
+                              : 'bg-ink hover:bg-ink text-canvas'
+                          )}
+                          icon={<ShieldCheck className="w-4 h-4" />}
+                        >
+                          {isReadyToReview ? 'Reviu Hasil Sidang (Langkah 3)' : 'Lihat Hasil Anggota'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 );

@@ -44,8 +44,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const [distributorNotes, setDistributorNotes] = useState('');
   // Pemaraf: keputusan distributor ditahan sampai diparaf (hanya bila sudah ada akun Pemaraf aktif)
   const [parafState, setParafState] = useState({ gate_active: false, pending: null });
-  const [pemarafOptions, setPemarafOptions] = useState([]);
-  const [pemarafId, setPemarafId] = useState('');
   const [outgoingCourier, setOutgoingCourier] = useState('');
   const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
   const [outgoingNotes, setOutgoingNotes] = useState('');
@@ -111,23 +109,19 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   useEffect(() => {
     let active = true;
     tashihApi.getDistributionParaf(registrationId)
-      .then(async (res) => {
-        if (!active || !res?.data) return;
-        setParafState(res.data);
-        if (res.data.pending?.pemaraf?.id) setPemarafId(res.data.pending.pemaraf.id);
-        if (res.data.gate_active) {
-          const list = await tashihApi.listPemaraf();
-          if (active) setPemarafOptions(list?.data || []);
-        }
+      .then((res) => {
+        if (active && res?.data) setParafState(res.data);
       })
       .catch(() => {}); // tanpa data paraf, dialog tetap berjalan dengan alur lama
     return () => { active = false; };
   }, [registrationId]);
 
   const pendingParaf = parafState.pending;
-  const canParaf = Boolean(pendingParaf) && (
-    userRoles.includes('SUPERADMIN') || (currentUser?.isPemaraf && pendingParaf.pemaraf?.id === currentUser?.id)
-  );
+  const parafSigners = pendingParaf?.signers || [];
+  const parafRequired = pendingParaf?.required || 2;
+  const alreadyParafed = parafSigners.some((signer) => signer.id === currentUser?.id);
+  // Kedua Pemaraf wajib memaraf (urutan bebas, masing-masing sekali); hanya akun berperan Pemaraf.
+  const canParaf = Boolean(pendingParaf) && Boolean(currentUser?.isPemaraf) && !alreadyParafed;
 
   const handleParaf = async () => {
     setSubmitting(true);
@@ -181,10 +175,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
       return;
     }
-    if (parafState.gate_active && !pemarafId) {
-      setError('Pilih Pemaraf yang akan membubuhkan paraf atas keputusan ini.');
-      return;
-    }
 
     setSubmitting(true);
     setError(null);
@@ -193,7 +183,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
       await tashihApi.approveDistribution(registrationId, {
         result: decision,
         notes: distributorNotes.trim(),
-        pemaraf_id: parafState.gate_active ? pemarafId : undefined,
         outgoing_courier: decision === 'REVISION_REQUIRED' && outgoingCourier.trim() ? outgoingCourier.trim() : undefined,
         outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
         outgoing_notes: decision === 'REVISION_REQUIRED' && outgoingNotes.trim() ? outgoingNotes.trim() : undefined,
@@ -444,8 +433,14 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 <div className="p-3.5 rounded-xl bg-civic-infoSoft border border-civic-infoLine text-xs text-ink space-y-2">
                   <div className="font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-civic-info" />
-                    <span>Menunggu paraf {pendingParaf.pemaraf?.name || 'Pemaraf'}</span>
+                    <span>Menunggu paraf Pemaraf ({parafSigners.length}/{parafRequired})</span>
                   </div>
+                  {parafSigners.length > 0 && (
+                    <div>Sudah memaraf: <strong>{parafSigners.map((signer) => signer.name || 'Pemaraf').join(', ')}</strong></div>
+                  )}
+                  {alreadyParafed && (
+                    <div className="text-civic-info">Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.</div>
+                  )}
                   <div>
                     Keputusan {pendingParaf.requested_by?.name || 'distributor'}:{' '}
                     <strong>{pendingParaf.decision?.result === 'PASSED' ? 'Lolos telaah' : 'Kembalikan ke penerbit (perbaikan)'}</strong>
@@ -581,31 +576,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                               </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-
-                      {(
-                        <div className="mt-3.5">
-                          <label htmlFor="pemaraf-select" className="block text-xs font-bold text-ink uppercase tracking-wider mb-1.5">
-                            Pemaraf
-                          </label>
-                          <select
-                            id="pemaraf-select"
-                            value={pemarafId}
-                            onChange={(e) => setPemarafId(e.target.value)}
-                            disabled={!parafState.gate_active}
-                            className="w-full rounded-xl border border-line-strong p-2.5 text-xs bg-canvas/70 outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
-                          >
-                            <option value="">Pilih pemaraf...</option>
-                            {pemarafOptions.map((p) => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
-                          </select>
-                          <p className="text-xs text-ink-muted mt-1">
-                            {parafState.gate_active
-                              ? 'Keputusan baru berlaku setelah pemaraf yang dipilih membubuhkan paraf.'
-                              : 'Belum ada akun dengan peran Pemaraf yang aktif, sehingga keputusan langsung berlaku saat disimpan.'}
-                          </p>
                         </div>
                       )}
 

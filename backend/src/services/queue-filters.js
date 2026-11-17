@@ -160,23 +160,37 @@ export function buildHeadVerificationSignatureWhere(user) {
   };
 }
 
-export function buildHeadSttSignatureWhere(user) {
-  const headSignatory = {
-    signing_status: 'PENDING',
-    name_position_snapshot: { contains: 'Kepala' },
-    ...(user.roles.includes('SUPERADMIN') ? {} : { signer_user_id: user.id }),
-  };
+// Draf STT baru masuk ke Kepala setelah SEMUA Pemaraf memaraf: layanan paraf menandainya
+// tu_workflow.status = PARAF_COMPLETED (dokumen lama juga diberi status ini setelah Paraf 2).
+const STT_PARAF_COMPLETED = { content_snapshot: { path: '$.tu_workflow.status', equals: 'PARAF_COMPLETED' } };
 
-  return {
+export function buildHeadSttSignatureWhere(user) {
+  const base = {
     document_type: 'SURAT_TANDA_TASHIH',
     status: 'DRAFT',
     registration: { status: { in: ['READY_FOR_STT', 'STT_ISSUED'] } },
-    signatories: { some: headSignatory },
-    AND: [
-      { content_snapshot: { path: '$.tu_workflow.paraf_1', not: Prisma.DbNull } },
-      { content_snapshot: { path: '$.tu_workflow.paraf_2', not: Prisma.DbNull } },
-      { content_snapshot: { path: '$.tu_workflow.paraf_1.signed_by.id', not: user.id } },
-      { content_snapshot: { path: '$.tu_workflow.paraf_2.signed_by.id', not: user.id } },
-    ],
+  };
+
+  // Pemaraf (akses setara Kepala): draf yang sudah diserahkan, parafnya belum lengkap, dan belum ia paraf sendiri.
+  if (user.isPemaraf) {
+    return {
+      ...base,
+      content_snapshot: { path: '$.tu_workflow.submitted_at', not: Prisma.DbNull },
+      NOT: [STT_PARAF_COMPLETED],
+      signatories: { none: { signer_user_id: user.id, signing_status: 'SIGNED' } },
+    };
+  }
+
+  // Kepala LPMQ: draf yang parafnya sudah lengkap dan menunggu tanda tangannya.
+  return {
+    ...base,
+    ...STT_PARAF_COMPLETED,
+    signatories: {
+      some: {
+        signing_status: 'PENDING',
+        name_position_snapshot: { endsWith: "(Kepala Lajnah Pentashihan Mushaf Al-Qur'an)" },
+        ...(user.roles.includes('SUPERADMIN') ? {} : { signer_user_id: user.id }),
+      },
+    },
   };
 }

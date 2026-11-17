@@ -186,6 +186,9 @@ export const Navbar = ({ sidebarOpen, onToggleSidebar }) => {
     if (pathname.startsWith('/internal/master-requests')) {
       return { parent: 'Tata Kelola Sistem', name: 'Permohonan Master' };
     }
+    if (pathname.startsWith('/internal/publisher-directory')) {
+      return { parent: 'Tata Kelola Sistem', name: 'Direktori Penerbit' };
+    }
     if (pathname.startsWith('/internal/surveys')) {
       return { parent: 'Tata Kelola Sistem', name: 'Survei' };
     }
