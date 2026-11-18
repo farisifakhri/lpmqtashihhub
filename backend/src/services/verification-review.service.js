@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
-import { requireParaf, recordParaf, clearParaf } from './paraf.service.js';
+import { requireParaf, recordParaf, clearParaf, pemarafGateActive, findParaf, parafProgress } from './paraf.service.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
@@ -593,6 +593,14 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
     ? await prisma.user.findUnique({ where: { id: assignment.registration.core_distributor_id }, select: { id: true, name: true, nip: true } })
     : null;
 
+  const parafSubject = assignment.id;
+  const gateActive = await pemarafGateActive(prisma);
+  const parafRecord = gateActive ? await findParaf(prisma, 'VERIFICATION_RESULT', parafSubject) : null;
+  const parafInfo = gateActive ? {
+    gate_active: true,
+    ...parafProgress(parafRecord),
+  } : { gate_active: false, complete: true, signers: [], required: 0 };
+
   return {
     assignment: {
       id: assignment.id,
@@ -629,6 +637,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
     latest_result_document: latestDraft,
     berita_acara: beritaAcara,
     result_documents: resultDocuments,
+    paraf: parafInfo,
   };
 };
 

@@ -726,6 +726,7 @@ export const VerificationInspectionPage = () => {
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
+    isPemaraf, canPemarafSign, alreadyParafed, parafInfo, parafSatisfied,
     isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
     canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
@@ -1390,6 +1391,12 @@ export const VerificationInspectionPage = () => {
         sesuaiCount={sesuaiCount}
         tidakBerlakuCount={tidakBerlakuCount}
         isDirty={isDirty}
+        isHead={isHead}
+        isPemaraf={isPemaraf}
+        canPemarafSign={canPemarafSign}
+        alreadyParafed={alreadyParafed}
+        parafInfo={parafInfo}
+        parafSatisfied={parafSatisfied}
         canHeadApprove={canHeadApprove}
         assignment={assignment}
         isSent={isSent}

@@ -34,8 +34,11 @@ test('Pemaraf mendapat akses setara Kepala LPMQ tetapi tampil sebagai role Pemar
   assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'], identityRoles: ['PEMARAF'] });
   assert.deepEqual(withPemaraf(['DISTRIBUTOR', 'PEMARAF']), { isPemaraf: true, roles: ['DISTRIBUTOR', 'KEPALA_LPMQ'], identityRoles: ['DISTRIBUTOR', 'PEMARAF'] });
   assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
-  // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala
+  // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala bila tanpa activeRole
   assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
+  // Namun bila akun multi-role beralih ke peran aktif PEMARAF (X-Active-Role: PEMARAF), maka berhak bertindak sebagai Pemaraf
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF'], 'PEMARAF'), { isPemaraf: true, roles: ['KEPALA_LPMQ', 'KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ', 'PEMARAF'] });
+  assert.deepEqual(withPemaraf(['SUPERADMIN', 'PEMARAF', 'KEPALA_LPMQ'], 'PEMARAF'), { isPemaraf: true, roles: ['SUPERADMIN', 'KEPALA_LPMQ', 'KEPALA_LPMQ'], identityRoles: ['SUPERADMIN', 'PEMARAF', 'KEPALA_LPMQ'] });
   assert.equal(toAccessRole('PEMARAF', true), 'KEPALA_LPMQ');
   assert.equal(toAccessRole('DISTRIBUTOR', true), 'DISTRIBUTOR');
 });
