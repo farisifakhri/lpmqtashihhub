@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink, Download, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 function LocalFilePreviewModal({ file, onClose }) {
@@ -111,6 +111,7 @@ export const Step4ReviewSubmit = ({
   isSubmitting,
   uploadingFiles,
   loadingMaster,
+  submitError,
 }) => {
   const isPerpanjangan = kategoriPendaftaran === 'Perpanjangan Tanda Tashih';
   const isLuarNegeri = kategoriPendaftaran === 'Mushaf Luar Negeri';
@@ -404,6 +405,16 @@ export const Step4ReviewSubmit = ({
             )}
           </div>
         </div>
+
+        {submitError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-semibold text-civic-danger"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         {/* Navigasi & Aksi Pengiriman */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-line">
