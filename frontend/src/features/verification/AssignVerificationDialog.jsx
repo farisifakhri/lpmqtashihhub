@@ -297,13 +297,9 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
                   <option value="">-- Pilih Petugas Verifikator --</option>
                   {filteredVerifiers.map((v) => {
                     const taskCount = v.active_assignment_count ?? v.active_assignments_count ?? 0;
-                    const dueInfo = v.oldest_active_due_at
-                      ? ` · tenggat terdekat ${new Date(v.oldest_active_due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                      : '';
-                    const teamPrefix = v.core_team_number ? `[Tim Inti ${v.core_team_number}] ` : '';
                     return (
                       <option key={v.id} value={v.id}>
-                        {teamPrefix}{v.name} {v.nip ? `(NIP: ${v.nip})` : ''} · {taskCount} tugas aktif{dueInfo}
+                        {v.name} · {taskCount} tugas aktif
                       </option>
                     );
                   })}
