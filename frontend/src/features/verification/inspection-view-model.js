@@ -58,9 +58,18 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const userRoles = accessRoles(Array.isArray(currentUser?.roles)
     ? currentUser.roles
     : (currentUser?.role ? [currentUser.role] : []));
+  const isPemaraf = Boolean(
+    currentUser?.isPemaraf ||
+    currentUser?.activeRole === 'PEMARAF' ||
+    userRoles.includes('PEMARAF')
+  );
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL');
+
+  const parafInfo = detail?.paraf || { gate_active: false, complete: true, signers: [], required: 0 };
+  const alreadyParafed = Boolean(parafInfo.signers?.some(s => s.id === currentUser?.id));
+  const parafSatisfied = !parafInfo.gate_active || Boolean(parafInfo.complete);
 
   const isAssignedVerifier = isVerifier && (!assignment.verifier_id || assignment.verifier_id === currentUser?.id || assignment.verifier?.id === currentUser?.id);
   const canVerifierWork = isInProgress && isAssignedVerifier && !isRevoked;
@@ -73,7 +82,8 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     && registration.payment_records?.some(item => item.billing_no === latestResultDoc.content_snapshot.billing_no)
   );
   const approvalReady = Boolean(verifierSignedResult && verifierSignedBa && billingReady);
-  const canHeadApprove = isHead && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL' && approvalReady;
+  const canPemarafSign = isPemaraf && !alreadyParafed && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL';
+  const canHeadApprove = !isPemaraf && isHead && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL' && approvalReady && parafSatisfied;
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
   const canVerifierSend = isAssignedVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
 
@@ -104,6 +114,7 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
+    isPemaraf, canPemarafSign, alreadyParafed, parafInfo, parafSatisfied,
     isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
     canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
