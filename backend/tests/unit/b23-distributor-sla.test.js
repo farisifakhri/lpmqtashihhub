@@ -252,3 +252,31 @@ test('B23-T8: Distributor tidak memilih tanggal (due_at kosong) menggunakan defa
   assert.equal(result.due_meta.sla_days, 10);
   assert.equal(result.due_at.getTime(), result.due_meta.max_due.getTime());
 });
+
+
+test('B23-T9: Pilihan due_at di masa lalu ditolak 422', async () => {
+  const mockCalendar = createMockCalendar('2026-11-01', 60);
+  const tx = createMockTx(mockCalendar);
+
+  const reg = {
+    id: 'reg-past',
+    status: 'WAITING_DISTRIBUTION',
+    stage_entered_at: new Date('2026-11-01T08:00:00.000Z'),
+    fee_sla_snapshot: {
+      sla_initial_days: 30,
+    },
+  };
+
+  const user = { id: 'dist-1', roles: ['DISTRIBUTOR'] };
+  // Tanggal 5 November 2026 adalah hari kerja (Kamis), tetapi berada di masa lalu relatif terhadap hari ini
+  await assert.rejects(
+    async () => {
+      await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-11-05', user);
+    },
+    err => {
+      assert.equal(err.statusCode, 422);
+      assert.match(err.message, /masa lalu/i);
+      return true;
+    }
+  );
+});
