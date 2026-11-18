@@ -164,4 +164,31 @@ describe('CheckRegistrationStatusPage (T-S02 Cek Status Pendaftaran)', () => {
       expect(screen.getByText(/Kode pendaftaran tidak ditemukan\. Pastikan Anda memasukkan kode dengan benar/i)).toBeInTheDocument();
     });
   });
+
+  it('handles email search with generic privacy-preserving message', async () => {
+    vi.spyOn(publisherRegistrationApi, 'checkStatus').mockResolvedValue({
+      success: true,
+      data: {
+        is_email_search: true,
+        message: 'Jika email terdaftar, informasi status pendaftaran dan kode akses telah dikirimkan ke email tersebut.',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <CheckRegistrationStatusPage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/Contoh: REG-PUB-7K9M2X4F/i), {
+      target: { value: 'user@penerbit.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Periksa Status Pendaftaran/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Pemeriksaan Status via Email')).toBeInTheDocument();
+      expect(screen.getByText(/Jika email terdaftar, informasi status pendaftaran dan kode akses telah dikirimkan/i)).toBeInTheDocument();
+      expect(screen.getByText(/Petunjuk Akses:/i)).toBeInTheDocument();
+    });
+  });
 });

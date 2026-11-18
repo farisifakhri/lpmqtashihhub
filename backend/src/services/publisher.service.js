@@ -292,7 +292,7 @@ const toDirectoryRow = (publisher) => {
   };
 };
 
-export const getPublisherDirectory = async ({ letter, province, search, page = 1, limit = 20 } = {}) => {
+export const getPublisherDirectory = async ({ letter, province, search, page = 1, limit = 20 } = {}, { isPublic = false } = {}) => {
   const publishers = await prisma.publisher.findMany({
     where: { verification_status: 'VERIFIED' },
     select: {
@@ -319,7 +319,9 @@ export const getPublisherDirectory = async ({ letter, province, search, page = 1
   const filtered = all.filter((row) =>
     (!letter || row.letter === letter)
     && (!province || row.province === province)
-    && (!keyword || [row.name, row.address, row.pic_name, row.email, row.phone, row.nomor_induk_penerbit]
+    && (!keyword || (isPublic
+      ? [row.name, row.address, row.nomor_induk_penerbit]
+      : [row.name, row.address, row.pic_name, row.email, row.phone, row.nomor_induk_penerbit])
       .some((value) => value.toLowerCase().includes(keyword))));
 
   const start = (page - 1) * limit;
@@ -336,10 +338,14 @@ export const getPublisherDirectory = async ({ letter, province, search, page = 1
   };
 };
 
-// Versi publik (halaman Informasi): sama dengan direktori lama di situs LPMQ, tanpa NPWP/NIB.
+// Versi publik (halaman Informasi): hanya nama, alamat, provinsi, jenis badan, nomor induk, tanggal.
+// TIDAK menyertakan PII sensitif: email, telepon, nama PIC, NPWP, NIB (P0 Security Fix).
 export const getPublicPublisherDirectory = async (params) => {
-  const result = await getPublisherDirectory(params);
-  return { ...result, items: result.items.map(({ npwp: _npwp, nib: _nib, ...row }) => row) };
+  const result = await getPublisherDirectory(params, { isPublic: true });
+  return {
+    ...result,
+    items: result.items.map(({ npwp: _npwp, nib: _nib, email: _email, phone: _phone, pic_name: _pic, ...row }) => row),
+  };
 };
 
 export default {
