@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AlertCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, HelpCircle, Search } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, HelpCircle, Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { faqApi, FAQ_CATEGORIES_OPTIONS } from '@/api/faq.api';
+import { PublicAppPromotion } from '@/components/public/PublicAppPromotion';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicHeader, PUBLIC_INFORMATION_NAV_ITEMS } from '@/components/public/PublicHeader';
 
@@ -157,14 +158,8 @@ export function FaqPage() {
               {[1, 2, 3].map((row) => <div key={row} className="h-14 animate-pulse rounded-lg bg-surface-subtle" />)}
             </div>
           )}
-          {!loading && error && (
-            <div className="rounded-2xl border border-civic-dangerLine bg-civic-dangerSoft p-6 text-sm text-civic-danger" role="alert">
-              <AlertCircle className="mr-2 inline h-4 w-4" />
-              {error}
-              <button type="button" onClick={fetchFaqs} className="ml-3 font-semibold underline">Coba lagi</button>
-            </div>
-          )}
-          {!loading && !error && (
+
+          {!loading && (
             <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
               <table className="w-full min-w-[640px] text-left text-sm">
                 <thead className="border-b border-line bg-surface-subtle text-xs font-bold uppercase tracking-wide text-ink-muted">
@@ -261,6 +256,7 @@ export function FaqPage() {
           )}
         </section>
       </main>
+      <PublicAppPromotion />
       <PublicFooter />
     </div>
   );

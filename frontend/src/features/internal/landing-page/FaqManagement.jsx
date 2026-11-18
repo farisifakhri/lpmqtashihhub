@@ -267,13 +267,7 @@ export function FaqManagement() {
       </div>
 
       {loading && <div className="space-y-3 rounded-2xl border border-line bg-surface p-5" aria-busy="true" aria-label="Memuat FAQ"><div className="h-10 animate-pulse rounded-lg bg-surface-subtle" /><div className="h-10 animate-pulse rounded-lg bg-surface-subtle" /></div>}
-      {!loading && error && (
-        <div className="rounded-2xl border border-civic-dangerLine bg-civic-dangerSoft p-6 text-sm text-civic-danger" role="alert">
-          <AlertCircle className="mr-2 inline h-4 w-4" />{error}
-          <button type="button" onClick={fetchFaqs} className="ml-3 font-semibold underline">Muat ulang</button>
-        </div>
-      )}
-      {!loading && !error && (
+      {!loading && (
         <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-sm">
           <table className="w-full min-w-[800px] text-left text-sm">
             <thead className="border-b border-line bg-surface-subtle text-xs font-bold uppercase tracking-wide text-ink-muted">
