@@ -1,4 +1,18 @@
 import { prisma } from '../config/database.js';
+import { getPublicLandingStatistics } from '../services/landing-statistics.service.js';
+
+export const getLandingStatistics = async (req, res, next) => {
+  try {
+    const stats = await getPublicLandingStatistics();
+    res.set('Cache-Control', 'no-cache');
+    return res.status(200).json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
 
 export const verifyDocumentByQrToken = async (req, res, next) => {
   try {
@@ -57,4 +71,4 @@ export const verifyDocumentByQrToken = async (req, res, next) => {
   }
 };
 
-export default { verifyDocumentByQrToken };
+export default { verifyDocumentByQrToken, getLandingStatistics };
