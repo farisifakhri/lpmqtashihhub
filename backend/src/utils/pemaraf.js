@@ -10,7 +10,8 @@ export const withPemaraf = (codes, activeRoleHeader = null) => {
   if (hasPemaraf) {
     if (activeRoleHeader === 'PEMARAF') {
       isPemaraf = true;
-    } else if (activeRoleHeader === 'KEPALA_LPMQ') {
+    } else if (activeRoleHeader && activeRoleHeader.trim() !== '') {
+      // Jika pengguna secara eksplisit mengirimkan active role lain (misal KEPALA_LPMQ, SUPERADMIN, VERIFIKATOR)
       isPemaraf = false;
     } else {
       isPemaraf = !hasKepala;

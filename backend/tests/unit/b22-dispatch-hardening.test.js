@@ -111,9 +111,9 @@ test('B22-Hardening: dispatchVerificationResult klaim atomik dokumen ke status S
       }
     );
 
-    // Pastikan klaim atomik menargetkan dokumen berstatus SIGNED atau EMAIL_FAILED dan mengubahnya ke SENDING
+    // Pastikan klaim atomik menargetkan dokumen berstatus SIGNED atau EMAIL_FAILED dan mengubahnya ke EMAIL_QUEUED
     assert.deepEqual(updateManyCalledWith.where.status.in, ['SIGNED', 'EMAIL_FAILED']);
-    assert.equal(updateManyCalledWith.data.status, 'SENDING');
+    assert.equal(updateManyCalledWith.data.status, 'EMAIL_QUEUED');
   } finally {
     prisma.verificationDocument.findUnique = originalFindUnique;
     prisma.verificationDocument.updateMany = originalUpdateMany;

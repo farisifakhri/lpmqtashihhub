@@ -1216,7 +1216,7 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   if (doc.status === 'SENT') {
     fail(409, 'Surat hasil verifikasi sudah dikirimkan kepada penerbit sebelumnya.');
   }
-  if (!['SIGNED', 'EMAIL_FAILED'].includes(doc.status)) {
+  if (!['SIGNED', 'EMAIL_FAILED', 'EMAIL_QUEUED'].includes(doc.status)) {
     fail(409, `Surat hasil verifikasi belum ditandatangani secara lengkap (status dokumen: ${doc.status}).`);
   }
 
@@ -1264,14 +1264,14 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   }
 
   // Klaim kepemilikan atomik: hanya 1 proses pengiriman yang berhak memproses dokumen
-  // Transisikan status dari SIGNED / EMAIL_FAILED ke SENDING untuk mencegah race condition
+  // Transisikan status dari SIGNED / EMAIL_FAILED ke EMAIL_QUEUED untuk mencegah race condition
   const claim = await prisma.verificationDocument.updateMany({
     where: {
       id: doc.id,
       status: { in: ['SIGNED', 'EMAIL_FAILED'] },
     },
     data: {
-      status: 'SENDING',
+      status: 'EMAIL_QUEUED',
       dispatch_error: null,
     },
   });

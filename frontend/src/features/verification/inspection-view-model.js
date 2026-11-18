@@ -1,4 +1,4 @@
-import { accessRoles } from '@/lib/roles';
+import { accessRoles, checkIsPemaraf } from '@/lib/roles';
 
 export function getInspectionDraft(detail, definitions) {
   const snapshot = detail.latest_result_document?.content_snapshot;
@@ -55,17 +55,14 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const isInProgress = assignment.status === 'IN_PROGRESS';
   const isCompletedOrSubmitted =
     assignment.status === 'COMPLETED' || latestResultDoc?.status === 'SUBMITTED';
+  const activeRole = currentUser?.activeRole || currentUser?.role;
   const userRoles = accessRoles(Array.isArray(currentUser?.roles)
     ? currentUser.roles
     : (currentUser?.role ? [currentUser.role] : []));
-  const isPemaraf = Boolean(
-    currentUser?.isPemaraf ||
-    currentUser?.activeRole === 'PEMARAF' ||
-    userRoles.includes('PEMARAF')
-  );
-  const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
-  const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
-  const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL');
+  const isPemaraf = checkIsPemaraf(currentUser);
+  const isHead = activeRole === 'KEPALA_LPMQ' || (!isPemaraf && (userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ'));
+  const isVerifier = activeRole === 'VERIFIKATOR' || userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
+  const isAdmin = activeRole === 'SUPERADMIN' || userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL');
 
   const parafInfo = detail?.paraf || { gate_active: false, complete: true, signers: [], required: 0 };
   const alreadyParafed = Boolean(parafInfo.signers?.some(s => s.id === currentUser?.id));
