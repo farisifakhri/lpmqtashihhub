@@ -241,6 +241,7 @@ test('B19A-06: comparison_notes opsional pada penugasan naskah revisi masuk; dis
         core_team_number: 1,
         core_distributor_id: 'usr-dist',
         payment_records: [{ status: 'VERIFIED' }],
+        fee_sla_snapshot: { sla_revision_days: 7 },
       }),
       updateMany: async () => ({ count: 1 }),
     },
