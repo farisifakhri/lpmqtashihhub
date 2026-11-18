@@ -17,8 +17,8 @@ function createQuery({ page, limit, search, category, is_published } = {}) {
 }
 
 export const faqApi = {
-  listPublic: (params = {}) => apiClient(`${FAQ_API}${createQuery(params)}`, { method: 'GET' }),
-  listAdmin: (params = {}) => apiClient(`/admin${FAQ_API}${createQuery(params)}`, { method: 'GET' }),
+  listPublic: (params = {}) => apiClient(`${FAQ_API}${createQuery(params)}`, { method: 'GET', silent: true }),
+  listAdmin: (params = {}) => apiClient(`/admin${FAQ_API}${createQuery(params)}`, { method: 'GET', silent: true }),
   getAdmin: (id) => apiClient(`/admin${FAQ_API}/${encodeURIComponent(id)}`, { method: 'GET' }),
   create: (data) => apiClient(`/admin${FAQ_API}`, { method: 'POST', body: data }),
   update: (id, data) => apiClient(`/admin${FAQ_API}/${encodeURIComponent(id)}`, { method: 'PATCH', body: data }),
