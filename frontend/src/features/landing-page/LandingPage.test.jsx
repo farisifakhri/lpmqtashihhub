@@ -1,8 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { act, render, screen, fireEvent, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './LandingPage';
+import { publicApi } from '@/api/public.api';
+import { DATA_MUTATED_EVENT } from '@/api/client';
 
 const initialVisibilityStateDescriptor = Object.getOwnPropertyDescriptor(
   document,
@@ -26,6 +28,14 @@ describe('LandingPage sections and navigation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     window.HTMLElement.prototype.scrollIntoView = vi.fn();
+    vi.spyOn(publicApi, 'getStatistics').mockResolvedValue({
+      success: true,
+      data: {
+        stt_issued: 100,
+        publishers: 99,
+        pentashih: 53,
+      },
+    });
   });
 
   afterEach(() => {
@@ -520,7 +530,7 @@ describe('LandingPage sections and navigation', () => {
     });
   });
 
-  it('renders Informasi Pelayanan section with text maklumat, social links, statistics, and values', () => {
+  it('renders Informasi Pelayanan section with text maklumat, social links, statistics, and values', async () => {
     render(
       <MemoryRouter>
         <LandingPage />
@@ -543,8 +553,8 @@ describe('LandingPage sections and navigation', () => {
     expect(screen.getByText('Motto')).toBeInTheDocument();
     expect(screen.getByText(/Sahih Melayani/i)).toBeInTheDocument();
 
-    // Tiga kartu statistik & tanggal pembaruan data
-    expect(screen.getByText('100')).toBeInTheDocument();
+    // Tiga kartu statistik dinamis & tanggal pembaruan data
+    expect(await screen.findByText('100')).toBeInTheDocument();
     expect(screen.getByText('Surat Tanda Tashih Diterbitkan')).toBeInTheDocument();
     expect(screen.getByText('99')).toBeInTheDocument();
     expect(screen.getByText("Penerbit Mushaf Al-Qur'an")).toBeInTheDocument();
@@ -578,6 +588,66 @@ describe('LandingPage sections and navigation', () => {
     expect(fbLink).toHaveAttribute('target', '_blank');
     expect(footer.contains(fbLink)).toBe(true);
     expect(infoSection.contains(fbLink)).toBe(false);
+  });
+
+  it('menampilkan angka 0 pada ketiga kartu jika data statistik kosong, null, undefined, atau NaN', async () => {
+    vi.spyOn(publicApi, 'getStatistics').mockResolvedValueOnce({
+      success: true,
+      data: {
+        stt_issued: null,
+        publishers: undefined,
+        pentashih: 'invalid_number',
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('Surat Tanda Tashih Diterbitkan')).toBeInTheDocument();
+    expect(screen.getByText("Penerbit Mushaf Al-Qur'an")).toBeInTheDocument();
+    expect(screen.getByText("Pentashih Mushaf Al-Qur'an")).toBeInTheDocument();
+
+    // Seluruh kartu harus menampilkan angka 0, bukan null, undefined, atau NaN
+    const zeroElements = await screen.findAllByText('0');
+    expect(zeroElements.length).toBeGreaterThanOrEqual(3);
+    expect(screen.queryByText('NaN')).not.toBeInTheDocument();
+    expect(screen.queryByText('null')).not.toBeInTheDocument();
+    expect(screen.queryByText('undefined')).not.toBeInTheDocument();
+  });
+
+  it('memperbarui angka ketiga kartu secara otomatis (real-time) saat DATA_MUTATED_EVENT dipicu', async () => {
+    const statsMock = vi.spyOn(publicApi, 'getStatistics');
+    statsMock.mockResolvedValueOnce({
+      success: true,
+      data: { stt_issued: 5, publishers: 10, pentashih: 15 },
+    });
+
+    render(
+      <MemoryRouter>
+        <LandingPage />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('5')).toBeInTheDocument();
+    expect(screen.getByText('10')).toBeInTheDocument();
+    expect(screen.getByText('15')).toBeInTheDocument();
+
+    // Simulasikan ada STT baru terbit dan mutasi data pengguna
+    statsMock.mockResolvedValueOnce({
+      success: true,
+      data: { stt_issued: 6, publishers: 11, pentashih: 16 },
+    });
+
+    act(() => {
+      window.dispatchEvent(new CustomEvent(DATA_MUTATED_EVENT));
+    });
+
+    expect(await screen.findByText('6')).toBeInTheDocument();
+    expect(screen.getByText('11')).toBeInTheDocument();
+    expect(screen.getByText('16')).toBeInTheDocument();
   });
 
   it('slides the hero horizontally every ten seconds and cycles back to the first image', () => {

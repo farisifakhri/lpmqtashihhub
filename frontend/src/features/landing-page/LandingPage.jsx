@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect, useRef, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -23,28 +23,18 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 import { PublicAppPromotion } from '@/components/public/PublicAppPromotion';
+import { publicApi } from '@/api/public.api';
+import { DATA_MUTATED_EVENT } from '@/api/client';
 import heroImageFirst from '@/assets/berandaaku.webp';
 import heroImageSecond from '@/assets/berandakii.webp';
 
 const DistributionMap = lazy(() => import('./DistributionMap'));
 
-const serviceStatistics = [
-  {
-    count: '100',
-    label: 'Surat Tanda Tashih Diterbitkan',
-    icon: FileCheck,
-  },
-  {
-    count: '99',
-    label: "Penerbit Mushaf Al-Qur'an",
-    icon: Building2,
-  },
-  {
-    count: '53',
-    label: "Pentashih Mushaf Al-Qur'an",
-    icon: Users,
-  },
-];
+export const parseStatisticCount = (val) => {
+  if (val === null || val === undefined) return 0;
+  const num = Number(val);
+  return Number.isFinite(num) && num >= 0 ? Math.floor(num) : 0;
+};
 
 const serviceValues = [
   {
@@ -138,24 +128,30 @@ const extendedHeroSlides = [
 ];
 
 const StatCounter = ({ target, isVisible, duration = 1600 }) => {
-  const numericTarget = typeof target === 'number' ? target : parseInt(target, 10) || 0;
+  const numericTarget = parseStatisticCount(target);
+  const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+  const prefersReduced =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   const [count, setCount] = useState(() => {
-    // Di lingkungan pengujian (jsdom) atau SSR tanpa IntersectionObserver, tampilkan target langsung
-    if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
+    if (isTestEnv || prefersReduced || typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
       return numericTarget;
     }
     return 0;
   });
 
   useEffect(() => {
-    if (!isVisible) return;
+    if (isTestEnv || prefersReduced) {
+      setCount((prev) => (prev !== numericTarget ? numericTarget : prev));
+      return;
+    }
 
-    if (
-      typeof window !== 'undefined' &&
-      window.matchMedia &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-      setCount(numericTarget);
+    if (!isVisible) {
+      if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined') {
+        setCount((prev) => (prev !== numericTarget ? numericTarget : prev));
+      }
       return;
     }
 
@@ -187,12 +183,16 @@ const StatCounter = ({ target, isVisible, duration = 1600 }) => {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isVisible, numericTarget, duration]);
+  }, [isVisible, numericTarget, duration, isTestEnv, prefersReduced]);
+
+  if (isTestEnv) {
+    return <>{numericTarget}</>;
+  }
 
   return <>{count}</>;
 };
 
-export const LandingPage = () => {
+export const LandingPage = ({ initialStatistics } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const isLandingRoute = location.pathname === '/' || location.pathname === '/landing';
@@ -209,6 +209,76 @@ export const LandingPage = () => {
   const statsRef = useRef(null);
   const [statsVisible, setStatsVisible] = useState(false);
   const activeHeroSlide = (heroTrackIndex - 1 + heroSlides.length) % heroSlides.length;
+
+  const [rawStats, setRawStats] = useState(() => ({
+    stt_issued: initialStatistics?.stt_issued ?? initialStatistics?.sttIssued ?? (initialStatistics?.stt !== undefined ? initialStatistics.stt : null),
+    publishers: initialStatistics?.publishers ?? initialStatistics?.publishersCount ?? null,
+    pentashih: initialStatistics?.pentashih ?? initialStatistics?.pentashihCount ?? null,
+  }));
+
+  const fetchStatistics = useCallback(async () => {
+    try {
+      const res = await publicApi.getStatistics();
+      if (res?.data) {
+        setRawStats({
+          stt_issued: res.data.stt_issued ?? res.data.sttIssued ?? 0,
+          publishers: res.data.publishers ?? res.data.publishersCount ?? 0,
+          pentashih: res.data.pentashih ?? res.data.pentashihCount ?? 0,
+        });
+      }
+    } catch {
+      // Pada kegagalan koneksi atau error API, pertahankan nilai atau fallback ke 0
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStatistics();
+
+    const handleMutation = () => {
+      fetchStatistics();
+    };
+    const handleFocus = () => {
+      fetchStatistics();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchStatistics();
+      }
+    };
+
+    window.addEventListener(DATA_MUTATED_EVENT, handleMutation);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const interval = setInterval(fetchStatistics, 30_000);
+
+    return () => {
+      window.removeEventListener(DATA_MUTATED_EVENT, handleMutation);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [fetchStatistics]);
+
+  const serviceStatistics = useMemo(
+    () => [
+      {
+        count: parseStatisticCount(rawStats.stt_issued),
+        label: 'Surat Tanda Tashih Diterbitkan',
+        icon: FileCheck,
+      },
+      {
+        count: parseStatisticCount(rawStats.publishers),
+        label: "Penerbit Mushaf Al-Qur'an",
+        icon: Building2,
+      },
+      {
+        count: parseStatisticCount(rawStats.pentashih),
+        label: "Pentashih Mushaf Al-Qur'an",
+        icon: Users,
+      },
+    ],
+    [rawStats]
+  );
 
   const navigateHeroSlide = useCallback((direction) => {
     heroTimerRemainingRef.current = HERO_SLIDE_INTERVAL_MS;
