@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
+import { checkIsPemaraf } from '@/lib/roles';
 
 export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) => {
   const { currentUser } = useAuth();
@@ -121,7 +122,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const parafRequired = pendingParaf?.required || 2;
   const alreadyParafed = parafSigners.some((signer) => signer.id === currentUser?.id);
   // Kedua Pemaraf wajib memaraf (urutan bebas, masing-masing sekali); hanya akun berperan Pemaraf.
-  const canParaf = Boolean(pendingParaf) && Boolean(currentUser?.isPemaraf) && !alreadyParafed;
+  const isPemaraf = checkIsPemaraf(currentUser);
+  const canParaf = Boolean(pendingParaf) && isPemaraf && !alreadyParafed;
 
   const handleParaf = async () => {
     setSubmitting(true);

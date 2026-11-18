@@ -329,6 +329,13 @@ export async function checkPublisherRegistrationStatus(queryInput) {
 
   if (isEmail) {
     const normalizedEmail = query.toLowerCase();
+    // Respons SELALU generik untuk mencegah enumerasi email (P0 Security Fix).
+    // Data sensitif (kode pendaftaran, status, alasan) HANYA dikirim ke email pemilik.
+    const GENERIC_RESPONSE = {
+      is_email_search: true,
+      message: 'Jika email terdaftar, informasi status pendaftaran dan kode akses telah dikirimkan ke email tersebut.',
+    };
+
     const regs = await prisma.publisherRegistration.findMany({
       where: { email: normalizedEmail },
       orderBy: { created_at: 'desc' },
@@ -344,58 +351,35 @@ export async function checkPublisherRegistrationStatus(queryInput) {
     });
 
     if (regs.length === 0) {
-      // Respons anti-enumerasi aman jika email belum terdaftar
-      return {
-        is_email_search: true,
-        email_sent: false,
-        message: 'Jika email terdaftar, informasi status pendaftaran dan kode akses telah dikirimkan ke email tersebut.',
-      };
+      return GENERIC_RESPONSE;
     }
 
-    const latest = regs[0];
-    const statusLabel = STATUS_LABELS[latest.status] || latest.status;
-
-    // Masked email: z***@gmail.com
-    const [userPart, domainPart] = normalizedEmail.split('@');
-    const maskedEmail = userPart.length > 2
-      ? `${userPart[0]}***${userPart.slice(-1)}@${domainPart}`
-      : `${userPart[0]}***@${domainPart}`;
-
-    // Kirim notifikasi status dan kode pendaftaran ke email via Outbox
-    try {
-      await sendOutboxEmail(prisma, {
-        registrationId: latest.id,
-        documentId: null,
-        idempotencyKey: `pub_status_email_${latest.id}_${Math.floor(Date.now() / 60000)}`,
-        recipientEmail: normalizedEmail,
-        recipientName: latest.name,
-        subject: `Status Pendaftaran Akun Penerbit - ${latest.registration_code}`,
-        template: 'PUBLISHER_STATUS_INFO',
-        payload: {
-          registration_code: latest.registration_code,
-          status: latest.status,
-          status_label: statusLabel,
-        },
-      });
-      console.info(`[StatusCheck] Email status dikirim via outbox ke ${maskedEmail}`);
-    } catch (emailErr) {
-      console.warn('[StatusCheck] Gagal kirim email outbox status:', emailErr.message);
+    // Kirim ringkasan status ke email pemilik via Outbox — data TIDAK dikembalikan ke HTTP response.
+    for (const reg of regs) {
+      const statusLabel = STATUS_LABELS[reg.status] || reg.status;
+      try {
+        await sendOutboxEmail(prisma, {
+          registrationId: reg.id,
+          documentId: null,
+          idempotencyKey: `pub_status_email_${reg.id}_${Math.floor(Date.now() / 60000)}`,
+          recipientEmail: normalizedEmail,
+          recipientName: reg.name,
+          subject: `Status Pendaftaran Akun Penerbit - ${reg.registration_code}`,
+          template: 'PUBLISHER_STATUS_INFO',
+          payload: {
+            registration_code: reg.registration_code,
+            status: reg.status,
+            status_label: statusLabel,
+            reason: ['PERLU_PERBAIKAN', 'DITOLAK'].includes(reg.status) ? reg.reason : undefined,
+          },
+        });
+      } catch (emailErr) {
+        console.warn(`[StatusCheck] Gagal kirim email outbox status untuk ${reg.registration_code}:`, emailErr.message);
+      }
     }
+    console.info(`[StatusCheck] Email status dikirim via outbox ke ${normalizedEmail.replace(/(.)[^@]*(@.*)/, '$1***$2')} (${regs.length} pendaftaran)`);
 
-    return {
-      is_email_search: true,
-      email_sent: true,
-      masked_email: maskedEmail,
-      kode_pendaftaran: latest.registration_code,
-      status: latest.status,
-      status_label: statusLabel,
-      alasan: ['PERLU_PERBAIKAN', 'DITOLAK'].includes(latest.status) ? latest.reason : null,
-      tanggal_pengajuan: latest.created_at,
-      tanggal_pembaruan: latest.updated_at,
-      message: `Informasi kode pendaftaran dan status telah dikirimkan ke email ${maskedEmail}.`,
-      total_pendaftaran: regs.length,
-      timeline: buildRegistrationTimeline(latest.status, latest.created_at, latest.updated_at),
-    };
+    return GENERIC_RESPONSE;
   }
 
   // Pencarian dengan kode pendaftaran resmi

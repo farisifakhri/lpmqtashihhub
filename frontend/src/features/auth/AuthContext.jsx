@@ -84,6 +84,11 @@ export const AuthProvider = ({ children }) => {
           const effectiveRole = (savedActiveRole && userRoles.includes(savedActiveRole))
             ? savedActiveRole
             : (userRoles[0] || 'PENERBIT');
+          const isPemaraf = effectiveRole === 'PEMARAF'
+            ? true
+            : (['KEPALA_LPMQ', 'SUPERADMIN', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'PENERBIT'].includes(effectiveRole)
+              ? false
+              : Boolean(u.isPemaraf || (userRoles.includes('PEMARAF') && !userRoles.includes('KEPALA_LPMQ'))));
 
           const userObj = {
             id: u.id,
@@ -91,8 +96,9 @@ export const AuthProvider = ({ children }) => {
             email: u.email,
             nip: u.nip,
             roles: userRoles,
-            isPemaraf: Boolean(u.isPemaraf),
+            isPemaraf,
             role: effectiveRole,
+            activeRole: effectiveRole,
             publisherId: u.publisher?.id,
             publisherName: u.publisher?.legal_name,
             publisher: u.publisher || null,
@@ -133,6 +139,11 @@ export const AuthProvider = ({ children }) => {
         const effectiveRole = (savedActiveRole && userRoles.includes(savedActiveRole))
           ? savedActiveRole
           : (userRoles[0] || 'PENERBIT');
+        const isPemaraf = effectiveRole === 'PEMARAF'
+          ? true
+          : (['KEPALA_LPMQ', 'SUPERADMIN', 'VERIFIKATOR', 'DISTRIBUTOR', 'PENTASHIH', 'DOKUMENTATOR', 'PENERBIT'].includes(effectiveRole)
+            ? false
+            : Boolean(u.isPemaraf || (userRoles.includes('PEMARAF') && !userRoles.includes('KEPALA_LPMQ'))));
 
         const userObj = {
           id: u.id,
@@ -140,8 +151,9 @@ export const AuthProvider = ({ children }) => {
           email: u.email,
           nip: u.nip,
           roles: userRoles,
-          isPemaraf: Boolean(u.isPemaraf),
+          isPemaraf,
           role: effectiveRole,
+          activeRole: effectiveRole,
           publisherId: u.publisher?.id || (userRoles.includes('PENERBIT') ? u.id : null),
           publisherName: u.publisher?.legal_name || (userRoles.includes('PENERBIT') ? u.name : null),
           publisher: u.publisher || null,
@@ -195,9 +207,12 @@ export const AuthProvider = ({ children }) => {
   // Ganti peran aktif untuk pengguna yang memiliki multi-role (Item 21)
   const switchActiveRole = (targetRole) => {
     if (currentUser?.roles?.includes(targetRole)) {
+      const isPemaraf = targetRole === 'PEMARAF';
       const updatedUser = {
         ...currentUser,
         role: targetRole,
+        activeRole: targetRole,
+        isPemaraf,
       };
       setCurrentUser(updatedUser);
       localStorage.setItem('lpmq_active_role', targetRole);
@@ -231,6 +246,7 @@ export const AuthProvider = ({ children }) => {
     'PENTASHIH',
     'DOKUMENTATOR',
     'KEPALA_LPMQ',
+    'PEMARAF',
   ];
 
   return (

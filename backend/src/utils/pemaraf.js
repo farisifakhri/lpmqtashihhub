@@ -2,10 +2,29 @@
 // dengan Kepala dan berdiri sebelum Kepala: pada titik persetujuan, aksinya dicatat sebagai paraf.
 // `roles` = hak akses di server (PEMARAF dipetakan ke KEPALA_LPMQ agar semua pemeriksaan Kepala berlaku);
 // `identityRoles` = role yang ditampilkan ke pengguna (PEMARAF tetap PEMARAF).
-export const withPemaraf = (codes) => {
-  const isPemaraf = codes.includes('PEMARAF') && !codes.includes('KEPALA_LPMQ');
-  const roles = isPemaraf ? codes.map(code => (code === 'PEMARAF' ? 'KEPALA_LPMQ' : code)) : codes.filter(code => code !== 'PEMARAF');
-  return { isPemaraf, roles, identityRoles: isPemaraf ? codes : roles };
+export const withPemaraf = (codes, activeRoleHeader = null) => {
+  const hasPemaraf = codes.includes('PEMARAF');
+  const hasKepala = codes.includes('KEPALA_LPMQ');
+
+  let isPemaraf = false;
+  if (hasPemaraf) {
+    if (activeRoleHeader === 'PEMARAF') {
+      isPemaraf = true;
+    } else if (activeRoleHeader && activeRoleHeader.trim() !== '') {
+      // Jika pengguna secara eksplisit mengirimkan active role lain (misal KEPALA_LPMQ, SUPERADMIN, VERIFIKATOR)
+      isPemaraf = false;
+    } else {
+      isPemaraf = !hasKepala;
+    }
+  }
+
+  const roles = isPemaraf
+    ? codes.map(code => (code === 'PEMARAF' ? 'KEPALA_LPMQ' : code))
+    : (activeRoleHeader ? codes : codes.filter(code => code !== 'PEMARAF'));
+
+  const identityRoles = isPemaraf || activeRoleHeader ? codes : roles;
+
+  return { isPemaraf, roles, identityRoles };
 };
 
 // Peran aktif dari header X-Active-Role memakai kode identitas; terjemahkan ke kode hak akses.

@@ -50,11 +50,13 @@ export const authenticate = async (req, res, next) => {
       }
     }
 
-    const { roles: roleCodes, isPemaraf, identityRoles } = withPemaraf(user.roles.map((ur) => ur.role.code));
+    const activeRoleHeader = (req.headers['x-active-role'] || '').toString().trim();
+    const userRoleCodes = user.roles.map((ur) => ur.role.code);
+    const { roles: roleCodes, isPemaraf, identityRoles } = withPemaraf(userRoleCodes, activeRoleHeader);
     // Peran aktif dikirim dari client via header X-Active-Role; backend memakainya untuk
     // menyaring badge dan menu agar pengguna multi-role bisa berganti peran dengan benar.
-    const headerRole = toAccessRole((req.headers['x-active-role'] || '').toString().trim(), isPemaraf);
-    const activeRole = roleCodes.includes(headerRole) ? headerRole : roleCodes[0];
+    const headerRole = toAccessRole(activeRoleHeader, isPemaraf);
+    const activeRole = isPemaraf && activeRoleHeader === 'PEMARAF' ? 'PEMARAF' : (roleCodes.includes(headerRole) ? headerRole : roleCodes[0]);
 
     req.user = {
       id: user.id,

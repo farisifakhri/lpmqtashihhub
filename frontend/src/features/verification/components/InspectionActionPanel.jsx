@@ -7,6 +7,7 @@ import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle, Printer } from 'l
 
 export const InspectionActionPanel = ({
   isInProgress, sesuaiCount, tidakBerlakuCount, isDirty, canHeadApprove,
+  isHead, isPemaraf, canPemarafSign, alreadyParafed, parafInfo = {}, parafSatisfied = true,
   assignment, isSent, canVerifierWork, handleSaveDraft, actionLoading,
   setReturnModalOpen, handleOpenSubmitConfirm, setApproveConfirmOpen,
   canVerifierSend, handleSendDocument, isAllFullySigned,
@@ -39,6 +40,21 @@ export const InspectionActionPanel = ({
                 {isDirty ? 'Ada perubahan belum disimpan' : 'Tersimpan otomatis'}
               </span>
             </div>
+          ) : canPemarafSign ? (
+            <span className="font-bold text-civic-info flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-civic-info shrink-0" />
+              Menunggu Paraf Pemaraf (Draf Hasil Verifikasi)
+            </span>
+          ) : isPemaraf && alreadyParafed ? (
+            <span className="font-bold text-civic-success flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0" />
+              Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.
+            </span>
+          ) : !parafSatisfied && (isHead || assignment.status === 'WAITING_APPROVAL') ? (
+            <span className="font-bold text-civic-warning flex items-center gap-1.5">
+              <AlertTriangle className="w-4 h-4 text-civic-warning shrink-0" />
+              Menunggu Paraf Pemaraf ({parafInfo.signers?.length || 0}/{parafInfo.required || 2}) sebelum Pengesahan Kepala LPMQ
+            </span>
           ) : canHeadApprove ? (
             <span className="font-bold text-civic-warning">
               Menunggu Persetujuan Draf oleh Kepala LPMQ
@@ -136,6 +152,29 @@ export const InspectionActionPanel = ({
                   : 'Ajukan Draf ke Kepala LPMQ'}
               </Button>
             </div>
+          ) : canPemarafSign ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (setApproveModalError) setApproveModalError(null);
+                setApproveConfirmOpen(true);
+              }}
+              disabled={actionLoading}
+              className="text-xs"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+              {actionLoading ? 'Memproses...' : 'Bubuhkan Paraf Surat Hasil'}
+            </Button>
+          ) : isHead && !parafSatisfied && assignment.status === 'WAITING_APPROVAL' ? (
+            <Button
+              variant="outline"
+              disabled={true}
+              className="text-xs opacity-60 cursor-not-allowed text-civic-warning border-civic-warningLine"
+              title="Persetujuan Kepala LPMQ baru dapat dilakukan setelah seluruh Pemaraf membubuhkan paraf."
+            >
+              <AlertCircle className="w-3.5 h-3.5 mr-1.5 text-civic-warning" />
+              Menunggu Paraf Pemaraf ({parafInfo.signers?.length || 0}/{parafInfo.required || 2})
+            </Button>
           ) : canHeadApprove ? (
             <Button
               variant="primary"
@@ -216,7 +255,7 @@ export const InspectionActionPanel = ({
         loading={actionLoading}
       />
 
-      {/* Confirmation Summary Dialog for Approving Draft (Kepala LPMQ) */}
+      {/* Confirmation Summary Dialog for Approving Draft (Kepala LPMQ / Pemaraf) */}
       <ConfirmationSummaryDialog
         isOpen={approveConfirmOpen}
         onClose={() => {
@@ -224,13 +263,17 @@ export const InspectionActionPanel = ({
           setApproveConfirmOpen(false);
         }}
         onConfirm={handleConfirmApprove}
-        title="Sahkan Surat Hasil Verifikasi"
-        description="Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan sahkan surat."
+        title={canPemarafSign ? "Bubuhkan Paraf Dokumen Verifikasi" : "Sahkan Surat Hasil Verifikasi"}
+        description={canPemarafSign
+          ? "Periksa draf hasil verifikasi sebelum membubuhkan paraf resmi. Setelah seluruh Pemaraf memaraf, dokumen akan diteruskan ke Kepala LPMQ untuk disahkan."
+          : "Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan sahkan surat."}
         objectName={`Surat Hasil Verifikasi (${registration.registration_no || '-'})`}
-        nextActor="Penerbit (Terkirim Otomatis)"
-        statusChange="SUBMITTED -> SIGNED & SENT (Terkirim Otomatis ke Penerbit)"
-        irreversibleConsequence="Setelah disahkan, surat hasil resmi dan tagihan PNBP akan langsung dikirimkan ke penerbit secara otomatis, nomor dokumen dikunci, dan tagihan PNBP resmi diterbitkan."
-        confirmLabel="Sahkan dan Terbitkan PDF"
+        nextActor={canPemarafSign ? "Pemaraf / Kepala LPMQ" : "Penerbit (Terkirim Otomatis)"}
+        statusChange={canPemarafSign ? "SUBMITTED (Paraf Dicatat)" : "SUBMITTED -> SIGNED & SENT (Terkirim Otomatis ke Penerbit)"}
+        irreversibleConsequence={canPemarafSign
+          ? "Paraf Anda akan dicatat secara permanen pada log audit dan dokumen sistem."
+          : "Setelah disahkan, surat hasil resmi dan tagihan PNBP akan langsung dikirimkan ke penerbit secara otomatis, nomor dokumen dikunci, dan tagihan PNBP resmi diterbitkan."}
+        confirmLabel={canPemarafSign ? "Bubuhkan Paraf" : "Sahkan dan Terbitkan PDF"}
         confirmVariant="primary"
         loading={actionLoading}
         summaryItems={[
@@ -248,67 +291,71 @@ export const InspectionActionPanel = ({
         ]}
       >
         <div className="space-y-3 pt-2 border-t border-line text-xs">
-          <div className="p-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-xs text-brand-800">
-              <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
-              <span>Penomoran Resmi Diterbitkan Otomatis</span>
-            </div>
-            <p className="text-xs text-brand-700 leading-relaxed">
-              Sistem akan menerbitkan nomor surat hasil dan berita acara secara atomik sesuai standar tata naskah dinas LPMQ (contoh: <code>B-xxxx/LPMQ.01/TL.01/...</code> dan <code>BA-xxxx/LPMQ.01/TL.01/...</code>).
-            </p>
-          </div>
-
-          <details className="group border border-line rounded-lg p-2.5 bg-surface-subtle">
-            <summary className="font-semibold text-xs text-ink-muted cursor-pointer hover:text-ink flex items-center justify-between select-none">
-              <span>Ubah nomor secara manual (opsional / darurat)</span>
-              <span className="text-xs text-ink-muted group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="space-y-3 pt-2.5 mt-2 border-t border-line">
-              <div>
-                <label htmlFor="approve-result-doc-no" className="block font-medium text-ink mb-1">
-                  Nomor Surat Hasil Verifikasi (Opsional)
-                </label>
-                <input
-                  id="approve-result-doc-no"
-                  type="text"
-                  value={resultDocumentNo || ''}
-                  onChange={(e) => {
-                    setResultDocumentNo?.(e.target.value);
-                    if (approveModalError) setApproveModalError?.(null);
-                  }}
-                  placeholder="Kosongkan untuk nomor otomatis (Contoh: B-0123/LPMQ.01/TL.01/X/2026)"
-                  maxLength={191}
-                  className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
-                />
-              </div>
-
-              {beritaAcaraDoc && (
-                <div>
-                  <label htmlFor="approve-ba-doc-no" className="block font-medium text-ink mb-1">
-                    Nomor Berita Acara Verifikasi (Opsional)
-                  </label>
-                  <input
-                    id="approve-ba-doc-no"
-                    type="text"
-                    value={minutesDocumentNo || ''}
-                    onChange={(e) => {
-                      setMinutesDocumentNo?.(e.target.value);
-                      if (approveModalError) setApproveModalError?.(null);
-                    }}
-                    placeholder="Kosongkan untuk nomor otomatis (Contoh: BA-0089/LPMQ.01/TL.01/X/2026)"
-                    maxLength={191}
-                    className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
-                  />
-                </div>
-              )}
-            </div>
-          </details>
-
           {approveModalError && (
             <div className="p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2" role="alert">
               <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
               <span>{approveModalError}</span>
             </div>
+          )}
+
+          {!canPemarafSign && (
+            <>
+              <div className="p-3 bg-brand-50 border border-brand-200 rounded-lg text-brand-900 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-xs text-brand-800">
+                  <CheckCircle2 className="w-4 h-4 text-brand-700 shrink-0" />
+                  <span>Penomoran Resmi Diterbitkan Otomatis</span>
+                </div>
+                <p className="text-xs text-brand-700 leading-relaxed">
+                  Sistem akan menerbitkan nomor surat hasil dan berita acara secara atomik sesuai standar tata naskah dinas LPMQ (contoh: <code>B-xxxx/LPMQ.01/TL.01/...</code> dan <code>BA-xxxx/LPMQ.01/TL.01/...</code>).
+                </p>
+              </div>
+
+              <details className="group border border-line rounded-lg p-2.5 bg-surface-subtle">
+                <summary className="font-semibold text-xs text-ink-muted cursor-pointer hover:text-ink flex items-center justify-between select-none">
+                  <span>Ubah nomor secara manual (opsional / darurat)</span>
+                  <span className="text-xs text-ink-muted group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div className="space-y-3 pt-2.5 mt-2 border-t border-line">
+                  <div>
+                    <label htmlFor="approve-result-doc-no" className="block font-medium text-ink mb-1">
+                      Nomor Surat Hasil Verifikasi (Opsional)
+                    </label>
+                    <input
+                      id="approve-result-doc-no"
+                      type="text"
+                      value={resultDocumentNo || ''}
+                      onChange={(e) => {
+                        setResultDocumentNo?.(e.target.value);
+                        if (approveModalError) setApproveModalError?.(null);
+                      }}
+                      placeholder="Kosongkan untuk nomor otomatis (Contoh: B-0123/LPMQ.01/TL.01/X/2026)"
+                      maxLength={191}
+                      className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
+                    />
+                  </div>
+
+                  {beritaAcaraDoc && (
+                    <div>
+                      <label htmlFor="approve-ba-doc-no" className="block font-medium text-ink mb-1">
+                        Nomor Berita Acara Verifikasi (Opsional)
+                      </label>
+                      <input
+                        id="approve-ba-doc-no"
+                        type="text"
+                        value={minutesDocumentNo || ''}
+                        onChange={(e) => {
+                          setMinutesDocumentNo?.(e.target.value);
+                          if (approveModalError) setApproveModalError?.(null);
+                        }}
+                        placeholder="Kosongkan untuk nomor otomatis (Contoh: BA-0089/LPMQ.01/TL.01/X/2026)"
+                        maxLength={191}
+                        className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono text-ink bg-white"
+                      />
+                    </div>
+                  )}
+                </div>
+              </details>
+            </>
           )}
         </div>
       </ConfirmationSummaryDialog>

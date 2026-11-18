@@ -169,24 +169,36 @@ export async function resolvePentashihDueAt(tx, reg, stage, requestedDueAt = nul
 
   const targetDateStr = jakartaDate(targetDate);
   const startDateStr = jakartaDate(startDate);
+  const todayStr = jakartaDate(now);
   const maxDueDateStr = jakartaDate(maxDueAt);
 
-  // 1. Validasi hari kerja (tidak boleh hari libur / akhir pekan bila workingDay tercatat)
+  // 1. Validasi hari kerja: tolak akhir pekan (Sabtu/Minggu) dan hari libur nasional
+  const targetDay = new Date(`${targetDateStr}T00:00:00Z`);
+  const dayOfWeek = targetDay.getUTCDay(); // 0 = Minggu, 6 = Sabtu
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    fail(422, `Tanggal tenggat waktu yang dipilih (${targetDateStr}) jatuh pada hari libur atau akhir pekan. Pilih hari kerja resmi.`);
+  }
+
   if (tx.workingDay?.findUnique) {
     const calendarDay = await tx.workingDay.findUnique({
-      where: { date: new Date(`${targetDateStr}T00:00:00Z`) },
+      where: { date: targetDay },
     });
     if (calendarDay && !calendarDay.is_working_day) {
       fail(422, `Tanggal tenggat waktu yang dipilih (${targetDateStr}) jatuh pada hari libur atau akhir pekan. Pilih hari kerja resmi.`);
     }
   }
 
-  // 2. Validasi tidak boleh lebih awal dari startDate
+  // 2. Validasi tidak boleh berada di masa lalu
+  if (targetDateStr < todayStr) {
+    fail(422, 'Tenggat waktu pentashihan tidak boleh berada di masa lalu.');
+  }
+
+  // 3. Validasi tidak boleh lebih awal dari startDate
   if (targetDateStr < startDateStr) {
     fail(422, 'Tenggat waktu tidak boleh lebih awal dari tanggal mulai penugasan.');
   }
 
-  // 3. Validasi tidak boleh melebihi batas maksimal SLA kecuali Superadmin dengan alasan valid
+  // 4. Validasi tidak boleh melebihi batas maksimal SLA kecuali Superadmin dengan alasan valid
   const isSuperAdmin = Boolean(
     user?.roles?.includes('SUPERADMIN') ||
     user?.role === 'SUPERADMIN'
