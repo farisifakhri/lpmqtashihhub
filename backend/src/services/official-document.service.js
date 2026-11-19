@@ -56,11 +56,11 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
         ? 'Surat Tanda Tashih (STT) untuk pengajuan ini sudah diterbitkan.'
         : 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
     }
-    if (last.status === 'DRAFT') {
+    if (last.status === 'DRAFT' && data.document_type === 'SURAT_TANDA_TASHIH') {
       if (data.reuse_existing_draft) {
         return last;
       }
-      fail(409, 'Draf dokumen untuk pengajuan ini sudah ada dan masih aktif. Silakan gunakan atau selesaikan draf yang sudah tersedia.');
+      fail(409, 'Draf Surat Tanda Tashih (STT) untuk pengajuan ini sudah ada dan masih aktif. Silakan gunakan atau selesaikan draf yang sudah tersedia.');
     }
   }
 
