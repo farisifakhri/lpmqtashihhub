@@ -127,6 +127,9 @@ export const VerificationInspectionPage = () => {
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
+  const [pemarafIds, setPemarafIds] = useState([]);
+  const [submitModalError, setSubmitModalError] = useState(null);
+  const [pemarafAvailable, setPemarafAvailable] = useState(null);
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
   const [resultDocumentNo, setResultDocumentNo] = useState('');
   const [minutesDocumentNo, setMinutesDocumentNo] = useState('');
@@ -435,6 +438,7 @@ export const VerificationInspectionPage = () => {
   const handleConfirmSubmitToHead = async () => {
     setActionLoading(true);
     setError(null);
+    setSubmitModalError(null);
     setSuccessMessage(null);
     try {
       const payload = {
@@ -445,15 +449,18 @@ export const VerificationInspectionPage = () => {
         billing_no: decision === 'PASSED' ? billingNo.trim() : undefined,
         billing_file_id: decision === 'PASSED' ? billingFileId || undefined : undefined,
         mushaf_content_review: contentReview || undefined,
+        pemaraf_ids: pemarafAvailable ? pemarafIds : undefined,
       };
       await verificationApi.submitDraft(assignmentId, payload);
+      setPemarafIds([]);
       invalidateQueueCounts();
       setSubmitConfirmOpen(false);
       setIsDirty(false);
       setSuccessMessage('Surat hasil telah ditandatangani internal oleh Verifikator dan diajukan bersama kode billing kepada Kepala LPMQ.');
       await fetchDetail();
     } catch (err) {
-      setError(err.message || 'Gagal mengajukan draf hasil verifikasi.');
+      // Tampilkan di dalam dialog: error halaman tertutup dialog sehingga tombol terlihat tidak bereaksi.
+      setSubmitModalError(err.message || 'Gagal mengajukan draf hasil verifikasi.');
     } finally {
       setActionLoading(false);
     }
@@ -727,7 +734,7 @@ export const VerificationInspectionPage = () => {
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
     isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
-    canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
+    isPemaraf, parafStatus, canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,
   } = getInspectionViewModel(detail, currentUser, selectedFileId, checklist);
@@ -1276,7 +1283,37 @@ export const VerificationInspectionPage = () => {
         {/* TAB 3: HASIL & DRAF SURAT */}
         <div className={`${activeMobileTab === 'hasil' ? 'block' : 'hidden'} ${activeWorkbenchTab === 'hasil' ? 'lg:block' : 'lg:hidden'} space-y-4 pb-28`}>
           {/* Multi-Signatory Progress & Email Status Banners */}
-          {isHead && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
+          {parafStatus && (
+            <div
+              role="status"
+              className={`rounded-xl border p-4 text-xs space-y-1.5 ${parafStatus.complete
+                ? 'border-civic-successLine bg-civic-successSoft text-civic-success'
+                : 'border-civic-warningLine bg-civic-warningSoft text-civic-warning'}`}
+            >
+              <p className="font-bold">
+                {parafStatus.complete
+                  ? `Paraf Pemaraf Lengkap (${parafStatus.signers.length}/${parafStatus.required})`
+                  : `Paraf Pemaraf ${parafStatus.signers.length}/${parafStatus.required}`}
+              </p>
+              {parafStatus.signers.length > 0 && (
+                <p>Sudah memaraf: {parafStatus.signers.map(signer => signer.name || 'Pemaraf').join(', ')}</p>
+              )}
+              <p>
+                {parafStatus.complete
+                  ? (parafStatus.isPemaraf
+                    ? 'Seluruh paraf sudah lengkap. Surat diteruskan ke Kepala LPMQ untuk disahkan.'
+                    : 'Seluruh Pemaraf sudah memaraf. Kepala LPMQ dapat mengesahkan surat hasil.')
+                  : (parafStatus.isPemaraf
+                    ? (!parafStatus.assignedToMe
+                      ? 'Anda tidak ditunjuk sebagai Pemaraf untuk surat ini.'
+                      : parafStatus.signedByMe
+                        ? 'Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.'
+                        : 'Surat menunggu paraf Anda.')
+                    : 'Pengesahan Kepala LPMQ tersedia setelah seluruh Pemaraf membubuhkan paraf.')}
+              </p>
+            </div>
+          )}
+          {isHead && !isPemaraf && latestResultDoc?.status === 'SUBMITTED' && !approvalReady && (
             <div role="alert" className="rounded-xl border border-civic-warningLine bg-civic-warningSoft p-4 text-xs text-civic-warning">
               Persetujuan Kepala tersedia setelah Verifikator menandatangani surat dan Berita Acara, serta kode billing PNBP pada surat lolos sudah tercatat sebagai tagihan.
             </div>
@@ -1391,6 +1428,7 @@ export const VerificationInspectionPage = () => {
         tidakBerlakuCount={tidakBerlakuCount}
         isDirty={isDirty}
         canHeadApprove={canHeadApprove}
+        isPemaraf={isPemaraf}
         assignment={assignment}
         isSent={isSent}
         canVerifierWork={canVerifierWork}
@@ -1405,6 +1443,12 @@ export const VerificationInspectionPage = () => {
         submitConfirmOpen={submitConfirmOpen}
         setSubmitConfirmOpen={setSubmitConfirmOpen}
         handleConfirmSubmitToHead={handleConfirmSubmitToHead}
+        pemarafIds={pemarafIds}
+        submitModalError={submitModalError}
+        setSubmitModalError={setSubmitModalError}
+        setPemarafIds={setPemarafIds}
+        pemarafAvailable={pemarafAvailable}
+        setPemarafAvailable={setPemarafAvailable}
         registration={registration}
         tidakSesuaiCount={tidakSesuaiCount}
         decision={decision}

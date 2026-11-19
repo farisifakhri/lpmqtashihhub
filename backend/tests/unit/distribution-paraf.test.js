@@ -2,13 +2,13 @@ import 'dotenv/config';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { prisma } from '../../src/config/database.js';
-import { parafDistribution } from '../../src/services/distribution.service.js';
+import { parafDistribution, headApproveDistribution } from '../../src/services/distribution.service.js';
 
 // Keputusan distributor yang menunggu paraf tanpa Pemaraf yang ditunjuk (pemaraf_id: null).
-const withPendingParaf = async (run) => {
+const withPendingParaf = async (run, row = {}) => {
   const original = prisma.$transaction;
   const tx = {
-    approvalParaf: { findUnique: async () => ({ id: 'paraf-1', pemaraf_id: null, requested_by_id: 'dist-1', payload: { result: 'PASSED' }, signed_at: null }) },
+    approvalParaf: { findUnique: async () => ({ id: 'paraf-1', pemaraf_id: null, requested_by_id: 'dist-1', payload: { result: 'PASSED' }, signed_at: null, ...row }) },
     // pembuat keputusan sengaja tidak ditemukan: bila otorisasi lolos, layanan berhenti di 409 (bukan 403)
     user: { findUnique: async () => null },
   };
@@ -20,7 +20,7 @@ const withPendingParaf = async (run) => {
   }
 };
 
-test('setiap akun berperan Pemaraf boleh membubuhkan paraf tanpa harus ditunjuk distributor', async () => {
+test('baris lama tanpa penunjukan: setiap akun berperan Pemaraf boleh membubuhkan paraf', async () => {
   await withPendingParaf(async () => {
     const pemaraf = { id: 'pemaraf-lain', name: 'Pemaraf B', roles: ['KEPALA_LPMQ'], isPemaraf: true };
     await assert.rejects(parafDistribution('reg-1', pemaraf), (error) => error.statusCode === 409);
@@ -37,4 +37,20 @@ test('hanya Pemaraf: Super Admin, Kepala LPMQ asli, dan Distributor ditolak', as
       await assert.rejects(parafDistribution('reg-1', user), (error) => error.statusCode === 403, user.name);
     }
   });
+});
+
+const PEMARAF_A = { id: 'p-a', name: 'Pemaraf A', roles: ['KEPALA_LPMQ'], isPemaraf: true };
+const KEPALA = { id: 'kepala-1', name: 'Kepala', roles: ['KEPALA_LPMQ'], isPemaraf: false };
+
+test('pengesahan Kepala: Pemaraf ditolak, dan Kepala ditolak sebelum kedua paraf lengkap', async () => {
+  await withPendingParaf(async () => {
+    await assert.rejects(headApproveDistribution('reg-1', PEMARAF_A), (error) => error.statusCode === 403);
+    await assert.rejects(headApproveDistribution('reg-1', KEPALA), (error) => error.statusCode === 409 && /belum diparaf/.test(error.message));
+  }, { assigned_ids: ['p-a', 'p-b'], signers: [{ id: 'p-a' }] });
+});
+
+test('pengesahan Kepala: baris lama yang sudah dijalankan tidak bisa disahkan ulang', async () => {
+  await withPendingParaf(async () => {
+    await assert.rejects(headApproveDistribution('reg-1', KEPALA), (error) => error.statusCode === 409 && /menunggu pengesahan/.test(error.message));
+  }, { signed_at: new Date() });
 });

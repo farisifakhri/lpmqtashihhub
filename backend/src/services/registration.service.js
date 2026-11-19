@@ -1,4 +1,5 @@
 import { prisma } from '../config/database.js';
+import { OPEN_DISTRIBUTION_PARAF } from './paraf.service.js';
 import { logAudit } from './audit.service.js';
 import { assertManuscriptAccess } from './file-access.service.js';
 import { ownedFile } from './storage.service.js';
@@ -1922,7 +1923,7 @@ export const listRegistrations = async ({
   // Keputusan distributor yang sudah dikirim dan masih menunggu paraf Pemaraf (kartu menampilkan "Menunggu Paraf").
   const parafPendingIds = !publisherScope && items.length > 0 && prisma.approvalParaf?.findMany
     ? new Set((await prisma.approvalParaf.findMany({
-        where: { subject_type: 'DISTRIBUTOR_REVIEW', subject_id: { in: items.map(item => item.id) }, signed_at: null },
+        where: { ...OPEN_DISTRIBUTION_PARAF, subject_id: { in: items.map(item => item.id) } },
         select: { subject_id: true },
       })).map(paraf => paraf.subject_id))
     : new Set();

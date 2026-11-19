@@ -3,6 +3,7 @@ import { prisma } from '../config/database.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles } from './verification-document-pdf.service.js';
 import { audit, fail, move, registration, requireOwner, requireRole, requireStatus } from './workflow-utils.js';
 import { queueItems } from './queue-utils.js';
+import { parafProgress, PEMARAF_REQUIRED } from './paraf.service.js';
 import {
   buildUnassignedVerificationWhere
 } from './queue-filters.js';
@@ -454,7 +455,19 @@ export const listVerificationAssignments = async (query, user) => {
       },
     }),
   ]);
-  return { items: queueItems(items, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
+  // Progres paraf surat hasil untuk kartu antrean (Menunggu Pemaraf / Menunggu Kepala).
+  const waitingIds = items.filter(item => item.status === 'WAITING_APPROVAL').map(item => item.id);
+  const parafRows = waitingIds.length && prisma.approvalParaf?.findMany
+    ? await prisma.approvalParaf.findMany({ where: { subject_type: 'VERIFICATION_RESULT', subject_id: { in: waitingIds } } })
+    : [];
+  const parafBy = new Map(parafRows.map(row => [row.subject_id, row]));
+  const withParaf = items.map(item => {
+    if (item.status !== 'WAITING_APPROVAL') return item;
+    const row = parafBy.get(item.id);
+    const { signers, assigned, complete } = parafProgress(row);
+    return { ...item, paraf: row ? { signers, assigned, complete, required: row.required_count ?? PEMARAF_REQUIRED } : null };
+  });
+  return { items: queueItems(withParaf, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
 };
 
 export const listVerifiers = async (queryOrUser, maybeUser) => {

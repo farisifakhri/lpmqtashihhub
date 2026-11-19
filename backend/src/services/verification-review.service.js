@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
-import { requireParaf, recordParaf, clearParaf } from './paraf.service.js';
+import { requireParaf, recordParaf, clearParaf, findParaf, parafProgress, pemarafGateActive, PEMARAF_REQUIRED, resolveDesignatedPemaraf, openParafRequest } from './paraf.service.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
@@ -427,22 +427,15 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 
   await audit(tx, user, 'SUBMIT_VERIFICATION_DRAFT', 'VerificationDocument', document.id, document, req);
 
-  // Kirim notifikasi permohonan paraf kepada Pemaraf bila ditunjuk
-  if (data.pemaraf_id) {
-    await tx.notification.create({
-      data: {
-        user_id: data.pemaraf_id,
+  // Verifikator menunjuk 2 Pemaraf; hanya mereka yang memaraf sebelum Kepala LPMQ mengesahkan.
+  const designated = await resolveDesignatedPemaraf(tx, data.pemaraf_ids);
+  if (designated) {
+    await openParafRequest(tx, 'VERIFICATION_RESULT', actualAssignmentId, designated, {
+      requested_by_id: user.id,
+      notify: {
         registration_id: reg.id,
-        type: 'APPROVAL_REQUEST',
-        title: `Permohonan paraf draf verifikasi: ${reg.registration_no}`,
-        payload: {
-          assignment_id: actualAssignmentId,
-          document_id: document.id,
-          version: document.version,
-          decision: data.decision,
-          verifier_name: user.name,
-          link: `/internal/verifications/${actualAssignmentId}`,
-        },
+        title: `Surat hasil verifikasi menunggu paraf Anda: ${reg.registration_no}`,
+        payload: { assignment_id: actualAssignmentId, link: `/internal/verifications/${actualAssignmentId}` },
       },
     });
   }
@@ -592,8 +585,19 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   const coreDistributor = assignment.registration.core_distributor_id
     ? await prisma.user.findUnique({ where: { id: assignment.registration.core_distributor_id }, select: { id: true, name: true, nip: true } })
     : null;
+  // Progres paraf surat hasil: Pemaraf melihat apakah ia sudah memaraf, Kepala melihat kapan boleh mengesahkan.
+  const parafRow = await findParaf(prisma, 'VERIFICATION_RESULT', assignment.id);
+  const parafInfo = parafProgress(parafRow);
+  const paraf = {
+    gate_active: await pemarafGateActive(prisma),
+    signers: parafInfo.signers,
+    required: parafRow?.required_count ?? PEMARAF_REQUIRED,
+    complete: parafInfo.complete,
+    assigned: parafInfo.assigned,
+  };
 
   return {
+    paraf,
     assignment: {
       id: assignment.id,
       status: assignment.status,

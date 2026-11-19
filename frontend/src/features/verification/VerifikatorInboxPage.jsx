@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { invalidateQueueCounts } from '@/api/queue.api';
+import { approvalStageText } from './inspection-view-model';
 
 function formatWaitingTime(dateString) {
   if (!dateString) return null;
@@ -923,10 +924,10 @@ export const VerifikatorInboxPage = () => {
                         <div className="p-3 bg-surface-subtle dark:bg-canvas rounded-xl border border-line text-xs space-y-1">
                           <div className="font-bold text-ink flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-brand-800" />
-                            Draft Sedang Diperiksa Kepala LPMQ
+                            {approvalStageText(item.paraf, currentUser).title}
                           </div>
                           <p className="text-[11px] text-ink-muted">
-                            Tidak ada tindakan yang diperlukan dari Verifikator saat ini. Draf sedang dalam proses penelaahan oleh Kepala LPMQ.
+                            {approvalStageText(item.paraf, currentUser).body}
                           </p>
                         </div>
                       )}

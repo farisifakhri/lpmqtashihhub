@@ -19,6 +19,7 @@ import { StatusBadge } from '@/components/ui/StatusBadge';
 import { documentationApi } from '@/api/documentation.api';
 import { sttParafProgress } from '@/lib/stt-paraf';
 import { showToast } from '@/components/ui/toast';
+import { PemarafSubmitDialog } from '@/components/common/PemarafPicker';
 
 export const SttWorkflowPanel = ({
   distLoading,
@@ -28,6 +29,7 @@ export const SttWorkflowPanel = ({
   const [requestNotesModalReg, setRequestNotesModalReg] = useState(null);
   const [requestNotes, setRequestNotes] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [sttSubmitTarget, setSttSubmitTarget] = useState(null);
 
   const handleRequestStt = async (regId) => {
     setActionLoadingId(regId);
@@ -44,10 +46,11 @@ export const SttWorkflowPanel = ({
     }
   };
 
-  const handleSubmitToTu = async (regId, documentId) => {
+  const handleSubmitToTu = async (regId, documentId, pemarafIds = []) => {
     setActionLoadingId(regId);
     try {
-      await documentationApi.submitToTu(documentId);
+      await documentationApi.submitToTu(documentId, pemarafIds.length ? { pemaraf_ids: pemarafIds } : {});
+      setSttSubmitTarget(null);
       showToast('Draf STT berhasil diteruskan ke Pemaraf untuk dibubuhi paraf, lalu ditandatangani Kepala LPMQ.', 'success');
       await fetchDistributionData();
     } catch (err) {
@@ -59,6 +62,15 @@ export const SttWorkflowPanel = ({
 
   return (
     <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
+      <PemarafSubmitDialog
+        isOpen={Boolean(sttSubmitTarget)}
+        onClose={() => setSttSubmitTarget(null)}
+        onConfirm={(ids) => handleSubmitToTu(...sttSubmitTarget.args, ids)}
+        title="Kirim Draf STT ke Pemaraf"
+        description="Tunjuk 2 Pemaraf yang akan memaraf draf STT ini. Setelah keduanya memaraf, STT diteruskan ke Kepala LPMQ untuk disahkan."
+        objectName={sttSubmitTarget?.label}
+        loading={Boolean(actionLoadingId)}
+      />
       {/* Panel Header */}
       <div className="p-5 sm:p-6 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -164,7 +176,7 @@ export const SttWorkflowPanel = ({
                         variant="primary"
                         size="sm"
                         disabled={actionLoadingId === reg.id}
-                        onClick={() => handleSubmitToTu(reg.id, sttDoc.id)}
+                        onClick={() => setSttSubmitTarget({ args: [reg.id, sttDoc.id], label: reg.registration_no || reg.title })}
                         className="bg-civic-info hover:opacity-90 text-white shadow-xs text-xs font-bold"
                         icon={<UserCheck className="w-3.5 h-3.5" />}
                       >

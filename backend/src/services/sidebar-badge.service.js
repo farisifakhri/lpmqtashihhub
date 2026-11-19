@@ -5,7 +5,7 @@ import { buildUnassignedVerificationWhere } from './queue-filters.js';
 import { buildPaymentWhere } from './payment.service.js';
 import { buildHandoverWhere } from './handover.service.js';
 import { buildRegistrationScopeWhere } from './registration.service.js';
-import { parafSigners } from './paraf.service.js';
+import { parafSigners, assignedPemarafIds, OPEN_DISTRIBUTION_PARAF } from './paraf.service.js';
 
 /**
  * Badge notifikasi sidebar: jumlah pekerjaan yang menunggu tindakan pada tiap menu.
@@ -124,17 +124,20 @@ export const SIDEBAR_BADGES = [
     roles: VERIFICATION_ROLES,
     count: user => prisma.verificationAssignment.count({ where: buildVerificationAssignmentWhere({ handover_ready: 'true' }, user) }),
   },
-  // Pemaraf: keputusan distributor yang parafnya belum lengkap DAN belum ia paraf sendiri
+  // Pemaraf: keputusan distributor yang menunjuknya dan belum ia paraf. Kepala: paraf lengkap, menunggu pengesahannya.
   {
     key: 'distribution_paraf_pending',
     roles: ['KEPALA_LPMQ'],
-    when: user => Boolean(user.isPemaraf),
     count: async user => {
+      if (!user.isPemaraf) {
+        return prisma.approvalParaf.count({ where: { ...OPEN_DISTRIBUTION_PARAF, signed_at: { not: null } } });
+      }
       const pending = await prisma.approvalParaf.findMany({
         where: { subject_type: 'DISTRIBUTOR_REVIEW', signed_at: null },
-        select: { signers: true, pemaraf_id: true, signed_at: true },
+        select: { signers: true, pemaraf_id: true, signed_at: true, assigned_ids: true },
       });
-      return pending.filter(paraf => !parafSigners(paraf).some(signer => signer.id === user.id)).length;
+      return pending.filter(paraf => (assignedPemarafIds(paraf)?.includes(user.id) ?? true)
+        && !parafSigners(paraf).some(signer => signer.id === user.id)).length;
     },
   },
   {

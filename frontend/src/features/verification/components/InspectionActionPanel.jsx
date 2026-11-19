@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { StickyActionBar } from '@/components/layout/StickyActionBar';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { Button } from '@/components/ui/Button';
+import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 
 export const InspectionActionPanel = ({
@@ -19,6 +20,9 @@ export const InspectionActionPanel = ({
   showDocumentPdf,
   billingNo, billingFileId,
   totalChecklistCount = 8,
+  isPemaraf = false,
+  submitModalError = null, setSubmitModalError,
+  pemarafIds = [], setPemarafIds, pemarafAvailable = null, setPemarafAvailable,
 }) => (
   <>
       {/* STICKY ACTION BAR FOR WORKSPACE */}
@@ -41,7 +45,7 @@ export const InspectionActionPanel = ({
             </div>
           ) : canHeadApprove ? (
             <span className="font-bold text-civic-warning">
-              Menunggu Persetujuan Draf oleh Kepala LPMQ
+              {isPemaraf ? 'Surat Hasil Menunggu Paraf Anda' : 'Menunggu Persetujuan Draf oleh Kepala LPMQ'}
             </span>
           ) : assignment.status === 'WAITING_APPROVAL' ? (
             <span className="font-bold text-civic-warning">
@@ -91,7 +95,7 @@ export const InspectionActionPanel = ({
                 {actionLoading ? 'Menyimpan...' : 'Simpan Draf Pemeriksaan'}
               </Button>
             )}
-            {canHeadApprove && (
+            {canHeadApprove && !isPemaraf && (
               <Button
                 variant="outline"
                 onClick={() => setReturnModalOpen(true)}
@@ -147,7 +151,7 @@ export const InspectionActionPanel = ({
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat Hasil'}
+              {actionLoading ? 'Memproses...' : isPemaraf ? 'Setujui & Bubuhkan Paraf' : 'Setujui & Sahkan Surat Hasil'}
             </Button>
           ) : latestResultDoc?.status === 'EMAIL_FAILED' ? (
             <div className="flex items-center gap-2">
@@ -181,7 +185,10 @@ export const InspectionActionPanel = ({
       {/* Confirmation Summary Dialog for Submitting Draft */}
       <ConfirmationSummaryDialog
         isOpen={submitConfirmOpen}
-        onClose={() => setSubmitConfirmOpen(false)}
+        onClose={() => {
+          setSubmitModalError?.(null);
+          setSubmitConfirmOpen(false);
+        }}
         onConfirm={handleConfirmSubmitToHead}
         title={decision === 'PASSED' ? "Ajukan Draf Hasil Verifikasi" : "Ajukan Draf Pengembalian Naskah"}
         description={decision === 'PASSED'
@@ -214,7 +221,20 @@ export const InspectionActionPanel = ({
         confirmLabel={decision === 'PASSED' ? 'Ajukan Draf Lolos' : 'Ajukan Pengembalian Naskah'}
         confirmVariant={decision === 'PASSED' ? 'primary' : 'gold'}
         loading={actionLoading}
-      />
+        confirmDisabled={!pemarafSelectionValid(pemarafAvailable, pemarafIds)}
+      >
+        {submitConfirmOpen && setPemarafIds && (
+          <div className="pt-2 border-t border-line">
+            <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={actionLoading} />
+          </div>
+        )}
+        {submitModalError && (
+          <div className="mt-3 p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2" role="alert">
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
+            <span>{submitModalError}</span>
+          </div>
+        )}
+      </ConfirmationSummaryDialog>
 
       {/* Confirmation Summary Dialog for Approving Draft (Kepala LPMQ) */}
       <ConfirmationSummaryDialog
@@ -224,13 +244,13 @@ export const InspectionActionPanel = ({
           setApproveConfirmOpen(false);
         }}
         onConfirm={handleConfirmApprove}
-        title="Sahkan Surat Hasil Verifikasi"
+        title={isPemaraf ? "Bubuhkan Paraf Surat Hasil Verifikasi" : "Sahkan Surat Hasil Verifikasi"}
         description="Periksa tanda tangan internal Verifikator dan kode billing yang sudah dicatat, lalu tetapkan nomor resmi dan sahkan surat."
         objectName={`Surat Hasil Verifikasi (${registration.registration_no || '-'})`}
-        nextActor="Penerbit (Terkirim Otomatis)"
-        statusChange="SUBMITTED -> SIGNED & SENT (Terkirim Otomatis ke Penerbit)"
-        irreversibleConsequence="Setelah disahkan, surat hasil resmi dan tagihan PNBP akan langsung dikirimkan ke penerbit secara otomatis, nomor dokumen dikunci, dan tagihan PNBP resmi diterbitkan."
-        confirmLabel="Sahkan dan Terbitkan PDF"
+        nextActor={isPemaraf ? "Kepala LPMQ (setelah seluruh Pemaraf memaraf)" : "Penerbit (Terkirim Otomatis)"}
+        statusChange={isPemaraf ? "Paraf dicatat; surat tetap menunggu pengesahan Kepala LPMQ" : "SUBMITTED -> SIGNED & SENT (Terkirim Otomatis ke Penerbit)"}
+        irreversibleConsequence={isPemaraf ? "Paraf tidak dapat dibatalkan. Surat diteruskan ke Kepala LPMQ setelah seluruh Pemaraf memaraf." : "Setelah disahkan, surat hasil resmi dan tagihan PNBP akan langsung dikirimkan ke penerbit secara otomatis, nomor dokumen dikunci, dan tagihan PNBP resmi diterbitkan."}
+        confirmLabel={isPemaraf ? "Bubuhkan Paraf" : "Sahkan dan Terbitkan PDF"}
         confirmVariant="primary"
         loading={actionLoading}
         summaryItems={[

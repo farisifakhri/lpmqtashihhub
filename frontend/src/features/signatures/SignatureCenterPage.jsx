@@ -235,7 +235,9 @@ export const SignatureCenterPage = () => {
         const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at);
         const progress = sttParafProgress(tuWorkflow);
         const hasParaf = progress.complete;
-        const canUserParaf = isPemaraf && isSubmittedToTu && !hasParaf && !isCompleted && !progress.signedBy(currentUser?.id);
+        // Draf baru hanya untuk 2 Pemaraf yang ditunjuk; draf lama (tanpa penunjukan) terbuka bagi semua Pemaraf.
+        const sttAssignedToMe = !Array.isArray(tuWorkflow?.pemaraf_ids) || tuWorkflow.pemaraf_ids.includes(currentUser?.id);
+        const canUserParaf = isPemaraf && sttAssignedToMe && isSubmittedToTu && !hasParaf && !isCompleted && !progress.signedBy(currentUser?.id);
         const canUserSignHead = (isHead || isSuperadmin) && !isPemaraf && isSubmittedToTu && hasParaf && !isCompleted;
         const canUserSign = canUserParaf || canUserSignHead;
 
@@ -294,7 +296,8 @@ export const SignatureCenterPage = () => {
       const parafRequired = letter.paraf_required || 2;
       const parafComplete = Boolean(letter.paraf_signed_at);
       const waitingTte = letter.status === 'MENUNGGU_TTE' && !draftedByMe;
-      const canParafLetter = isPemaraf && waitingTte && !parafComplete && !parafSigners.some((s) => s.id === currentUser?.id);
+      const letterAssignedToMe = !Array.isArray(letter.paraf_assigned) || letter.paraf_assigned.includes(currentUser?.id);
+      const canParafLetter = isPemaraf && letterAssignedToMe && waitingTte && !parafComplete && !parafSigners.some((s) => s.id === currentUser?.id);
       const canSignLetter = (isHead || isSuperadmin) && !isPemaraf && waitingTte && parafComplete;
       list.push({
         id: letter.id,

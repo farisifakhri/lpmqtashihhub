@@ -44,9 +44,11 @@ router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH', 'SUP
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
 router.post('/assignments/:id/revoke', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(revokePentashihAssignmentSchema), action(req => distribution.revokeAssignment(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(distributorReviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
-router.get('/pemaraf', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(() => listPemaraf()));
+router.get('/pemaraf', authenticate, authorize('DISTRIBUTOR', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(() => listPemaraf()));
 router.get('/registrations/:id/distribution-review/paraf', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => distribution.getDistributionParaf(req.params.id)));
 router.post('/registrations/:id/distribution-review/paraf', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(emptyAction), action(req => distribution.parafDistribution(req.params.id, req.user, req)));
+// Pengesahan Kepala LPMQ setelah kedua Pemaraf yang ditunjuk memaraf; keputusan baru dijalankan di sini.
+router.post('/registrations/:id/distribution-review/approve', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => distribution.headApproveDistribution(req.params.id, req.user, req)));
 router.post('/registrations/:id/outgoing-dispatch', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(outgoingDispatchSchema), action(req => distribution.recordOutgoingDispatch(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/remind-publisher', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPublisherReminder(req.params.id, req.user, req)));
 router.post('/registrations/batch-remind-publishers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPeriodicReminders(req.user, req.body)));

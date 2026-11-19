@@ -18,7 +18,7 @@ import {
   saveSecurePublisherDocument,
   readSecurePublisherDocument,
 } from './secure-document.service.js';
-import { requireParaf, recordParaf, clearParaf, parafProgress, ACTIVE_PEMARAF } from './paraf.service.js';
+import { requireParaf, recordParaf, clearParaf, parafProgress, ACTIVE_PEMARAF, resolveDesignatedPemaraf, openParafRequest } from './paraf.service.js';
 import {
   createMasterRequestSchema,
   MASTER_MUSHAF_TYPES,
@@ -428,7 +428,7 @@ export async function rejectMasterRequest(id, { alasan }, user, req) {
  * Admin menyusun surat persetujuan dan mengajukannya ke Kepala LPMQ (Pusat Tanda Tangan).
  * Boleh dipanggil ulang selama surat belum ditandatangani untuk memperbaiki isi; nomor surat tetap.
  */
-export async function submitLetterForSignature(id, { perihal, isi }, user, req) {
+export async function submitLetterForSignature(id, { perihal, isi, pemaraf_ids }, user, req) {
   const current = await loadForAction(id);
   if (!['DIAJUKAN', 'MENUNGGU_TTE'].includes(current.status)) {
     fail(409, `Surat tidak dapat disusun untuk permohonan berstatus ${STATUS_LABELS[current.status]}.`);
@@ -449,6 +449,14 @@ export async function submitLetterForSignature(id, { perihal, isi }, user, req) 
       processed_by_id: user.id,
     });
     await clearParaf(tx, 'MASTER_LETTER', id);
+    // Admin menunjuk 2 Pemaraf; surat baru bisa di-TTE Kepala setelah keduanya memaraf.
+    const designated = await resolveDesignatedPemaraf(tx, pemaraf_ids);
+    if (designated) {
+      await openParafRequest(tx, 'MASTER_LETTER', id, designated, {
+        requested_by_id: user.id,
+        notify: { title: `Surat persetujuan master menunggu paraf Anda: ${letterNumber}`, payload: { link: '/internal/signatures' } },
+      });
+    }
     await audit(tx, user, current.status === 'DIAJUKAN' ? 'MASTER_LETTER_SUBMITTED_FOR_TTE' : 'MASTER_LETTER_REVISED',
       'MasterMushafRequest', id, { letter_number: letterNumber, perihal }, req, { status: current.status });
   });
@@ -520,12 +528,13 @@ export async function listLettersForSignature() {
   const requiredDefault = await prisma.user.count({ where: ACTIVE_PEMARAF });
   return letters.map(l => {
     const paraf = parafBySubject.get(l.id);
-    const { signers } = parafProgress(paraf);
+    const { signers, assigned } = parafProgress(paraf);
     return {
       ...l,
       // paraf_signed_at terisi hanya bila SELURUH Pemaraf sudah memaraf (siap TTE Kepala)
       paraf_signed_at: paraf?.signed_at || null,
       paraf_signers: signers,
+      paraf_assigned: assigned,
       paraf_required: paraf?.required_count ?? requiredDefault,
     };
   });
