@@ -65,7 +65,7 @@ export const OPEN_DISTRIBUTION_PARAF = {
 
 export const assignedPemarafIds = (paraf) => (Array.isArray(paraf?.assigned_ids) ? paraf.assigned_ids : null);
 
-export async function requireParaf(tx, type, id) {
+export async function requireParaf(tx, type, id, signingUser = null) {
   if (!(await pemarafGateActive(tx))) return;
   const paraf = await findParaf(tx, type, id);
   const activePemarafCount = await tx.user.count({ where: ACTIVE_PEMARAF });
@@ -75,6 +75,10 @@ export async function requireParaf(tx, type, id) {
 
   if (!isComplete) {
     fail(409, `Dokumen ini belum diparaf seluruh Pemaraf (${signers.length}/${targetRequired}). Persetujuan Kepala LPMQ baru dapat dilakukan setelah seluruh Pemaraf membubuhkan paraf.`);
+  }
+
+  if (signingUser && signers.some(signer => signer.id === signingUser.id)) {
+    fail(403, 'Kepala LPMQ yang menandatangani tidak boleh merupakan Pemaraf yang telah memaraf dokumen ini.');
   }
 }
 
@@ -113,14 +117,16 @@ export async function recordParaf(tx, type, id, user, req) {
   return (await addPemarafSignature(tx, type, id, user, req)).paraf;
 }
 
-// Jalur darurat operasional: Super Admin dapat memberikan dispensasi / penimpaan paraf bila ada kebuntuan
+// Jalur darurat operasional: Kepala LPMQ (sebagai pengesah utama) atau Super Admin dapat memberikan dispensasi paraf bila ada kendala operasional
 export async function overrideParafByAdmin(tx, type, id, adminUser, reason, req) {
-  const isSuperAdmin = Boolean(
+  const isAuthorized = Boolean(
+    adminUser?.roles?.includes('KEPALA_LPMQ') ||
+    adminUser?.role === 'KEPALA_LPMQ' ||
     adminUser?.roles?.includes('SUPERADMIN') ||
     adminUser?.role === 'SUPERADMIN'
   );
-  if (!isSuperAdmin) {
-    fail(403, 'Hanya Super Admin yang berhak melakukan penimpaan (override) paraf darurat.');
+  if (!isAuthorized || adminUser?.isPemaraf) {
+    fail(403, 'Hanya Kepala LPMQ (atau Super Admin) yang berhak memberikan dispensasi paraf darurat.');
   }
   if (!reason || reason.trim().length < 10) {
     fail(400, 'Alasan penimpaan paraf darurat wajib diisi (minimal 10 karakter).');
@@ -128,11 +134,12 @@ export async function overrideParafByAdmin(tx, type, id, adminUser, reason, req)
   const now = new Date();
   const existing = await findParaf(tx, type, id);
   const signers = parafSigners(existing);
+  const actorRoleLabel = adminUser?.roles?.includes('KEPALA_LPMQ') ? 'KEPALA LPMQ' : 'SUPERADMIN';
   const nextSigners = [
     ...signers,
     {
       id: adminUser.id,
-      name: `[DISPENSASI SUPERADMIN] ${adminUser.name}`,
+      name: `[DISPENSASI ${actorRoleLabel}] ${adminUser.name}`,
       signed_at: now.toISOString(),
       reason: reason.trim(),
     },

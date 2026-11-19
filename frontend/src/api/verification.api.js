@@ -258,6 +258,18 @@ export const verificationApi = {
       body: payload,
     });
   },
+
+  /**
+   * Penimpaan (override) darurat paraf hasil verifikasi oleh Super Admin
+   * @param {string} documentId
+   * @param {string} reason
+   */
+  overrideParaf: async (documentId, reason) => {
+    return apiClient(`/verification-documents/${encodeURIComponent(documentId)}/paraf-override`, {
+      method: 'POST',
+      body: { reason },
+    });
+  },
 };
 
 export default verificationApi;

@@ -54,6 +54,13 @@ export const documentationApi = {
       body: {},
     });
   },
+
+  overrideSttParaf: async (documentId, reason) => {
+    return apiClient(`/official-documents/${encodeURIComponent(documentId)}/paraf-override`, {
+      method: 'POST',
+      body: { reason },
+    });
+  },
   getPrintingReports: async (registrationId) => {
     return apiClient(`/registrations/${encodeURIComponent(registrationId)}/printing-reports`);
   },
