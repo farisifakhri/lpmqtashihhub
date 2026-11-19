@@ -51,6 +51,7 @@ const RegulationInfoPage = withSuspense(lazy(() => import('@/features/informatio
 const InformationGuidePage = withSuspense(lazy(() => import('@/features/information/InformationGuidePage').then(m => ({ default: m.InformationGuidePage }))));
 const InformationPlaceholderPage = withSuspense(lazy(() => import('@/features/information/InformationPlaceholderPage').then(m => ({ default: m.InformationPlaceholderPage }))));
 const DownloadDocumentsPage = withSuspense(lazy(() => import('@/features/information/DownloadDocumentsPage').then(m => ({ default: m.DownloadDocumentsPage }))));
+const SurveyResultsInfoPage = withSuspense(lazy(() => import('@/features/information/SurveyResultsInfoPage').then(m => ({ default: m.SurveyResultsInfoPage }))));
 const PublisherDirectoryInfoPage = withSuspense(lazy(() => import('@/features/information/PublisherDirectoryInfoPage').then(m => ({ default: m.PublisherDirectoryInfoPage }))));
 const FaqPage = withSuspense(lazy(() => import('@/features/information/FaqPage').then(m => ({ default: m.FaqPage }))));
 const PublisherDirectoryPage = withSuspense(lazy(() => import('@/features/internal/publishers/PublisherDirectoryPage').then(m => ({ default: m.PublisherDirectoryPage }))));
@@ -99,7 +100,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih',
-    element: <InformationPlaceholderPage title="Survei IKM dan IPAK Pelayanan Surat Tanda Tashih" basePath="/informasi/survei-ikm-ipak-pelayanan-surat-tanda-tashih" />,
+    element: <SurveyResultsInfoPage />,
   },
   {
     path: '/informasi/siaran-pers',

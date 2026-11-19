@@ -10,7 +10,7 @@ import { ENV } from '../config/env.js';
 import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
 import { assertReadyForSttEligibility } from './distribution.service.js';
-import { ACTIVE_PEMARAF } from './paraf.service.js';
+import { resolveDesignatedPemaraf, pemarafGateActive } from './paraf.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
@@ -28,6 +28,10 @@ export function formatIndonesianDate(d) {
 export const createDocument = (id, data, user) => prisma.$transaction(async tx => {
   requireRole(user, ['ADMIN_INTERNAL', 'DISTRIBUTOR', 'DOKUMENTATOR', 'SUPERADMIN']);
   const reg = await registration(tx, id);
+  // Surat revisi/dumi hanya terbit dari keputusan sidang yang diparaf 2 Pemaraf dan disahkan Kepala LPMQ.
+  if (data.document_type === 'REVISION_RETURN_LETTER' && await pemarafGateActive(tx)) {
+    fail(409, 'Surat revisi/dumi terbit otomatis dari keputusan sidang setelah diparaf 2 Pemaraf dan disahkan Kepala LPMQ.');
+  }
   if (data.document_type === 'SURAT_TANDA_TASHIH') {
     const verifiedPayment = await tx.paymentRecord.findFirst({
       where: { registration_id: id, status: 'VERIFIED' },
@@ -662,8 +666,9 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     fail(409, 'Dokumen draf STT sudah diserahkan ke Pemaraf dan tidak dapat disubmit ulang.');
   }
 
-  const pemarafUsers = await tx.user.findMany({ where: ACTIVE_PEMARAF, select: { id: true } });
-  if (pemarafUsers.length === 0) {
+  // Pengaju menunjuk tepat 2 Pemaraf aktif; hanya mereka yang memaraf sebelum Kepala LPMQ mengesahkan.
+  const pemarafUsers = await resolveDesignatedPemaraf(tx, data?.pemaraf_ids);
+  if (!pemarafUsers) {
     fail(400, 'Belum ada akun Pemaraf yang aktif. Aktifkan akun Pemaraf sebelum menyerahkan draf STT.');
   }
   const kepala = await tx.user.findFirst({
@@ -691,6 +696,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     status: 'SUBMITTED_TO_PEMARAF',
     // seluruh Pemaraf aktif saat diserahkan wajib memaraf sebelum dokumen masuk ke Kepala LPMQ
     paraf_required: pemarafUsers.length,
+    pemaraf_ids: pemarafUsers.map(pemaraf => pemaraf.id),
     parafs: [],
     ...(data?.notes ? { notes: data.notes } : {}),
   };
@@ -728,6 +734,8 @@ export const parafDocument = (documentId, data, user, req) => prisma.$transactio
   const parafs = sttParafsOf(snapshot.tu_workflow);
   if (isSttParafComplete(snapshot.tu_workflow)) fail(409, 'Draf STT ini sudah diparaf seluruh Pemaraf.');
   if (parafs.some(paraf => paraf.signed_by?.id === user.id)) fail(409, 'Anda sudah membubuhkan paraf pada draf STT ini.');
+  const assigned = snapshot.tu_workflow.pemaraf_ids;
+  if (Array.isArray(assigned) && !assigned.includes(user.id)) fail(403, 'Anda tidak ditunjuk sebagai Pemaraf untuk draf STT ini.');
 
   const now = new Date();
   await tx.documentSignatory.create({

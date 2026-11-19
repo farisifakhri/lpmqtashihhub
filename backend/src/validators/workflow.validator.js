@@ -144,6 +144,7 @@ export const distributorReviewSchema = { params, body: z.object({
   outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
   outgoing_notes: z.string().trim().max(1000).optional(),
   pemaraf_id: z.string().uuid('Pemaraf tidak valid.').optional(),
+  pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
 }).strict() };
 
 export const outgoingDispatchSchema = { params, body: z.object({
@@ -191,6 +192,7 @@ export const submitToTuSchema = {
   params,
   body: z.object({
     notes: z.string().trim().max(1000).optional(),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
   }).strict(),
 };
 

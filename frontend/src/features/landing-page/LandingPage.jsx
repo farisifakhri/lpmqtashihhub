@@ -29,6 +29,7 @@ import heroImageFirst from '@/assets/berandaaku.webp';
 import heroImageSecond from '@/assets/berandakii.webp';
 
 const DistributionMap = lazy(() => import('./DistributionMap'));
+const SurveyHighlights = lazy(() => import('./SurveyHighlights'));
 
 export const parseStatisticCount = (val) => {
   if (val === null || val === undefined) return 0;
@@ -794,6 +795,10 @@ export const LandingPage = ({ initialStatistics } = {}) => {
           }
         >
           <DistributionMap />
+        </Suspense>
+
+        <Suspense fallback={null}>
+          <SurveyHighlights />
         </Suspense>
       </main>
 

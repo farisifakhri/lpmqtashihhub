@@ -7,7 +7,7 @@ import { FormField } from '@/components/ui/FormField';
 import { Badge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { showToast } from '@/components/ui/toast';
-import { inputClass } from './survey-constants';
+import { inputClass, STATUS_BADGE } from './survey-constants';
 import { useRowDrag, moveItem } from './useRowDrag';
 
 const EMPTY = { name: '', definition: '', survey_id: '' };
@@ -30,6 +30,22 @@ export function UnsurTab() {
   }, [showArchived]);
 
   useEffect(load, [load]);
+
+  // Card "Pilih Survei": '' = semua unsur; selain itu tampilkan unsur yang dipakai survei terpilih.
+  const [viewSurveyId, setViewSurveyId] = useState('');
+  const [viewSurvey, setViewSurvey] = useState(null);
+  useEffect(() => {
+    if (!viewSurveyId) { setViewSurvey(null); return undefined; }
+    let active = true;
+    surveyApi.getSurvey(viewSurveyId).then((r) => active && setViewSurvey(r.data || null)).catch(() => active && setViewSurvey(null));
+    return () => { active = false; };
+  }, [viewSurveyId, items]);
+  const questionsPerUnsur = new Map();
+  for (const it of viewSurvey?.items || []) questionsPerUnsur.set(it.unsur_id, (questionsPerUnsur.get(it.unsur_id) || 0) + 1);
+  const filtering = Boolean(viewSurveyId);
+  const rows = filtering
+    ? [...questionsPerUnsur.keys()].map((id) => items.find((u) => u.id === id)).filter(Boolean)
+    : items;
 
   const save = async (event) => {
     event.preventDefault();
@@ -85,7 +101,35 @@ export function UnsurTab() {
         </div>
       </div>
 
-      {!loading && !items.length ? (
+      <div className="grid gap-4 rounded-xl border border-line bg-white p-4 md:grid-cols-[minmax(0,22rem)_1fr] md:items-center">
+        <label className="space-y-1 text-xs font-semibold text-ink-muted">
+          Pilih Survei
+          <select className={inputClass} value={viewSurveyId} onChange={(e) => setViewSurveyId(e.target.value)}>
+            <option value="">Semua unsur</option>
+            {surveyList.map((sv) => <option key={sv.id} value={sv.id}>{sv.name} ({sv.kind})</option>)}
+          </select>
+        </label>
+        {!filtering ? (
+          <p className="text-xs text-ink-muted">Pilih survei untuk melihat unsur yang dipakai beserta jumlah pertanyaannya. Saat ini menampilkan {items.length} unsur.</p>
+        ) : !viewSurvey ? (
+          <p role="status" className="text-xs text-ink-muted">Memuat isi survei…</p>
+        ) : (
+          <div className="space-y-1.5" aria-label="Ringkasan survei terpilih">
+            <div className="flex flex-wrap items-center gap-1.5 text-sm font-bold text-ink">
+              {viewSurvey.name}
+              <Badge variant="info">{viewSurvey.kind}</Badge>
+              <Badge variant={STATUS_BADGE[viewSurvey.display_status || viewSurvey.status]?.variant}>{STATUS_BADGE[viewSurvey.display_status || viewSurvey.status]?.label || viewSurvey.status}</Badge>
+            </div>
+            <p className="text-xs text-ink-muted">
+              {questionsPerUnsur.size} unsur · {viewSurvey.items?.length || 0} pertanyaan · {viewSurvey._count?.responses ?? 0} responden
+            </p>
+          </div>
+        )}
+      </div>
+
+      {filtering && viewSurvey && !rows.length ? (
+        <EmptyState title="Survei ini belum memakai unsur" description="Susun unsur dan pertanyaannya lewat menu Pemilihan Survei." />
+      ) : !loading && !items.length ? (
         <EmptyState title="Belum ada unsur" description="Tambahkan unsur penilaian terlebih dahulu, lalu susun pertanyaan per unsur di survei." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
@@ -94,11 +138,12 @@ export function UnsurTab() {
               <tr><th className="p-3 w-8"><span className="sr-only">Urutan</span></th><th className="p-3 w-12">No.</th><th className="p-3">Unsur & Definisi</th><th className="p-3">Dipakai</th><th className="p-3 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {items.map((u, index) => (
-                <tr key={u.id} {...drag.rowProps(index)}
-                  className={`${u.is_archived ? 'opacity-60' : ''} ${drag.isOver(index) ? 'outline outline-2 -outline-offset-2 outline-brand-700' : ''}`}>
+              {rows.map((u, index) => (
+                <tr key={u.id} {...(filtering ? {} : drag.rowProps(index))}
+                  className={`${u.is_archived ? 'opacity-60' : ''} ${!filtering && drag.isOver(index) ? 'outline outline-2 -outline-offset-2 outline-brand-700' : ''}`}>
                   <td className="p-3 align-top">
-                    <span {...drag.gripProps(index)} className="inline-flex cursor-grab text-ink-muted active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>
+                    {/* Urutan unsur berlaku global; tidak diubah saat daftar disaring per survei. */}
+                    {!filtering && <span {...drag.gripProps(index)} className="inline-flex cursor-grab text-ink-muted active:cursor-grabbing"><GripVertical className="w-4 h-4" /></span>}
                   </td>
                   <td className="p-3 align-top font-semibold text-ink-muted">{index + 1}.</td>
                   <td className="p-3 space-y-1">
@@ -110,11 +155,11 @@ export function UnsurTab() {
                     </div>
                     <p className="text-xs text-ink-muted leading-relaxed">{u.definition || 'Belum ada definisi.'}</p>
                   </td>
-                  <td className="p-3 text-xs text-ink-muted">{u._count?.items || 0} survei</td>
+                  <td className="p-3 text-xs text-ink-muted">{filtering ? `${questionsPerUnsur.get(u.id)} pertanyaan` : `${u._count?.items || 0} survei`}</td>
                   <td className="p-3">
                     <div className="flex justify-end gap-1.5">
-                      <Button size="sm" variant="ghost" aria-label={`Naikkan ${u.name}`} disabled={index === 0} onClick={() => moveRow(index, index - 1)}><ArrowUp className="w-4 h-4" /></Button>
-                      <Button size="sm" variant="ghost" aria-label={`Turunkan ${u.name}`} disabled={index === items.length - 1} onClick={() => moveRow(index, index + 1)}><ArrowDown className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" aria-label={`Naikkan ${u.name}`} disabled={filtering || index === 0} onClick={() => moveRow(index, index - 1)}><ArrowUp className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" aria-label={`Turunkan ${u.name}`} disabled={filtering || index === items.length - 1} onClick={() => moveRow(index, index + 1)}><ArrowDown className="w-4 h-4" /></Button>
                       <Button size="sm" variant="ghost" aria-label={`Ubah ${u.name}`}
                         onClick={() => setForm({ id: u.id, name: u.name, definition: u.definition || '', survey_id: u.survey_id || '', is_standard: u.is_standard })}>
                         <Pencil className="w-4 h-4" />

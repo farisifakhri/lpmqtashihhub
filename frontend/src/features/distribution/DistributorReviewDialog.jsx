@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
+import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { checkIsPemaraf } from '@/lib/roles';
 
 export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) => {
@@ -45,6 +46,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const [distributorNotes, setDistributorNotes] = useState('');
   // Pemaraf: keputusan distributor ditahan sampai diparaf (hanya bila sudah ada akun Pemaraf aktif)
   const [parafState, setParafState] = useState({ gate_active: false, pending: null });
+  const [pemarafIds, setPemarafIds] = useState([]);
+  const [pemarafAvailable, setPemarafAvailable] = useState(null);
   const [outgoingCourier, setOutgoingCourier] = useState('');
   const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
   const [outgoingNotes, setOutgoingNotes] = useState('');
@@ -90,8 +93,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
           );
         } else {
           setDecision('PASSED');
-          setDistributorNotes(
-            'Seluruh anggota tim pentashih telah menelaah naskah dan menyatakan lulus tanpa catatan koreksi. Direkomendasikan untuk penetapan Surat Tanda Tashih (STT).'
+          // B-16: hanya tahap Dumi yang lulus berujung STT; tahap awal/perbaikan yang lulus beralih ke tahap Dumi.
+          setDistributorNotes(currentAssignments[0]?.stage === 'DUMMY'
+            ? 'Seluruh anggota tim pentashih telah menelaah naskah dumi dan menyatakan lulus tanpa catatan koreksi. Direkomendasikan untuk penetapan Surat Tanda Tashih (STT).'
+            : 'Seluruh anggota tim pentashih telah menelaah naskah dan menyatakan lulus tanpa catatan koreksi. Pengajuan dialihkan ke tahap dumi; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.'
           );
         }
       })
@@ -121,9 +126,25 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const parafSigners = pendingParaf?.signers || [];
   const parafRequired = pendingParaf?.required || 2;
   const alreadyParafed = parafSigners.some((signer) => signer.id === currentUser?.id);
-  // Kedua Pemaraf wajib memaraf (urutan bebas, masing-masing sekali); hanya akun berperan Pemaraf.
+  // Hanya 2 Pemaraf yang ditunjuk distributor yang memaraf (urutan bebas); lalu Kepala LPMQ mengesahkan.
   const isPemaraf = checkIsPemaraf(currentUser);
-  const canParaf = Boolean(pendingParaf) && isPemaraf && !alreadyParafed;
+  const awaitingHead = Boolean(pendingParaf?.awaiting_head);
+  const assignedToMe = !pendingParaf?.assigned || pendingParaf.assigned.includes(currentUser?.id);
+  const canParaf = Boolean(pendingParaf) && !awaitingHead && isPemaraf && !alreadyParafed && assignedToMe;
+  const canHeadApprove = awaitingHead && !isPemaraf && userRoles.includes('KEPALA_LPMQ');
+
+  const handleHeadApprove = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await tashihApi.headApproveDistribution(registrationId);
+      onSuccess?.();
+    } catch (err) {
+      setError(err.message || 'Gagal mengesahkan keputusan sidang.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleParaf = async () => {
     setSubmitting(true);
@@ -188,6 +209,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
         outgoing_courier: decision === 'REVISION_REQUIRED' && outgoingCourier.trim() ? outgoingCourier.trim() : undefined,
         outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
         outgoing_notes: decision === 'REVISION_REQUIRED' && outgoingNotes.trim() ? outgoingNotes.trim() : undefined,
+        pemaraf_ids: pemarafAvailable ? pemarafIds : undefined,
       });
 
       onSuccess?.();
@@ -435,17 +457,26 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 <div className="p-3.5 rounded-xl bg-civic-infoSoft border border-civic-infoLine text-xs text-ink space-y-2">
                   <div className="font-bold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-civic-info" />
-                    <span>Menunggu paraf Pemaraf ({parafSigners.length}/{parafRequired})</span>
+                    <span>{awaitingHead
+                      ? `Paraf lengkap (${parafSigners.length}/${parafRequired}) — menunggu pengesahan Kepala LPMQ`
+                      : `Menunggu paraf Pemaraf (${parafSigners.length}/${parafRequired})`}</span>
                   </div>
                   {parafSigners.length > 0 && (
                     <div>Sudah memaraf: <strong>{parafSigners.map((signer) => signer.name || 'Pemaraf').join(', ')}</strong></div>
                   )}
-                  {alreadyParafed && (
+                  {alreadyParafed && !awaitingHead && (
                     <div className="text-civic-info">Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.</div>
+                  )}
+                  {isPemaraf && !assignedToMe && !awaitingHead && (
+                    <div className="text-civic-info">Anda tidak ditunjuk sebagai Pemaraf untuk keputusan ini.</div>
                   )}
                   <div>
                     Keputusan {pendingParaf.requested_by?.name || 'distributor'}:{' '}
-                    <strong>{pendingParaf.decision?.result === 'PASSED' ? 'Lolos telaah' : 'Kembalikan ke penerbit (perbaikan)'}</strong>
+                    <strong>{pendingParaf.decision?.result !== 'PASSED'
+                      ? 'Kembalikan ke penerbit (perbaikan)'
+                      : currentAssignments[0]?.stage === 'DUMMY'
+                        ? 'Lolos dumi — rekomendasikan penetapan STT'
+                        : 'Lolos telaah — lanjut ke tahap Dumi (penerbit kirim naskah dumi)'}</strong>
                   </div>
                   <p className="font-mono whitespace-pre-line bg-white border border-line rounded p-2">{pendingParaf.decision?.notes}</p>
                   {canParaf && (
@@ -459,6 +490,19 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                       icon={<Check className="w-3.5 h-3.5" />}
                     >
                       {submitting ? 'Menyimpan...' : 'Bubuhkan Paraf'}
+                    </Button>
+                  )}
+                  {canHeadApprove && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={handleHeadApprove}
+                      disabled={submitting}
+                      className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                      icon={<ShieldCheck className="w-3.5 h-3.5" />}
+                    >
+                      {submitting ? 'Memproses...' : 'Sahkan Keputusan Sidang'}
                     </Button>
                   )}
                 </div>
@@ -622,6 +666,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
             </>
           ) : null}
 
+          {canDecide && allCompleted && parafState.gate_active && (
+            <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
+          )}
+
           {/* Footer Actions */}
           <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
             <Button
@@ -638,7 +686,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 type="submit"
                 variant="primary"
                 size="sm"
-                disabled={submitting || !distributorNotes.trim()}
+                disabled={submitting || !distributorNotes.trim() || (parafState.gate_active && !pemarafSelectionValid(pemarafAvailable, pemarafIds))}
                 className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                 icon={<Send className="w-3.5 h-3.5" />}
               >

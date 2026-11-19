@@ -94,6 +94,7 @@ export const verificationDraftSchema = {
     attachment_file_ids: z.array(z.string().uuid()).max(5).default([]),
     mushaf_content_review: z.record(z.any()).optional().nullable(),
     pemaraf_id: z.string().uuid().optional().nullable(),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
   }).strict().superRefine((data, ctx) => {
     const codes = data.checklist.map(item => item.code);
     if (new Set(codes).size !== data.checklist.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['checklist'], message: 'Seluruh butir checklist harus diisi masing-masing satu kali tanpa duplikasi.' });

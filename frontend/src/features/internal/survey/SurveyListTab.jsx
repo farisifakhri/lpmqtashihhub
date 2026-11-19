@@ -11,6 +11,7 @@ import { showToast } from '@/components/ui/toast';
 import {
   inputClass, STATUS_BADGE, STATUS_OPTIONS, formatDate, unsurLabel,
   OPENING_TEXT, CLOSING_TEXT, DEMOGRAPHIC_FIELDS, SATISFACTION_LABELS, ANTI_CORRUPTION_STATEMENTS,
+  IKM_CATEGORIES, IPAK_KINERJA,
 } from './survey-constants';
 
 const QuestionnaireSection = ({ title, children }) => (
@@ -20,7 +21,7 @@ const QuestionnaireSection = ({ title, children }) => (
   </section>
 );
 
-const EMPTY = { name: '', status: 'DRAFT', itemCount: 0 };
+const EMPTY = { name: '', status: 'DRAFT', kind: 'IKM', mutu_labels: {}, itemCount: 0 };
 const NO_QUESTIONS_NOTE = 'Catatan: survei belum memiliki pertanyaan, jadi belum bisa diisi penerbit. Susun pertanyaannya di Pemilihan Survei.';
 
 const StatusBadge = ({ survey }) => {
@@ -116,7 +117,7 @@ export function SurveyListTab({ onOpen }) {
     event.preventDefault();
     setSaving(true);
     try {
-      const body = { name: form.name, status: form.status };
+      const body = { name: form.name, status: form.status, mutu_labels: form.mutu_labels };
       if (form.id) await surveyApi.updateSurvey(form.id, body);
       else await surveyApi.createSurvey(body);
       const saved = form.id ? 'Survei diperbarui.' : 'Survei ditambahkan.';
@@ -187,7 +188,7 @@ export function SurveyListTab({ onOpen }) {
                         <Button size="sm" variant="ghost" aria-label={`Turunkan ${s.name}`} disabled={index === items.length - 1} onClick={() => moveRow(index, index + 1)}><ArrowDown className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label={`Lihat ${s.name}`} onClick={() => setViewId(s.id)}><Eye className="w-4 h-4" /></Button>
                         <Button size="sm" variant="ghost" aria-label={`Edit ${s.name}`}
-                          onClick={() => setForm({ id: s.id, name: s.name, status: s.status, itemCount: s._count?.items || 0 })}>
+                          onClick={() => setForm({ id: s.id, name: s.name, status: s.status, kind: s.kind, mutu_labels: s.mutu_labels || {}, itemCount: s._count?.items || 0 })}>
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button size="sm" variant="ghost" aria-label={`Hapus ${s.name}`}
@@ -214,6 +215,19 @@ export function SurveyListTab({ onOpen }) {
               <select className={inputClass} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+            </FormField>
+            <FormField label="Label mutu hasil survei" hint="Teks yang tampil di hasil survei (mis. banner &quot;Sangat Baik&quot;). Kosongkan untuk memakai label bawaan.">
+              <div className="grid gap-2 sm:grid-cols-2">
+                {IKM_CATEGORIES.slice().reverse().map((c) => (
+                  <label key={c.mutu} className="flex items-center gap-2 text-xs font-semibold text-ink">
+                    <span className="w-14 shrink-0">Mutu {c.mutu}</span>
+                    <input className={inputClass} aria-label={`Label mutu ${c.mutu}`} maxLength={60}
+                      placeholder={form.kind === 'IPAK' ? IPAK_KINERJA[c.mutu] : c.kinerja}
+                      value={form.mutu_labels?.[c.mutu] || ''}
+                      onChange={(e) => setForm({ ...form, mutu_labels: { ...form.mutu_labels, [c.mutu]: e.target.value } })} />
+                  </label>
+                ))}
+              </div>
             </FormField>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setForm(null)}>Batal</Button>
