@@ -100,6 +100,28 @@ export async function countWorkingDays(db, from, to, options = {}) {
     },
   });
 
+  // Jika tabel kalender kerja belum terisi untuk rentang tanggal ini,
+  // gunakan estimasi hari kerja standar (Senin-Jumat) agar metrik SLA tidak 0 secara diam-diam.
+  const totalInCalendar = await db.workingDay.count({
+    where: {
+      date: {
+        gte: dStart,
+        lte: dEnd,
+      },
+    },
+  });
+
+  if (totalInCalendar === 0) {
+    let standardDays = 0;
+    const cur = new Date(dStart);
+    while (cur <= dEnd) {
+      const day = cur.getUTCDay();
+      if (day !== 0 && day !== 6) standardDays++;
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    return standardDays;
+  }
+
   return count;
 }
 
@@ -109,12 +131,13 @@ export async function countWorkingDays(db, from, to, options = {}) {
  * - EARLY: tanggal kirim < tanggal due_at
  * - ON_TIME: tanggal kirim = tanggal due_at DAN waktu kirim <= due_at
  * - LATE: selebihnya
+ * - null: jika dueAt atau sentAt tidak tersedia
  * @param {Date|string} dueAt Tenggat waktu SLA
  * @param {Date|string} sentAt Waktu pengiriman surat
- * @returns {'EARLY'|'ON_TIME'|'LATE'}
+ * @returns {'EARLY'|'ON_TIME'|'LATE'|null}
  */
 export function determineVerificationSlaOutcome(dueAt, sentAt) {
-  if (!dueAt || !sentAt) return 'ON_TIME';
+  if (!dueAt || !sentAt) return null;
   const dDue = dueAt instanceof Date ? dueAt : new Date(dueAt);
   const dSent = sentAt instanceof Date ? sentAt : new Date(sentAt);
 

@@ -688,7 +688,7 @@ export const VerifikatorInboxPage = () => {
                               }}
                             >
                               <UserCheck className="w-4 h-4 mr-1.5" />
-                              Tugaskan Verifikator
+                              Tugaskan Tim
                             </Button>
                           </div>
                         </div>

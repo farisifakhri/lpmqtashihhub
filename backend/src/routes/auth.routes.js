@@ -9,11 +9,11 @@ import {
   resetPasswordSchema,
   changePasswordSchema,
 } from '../validators/auth.validator.js';
-import { authRateLimiter, registrationRateLimiter, forgotPasswordRateLimiter } from '../middlewares/rateLimiter.middleware.js';
+import { authRateLimiter, authIpRateLimiter, registrationRateLimiter, forgotPasswordRateLimiter } from '../middlewares/rateLimiter.middleware.js';
 
 const router = Router();
 
-router.post('/login', authRateLimiter, validate(loginSchema), authController.login);
+router.post('/login', authIpRateLimiter, authRateLimiter, validate(loginSchema), authController.login);
 router.post(
   '/register-publisher',
   registrationRateLimiter,

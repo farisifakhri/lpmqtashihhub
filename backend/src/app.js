@@ -9,8 +9,8 @@ import { ENV } from './config/env.js';
 
 const app = express();
 
-// Konfigurasi trust proxy untuk deployment di balik Nginx / reverse proxy
-app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY : 1);
+// Konfigurasi trust proxy untuk deployment di balik Nginx / reverse proxy / Cloudflare
+app.set('trust proxy', process.env.TRUST_PROXY ? (Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY) : true);
 
 // Disable ETag dan aktifkan no-store untuk mencegah kebocoran cache antar akun / sesi (P0 Tenant Isolation)
 app.set('etag', false);
