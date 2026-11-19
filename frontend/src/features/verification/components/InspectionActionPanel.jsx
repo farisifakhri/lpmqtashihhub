@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { StickyActionBar } from '@/components/layout/StickyActionBar';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 import { Button } from '@/components/ui/Button';
+import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 
 export const InspectionActionPanel = ({
@@ -20,6 +21,8 @@ export const InspectionActionPanel = ({
   showDocumentPdf,
   billingNo, billingFileId,
   totalChecklistCount = 8,
+  submitModalError = null, setSubmitModalError,
+  pemarafIds = [], setPemarafIds, pemarafAvailable = null, setPemarafAvailable,
 }) => (
   <>
       {/* STICKY ACTION BAR FOR WORKSPACE */}
@@ -57,7 +60,7 @@ export const InspectionActionPanel = ({
             </span>
           ) : canHeadApprove ? (
             <span className="font-bold text-civic-warning">
-              Menunggu Persetujuan Draf oleh Kepala LPMQ
+              {isPemaraf ? 'Surat Hasil Menunggu Paraf Anda' : 'Menunggu Persetujuan Draf oleh Kepala LPMQ'}
             </span>
           ) : assignment.status === 'WAITING_APPROVAL' ? (
             <span className="font-bold text-civic-warning">
@@ -107,7 +110,7 @@ export const InspectionActionPanel = ({
                 {actionLoading ? 'Menyimpan...' : 'Simpan Draf Pemeriksaan'}
               </Button>
             )}
-            {canHeadApprove && (
+            {canHeadApprove && !isPemaraf && (
               <Button
                 variant="outline"
                 onClick={() => setReturnModalOpen(true)}
@@ -186,7 +189,7 @@ export const InspectionActionPanel = ({
               className="text-xs"
             >
               <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
-              {actionLoading ? 'Memproses...' : 'Setujui & Sahkan Surat Hasil'}
+              {actionLoading ? 'Memproses...' : isPemaraf ? 'Setujui & Bubuhkan Paraf' : 'Setujui & Sahkan Surat Hasil'}
             </Button>
           ) : latestResultDoc?.status === 'EMAIL_FAILED' ? (
             <div className="flex items-center gap-2">
@@ -220,7 +223,10 @@ export const InspectionActionPanel = ({
       {/* Confirmation Summary Dialog for Submitting Draft */}
       <ConfirmationSummaryDialog
         isOpen={submitConfirmOpen}
-        onClose={() => setSubmitConfirmOpen(false)}
+        onClose={() => {
+          setSubmitModalError?.(null);
+          setSubmitConfirmOpen(false);
+        }}
         onConfirm={handleConfirmSubmitToHead}
         title={decision === 'PASSED' ? "Ajukan Draf Hasil Verifikasi" : "Ajukan Draf Pengembalian Naskah"}
         description={decision === 'PASSED'
@@ -253,7 +259,20 @@ export const InspectionActionPanel = ({
         confirmLabel={decision === 'PASSED' ? 'Ajukan Draf Lolos' : 'Ajukan Pengembalian Naskah'}
         confirmVariant={decision === 'PASSED' ? 'primary' : 'gold'}
         loading={actionLoading}
-      />
+        confirmDisabled={!pemarafSelectionValid(pemarafAvailable, pemarafIds)}
+      >
+        {submitConfirmOpen && setPemarafIds && (
+          <div className="pt-2 border-t border-line">
+            <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={actionLoading} />
+          </div>
+        )}
+        {submitModalError && (
+          <div className="mt-3 p-2.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2" role="alert">
+            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
+            <span>{submitModalError}</span>
+          </div>
+        )}
+      </ConfirmationSummaryDialog>
 
       {/* Confirmation Summary Dialog for Approving Draft (Kepala LPMQ / Pemaraf) */}
       <ConfirmationSummaryDialog

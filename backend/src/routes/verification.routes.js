@@ -25,6 +25,7 @@ import {
   reassignAssignmentSchema,
   latestAssignmentSchema,
 } from '../validators/verification.validator.js';
+import { overrideParafSchema } from '../validators/workflow.validator.js';
 
 const router = Router();
 const action = (fn, status = 200) => async (req, res, next) => {
@@ -72,6 +73,8 @@ router.get('/verification-documents/:documentId/attachments/:fileId', authentica
 // PR-VER-04: Persetujuan Kepala LPMQ (Epic E) & Pengiriman Hasil Verifikasi (Epic F)
 router.post('/verification-documents/:id/sign', authenticate, authorize('VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.signVerificationDocumentHandler(req.params.id, req.user, req)));
 router.post('/verification-documents/:id/retry-email', authenticate, authorize('VERIFIKATOR', 'SUPERADMIN'), validate(documentIdSchema), action(req => review.retryVerificationEmail(req.params.id, req.user, req)));
+// Jalur darurat operasional: penimpaan paraf hasil verifikasi oleh Kepala LPMQ atau Super Admin
+router.post('/verification-documents/:id/paraf-override', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(overrideParafSchema), action(req => review.overrideVerificationParaf(req.params.id, req.body, req.user, req)));
 
 router.post('/verification-documents/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));
 router.post('/verification-results/:id/approve', authenticate, authorize('KEPALA_LPMQ'), validate(documentIdSchema), action(req => review.approveVerificationDocument(req.params.id, req.user, req)));

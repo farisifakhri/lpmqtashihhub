@@ -178,6 +178,11 @@ export function buildHeadSttSignatureWhere(user) {
       content_snapshot: { path: '$.tu_workflow.submitted_at', not: Prisma.DbNull },
       NOT: [STT_PARAF_COMPLETED],
       signatories: { none: { signer_user_id: user.id, signing_status: 'SIGNED' } },
+      // Draf lama tanpa penunjukan tetap tampil; draf baru hanya untuk Pemaraf yang ditunjuk.
+      OR: [
+        { content_snapshot: { path: '$.tu_workflow.pemaraf_ids', equals: Prisma.DbNull } },
+        { content_snapshot: { path: '$.tu_workflow.pemaraf_ids', array_contains: user.id } },
+      ],
     };
   }
 

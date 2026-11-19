@@ -144,6 +144,7 @@ export const distributorReviewSchema = { params, body: z.object({
   outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
   outgoing_notes: z.string().trim().max(1000).optional(),
   pemaraf_id: z.string().uuid('Pemaraf tidak valid.').optional(),
+  pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
 }).strict() };
 
 export const outgoingDispatchSchema = { params, body: z.object({
@@ -191,6 +192,7 @@ export const submitToTuSchema = {
   params,
   body: z.object({
     notes: z.string().trim().max(1000).optional(),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
   }).strict(),
 };
 
@@ -198,6 +200,21 @@ export const parafDocumentSchema = {
   params,
   body: z.object({
     notes: z.string().trim().max(1000).optional(),
+  }).strict(),
+};
+
+export const overrideParafSchema = {
+  params,
+  body: z.object({
+    reason: z.string().trim().min(10, 'Alasan penimpaan paraf darurat minimal 10 karakter').max(1000),
+  }).strict(),
+};
+
+export const reassignPemarafSchema = {
+  params,
+  body: z.object({
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).length(2, 'Pilih tepat 2 Pemaraf aktif.'),
+    reason: z.string().trim().min(10, 'Alasan penunjukan ulang Pemaraf minimal 10 karakter').max(1000),
   }).strict(),
 };
 

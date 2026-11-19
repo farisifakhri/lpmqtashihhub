@@ -51,7 +51,7 @@ function ItemsEditor({ survey, onSaved }) {
   const used = new Set(groups.flatMap((g) => g.questions.map((q) => q.id)));
   // Pertanyaan bank soal milik unsur ini yang belum dipakai di survei.
   const availableFor = (unsurId) => questions.filter((q) => q.unsur_id === unsurId && !used.has(q.id));
-  const unusedUnsur = unsurForSurvey(unsurList, survey.id).filter((u) => !groups.some((g) => g.unsur.id === u.id));
+  const unusedUnsur = unsurForSurvey(unsurList, survey.id, survey.kind).filter((u) => !groups.some((g) => g.unsur.id === u.id));
   const dirty = JSON.stringify(flatten(groups))
     !== JSON.stringify(survey.items.map((i) => ({ unsur_id: i.unsur_id, question_id: i.question_id })));
 
@@ -218,7 +218,7 @@ function DonutChart({ rows, label }) {
 }
 
 // Kartu demografi: diagram donat + rincian angkanya (angka tetap terbaca tanpa melihat diagram).
-function DistributionCard({ title, rows }) {
+export function DistributionCard({ title, rows }) {
   return (
     <div className="space-y-3 rounded-xl border border-line bg-white p-4">
       <h4 className="text-xs font-bold uppercase tracking-wider text-ink-muted">{title}</h4>

@@ -45,6 +45,8 @@ export const tashihApi = {
   listPemaraf: async () => apiClient('/pemaraf'),
   getDistributionParaf: async (registrationId) => apiClient(`/registrations/${registrationId}/distribution-review/paraf`),
   parafDistribution: async (registrationId) => apiClient(`/registrations/${registrationId}/distribution-review/paraf`, { method: 'POST', body: {} }),
+  // Kepala LPMQ mengesahkan keputusan distributor setelah kedua Pemaraf yang ditunjuk memaraf
+  headApproveDistribution: async (registrationId) => apiClient(`/registrations/${registrationId}/distribution-review/approve`, { method: 'POST', body: {} }),
 
   /**
    * Mengambil beban kerja (workload) tim pentashihan

@@ -12,6 +12,12 @@ export const reorderSchema = {
 export const questionIdSchema = { ...idParams, ...forceQuery };
 export const surveyIdSchema = { ...idParams, ...forceQuery };
 
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD.').optional();
+export const publicSurveyReportSchema = {
+  ...idParams,
+  query: z.object({ from: DATE, to: DATE }).refine((q) => !q.from || !q.to || q.from <= q.to, { message: 'Tanggal awal harus sebelum tanggal akhir.' }),
+};
+
 export const listUnsurSchema = {
   query: z.object({ kind: KIND.optional(), include_archived: z.enum(['true', 'false']).optional() }),
 };
@@ -33,7 +39,7 @@ export const updateUnsurSchema = { ...idParams, body: unsurBody.partial() };
 
 const optionBody = z.object({
   label: z.string().trim().min(1, 'Label opsi wajib diisi.').max(150, 'Label opsi maksimal 150 karakter.'),
-  value: z.coerce.number().int().min(1, 'Nilai opsi antara 1 dan 4.').max(4, 'Nilai opsi antara 1 dan 4.'),
+  value: z.coerce.number().int().min(1, 'Nilai opsi antara 1 dan 5.').max(5, 'Nilai opsi antara 1 dan 5.'), // 1–4 skala pelayanan, 1–5 Likert anti-korupsi
 });
 
 const questionBody = z.object({
@@ -62,6 +68,10 @@ const surveyBody = z.object({
   description: z.string().trim().max(5000, 'Pengantar maksimal 5000 karakter.').optional().nullable(),
   starts_at: optionalDate('Tanggal mulai'),
   ends_at: optionalDate('Tanggal selesai'),
+  // Label mutu kustom; huruf yang kosong memakai label bawaan.
+  mutu_labels: z.object(Object.fromEntries(['A', 'B', 'C', 'D'].map((g) => [g, z.string().trim().max(60, 'Label mutu maksimal 60 karakter.').optional()])))
+    .strict().nullable().optional()
+    .transform((v) => { if (!v) return v; const kept = Object.fromEntries(Object.entries(v).filter(([, l]) => l)); return Object.keys(kept).length ? kept : null; }),
 });
 
 const periodOrder = (b) => !b.starts_at || !b.ends_at || b.ends_at >= b.starts_at;

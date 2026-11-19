@@ -25,13 +25,18 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
     assert.equal((await call('/admin/surveys', helperAdminToken)).status, 403);
   });
 
-  await test('Survei: 9 unsur baku Pedoman PANRB 9/2024 langsung tersedia beserta definisinya', async () => {
+  await test('Survei: 9 unsur baku IKM dan 10 unsur baku IPAK (nama sesuai sistem lama) langsung tersedia beserta definisinya', async () => {
     const list = await ok('/admin/survey-unsur', adminToken, 'GET');
-    const standard = list.filter((u) => u.is_standard);
+    const standard = list.filter((u) => u.is_standard && u.kind === 'IKM');
     assert.deepEqual(standard.map((u) => `${u.code} ${u.name}`), [
-      'A Persyaratan', 'B Sistem, Mekanisme, dan Prosedur', 'C Waktu Penyelesaian', 'D Biaya/Tarif',
-      'E Produk, Spesifikasi, dan Jenis Pelayanan', 'F Kompetensi Pelaksana', 'G Perilaku Pelaksana',
-      'H Penanganan Pengaduan', 'I Sarana dan Prasarana',
+      'A Persyaratan Pelayanan Pentashihan', 'B Sistem, Mekanisme, dan Prosedur Pelayanan', 'C Waktu Penyelesaian Pelayanan', 'D Biaya/Tarif',
+      'E Produk Spesifikasi Jenis Pelayanan', 'F Kompetensi Pelaksana', 'G Perilaku Pelaksana',
+      'H Penanganan Pengaduan, Saran dan Masukan', 'I Sarana dan Prasarana',
+    ]);
+    assert.deepEqual(list.filter((u) => u.is_standard && u.kind === 'IPAK').map((u) => `${u.code} ${u.name}`), [
+      '1 Manipulasi Peraturan', '2 Penyalahgunaan Jabatan', '3 Menjual Pengaruh', '4 Transparansi Biaya', '5 Biaya Tambahan',
+      '6 Hadiah', '7 Transparansi Pembayaran', '8 Percaloan', '9 Perbuatan Curang', '10 Transaksi Rahasia',
+      '11 Transparansi Pelayanan', '12 Integritas Petugas Pelayanan',
     ]);
     assert.match(standard[0].definition, /^Syarat yang harus dipenuhi/);
     assert.ok(standard.every((u) => u.definition));
@@ -61,19 +66,20 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
 
     // Kasus nyata: "Persyaratan" dihapus lalu dibuat ulang tanpa kode sehingga jatuh ke urutan terakhir.
     await ok(`/admin/survey-unsur/${standard[0].id}`, adminToken, 'DELETE');
-    const recreated = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Persyaratan', definition: 'Definisi buatan admin.' }, 201);
+    const recreated = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Persyaratan Pelayanan Pentashihan', definition: 'Definisi buatan admin.' }, 201);
     const restored = await ok('/admin/survey-unsur/restore-standard', adminToken, 'POST');
     const restoredStandard = restored.filter((u) => u.is_standard);
     assert.deepEqual(restoredStandard.map((u) => u.name).slice(0, 9), [
-      'Persyaratan', 'Sistem, Mekanisme, dan Prosedur', 'Waktu Penyelesaian', 'Biaya/Tarif',
-      'Produk, Spesifikasi, dan Jenis Pelayanan', 'Kompetensi Pelaksana', 'Perilaku Pelaksana',
-      'Penanganan Pengaduan', 'Sarana dan Prasarana',
+      'Persyaratan Pelayanan Pentashihan', 'Sistem, Mekanisme, dan Prosedur Pelayanan', 'Waktu Penyelesaian Pelayanan', 'Biaya/Tarif',
+      'Produk Spesifikasi Jenis Pelayanan', 'Kompetensi Pelaksana', 'Perilaku Pelaksana',
+      'Penanganan Pengaduan, Saran dan Masukan', 'Sarana dan Prasarana',
     ]);
-    assert.deepEqual(restoredStandard.map((u) => u.sort_order), [1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    assert.deepEqual(restoredStandard.map((u) => u.sort_order), [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]);
+    assert.ok(restoredStandard.slice(9).every((u) => u.kind === 'IPAK'));
     // Unsur buatan ulang dijadikan baku (tanpa duplikat) dan definisi admin dipertahankan.
     assert.equal(restoredStandard[0].id, recreated.id);
     assert.equal(restoredStandard[0].definition, 'Definisi buatan admin.');
-    assert.equal(restored.filter((u) => u.name === 'Persyaratan').length, 1);
+    assert.equal(restored.filter((u) => u.name === 'Persyaratan Pelayanan Pentashihan').length, 1);
     // Unsur buatan sendiri tampil setelah 9 unsur baku.
     const custom = await ok('/admin/survey-unsur', adminToken, 'POST', { name: 'Unsur tambahan' }, 201);
     assert.equal((await ok('/admin/survey-unsur', adminToken, 'GET')).at(-1).id, custom.id);
@@ -293,6 +299,25 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
       assert.equal(byName.get(name).kind, kind);
       assert.equal(byName.get(name).display_status, 'DRAFT');
     }
+    // Survei IPAK baku: 10 unsur sistem lama (skala 1–4) + Pengukuran Perilaku Anti-Korupsi (Likert 1–5).
+    const ipak = await ok(`/admin/surveys/${byName.get('Indeks Persepsi Anti Korupsi').id}`, adminToken, 'GET');
+    assert.deepEqual(ipak.items.map((i) => `${i.unsur.code} ${i.unsur.name}`), [
+      '1 Manipulasi Peraturan', '2 Penyalahgunaan Jabatan', '3 Menjual Pengaruh', '4 Transparansi Biaya', '5 Biaya Tambahan',
+      '6 Hadiah', '7 Transparansi Pembayaran', '8 Percaloan', '9 Perbuatan Curang', '10 Transaksi Rahasia',
+      '11 Transparansi Pelayanan', '12 Integritas Petugas Pelayanan', '12 Integritas Petugas Pelayanan', '12 Integritas Petugas Pelayanan',
+    ]);
+    assert.deepEqual(ipak.items[0].question.options.map((o) => [o.label, o.value]), [['Sangat setuju', 4], ['Setuju', 3], ['Tidak setuju', 2], ['Sangat tidak setuju', 1]]);
+    assert.deepEqual(ipak.items.slice(11).map((i) => i.question.text.slice(0, 28)), [
+      'Tidak ada pungutan liar (pun', 'Tidak ada percaloan/perantar', 'Tidak ada penerimaan imbalan',
+    ]);
+    assert.deepEqual(ipak.items[10].question.options.map((o) => [o.label, o.value]), [
+      ['Sangat Setuju', 5], ['Setuju', 4], ['Antara Setuju dan Tidak Setuju', 3], ['Tidak Setuju', 2], ['Sangat Tidak Setuju', 1],
+    ]);
+
+    // Survei IPAK baru langsung memuat semua pernyataan unsur IPAK baku.
+    const baru = await ok('/admin/surveys', adminToken, 'POST', { name: 'IPAK uji otomatis', kind: 'IPAK' }, 201);
+    assert.equal(baru._count.items, 14);
+    await ok(`/admin/surveys/${baru.id}`, adminToken, 'DELETE');
   });
 
   await test('Survei: penerbit mengisi survei aktif untuk pengajuannya, sekali saja', async () => {

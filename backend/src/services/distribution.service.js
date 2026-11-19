@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { calculateDueAt, jakartaDate } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
-import { ACTIVE_PEMARAF, pemarafGateActive, findParaf, parafKey, addPemarafSignature, parafProgress } from './paraf.service.js';
+import { pemarafGateActive, findParaf, addPemarafSignature, parafProgress, resolveDesignatedPemaraf, openParafRequest, overrideParafByAdmin } from './paraf.service.js';
 import { buildMyAssignmentsWhere } from './queue-filters.js';
 
 const STAGE_LABELS = { INITIAL: 'Penugasan Awal', REVISION: 'Penugasan Perbaikan', DUMMY: 'Penugasan Dumi' };
@@ -1004,7 +1004,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
     const signatories = await tx.user.findMany({
       where: {
         status: 'ACTIVE',
-        roles: { some: { role: { code: { in: ['KEPALA_LPMQ', 'DOKUMENTATOR'] } } } },
+        roles: { some: { role: { code: 'DOKUMENTATOR' } } },
       },
     });
     for (const officer of signatories) {
@@ -1025,28 +1025,21 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
 
 // Bila sudah ada akun Pemaraf aktif, keputusan distributor ditahan sampai diparaf SELURUH Pemaraf (saat ini 2,
 // urutan bebas). Pemaraf tidak dipilih distributor; hanya akun berperan Pemaraf yang dapat memaraf.
-export const approveDistribution = (id, { pemaraf_id: _ignored, ...decision }, user) => prisma.$transaction(async tx => {
+export const approveDistribution = (id, { pemaraf_id: _ignored, pemaraf_ids, ...decision }, user) => prisma.$transaction(async tx => {
   if (!(await pemarafGateActive(tx))) return applyDistributionDecision(tx, id, decision, user);
 
   const reg = await applyDistributionDecision(tx, id, decision, user, { dryRun: true });
-  const pemarafUsers = await tx.user.findMany({ where: ACTIVE_PEMARAF, select: { id: true } });
-  // Keputusan baru/ulang: paraf sebelumnya tidak berlaku lagi.
-  const pending = {
-    pemaraf_id: null, requested_by_id: user.id, payload: decision, signed_at: null,
-    signers: [], required_count: pemarafUsers.length,
-  };
-  await tx.approvalParaf.upsert({
-    where: parafKey('DISTRIBUTOR_REVIEW', id),
-    create: { subject_type: 'DISTRIBUTOR_REVIEW', subject_id: id, ...pending },
-    update: pending,
+  const designated = await resolveDesignatedPemaraf(tx, pemaraf_ids);
+  // Keputusan baru/ulang: paraf & pengesahan sebelumnya tidak berlaku lagi.
+  await openParafRequest(tx, 'DISTRIBUTOR_REVIEW', id, designated, {
+    requested_by_id: user.id,
+    payload: decision,
+    notify: {
+      registration_id: id,
+      title: `Keputusan sidang menunggu paraf Anda: ${reg.registration_no || reg.title}`,
+      payload: { link: `/internal/distributions/monitoring?review=${id}` },
+    },
   });
-  await tx.notification.createMany({ data: pemarafUsers.map(pemaraf => ({
-    user_id: pemaraf.id,
-    registration_id: id,
-    type: 'PARAF_REQUIRED',
-    title: `Keputusan sidang menunggu paraf Anda: ${reg.registration_no || reg.title}`,
-    payload: { link: `/internal/distributions/monitoring?review=${id}` },
-  })) });
   await audit(tx, user, 'DISTRIBUTOR_REVIEW_WAITING_PARAF', 'Registration', id, decision);
   return { ...reg, pending_paraf: { pemaraf: null } };
 }, { isolationLevel: 'ReadCommitted' });
@@ -1054,12 +1047,17 @@ export const approveDistribution = (id, { pemaraf_id: _ignored, ...decision }, u
 export const getDistributionParaf = async (id) => {
   const gate_active = await pemarafGateActive(prisma);
   const paraf = await findParaf(prisma, 'DISTRIBUTOR_REVIEW', id);
-  if (!paraf || paraf.signed_at) return { gate_active, pending: null };
+  // Baris lama (tanpa penunjukan) yang parafnya lengkap sudah langsung dijalankan dahulu; bukan antrean lagi.
+  if (!paraf || paraf.head_approved_at || (paraf.signed_at && !Array.isArray(paraf.assigned_ids))) return { gate_active, pending: null };
   const requested_by = paraf.requested_by_id
     ? await prisma.user.findUnique({ where: { id: paraf.requested_by_id }, select: { id: true, name: true } })
     : null;
-  const { signers, required } = parafProgress(paraf);
-  return { gate_active, pending: { signers, required, requested_by, decision: paraf.payload, requested_at: paraf.created_at } };
+  const { signers, required, assigned, complete } = parafProgress(paraf);
+  return { gate_active, pending: {
+    signers, required, assigned, requested_by, decision: paraf.payload, requested_at: paraf.created_at,
+    // Paraf lengkap -> menunggu pengesahan Kepala LPMQ sebelum keputusan dijalankan.
+    awaiting_head: complete,
+  } };
 };
 
 // Setiap Pemaraf memaraf sekali; keputusan distributor baru dijalankan (atas nama distributor yang memutuskan)
@@ -1072,17 +1070,47 @@ export const parafDistribution = (id, user, req) => prisma.$transaction(async tx
   if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
 
   const { complete, signers, required } = await addPemarafSignature(tx, 'DISTRIBUTOR_REVIEW', id, user, req);
-  if (!complete) {
-    const reg = await tx.registration.findUnique({ where: { id } });
-    return { ...reg, pending_paraf: { signers, required } };
+  const reg = await tx.registration.findUnique({ where: { id } });
+  await audit(tx, user, 'PARAF_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
+  if (complete) {
+    const heads = await tx.user.findMany({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'KEPALA_LPMQ' } } } }, select: { id: true } });
+    await tx.notification.createMany({ data: heads.map(head => ({
+      user_id: head.id, registration_id: id, type: 'APPROVAL_REQUEST',
+      title: `Keputusan sidang menunggu pengesahan Anda: ${reg.registration_no || reg.title}`,
+      payload: { link: `/internal/distributions/monitoring?review=${id}` },
+    })) });
+  }
+  return { ...reg, pending_paraf: { signers, required, awaiting_head: complete } };
+}, { isolationLevel: 'ReadCommitted' });
+
+// Kepala LPMQ mengesahkan keputusan distributor setelah kedua Pemaraf memaraf; barulah keputusan dijalankan
+// atas nama distributor yang memutuskan.
+export const headApproveDistribution = (id, user, req) => prisma.$transaction(async tx => {
+  if (user.isPemaraf) fail(403, 'Pengesahan keputusan sidang hanya oleh Kepala LPMQ. Pemaraf membubuhkan paraf sebelum pengesahan.');
+  const paraf = await findParaf(tx, 'DISTRIBUTOR_REVIEW', id);
+  if (!paraf || paraf.head_approved_at || !Array.isArray(paraf.assigned_ids)) fail(409, 'Tidak ada keputusan distributor yang menunggu pengesahan untuk pengajuan ini.');
+  if (!paraf.signed_at) fail(409, 'Keputusan ini belum diparaf kedua Pemaraf yang ditunjuk.');
+  const requester = await tx.user.findUnique({ where: { id: paraf.requested_by_id }, include: { roles: { include: { role: true } } } });
+  if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
+  const { signers } = parafProgress(paraf);
+  if (signers.some(signer => signer.id === user.id)) {
+    fail(403, 'Kepala LPMQ yang mengesahkan keputusan sidang tidak boleh merupakan Pemaraf yang telah membubuhkan paraf.');
   }
 
   const actor = { id: requester.id, name: requester.name, roles: requester.roles.map(r => r.role.code) };
   const pemarafName = signers.map(signer => signer.name).filter(Boolean).join(' & ') || user.name;
   const result = await applyDistributionDecision(tx, id, paraf.payload, actor, { pemarafName });
-  await audit(tx, user, 'PARAF_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
+  await tx.approvalParaf.update({ where: { id: paraf.id }, data: { head_approved_at: new Date(), head_approved_by_id: user.id } });
+  await audit(tx, user, 'HEAD_APPROVE_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
   return result;
 }, { isolationLevel: 'ReadCommitted' });
+
+// Penimpaan (override) darurat paraf keputusan sidang oleh Super Admin
+export const overrideDistributionParaf = async (id, data, user, req) => {
+  return prisma.$transaction(async tx => {
+    return overrideParafByAdmin(tx, 'DISTRIBUTOR_REVIEW', id, user, data?.reason, req);
+  }, { isolationLevel: 'ReadCommitted' });
+};
 
 
 export const recordOutgoingDispatch = async (registrationId, data, user, req) => {

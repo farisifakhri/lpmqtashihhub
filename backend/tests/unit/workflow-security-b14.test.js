@@ -92,6 +92,7 @@ test('B14-07: listRegistrations sanitizes assignments for PENERBIT (no pentashih
   const origCount = prisma.registration.count;
   const origFindMany = prisma.registration.findMany;
   const origGroupBy = prisma.registration.groupBy;
+  const origParafFindMany = prisma.approvalParaf?.findMany;
 
   try {
     prisma.registration.count = async () => 1;
@@ -119,6 +120,9 @@ test('B14-07: listRegistrations sanitizes assignments for PENERBIT (no pentashih
       },
     ];
     prisma.registration.groupBy = async () => [{ status: 'TASHIH_IN_PROGRESS', _count: 1 }];
+    if (prisma.approvalParaf) {
+      prisma.approvalParaf.findMany = async () => [];
+    }
 
     // 1. Akun Penerbit
     const pubUser = { id: 'usr-pub-1', publisherId: 'pub-1', roles: ['PENERBIT'] };
@@ -146,5 +150,8 @@ test('B14-07: listRegistrations sanitizes assignments for PENERBIT (no pentashih
     prisma.registration.count = origCount;
     prisma.registration.findMany = origFindMany;
     prisma.registration.groupBy = origGroupBy;
+    if (prisma.approvalParaf && origParafFindMany) {
+      prisma.approvalParaf.findMany = origParafFindMany;
+    }
   }
 });

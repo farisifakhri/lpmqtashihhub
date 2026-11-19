@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
-import { requireParaf, recordParaf, clearParaf, pemarafGateActive, findParaf, parafProgress } from './paraf.service.js';
+import { requireParaf, recordParaf, clearParaf, findParaf, parafProgress, pemarafGateActive, PEMARAF_REQUIRED, resolveDesignatedPemaraf, openParafRequest, overrideParafByAdmin } from './paraf.service.js';
 import { audit, fail, move, registration, requireRole, requireStatus } from './workflow-utils.js';
 import { assertAttachmentFileOwnership } from './resource-policy.service.js';
 import { computeDocumentHash, signVerificationDocument, assertDocumentFullySigned } from './verification-signing.service.js';
@@ -444,22 +444,15 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
 
   await audit(tx, user, 'SUBMIT_VERIFICATION_DRAFT', 'VerificationDocument', document.id, document, req);
 
-  // Kirim notifikasi permohonan paraf kepada Pemaraf bila ditunjuk
-  if (targetPemarafId) {
-    await tx.notification.create({
-      data: {
-        user_id: targetPemarafId,
+  // Verifikator menunjuk 2 Pemaraf; hanya mereka yang memaraf sebelum Kepala LPMQ mengesahkan.
+  const designated = await resolveDesignatedPemaraf(tx, data.pemaraf_ids);
+  if (designated) {
+    await openParafRequest(tx, 'VERIFICATION_RESULT', actualAssignmentId, designated, {
+      requested_by_id: user.id,
+      notify: {
         registration_id: reg.id,
-        type: 'APPROVAL_REQUEST',
-        title: `Permohonan paraf draf verifikasi: ${reg.registration_no}`,
-        payload: {
-          assignment_id: actualAssignmentId,
-          document_id: document.id,
-          version: document.version,
-          decision: data.decision,
-          verifier_name: user.name,
-          link: `/internal/verifications/${actualAssignmentId}`,
-        },
+        title: `Surat hasil verifikasi menunggu paraf Anda: ${reg.registration_no}`,
+        payload: { assignment_id: actualAssignmentId, link: `/internal/verifications/${actualAssignmentId}` },
       },
     });
   }
@@ -609,14 +602,14 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
   const coreDistributor = assignment.registration.core_distributor_id
     ? await prisma.user.findUnique({ where: { id: assignment.registration.core_distributor_id }, select: { id: true, name: true, nip: true } })
     : null;
-
-  const parafSubject = assignment.id;
+  // Progres paraf surat hasil: Pemaraf melihat apakah ia sudah memaraf, Kepala melihat kapan boleh mengesahkan.
   const gateActive = await pemarafGateActive(prisma);
-  const parafRecord = gateActive ? await findParaf(prisma, 'VERIFICATION_RESULT', parafSubject) : null;
+  const parafRow = gateActive ? await findParaf(prisma, 'VERIFICATION_RESULT', assignment.id) : null;
   const parafInfo = gateActive ? {
     gate_active: true,
-    ...parafProgress(parafRecord),
-  } : { gate_active: false, complete: true, signers: [], required: 0 };
+    ...parafProgress(parafRow),
+    required: parafRow?.required_count ?? PEMARAF_REQUIRED,
+  } : { gate_active: false, complete: true, signers: [], required: 0, assigned: null };
 
   return {
     assignment: {
@@ -961,7 +954,7 @@ try { approvedResult = await prisma.$transaction(async tx => {
     const paraf = await recordParaf(tx, 'VERIFICATION_RESULT', parafSubject, user, req);
     return { ...doc, paraf_only: true, paraf_complete: Boolean(paraf.signed_at) };
   }
-  await requireParaf(tx, 'VERIFICATION_RESULT', parafSubject);
+  await requireParaf(tx, 'VERIFICATION_RESULT', parafSubject, user);
 
   const now = new Date();
 
@@ -1264,12 +1257,15 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   }
 
   // Klaim kepemilikan atomik: hanya 1 proses pengiriman yang berhak memproses dokumen
-  // Transisikan status dari SIGNED / EMAIL_FAILED ke EMAIL_QUEUED untuk mencegah race condition
+  // Transisikan status dari SIGNED / EMAIL_FAILED ke EMAIL_QUEUED untuk mencegah race condition.
+  // Dokumen yang macet di EMAIL_QUEUED lebih dari 5 menit dapat diklaim ulang (stale reclaim).
+  const staleThreshold = new Date(Date.now() - 5 * 60 * 1000);
+  const isStaleClaim = doc.status === 'EMAIL_QUEUED';
+  const whereClause = isStaleClaim
+    ? { id: doc.id, status: 'EMAIL_QUEUED', updated_at: { lt: staleThreshold } }
+    : { id: doc.id, status: { in: ['SIGNED', 'EMAIL_FAILED'] } };
   const claim = await prisma.verificationDocument.updateMany({
-    where: {
-      id: doc.id,
-      status: { in: ['SIGNED', 'EMAIL_FAILED'] },
-    },
+    where: whereClause,
     data: {
       status: 'EMAIL_QUEUED',
       dispatch_error: null,
@@ -1328,7 +1324,8 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   }
 
   // 2. Transaksi atomik transisi status berhasil
-  return prisma.$transaction(async tx => {
+  try {
+    return await prisma.$transaction(async tx => {
     const now = new Date();
     const updatedDoc = await tx.verificationDocument.update({
       where: { id: doc.id },
@@ -1438,7 +1435,17 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
 
     await audit(tx, user, 'SEND_VERIFICATION_RESULT', 'VerificationDocument', doc.id, updatedDoc, req);
     return { document: updatedDoc, payment };
-  }, transactionOptions);
+    }, transactionOptions);
+  } catch (txError) {
+    await prisma.verificationDocument.update({
+      where: { id: doc.id },
+      data: {
+        status: 'EMAIL_FAILED',
+        dispatch_error: `Gagal memperbarui status transaksi verifikasi: ${txError.message}`,
+      },
+    }).catch(() => {});
+    fail(500, `Gagal menyelesaikan proses pengiriman: ${txError.message}. Status dokumen dikembalikan ke EMAIL_FAILED.`);
+  }
 };
 
 // Endpoint kirim ulang hasil verifikasi (idempoten)
@@ -1472,8 +1479,8 @@ export const retryVerificationEmail = async (documentId, user, req) => {
   });
 
   if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
-  if (doc.status !== 'EMAIL_FAILED') {
-    fail(409, `Hanya dokumen yang berstatus EMAIL_FAILED yang dapat dicoba kirim ulang (status saat ini: ${doc.status}).`);
+  if (!['EMAIL_FAILED', 'EMAIL_QUEUED'].includes(doc.status)) {
+    fail(409, `Hanya dokumen yang berstatus EMAIL_FAILED atau EMAIL_QUEUED (tersangkut) yang dapat dicoba kirim ulang (status saat ini: ${doc.status}).`);
   }
   const isPrivileged = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN' || user.roles?.includes('ADMIN_INTERNAL');
   if (doc.assignment && doc.assignment.verifier_id !== user.id && !isPrivileged) {
@@ -1481,6 +1488,16 @@ export const retryVerificationEmail = async (documentId, user, req) => {
   }
 
   return dispatchVerificationResult(documentId, user, req);
+};
+
+// Penimpaan (override) darurat paraf hasil verifikasi oleh Super Admin
+export const overrideVerificationParaf = async (documentId, data, user, req) => {
+  return prisma.$transaction(async tx => {
+    const doc = await tx.verificationDocument.findUnique({ where: { id: documentId } });
+    if (!doc) fail(404, 'Dokumen verifikasi tidak ditemukan.');
+    const parafSubject = doc.assignment_id || documentId;
+    return overrideParafByAdmin(tx, 'VERIFICATION_RESULT', parafSubject, user, data?.reason, req);
+  }, transactionOptions);
 };
 
 export const getVerificationDocument = async (documentId, user) => {

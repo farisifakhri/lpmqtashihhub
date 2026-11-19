@@ -8,9 +8,15 @@ import { authRateLimiter, registrationRateLimiter, shouldSkipRateLimit } from '.
 test('P0: createDraft rejects attachment files belonging to other users', async () => {
   const originalFindUnique = prisma.serviceType.findUnique;
   const originalStoredFileFindMany = prisma.storedFile.findMany;
+  const originalJenisNaskahFindMany = prisma.jenisNaskahItem?.findMany;
 
   try {
     prisma.serviceType.findUnique = async () => ({ id: 'srv-1', status: 'ACTIVE', category: {} });
+    if (prisma.jenisNaskahItem) {
+      prisma.jenisNaskahItem.findMany = async () => [
+        { id: 'item-1', code: 'JUZ30', role: 'DASAR', service_kind: 'DIGITAL', status: 'ACTIVE' },
+      ];
+    }
     prisma.storedFile.findMany = async () => [
       { id: 'file-other', owner_id: 'other-user-uuid' },
     ];
@@ -29,6 +35,9 @@ test('P0: createDraft rejects attachment files belonging to other users', async 
   } finally {
     prisma.serviceType.findUnique = originalFindUnique;
     prisma.storedFile.findMany = originalStoredFileFindMany;
+    if (prisma.jenisNaskahItem && originalJenisNaskahFindMany) {
+      prisma.jenisNaskahItem.findMany = originalJenisNaskahFindMany;
+    }
   }
 });
 
@@ -90,9 +99,28 @@ test('P0-1 Auth: forgotPassword, resetPassword, changePassword, and authenticate
   const originalTokenFindUnique = prisma.passwordResetToken.findUnique;
   const originalTokenUpdate = prisma.passwordResetToken.update;
   const originalTransaction = prisma.$transaction;
+  const originalEmailOutbox = prisma.emailOutbox;
 
   try {
     prisma.auditLog.create = async () => ({ id: 'mock-audit' });
+
+    let storedOutbox = [];
+    prisma.emailOutbox = {
+      findUnique: async ({ where }) => storedOutbox.find((o) => o.idempotency_key === where.idempotency_key) || null,
+      create: async ({ data }) => {
+        const rec = { id: 'out-' + Date.now(), status: 'PENDING', ...data };
+        storedOutbox.push(rec);
+        return rec;
+      },
+      update: async ({ where, data }) => {
+        const idx = storedOutbox.findIndex((o) => o.id === where.id);
+        if (idx !== -1) {
+          storedOutbox[idx] = { ...storedOutbox[idx], ...data };
+          return storedOutbox[idx];
+        }
+        return null;
+      },
+    };
 
     const passwordHash = await bcrypt.hash('CurrentPassword123', 10);
     const fakeUser = {
@@ -304,6 +332,7 @@ test('P0-1 Auth: forgotPassword, resetPassword, changePassword, and authenticate
     prisma.passwordResetToken.findUnique = originalTokenFindUnique;
     prisma.passwordResetToken.update = originalTokenUpdate;
     prisma.$transaction = originalTransaction;
+    prisma.emailOutbox = originalEmailOutbox;
   }
 });
 

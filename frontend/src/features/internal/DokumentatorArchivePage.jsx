@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/Button';
 import { showToast } from '@/components/ui/toast';
 import { TashihLoader } from '@/components/ui/TashihLoader';
 import { formatDocumentType, formatDocumentStatus } from '@/lib/glossary';
+import { PemarafSubmitDialog } from '@/components/common/PemarafPicker';
 
 const QUALITY_OPTIONS = [
   { value: 'SANGAT_BAIK', label: 'Sangat Baik' },
@@ -52,6 +53,7 @@ export const DokumentatorArchivePage = () => {
   const [detail, setDetail] = useState(null);
   const [loadingList, setLoadingList] = useState(true);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [sttSubmitTarget, setSttSubmitTarget] = useState(null);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [tabFilter, setTabFilter] = useState('ALL'); // ALL, READY_FOR_STT, WAITING_TU, STT_ISSUED, COMPLETED, PENDING, ARCHIVED
@@ -236,10 +238,11 @@ export const DokumentatorArchivePage = () => {
     }
   };
 
-  const handleSubmitToTu = async (documentId) => {
+  const handleSubmitToTu = async (documentId, pemarafIds = []) => {
     setSaving(true);
     try {
-      await documentationApi.submitToTu(documentId);
+      await documentationApi.submitToTu(documentId, pemarafIds.length ? { pemaraf_ids: pemarafIds } : {});
+      setSttSubmitTarget(null);
       showToast('Draf STT berhasil diteruskan ke Pemaraf untuk dibubuhi paraf.', 'success');
       await fetchRegistrations();
       if (selectedId) await loadDetail(selectedId);
@@ -286,6 +289,15 @@ export const DokumentatorArchivePage = () => {
 
   return (
     <div className="space-y-6">
+      <PemarafSubmitDialog
+        isOpen={Boolean(sttSubmitTarget)}
+        onClose={() => setSttSubmitTarget(null)}
+        onConfirm={(ids) => handleSubmitToTu(sttSubmitTarget.documentId, ids)}
+        title="Kirim Draf STT ke Pemaraf"
+        description="Tunjuk 2 Pemaraf yang akan memaraf draf STT ini. Setelah keduanya memaraf, STT diteruskan ke Kepala LPMQ untuk disahkan."
+        objectName={sttSubmitTarget?.label}
+        loading={saving}
+      />
       {/* Page Header */}
       <div className="bg-surface border-b border-line -mt-6 -mx-6 px-6 py-6 sm:px-8">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -581,7 +593,7 @@ export const DokumentatorArchivePage = () => {
                           <Button
                             size="xs"
                             variant="outline"
-                            onClick={() => handleSubmitToTu(sttDoc.id)}
+                            onClick={() => setSttSubmitTarget({ documentId: sttDoc.id, label: sttDoc.document_no })}
                             className="text-xs font-bold text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft"
                           >
                             <Send className="w-3 h-3 mr-1" />

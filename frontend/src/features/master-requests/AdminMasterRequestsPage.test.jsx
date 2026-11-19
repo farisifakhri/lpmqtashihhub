@@ -5,6 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { AdminMasterRequestsPage } from './AdminMasterRequestsPage';
 import { masterRequestApi } from '@/api/master-request.api';
 
+vi.mock('@/api/tashih.api', () => ({
+  tashihApi: { listPemaraf: vi.fn().mockResolvedValue({ data: [{ id: 'p1', name: 'Pemaraf Satu' }, { id: 'p2', name: 'Pemaraf Dua' }, { id: 'p3', name: 'Pemaraf Tiga' }] }) },
+}));
+
 vi.mock('@/api/master-request.api', () => ({
   masterRequestApi: {
     listAdmin: vi.fn(),
@@ -83,9 +87,17 @@ describe('AdminMasterRequestsPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Susun Surat Persetujuan' }));
     fireEvent.change(within(dialog).getByLabelText(/Isi tambahan surat/), { target: { value: 'Master dikirim melalui surel resmi LPMQ.' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ajukan ke Kepala untuk TTE' }));
+    // Wajib menunjuk tepat 2 Pemaraf sebelum surat bisa diajukan
+    const ajukan = await screen.findByRole('button', { name: 'Ajukan ke Pemaraf' });
+    fireEvent.click(await screen.findByLabelText(/Pemaraf Satu/));
+    expect(ajukan).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/Pemaraf Tiga/));
+    expect(screen.getByLabelText(/Pemaraf Dua/)).toBeDisabled();
+    fireEvent.click(ajukan);
     await waitFor(() => expect(masterRequestApi.submitLetter).toHaveBeenCalledWith('req-1', {
       perihal: "Persetujuan Permohonan Master Mushaf Al-Qur'an",
       isi: 'Master dikirim melalui surel resmi LPMQ.',
+      pemaraf_ids: ['p1', 'p3'],
     }));
     expect(await within(dialog).findByText(/menunggu tanda tangan elektronik Kepala LPMQ/)).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: 'Pratinjau Draf Surat' })).toBeInTheDocument();

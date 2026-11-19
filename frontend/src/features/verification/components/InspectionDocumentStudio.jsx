@@ -91,17 +91,6 @@ export function InspectionDocumentStudio({
                       }`}
                     >
                       <span>{getFileLabel(f)}</span>
-                      {f.version && (
-                        <span
-                          className={`font-mono text-[10px] px-1.5 py-0.2 rounded ${
-                            isSelected
-                              ? 'bg-brand-900/70 text-white'
-                              : 'bg-surface-subtle text-ink-muted'
-                          }`}
-                        >
-                          v{f.version}
-                        </span>
-                      )}
                     </button>
                   );
                 })}

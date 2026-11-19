@@ -2,7 +2,7 @@ import express, { Router } from 'express';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, distributorReviewSchema, outgoingDispatchSchema, documentSchema, calendarSchema, revokePentashihAssignmentSchema, submitToTuSchema, parafDocumentSchema } from '../validators/workflow.validator.js';
+import { emptyAction, confirmPaymentSchema, returnPaymentSchema, paymentQuerySchema, myTasksQuerySchema, assignmentSchema, juzChecklistSchema, reviewSchema, distributorReviewSchema, outgoingDispatchSchema, documentSchema, calendarSchema, revokePentashihAssignmentSchema, submitToTuSchema, parafDocumentSchema, overrideParafSchema, reassignPemarafSchema } from '../validators/workflow.validator.js';
 import { updateCalendar, syncNationalHolidays } from '../services/calendar.service.js';
 import * as documents from '../services/official-document.service.js';
 import * as documentation from '../services/documentation.service.js';
@@ -45,9 +45,13 @@ router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH', 'SUP
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
 router.post('/assignments/:id/revoke', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(revokePentashihAssignmentSchema), action(req => distribution.revokeAssignment(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(distributorReviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
-router.get('/pemaraf', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(() => listPemaraf()));
+router.get('/pemaraf', authenticate, authorize('DISTRIBUTOR', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(() => listPemaraf()));
 router.get('/registrations/:id/distribution-review/paraf', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => distribution.getDistributionParaf(req.params.id)));
 router.post('/registrations/:id/distribution-review/paraf', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(emptyAction), action(req => distribution.parafDistribution(req.params.id, req.user, req)));
+// Jalur darurat operasional: penimpaan paraf keputusan sidang oleh Kepala LPMQ atau Super Admin
+router.post('/registrations/:id/distribution-review/paraf-override', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(overrideParafSchema), action(req => distribution.overrideDistributionParaf(req.params.id, req.body, req.user, req)));
+// Pengesahan Kepala LPMQ setelah kedua Pemaraf yang ditunjuk memaraf; keputusan baru dijalankan di sini.
+router.post('/registrations/:id/distribution-review/approve', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => distribution.headApproveDistribution(req.params.id, req.user, req)));
 router.post('/registrations/:id/outgoing-dispatch', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(outgoingDispatchSchema), action(req => distribution.recordOutgoingDispatch(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/remind-publisher', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPublisherReminder(req.params.id, req.user, req)));
 router.post('/registrations/batch-remind-publishers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => distribution.sendPeriodicReminders(req.user, req.body)));
@@ -57,8 +61,12 @@ router.post('/registrations/:id/official-documents', authenticate, authorize('AD
 router.post('/registrations/:id/request-stt', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN', 'ADMIN_INTERNAL'), action(req => documents.requestSttFromAdmin(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/send-to-distributor', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => documents.sendDraftToDistributor(req.params.id, req.user, req)));
 router.post('/official-documents/:id/submit-to-tu', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(submitToTuSchema), action(req => documents.submitToTu(req.params.id, req.body, req.user, req)));
+// Penunjukan ulang Pemaraf untuk draf STT (misal bila ada Pemaraf berhalangan sebelum selesai memaraf)
+router.post('/official-documents/:id/reassign-pemaraf', authenticate, authorize('DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(reassignPemarafSchema), action(req => documents.reassignSttPemaraf(req.params.id, req.body, req.user, req)));
 // Paraf draf STT: satu paraf oleh akun berperan Pemaraf (akses Pemaraf dipetakan ke KEPALA_LPMQ; layanan menolak selain Pemaraf).
 router.post('/official-documents/:id/paraf', authenticate, authorize('KEPALA_LPMQ'), validate(parafDocumentSchema), action(req => documents.parafDocument(req.params.id, req.body, req.user, req)));
+// Jalur darurat operasional: penimpaan paraf draf STT oleh Kepala LPMQ atau Super Admin
+router.post('/official-documents/:id/paraf-override', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(overrideParafSchema), action(req => documents.overrideSttParaf(req.params.id, req.body, req.user, req)));
 router.post('/official-documents/:id/sign', authenticate, authorize('KEPALA_LPMQ'), validate(emptyAction), action(req => documents.signDocument(req.params.id, req.user, req)));
 
 // Halaman Dokumentator & Pengarsipan Fisik (5 Eksemplar & Lokasi Arsip)
