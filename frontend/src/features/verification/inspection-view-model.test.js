@@ -13,9 +13,11 @@ const vm = (d, u) => getInspectionViewModel(d, u, null, []);
 
 describe('gerbang paraf surat hasil', () => {
   it('Pemaraf bisa memaraf sekali, lalu tombolnya hilang', () => {
-    expect(vm(detail([], false), pemaraf).canHeadApprove).toBe(true);
+    const before = vm(detail([], false), pemaraf);
+    expect(before.canPemarafSign).toBe(true);
+    expect(before.canHeadApprove).toBe(false);
     const after = vm(detail([{ id: 'p1', name: 'P1' }], false), pemaraf);
-    expect(after.canHeadApprove).toBe(false);
+    expect(after.canPemarafSign).toBe(false);
     expect(after.parafStatus.signedByMe).toBe(true);
   });
 
@@ -30,7 +32,7 @@ describe('penunjukan Pemaraf', () => {
     const d = detail([], false);
     d.paraf.assigned = ['p2', 'p3'];
     const result = vm(d, pemaraf);
-    expect(result.canHeadApprove).toBe(false);
+    expect(result.canPemarafSign).toBe(false);
     expect(result.parafStatus.assignedToMe).toBe(false);
   });
 });

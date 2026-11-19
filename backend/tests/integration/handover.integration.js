@@ -122,8 +122,15 @@ export async function runHandoverTests({
     });
 
     // Verifikator kirim surat resmi -> AWAITING_PAYMENT & Payment terbit
-    const sent = await expect(`/verification-documents/${doc.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
-    payment = sent.payment;
+    // Sesuai B-22: Pengesahan Kepala LPMQ otomatis mengirimkan surat ke penerbit (SENT)
+    const currentDoc = await prisma.verificationDocument.findUnique({ where: { id: doc.id } });
+    if (currentDoc.status === 'SENT') {
+      payment = await prisma.paymentRecord.findFirst({ where: { registration_id: reg.id }, orderBy: { created_at: 'desc' } });
+    } else {
+      const sent = await expect(`/verification-documents/${doc.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
+      payment = sent.payment;
+    }
+    assert.ok(payment, 'Payment record harus terbentuk');
 
     // Siapkan upload bukti bayar
     const uploadRes = await fetch(`${base}/uploads`, {
@@ -309,11 +316,19 @@ export async function runHandoverTests({
         BERITA_ACARA_VERIFIKASI: `BA-778-${Date.now()}/LPMQ.01/TL.00/09/2026`,
       },
     });
-    const sent2 = await expect(`/verification-documents/${doc2.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
-    await expect(`/payments/${sent2.payment.id}/confirm`, publisherToken, 'POST', {
+    const currentDoc2 = await prisma.verificationDocument.findUnique({ where: { id: doc2.id } });
+    let payment2;
+    if (currentDoc2.status === 'SENT') {
+      payment2 = await prisma.paymentRecord.findFirst({ where: { registration_id: reg2.id }, orderBy: { created_at: 'desc' } });
+    } else {
+      const sent2 = await expect(`/verification-documents/${doc2.id}/send`, verifikatorToken, 'POST', { channel: 'IN_APP' });
+      payment2 = sent2.payment;
+    }
+    assert.ok(payment2, 'Payment record 2 harus terbentuk');
+    await expect(`/payments/${payment2.id}/confirm`, publisherToken, 'POST', {
       receipt_file_id: receiptFile.id, external_ref: 'NTPN-REG2',
     });
-    await expect(`/payments/${sent2.payment.id}/verify`, verifikatorToken, 'PATCH');
+    await expect(`/payments/${payment2.id}/verify`, verifikatorToken, 'PATCH');
 
     // Verifikator serahkan master
     const ho2 = (await expect(`/registrations/${reg2.id}/physical-master/handovers`, verifikatorToken, 'POST', {
@@ -354,7 +369,7 @@ export async function runHandoverTests({
     const afterResubmit = await prisma.registration.findUnique({ where: { id: reg2.id } });
     assert.equal(afterResubmit.status, 'WAITING_DISTRIBUTOR_RECEIPT');
     assert.equal(afterResubmit.revision_source, null);
-    const originalPayment = await prisma.paymentRecord.findUnique({ where: { id: sent2.payment.id } });
+    const originalPayment = await prisma.paymentRecord.findUnique({ where: { id: payment2.id } });
     assert.equal(originalPayment.status, 'VERIFIED');
     await expect(`/physical-master/handovers/${replacement.id}/receive`, distributorToken, 'POST', {
       condition: 'BAIK', volume_count: 30,

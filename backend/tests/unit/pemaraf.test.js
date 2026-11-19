@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withPemaraf, toAccessRole, forbidPemaraf } from '../../src/utils/pemaraf.js';
-import { requireParaf, recordParaf, parafProgress, openParafRequest } from '../../src/services/paraf.service.js';
+import { requireParaf, recordParaf, parafProgress, openParafRequest, overrideParafByAdmin } from '../../src/services/paraf.service.js';
 
 // tx tiruan: satu tabel paraf di memori, dengan jumlah akun Pemaraf aktif yang bisa diatur.
 const fakeTx = (activePemaraf) => {
@@ -34,8 +34,11 @@ test('Pemaraf mendapat akses setara Kepala LPMQ tetapi tampil sebagai role Pemar
   assert.deepEqual(withPemaraf(['PEMARAF']), { isPemaraf: true, roles: ['KEPALA_LPMQ'], identityRoles: ['PEMARAF'] });
   assert.deepEqual(withPemaraf(['DISTRIBUTOR', 'PEMARAF']), { isPemaraf: true, roles: ['DISTRIBUTOR', 'KEPALA_LPMQ'], identityRoles: ['DISTRIBUTOR', 'PEMARAF'] });
   assert.deepEqual(withPemaraf(['KEPALA_LPMQ']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
-  // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala
+  // Kepala asli yang juga diberi peran Pemaraf tetap bertindak sebagai Kepala bila tanpa activeRole
   assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF']), { isPemaraf: false, roles: ['KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ'] });
+  // Namun bila akun multi-role beralih ke peran aktif PEMARAF (X-Active-Role: PEMARAF), maka berhak bertindak sebagai Pemaraf
+  assert.deepEqual(withPemaraf(['KEPALA_LPMQ', 'PEMARAF'], 'PEMARAF'), { isPemaraf: true, roles: ['KEPALA_LPMQ', 'KEPALA_LPMQ'], identityRoles: ['KEPALA_LPMQ', 'PEMARAF'] });
+  assert.deepEqual(withPemaraf(['SUPERADMIN', 'PEMARAF', 'KEPALA_LPMQ'], 'PEMARAF'), { isPemaraf: true, roles: ['SUPERADMIN', 'KEPALA_LPMQ', 'KEPALA_LPMQ'], identityRoles: ['SUPERADMIN', 'PEMARAF', 'KEPALA_LPMQ'] });
   assert.equal(toAccessRole('PEMARAF', true), 'KEPALA_LPMQ');
   assert.equal(toAccessRole('DISTRIBUTOR', true), 'DISTRIBUTOR');
 });
@@ -98,4 +101,47 @@ test('Penunjukan: hanya 2 Pemaraf yang ditunjuk boleh memaraf, paraf lengkap set
   const last = await recordParaf(tx, 'VERIFICATION_RESULT', 'a1', PEMARAF_A);
   assert.ok(last.signed_at);
   await requireParaf(tx, 'VERIFICATION_RESULT', 'a1');
+});
+
+test('Pemaraf aktif berkurang (misal cuti/dinonaktifkan): kuorum dinamis menyesuaikan tanpa membuat alur macet', async () => {
+  // Awalnya ada 2 pemaraf, dokumen diserahkan dengan target 2
+  const tx = fakeTx(2);
+  await recordParaf(tx, 'MASTER_LETTER', 'm-dyn', PEMARAF_A);
+
+  // Belum lengkap saat masih ada 2 pemaraf
+  await assert.rejects(requireParaf(tx, 'MASTER_LETTER', 'm-dyn'), e => e.statusCode === 409);
+
+  // Kemudian 1 pemaraf dinonaktifkan sehingga hanya tersisa 1 pemaraf aktif
+  tx.user.count = async () => 1;
+
+  // Dengan 1 pemaraf aktif dan PEMARAF_A sudah memaraf, dokumen kini dianggap lengkap
+  await requireParaf(tx, 'MASTER_LETTER', 'm-dyn');
+});
+
+test('Super Admin dapat melakukan penimpaan paraf darurat (overrideParafByAdmin) dengan audit log', async () => {
+  const tx = fakeTx(2);
+  const adminUser = { id: 'sa-1', name: 'Super Admin LPMQ', roles: ['SUPERADMIN'] };
+
+  // Penimpaan tanpa alasan cukup (< 10 karakter) ditolak
+  await assert.rejects(
+    overrideParafByAdmin(tx, 'MASTER_LETTER', 'm-override', adminUser, 'pendek'),
+    e => e.statusCode === 400
+  );
+
+  // Bukan superadmin ditolak
+  await assert.rejects(
+    overrideParafByAdmin(tx, 'MASTER_LETTER', 'm-override', { id: 'u1', roles: ['VERIFIKATOR'] }, 'Alasan darurat karena kendala teknis'),
+    e => e.statusCode === 403
+  );
+
+  // Super Admin berhasil melakukan penimpaan darurat
+  const result = await overrideParafByAdmin(
+    tx,
+    'MASTER_LETTER',
+    'm-override',
+    adminUser,
+    'Dispensasi darurat: seluruh pemaraf cuti dinas luar kota'
+  );
+  assert.equal(result.complete, true);
+  await requireParaf(tx, 'MASTER_LETTER', 'm-override');
 });

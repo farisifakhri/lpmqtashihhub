@@ -14,7 +14,7 @@ import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSumma
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { formatDocumentStatus, formatDocumentType } from '@/lib/glossary';
-import { accessRoles } from '@/lib/roles';
+import { accessRoles, checkIsPemaraf } from '@/lib/roles';
 import { sttParafProgress } from '@/lib/stt-paraf';
 import {
   PenTool,
@@ -42,10 +42,10 @@ export const SignatureCenterPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
 
-  const isHead = accessRoles(currentUser?.roles).includes('KEPALA_LPMQ');
-  const isVerifier = currentUser?.roles?.includes('VERIFIKATOR');
-  const isPemaraf = Boolean(currentUser?.isPemaraf);
-  const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN');
+  const isPemaraf = checkIsPemaraf(currentUser);
+  const isHead = !isPemaraf && (accessRoles(currentUser?.roles).includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ');
+  const isVerifier = currentUser?.roles?.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
+  const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
 
   const tabParam = searchParams.get('tab') || 'NEED_MY_SIGN';
   const [activeTab, setActiveTab] = useState(tabParam);

@@ -563,4 +563,96 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
     expect(screen.getByText(/Naskah Ditolak \/ Perlu Perbaikan Penerbit \(Otomatis dari Checklist\)/i)).toBeInTheDocument();
     expect(screen.getByText(/Ditolak \/ Perbaikan/i)).toBeInTheDocument();
   });
+
+  it('Pemaraf membubuhkan paraf draf hasil verifikasi (dialog bertajuk Bubuhkan Paraf dan tanpa penomoran otomatis)', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'pemaraf-1', name: 'Petugas Pemaraf', role: 'PEMARAF', roles: ['PEMARAF'], isPemaraf: true },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: { id: 'assign-1', status: 'WAITING_APPROVAL' },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: "Mushaf Al-Qur'an Standar Kemenag",
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED', content_snapshot: { decision: 'REVISION_REQUIRED' }, signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED', signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        result_documents: [],
+        paraf: { gate_active: true, complete: false, signers: [], required: 2 },
+      },
+    });
+
+    const approveSpy = vi.spyOn(VerificationApiModule.verificationApi, 'approveDocument').mockResolvedValue({
+      success: true,
+      data: { id: 'doc-1', paraf_only: true, paraf_complete: false },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const parafButton = await screen.findByRole('button', { name: /Bubuhkan Paraf Surat Hasil/i });
+    expect(screen.getByText(/Menunggu Paraf Pemaraf \(Draf Hasil Verifikasi\)/i)).toBeInTheDocument();
+    fireEvent.click(parafButton);
+
+    expect(await screen.findByRole('heading', { name: 'Bubuhkan Paraf Dokumen Verifikasi' })).toBeInTheDocument();
+    // Kotak penomoran otomatis tidak ditampilkan untuk peran Pemaraf
+    expect(screen.queryByText(/Penomoran Resmi Diterbitkan Otomatis/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bubuhkan Paraf' }));
+
+    await waitFor(() => {
+      expect(approveSpy).toHaveBeenCalledWith('doc-1', { auto_number: true, auto_generate: true });
+    });
+  });
+
+  it('Kepala LPMQ dicegah mengesahkan jika paraf Pemaraf belum lengkap', async () => {
+    vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
+      currentUser: { id: 'kepala-1', name: 'Kepala LPMQ', role: 'KEPALA_LPMQ', roles: ['KEPALA_LPMQ'], isPemaraf: false },
+    });
+
+    vi.spyOn(VerificationApiModule.verificationApi, 'getAssignmentDetail').mockResolvedValue({
+      success: true,
+      data: {
+        assignment: { id: 'assign-1', status: 'WAITING_APPROVAL' },
+        registration: {
+          id: 'reg-1',
+          registration_no: 'REG-2026-001',
+          title: "Mushaf Al-Qur'an Standar Kemenag",
+          status: 'WAITING_VERIFICATION_APPROVAL',
+          publisher: { legal_name: 'PT Mushaf Nusantara' },
+          manuscript_files: [],
+        },
+        nota_dinas: { document_no: 'ND-001' },
+        latest_result_document: { id: 'doc-1', document_type: 'SURAT_HASIL_VERIFIKASI', status: 'SUBMITTED', content_snapshot: { decision: 'REVISION_REQUIRED' }, signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        berita_acara: { id: 'ba-1', document_type: 'BERITA_ACARA_VERIFIKASI', status: 'SUBMITTED', signatories: [{ signer_user_id: 'verifier-1', status: 'SIGNED' }] },
+        result_documents: [],
+        paraf: { gate_active: true, complete: false, signers: [{ id: 'pemaraf-1', name: 'Pemaraf A' }], required: 2 },
+      },
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal/verifications/assign-1']}>
+        <Routes>
+          <Route path="/internal/verifications/:id" element={<VerificationInspectionPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // Kepala melihat indikator menunggu paraf dan tombol pengesahan dinonaktifkan
+    expect(await screen.findByText(/Menunggu Paraf Pemaraf \(1\/2\) sebelum Pengesahan Kepala LPMQ/i)).toBeInTheDocument();
+    const disabledBtn = screen.getByRole('button', { name: /Menunggu Paraf Pemaraf \(1\/2\)/i });
+    expect(disabledBtn).toBeDisabled();
+  });
 });

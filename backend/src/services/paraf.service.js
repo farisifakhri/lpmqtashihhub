@@ -68,7 +68,14 @@ export const assignedPemarafIds = (paraf) => (Array.isArray(paraf?.assigned_ids)
 export async function requireParaf(tx, type, id) {
   if (!(await pemarafGateActive(tx))) return;
   const paraf = await findParaf(tx, type, id);
-  if (!paraf?.signed_at) fail(409, 'Dokumen ini belum diparaf seluruh Pemaraf. Persetujuan Kepala LPMQ baru dapat dilakukan setelah kedua Pemaraf membubuhkan paraf.');
+  const activePemarafCount = await tx.user.count({ where: ACTIVE_PEMARAF });
+  const targetRequired = Math.max(activePemarafCount, 1);
+  const signers = parafSigners(paraf);
+  const isComplete = Boolean(paraf?.signed_at) || signers.length >= targetRequired;
+
+  if (!isComplete) {
+    fail(409, `Dokumen ini belum diparaf seluruh Pemaraf (${signers.length}/${targetRequired}). Persetujuan Kepala LPMQ baru dapat dilakukan setelah seluruh Pemaraf membubuhkan paraf.`);
+  }
 }
 
 // Satu Pemaraf membubuhkan parafnya. Seluruh Pemaraf aktif (saat ini 2) wajib memaraf dengan urutan bebas,
@@ -84,7 +91,13 @@ export async function addPemarafSignature(tx, type, id, user, req, { create = {}
     fail(409, 'Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.');
   }
 
-  const required = existing?.required_count ?? Math.max(await tx.user.count({ where: ACTIVE_PEMARAF }), 1);
+  // Hitung ulang target paraf berdasarkan pemaraf yang aktif saat ini
+  const activePemarafCount = await tx.user.count({ where: ACTIVE_PEMARAF });
+  const currentActiveRequired = Math.max(activePemarafCount, 1);
+  const required = existing?.required_count
+    ? Math.min(existing.required_count, currentActiveRequired)
+    : currentActiveRequired;
+
   const now = new Date();
   const nextSigners = [...signers, { id: user.id, name: user.name, signed_at: now.toISOString() }];
   const complete = nextSigners.length >= required;
@@ -98,6 +111,46 @@ export async function addPemarafSignature(tx, type, id, user, req, { create = {}
 
 export async function recordParaf(tx, type, id, user, req) {
   return (await addPemarafSignature(tx, type, id, user, req)).paraf;
+}
+
+// Jalur darurat operasional: Super Admin dapat memberikan dispensasi / penimpaan paraf bila ada kebuntuan
+export async function overrideParafByAdmin(tx, type, id, adminUser, reason, req) {
+  const isSuperAdmin = Boolean(
+    adminUser?.roles?.includes('SUPERADMIN') ||
+    adminUser?.role === 'SUPERADMIN'
+  );
+  if (!isSuperAdmin) {
+    fail(403, 'Hanya Super Admin yang berhak melakukan penimpaan (override) paraf darurat.');
+  }
+  if (!reason || reason.trim().length < 10) {
+    fail(400, 'Alasan penimpaan paraf darurat wajib diisi (minimal 10 karakter).');
+  }
+  const now = new Date();
+  const existing = await findParaf(tx, type, id);
+  const signers = parafSigners(existing);
+  const nextSigners = [
+    ...signers,
+    {
+      id: adminUser.id,
+      name: `[DISPENSASI SUPERADMIN] ${adminUser.name}`,
+      signed_at: now.toISOString(),
+      reason: reason.trim(),
+    },
+  ];
+  const data = {
+    signers: nextSigners,
+    required_count: nextSigners.length,
+    pemaraf_id: adminUser.id,
+    signed_at: now,
+  };
+  const paraf = existing
+    ? await tx.approvalParaf.update({ where: { id: existing.id }, data })
+    : await tx.approvalParaf.create({ data: { subject_type: type, subject_id: id, ...data } });
+  await audit(tx, adminUser, 'OVERRIDE_PARAF_EMERGENCY', type, id, {
+    reason: reason.trim(),
+    paraf_sebelumnya: signers.length,
+  }, req);
+  return { paraf, complete: true, signers: nextSigners, required: nextSigners.length };
 }
 
 // Dokumen yang dikembalikan/diubah harus diparaf ulang.

@@ -75,18 +75,52 @@ test('direktori: hanya penerbit terverifikasi, urut nama, filter huruf/provinsi/
   }
 });
 
-test('direktori publik tidak mengeluarkan NPWP dan NIB', async () => {
+test('direktori publik tidak mengeluarkan NPWP, NIB, email, telepon, dan nama PIC (P0 Security)', async () => {
   const original = prisma.publisher.findMany;
   prisma.publisher.findMany = async () => [
-    { id: 'p1', legal_name: 'abyan', entity_type: 'PT', address: 'Solo Jawa Tengah', phone: '0813', nomor_induk_penerbit: '01', npwp: '012345678901000', nib: '9120001234567', created_at: new Date(), user: { name: 'Edy', email: 'a@b.id' }, registration_submission: null },
+    { id: 'p1', legal_name: 'abyan', entity_type: 'PT', address: 'Solo Jawa Tengah', phone: '0813', nomor_induk_penerbit: '01', npwp: '012345678901000', nib: '9120001234567', created_at: new Date(), user: { name: 'Edy', email: 'a@b.id' }, registration_submission: { address: 'Solo', pic_name: 'Edy Sutarto', pic_phone: '0813', email: 'edy@b.id', decided_at: null } },
   ];
   try {
     const result = await getPublicPublisherDirectory({ page: 1, limit: 20 });
     assert.equal(result.items.length, 1);
-    assert.equal('npwp' in result.items[0], false);
-    assert.equal('nib' in result.items[0], false);
-    assert.equal(result.items[0].email, 'a@b.id');
+    const item = result.items[0];
+    // Field sensitif yang TIDAK boleh ada di respons publik:
+    assert.equal('npwp' in item, false, 'NPWP tidak boleh ada di direktori publik');
+    assert.equal('nib' in item, false, 'NIB tidak boleh ada di direktori publik');
+    assert.equal('email' in item, false, 'Email tidak boleh ada di direktori publik');
+    assert.equal('phone' in item, false, 'Telepon tidak boleh ada di direktori publik');
+    assert.equal('pic_name' in item, false, 'Nama PIC tidak boleh ada di direktori publik');
+    // Field yang BOLEH ada:
+    assert.equal(item.name, 'abyan');
+    assert.equal(item.nomor_induk_penerbit, '01');
+    assert.ok(item.address);
     assert.equal(result.summary.total, 1);
+  } finally {
+    prisma.publisher.findMany = original;
+  }
+});
+
+test('pencarian publik tidak mencocokkan email atau telepon (anti-enumerasi)', async () => {
+  const original = prisma.publisher.findMany;
+  prisma.publisher.findMany = async () => [
+    { id: 'p1', legal_name: 'abyan', entity_type: 'PT', address: 'Solo Jawa Tengah', phone: '08123456', nomor_induk_penerbit: '01', npwp: '', nib: '', created_at: new Date(), user: { name: 'Edy', email: 'secret@email.com' }, registration_submission: null },
+  ];
+  try {
+    // Pencarian email pada versi publik TIDAK boleh mengembalikan hasil
+    const byEmail = await getPublicPublisherDirectory({ search: 'secret@email', page: 1, limit: 20 });
+    assert.equal(byEmail.items.length, 0, 'Pencarian email tidak boleh mencocokkan di direktori publik');
+
+    // Pencarian telepon pada versi publik TIDAK boleh mengembalikan hasil
+    const byPhone = await getPublicPublisherDirectory({ search: '08123456', page: 1, limit: 20 });
+    assert.equal(byPhone.items.length, 0, 'Pencarian telepon tidak boleh mencocokkan di direktori publik');
+
+    // Pencarian nama tetap berfungsi
+    const byName = await getPublicPublisherDirectory({ search: 'abyan', page: 1, limit: 20 });
+    assert.equal(byName.items.length, 1, 'Pencarian nama harus tetap berfungsi');
+
+    // Versi internal (admin) tetap bisa cari email
+    const internalByEmail = await getPublisherDirectory({ search: 'secret@email', page: 1, limit: 20 });
+    assert.equal(internalByEmail.items.length, 1, 'Pencarian email di versi internal harus berfungsi');
   } finally {
     prisma.publisher.findMany = original;
   }

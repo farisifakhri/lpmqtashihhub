@@ -301,6 +301,23 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
   const version = existingDraft ? existingDraft.version : (lastDoc?.version || 0) + 1;
   const docType = existingDraft ? existingDraft.document_type : 'SURAT_HASIL_VERIFIKASI';
 
+  // Validasi pemaraf_id bila disertakan verifikator
+  let targetPemarafId = null;
+  if (data.pemaraf_id) {
+    const pemarafUser = await tx.user.findFirst({
+      where: {
+        id: data.pemaraf_id,
+        status: 'ACTIVE',
+        roles: { some: { role: { code: 'PEMARAF' } } },
+      },
+      select: { id: true },
+    });
+    if (!pemarafUser) {
+      fail(400, 'Akun Pemaraf yang ditunjuk tidak ditemukan atau tidak aktif dengan peran Pemaraf.');
+    }
+    targetPemarafId = pemarafUser.id;
+  }
+
   const content = {
     registration_no: reg.registration_no,
     title: reg.title,
@@ -318,7 +335,7 @@ export const submitVerificationDraft = (assignmentId, data, user, req) => prisma
     billing_amount: payment ? String(payment.amount) : null,
     billing_file_id: payment ? data.billing_file_id || null : null,
     attachment_file_ids: attachments,
-    pemaraf_id: data.pemaraf_id || null,
+    pemaraf_id: targetPemarafId,
     submitted_at: new Date().toISOString(),
   };
 
@@ -586,18 +603,15 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
     ? await prisma.user.findUnique({ where: { id: assignment.registration.core_distributor_id }, select: { id: true, name: true, nip: true } })
     : null;
   // Progres paraf surat hasil: Pemaraf melihat apakah ia sudah memaraf, Kepala melihat kapan boleh mengesahkan.
-  const parafRow = await findParaf(prisma, 'VERIFICATION_RESULT', assignment.id);
-  const parafInfo = parafProgress(parafRow);
-  const paraf = {
-    gate_active: await pemarafGateActive(prisma),
-    signers: parafInfo.signers,
+  const gateActive = await pemarafGateActive(prisma);
+  const parafRow = gateActive ? await findParaf(prisma, 'VERIFICATION_RESULT', assignment.id) : null;
+  const parafInfo = gateActive ? {
+    gate_active: true,
+    ...parafProgress(parafRow),
     required: parafRow?.required_count ?? PEMARAF_REQUIRED,
-    complete: parafInfo.complete,
-    assigned: parafInfo.assigned,
-  };
+  } : { gate_active: false, complete: true, signers: [], required: 0, assigned: null };
 
   return {
-    paraf,
     assignment: {
       id: assignment.id,
       status: assignment.status,
@@ -633,6 +647,7 @@ export const getVerificationAssignmentDetail = async (assignmentId, user) => {
     latest_result_document: latestDraft,
     berita_acara: beritaAcara,
     result_documents: resultDocuments,
+    paraf: parafInfo,
   };
 };
 
@@ -1054,13 +1069,18 @@ try { approvedResult = await prisma.$transaction(async tx => {
 }, transactionOptions); }
 catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
 
-  // PR-VER-04 & B-22: Pengiriman otomatis setelah pengesahan Kepala LPMQ (bila auto_dispatch: true dan bukan Pemaraf)
-  if (req?.body?.auto_dispatch === true && !approvedResult.paraf_only && !user.isPemaraf) {
+  // PR-VER-04 & B-22: Pengiriman otomatis setelah pengesahan Kepala LPMQ (bila bukan Pemaraf)
+  if (!approvedResult.paraf_only && !user.isPemaraf) {
     try {
       const dispatchRes = await dispatchVerificationResult(approvedResult.id, user, req);
       return dispatchRes.document || approvedResult;
     } catch (dispatchError) {
-      console.error(`[Approve Verification Document] Pengiriman otomatis gagal: ${dispatchError.message}`);
+      console.error(`[Approve Verification Document] Pengiriman otomatis tertunda/gagal: ${dispatchError.message}`);
+      await prisma.verificationDocument.update({
+        where: { id: approvedResult.id },
+        data: { dispatch_error: dispatchError.message },
+      }).catch(err => console.warn('[Approve] Gagal mencatat dispatch_error:', err.message));
+
       const latestDoc = await prisma.verificationDocument.findUnique({
         where: { id: approvedResult.id },
         include: { assignment: true, registration: true },
@@ -1189,12 +1209,20 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   if (doc.status === 'SENT') {
     fail(409, 'Surat hasil verifikasi sudah dikirimkan kepada penerbit sebelumnya.');
   }
-  if (!['SIGNED', 'EMAIL_FAILED'].includes(doc.status)) {
+  if (!['SIGNED', 'EMAIL_FAILED', 'EMAIL_QUEUED'].includes(doc.status)) {
     fail(409, `Surat hasil verifikasi belum ditandatangani secara lengkap (status dokumen: ${doc.status}).`);
   }
 
   // Validasi seluruh penandatangan selesai
   await assertDocumentFullySigned(prisma, doc.id);
+
+  const failDispatch = async (statusCode, message) => {
+    await prisma.verificationDocument.update({
+      where: { id: doc.id },
+      data: { dispatch_error: message },
+    }).catch(() => {});
+    fail(statusCode, message);
+  };
 
   // Periksa Berita Acara terkait (bila ada)
   const relatedBA = await prisma.verificationDocument.findFirst({
@@ -1206,17 +1234,17 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   });
 
   if (relatedBA && !['SIGNED', 'SENT'].includes(relatedBA.status)) {
-    fail(409, `Berita Acara Verifikasi belum selesai ditandatangani (status: ${relatedBA.status}). Selesaikan penandatanganan Berita Acara terlebih dahulu.`);
+    await failDispatch(409, `Berita Acara Verifikasi belum selesai ditandatangani (status: ${relatedBA.status}). Selesaikan penandatanganan Berita Acara terlebih dahulu.`);
   }
 
   const reg = doc.registration;
   if (!['VERIFICATION_APPROVED', 'AWAITING_PAYMENT', 'REVISION_REQUIRED'].includes(reg.status)) {
-    fail(409, `Surat hasil verifikasi belum dapat dikirimkan pada status pengajuan ${reg.status}.`);
+    await failDispatch(409, `Surat hasil verifikasi belum dapat dikirimkan pada status pengajuan ${reg.status}.`);
   }
 
   const recipientEmail = reg.publisher?.user?.email || reg.publisher?.email;
   if (!recipientEmail || typeof recipientEmail !== 'string' || !recipientEmail.trim() || !recipientEmail.includes('@')) {
-    fail(400, 'Alamat email penerbit tidak ditemukan atau tidak valid pada data pendaftaran. Perbarui kontak akun penerbit terlebih dahulu sebelum mengirimkan surat hasil verifikasi.');
+    await failDispatch(400, 'Alamat email penerbit tidak ditemukan atau tidak valid pada data pendaftaran. Perbarui kontak akun penerbit terlebih dahulu sebelum mengirimkan surat hasil verifikasi.');
   }
   const recipientName = reg.publisher?.legal_name || 'Penerbit';
   const decision = doc.content_snapshot?.decision || doc.assignment?.decision || 'PASSED';
@@ -1224,9 +1252,31 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
   if (decision === 'PASSED') {
     approvedPayment = await prisma.paymentRecord.findFirst({ where: { registration_id: reg.id }, orderBy: { created_at: 'desc' } });
     if (!approvedPayment || approvedPayment.billing_no !== doc.content_snapshot?.billing_no) {
-      fail(409, 'Surat belum dapat dikirim karena kode billing pada surat tidak cocok dengan tagihan PNBP.');
+      await failDispatch(409, 'Surat belum dapat dikirim karena kode billing pada surat tidak cocok dengan tagihan PNBP.');
     }
   }
+
+  // Klaim kepemilikan atomik: hanya 1 proses pengiriman yang berhak memproses dokumen
+  // Transisikan status dari SIGNED / EMAIL_FAILED ke EMAIL_QUEUED untuk mencegah race condition
+  const claim = await prisma.verificationDocument.updateMany({
+    where: {
+      id: doc.id,
+      status: { in: ['SIGNED', 'EMAIL_FAILED'] },
+    },
+    data: {
+      status: 'EMAIL_QUEUED',
+      dispatch_error: null,
+    },
+  });
+
+  if (claim.count === 0) {
+    const fresh = await prisma.verificationDocument.findUnique({ where: { id: doc.id } });
+    if (fresh?.status === 'SENT') {
+      return { success: true, document: fresh, message: 'Surat hasil verifikasi sudah dikirimkan sebelumnya.' };
+    }
+    fail(409, `Surat hasil verifikasi sedang dalam proses pengiriman atau belum siap dikirim (status: ${fresh?.status}).`);
+  }
+
   const idempotencyKey = `send_verification_${doc.id}_v${doc.version}`;
 
   const subject = decision === 'PASSED'
@@ -1324,12 +1374,16 @@ export const dispatchVerificationResult = async (documentId, user, req) => {
       await move(tx, reg, 'AWAITING_PAYMENT', user, `Surat hasil verifikasi disahkan dan dikirimkan otomatis kepada penerbit (${recipientName})`, req);
 
       if (approvedPayment && reg.fee_sla_snapshot?.total_fee !== undefined) {
+        const updateData = {
+          amount: new Prisma.Decimal(reg.fee_sla_snapshot.total_fee),
+        };
+        // Jangan timpa status bila pembayaran telah dilunasi atau diverifikasi
+        if (!['PAID', 'VERIFIED'].includes(approvedPayment.status)) {
+          updateData.status = 'UNPAID';
+        }
         payment = await tx.paymentRecord.update({
           where: { id: approvedPayment.id },
-          data: {
-            amount: new Prisma.Decimal(reg.fee_sla_snapshot.total_fee),
-            status: 'UNPAID',
-          },
+          data: updateData,
         });
       } else {
         payment = approvedPayment;

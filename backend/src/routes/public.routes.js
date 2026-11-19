@@ -79,6 +79,9 @@ router.get('/surveys/:id/report', mapLimit, validate(publicSurveyReportSchema), 
     next(error);
   }
 });
+// Endpoint agregat statistik publik untuk Tiga Kartu Statistik Landing Page (STT Terbit, Penerbit, Pentashih)
+// Hanya mengirimkan angka agregat tanpa mengekspos data pengguna atau detail internal
+router.get('/statistics', mapLimit, publicController.getLandingStatistics);
 
 // Endpoint verifikasi publik tanpa otentikasi
 router.get('/verify-document/:token', qrLimit, publicController.verifyDocumentByQrToken);

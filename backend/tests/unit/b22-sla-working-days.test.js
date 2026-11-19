@@ -20,6 +20,11 @@ test('B22-T9: SLA 3 Hasil (EARLY, ON_TIME, LATE) klasifikasi waktu Jakarta', () 
   // 4. LATE: selesai tanggal 21 November 2026 (lewat hari batas)
   const sentLate = new Date('2026-11-21T02:00:00Z'); // 09:00 WIB
   assert.equal(determineVerificationSlaOutcome(dueAt, sentLate), 'LATE');
+
+  // 5. Data kosong atau belum ditentukan -> null (bukan default ON_TIME)
+  assert.equal(determineVerificationSlaOutcome(null, sentOnTime), null);
+  assert.equal(determineVerificationSlaOutcome(dueAt, null), null);
+  assert.equal(determineVerificationSlaOutcome(null, null), null);
 });
 
 test('B22-T10: countWorkingDays menghitung hari kerja dengan mock db', async () => {
@@ -38,7 +43,7 @@ test('B22-T10: countWorkingDays menghitung hari kerja dengan mock db', async () 
       count: async ({ where }) => {
         const { gte, lte } = where.date;
         return mockWorkingDays.filter(
-          d => d.date >= gte && d.date <= lte && d.is_working_day
+          d => d.date >= gte && d.date <= lte && (where.is_working_day === undefined || d.is_working_day === where.is_working_day)
         ).length;
       },
     },
@@ -54,4 +59,14 @@ test('B22-T10: countWorkingDays menghitung hari kerja dengan mock db', async () 
   // Jika to < from -> 0
   const invalidRange = await countWorkingDays(mockDb, to, from);
   assert.equal(invalidRange, 0);
+
+  // Jika kalender database kosong (0 baris), fallback ke hari kerja standar (Senin-Jumat)
+  const emptyDb = {
+    workingDay: {
+      count: async () => 0,
+    },
+  };
+  // Senin 16 Nov s/d Jumat 20 Nov -> 5 hari kerja standar
+  const fallbackDays = await countWorkingDays(emptyDb, from, to);
+  assert.equal(fallbackDays, 5);
 });

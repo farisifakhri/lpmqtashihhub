@@ -83,3 +83,45 @@ test('B24-04: Guard forbidPemaraf melempar 403 untuk Pemaraf dan mengizinkan per
   assert.doesNotThrow(() => forbidPemaraf(superadmin, 'mengembalikan draf'));
   assert.doesNotThrow(() => forbidPemaraf(null, 'mengembalikan draf'));
 });
+
+
+test('B24-P0: Cek status via email SELALU mengembalikan respons generik tanpa data sensitif', async () => {
+  // Simulasi: mock prisma dan sendOutboxEmail
+  const { prisma } = await import('../../src/config/database.js');
+  const service = await import('../../src/services/publisher-registration.service.js');
+
+  const originalFindMany = prisma.publisherRegistration.findMany;
+
+  // Kasus 1: Email TERDAFTAR — respons harus sama dengan email TIDAK terdaftar
+  prisma.publisherRegistration.findMany = async () => [
+    { id: 'r1', registration_code: 'REG-PUB-SECRET', name: 'PT Rahasia', status: 'DIAJUKAN', reason: null, created_at: new Date(), updated_at: new Date() },
+  ];
+  try {
+    const resultFound = await service.checkPublisherRegistrationStatus('terdaftar@email.com');
+    // TIDAK boleh mengandung kode pendaftaran, status, alasan, atau data sensitif apapun
+    assert.equal(resultFound.is_email_search, true);
+    assert.equal('kode_pendaftaran' in resultFound, false, 'Kode pendaftaran TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('status' in resultFound, false, 'Status TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('status_label' in resultFound, false, 'Label status TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('alasan' in resultFound, false, 'Alasan TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('masked_email' in resultFound, false, 'Masked email TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('email_sent' in resultFound, false, 'email_sent TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('total_pendaftaran' in resultFound, false, 'total_pendaftaran TIDAK boleh dikembalikan ke HTTP');
+    assert.equal('timeline' in resultFound, false, 'timeline TIDAK boleh dikembalikan ke HTTP');
+    assert.ok(resultFound.message.includes('Jika email terdaftar'));
+
+    // Kasus 2: Email TIDAK terdaftar — respons identik
+    prisma.publisherRegistration.findMany = async () => [];
+    const resultNotFound = await service.checkPublisherRegistrationStatus('tidakada@email.com');
+    assert.equal(resultNotFound.is_email_search, true);
+    assert.equal('kode_pendaftaran' in resultNotFound, false);
+    assert.equal('status' in resultNotFound, false);
+    assert.ok(resultNotFound.message.includes('Jika email terdaftar'));
+
+    // Kasus 3: Respons keduanya harus IDENTIK secara struktur
+    assert.deepEqual(Object.keys(resultFound).sort(), Object.keys(resultNotFound).sort(),
+      'Struktur respons email terdaftar dan tidak terdaftar harus identik');
+  } finally {
+    prisma.publisherRegistration.findMany = originalFindMany;
+  }
+});

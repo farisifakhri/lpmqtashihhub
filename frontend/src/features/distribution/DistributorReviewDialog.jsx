@@ -25,6 +25,7 @@ import {
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
 import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
+import { checkIsPemaraf } from '@/lib/roles';
 
 export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) => {
   const { currentUser } = useAuth();
@@ -126,10 +127,11 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   const parafRequired = pendingParaf?.required || 2;
   const alreadyParafed = parafSigners.some((signer) => signer.id === currentUser?.id);
   // Hanya 2 Pemaraf yang ditunjuk distributor yang memaraf (urutan bebas); lalu Kepala LPMQ mengesahkan.
+  const isPemaraf = checkIsPemaraf(currentUser);
   const awaitingHead = Boolean(pendingParaf?.awaiting_head);
   const assignedToMe = !pendingParaf?.assigned || pendingParaf.assigned.includes(currentUser?.id);
-  const canParaf = Boolean(pendingParaf) && !awaitingHead && Boolean(currentUser?.isPemaraf) && !alreadyParafed && assignedToMe;
-  const canHeadApprove = awaitingHead && !currentUser?.isPemaraf && userRoles.includes('KEPALA_LPMQ');
+  const canParaf = Boolean(pendingParaf) && !awaitingHead && isPemaraf && !alreadyParafed && assignedToMe;
+  const canHeadApprove = awaitingHead && !isPemaraf && userRoles.includes('KEPALA_LPMQ');
 
   const handleHeadApprove = async () => {
     setSubmitting(true);
@@ -465,7 +467,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                   {alreadyParafed && !awaitingHead && (
                     <div className="text-civic-info">Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.</div>
                   )}
-                  {currentUser?.isPemaraf && !assignedToMe && !awaitingHead && (
+                  {isPemaraf && !assignedToMe && !awaitingHead && (
                     <div className="text-civic-info">Anda tidak ditunjuk sebagai Pemaraf untuk keputusan ini.</div>
                   )}
                   <div>

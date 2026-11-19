@@ -20,6 +20,8 @@ export const assignmentSchema = { params, body: z.object({
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
   comparison_notes: z.string().trim().max(5000).optional(),
+  due_at: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+  due_override_reason: z.string().trim().min(10, 'Alasan perpanjangan tenggat waktu minimal 10 karakter.').max(500).optional(),
 }).strict().superRefine((data, ctx) => {
   if (!data.assignee_ids && !data.juz_assignments) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Daftar pentashih atau penugasan juz wajib diisi.' });

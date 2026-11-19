@@ -242,39 +242,42 @@ export const CheckRegistrationStatusPage = () => {
                         data-testid="status-result-card"
                         className="p-5 rounded-2xl border bg-surface-subtle/50 space-y-4 animate-fadeIn"
                     >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
-                            <div>
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-                                    Kode Pendaftaran
-                                </span>
-                                <p className="font-mono text-base font-extrabold text-ink">
-                                    {statusResult.kode_pendaftaran || '-'}
+                        {statusResult.is_email_search ? (
+                            <div className="p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200 text-ink space-y-3">
+                                <div className="flex items-center gap-2.5 text-brand-900 font-bold text-sm">
+                                    <Mail className="w-5 h-5 text-brand-fg" />
+                                    <span>Pemeriksaan Status via Email</span>
+                                </div>
+                                <p className="text-xs text-ink-muted leading-relaxed">
+                                    {statusResult.message}
                                 </p>
-                            </div>
-                            <div className="text-left sm:text-right">
-                                <span className="text-[11px] text-ink-muted block">
-                                    Diajukan pada
-                                </span>
-                                <span className="text-xs font-semibold text-ink">
-                                    {formatDate(statusResult.tanggal_pengajuan)}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Banner Pencarian Email */}
-                        {statusResult.is_email_search && (
-                            <div className="p-3.5 rounded-xl bg-brand-50 border border-brand-200 text-ink text-xs flex items-start gap-2.5">
-                                <Mail className="w-4 h-4 text-brand-fg shrink-0 mt-0.5" />
-                                <div className="space-y-1">
-                                    <p className="font-semibold text-brand-900">
-                                        Pencarian Berdasarkan Email: {statusResult.masked_email}
-                                    </p>
-                                    <p className="text-ink-muted leading-relaxed">
-                                        {statusResult.message}
+                                <div className="p-3 bg-white rounded-lg border border-brand-200 text-[11px] text-ink-muted space-y-1">
+                                    <p className="font-semibold text-brand-900">Petunjuk Akses:</p>
+                                    <p>
+                                        Buka kotak masuk email Anda, lalu salin <strong>Kode Pendaftaran</strong> (diawali <code>REG-PUB-</code>) yang tertera pada pesan email dan masukkan pada kolom pencarian di atas untuk melihat linimasa lengkap.
                                     </p>
                                 </div>
                             </div>
-                        )}
+                        ) : (
+                            <>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-line">
+                                    <div>
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+                                            Kode Pendaftaran
+                                        </span>
+                                        <p className="font-mono text-base font-extrabold text-ink">
+                                            {statusResult.kode_pendaftaran || '-'}
+                                        </p>
+                                    </div>
+                                    <div className="text-left sm:text-right">
+                                        <span className="text-[11px] text-ink-muted block">
+                                            Diajukan pada
+                                        </span>
+                                        <span className="text-xs font-semibold text-ink">
+                                            {formatDate(statusResult.tanggal_pengajuan)}
+                                        </span>
+                                    </div>
+                                </div>
 
                         {/* STATUS: DIAJUKAN (Menunggu Verifikasi) */}
                         {statusResult.status === "DIAJUKAN" && (
@@ -471,6 +474,8 @@ export const CheckRegistrationStatusPage = () => {
                                     ))}
                                 </div>
                             </div>
+                        )}
+                            </>
                         )}
                     </div>
                 )}

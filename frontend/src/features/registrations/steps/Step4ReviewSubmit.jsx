@@ -1,6 +1,80 @@
-import React from 'react';
-import { CheckCircle2, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { AlertCircle, CheckCircle2, FileText, Image, Smartphone, Send, Save, ArrowLeft, Eye, ExternalLink, Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+
+function LocalFilePreviewModal({ file, onClose }) {
+  const [fileUrl, setFileUrl] = useState('');
+  const mimeType = file?.type || '';
+  const isPdf = mimeType === 'application/pdf' || file?.name?.toLowerCase().endsWith('.pdf');
+  const isImage = mimeType.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(file?.name || '');
+
+  useEffect(() => {
+    if (!file) return undefined;
+    const url = URL.createObjectURL(file);
+    setFileUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  if (!file) return null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Pratinjau ${file.name}`}
+      className="fixed inset-0 z-50 bg-ink/70 p-3 sm:p-6 flex items-center justify-center"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="w-full max-w-5xl h-[92vh] rounded-xl bg-white shadow-xl flex flex-col overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-ink truncate">{file.name}</h2>
+            <p className="text-xs text-ink-muted">Pratinjau berkas persyaratan permohonan.</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={fileUrl || undefined}
+              download={file.name}
+              className="inline-flex items-center rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas"
+            >
+              <Download className="w-3.5 h-3.5 mr-1 text-brand-700" /> Unduh Berkas
+            </a>
+            <Button variant="outline" className="text-xs" onClick={onClose}>
+              <X className="w-3.5 h-3.5 mr-1" /> Tutup
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden p-2">
+          <div className="h-full rounded-lg border border-line bg-surface-subtle flex items-center justify-center overflow-hidden">
+            {isPdf && fileUrl ? (
+              <iframe
+                src={fileUrl}
+                title={`Pratinjau Dokumen: ${file.name}`}
+                className="h-full w-full border-0 bg-white"
+              />
+            ) : isImage && fileUrl ? (
+              <img src={fileUrl} alt={`Pratinjau: ${file.name}`} className="max-h-full max-w-full object-contain" />
+            ) : (
+              <div className="p-8 text-center text-sm text-ink-muted">
+                Pratinjau tidak tersedia untuk jenis berkas ini. Silakan unduh berkas untuk membukanya.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const Step4ReviewSubmit = ({
   kategoriPendaftaran,
@@ -37,23 +111,17 @@ export const Step4ReviewSubmit = ({
   isSubmitting,
   uploadingFiles,
   loadingMaster,
+  submitError,
 }) => {
   const isPerpanjangan = kategoriPendaftaran === 'Perpanjangan Tanda Tashih';
   const isLuarNegeri = kategoriPendaftaran === 'Mushaf Luar Negeri';
+  const [previewFile, setPreviewFile] = useState(null);
 
-  // Buka file lokal (File object) di tab baru menggunakan object URL
-  const handlePreviewFile = (file) => {
-    const url = URL.createObjectURL(file);
-    const win = window.open(url, '_blank');
-    if (win) {
-      win.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
-    } else {
-      URL.revokeObjectURL(url);
-    }
-  };
+  const handlePreviewFile = (file) => setPreviewFile(file);
 
   return (
     <div className="space-y-6">
+      <LocalFilePreviewModal file={previewFile} onClose={() => setPreviewFile(null)} />
       <div className="bg-white rounded-2xl border border-line p-5 sm:p-7 shadow-xs space-y-6">
         <div className="border-b border-line pb-4 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-brand-50 border border-brand-200 text-brand-800 flex items-center justify-center shrink-0">
@@ -337,6 +405,16 @@ export const Step4ReviewSubmit = ({
             )}
           </div>
         </div>
+
+        {submitError && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-semibold text-civic-danger"
+          >
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         {/* Navigasi & Aksi Pengiriman */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-line">

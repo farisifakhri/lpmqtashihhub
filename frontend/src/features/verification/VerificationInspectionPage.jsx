@@ -498,7 +498,7 @@ export const VerificationInspectionPage = () => {
       invalidateQueueCounts();
       setApproveConfirmOpen(false);
       // Kedua Pemaraf wajib memaraf; baru setelah paraf terakhir surat diteruskan ke Kepala LPMQ.
-      setSuccessMessage(currentUser?.isPemaraf
+      setSuccessMessage(isPemaraf
         ? (approved?.data?.paraf_complete
           ? 'Paraf dibubuhkan. Paraf seluruh Pemaraf lengkap; surat hasil verifikasi diteruskan ke Kepala LPMQ untuk disahkan.'
           : 'Paraf dibubuhkan. Menunggu paraf Pemaraf lainnya sebelum surat diteruskan ke Kepala LPMQ.')
@@ -733,8 +733,9 @@ export const VerificationInspectionPage = () => {
     latestSignatory, canUserSignLatest, baSignatories, baMySignatory, priorBaPending,
     canUserSignBa, isEmailFailed, isRevoked, isAssigned, isInProgress,
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
+    isPemaraf, canPemarafSign, alreadyParafed, parafInfo, parafSatisfied,
     isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
-    isPemaraf, parafStatus, canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
+    parafStatus, canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,
   } = getInspectionViewModel(detail, currentUser, selectedFileId, checklist);
@@ -1427,8 +1428,13 @@ export const VerificationInspectionPage = () => {
         sesuaiCount={sesuaiCount}
         tidakBerlakuCount={tidakBerlakuCount}
         isDirty={isDirty}
-        canHeadApprove={canHeadApprove}
+        isHead={isHead}
         isPemaraf={isPemaraf}
+        canPemarafSign={canPemarafSign}
+        alreadyParafed={alreadyParafed}
+        parafInfo={parafInfo}
+        parafSatisfied={parafSatisfied}
+        canHeadApprove={canHeadApprove}
         assignment={assignment}
         isSent={isSent}
         canVerifierWork={canVerifierWork}

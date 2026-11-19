@@ -222,10 +222,10 @@ describe('VerifikatorInboxPage Component', () => {
       expect(screen.getByText('REG-2026-UNASSIGNED')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Standar Usmani')).toBeInTheDocument();
       expect(screen.getByText('Naskah Siap Ditugaskan ke Verifikator')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Tugaskan Verifikator/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Tugaskan Tim/i })).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /Tugaskan Verifikator/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Tugaskan Tim/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -255,7 +255,7 @@ describe('VerifikatorInboxPage Component', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: /Perlu Penugasan/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Tugaskan Verifikator/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Tugaskan Tim/i })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Menunggu Persetujuan/i })).toBeInTheDocument();
     });
   });

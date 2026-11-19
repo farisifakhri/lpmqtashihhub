@@ -5,6 +5,8 @@ export const publicApi = {
     return apiClient(`/public/verify-document/${encodeURIComponent(token)}`);
   },
   publisherMap: () => apiClient('/public/publisher-map'),
+  // Mengambil angka statistik ringkasan agregat (STT Terbit, Penerbit, Pentashih) untuk Landing Page
+  getStatistics: () => apiClient('/public/statistics', { silent: true }),
   // { letter, province, search, page, limit } — tanpa NPWP/NIB
   publisherDirectory: (params = {}) => {
     const query = new URLSearchParams();
