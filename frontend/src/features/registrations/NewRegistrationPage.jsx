@@ -972,6 +972,7 @@ export const NewRegistrationPage = () => {
         setShowReceiptDialog(true);
       }
     } catch (err) {
+      if (isDirectSubmit) setCurrentStep(4);
       setError(err.message || 'Gagal menyimpan permohonan naskah.');
     } finally {
       setIsSubmitting(false);
@@ -1073,7 +1074,7 @@ export const NewRegistrationPage = () => {
       />
 
       {/* Notices */}
-      {error && (
+      {error && currentStep !== 4 && (
         <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
           <div>
@@ -1292,6 +1293,7 @@ export const NewRegistrationPage = () => {
             calculation={calculation}
             isSubmitting={isSubmitting}
             uploadingFiles={uploadingFiles}
+            submitError={currentStep === 4 ? error : ''}
             onSaveDraft={() => executeSubmit(false)}
             onInitiateSubmit={handleInitiateSubmit}
             onPreviousStep={() => setCurrentStep(3)}
