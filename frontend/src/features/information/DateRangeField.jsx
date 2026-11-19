@@ -66,7 +66,7 @@ export function DateRangeField({ id, from, to, onChange }) {
           </div>
           <div className="mt-2 flex items-center justify-between text-xs">
             <span className="text-ink-muted">{pending ? 'Pilih tanggal akhir' : 'Pilih tanggal awal'}</span>
-            <button type="button" className="font-semibold text-brand-700 hover:underline" onClick={() => { onChange({ from: '', to: '' }); setPending(null); setOpen(false); }}>Semua waktu</button>
+            <button type="button" className="font-semibold text-brand-fg hover:underline" onClick={() => { onChange({ from: '', to: '' }); setPending(null); setOpen(false); }}>Semua waktu</button>
           </div>
         </div>
       )}
