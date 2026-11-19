@@ -7,6 +7,20 @@ import { Sidebar } from './Sidebar';
 import { AppLayout } from './AppLayout';
 import * as AuthContext from '@/features/auth/AuthContext';
 
+vi.mock('./useSidebarBadges', () => ({
+  useSidebarBadges: () => ({}),
+  getBadgeCount: () => null,
+  formatBadgeCount: () => '',
+}));
+
+vi.mock('@/features/queue/useQueueCounts', () => ({
+  useQueueCounts: () => ({ counts: {} }),
+}));
+
+vi.mock('./NotificationCenter', () => ({
+  NotificationCenter: () => <div data-testid="notification-center-mock" />,
+}));
+
 describe('Komponen tata letak portal operasional', () => {
   const mockLogout = vi.fn();
 

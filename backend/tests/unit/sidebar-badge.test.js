@@ -18,6 +18,9 @@ function stubPrisma(overrides = {}) {
     stub(model, 'count', overrides[model] || (() => 2));
   }
   stub('verificationDocumentSignatory', 'findMany', overrides.signatories || (() => []));
+  stub('masterMushafRequest', 'count', overrides.masterMushafRequest || (() => 0));
+  stub('approvalParaf', 'count', overrides.approvalParafCount || (() => 0));
+  stub('approvalParaf', 'findMany', overrides.approvalParafFindMany || (() => []));
   const restore = () => originals.forEach(([model, method, fn]) => { prisma[model][method] = fn; });
   return { calls, restore };
 }

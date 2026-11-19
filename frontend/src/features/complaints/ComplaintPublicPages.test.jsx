@@ -1,6 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { complaintApi } from '@/api/complaint.api';
 import { PUBLIC_NAV_ITEMS } from '@/components/public/PublicHeader';
@@ -221,7 +221,9 @@ describe('ServiceComplaintPage', () => {
   it('tombol Reset mengosongkan formulir', async () => {
     renderAt('/pengaduan/pelayanan-surat-tanda-tashih', <ServiceComplaintPage />);
     fireEvent.change(screen.getByLabelText(/Nomor Pendaftaran Mushaf/), { target: { value: 'REG-1' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    });
     expect(screen.getByLabelText(/Nomor Pendaftaran Mushaf/)).toHaveValue('');
   });
 });
