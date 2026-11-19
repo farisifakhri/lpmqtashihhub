@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../config/database.js';
 import { fail, audit } from './workflow-utils.js';
 
@@ -26,8 +27,43 @@ export const parafProgress = (paraf) => {
     signers,
     required: paraf?.required_count ?? Math.max(signers.length, 1),
     complete: Boolean(paraf?.signed_at),
+    assigned: assignedPemarafIds(paraf),
   };
 };
+
+// Pengaju wajib menunjuk tepat 2 Pemaraf aktif yang berbeda. Tanpa akun Pemaraf aktif (gerbang mati) -> null.
+export const PEMARAF_REQUIRED = 2;
+export async function resolveDesignatedPemaraf(tx, ids) {
+  if (!(await pemarafGateActive(tx))) return null;
+  const unique = [...new Set(Array.isArray(ids) ? ids : [])];
+  if (unique.length !== PEMARAF_REQUIRED) fail(422, `Pilih tepat ${PEMARAF_REQUIRED} Pemaraf aktif yang berbeda sebelum mengajukan.`);
+  const found = await tx.user.findMany({ where: { id: { in: unique }, ...ACTIVE_PEMARAF }, select: { id: true, name: true } });
+  if (found.length !== PEMARAF_REQUIRED) fail(422, 'Pemaraf yang dipilih harus akun aktif dengan peran Pemaraf.');
+  return found;
+}
+
+// Membuka (atau membuka ulang) permohonan paraf untuk Pemaraf yang ditunjuk; paraf lama dihapus.
+export async function openParafRequest(tx, type, id, pemarafs, { requested_by_id = null, payload, notify } = {}) {
+  const data = {
+    assigned_ids: pemarafs.map(p => p.id), required_count: pemarafs.length, signers: [], signed_at: null,
+    pemaraf_id: null, requested_by_id, head_approved_at: null, head_approved_by_id: null,
+    ...(payload !== undefined ? { payload } : {}),
+  };
+  await tx.approvalParaf.upsert({ where: parafKey(type, id), create: { subject_type: type, subject_id: id, ...data }, update: data });
+  if (notify) {
+    await tx.notification.createMany({ data: pemarafs.map(p => ({ user_id: p.id, type: 'PARAF_REQUIRED', ...notify })) });
+  }
+}
+
+// Keputusan distributor yang masih berjalan: menunggu paraf, atau paraf lengkap tapi belum disahkan Kepala.
+// Baris lama tanpa penunjukan (assigned_ids null) yang sudah lengkap sudah langsung dijalankan dahulu.
+export const OPEN_DISTRIBUTION_PARAF = {
+  subject_type: 'DISTRIBUTOR_REVIEW',
+  head_approved_at: null,
+  OR: [{ signed_at: null }, { assigned_ids: { not: Prisma.DbNull } }],
+};
+
+export const assignedPemarafIds = (paraf) => (Array.isArray(paraf?.assigned_ids) ? paraf.assigned_ids : null);
 
 export async function requireParaf(tx, type, id) {
   if (!(await pemarafGateActive(tx))) return;
@@ -48,6 +84,8 @@ export async function addPemarafSignature(tx, type, id, user, req, { create = {}
   if (!user?.isPemaraf) fail(403, 'Hanya akun dengan peran Pemaraf yang dapat membubuhkan paraf.');
   const existing = await findParaf(tx, type, id);
   if (existing?.signed_at) fail(409, 'Paraf seluruh Pemaraf sudah lengkap. Dokumen sedang menunggu proses berikutnya.');
+  const assigned = assignedPemarafIds(existing);
+  if (assigned && !assigned.includes(user.id)) fail(403, 'Anda tidak ditunjuk sebagai Pemaraf untuk dokumen ini.');
   const signers = parafSigners(existing);
   if (signers.some(signer => signer.id === user.id)) {
     fail(409, 'Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya.');

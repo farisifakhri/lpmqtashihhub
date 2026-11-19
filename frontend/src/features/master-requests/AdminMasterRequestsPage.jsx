@@ -19,6 +19,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { showToast } from '@/components/ui/toast';
 import { masterRequestApi } from '@/api/master-request.api';
 import { DEFAULT_LETTER_SUBJECT, MasterStatusPill, MASTER_STATUS_META, formatDateTime } from './master-request.constants';
+import { PemarafSubmitDialog } from '@/components/common/PemarafPicker';
 
 const FILTERS = ['SEMUA', 'DIAJUKAN', 'MENUNGGU_TTE', 'DITANDATANGANI', 'DIKIRIM', 'DITOLAK'];
 
@@ -115,12 +116,18 @@ function MasterRequestDetailModal({ requestId, onClose, onChanged }) {
     }
   };
 
+  const [letterPemarafOpen, setLetterPemarafOpen] = useState(false);
   const submitLetter = () => {
     if (isi.trim().length < 20) {
       setActionError('Isi surat minimal 20 karakter.');
       return;
     }
-    run('letter', () => masterRequestApi.submitLetter(requestId, { perihal: perihal.trim(), isi: isi.trim() }),
+    setLetterPemarafOpen(true);
+  };
+  // Setiap pengajuan/perbaikan surat membuka ulang paraf: 2 Pemaraf ditunjuk lagi.
+  const confirmSubmitLetter = (pemarafIds) => {
+    setLetterPemarafOpen(false);
+    run('letter', () => masterRequestApi.submitLetter(requestId, { perihal: perihal.trim(), isi: isi.trim(), pemaraf_ids: pemarafIds.length ? pemarafIds : undefined }),
       detail.status === 'DIAJUKAN'
         ? 'Surat persetujuan diajukan ke Kepala LPMQ untuk ditandatangani.'
         : 'Surat persetujuan diperbarui.');
@@ -297,11 +304,22 @@ function MasterRequestDetailModal({ requestId, onClose, onChanged }) {
                 )}
                 {canLetter && !isLegacy && mode !== 'reject' && (
                   mode === 'letter' ? (
+                    <>
+                    <PemarafSubmitDialog
+                      isOpen={letterPemarafOpen}
+                      onClose={() => setLetterPemarafOpen(false)}
+                      onConfirm={confirmSubmitLetter}
+                      title="Ajukan Surat Persetujuan Master"
+                      description="Tunjuk 2 Pemaraf yang akan memaraf surat ini. Setelah keduanya memaraf, surat diteruskan ke Kepala LPMQ untuk TTE."
+                      objectName={detail.letter_number || detail.publisher?.legal_name}
+                      loading={busy === 'letter'}
+                    />
                     <button type="button" onClick={submitLetter} disabled={Boolean(busy)}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-lpmq-green px-4 py-2 text-xs font-bold text-white hover:bg-lpmq-dark disabled:opacity-60">
                       {busy === 'letter' ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <FileSignature className="h-3.5 w-3.5" aria-hidden="true" />}
                       {detail.status === 'DIAJUKAN' ? 'Ajukan ke Kepala untuk TTE' : 'Simpan Perbaikan Surat'}
                     </button>
+                    </>
                   ) : (
                     <button type="button" onClick={() => setMode('letter')}
                       className="inline-flex items-center gap-1.5 rounded-lg bg-lpmq-green px-4 py-2 text-xs font-bold text-white hover:bg-lpmq-dark">

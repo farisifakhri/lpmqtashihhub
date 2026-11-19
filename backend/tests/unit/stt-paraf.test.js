@@ -31,7 +31,8 @@ const fakeTx = ({ snapshot = {}, signatories = [], pemaraf = [PEMARAF_A, PEMARAF
       },
     },
     user: {
-      findMany: async () => pemaraf.map(({ id }) => ({ id })),
+      findMany: async ({ where } = {}) => pemaraf.filter(({ id }) => !where?.id?.in || where.id.in.includes(id)).map(({ id, name }) => ({ id, name })),
+      count: async () => pemaraf.length,
       findFirst: async () => kepala,
     },
     documentSignatory: {
@@ -54,6 +55,7 @@ const fakeTx = ({ snapshot = {}, signatories = [], pemaraf = [PEMARAF_A, PEMARAF
     publisher: { findUnique: async () => ({ user_id: null }) },
     storedFile: { create: async () => ({}) },
     auditLog: { create: async () => ({}) },
+    approvalParaf: {},
   };
   return { tx, state };
 };
@@ -68,9 +70,12 @@ const withTx = async (fake, run) => {
   }
 };
 
-test('submitToTu: hanya menyiapkan baris Kepala, tanpa Paraf 1/2, dan memberi tahu semua Pemaraf aktif', async () => {
+const BOTH = { pemaraf_ids: [PEMARAF_A.id, PEMARAF_B.id] };
+
+test('submitToTu: hanya menyiapkan baris Kepala, tanpa Paraf 1/2, dan memberi tahu kedua Pemaraf yang ditunjuk', async () => {
   await withTx(fakeTx(), async (state) => {
-    await submitToTu('doc-1', {}, DOKUMENTATOR);
+    await submitToTu('doc-1', BOTH, DOKUMENTATOR);
+    assert.deepEqual(state.snapshot.tu_workflow.pemaraf_ids, [PEMARAF_A.id, PEMARAF_B.id]);
     assert.deepEqual(state.signatories.map((s) => s.name_position_snapshot), [`${KEPALA.name} (${STT_KEPALA_TITLE})`]);
     assert.equal(state.snapshot.tu_workflow.status, 'SUBMITTED_TO_PEMARAF');
     assert.equal(state.snapshot.tu_workflow.paraf_required, 2); // kedua Pemaraf aktif wajib memaraf
@@ -83,10 +88,26 @@ test('submitToTu: ditolak bila belum ada Pemaraf aktif, belum ada Kepala, atau s
     await assert.rejects(submitToTu('doc-1', {}, DOKUMENTATOR), (e) => e.statusCode === 400 && /Pemaraf/.test(e.message));
   });
   await withTx(fakeTx({ kepala: null }), async () => {
-    await assert.rejects(submitToTu('doc-1', {}, DOKUMENTATOR), (e) => e.statusCode === 400 && /Kepala/.test(e.message));
+    await assert.rejects(submitToTu('doc-1', BOTH, DOKUMENTATOR), (e) => e.statusCode === 400 && /Kepala/.test(e.message));
   });
   await withTx(fakeTx({ snapshot: { tu_workflow: { submitted_at: '2026-11-16T00:00:00Z' } } }), async () => {
     await assert.rejects(submitToTu('doc-1', {}, DOKUMENTATOR), (e) => e.statusCode === 409);
+  });
+});
+
+test('submitToTu: wajib menunjuk tepat 2 Pemaraf aktif yang berbeda', async () => {
+  const PEMARAF_C = { id: 'u-pemaraf-c', name: 'Pemaraf C', isPemaraf: true };
+  for (const data of [{}, { pemaraf_ids: [PEMARAF_A.id] }, { pemaraf_ids: [PEMARAF_A.id, PEMARAF_A.id] }, { pemaraf_ids: [PEMARAF_A.id, 'u-bukan-pemaraf'] }]) {
+    await withTx(fakeTx({ pemaraf: [PEMARAF_A, PEMARAF_B, PEMARAF_C] }), async () => {
+      await assert.rejects(submitToTu('doc-1', data, DOKUMENTATOR), (e) => e.statusCode === 422, JSON.stringify(data));
+    });
+  }
+});
+
+test('parafDocument: Pemaraf yang tidak ditunjuk ditolak', async () => {
+  const snapshot = { tu_workflow: { submitted_at: '2026-11-18T00:00:00Z', parafs: [], paraf_required: 2, pemaraf_ids: [PEMARAF_A.id, 'u-lain'] } };
+  await withTx(fakeTx({ snapshot }), async () => {
+    await assert.rejects(parafDocument('doc-1', {}, PEMARAF_B), (e) => e.statusCode === 403 && /tidak ditunjuk/.test(e.message));
   });
 });
 

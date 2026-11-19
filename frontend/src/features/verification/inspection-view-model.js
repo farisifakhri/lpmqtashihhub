@@ -79,8 +79,18 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     && registration.payment_records?.some(item => item.billing_no === latestResultDoc.content_snapshot.billing_no)
   );
   const approvalReady = Boolean(verifierSignedResult && verifierSignedBa && billingReady);
-  const canPemarafSign = isPemaraf && !alreadyParafed && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL';
-  const canHeadApprove = !isPemaraf && isHead && latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL' && approvalReady && parafSatisfied;
+  // Paraf: hanya 2 Pemaraf yang ditunjuk memaraf (sekali per orang) sebelum Kepala LPMQ dapat mengesahkan.
+  const parafGate = Boolean(parafInfo.gate_active);
+  const parafSigners = parafInfo.signers || [];
+  const parafRequired = parafInfo.required || parafSigners.length || 1;
+  const parafAssigned = parafInfo.assigned || null;
+  const parafAssignedToMe = !parafAssigned || parafAssigned.includes(currentUser?.id);
+  const awaitingApproval = latestResultDoc?.status === 'SUBMITTED' && registration.status === 'WAITING_VERIFICATION_APPROVAL';
+  const canPemarafSign = isPemaraf && parafGate && !parafSatisfied && !alreadyParafed && parafAssignedToMe && awaitingApproval;
+  const canHeadApprove = !isPemaraf && isHead && awaitingApproval && approvalReady && parafSatisfied;
+  const parafStatus = parafGate && latestResultDoc?.status === 'SUBMITTED'
+    ? { signers: parafSigners, required: parafRequired, complete: parafSatisfied, signedByMe: alreadyParafed, assignedToMe: parafAssignedToMe, isPemaraf }
+    : null;
   const isSent = latestResultDoc?.status === 'SENT' || ['AWAITING_PAYMENT', 'PAYMENT_VERIFICATION', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION', 'REVISION_REQUIRED'].includes(registration.status);
   const canVerifierSend = isAssignedVerifier && (registration.status === 'VERIFICATION_APPROVED' || ['APPROVED', 'SIGNING', 'SIGNED'].includes(latestResultDoc?.status)) && !isSent && !isEmailFailed;
 
@@ -113,8 +123,33 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
     isCompletedOrSubmitted, userRoles, isHead, isVerifier, isAdmin,
     isPemaraf, canPemarafSign, alreadyParafed, parafInfo, parafSatisfied,
     isAssignedVerifier, canVerifierWork, isReadOnly, canHeadApprove, approvalReady, isSent,
-    canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
+    parafStatus, canVerifierSend, latestPayment, latestHandover, isPaymentVerified, canVerifierHandover,
     isWaitingDistributor, isHandoverReceived, selectedFileObj, sesuaiCount, tidakSesuaiCount,
     tidakBerlakuCount,
   };
+}
+
+// Judul & keterangan kartu antrean draf yang menunggu persetujuan, mengikuti progres paraf.
+export function approvalStageText(paraf, currentUser) {
+  if (!paraf) {
+    return {
+      title: 'Draft Sedang Diperiksa Kepala LPMQ',
+      body: 'Tidak ada tindakan yang diperlukan dari Verifikator saat ini. Draf sedang dalam proses penelaahan oleh Kepala LPMQ.',
+    };
+  }
+  const signers = paraf.signers || [];
+  const count = `${signers.length}/${paraf.required || 2}`;
+  if (paraf.complete) {
+    return { title: 'Menunggu Pengesahan Kepala LPMQ', body: `Kedua Pemaraf sudah memaraf (${count}). Draf menunggu pengesahan Kepala LPMQ.` };
+  }
+  if (currentUser?.isPemaraf) {
+    if (Array.isArray(paraf.assigned) && !paraf.assigned.includes(currentUser.id)) {
+      return { title: `Menunggu Paraf Pemaraf (${count})`, body: 'Anda tidak ditunjuk sebagai Pemaraf untuk draf ini.' };
+    }
+    if (signers.some(signer => signer.id === currentUser.id)) {
+      return { title: `Menunggu Pemaraf Lain (${count})`, body: 'Anda sudah membubuhkan paraf. Menunggu paraf Pemaraf lainnya sebelum diteruskan ke Kepala LPMQ.' };
+    }
+    return { title: `Menunggu Paraf Anda (${count})`, body: 'Buka detail draf untuk memeriksa dan membubuhkan paraf.' };
+  }
+  return { title: `Menunggu Paraf Pemaraf (${count})`, body: 'Draf diteruskan ke Kepala LPMQ setelah kedua Pemaraf yang ditunjuk membubuhkan paraf.' };
 }

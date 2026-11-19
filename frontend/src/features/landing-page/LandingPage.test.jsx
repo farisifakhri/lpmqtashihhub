@@ -11,6 +11,8 @@ const initialVisibilityStateDescriptor = Object.getOwnPropertyDescriptor(
   'visibilityState'
 );
 
+vi.mock('./SurveyHighlights', () => ({ default: () => null }));
+
 vi.mock('./DistributionMap', async () => {
   const { createElement } = await import('react');
 

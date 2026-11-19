@@ -11,9 +11,15 @@ const MUTU = [
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
-export function mutuFor(indexValue) {
+// IPAK memakai rentang yang sama, labelnya menurut kategori IPAK BPS (A = "Bersih dari korupsi" seperti sistem lama).
+const IPAK_LABELS = { A: 'Bersih dari korupsi', B: 'Cukup bersih dari korupsi', C: 'Kurang bersih dari korupsi', D: 'Tidak bersih dari korupsi' };
+
+// labels: label kustom per huruf dari Super Admin (Survey.mutu_labels); kosong = label bawaan.
+export function mutuFor(indexValue, kind = 'IKM', labels = null) {
   if (indexValue == null) return null;
-  return MUTU.find((m) => indexValue >= m.min) || MUTU[MUTU.length - 1];
+  const mutu = MUTU.find((m) => indexValue >= m.min) || MUTU[MUTU.length - 1];
+  const label = labels?.[mutu.grade] || (kind === 'IPAK' ? IPAK_LABELS[mutu.grade] : mutu.label);
+  return { ...mutu, label };
 }
 
 // Survei AKTIF yang lewat tanggal selesai ditampilkan "BERAKHIR" tanpa perlu diubah manual.
@@ -43,17 +49,37 @@ async function requireUnsurSurvey(tx, surveyId) {
 }
 
 // 9 unsur SKM, Pedoman Menteri PANRB No. 9 Tahun 2024, BAB III hlm. 12–13 (urutan = sort_order).
-export const STANDARD_UNSUR = [
-  ['A', 'Persyaratan', 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan, baik persyaratan teknis maupun administratif.'],
-  ['B', 'Sistem, Mekanisme, dan Prosedur', 'Tata cara pelayanan yang dibakukan bagi pemberi dan penerima pelayanan, termasuk pengaduan.'],
-  ['C', 'Waktu Penyelesaian', 'Jangka waktu yang diperlukan untuk menyelesaikan seluruh proses pelayanan dari setiap jenis pelayanan.'],
+// Nama mengikuti rekap "Indeks Persepsi Kualitas Pelayanan" di tashih.lpmqkemenag.id lama.
+const STANDARD_IKM_UNSUR = [
+  ['A', 'Persyaratan Pelayanan Pentashihan', 'Syarat yang harus dipenuhi dalam pengurusan suatu jenis pelayanan, baik persyaratan teknis maupun administratif.'],
+  ['B', 'Sistem, Mekanisme, dan Prosedur Pelayanan', 'Tata cara pelayanan yang dibakukan bagi pemberi dan penerima pelayanan, termasuk pengaduan.'],
+  ['C', 'Waktu Penyelesaian Pelayanan', 'Jangka waktu yang diperlukan untuk menyelesaikan seluruh proses pelayanan dari setiap jenis pelayanan.'],
   ['D', 'Biaya/Tarif', 'Ongkos yang dikenakan kepada penerima layanan dalam mengurus dan/atau memperoleh pelayanan dari penyelenggara yang besarnya ditetapkan berdasarkan kesepakatan antara penyelenggara dan masyarakat.'],
-  ['E', 'Produk, Spesifikasi, dan Jenis Pelayanan', 'Hasil pelayanan yang diberikan dan diterima sesuai dengan ketentuan yang telah ditetapkan.'],
+  ['E', 'Produk Spesifikasi Jenis Pelayanan', 'Hasil pelayanan yang diberikan dan diterima sesuai dengan ketentuan yang telah ditetapkan.'],
   ['F', 'Kompetensi Pelaksana', 'Kemampuan yang harus dimiliki oleh pelaksana meliputi pengetahuan, keahlian, keterampilan, dan pengalaman.'],
   ['G', 'Perilaku Pelaksana', 'Sikap petugas dalam memberikan pelayanan.'],
-  ['H', 'Penanganan Pengaduan', 'Tata cara pelaksanaan penanganan pengaduan dan tindak lanjut.'],
+  ['H', 'Penanganan Pengaduan, Saran dan Masukan', 'Tata cara pelaksanaan penanganan pengaduan dan tindak lanjut.'],
   ['I', 'Sarana dan Prasarana', 'Segala sesuatu yang dapat dipakai sebagai alat dalam mencapai maksud dan tujuan. Prasarana adalah segala sesuatu yang merupakan penunjang utama terselenggaranya suatu proses. Sarana digunakan untuk benda yang bergerak dan prasarana untuk benda yang tidak bergerak.'],
-].map(([code, name, definition], i) => ({ code, name, definition, sort_order: i + 1 }));
+].map(([code, name, definition], i) => ({ code, name, definition, kind: 'IKM', sort_order: i + 1 }));
+
+// 10 unsur "Indeks Persepsi Anti Korupsi" di tashih.lpmqkemenag.id lama (kode 1–10 sesuai rekapnya).
+const STANDARD_IPAK_UNSUR = [
+  ['1', 'Manipulasi Peraturan', 'Tidak ada pelaksanaan pelayanan yang menyimpang dari peraturan atau prosedur yang berlaku.'],
+  ['2', 'Penyalahgunaan Jabatan', 'Tidak ada petugas yang memanfaatkan jabatan atau kewenangannya untuk kepentingan pribadi dalam pelayanan.'],
+  ['3', 'Menjual Pengaruh', 'Tidak ada pihak yang menawarkan kemudahan layanan dengan memanfaatkan pengaruh atau kedekatan dengan petugas.'],
+  ['4', 'Transparansi Biaya', 'Biaya pelayanan diinformasikan secara terbuka dan sesuai dengan ketentuan.'],
+  ['5', 'Biaya Tambahan', 'Tidak ada pungutan di luar biaya resmi yang ditetapkan.'],
+  ['6', 'Hadiah', 'Petugas tidak meminta atau menerima hadiah, imbalan, atau gratifikasi terkait pelayanan.'],
+  ['7', 'Transparansi Pembayaran', 'Pembayaran dilakukan melalui saluran resmi dengan bukti pembayaran yang jelas.'],
+  ['8', 'Percaloan', 'Tidak ada praktik percaloan atau perantara tidak resmi dalam pelayanan.'],
+  ['9', 'Perbuatan Curang', 'Tidak ada perbuatan curang, seperti mendahulukan pemohon tertentu di luar ketentuan.'],
+  ['10', 'Transaksi Rahasia', 'Tidak ada kesepakatan atau transaksi tersembunyi antara petugas dan pengguna layanan.'],
+  // Pengukuran Perilaku Anti-Korupsi (skala Likert 1–5).
+  ['11', 'Transparansi Pelayanan', 'Keterbukaan informasi mengenai standar dan prosedur pemberian layanan kepada pengguna layanan.'],
+  ['12', 'Integritas Petugas Pelayanan', 'Sikap petugas yang bebas dari pungutan liar, percaloan, dan penerimaan imbalan di luar ketentuan yang berlaku.'],
+].map(([code, name, definition], i) => ({ code, name, definition, kind: 'IPAK', sort_order: 11 + i }));
+
+export const STANDARD_UNSUR = [...STANDARD_IKM_UNSUR, ...STANDARD_IPAK_UNSUR];
 
 // Pertanyaan Data Persepsi baku, Pedoman Menteri PANRB No. 9/2024 hlm. 16–18, varian Campuran (Hybrid):
 // layanan pentashihan memadukan pendaftaran daring dan penyerahan master fisik luring.
@@ -101,7 +127,7 @@ export async function restoreStandardUnsur(user, req) {
     for (const std of STANDARD_UNSUR) {
       const existing = await tx.surveyUnsur.findFirst({ where: { code: std.code } })
         || await tx.surveyUnsur.findFirst({ where: { name: std.name }, orderBy: { created_at: 'asc' } });
-      const data = { code: std.code, name: std.name, kind: 'IKM', is_standard: true, sort_order: std.sort_order, is_archived: false };
+      const data = { code: std.code, name: std.name, kind: std.kind, is_standard: true, sort_order: std.sort_order, is_archived: false };
       if (existing) await tx.surveyUnsur.update({ where: { id: existing.id }, data: { ...data, definition: existing.definition || std.definition } });
       else await tx.surveyUnsur.create({ data: { ...data, definition: std.definition } });
     }
@@ -271,8 +297,20 @@ export async function getSurvey(id) {
 }
 
 export async function createSurvey(data, user, req) {
-  return present(await withAudit(user, req, 'SURVEY_CREATE', 'Survey', (tx) =>
-    tx.survey.create({ data, include: surveyListInclude })));
+  return present(await withAudit(user, req, 'SURVEY_CREATE', 'Survey', async (tx) => {
+    const survey = await tx.survey.create({ data, include: surveyListInclude });
+    if (survey.kind !== 'IPAK') return survey;
+    // Survei IPAK baru langsung memuat unsur baku IPAK beserta pertanyaan pilihannya.
+    const unsur = await tx.surveyUnsur.findMany({
+      where: { kind: 'IPAK', is_standard: true, is_archived: false },
+      orderBy: { sort_order: 'asc' },
+      include: { questions: { where: { type: 'PILIHAN' }, orderBy: { created_at: 'asc' }, select: { id: true } } },
+    });
+    const items = unsur.flatMap((u) => u.questions.map((q) => ({ survey_id: survey.id, unsur_id: u.id, question_id: q.id }))).map((it, i) => ({ ...it, sort_order: i }));
+    if (!items.length) return survey;
+    await tx.surveyItem.createMany({ data: items });
+    return tx.survey.findUnique({ where: { id: survey.id }, include: surveyListInclude });
+  }));
 }
 
 export async function updateSurvey(id, data, user, req) {
@@ -393,36 +431,54 @@ const countBy = (rows, keyFn) => {
 
 const ageBucket = (age) => (age == null ? null : age < 30 ? '< 30 tahun' : age < 40 ? '30–39 tahun' : age < 50 ? '40–49 tahun' : '≥ 50 tahun');
 
-export async function getSurveyReport(id) {
+// Rentang tanggal pengisian (YYYY-MM-DD, inklusif sampai akhir hari `to`).
+const submittedRange = ({ from, to } = {}) => {
+  const range = {};
+  if (from) range.gte = new Date(`${from}T00:00:00`);
+  if (to) range.lte = new Date(`${to}T23:59:59.999`);
+  return Object.keys(range).length ? { submitted_at: range } : {};
+};
+
+export async function getSurveyReport(id, range = {}) {
   const survey = await requireSurvey(prisma, id, surveyDetailInclude);
+  const responseWhere = { survey_id: id, ...submittedRange(range) };
   const [answers, responses] = await Promise.all([
     prisma.surveyAnswer.findMany({
-      where: { response: { survey_id: id } },
-      select: { question_id: true, value: true, essay_text: true, response: { select: { respondent_name: true, submitted_at: true } } },
+      where: { response: responseWhere },
+      select: { response_id: true, question_id: true, value: true, essay_text: true, response: { select: { respondent_name: true, submitted_at: true } } },
     }),
-    prisma.surveyResponse.findMany({ where: { survey_id: id } }),
+    prisma.surveyResponse.findMany({ where: responseWhere }),
   ]);
 
   const unsurByQuestion = new Map(survey.items.map((i) => [i.question_id, i.unsur]));
+  // Nilai tertinggi opsi per pertanyaan: skala 1–4 (unsur pelayanan) atau 1–5 (Likert anti-korupsi).
+  const scaleMax = new Map(survey.items.map((i) => [i.question_id, Math.max(4, ...(i.question.options || []).map((o) => o.value))]));
   const perUnsur = new Map();
   for (const item of survey.items) {
-    if (item.question.type === 'PILIHAN' && !perUnsur.has(item.unsur_id)) perUnsur.set(item.unsur_id, { unsur: item.unsur, sum: 0, count: 0 });
+    if (item.question.type === 'PILIHAN' && !perUnsur.has(item.unsur_id)) perUnsur.set(item.unsur_id, { unsur: item.unsur, sum: 0, norm: 0, count: 0, scale: 4, respondents: new Set() });
   }
   for (const a of answers) {
     const unsur = unsurByQuestion.get(a.question_id);
     const bucket = unsur && perUnsur.get(unsur.id);
-    if (bucket && a.value != null) { bucket.sum += a.value; bucket.count += 1; }
+    if (!bucket || a.value == null) continue;
+    const max = scaleMax.get(a.question_id) || 4;
+    bucket.sum += a.value;
+    bucket.norm += 1 + ((a.value - 1) * 3) / (max - 1); // disetarakan ke skala 1–4 agar konversi 25–100 sama
+    bucket.count += 1;
+    bucket.scale = Math.max(bucket.scale, max);
+    bucket.respondents.add(a.response_id);
   }
 
   const unsur = [...perUnsur.values()]
     .sort((a, b) => a.unsur.sort_order - b.unsur.sort_order)
-    .map(({ unsur: u, sum, count }) => {
-      const average = count ? round2(sum / count) : null;
-      const converted = average == null ? null : round2(average * 25);
-      return { id: u.id, code: u.code, name: u.name, definition: u.definition, answers: count, average, converted, mutu: mutuFor(converted) };
+    .map(({ unsur: u, sum, norm, count, scale, respondents }) => {
+      const average = count ? round2(sum / count) : null; // NRR pada skala aslinya
+      const nrr4 = count ? norm / count : null;
+      const converted = nrr4 == null ? null : round2(nrr4 * 25);
+      return { id: u.id, code: u.code, name: u.name, definition: u.definition, sum, answers: count, respondents: respondents.size, scale, average, converted, mutu: mutuFor(converted, survey.kind, survey.mutu_labels) };
     });
-  const scored = unsur.filter((u) => u.average != null);
-  const averageAll = scored.length ? scored.reduce((s, u) => s + u.average, 0) / scored.length : null;
+  const scored = unsur.filter((u) => u.converted != null);
+  const averageAll = scored.length ? scored.reduce((s, u) => s + u.converted / 25, 0) / scored.length : null;
   const indexValue = averageAll == null ? null : round2(averageAll * 25);
   const questionText = new Map(survey.items.map((i) => [i.question_id, i.question.text]));
 
@@ -430,11 +486,14 @@ export async function getSurveyReport(id) {
     survey: present({ ...survey, items: undefined }),
     respondents: responses.length,
     unsur,
+    average: averageAll == null ? null : round2(averageAll),
     index: indexValue,
-    mutu: mutuFor(indexValue),
+    mutu: mutuFor(indexValue, survey.kind, survey.mutu_labels),
     demographics: {
       gender: countBy(responses, (r) => (r.gender === 'L' ? 'Laki-laki' : r.gender === 'P' ? 'Perempuan' : null)),
       age: countBy(responses, (r) => ageBucket(r.age)),
+      // Per tahun seperti rekap sistem lama, urut usia.
+      age_years: countBy([...responses].sort((a, b) => (a.age ?? Infinity) - (b.age ?? Infinity)), (r) => (r.age == null ? null : `${r.age} Tahun`)),
       education: countBy(responses, (r) => r.education),
       occupation: countBy(responses, (r) => r.occupation),
       disability: countBy(responses, (r) => (r.is_disabled === true ? 'Ya' : r.is_disabled === false ? 'Tidak' : null)),
@@ -457,6 +516,40 @@ export async function getSurveyReport(id) {
 }
 
 const AK_FIELDS = ['ak_transparency', 'ak_no_extortion', 'ak_no_broker', 'ak_no_gratification'];
+
+// ------------------------------------------------- Hasil survei publik (halaman Informasi)
+// Survei DRAFT belum pernah diisi publik, jadi tidak ditampilkan.
+const PUBLIC_STATUSES = ['AKTIF', 'NONAKTIF'];
+
+export async function listPublicSurveys() {
+  return prisma.survey.findMany({
+    where: { status: { in: PUBLIC_STATUSES } },
+    orderBy: [{ sort_order: 'asc' }, { created_at: 'desc' }],
+    select: { id: true, name: true, kind: true, starts_at: true, ends_at: true },
+  });
+}
+
+// Hanya agregat (+ definisi unsur): tanpa nama responden, esai, kritik/saran, atau data disabilitas.
+export async function getPublicSurveyReport(id, range = {}) {
+  const survey = await prisma.survey.findUnique({ where: { id }, select: { status: true } });
+  if (!survey || !PUBLIC_STATUSES.includes(survey.status)) fail(404, 'Survei tidak ditemukan.');
+  const report = await getSurveyReport(id, range);
+  const { id: surveyId, name, kind, description, starts_at, ends_at, mutu_labels } = report.survey;
+  return {
+    survey: { id: surveyId, name, kind, description, starts_at, ends_at, mutu_labels },
+    respondents: report.respondents,
+    unsur: report.unsur,
+    average: report.average,
+    index: report.index,
+    mutu: report.mutu,
+    demographics: {
+      gender: report.demographics.gender,
+      education: report.demographics.education,
+      occupation: report.demographics.occupation,
+      age: report.demographics.age_years,
+    },
+  };
+}
 
 function avgOf(rows, key) {
   const values = rows.map((r) => r[key]).filter((v) => v != null);

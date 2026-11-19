@@ -141,7 +141,7 @@ describe('VerificationInspectionPage Component', { timeout: 15000 }, () => {
 
     const coverTabs = await screen.findAllByRole('button', { name: /Sampul \/ Cover/ });
     expect(coverTabs).toHaveLength(1);
-    expect(coverTabs[0]).toHaveTextContent('v2');
+    expect(coverTabs[0]).not.toHaveTextContent(/v\d/); // label versi (v1/v2) tidak lagi ditampilkan
     expect(screen.getAllByRole('button', { name: /Dummy Cetak/ })).toHaveLength(1);
   });
 

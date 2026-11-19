@@ -59,7 +59,7 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.change(screen.getByLabelText(/Status/), { target: { value: 'AKTIF' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
 
-    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Indeks Persepsi Kualitas Pelayanan', status: 'AKTIF' }));
+    await waitFor(() => expect(create).toHaveBeenCalledWith({ name: 'Indeks Persepsi Kualitas Pelayanan', status: 'AKTIF', mutu_labels: {} }));
   });
 
   it('tombol Aktifkan Survei tetap bisa dipakai walau survei belum punya pertanyaan', async () => {
@@ -78,8 +78,11 @@ describe('SurveyManagementPage (Super Admin)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Edit Survei IKM 2027' }));
     expect(screen.getByRole('option', { name: 'Aktif' })).not.toBeDisabled();
     fireEvent.change(screen.getByLabelText(/Status/), { target: { value: 'NONAKTIF' } });
+    // Label mutu bisa diganti; placeholder menunjukkan label bawaan.
+    expect(screen.getByLabelText('Label mutu A')).toHaveAttribute('placeholder', 'Sangat baik');
+    fireEvent.change(screen.getByLabelText('Label mutu A'), { target: { value: 'Sangat Memuaskan' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
-    await waitFor(() => expect(update).toHaveBeenCalledWith('s1', { name: 'Survei IKM 2027', status: 'NONAKTIF' }));
+    await waitFor(() => expect(update).toHaveBeenCalledWith('s1', { name: 'Survei IKM 2027', status: 'NONAKTIF', mutu_labels: { A: 'Sangat Memuaskan' } }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Lihat Survei IKM 2027' }));
     expect(await screen.findByRole('heading', { name: 'Detail Survei' })).toBeInTheDocument();

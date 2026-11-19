@@ -10,7 +10,16 @@ import {
 
 const GENDERS = [['L', 'Laki-laki'], ['P', 'Perempuan']];
 const EDUCATIONS = ['SD', 'SMP', 'SMA', 'D3', 'S1', 'S2', 'S3'];
-const OCCUPATIONS = [['PNS', 'PNS'], ['TNI/POLRI', 'TNI/Polri'], ['SWASTA', 'Pegawai Swasta'], ['WIRASWASTA', 'Wiraswasta'], ['PELAJAR/MAHASISWA', 'Pelajar/Mahasiswa'], ['LAINNYA', 'Lainnya']];
+// Daftar pekerjaan responden sistem lama (dirapikan); kode lama tetap dipakai agar data terdahulu terbaca sama.
+const OCCUPATIONS = [
+  ['PNS', 'PNS/ASN'], ['PPNPN', 'PPNPN/Honorer'], ['TNI/POLRI', 'TNI/Polri'], ['KARYAWAN BUMN', 'Karyawan BUMN'],
+  ['SWASTA', 'Pegawai/Karyawan Swasta'], ['WIRASWASTA', 'Wiraswasta/Wirausaha'], ['DIREKTUR', 'Direktur/Pimpinan Perusahaan'],
+  ['ADMINISTRASI', 'Staf Administrasi'], ['SUPERVISOR', 'Supervisor/Pengawas'], ['KONSULTAN', 'Konsultan'],
+  ['LAYOUTER', 'Layouter/Desainer'], ['DOSEN', 'Dosen'], ['GURU', 'Guru'], ['GURU PESANTREN', 'Guru Pesantren'],
+  ['USTADZ/MUBALLIGH', 'Ustadz/Muballigh'], ['PENGURUS YAYASAN', 'Pengurus/Ketua Yayasan'],
+  ['PENGEMBANG METODE BELAJAR', 'Pengembang Metode Belajar'], ['IRT', 'Ibu Rumah Tangga'],
+  ['PELAJAR/MAHASISWA', 'Pelajar/Mahasiswa'], ['LAINNYA', 'Lainnya'],
+];
 
 const emptyForm = () => ({
   answers: {}, essays: {}, respondent_name: '', gender: '', age: '', education: '', occupation: '',

@@ -854,7 +854,7 @@ model StatusHistory {
   from_status     String
   to_status       String
   actor_id        String?
-  notes           String?
+  notes           String?  @db.Text
   changed_at      DateTime @default(now())
 
   // Relations
@@ -1148,6 +1148,9 @@ model ApprovalParaf {
   signers         Json? // [{ id, name, signed_at }] seluruh Pemaraf yang sudah memaraf
   required_count  Int? // jumlah Pemaraf aktif yang wajib memaraf (saat ini 2)
   signed_at       DateTime? // terisi hanya setelah SELURUH Pemaraf memaraf
+  assigned_ids    Json? // Pemaraf yang ditunjuk pengaju (tepat 2 akun aktif); hanya mereka yang boleh memaraf
+  head_approved_at    DateTime? // pengesahan Kepala LPMQ setelah paraf lengkap (keputusan distributor)
+  head_approved_by_id String?
   created_at      DateTime  @default(now())
 
   @@unique([subject_type, subject_id])
@@ -1633,6 +1636,8 @@ model Survey {
   ends_at     DateTime?
   status      String           @default("DRAFT") @db.VarChar(20) // DRAFT | AKTIF | NONAKTIF
   sort_order  Int              @default(0) // urutan tampil, diatur Super Admin lewat seret
+  // Label mutu kustom per huruf, mis. {"A":"Sangat Memuaskan"}; kosong = label bawaan.
+  mutu_labels Json?
   created_at  DateTime         @default(now())
   updated_at  DateTime         @updatedAt
   items       SurveyItem[]

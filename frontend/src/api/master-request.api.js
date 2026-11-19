@@ -54,8 +54,8 @@ export const masterRequestApi = {
   },
   getAdminDetail: (id) => apiClient(`/admin/master-requests/${enc(id)}`),
   reject: (id, alasan) => apiClient(`/admin/master-requests/${enc(id)}/reject`, { method: 'POST', body: { alasan } }),
-  submitLetter: (id, { perihal, isi }) =>
-    apiClient(`/admin/master-requests/${enc(id)}/letter`, { method: 'POST', body: { perihal, isi } }),
+  submitLetter: (id, { perihal, isi, pemaraf_ids }) =>
+    apiClient(`/admin/master-requests/${enc(id)}/letter`, { method: 'POST', body: { perihal, isi, pemaraf_ids } }),
   sendToPublisher: (id) => apiClient(`/admin/master-requests/${enc(id)}/send`, { method: 'POST' }),
   openDocument: (requestId, documentId) =>
     openProtectedPdf(`/admin/master-requests/${enc(requestId)}/documents/${enc(documentId)}`),

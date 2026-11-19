@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { withPemaraf, toAccessRole, forbidPemaraf } from '../../src/utils/pemaraf.js';
-import { requireParaf, recordParaf, parafProgress, overrideParafByAdmin } from '../../src/services/paraf.service.js';
+import { requireParaf, recordParaf, parafProgress, openParafRequest, overrideParafByAdmin } from '../../src/services/paraf.service.js';
 
 // tx tiruan: satu tabel paraf di memori, dengan jumlah akun Pemaraf aktif yang bisa diatur.
 const fakeTx = (activePemaraf) => {
@@ -70,7 +70,7 @@ test('Hanya akun berperan Pemaraf yang dapat memaraf', async () => {
 
 test('Baris paraf lama (satu pemaraf, sudah lengkap) tetap dianggap lengkap', () => {
   const legacy = { pemaraf_id: 'p1', signed_at: new Date('2026-11-01') };
-  assert.deepEqual(parafProgress(legacy), { signers: [{ id: 'p1', signed_at: legacy.signed_at }], required: 1, complete: true });
+  assert.deepEqual(parafProgress(legacy), { signers: [{ id: 'p1', signed_at: legacy.signed_at }], required: 1, complete: true, assigned: null });
 });
 
 test('Tanpa akun Pemaraf aktif, alur lama tetap berjalan tanpa paraf', async () => {
@@ -90,6 +90,18 @@ test('forbidPemaraf menolak user dengan isPemaraf: true dan meloloskan user lain
   assert.doesNotThrow(() => forbidPemaraf({ id: 's1', roles: ['SUPERADMIN'] }, 'mengembalikan draf surat'));
 });
 
+test('Penunjukan: hanya 2 Pemaraf yang ditunjuk boleh memaraf, paraf lengkap setelah keduanya', async () => {
+  const tx = fakeTx(3);
+  tx.approvalParaf.upsert = async ({ create }) => tx.approvalParaf.create({ data: create });
+  await openParafRequest(tx, 'VERIFICATION_RESULT', 'a1', [PEMARAF_A, PEMARAF_B]);
+  const outsider = { id: 'p3', name: 'Pemaraf C', isPemaraf: true };
+  await assert.rejects(recordParaf(tx, 'VERIFICATION_RESULT', 'a1', outsider), e => e.statusCode === 403 && /tidak ditunjuk/.test(e.message));
+  await recordParaf(tx, 'VERIFICATION_RESULT', 'a1', PEMARAF_B);
+  await assert.rejects(requireParaf(tx, 'VERIFICATION_RESULT', 'a1'), e => e.statusCode === 409);
+  const last = await recordParaf(tx, 'VERIFICATION_RESULT', 'a1', PEMARAF_A);
+  assert.ok(last.signed_at);
+  await requireParaf(tx, 'VERIFICATION_RESULT', 'a1');
+});
 
 test('Pemaraf aktif berkurang (misal cuti/dinonaktifkan): kuorum dinamis menyesuaikan tanpa membuat alur macet', async () => {
   // Awalnya ada 2 pemaraf, dokumen diserahkan dengan target 2

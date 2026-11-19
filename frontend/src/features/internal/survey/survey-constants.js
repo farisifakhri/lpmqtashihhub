@@ -17,7 +17,7 @@ export const STATUS_OPTIONS = [
   { value: 'NONAKTIF', label: 'Expired' },
 ];
 
-// Templat skala 1–4 agar urutan nilai pertanyaan positif/negatif tidak terbalik.
+// Templat skala 1–4 (unsur pelayanan) dan Likert 1–5 (pernyataan anti-korupsi) agar urutan nilai tidak terbalik.
 export const OPTION_PRESETS = [
   {
     id: 'positif',
@@ -47,6 +47,17 @@ export const OPTION_PRESETS = [
       { label: 'Sering', value: 3 },
       { label: 'Jarang', value: 2 },
       { label: 'Tidak pernah', value: 1 },
+    ],
+  },
+  {
+    id: 'likert-setuju',
+    label: 'Likert 1–5 (persetujuan)',
+    options: [
+      { label: 'Sangat Setuju', value: 5 },
+      { label: 'Setuju', value: 4 },
+      { label: 'Antara Setuju dan Tidak Setuju', value: 3 },
+      { label: 'Tidak Setuju', value: 2 },
+      { label: 'Sangat Tidak Setuju', value: 1 },
     ],
   },
 ];
@@ -97,4 +108,10 @@ export const formatDateTime = (value) =>
   value ? new Date(value).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
 
 // Unsur yang boleh dipakai pada survei: unsur umum + unsur khusus survei itu. Tanpa survei = semua unsur.
-export const unsurForSurvey = (list, surveyId) => (surveyId ? list.filter((u) => !u.survey_id || u.survey_id === surveyId) : list);
+// Survei IKM/IPAK hanya menawarkan unsur sejenis (unsur IPAK tidak muncul di survei IKM); LAINNYA bebas.
+export const unsurForSurvey = (list, surveyId, kind) => (surveyId
+  ? list.filter((u) => (!u.survey_id || u.survey_id === surveyId) && (!kind || kind === 'LAINNYA' || !u.kind || u.kind === kind))
+  : list);
+
+// Label mutu IPAK (rentang sama dengan IKM), mengikuti label backend.
+export const IPAK_KINERJA = { A: 'Bersih dari korupsi', B: 'Cukup bersih dari korupsi', C: 'Kurang bersih dari korupsi', D: 'Tidak bersih dari korupsi' };
