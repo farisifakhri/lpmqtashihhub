@@ -658,7 +658,7 @@ export const STT_PARAF_TITLE = 'Pemaraf';
 export const sttParafsOf = (tuWorkflow) => tuWorkflow?.parafs
   || [tuWorkflow?.paraf, tuWorkflow?.paraf_1, tuWorkflow?.paraf_2].filter(Boolean);
 export const sttParafRequired = (tuWorkflow, activeCount = null) => {
-  const baseRequired = tuWorkflow?.paraf_required ?? 2;
+  const baseRequired = tuWorkflow?.paraf_required ?? (Array.isArray(tuWorkflow?.pemaraf_ids) ? tuWorkflow.pemaraf_ids.length : 1);
   if (typeof activeCount === 'number' && activeCount > 0) {
     return Math.min(baseRequired, activeCount);
   }
@@ -686,7 +686,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
     fail(409, 'Dokumen draf STT sudah diserahkan ke Pemaraf dan tidak dapat disubmit ulang.');
   }
 
-  // Pengaju menunjuk tepat 2 Pemaraf aktif; hanya mereka yang memaraf sebelum Kepala LPMQ mengesahkan.
+  // Pengaju menunjuk minimal 1 Pemaraf aktif; hanya mereka yang memaraf sebelum Kepala LPMQ mengesahkan.
   const pemarafUsers = await resolveDesignatedPemaraf(tx, data?.pemaraf_ids);
   if (!pemarafUsers) {
     fail(400, 'Belum ada akun Pemaraf yang aktif. Aktifkan akun Pemaraf sebelum menyerahkan draf STT.');
@@ -839,13 +839,14 @@ export const reassignSttPemaraf = (documentId, data, user, req) => prisma.$trans
 
   const newPemarafUsers = await resolveDesignatedPemaraf(tx, data?.pemaraf_ids);
   if (!newPemarafUsers) {
-    fail(400, 'Pilih tepat 2 Pemaraf aktif untuk penunjukan ulang.');
+    fail(400, 'Pilih minimal 1 Pemaraf aktif untuk penunjukan ulang.');
   }
 
   const existingParafs = sttParafsOf(snapshot.tu_workflow);
   const newPemarafIds = newPemarafUsers.map(p => p.id);
 
   snapshot.tu_workflow.pemaraf_ids = newPemarafIds;
+  snapshot.tu_workflow.paraf_required = newPemarafIds.length;
   snapshot.tu_workflow.reassigned_at = new Date().toISOString();
   snapshot.tu_workflow.reassigned_by = { id: user.id, name: user.name, reason: data.reason.trim() };
 

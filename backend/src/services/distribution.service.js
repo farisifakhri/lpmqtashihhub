@@ -1023,8 +1023,8 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   return tx.registration.findUnique({ where: { id } });
 };
 
-// Bila sudah ada akun Pemaraf aktif, keputusan distributor ditahan sampai diparaf SELURUH Pemaraf (saat ini 2,
-// urutan bebas). Pemaraf tidak dipilih distributor; hanya akun berperan Pemaraf yang dapat memaraf.
+// Bila sudah ada akun Pemaraf aktif, keputusan distributor ditahan sampai diparaf SELURUH Pemaraf yang ditunjuk (minimal 1,
+// urutan bebas). Hanya akun berperan Pemaraf yang dapat memaraf.
 export const approveDistribution = (id, { pemaraf_id: _ignored, pemaraf_ids, ...decision }, user) => prisma.$transaction(async tx => {
   if (!(await pemarafGateActive(tx))) return applyDistributionDecision(tx, id, decision, user);
 
@@ -1089,7 +1089,7 @@ export const headApproveDistribution = (id, user, req) => prisma.$transaction(as
   if (user.isPemaraf) fail(403, 'Pengesahan keputusan sidang hanya oleh Kepala LPMQ. Pemaraf membubuhkan paraf sebelum pengesahan.');
   const paraf = await findParaf(tx, 'DISTRIBUTOR_REVIEW', id);
   if (!paraf || paraf.head_approved_at || !Array.isArray(paraf.assigned_ids)) fail(409, 'Tidak ada keputusan distributor yang menunggu pengesahan untuk pengajuan ini.');
-  if (!paraf.signed_at) fail(409, 'Keputusan ini belum diparaf kedua Pemaraf yang ditunjuk.');
+  if (!paraf.signed_at) fail(409, 'Keputusan ini belum diparaf seluruh Pemaraf yang ditunjuk.');
   const requester = await tx.user.findUnique({ where: { id: paraf.requested_by_id }, include: { roles: { include: { role: true } } } });
   if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
   const { signers } = parafProgress(paraf);

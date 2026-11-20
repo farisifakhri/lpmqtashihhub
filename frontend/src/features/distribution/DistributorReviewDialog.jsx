@@ -124,9 +124,9 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
   const pendingParaf = parafState.pending;
   const parafSigners = pendingParaf?.signers || [];
-  const parafRequired = pendingParaf?.required || 2;
+  const parafRequired = pendingParaf?.required || 1;
   const alreadyParafed = parafSigners.some((signer) => signer.id === currentUser?.id);
-  // Hanya 2 Pemaraf yang ditunjuk distributor yang memaraf (urutan bebas); lalu Kepala LPMQ mengesahkan.
+  // Hanya Pemaraf yang ditunjuk distributor yang memaraf (urutan bebas); lalu Kepala LPMQ mengesahkan.
   const isPemaraf = checkIsPemaraf(currentUser);
   const awaitingHead = Boolean(pendingParaf?.awaiting_head);
   const assignedToMe = !pendingParaf?.assigned || pendingParaf.assigned.includes(currentUser?.id);
