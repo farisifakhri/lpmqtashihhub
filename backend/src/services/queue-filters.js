@@ -57,6 +57,15 @@ export function buildMasterIntakeQueueWhere() {
           status: 'RETURNED',
         },
       },
+      // Naskah perbaikan/dumi hasil sidang yang sudah dikirim penerbit: Admin menerimanya di loket lalu
+      // sistem membuat BAST ke Distributor tim inti (receivePhysicalMaster). Tanpa ini alur berhenti di sini.
+      {
+        status: 'REVISION_REQUIRED',
+        revision_source: 'TASHIH_REVISION',
+        physical_master_intake: {
+          status: 'PENDING',
+        },
+      },
     ],
   };
 }
