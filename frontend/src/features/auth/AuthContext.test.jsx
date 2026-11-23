@@ -61,6 +61,7 @@ describe('bootstrap autentikasi', () => {
     await act(async () => {});
 
     expect(screen.getByTestId('current-role')).toHaveTextContent('VERIFIKATOR');
+    expect(localStorage.getItem('lpmq_active_role')).toBe('VERIFIKATOR');
 
     act(() => {
       screen.getByText('Pindah ke Pentashih').click();
@@ -68,5 +69,18 @@ describe('bootstrap autentikasi', () => {
 
     expect(screen.getByTestId('current-role')).toHaveTextContent('PENTASHIH');
     expect(localStorage.getItem('lpmq_active_role')).toBe('PENTASHIH');
+  });
+
+  it('login menimpa peran aktif sisa akun sebelumnya agar header X-Active-Role sesuai akun baru', async () => {
+    localStorage.setItem('lpmq_active_role', 'DISTRIBUTOR');
+    authApi.login.mockResolvedValue({ success: true, data: { token: 't', user: { id: 'p1', name: 'Pemaraf', roles: ['PEMARAF'] } } });
+    const LoginView = () => {
+      const { currentUser, login } = useAuth();
+      return <button onClick={() => login('p@x', 'pw')}>{currentUser?.role || 'masuk'}</button>;
+    };
+    render(<AuthProvider><LoginView /></AuthProvider>);
+    await act(async () => { screen.getByRole('button').click(); });
+    expect(screen.getByRole('button')).toHaveTextContent('PEMARAF');
+    expect(localStorage.getItem('lpmq_active_role')).toBe('PEMARAF');
   });
 });

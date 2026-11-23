@@ -6,6 +6,7 @@ import { buildPaymentWhere } from './payment.service.js';
 import { buildHandoverWhere } from './handover.service.js';
 import { buildRegistrationScopeWhere } from './registration.service.js';
 import { parafSigners, assignedPemarafIds, OPEN_DISTRIBUTION_PARAF } from './paraf.service.js';
+import { listMyParafQueue } from './paraf-queue.service.js';
 
 /**
  * Badge notifikasi sidebar: jumlah pekerjaan yang menunggu tindakan pada tiap menu.
@@ -139,6 +140,13 @@ export const SIDEBAR_BADGES = [
       return pending.filter(paraf => (assignedPemarafIds(paraf)?.includes(user.id) ?? true)
         && !parafSigners(paraf).some(signer => signer.id === user.id)).length;
     },
+  },
+  // Pemaraf: seluruh dokumen yang menunggu parafnya (surat hasil, keputusan sidang, STT, surat master) — isi halaman Antrean Paraf.
+  {
+    key: 'paraf_queue_mine',
+    roles: ['KEPALA_LPMQ'],
+    when: user => user.isPemaraf,
+    count: async user => (await listMyParafQueue(user)).length,
   },
   {
     key: 'signatures_pending',
