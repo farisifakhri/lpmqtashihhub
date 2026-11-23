@@ -38,6 +38,21 @@ test('B-06: distributorReviewSchema allows distributor review without recap_file
   assert.ok(distReview.success, 'distributorReviewSchema harus mengizinkan keputusan tanpa recap_file_id');
 });
 
+test('B-06: reviewSchema and distributorReviewSchema allow empty/omitted notes', () => {
+  const pentashihNoNotes = reviewSchema.body.safeParse({
+    result: 'PASSED',
+    recap_file_id: '123e4567-e89b-12d3-a456-426614174000',
+  });
+  assert.ok(pentashihNoNotes.success, 'reviewSchema harus mengizinkan catatan kosong atau diabaikan');
+  assert.equal(pentashihNoNotes.data.notes, '');
+
+  const distNoNotes = distributorReviewSchema.body.safeParse({
+    result: 'PASSED',
+  });
+  assert.ok(distNoNotes.success, 'distributorReviewSchema harus mengizinkan catatan kosong');
+  assert.equal(distNoNotes.data.notes, '');
+});
+
 test('B-06: recordReview requires existing StoredFile and updates all assigned juz items collectively', async () => {
   const originalTx = prisma.$transaction;
   let updatedJuz = null;

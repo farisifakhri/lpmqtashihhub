@@ -10,10 +10,40 @@ export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
   submitting, modalError, closeReviewModal, handleReviewSubmit, getStageLabel,
   recapFileId, setRecapFileId, recapScope = 'SELF', setRecapScope,
+  juzItems, setJuzItems,
 }) => {
   const [uploadingRecap, setUploadingRecap] = useState(false);
   const [recapFileName, setRecapFileName] = useState('');
   const [uploadError, setUploadError] = useState('');
+
+  const handleMarkAllPassed = () => {
+    if (!setJuzItems) return;
+    setJuzItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        result: 'PASSED',
+      }))
+    );
+  };
+
+  const handleMarkAllRevision = () => {
+    if (!setJuzItems) return;
+    setJuzItems((prev) =>
+      prev.map((item) => ({
+        ...item,
+        result: 'REVISION_REQUIRED',
+      }))
+    );
+  };
+
+  const handleUpdateJuzItem = (index, updates) => {
+    if (!setJuzItems) return;
+    setJuzItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], ...updates };
+      return copy;
+    });
+  };
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -285,6 +315,11 @@ export const ReviewForm = ({
                       <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                       {recapFileName}
                     </span>
+                  ) : recapFileId ? (
+                    <span className="text-xs text-brand-800 font-medium inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
+                      Berkas rekapan sidang kelompok telah tersedia
+                    </span>
                   ) : (
                     <span className="text-xs text-ink-muted italic">Belum ada berkas rekapan terpilih (wajib diunggah)</span>
                   )}
@@ -350,30 +385,110 @@ export const ReviewForm = ({
                 </div>
               </div>
 
-              {/* Catatan Koreksi Lafazh & Rasm */}
+              {/* Catatan Umum Pentashih */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-ink uppercase tracking-wider">
-                    Catatan Koreksi & Telaah Lafazh / Rasm
+                    Catatan Umum Pentashih
                   </label>
-                  <span className="text-xs text-ink-muted">Wajib diisi</span>
+                  <span className="text-xs text-ink-muted">Opsional</span>
                 </div>
                 <textarea
-                  rows={5}
+                  rows={4}
                   value={reviewNotes}
                   maxLength={10000}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  
-                  placeholder="Contoh format telaah:&#10;[Juz 1, Hal 15, QS. Al-Baqarah: 25] - Lafazh '...' kurang harakat fathah.&#10;[Juz 2, Hal 32, QS. Al-Baqarah: 142] - Tanda waqaf lazim tertukar dengan waqaf jaiz.&#10;Jika bersih tanpa koreksi: Naskah telah ditashih dan sesuai standar Mushaf Indonesia."
+                  placeholder="Ringkasan umum hasil telaah naskah (opsional)..."
                   className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
                 />
                 <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
                   <Info className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                   <span>
-                    Catatan ini akan dikompilasi oleh koordinator Distributor untuk keputusan lanjut STT atau surat perbaikan ke penerbit.
+                    Catatan ringkasan keseluruhan tugas telaah. Bersifat opsional jika tidak ada temuan khusus.
                   </span>
                 </p>
               </div>
+
+              {/* Rincian Hasil per Juz (Opsional) */}
+              {juzItems && juzItems.length > 0 && (
+                <div className="space-y-3 p-3.5 rounded-xl border border-line bg-surface">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                          Rincian Hasil per Juz
+                        </label>
+                        <span className="text-xs text-ink-muted">Opsional</span>
+                      </div>
+                      <p className="text-[11px] text-ink-muted mt-0.5">
+                        Tentukan status dan catatan spesifik untuk masing-masing juz yang ditugaskan.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleMarkAllPassed}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-md border border-brand-200 bg-brand-50 text-brand-900 hover:bg-brand-100 transition-colors cursor-pointer"
+                      >
+                        Tandai Semua Lolos
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleMarkAllRevision}
+                        className="px-2.5 py-1 text-xs font-semibold rounded-md border border-civic-warningLine bg-civic-warningSoft text-civic-warning hover:bg-civic-warningSoft/80 transition-colors cursor-pointer"
+                      >
+                        Tandai Semua Perlu Perbaikan
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {juzItems.map((item, index) => (
+                      <div
+                        key={item.juz_number}
+                        className="p-2.5 rounded-lg border border-line bg-white space-y-2 text-xs"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-ink">Juz {item.juz_number}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateJuzItem(index, { result: 'PASSED' })}
+                              className={clsx(
+                                'px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer',
+                                item.result === 'PASSED'
+                                  ? 'bg-brand-100 text-brand-800 border-brand-200'
+                                  : 'bg-canvas text-ink-muted border-line hover:text-ink'
+                              )}
+                            >
+                              Lolos
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateJuzItem(index, { result: 'REVISION_REQUIRED' })}
+                              className={clsx(
+                                'px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer',
+                                item.result === 'REVISION_REQUIRED'
+                                  ? 'bg-civic-warningSoft text-civic-warning border-civic-warningLine'
+                                  : 'bg-canvas text-ink-muted border-line hover:text-ink'
+                              )}
+                            >
+                              Perlu Perbaikan
+                            </button>
+                          </div>
+                        </div>
+                        <input
+                          type="text"
+                          value={item.notes || ''}
+                          onChange={(e) => handleUpdateJuzItem(index, { notes: e.target.value })}
+                          placeholder={`Catatan temuan khusus Juz ${item.juz_number} (opsional)...`}
+                          className="w-full p-2 text-xs bg-canvas rounded border border-line font-mono outline-none focus:bg-white focus:border-brand-700 transition-colors"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Modal Actions */}
               {modalError && (
@@ -397,11 +512,15 @@ export const ReviewForm = ({
                   type="submit"
                   variant="primary"
                   size="sm"
-                  disabled={submitting || !reviewNotes.trim() || !recapFileId}
+                  disabled={submitting || !recapFileId || (selectedAssignment.status === 'COMPLETED' && selectedAssignment.reviews?.length > 0 && selectedAssignment.registration?.status !== 'REVISION_REQUIRED')}
                   className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                   icon={<Send className="w-3.5 h-3.5" />}
                 >
-                  {submitting ? 'Menyimpan...' : (selectedAssignment.status === 'COMPLETED' ? 'Simpan Pembaruan Telaah' : 'Kirim Hasil Telaah')}
+                  {submitting
+                    ? 'Menyimpan...'
+                    : (selectedAssignment.status === 'COMPLETED' && selectedAssignment.reviews?.length > 0 && selectedAssignment.registration?.status !== 'REVISION_REQUIRED')
+                    ? 'Hasil Sidang Telah Dikunci'
+                    : (selectedAssignment.reviews?.length > 0 ? 'Simpan Pembaruan Telaah' : 'Kirim Hasil Telaah')}
                 </Button>
               </div>
             </form>

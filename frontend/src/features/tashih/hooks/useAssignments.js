@@ -13,11 +13,15 @@ export function useAssignments(activeTab, page) {
     setLoading(true);
     setError(null);
     try {
-      const res = await tashihApi.getMyAssignments({ status: activeTab, page, limit: 20 });
+      const params = { page, limit: 100 };
+      if (activeTab && activeTab !== 'ALL') {
+        params.status = activeTab;
+      }
+      const res = await tashihApi.getMyAssignments(params);
       const items = Array.isArray(res?.data) ? res.data : [];
       if (request !== requestId.current) return;
       setAssignments(items);
-      setHasMore(items.length === 20);
+      setHasMore(items.length === 100);
     } catch (err) {
       if (request === requestId.current) {
         setError(err.message || 'Gagal memuat tugas sidang pentashihan.');
