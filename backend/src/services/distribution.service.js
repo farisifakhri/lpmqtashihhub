@@ -873,22 +873,24 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true, juz_items: true } });
 
-  // Agregasi putusan sidang: jika ada minimal 1 putusan REVISION_REQUIRED / REJECTED, naskah wajib diperbaiki
-  const allReviews = assignments.flatMap(a => a.reviews || []);
-  const hasRevisionRequired = allReviews.some(r => r.result === 'REVISION_REQUIRED' || r.result === 'REJECTED');
-  if (hasRevisionRequired && data.result === 'PASSED') {
-    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus (perlu perbaikan). Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
+  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
+
+  // Agregasi putusan sidang: jika tahap DUMMY dan mau ke STT, seluruh hasil sidang wajib PASSED
+  if (isEligibleForStt) {
+    const allReviews = assignments.flatMap(a => a.reviews || []);
+    const hasRevisionRequired = allReviews.some(r => r.result === 'REVISION_REQUIRED' || r.result === 'REJECTED');
+    if (hasRevisionRequired) {
+      fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus (perlu perbaikan). Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+    }
   }
 
   // B-17: Hukum dasar sidang - wajib nunggu seluruh pentashih/kelompok menyelesaikan rekapnya (baik PASSED maupun REVISION_REQUIRED)
-  assertDistributionReviewCompleteness(assignments, { requireAllPassed: data.result === 'PASSED' });
+  assertDistributionReviewCompleteness(assignments, { requireAllPassed: isEligibleForStt });
 
   const previousLetters = tx.officialDocument?.count
     ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
     : 0;
-
-  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
-  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
 
   if (isEligibleForStt) {
     await assertReadyForSttEligibility(tx, id);

@@ -164,5 +164,73 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
   });
+
+  it('memungkinkan distributor meloloskan naskah ke tahap dumi meski terdapat catatan perbaikan dari pentashih', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-with-revisions',
+        title: 'Mushaf Al-Qur`an dengan Koreksi Minor',
+        status: 'TASHIH_IN_PROGRESS',
+        official_documents: [],
+        assignments: [
+          {
+            id: 'asg-1',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'COMPLETED',
+            assignee: { name: 'Pentashih 1' },
+            reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'recap-1' }],
+          },
+          {
+            id: 'asg-2',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'COMPLETED',
+            assignee: { name: 'Pentashih 2' },
+            reviews: [{ id: 'rev-2', result: 'REVISION_REQUIRED', recap_file_id: 'recap-2', notes: 'Ada koreksi harakat minor di juz 5' }],
+          },
+        ],
+      },
+    });
+
+    const approveSpy = vi.spyOn(tashihApi, 'approveDistribution').mockResolvedValue({ success: true });
+    const onClose = vi.fn();
+    const onSuccess = vi.fn();
+
+    render(<DistributorReviewDialog registrationId="reg-with-revisions" onClose={onClose} onSuccess={onSuccess} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Reviu Hasil Sidang Pentashihan/i)).toBeInTheDocument();
+    });
+
+    // 1. Secara default terpilih "Kembalikan ke Penerbit (Perbaikan)"
+    const revisionRadio = screen.getByRole('radio', { name: /Kembalikan ke Penerbit \(Perbaikan\)/i });
+    expect(revisionRadio).toBeChecked();
+
+    // 2. Pesan informatif ditampilkan, bukan teks pengunci
+    expect(screen.getByText(/Terdapat catatan perbaikan dari pentashih; Koordinator Distribusi\/Distributor tetap dapat meloloskan telaah ke tahap dumi jika catatan bersifat minor\./i)).toBeInTheDocument();
+    expect(screen.queryByText(/Rekomendasi STT terkunci/i)).not.toBeInTheDocument();
+
+    // 3. Opsi "Loloskan Telaah & Alihkan ke Tahap Dumi" TIDAK terkunci / disabled
+    const passRadio = screen.getByRole('radio', { name: /Loloskan Telaah & Alihkan ke Tahap Dumi/i });
+    expect(passRadio).not.toBeDisabled();
+
+    // 4. Distributor bebas memilih opsi Loloskan Telaah & Alihkan ke Tahap Dumi
+    fireEvent.click(passRadio);
+    expect(passRadio).toBeChecked();
+
+    // 5. Submit keputusan dan pastikan payload result adalah PASSED
+    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
+    expect(submitBtn).not.toBeDisabled();
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(approveSpy).toHaveBeenCalledWith('reg-with-revisions', expect.objectContaining({
+        result: 'PASSED',
+      }));
+      expect(onSuccess).toHaveBeenCalled();
+    });
+  });
 });
 

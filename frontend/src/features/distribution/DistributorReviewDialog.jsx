@@ -188,8 +188,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
     (a) => Boolean(a.recap_file_id || a.reviews?.[0]?.recap_file_id || a.reviews?.[0]?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i))
   );
 
-  const canPassSTT = allCompleted && !hasRevisionRequested;
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!registration) return;
@@ -513,19 +511,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         {/* Opsi Lulus (STT jika DUMMY, atau Alihkan ke Tahap DUMMY jika INITIAL/REVISION) - B-16 */}
                         <label
                           className={clsx(
-                            'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3',
-                            !canPassSTT
-                              ? 'opacity-50 border-line bg-canvas cursor-not-allowed'
-                              : decision === 'PASSED'
-                              ? 'border-brand-700 bg-brand-50/50 cursor-pointer'
-                              : 'border-line hover:border-line-strong cursor-pointer'
+                            'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 cursor-pointer',
+                            decision === 'PASSED'
+                              ? 'border-brand-700 bg-brand-50/50'
+                              : 'border-line hover:border-line-strong'
                           )}
                         >
                           <input
                             type="radio"
                             name="distributorDecision"
                             value="PASSED"
-                            disabled={!canPassSTT}
                             checked={decision === 'PASSED'}
                             onChange={(e) => setDecision(e.target.value)}
                             className="mt-0.5 text-brand-700 focus:ring-brand-700"
@@ -618,11 +613,13 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                         </div>
                       )}
 
-                      {!canPassSTT && (
+                      {hasRevisionRequested && (
                         <p className="text-xs text-civic-warning mt-1.5 flex items-center gap-1">
                           <Info className="w-3.5 h-3.5 shrink-0" />
                           <span>
-                            Rekomendasi STT terkunci karena ada pentashih yang memberikan catatan perbaikan.
+                            {currentAssignments[0]?.stage === 'DUMMY'
+                              ? 'Terdapat catatan perbaikan dari pentashih; Koordinator Distribusi/Distributor tetap dapat merekomendasikan penetapan STT jika catatan bersifat minor.'
+                              : 'Terdapat catatan perbaikan dari pentashih; Koordinator Distribusi/Distributor tetap dapat meloloskan telaah ke tahap dumi jika catatan bersifat minor.'}
                           </span>
                         </p>
                       )}

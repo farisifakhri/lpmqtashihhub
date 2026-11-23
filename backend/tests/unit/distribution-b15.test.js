@@ -263,7 +263,7 @@ test('B15-05: Jika satu pentashih memutuskan REVISION_REQUIRED, distributor dito
       }),
     },
     assignment: {
-      findFirst: async () => ({ id: 'asg-1', iteration: 1 }),
+      findFirst: async () => ({ id: 'asg-1', iteration: 1, stage: 'DUMMY' }),
       findMany: async () => [
         { id: 'asg-1', team_id: 'team-1', status: 'COMPLETED', reviews: [{ result: 'PASSED', recap_file_id: 'recap-1', recap_scope: 'TEAM' }] },
         { id: 'asg-2', team_id: null, status: 'COMPLETED', reviews: [{ result: 'REVISION_REQUIRED', recap_file_id: 'recap-2', recap_scope: 'SELF' }] },
