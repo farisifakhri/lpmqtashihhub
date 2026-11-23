@@ -81,6 +81,14 @@ test('skema permohonan menerima isian lengkap dan menormalkan email', () => {
   const parsed = createMasterRequestSchema.body.parse(validBody);
   assert.equal(parsed.email, 'budi@example.com');
   assert.equal(parsed.pernyataan, true);
+  assert.deepEqual(parsed.jenis_mushaf, ['YASIN_TAHLIL']);
+});
+
+test('skema permohonan menerima beberapa jenis mushaf, membuang duplikat, menolak kode asing', () => {
+  const parse = (jenis_mushaf) => createMasterRequestSchema.body.safeParse({ ...validBody, jenis_mushaf });
+  assert.deepEqual(parse(['YASIN_TAHLIL', 'PEDOMAN_BRAILLE', 'YASIN_TAHLIL']).data.jenis_mushaf, ['YASIN_TAHLIL', 'PEDOMAN_BRAILLE']);
+  assert.equal(parse([]).success, false);
+  assert.equal(parse(['YASIN_TAHLIL', 'LAINNYA']).success, false);
 });
 
 test('skema permohonan menolak isian kosong, kode pos/telepon salah, dan pernyataan tidak dicentang', () => {

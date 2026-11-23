@@ -308,8 +308,8 @@ model MasterMushafRequest {
   phone               String                    @db.VarChar(30)
   email               String                    @db.VarChar(255)
   institution         String                    @db.VarChar(255)
-  mushaf_type         String                    @db.VarChar(80)
-  mushaf_type_label   String                    @db.VarChar(255)
+  mushaf_type         String                    @db.VarChar(600)
+  mushaf_type_label   String                    @db.Text
   intended_use        String                    @db.Text
   statement_agreed_at DateTime
   status              MasterMushafRequestStatus @default(DIAJUKAN)
