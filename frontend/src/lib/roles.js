@@ -2,7 +2,8 @@
 // Pakai helper ini untuk pemeriksaan hak akses, bukan untuk menampilkan nama role.
 export const accessRoles = (roles = []) => (roles.includes('PEMARAF') && !roles.includes('KEPALA_LPMQ') ? [...roles, 'KEPALA_LPMQ'] : roles);
 
-export const isHeadRole = (role) => role === 'KEPALA_LPMQ' || role === 'HEAD_OF_LPMQ';
+// Dipakai Sidebar: Pemaraf mendapat menu yang sama dengan Kepala LPMQ (tanpa ini sidebar Pemaraf kosong).
+export const isHeadRole = (role) => role === 'KEPALA_LPMQ' || role === 'HEAD_OF_LPMQ' || role === 'PEMARAF';
 
 /**
  * Memastikan apakah pengguna saat ini sedang bertindak sebagai Pemaraf.

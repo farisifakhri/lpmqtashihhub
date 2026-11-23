@@ -1,23 +1,76 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FileCheck2,
   RefreshCw,
+  Send,
+  Building2,
   CheckCircle2,
   Clock,
   ExternalLink,
+  ShieldCheck,
+  AlertCircle,
+  FileText,
   UserCheck,
+  Sparkles,
 } from 'lucide-react';
+import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
+import { documentationApi } from '@/api/documentation.api';
 import { sttParafProgress } from '@/lib/stt-paraf';
+import { showToast } from '@/components/ui/toast';
+import { PemarafSubmitDialog } from '@/components/common/PemarafPicker';
 
 export const SttWorkflowPanel = ({
   distLoading,
   readyRegistrations,
   fetchDistributionData,
 }) => {
+  const [requestNotesModalReg, setRequestNotesModalReg] = useState(null);
+  const [requestNotes, setRequestNotes] = useState('');
+  const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [sttSubmitTarget, setSttSubmitTarget] = useState(null);
+
+  const handleRequestStt = async (regId) => {
+    setActionLoadingId(regId);
+    try {
+      await documentationApi.requestStt(regId, requestNotes.trim());
+      showToast('Pengajuan pembuatan STT berhasil dikirim ke Admin Internal.', 'success');
+      setRequestNotesModalReg(null);
+      setRequestNotes('');
+      await fetchDistributionData();
+    } catch (err) {
+      showToast(err.message || 'Gagal mengajukan pembuatan STT ke admin.', 'error');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleSubmitToTu = async (regId, documentId, pemarafIds = []) => {
+    setActionLoadingId(regId);
+    try {
+      await documentationApi.submitToTu(documentId, pemarafIds.length ? { pemaraf_ids: pemarafIds } : {});
+      setSttSubmitTarget(null);
+      showToast('Draf STT berhasil diteruskan ke Pemaraf untuk dibubuhi paraf, lalu ditandatangani Kepala LPMQ.', 'success');
+      await fetchDistributionData();
+    } catch (err) {
+      showToast(err.message || 'Gagal mengirimkan draf STT ke Pemaraf.', 'error');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
+      <PemarafSubmitDialog
+        isOpen={Boolean(sttSubmitTarget)}
+        onClose={() => setSttSubmitTarget(null)}
+        onConfirm={(ids) => handleSubmitToTu(...sttSubmitTarget.args, ids)}
+        title="Kirim Draf STT ke Pemaraf"
+        description="Tunjuk 2 Pemaraf yang akan memaraf draf STT ini. Setelah keduanya memaraf, STT diteruskan ke Kepala LPMQ untuk disahkan."
+        objectName={sttSubmitTarget?.label}
+        loading={Boolean(actionLoadingId)}
+      />
       {/* Panel Header */}
       <div className="p-5 sm:p-6 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -60,10 +113,14 @@ export const SttWorkflowPanel = ({
           {readyRegistrations.map((reg) => {
             const docs = reg.official_documents || [];
             const sttDoc = docs.find((d) => d.document_type === 'SURAT_TANDA_TASHIH') || null;
+            const meta = reg.foreign_metadata || {};
+            const sttRequest = meta.stt_request || null;
             const tuWorkflow = sttDoc?.content_snapshot?.tu_workflow || null;
+            // submitted_at tetap ada setelah diparaf (status berubah ke PARAF_COMPLETED)
             const isSubmittedToTu = Boolean(tuWorkflow?.submitted_at);
-            const paraf = sttParafProgress(tuWorkflow);
+            const paraf = sttParafProgress(tuWorkflow); // seluruh Pemaraf wajib memaraf, urutan bebas
             const isIssued = reg.status === 'STT_ISSUED' || sttDoc?.status === 'ISSUED';
+            const isDraftSentToDist = sttDoc && (sttRequest?.status === 'DRAFT_READY' || tuWorkflow);
 
             return (
               <div
@@ -97,8 +154,37 @@ export const SttWorkflowPanel = ({
                     </p>
                   </div>
 
-                  {/* Actions (Read-Only Preview & Download for Distributor) */}
+                  {/* Action Buttons for Distributor */}
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* 1. Request STT from Admin */}
+                    {!sttRequest && reg.status === 'READY_FOR_STT' && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={actionLoadingId === reg.id}
+                        onClick={() => setRequestNotesModalReg(reg)}
+                        className="bg-brand-fill hover:bg-brand-fill-hover text-white shadow-xs text-xs font-bold"
+                        icon={<Send className="w-3.5 h-3.5" />}
+                      >
+                        Ajukan Pembuatan STT ke Admin
+                      </Button>
+                    )}
+
+                    {/* 2. Submit to TU */}
+                    {sttDoc && sttDoc.status === 'DRAFT' && !isSubmittedToTu && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        disabled={actionLoadingId === reg.id}
+                        onClick={() => setSttSubmitTarget({ args: [reg.id, sttDoc.id], label: reg.registration_no || reg.title })}
+                        className="bg-civic-info hover:opacity-90 text-white shadow-xs text-xs font-bold"
+                        icon={<UserCheck className="w-3.5 h-3.5" />}
+                      >
+                        {actionLoadingId === reg.id ? 'Mengirim...' : 'Kirim ke Pemaraf untuk Pengesahan'}
+                      </Button>
+                    )}
+
+                    {/* 3. Preview PDF */}
                     {sttDoc && (
                       <a
                         href={`/api/v1/official-documents/${sttDoc.id}/pdf`}
@@ -113,7 +199,7 @@ export const SttWorkflowPanel = ({
                   </div>
                 </div>
 
-                {/* Workflow Stepper Status Card (Jalur A - Dokumentator Lead) */}
+                {/* Workflow Stepper Status Card */}
                 <div className="bg-surface-subtle/50 rounded-xl p-4 border border-line text-xs grid grid-cols-1 sm:grid-cols-4 gap-3">
                   {/* Step 1: Sidang Selesai */}
                   <div className="flex items-start gap-2">
@@ -124,38 +210,34 @@ export const SttWorkflowPanel = ({
                     </div>
                   </div>
 
-                  {/* Step 2: Draf STT Dokumentator */}
+                  {/* Step 2: Pengajuan ke Admin */}
                   <div className="flex items-start gap-2">
-                    {sttDoc ? (
+                    {sttRequest ? (
                       <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
                     ) : (
                       <Clock className="w-4 h-4 text-civic-warning shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <div className="font-bold text-ink">2. Draf STT Dokumentator</div>
+                      <div className="font-bold text-ink">2. Permintaan STT ke Admin</div>
                       <div className="text-ink-muted text-[11px]">
-                        {sttDoc ? 'Draf STT telah disusun' : 'Menunggu Dokumentator'}
+                        {sttRequest ? 'Diajukan ke Admin Internal' : 'Belum diajukan'}
                       </div>
                     </div>
                   </div>
 
-                  {/* Step 3: Paraf Pemaraf */}
+                  {/* Step 3: Draf STT & Pengiriman ke TU */}
                   <div className="flex items-start gap-2">
-                    {paraf.complete ? (
+                    {isSubmittedToTu ? (
                       <CheckCircle2 className="w-4 h-4 text-civic-success shrink-0 mt-0.5" />
-                    ) : isSubmittedToTu ? (
+                    ) : sttDoc ? (
                       <Clock className="w-4 h-4 text-civic-info shrink-0 mt-0.5" />
                     ) : (
                       <Clock className="w-4 h-4 text-ink-muted shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <div className="font-bold text-ink">3. Paraf Pemaraf</div>
+                      <div className="font-bold text-ink">3. Penyerahan ke Pemaraf</div>
                       <div className="text-ink-muted text-[11px]">
-                        {isSubmittedToTu
-                          ? (paraf.complete
-                            ? 'Paraf lengkap, menunggu TTE Kepala'
-                            : `Menunggu paraf (${paraf.done}/${paraf.required})`)
-                          : (sttDoc ? 'Menunggu penyerahan ke Pemaraf' : 'Menunggu draf STT')}
+                        {isSubmittedToTu ? (paraf.complete ? 'Paraf lengkap, menunggu TTD Kepala' : `Menunggu paraf Pemaraf (${paraf.done}/${paraf.required})`) : sttDoc ? 'Draf siap dikirim ke Pemaraf' : 'Menunggu draf Admin'}
                       </div>
                     </div>
                   </div>
@@ -168,9 +250,9 @@ export const SttWorkflowPanel = ({
                       <Clock className="w-4 h-4 text-ink-muted shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <div className="font-bold text-ink">4. Pengesahan Kepala LPMQ</div>
+                      <div className="font-bold text-ink">4. Tanda Tangan Kepala</div>
                       <div className="text-ink-muted text-[11px]">
-                        {isIssued ? 'Resmi Diterbitkan' : (paraf.complete ? 'Siap disahkan Kepala LPMQ' : 'Menunggu kelengkapan paraf')}
+                        {isIssued ? 'Resmi Diterbitkan' : 'Menunggu TTD Kepala'}
                       </div>
                     </div>
                   </div>
@@ -194,7 +276,7 @@ export const SttWorkflowPanel = ({
                       </div>
                       <div className="p-2 bg-white/80 rounded-lg border border-civic-infoLine flex items-center justify-between">
                         <span>Kepala LPMQ (TTD Resmi):</span>
-                        <span className={isIssued ? 'font-bold text-civic-success' : 'font-medium text-ink-muted'}>
+                        <span className="font-bold text-civic-success">
                           {isIssued ? '✓ Resmi Sah' : 'Menunggu'}
                         </span>
                       </div>
@@ -206,8 +288,60 @@ export const SttWorkflowPanel = ({
           })}
         </div>
       )}
+
+      {/* Modal Dialog: Catatan Pengajuan STT */}
+      {requestNotesModalReg && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-line space-y-4">
+            <div>
+              <h3 className="text-lg font-bold text-ink">
+                Ajukan Pembuatan Draf STT ke Admin
+              </h3>
+              <p className="text-xs text-ink-muted mt-1">
+                Pengajuan untuk naskah <strong>{requestNotesModalReg.registration_no}</strong> ({requestNotesModalReg.title}).
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-ink mb-1">
+                Catatan Distributor untuk Admin Internal (Opsional)
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Misal: Seluruh catatan pentashihan telah terpenuhi dan rekomendasi sidang disetujui tanpa catatan perbaikan."
+                value={requestNotes}
+                onChange={(e) => setRequestNotes(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-line-strong rounded-lg focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setRequestNotesModalReg(null);
+                  setRequestNotes('');
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={actionLoadingId === requestNotesModalReg.id}
+                onClick={() => handleRequestStt(requestNotesModalReg.id)}
+                className="bg-brand-fill hover:bg-brand-fill-hover text-white font-bold text-xs"
+              >
+                {actionLoadingId === requestNotesModalReg.id ? 'Mengirim...' : 'Kirim Pengajuan STT'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default SttWorkflowPanel;
+

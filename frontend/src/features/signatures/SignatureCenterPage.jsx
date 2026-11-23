@@ -67,8 +67,6 @@ export const SignatureCenterPage = () => {
   const [signDialogDoc, setSignDialogDoc] = useState(null);
   const [parafDialog, setParafDialog] = useState(null);
   const [parafNotes, setParafNotes] = useState('');
-  const [overrideDialog, setOverrideDialog] = useState(null);
-  const [overrideReason, setOverrideReason] = useState('');
   const [batchSignOpen, setBatchSignOpen] = useState(false);
   const [previewDoc, setPreviewDoc] = useState(null);
   // Surat persetujuan Permohonan Master yang diajukan Admin untuk TTE Kepala LPMQ
@@ -452,33 +450,6 @@ export const SignatureCenterPage = () => {
       await fetchAssignments();
     } catch (err) {
       setActionError(err.message || 'Gagal membubuhkan paraf.');
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Dispensasi darurat paraf Super Admin
-  const handleConfirmOverride = async () => {
-    if (!overrideDialog) return;
-    if (!overrideReason || overrideReason.trim().length < 10) {
-      setActionError('Alasan dispensasi darurat wajib diisi minimal 10 karakter.');
-      return;
-    }
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      if (overrideDialog.doc.document_type === 'SURAT_TANDA_TASHIH') {
-        await documentationApi.overrideSttParaf(overrideDialog.doc.id, overrideReason.trim());
-      } else {
-        await verificationApi.overrideParaf(overrideDialog.doc.id, overrideReason.trim());
-      }
-      invalidateQueueCounts();
-      setSuccessMessage(`Dispensasi darurat berhasil dicatat untuk dokumen ${overrideDialog.doc.document_no}. Dokumen kini dapat disahkan oleh Kepala LPMQ.`);
-      setOverrideDialog(null);
-      setOverrideReason('');
-      await fetchAssignments();
-    } catch (err) {
-      setActionError(err.message || 'Gagal memberikan dispensasi darurat paraf.');
     } finally {
       setActionLoading(false);
     }
@@ -961,27 +932,13 @@ export const SignatureCenterPage = () => {
                           Tandatangani STT Resmi
                         </Button>
                       ) : (
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface-subtle text-ink-muted border border-line font-medium cursor-not-allowed"
-                            title={`Menunggu paraf seluruh Pemaraf (${doc.parafDone}/${doc.parafRequired})`}
-                          >
-                            <Clock className="w-3.5 h-3.5" />
-                            Menunggu Paraf
-                          </span>
-                          {isSuperadmin && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => { setActionError(null); setOverrideDialog({ doc }); setOverrideReason(''); }}
-                              disabled={actionLoading}
-                              className="text-xs px-2.5 py-1.5 text-civic-warning border-civic-warningLine hover:bg-civic-warningSoft font-semibold"
-                              title="Dispensasi darurat Super Admin bila terjadi kebuntuan paraf"
-                            >
-                              Dispensasi
-                            </Button>
-                          )}
-                        </div>
+                        <span
+                          className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface-subtle text-ink-muted border border-line font-medium cursor-not-allowed"
+                          title={`Menunggu paraf seluruh Pemaraf (${doc.parafDone}/${doc.parafRequired})`}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Menunggu Paraf
+                        </span>
                       )
                     )}
 
@@ -1117,74 +1074,6 @@ export const SignatureCenterPage = () => {
                 className="font-bold"
               >
                 {actionLoading ? 'Menyimpan...' : 'Bubuhkan Paraf'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Override Dialog for Super Admin */}
-      {overrideDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-line space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-line">
-              <h3 className="text-sm font-bold text-ink flex items-center gap-2">
-                <PenTool className="w-4 h-4 text-civic-warning" />
-                Dispensasi Darurat Paraf (Super Admin)
-              </h3>
-              <button
-                onClick={() => setOverrideDialog(null)}
-                className="text-ink-muted hover:text-ink transition-colors p-1"
-                aria-label="Tutup dialog"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="text-xs text-ink-muted space-y-1">
-              <p>Dokumen: <strong className="font-mono text-ink">{overrideDialog.doc.document_no}</strong></p>
-              <p>Naskah: <strong className="text-ink">{overrideDialog.doc.manuscript_title}</strong></p>
-              <p>Penerbit: <strong className="text-ink">{overrideDialog.doc.publisher_name}</strong></p>
-              <p className="text-civic-warning font-semibold pt-1">
-                Aksi ini memberikan dispensasi operasional agar dokumen dapat langsung disahkan oleh Kepala LPMQ. Seluruh tindakan dicatat dalam jejak audit.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-ink">
-                Alasan Dispensasi Darurat (Wajib, minimal 10 karakter):
-              </label>
-              <textarea
-                value={overrideReason}
-                onChange={(e) => setOverrideReason(e.target.value)}
-                placeholder="Contoh: Pemaraf berhalangan tetap/izin dinas mendesak sehingga memerlukan dispensasi operasional."
-                rows={3}
-                className="w-full text-xs p-2.5 border border-line-strong rounded-lg focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 outline-none"
-              />
-            </div>
-
-            {actionError && (
-              <div role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
-                {actionError}
-              </div>
-            )}
-            <div className="flex justify-end gap-2 pt-2 border-t border-line">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setOverrideDialog(null)}
-                disabled={actionLoading}
-              >
-                Batal
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleConfirmOverride}
-                disabled={actionLoading || overrideReason.trim().length < 10}
-                className="bg-civic-warning hover:opacity-90 text-white font-bold"
-              >
-                {actionLoading ? 'Menyimpan...' : 'Berikan Dispensasi'}
               </Button>
             </div>
           </div>

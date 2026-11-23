@@ -11,6 +11,7 @@ import * as payment from '../services/payment.service.js';
 import * as notifications from '../services/notification.service.js';
 import { getSidebarBadges } from '../services/sidebar-badge.service.js';
 import { listPemaraf } from '../services/paraf.service.js';
+import { listMyParafQueue } from '../services/paraf-queue.service.js';
 import { upload, MAX_UPLOAD_BYTES, MAX_DOC_BYTES, MAX_APK_BYTES } from '../services/storage.service.js';
 import { readPrivateFile } from '../services/private-file.service.js';
 import { uploadRateLimiter } from '../middlewares/rateLimiter.middleware.js';
@@ -45,6 +46,8 @@ router.post('/assignments/:id/review', authenticate, authorize('PENTASHIH', 'SUP
 router.patch('/assignments/:id/juz/:juzNumber', authenticate, authorize('PENTASHIH', 'SUPERADMIN'), validate(juzChecklistSchema), action(req => distribution.recordJuzChecklist(req.params.id, req.params.juzNumber, req.body, req.user)));
 router.post('/assignments/:id/revoke', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(revokePentashihAssignmentSchema), action(req => distribution.revokeAssignment(req.params.id, req.body, req.user, req)));
 router.post('/registrations/:id/distribution-review', authenticate, authorize('DISTRIBUTOR', 'SUPERADMIN'), validate(distributorReviewSchema), action(req => distribution.approveDistribution(req.params.id, req.body, req.user)));
+// Antrean Paraf gabungan milik Pemaraf yang login (akses Pemaraf dipetakan ke KEPALA_LPMQ; layanan menolak selain Pemaraf).
+router.get('/paraf/queue', authenticate, authorize('KEPALA_LPMQ'), action(req => listMyParafQueue(req.user)));
 router.get('/pemaraf', authenticate, authorize('DISTRIBUTOR', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'DOKUMENTATOR', 'KEPALA_LPMQ', 'SUPERADMIN'), action(() => listPemaraf()));
 router.get('/registrations/:id/distribution-review/paraf', authenticate, authorize('DISTRIBUTOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), action(req => distribution.getDistributionParaf(req.params.id)));
 router.post('/registrations/:id/distribution-review/paraf', authenticate, authorize('KEPALA_LPMQ', 'SUPERADMIN'), validate(emptyAction), action(req => distribution.parafDistribution(req.params.id, req.user, req)));

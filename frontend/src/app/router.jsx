@@ -32,6 +32,7 @@ const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verifica
 const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
 const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
 const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const ParafQueuePage = withSuspense(lazy(() => import('@/features/paraf/ParafQueuePage').then(m => ({ default: m.ParafQueuePage }))));
 const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signatures/SignatureCenterPage').then(m => ({ default: m.SignatureCenterPage }))));
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const DocumentArchivePage = withSuspense(lazy(() => import('@/features/internal/DocumentArchivePage').then(m => ({ default: m.DocumentArchivePage }))));
@@ -268,6 +269,15 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['ADMIN_INTERNAL', 'VERIFIKATOR', 'KEPALA_LPMQ', 'SUPERADMIN']}>
             <VerificationInspectionPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        // Antrean Paraf Pemaraf (akses Pemaraf dipetakan ke KEPALA_LPMQ; data hanya untuk peran Pemaraf)
+        path: 'internal/paraf',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ']}>
+            <ParafQueuePage />
           </ProtectedRoute>
         ),
       },
