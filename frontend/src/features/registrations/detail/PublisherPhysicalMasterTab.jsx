@@ -15,6 +15,7 @@ import {
 import { fileApi } from '@/api/file.api';
 import { registrationApi } from '@/api/registration.api';
 import { Button } from '@/components/ui/Button';
+import { formatRegistrationStatus } from '@/lib/glossary';
 
 export function PublisherPhysicalMasterTab({
   data,
@@ -71,6 +72,7 @@ export function PublisherPhysicalMasterTab({
   };
 
   const isRevisionRequired = ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION'].includes(data?.status);
+  const canDispatchPhysical = ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED'].includes(data?.status);
 
   return (
     <div className="space-y-6">
@@ -366,7 +368,7 @@ export function PublisherPhysicalMasterTab({
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : canDispatchPhysical ? (
               <form onSubmit={handleDispatch} className="space-y-3">
                 {/* Notice U-09: Syarat Unduh Label Sebelum Kirim */}
                 {!isLabelDownloaded ? (
@@ -500,6 +502,10 @@ export function PublisherPhysicalMasterTab({
                   </Button>
                 </div>
               </form>
+            ) : (
+              <div role="status" className="rounded-lg border border-civic-warningLine bg-civic-warningSoft p-3 text-xs text-civic-warning">
+                Konfirmasi pengiriman resi tidak tersedia pada tahap ini. Formulir pengiriman hanya dapat digunakan saat pengajuan menunggu penugasan verifikator atau memerlukan perbaikan. Status saat ini: <strong>{formatRegistrationStatus(data?.status)}</strong>. Jika ini pengajuan baru dan master fisik belum dikirim, hubungi Admin Internal untuk memeriksa riwayat status sebelum proses dilanjutkan.
+              </div>
             )}
           </div>
         </section>
