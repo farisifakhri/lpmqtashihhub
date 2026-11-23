@@ -167,11 +167,11 @@ describe('PentashihWorkspacePage Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Lembar Telaah Sidang Pentashihan/i)).toBeInTheDocument();
       expect(screen.getByText(/Lolos Tanpa Catatan \(Bersih\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Catatan Koreksi & Telaah/i)).toBeInTheDocument();
+      expect(screen.getByText(/Catatan Umum Pentashih/i)).toBeInTheDocument();
     });
 
-    // Masukkan catatan sidang
-    const textarea = screen.getByPlaceholderText(/Contoh format telaah/i);
+    // Masukkan catatan sidang (opsional)
+    const textarea = screen.getByPlaceholderText(/Ringkasan umum hasil telaah naskah/i);
     fireEvent.change(textarea, { target: { value: 'Seluruh rasm dan harakat telah ditashih dengan cermat.' } });
 
     // Submit dialog

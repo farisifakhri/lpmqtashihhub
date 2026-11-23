@@ -47,6 +47,7 @@ export const PentashihWorkspacePage = () => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [reviewResult, setReviewResult] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [reviewNotes, setReviewNotes] = useState('');
+  const [juzItems, setJuzItems] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [recapFileId, setRecapFileId] = useState(null);
@@ -130,6 +131,18 @@ export const PentashihWorkspacePage = () => {
       setReviewNotes('');
       setRecapScope(assignment.team_id || assignment.team ? 'TEAM' : 'SELF');
     }
+    if (assignment.juz_items?.length) {
+      setJuzItems(
+        assignment.juz_items.map((j) => ({
+          id: j.id,
+          juz_number: j.juz_number,
+          result: j.result || existingReview?.result || 'PASSED',
+          notes: j.notes || '',
+        }))
+      );
+    } else {
+      setJuzItems([]);
+    }
     setRecapFileId(assignment.recap_file_id || null);
     setModalError(null);
     setReviewModalOpen(true);
@@ -139,6 +152,7 @@ export const PentashihWorkspacePage = () => {
     if (submitting) return;
     setReviewModalOpen(false);
     setSelectedAssignment(null);
+    setJuzItems([]);
     setRecapFileId(null);
     setModalError(null);
   };
@@ -147,8 +161,8 @@ export const PentashihWorkspacePage = () => {
     e.preventDefault();
     if (!selectedAssignment) return;
 
-    if (!reviewNotes.trim() || reviewNotes.trim().length > 10000) {
-      setModalError('Catatan hasil telaah wajib diisi dan maksimal 10000 karakter.');
+    if (reviewNotes.trim().length > 10000) {
+      setModalError('Catatan hasil telaah maksimal 10000 karakter.');
       return;
     }
 
@@ -166,6 +180,14 @@ export const PentashihWorkspacePage = () => {
         notes: reviewNotes.trim(),
         recap_file_id: recapFileId || undefined,
         recap_scope: recapScope,
+        juz_items: juzItems?.length
+          ? juzItems.map((j) => ({
+              id: j.id,
+              juz_number: j.juz_number,
+              result: j.result,
+              notes: j.notes?.trim() || null,
+            }))
+          : undefined,
       });
       invalidateQueueCounts();
 
@@ -277,6 +299,8 @@ export const PentashihWorkspacePage = () => {
         setReviewResult={setReviewResult}
         reviewNotes={reviewNotes}
         setReviewNotes={setReviewNotes}
+        juzItems={juzItems}
+        setJuzItems={setJuzItems}
         recapFileId={recapFileId}
         setRecapFileId={setRecapFileId}
         recapScope={recapScope}

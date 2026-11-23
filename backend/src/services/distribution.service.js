@@ -641,15 +641,28 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   // Pentashih individu mandiri (tanpa team_id) terkunci mutlak ke SELF
   const recapScope = assignment.team_id ? (data.recap_scope === 'TEAM' ? 'TEAM' : 'SELF') : 'SELF';
 
-  if (assignment.juz_items?.length && tx.assignmentJuz?.updateMany) {
-    await tx.assignmentJuz.updateMany({
-      where: { assignment_id: id },
-      data: {
-        result: data.result,
-        notes: data.notes || (data.result === 'PASSED' ? 'Lolos telaah rentang juz' : 'Perlu perbaikan naskah'),
-        completed_at: new Date(),
-      },
-    });
+  if (assignment.juz_items?.length) {
+    if (data.juz_items && Array.isArray(data.juz_items) && data.juz_items.length && tx.assignmentJuz?.updateMany) {
+      for (const ji of data.juz_items) {
+        await tx.assignmentJuz.updateMany({
+          where: { assignment_id: id, juz_number: ji.juz_number },
+          data: {
+            result: ji.result || data.result,
+            notes: ji.notes !== undefined ? (ji.notes?.trim() || null) : null,
+            completed_at: new Date(),
+          },
+        });
+      }
+    } else if (tx.assignmentJuz?.updateMany) {
+      await tx.assignmentJuz.updateMany({
+        where: { assignment_id: id },
+        data: {
+          result: data.result,
+          notes: null,
+          completed_at: new Date(),
+        },
+      });
+    }
   }
 
   let finalReview = null;
@@ -912,7 +925,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   const isTransitionToDummy = data.result === 'PASSED' && last.stage !== 'DUMMY';
   const decisionNotes = isTransitionToDummy
     ? (data.notes || 'Telaah teks naskah dinyatakan lulus. Pengajuan dialihkan ke tahap dumi fisik; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.')
-    : data.notes;
+    : (data.notes || (data.result === 'PASSED' ? 'Disetujui untuk penetapan Surat Tanda Tashih (STT)' : 'Perlu perbaikan naskah oleh penerbit'));
 
   await move(tx, reg, status, user, decisionNotes);
 
@@ -969,7 +982,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
             publisher: reg.publisher?.legal_name,
             revision_round: revisionRound,
             revision_kind: revisionKind,
-            notes: data.notes,
+            notes: data.notes || '',
             distributor_name: user.name,
             pemaraf_name: pemarafName,
             created_at: new Date().toISOString(),
