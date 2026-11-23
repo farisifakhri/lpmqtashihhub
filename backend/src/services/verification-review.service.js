@@ -46,6 +46,13 @@ export const startVerification = (assignmentId, user, req) => prisma.$transactio
 
   const reg = await registration(tx, assignment.registration_id);
   requireStatus(reg, ['VERIFICATION_ASSIGNED']);
+  const physicalIntake = await tx.physicalMasterIntake.findUnique({
+    where: { registration_id: reg.id },
+    select: { status: true, receipt_no: true },
+  });
+  if (physicalIntake?.status !== 'RECEIVED' || !physicalIntake.receipt_no) {
+    fail(409, 'Pemeriksaan tidak dapat dimulai sebelum master fisik diterima dan nomor tanda terima dicatat oleh Admin Internal.');
+  }
   const startedAt = new Date();
   const updated = await tx.verificationAssignment.update({
     where: { id: assignment.id },
