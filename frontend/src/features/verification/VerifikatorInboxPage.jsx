@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthContext';
-import { accessRoles } from '@/lib/roles';
+import { accessRoles, checkIsPemaraf } from '@/lib/roles';
+import { ParafElsewhereNotice } from '@/features/paraf/ParafElsewhereNotice';
 import { verificationApi } from '@/api/verification.api';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -163,8 +164,9 @@ export const VerifikatorInboxPage = () => {
         params.handover_ready = true;
       } else if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
         params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
-      } else if (activeTab === 'COMPLETED' && (isHead || isAssignmentAdmin)) {
-        // Riwayat pimpinan: semua surat yang sudah disahkan (belum/sudah dikirim) untuk dilacak posisinya
+      } else if (activeTab === 'COMPLETED') {
+        // Riwayat: surat yang sudah disahkan (belum/sudah dikirim) untuk dilacak posisinya, termasuk setelah BAST ke distributor.
+        // Verifikator otomatis dibatasi ke tugasnya sendiri oleh backend.
         params.history = true;
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
@@ -278,6 +280,13 @@ export const VerifikatorInboxPage = () => {
         label: 'Siap Kirim',
         title: 'Dokumen Siap Dikirim ke Penerbit',
         subtitle: 'Seluruh konfirmasi internal lengkap dan surat hasil siap dikirimkan kepada pemohon penerbit.',
+      };
+    }
+    if (activeTab === 'COMPLETED') {
+      return {
+        label: 'Riwayat',
+        title: 'Riwayat & Lacak Berkas',
+        subtitle: 'Pantau posisi berkas setelah surat hasil disahkan: pengiriman, pembayaran PNBP, serah terima ke distributor, hingga tahap terkini.',
       };
     }
     if (activeTab === 'BAST_READY') {
@@ -484,6 +493,16 @@ export const VerifikatorInboxPage = () => {
                   >
                     Siap BAST
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange('COMPLETED')}
+                    className={clsx(
+                      'py-2 px-3.5 rounded-lg transition-all font-bold text-xs whitespace-nowrap cursor-pointer',
+                      activeTab === 'COMPLETED' ? 'bg-white text-brand-900 shadow-2xs font-extrabold' : 'text-ink-muted hover:text-ink'
+                    )}
+                  >
+                    Riwayat
+                  </button>
                 </>
               )}
             </div>
@@ -506,6 +525,9 @@ export const VerifikatorInboxPage = () => {
               </Button>
             </form>
           </div>
+
+          {/* Pemaraf: keputusan sidang / STT / surat master yang menunggu paraf tidak tampil di tab ini */}
+          {activeTab === 'WAITING_APPROVAL' && checkIsPemaraf(currentUser) && <ParafElsewhereNotice />}
 
           {/* Volume dan Antrean Berdasarkan Waktu Masuk */}
           <QueueOverview
@@ -842,7 +864,7 @@ export const VerifikatorInboxPage = () => {
           ) : activeTab === 'WAITING_APPROVAL' ? (
             // Menunggu Persetujuan: tabel antrean + pilih & paraf sekaligus (Pemaraf)
             <VerificationApprovalTable assignments={assignments} currentUser={currentUser} onRefresh={fetchAssignments} />
-          ) : activeTab === 'COMPLETED' && (isHead || isAssignmentAdmin) ? (
+          ) : activeTab === 'COMPLETED' ? (
             // Riwayat: lacak posisi berkas surat yang sudah disahkan
             <VerificationHistoryTable assignments={assignments} />
           ) : (
