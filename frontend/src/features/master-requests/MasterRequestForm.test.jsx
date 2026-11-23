@@ -35,7 +35,7 @@ async function fillValidForm() {
   fireEvent.change(screen.getByLabelText(/Nomor Telepon Pemohon/), { target: { value: '081234567890' } });
   fireEvent.change(screen.getByLabelText(/Email Pemohon/), { target: { value: 'budi@example.com' } });
   fireEvent.change(screen.getByLabelText(/Lembaga Pemohon/), { target: { value: 'Yayasan Rumah Tahfiz' } });
-  fireEvent.click(screen.getByRole('radio', { name: 'Yasin dan Tahlil' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'Yasin dan Tahlil' }));
   fireEvent.change(screen.getByLabelText(/Rencana Penggunaan/), { target: { value: 'Dicetak untuk dibagikan gratis.' } });
   fireEvent.change(screen.getByLabelText(/^Surat Permohonan Master/), { target: { files: [pdf('surat.pdf')] } });
   fireEvent.change(screen.getByLabelText(/^Profil Pemohon Master/), { target: { files: [pdf('profil.pdf')] } });
@@ -62,7 +62,7 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
     for (const heading of ['Siapa yang mengajukan?', 'Master apa yang dibutuhkan?', 'Lampirkan dokumen', 'Persetujuan']) {
       expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument();
     }
-    expect(await screen.findByRole('radio', { name: 'Yasin dan Tahlil' })).toBeInTheDocument();
+    expect(await screen.findByRole('checkbox', { name: 'Yasin dan Tahlil' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Jawa Barat' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Kosongkan Formulir' })).toBeInTheDocument();
     expect(screen.getByText('Braille (Tunanetra)')).toBeInTheDocument();
@@ -73,7 +73,7 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
     expect(screen.getByTestId('progress-count')).toHaveTextContent('0/5');
     fireEvent.click(screen.getByRole('checkbox', { name: /menyetujui pernyataan/i }));
     expect(screen.getByTestId('progress-count')).toHaveTextContent('1/5');
-    await screen.findByRole('radio', { name: 'Yasin dan Tahlil' });
+    await screen.findByRole('checkbox', { name: 'Yasin dan Tahlil' });
     await fillValidForm();
     expect(screen.getByTestId('progress-count')).toHaveTextContent('5/5');
   });
@@ -110,6 +110,20 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
     expect(masterRequestApi.submit).not.toHaveBeenCalled();
   });
 
+  it('jenis master bisa dipilih lebih dari satu dan dibatalkan lagi', async () => {
+    renderPage();
+    const yasin = await screen.findByRole('checkbox', { name: 'Yasin dan Tahlil' });
+    const braille = screen.getByRole('checkbox', { name: "Pedoman Membaca dan Menulis Al-Qur'an Braille" });
+    fireEvent.click(yasin);
+    fireEvent.click(braille);
+    expect(yasin).toBeChecked();
+    expect(braille).toBeChecked();
+    expect(screen.getByText('2 dipilih')).toBeInTheDocument();
+    fireEvent.click(yasin);
+    expect(yasin).not.toBeChecked();
+    expect(screen.getByText('1 dipilih')).toBeInTheDocument();
+  });
+
   it('menolak berkas lebih dari 500 KB', async () => {
     renderPage();
     fireEvent.change(screen.getByLabelText(/^Surat Permohonan Master/), { target: { files: [pdf('besar.pdf', 600 * 1024)] } });
@@ -121,7 +135,7 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
       data: { kode_permohonan: 'PMQ-20261109-ABC234', jenis_mushaf: 'Yasin dan Tahlil' },
     });
     renderPage();
-    await screen.findByRole('radio', { name: 'Yasin dan Tahlil' });
+    await screen.findByRole('checkbox', { name: 'Yasin dan Tahlil' });
     await fillValidForm();
     fireEvent.click(screen.getByRole('checkbox', { name: /menyetujui pernyataan/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Permohonan' }));
@@ -130,7 +144,7 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
     const formData = masterRequestApi.submit.mock.calls[0][0];
     expect(formData.get('nama_pemohon')).toBe('Budi Santoso');
     expect(formData.get('kecamatan_kode')).toBe('32.73.01');
-    expect(formData.get('jenis_mushaf')).toBe('YASIN_TAHLIL');
+    expect(formData.getAll('jenis_mushaf')).toEqual(['YASIN_TAHLIL']);
     expect(formData.get('pernyataan')).toBe('true');
     expect(formData.get('surat_permohonan').name).toBe('surat.pdf');
     expect(formData.get('profil_pemohon').name).toBe('profil.pdf');
@@ -141,7 +155,7 @@ describe('MasterRequestForm (formulir permohonan master penerbit)', () => {
       data: { errors: [{ field: 'email', message: 'Format alamat email tidak valid.' }] },
     }));
     renderPage();
-    await screen.findByRole('radio', { name: 'Yasin dan Tahlil' });
+    await screen.findByRole('checkbox', { name: 'Yasin dan Tahlil' });
     await fillValidForm();
     fireEvent.click(screen.getByRole('checkbox', { name: /menyetujui pernyataan/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Permohonan' }));
@@ -177,7 +191,7 @@ describe('validateMasterRequestForm', () => {
     const errors = validateMasterRequestForm({
       nama_pemohon: 'Budi', alamat: 'Jl. Merdeka No. 1', provinsi_kode: '32', kabupaten_kode: '32.73',
       kecamatan_kode: '32.73.01', kode_pos: '401', telepon: '12', email: 'budi@', lembaga: 'Yayasan',
-      jenis_mushaf: 'YASIN_TAHLIL', penggunaan: 'Untuk dibagikan gratis',
+      jenis_mushaf: ['YASIN_TAHLIL'], penggunaan: 'Untuk dibagikan gratis',
     }, { surat_permohonan: pdf(), profil_pemohon: pdf() });
     expect(Object.keys(errors).sort()).toEqual(['email', 'kode_pos', 'telepon']);
   });

@@ -157,7 +157,8 @@ export async function createMasterRequest(body, files = {}, user) {
   const data = createMasterRequestSchema.body.parse(body);
   validateMasterRequestFiles(files);
   const region = resolveRegion(data.provinsi_kode, data.kabupaten_kode, data.kecamatan_kode);
-  const mushaf = MASTER_MUSHAF_TYPES.find((type) => type.kode === data.jenis_mushaf);
+  // Beberapa jenis master disimpan sebagai satu baris: kode dipisah koma, label dipisah ", " agar surat/email tetap terbaca.
+  const mushafs = data.jenis_mushaf.map((kode) => MASTER_MUSHAF_TYPES.find((type) => type.kode === kode));
 
   // Validasi & simpan berkas lebih dulu (magic bytes PDF, maks. 500 KB, pemindaian konten aktif)
   const saved = [];
@@ -196,8 +197,8 @@ export async function createMasterRequest(body, files = {}, user) {
             phone: data.telepon,
             email: data.email,
             institution: data.lembaga,
-            mushaf_type: mushaf.kode,
-            mushaf_type_label: mushaf.label,
+            mushaf_type: mushafs.map((type) => type.kode).join(','),
+            mushaf_type_label: mushafs.map((type) => type.label).join(', '),
             intended_use: data.penggunaan,
             statement_agreed_at: new Date(),
             documents: {

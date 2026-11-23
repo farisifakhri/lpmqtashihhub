@@ -25,7 +25,7 @@ const EMPTY_FORM = {
   telepon: '',
   email: '',
   lembaga: '',
-  jenis_mushaf: '',
+  jenis_mushaf: [],
   penggunaan: '',
 };
 
@@ -236,6 +236,9 @@ export const MasterRequestForm = ({ defaults = {}, onSubmitted }) => {
   };
 
   const onText = (key) => (event) => setField(key, event.target.value);
+  const toggleMushaf = (kode) => setField('jenis_mushaf', form.jenis_mushaf.includes(kode)
+    ? form.jenis_mushaf.filter((item) => item !== kode)
+    : [...form.jenis_mushaf, kode]);
   const onDigits = (key, max) => (event) => setField(key, event.target.value.replace(/[^\d+]/g, '').slice(0, max));
 
   const onFile = (name) => (event) => {
@@ -276,7 +279,8 @@ export const MasterRequestForm = ({ defaults = {}, onSubmitted }) => {
     }
 
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value.trim()));
+    // jenis_mushaf berupa array: tiap kode dikirim sebagai nilai terpisah dengan kunci yang sama.
+    Object.entries(form).forEach(([key, value]) => [].concat(value).forEach((item) => formData.append(key, item.trim())));
     formData.append('pernyataan', 'true');
     FILE_FIELDS.forEach(({ name }) => formData.append(name, files[name]));
 
@@ -433,35 +437,49 @@ export const MasterRequestForm = ({ defaults = {}, onSubmitted }) => {
           </div>
         </StepCard>
 
-        <StepCard number={2} title="Master apa yang dibutuhkan?" subtitle="Pilih satu jenis master mushaf." done={progress[2].done}>
+        <StepCard number={2} title="Master apa yang dibutuhkan?" subtitle="Pilih satu atau beberapa jenis master mushaf." done={progress[2].done}>
           <fieldset aria-describedby={describedBy('jenis_mushaf')}>
             <legend className="sr-only">Jenis Mushaf Al-Qur&apos;an</legend>
-            <div className="space-y-5">
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-xl bg-surface-subtle px-4 py-2.5 text-xs">
+              <span className="text-ink-muted">Bisa pilih lebih dari satu.</span>
+              <span aria-live="polite" className={`rounded-full px-2.5 py-1 font-bold transition ${
+                form.jenis_mushaf.length ? 'bg-lpmq-green text-white' : 'bg-surface text-ink-muted ring-1 ring-line'
+              }`}>
+                {form.jenis_mushaf.length} dipilih
+              </span>
+            </div>
+            <div className="space-y-6">
               {groupedTypes.map((group) => {
                 const Icon = group.icon;
+                const picked = group.items.filter((type) => form.jenis_mushaf.includes(type.kode)).length;
                 return (
                   <div key={group.id}>
-                    <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
-                      <Icon className="h-3.5 w-3.5" aria-hidden="true" /> {group.title}
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="mb-3 flex items-center gap-2.5">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-lpmq-soft text-lpmq-dark" aria-hidden="true">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <p className="text-sm font-bold text-ink">{group.title}</p>
+                      <span className="text-xs text-ink-muted">{picked}/{group.items.length}</span>
+                      <span className="h-px flex-1 bg-line" aria-hidden="true" />
+                    </div>
+                    <div className="grid gap-2.5 sm:grid-cols-2">
                       {group.items.map((type) => {
-                        const checked = form.jenis_mushaf === type.kode;
+                        const checked = form.jenis_mushaf.includes(type.kode);
                         return (
                           <label key={type.kode}
-                            className={`relative flex cursor-pointer items-center rounded-xl border px-3.5 py-3 text-[13px] leading-snug transition has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-lpmq-green/20 ${
+                            className={`group flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 text-[13px] leading-snug motion-safe:transition-all has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-lpmq-green/20 ${
                               checked
-                                ? 'border-lpmq-green bg-lpmq-soft/50 font-semibold text-ink'
-                                : errors.jenis_mushaf ? 'border-civic-danger text-ink' : 'border-line text-ink hover:border-lpmq-green/50'
+                                ? 'border-lpmq-green bg-lpmq-soft/60 font-semibold text-ink shadow-sm'
+                                : errors.jenis_mushaf ? 'border-civic-danger text-ink' : 'border-line text-ink hover:-translate-y-0.5 hover:border-lpmq-green/60 hover:shadow-sm'
                             }`}>
-                            <input type="radio" name="jenis_mushaf" value={type.kode} checked={checked}
-                              onChange={onText('jenis_mushaf')} className="sr-only" />
-                            <span className="pr-6">{type.label}</span>
-                            {checked && (
-                              <span className="absolute right-3 flex h-5 w-5 items-center justify-center rounded-full bg-lpmq-green text-white" aria-hidden="true">
-                                <Check className="h-3 w-3" />
-                              </span>
-                            )}
+                            <input type="checkbox" name="jenis_mushaf" value={type.kode} checked={checked}
+                              onChange={() => toggleMushaf(type.kode)} className="sr-only" />
+                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 motion-safe:transition ${
+                              checked ? 'border-lpmq-green bg-lpmq-green text-white' : 'border-line-strong bg-surface group-hover:border-lpmq-green/60'
+                            }`} aria-hidden="true">
+                              {checked && <Check className="h-3.5 w-3.5" strokeWidth={3} />}
+                            </span>
+                            <span>{type.label}</span>
                           </label>
                         );
                       })}
