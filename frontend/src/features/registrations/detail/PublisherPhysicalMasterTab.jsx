@@ -23,11 +23,13 @@ export function PublisherPhysicalMasterTab({
   setVolumeCount,
   busy,
   savePhysical,
+  physicalFormError,
   actionLoading,
   showPhysicalReceipt,
   dispatchData,
   setDispatchData,
   handleDispatch,
+  dispatchError,
   setShowShippingLabel,
 }) {
   const [downloadedSession, setDownloadedSession] = useState(false);
@@ -296,6 +298,11 @@ export function PublisherPhysicalMasterTab({
                     className="w-full rounded-lg border border-line-strong p-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                   />
                 </div>
+                {physicalFormError && (
+                  <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                    {physicalFormError}
+                  </p>
+                )}
                 <Button type="submit" variant="outline" size="sm" disabled={busy} className="text-xs">
                   {busy ? 'Menyimpan...' : 'Simpan pernyataan fisik'}
                 </Button>
@@ -458,6 +465,11 @@ export function PublisherPhysicalMasterTab({
                     <p className="mt-1 text-xs text-ink-muted">Nomor resi menjadi bukti pengiriman; LPMQ baru dapat menjadwalkan sidang setelah naskah tercatat terkirim.</p>
                   )}
                 </div>
+                {dispatchError && (
+                  <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                    {dispatchError}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
                   <Button
                     type="button"

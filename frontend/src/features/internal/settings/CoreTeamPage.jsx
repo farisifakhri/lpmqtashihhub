@@ -18,6 +18,8 @@ export function CoreTeamPage() {
   const [nextNumber, setNextNumber] = useState(1);
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionErrorPath, setActionErrorPath] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -52,6 +54,8 @@ export function CoreTeamPage() {
   const save = async (path, body) => {
     setBusy(true);
     setError('');
+    setActionError('');
+    setActionErrorPath(path);
     setMessage('');
     try {
       await apiClient(path, { method: 'PUT', body });
@@ -59,7 +63,7 @@ export function CoreTeamPage() {
       setReason('');
       setMessage('Perubahan tim inti berhasil disimpan dan diaudit.');
     } catch (err) {
-      setError(err.message || 'Gagal menyimpan perubahan.');
+      setActionError(err.message || 'Gagal menyimpan perubahan.');
     } finally { setBusy(false); }
   };
 
@@ -77,6 +81,7 @@ export function CoreTeamPage() {
         <select aria-label="Nomor tim berikutnya" value={nextNumber} onChange={event => setNextNumber(Number(event.target.value))} className="border rounded p-2">
           {Array.from({ length: 9 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}
         </select>
+        {actionErrorPath === '/core-teams/next' && actionError && <p role="alert" className="text-sm text-civic-danger">{actionError}</p>}
         <button type="button" disabled={busy || !config || reason.trim().length < 5} onClick={() => save('/core-teams/next', { next_team_number: nextNumber, reason: reason.trim() })} className="bg-brand-fill hover:bg-brand-fill-hover text-white rounded px-4 py-2 disabled:opacity-50">Simpan nomor</button>
       </div>
     </section>
@@ -90,6 +95,7 @@ export function CoreTeamPage() {
       <label className="block text-sm font-medium">Alasan perubahan
         <textarea value={reason} onChange={event => setReason(event.target.value)} maxLength={1000} className="block border rounded p-2 w-full mt-1" />
       </label>
+      {actionErrorPath === '/core-teams/roster' && actionError && <p role="alert" className="text-sm text-civic-danger">{actionError}</p>}
       <button type="button" disabled={busy || reason.trim().length < 5 || teams.some(team => fields.some(([field]) => !team[field]))} onClick={() => save('/core-teams/roster', { teams, reason: reason.trim() })} className="bg-brand-700 text-white rounded px-4 py-2 disabled:opacity-50">Simpan versi roster</button>
     </section>
   </main>;

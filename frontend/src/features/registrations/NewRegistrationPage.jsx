@@ -1074,16 +1074,6 @@ export const NewRegistrationPage = () => {
       />
 
       {/* Notices */}
-      {error && currentStep !== 4 && (
-        <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Terjadi Kesalahan: </span>
-            {error}
-          </div>
-        </div>
-      )}
-
       {successMsg && (
         <div role="status" className="p-4 rounded-xl bg-brand-50 border border-brand-100 text-brand-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-700" />
@@ -1300,6 +1290,16 @@ export const NewRegistrationPage = () => {
           />
         </div>
       </div>
+
+      {error && currentStep !== 4 && (
+        <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">Terjadi Kesalahan: </span>
+            {error}
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal Before Sending */}
       {showConfirmModal && (

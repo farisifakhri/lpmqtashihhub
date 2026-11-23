@@ -2,7 +2,7 @@ import { prisma } from '../config/database.js';
 import { calculateDueAt, jakartaDate } from './sla.service.js';
 import { fail, requireRole, registration, requireStatus, move, audit, resolveTashihRound } from './workflow-utils.js';
 import { MANUAL_TEAM_ASSIGNMENT_ROLES } from '../middlewares/admin-internal.middleware.js';
-import { pemarafGateActive, findParaf, addPemarafSignature, parafProgress, resolveDesignatedPemaraf, openParafRequest } from './paraf.service.js';
+import { pemarafGateActive, findParaf, addPemarafSignature, parafProgress, resolveDesignatedPemaraf, openParafRequest, overrideParafByAdmin } from './paraf.service.js';
 import { buildMyAssignmentsWhere } from './queue-filters.js';
 
 const STAGE_LABELS = { INITIAL: 'Penugasan Awal', REVISION: 'Penugasan Perbaikan', DUMMY: 'Penugasan Dumi' };
@@ -1004,7 +1004,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
     const signatories = await tx.user.findMany({
       where: {
         status: 'ACTIVE',
-        roles: { some: { role: { code: { in: ['KEPALA_LPMQ', 'DOKUMENTATOR'] } } } },
+        roles: { some: { role: { code: 'DOKUMENTATOR' } } },
       },
     });
     for (const officer of signatories) {
@@ -1093,6 +1093,9 @@ export const headApproveDistribution = (id, user, req) => prisma.$transaction(as
   const requester = await tx.user.findUnique({ where: { id: paraf.requested_by_id }, include: { roles: { include: { role: true } } } });
   if (!requester) fail(409, 'Distributor pembuat keputusan tidak ditemukan. Minta distributor menyimpan ulang keputusannya.');
   const { signers } = parafProgress(paraf);
+  if (signers.some(signer => signer.id === user.id)) {
+    fail(403, 'Kepala LPMQ yang mengesahkan keputusan sidang tidak boleh merupakan Pemaraf yang telah membubuhkan paraf.');
+  }
 
   const actor = { id: requester.id, name: requester.name, roles: requester.roles.map(r => r.role.code) };
   const pemarafName = signers.map(signer => signer.name).filter(Boolean).join(' & ') || user.name;
@@ -1101,6 +1104,13 @@ export const headApproveDistribution = (id, user, req) => prisma.$transaction(as
   await audit(tx, user, 'HEAD_APPROVE_DISTRIBUTOR_REVIEW', 'Registration', id, { result: paraf.payload?.result }, req);
   return result;
 }, { isolationLevel: 'ReadCommitted' });
+
+// Penimpaan (override) darurat paraf keputusan sidang oleh Super Admin
+export const overrideDistributionParaf = async (id, data, user, req) => {
+  return prisma.$transaction(async tx => {
+    return overrideParafByAdmin(tx, 'DISTRIBUTOR_REVIEW', id, user, data?.reason, req);
+  }, { isolationLevel: 'ReadCommitted' });
+};
 
 
 export const recordOutgoingDispatch = async (registrationId, data, user, req) => {

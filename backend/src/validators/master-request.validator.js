@@ -46,8 +46,12 @@ export const createMasterRequestSchema = {
     email: z.string({ error: 'Email wajib diisi.' }).trim().toLowerCase()
       .email('Format alamat email tidak valid.').max(255, 'Email maksimal 255 karakter.'),
     lembaga: text('Lembaga pemohon', 3, 255),
-    jenis_mushaf: z.string({ error: "Jenis mushaf Al-Qur'an wajib dipilih." })
-      .refine((value) => MASTER_MUSHAF_TYPES.some((type) => type.kode === value), "Jenis mushaf Al-Qur'an wajib dipilih."),
+    // Boleh lebih dari satu: multipart mengirim satu nilai (string) atau beberapa (array) untuk kunci yang sama.
+    jenis_mushaf: z.preprocess(
+      (value) => (value == null || value === '' ? [] : [...new Set([].concat(value))]),
+      z.array(z.string().refine((value) => MASTER_MUSHAF_TYPES.some((type) => type.kode === value), "Jenis mushaf Al-Qur'an tidak dikenal."))
+        .min(1, "Jenis mushaf Al-Qur'an wajib dipilih."),
+    ),
     penggunaan: text("Penggunaan master mushaf Al-Qur'an", 10, 2000),
     pernyataan: z.union([z.literal('true'), z.literal(true)], { error: 'Anda wajib menyetujui pernyataan sebelum mengirim permohonan.' }).transform(() => true),
   }),

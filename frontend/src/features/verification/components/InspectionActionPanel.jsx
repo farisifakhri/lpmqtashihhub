@@ -9,6 +9,7 @@ import { Save, AlertTriangle, Send, CheckCircle2, AlertCircle, Printer } from 'l
 export const InspectionActionPanel = ({
   isInProgress, sesuaiCount, tidakBerlakuCount, isDirty, canHeadApprove,
   isHead, isPemaraf, canPemarafSign, alreadyParafed, parafInfo = {}, parafSatisfied = true,
+  actionError = null, onDismissActionError,
   assignment, isSent, canVerifierWork, handleSaveDraft, actionLoading,
   setReturnModalOpen, handleOpenSubmitConfirm, setApproveConfirmOpen,
   canVerifierSend, handleSendDocument, isAllFullySigned,
@@ -27,6 +28,8 @@ export const InspectionActionPanel = ({
   <>
       {/* STICKY ACTION BAR FOR WORKSPACE */}
       <StickyActionBar
+        errorMessage={actionError}
+        onDismissError={onDismissActionError}
         statusMessage={
           isInProgress ? (
             <div className="flex items-center gap-2">

@@ -999,13 +999,6 @@ export const PublisherVerificationPage = () => {
                                             3. Putusan Verifikasi Administrasi (Sidang Penerbit)
                                         </p>
 
-                                        {decisionError && (
-                                            <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
-                                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                                <span>{decisionError}</span>
-                                            </div>
-                                        )}
-
                                         {/* Pilihan Radio Keputusan */}
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             <button
@@ -1087,6 +1080,12 @@ export const PublisherVerificationPage = () => {
                                         </div>
 
                                         {/* Tombol Simpan */}
+                                        {decisionError && (
+                                            <div role="alert" className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
+                                                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                <span>{decisionError}</span>
+                                            </div>
+                                        )}
                                         <div className="flex items-center justify-end gap-2.5 pt-2">
                                             <Button
                                                 variant="outline"
@@ -1194,13 +1193,6 @@ export const PublisherVerificationPage = () => {
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
-
-                        {editError && (
-                            <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
-                                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                                <span>{editError}</span>
-                            </div>
-                        )}
 
                         <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1323,6 +1315,12 @@ export const PublisherVerificationPage = () => {
                                 </p>
                             </div>
 
+                            {editError && (
+                                <div role="alert" className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
+                                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <span>{editError}</span>
+                                </div>
+                            )}
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-line">
                                 <Button
                                     type="button"

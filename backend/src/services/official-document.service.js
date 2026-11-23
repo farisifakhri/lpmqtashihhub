@@ -10,7 +10,7 @@ import { ENV } from '../config/env.js';
 import { fail, requireRole, registration, requireStatus, audit, move } from './workflow-utils.js';
 import { readStoredFile } from './storage.service.js';
 import { assertReadyForSttEligibility } from './distribution.service.js';
-import { resolveDesignatedPemaraf, pemarafGateActive } from './paraf.service.js';
+import { resolveDesignatedPemaraf, pemarafGateActive, ACTIVE_PEMARAF } from './paraf.service.js';
 
 const letterheadLogo = fileURLToPath(new URL('../assets/lpmq-letterhead.png', import.meta.url));
 
@@ -33,10 +33,11 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
     fail(409, 'Surat revisi/dumi terbit otomatis dari keputusan sidang setelah diparaf 2 Pemaraf dan disahkan Kepala LPMQ.');
   }
   if (data.document_type === 'SURAT_TANDA_TASHIH') {
+    requireStatus(reg, ['READY_FOR_STT', 'STT_ISSUED']);
     const verifiedPayment = await tx.paymentRecord.findFirst({
       where: { registration_id: id, status: 'VERIFIED' },
     });
-    if (!verifiedPayment && !['READY_FOR_STT', 'STT_ISSUED'].includes(reg.status)) {
+    if (!verifiedPayment && reg.status !== 'STT_ISSUED') {
       fail(409, 'Draf Surat Tanda Tashih (STT) baru dapat dibuat setelah setoran PNBP diverifikasi lunas.');
     }
   } else {
@@ -49,10 +50,19 @@ export const createDocument = (id, data, user) => prisma.$transaction(async tx =
     assignments: { include: { reviews: true, assignee: { select: { name: true } }, team: { select: { name: true, decree_no: true } } } },
   } });
   const last = await tx.officialDocument.findFirst({ where: { registration_id: id, document_type: data.document_type }, orderBy: { version: 'desc' } });
-  if (last && last.status === 'DRAFT' && data.reuse_existing_draft) {
-    return last;
+  if (last) {
+    if (last.status === 'ISSUED') {
+      fail(409, data.document_type === 'SURAT_TANDA_TASHIH'
+        ? 'Surat Tanda Tashih (STT) untuk pengajuan ini sudah diterbitkan.'
+        : 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
+    }
+    if (last.status === 'DRAFT' && data.document_type === 'SURAT_TANDA_TASHIH') {
+      if (data.reuse_existing_draft) {
+        return last;
+      }
+      fail(409, 'Draf Surat Tanda Tashih (STT) untuk pengajuan ini sudah ada dan masih aktif. Silakan gunakan atau selesaikan draf yang sudah tersedia.');
+    }
   }
-  if (last && last.status !== 'DRAFT' && data.document_type !== 'SURAT_TANDA_TASHIH') fail(409, 'Dokumen yang telah ditetapkan tidak dapat dibuat ulang melalui aksi draf.');
 
   const meta = (typeof reg.foreign_metadata === 'object' && reg.foreign_metadata !== null)
     ? reg.foreign_metadata
@@ -647,9 +657,18 @@ export const STT_PARAF_TITLE = 'Pemaraf';
 // Dokumen lama mencatat paraf di paraf_1/paraf_2 (wajib 2); dokumen baru di parafs[] dengan paraf_required.
 export const sttParafsOf = (tuWorkflow) => tuWorkflow?.parafs
   || [tuWorkflow?.paraf, tuWorkflow?.paraf_1, tuWorkflow?.paraf_2].filter(Boolean);
-export const sttParafRequired = (tuWorkflow) => tuWorkflow?.paraf_required ?? 2;
-export const isSttParafComplete = (tuWorkflow) =>
-  Boolean(tuWorkflow?.submitted_at || tuWorkflow?.paraf_1) && sttParafsOf(tuWorkflow).length >= sttParafRequired(tuWorkflow);
+export const sttParafRequired = (tuWorkflow, activeCount = null) => {
+  const baseRequired = tuWorkflow?.paraf_required ?? 2;
+  if (typeof activeCount === 'number' && activeCount > 0) {
+    return Math.min(baseRequired, activeCount);
+  }
+  return baseRequired;
+};
+export const isSttParafComplete = (tuWorkflow, activeCount = null) => {
+  if (!tuWorkflow?.submitted_at && !tuWorkflow?.paraf_1) return false;
+  const required = sttParafRequired(tuWorkflow, activeCount);
+  return sttParafsOf(tuWorkflow).length >= required;
+};
 const isKepalaSignatory = (sig) => sig.name_position_snapshot?.endsWith(`(${STT_KEPALA_TITLE})`);
 
 export const submitToTu = (documentId, data, user, req) => prisma.$transaction(async tx => {
@@ -660,6 +679,7 @@ export const submitToTu = (documentId, data, user, req) => prisma.$transaction(a
   });
   if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
   if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
+  if (doc.registration?.status) requireStatus(doc.registration, ['READY_FOR_STT', 'STT_ISSUED']);
 
   const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
   if (snapshot.tu_workflow?.submitted_at || sttParafsOf(snapshot.tu_workflow).length > 0) {
@@ -728,6 +748,7 @@ export const parafDocument = (documentId, data, user, req) => prisma.$transactio
   });
   if (!doc) fail(404, 'Dokumen STT tidak ditemukan.');
   if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
+  if (doc.registration?.status) requireStatus(doc.registration, ['READY_FOR_STT', 'STT_ISSUED']);
 
   const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
   if (!snapshot.tu_workflow?.submitted_at) fail(409, 'Draf STT belum diserahkan ke Pemaraf.');
@@ -736,6 +757,12 @@ export const parafDocument = (documentId, data, user, req) => prisma.$transactio
   if (parafs.some(paraf => paraf.signed_by?.id === user.id)) fail(409, 'Anda sudah membubuhkan paraf pada draf STT ini.');
   const assigned = snapshot.tu_workflow.pemaraf_ids;
   if (Array.isArray(assigned) && !assigned.includes(user.id)) fail(403, 'Anda tidak ditunjuk sebagai Pemaraf untuk draf STT ini.');
+
+  const activePemarafCount = tx.user?.count ? await tx.user.count({ where: ACTIVE_PEMARAF }) : 2;
+  const currentActiveRequired = Math.max(activePemarafCount, 1);
+  const required = snapshot.tu_workflow.paraf_required
+    ? Math.min(snapshot.tu_workflow.paraf_required, currentActiveRequired)
+    : currentActiveRequired;
 
   const now = new Date();
   await tx.documentSignatory.create({
@@ -754,8 +781,9 @@ export const parafDocument = (documentId, data, user, req) => prisma.$transactio
     signed_at: now.toISOString(),
     notes: data?.notes || 'Disetujui dan dibubuhi paraf Pemaraf.',
   }];
-  snapshot.tu_workflow.paraf_required = sttParafRequired(snapshot.tu_workflow);
-  snapshot.tu_workflow.status = isSttParafComplete(snapshot.tu_workflow) ? 'PARAF_COMPLETED' : 'PARAF_IN_PROGRESS';
+  snapshot.tu_workflow.paraf_required = required;
+  const isComplete = isSttParafComplete(snapshot.tu_workflow, activePemarafCount);
+  snapshot.tu_workflow.status = isComplete ? 'PARAF_COMPLETED' : 'PARAF_IN_PROGRESS';
 
   const updated = await tx.officialDocument.update({
     where: { id: doc.id },
@@ -763,7 +791,164 @@ export const parafDocument = (documentId, data, user, req) => prisma.$transactio
     include: { signatories: true },
   });
 
+  if (isComplete) {
+    const kepalaUsers = await tx.user.findMany({
+      where: { status: 'ACTIVE', roles: { some: { role: { code: 'KEPALA_LPMQ' } } } },
+      select: { id: true },
+    });
+    if (kepalaUsers.length > 0) {
+      await tx.notification.createMany({
+        data: kepalaUsers.map(kepala => ({
+          user_id: kepala.id,
+          registration_id: doc.registration_id,
+          type: 'STT_READY_FOR_SIGNATURE',
+          title: `Draf STT telah selesai diparaf & siap disahkan: ${doc.registration?.registration_no || doc.document_no}`,
+          payload: { link: '/internal/signatures' },
+        })),
+      });
+    }
+  }
+
   await audit(tx, user, 'PARAF_STT', 'OfficialDocument', doc.id, { notes: data?.notes }, req);
+  return updated;
+}, { isolationLevel: 'ReadCommitted' });
+
+// Penunjukan ulang Pemaraf untuk draf STT bila ada Pemaraf berhalangan (paraf yang sudah masuk dipertahankan)
+export const reassignSttPemaraf = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
+  const doc = await tx.officialDocument.findUnique({
+    where: { id: documentId },
+    include: { registration: true },
+  });
+  if (!doc) fail(404, 'Dokumen draf STT tidak ditemukan.');
+  if (doc.status !== 'DRAFT') fail(409, 'Hanya draf dokumen yang dapat ditunjuk ulang Pemarafnya.');
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  if (!snapshot.tu_workflow?.submitted_at) {
+    fail(409, 'Draf STT belum diserahkan ke Pemaraf.');
+  }
+
+  const activePemarafCount = tx.user?.count ? await tx.user.count({ where: ACTIVE_PEMARAF }) : 2;
+  if (isSttParafComplete(snapshot.tu_workflow, activePemarafCount)) {
+    fail(409, 'Paraf STT sudah lengkap. Penunjukan ulang tidak dapat dilakukan.');
+  }
+
+  if (!data?.reason || data.reason.trim().length < 10) {
+    fail(400, 'Alasan penunjukan ulang Pemaraf wajib diisi (minimal 10 karakter).');
+  }
+
+  const newPemarafUsers = await resolveDesignatedPemaraf(tx, data?.pemaraf_ids);
+  if (!newPemarafUsers) {
+    fail(400, 'Pilih tepat 2 Pemaraf aktif untuk penunjukan ulang.');
+  }
+
+  const existingParafs = sttParafsOf(snapshot.tu_workflow);
+  const newPemarafIds = newPemarafUsers.map(p => p.id);
+
+  snapshot.tu_workflow.pemaraf_ids = newPemarafIds;
+  snapshot.tu_workflow.reassigned_at = new Date().toISOString();
+  snapshot.tu_workflow.reassigned_by = { id: user.id, name: user.name, reason: data.reason.trim() };
+
+  // Kirim notifikasi ke Pemaraf baru yang belum membubuhkan paraf
+  const uninitialedNew = newPemarafUsers.filter(p => !existingParafs.some(ep => ep.signed_by?.id === p.id));
+  if (uninitialedNew.length > 0) {
+    await tx.notification.createMany({
+      data: uninitialedNew.map(pemaraf => ({
+        user_id: pemaraf.id,
+        registration_id: doc.registration_id,
+        type: 'PARAF_REQUIRED',
+        title: `Draf STT dialihkan untuk paraf Anda: ${doc.registration?.registration_no || doc.document_no}`,
+        payload: { link: '/internal/signatures' },
+      })),
+    });
+  }
+
+  const updated = await tx.officialDocument.update({
+    where: { id: doc.id },
+    data: { content_snapshot: snapshot },
+  });
+
+  await audit(tx, user, 'REASSIGN_STT_PEMARAF', 'OfficialDocument', doc.id, {
+    reason: data.reason.trim(),
+    pemaraf_ids: newPemarafIds,
+  }, req);
+
+  return updated;
+}, { isolationLevel: 'ReadCommitted' });
+
+// Penimpaan (override) darurat paraf STT oleh Kepala LPMQ (pengesah utama) atau Super Admin
+export const overrideSttParaf = (documentId, data, user, req) => prisma.$transaction(async tx => {
+  const isAuthorized = Boolean(
+    user?.roles?.includes('KEPALA_LPMQ') ||
+    user?.role === 'KEPALA_LPMQ' ||
+    user?.roles?.includes('SUPERADMIN') ||
+    user?.role === 'SUPERADMIN'
+  );
+  if (!isAuthorized || user?.isPemaraf) {
+    fail(403, 'Hanya Kepala LPMQ (atau Super Admin) yang berhak memberikan dispensasi paraf darurat.');
+  }
+  if (!data?.reason || data.reason.trim().length < 10) {
+    fail(400, 'Alasan penimpaan paraf darurat wajib diisi (minimal 10 karakter).');
+  }
+
+  const doc = await tx.officialDocument.findUnique({
+    where: { id: documentId },
+    include: { signatories: true, registration: true },
+  });
+  if (!doc) fail(404, 'Dokumen STT tidak ditemukan.');
+  if (doc.status !== 'DRAFT') fail(409, 'Dokumen tidak dalam status draf.');
+  if (doc.registration?.status) requireStatus(doc.registration, ['READY_FOR_STT', 'STT_ISSUED']);
+
+  const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
+  if (!snapshot.tu_workflow?.submitted_at) fail(409, 'Draf STT belum diserahkan ke Pemaraf.');
+
+  const now = new Date();
+  const parafs = sttParafsOf(snapshot.tu_workflow);
+  const actorRoleLabel = user?.roles?.includes('KEPALA_LPMQ') ? 'KEPALA LPMQ' : 'SUPERADMIN';
+  const nextParafs = [
+    ...parafs,
+    {
+      signed_by: {
+        id: user.id,
+        name: `[DISPENSASI ${actorRoleLabel}] ${user.name}`,
+        nip: user.nip || '-',
+      },
+      signed_at: now.toISOString(),
+      notes: `[DISPENSASI DARURAT] ${data.reason.trim()}`,
+    },
+  ];
+
+  snapshot.tu_workflow.parafs = nextParafs;
+  snapshot.tu_workflow.paraf_required = nextParafs.length;
+  snapshot.tu_workflow.status = 'PARAF_COMPLETED';
+
+  const updated = await tx.officialDocument.update({
+    where: { id: doc.id },
+    data: { content_snapshot: snapshot },
+    include: { signatories: true },
+  });
+
+  await audit(tx, user, 'OVERRIDE_PARAF_EMERGENCY', 'OfficialDocument', doc.id, {
+    reason: data.reason.trim(),
+    paraf_sebelumnya: parafs.length,
+  }, req);
+
+  const kepalaUsers = await tx.user.findMany({
+    where: { status: 'ACTIVE', roles: { some: { role: { code: 'KEPALA_LPMQ' } } } },
+    select: { id: true },
+  });
+  if (kepalaUsers.length > 0) {
+    await tx.notification.createMany({
+      data: kepalaUsers.map(kepala => ({
+        user_id: kepala.id,
+        registration_id: doc.registration_id,
+        type: 'STT_READY_FOR_SIGNATURE',
+        title: `Draf STT (Dispensasi Super Admin) siap disahkan: ${doc.registration?.registration_no || doc.document_no}`,
+        payload: { link: '/internal/signatures' },
+      })),
+    });
+  }
+
   return updated;
 }, { isolationLevel: 'ReadCommitted' });
 
@@ -782,8 +967,14 @@ export const signDocument = async (id, user, req) => {
   if (doc.status === 'ISSUED') fail(409, 'Dokumen ini sudah resmi diterbitkan.');
 
   const snapshot = typeof doc.content_snapshot === 'string' ? JSON.parse(doc.content_snapshot) : (doc.content_snapshot || {});
-  if (!isSttParafComplete(snapshot.tu_workflow)) {
+  const activePemarafCount = tx.user?.count ? await tx.user.count({ where: ACTIVE_PEMARAF }) : 2;
+  if (!isSttParafComplete(snapshot.tu_workflow, activePemarafCount)) {
     fail(409, 'Surat Tanda Tashih (STT) baru dapat disahkan setelah dibubuhi paraf oleh seluruh Pemaraf.');
+  }
+
+  const parafs = sttParafsOf(snapshot.tu_workflow);
+  if (parafs.some(p => p.signed_by?.id === user.id || p.signer_user_id === user.id)) {
+    fail(403, 'Kepala LPMQ yang menandatangani tidak boleh merupakan Pemaraf yang telah membubuhkan paraf pada dokumen ini.');
   }
 
   const now = new Date();
