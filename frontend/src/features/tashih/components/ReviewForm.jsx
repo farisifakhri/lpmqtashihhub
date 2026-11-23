@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send, Upload, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { BookOpen, X, AlertCircle, AlertTriangle, FileText, Download, Info, Send, Upload, CheckCircle2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
@@ -290,12 +290,6 @@ export const ReviewForm = ({
                   )}
                 </div>
                 {uploadError && <p className="text-xs text-civic-danger">{uploadError}</p>}
-                <div className="rounded-lg border border-brand-100 bg-brand-50/50 p-2.5 text-xs text-brand-900 flex items-start gap-2">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-brand-700 mt-0.5" />
-                  <span>
-                    <strong>Kerahasiaan Dokumen Internal:</strong> Berkas rekapan koreksi rentang ini hanya dapat diakses oleh Anda dan Koordinator Distribusi. Berkas ini bersifat rahasia internal dan tidak dikirim ke penerbit atau dokumentator.
-                  </span>
-                </div>
               </div>
 
               {/* Pilihan Rekomendasi / Keputusan Sidang */}
