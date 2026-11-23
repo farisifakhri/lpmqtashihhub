@@ -16,8 +16,9 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
   }
 
   const userRoles = accessRoles(currentUser.roles || (currentUser.role ? [currentUser.role] : []));
-  const isPublisher = userRoles.includes('PENERBIT') || currentUser.role === 'PENERBIT';
-  const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
+  const activeRole = currentUser.activeRole || currentUser.role || null;
+  const isPublisher = activeRole === 'PENERBIT';
+  const isAdmin = activeRole === 'SUPERADMIN';
 
   // Proteksi portal: Penerbit vs Petugas Internal
   if (portalType === 'publisher') {
@@ -36,7 +37,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
 
   // Proteksi role spesifik (misal hanya SUPERADMIN untuk master settings)
   if (allowedRoles.length > 0) {
-    const hasRole = isAdmin || allowedRoles.some((r) => userRoles.includes(r) || currentUser.role === r);
+    const hasRole = isAdmin || allowedRoles.some((r) => r === activeRole);
     if (!hasRole) {
       return <Navigate to="/403" replace />;
     }

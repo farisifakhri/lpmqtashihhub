@@ -1,7 +1,7 @@
 import React from 'react';
 import { Plus, Trash2, BookOpen, AlertCircle } from 'lucide-react';
 import { ITEM_DASAR_MAP, ITEM_TAMBAHAN_MAP } from '@/lib/item-calculator';
-import { normalizeWhatsApp } from './registration-validation';
+import { isValidOplah, normalizeWhatsApp } from './registration-validation';
 
 export const Step1MushafData = ({
   kategoriPendaftaran,
@@ -84,12 +84,21 @@ export const Step1MushafData = ({
               setKategoriPendaftaran(e.target.value);
               clearFieldError?.('kategoriPendaftaran');
             }}
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink cursor-pointer"
+            aria-invalid={Boolean(fieldErrors.kategoriPendaftaran)}
+            aria-describedby={fieldErrors.kategoriPendaftaran ? 'registration-category-error' : undefined}
+            className={`w-full text-xs px-3.5 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink cursor-pointer ${
+              fieldErrors.kategoriPendaftaran ? 'border-civic-danger' : 'border-line-strong'
+            }`}
           >
             <option value="Mushaf Baru">Mushaf Baru</option>
             <option value="Perpanjangan Tanda Tashih">Perpanjangan Tanda Tashih</option>
             <option value="Mushaf Luar Negeri">Mushaf Luar Negeri</option>
           </select>
+          {fieldErrors.kategoriPendaftaran && (
+            <p id="registration-category-error" className="text-xs text-civic-danger">
+              {fieldErrors.kategoriPendaftaran}
+            </p>
+          )}
         </div>
 
         {/* Khusus Perpanjangan: Pilih dari Arsip atau Manual */}
@@ -311,14 +320,26 @@ export const Step1MushafData = ({
           <select
             id="registration-standard-select"
             value={jenisStandarMushaf}
-            onChange={(e) => setJenisStandarMushaf(e.target.value)}
-            className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-line-strong bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink cursor-pointer"
+            onChange={(e) => {
+              setJenisStandarMushaf(e.target.value);
+              clearFieldError?.('jenisStandarMushaf');
+            }}
+            aria-invalid={Boolean(fieldErrors.jenisStandarMushaf)}
+            aria-describedby={fieldErrors.jenisStandarMushaf ? 'registration-standard-error' : undefined}
+            className={`w-full text-xs px-3.5 py-2.5 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink cursor-pointer ${
+              fieldErrors.jenisStandarMushaf ? 'border-civic-danger' : 'border-line-strong'
+            }`}
           >
             <option value="Mushaf Standar Usmani">Mushaf Standar Usmani</option>
             <option value="Mushaf Standar Bahriyyah">Mushaf Standar Bahriyyah</option>
             <option value="Mushaf Standar Braille">Mushaf Standar Braille</option>
             <option value="Mushaf Standar Isyarat">Mushaf Standar Isyarat</option>
           </select>
+          {fieldErrors.jenisStandarMushaf && (
+            <p id="registration-standard-error" className="text-xs text-civic-danger">
+              {fieldErrors.jenisStandarMushaf}
+            </p>
+          )}
         </div>
 
         {/* 2. Nama Penanggung Jawab Produk / Mushaf */}
@@ -447,39 +468,52 @@ export const Step1MushafData = ({
             {sizes.map((row, idx) => (
               <div key={idx} className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start bg-canvas/70 p-3 rounded-xl border border-line">
                 <div className="sm:col-span-6 space-y-1">
-                  <label className="block text-xs font-bold text-ink">
-                    Ukuran (cm) {idx === 0 && <span className="text-civic-danger">*</span>}
+                  <label htmlFor={`registration-size-${idx}-ukuran`} className="block text-xs font-bold text-ink">
+                    Ukuran (cm) <span className="text-civic-danger">*</span>
                   </label>
                   <p className="text-xs text-brand-700 leading-tight">
                     Format: panjang x lebar (cm). Misal: 29,7 x 20 (tanpa cm)
                   </p>
                   <input
                     type="text"
+                    id={`registration-size-${idx}-ukuran`}
                     value={row.ukuran}
+                    aria-invalid={Boolean(fieldErrors.sizes && !(typeof row.ukuran === 'string' && row.ukuran.trim()))}
+                    aria-describedby={fieldErrors.sizes ? 'registration-sizes-error' : undefined}
                     onChange={(e) => {
                       handleSizeChange(idx, 'ukuran', e.target.value);
                       clearFieldError?.('sizes');
                     }}
                     placeholder="Tulis ukuran (cth: 29,7 x 20)"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700"
+                    className={`w-full text-xs px-3 py-2 rounded-lg border bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 ${
+                      fieldErrors.sizes && !(typeof row.ukuran === 'string' && row.ukuran.trim()) ? 'border-civic-danger' : 'border-line-strong'
+                    }`}
                   />
                 </div>
                 <div className="sm:col-span-5 space-y-1">
-                  <label className="block text-xs font-bold text-ink">
-                    Oplah {idx === 0 && <span className="text-civic-danger">*</span>}
+                  <label htmlFor={`registration-size-${idx}-oplah`} className="block text-xs font-bold text-ink">
+                    Oplah <span className="text-civic-danger">*</span>
                   </label>
                   <p className="text-xs text-brand-700 leading-tight">
                     Rencana oplah cetak. Misal: 100000 eksemplar, 50000 eksemplar, dll
                   </p>
                   <input
                     type="number"
+                    id={`registration-size-${idx}-oplah`}
                     value={row.oplah}
+                    aria-invalid={Boolean(fieldErrors.sizes && !isValidOplah(row.oplah))}
+                    aria-describedby={fieldErrors.sizes ? 'registration-sizes-error' : undefined}
                     onChange={(e) => {
                       handleSizeChange(idx, 'oplah', e.target.value);
                       clearFieldError?.('sizes');
                     }}
                     placeholder="Tulis oplah"
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong bg-white focus:outline-none focus:ring-1 focus:ring-brand-700"
+                    min="1"
+                    max="10000000"
+                    step="1"
+                    className={`w-full text-xs px-3 py-2 rounded-lg border bg-white focus:outline-none focus:ring-1 focus:ring-brand-700 ${
+                      fieldErrors.sizes && !isValidOplah(row.oplah) ? 'border-civic-danger' : 'border-line-strong'
+                    }`}
                   />
                 </div>
                 <div className="sm:col-span-1 pt-6 sm:pt-7 text-right">
@@ -498,7 +532,9 @@ export const Step1MushafData = ({
             ))}
           </div>
           {fieldErrors.sizes && (
-            <p className="text-xs text-civic-danger pt-1">{fieldErrors.sizes}</p>
+            <p id="registration-sizes-error" className="text-xs text-civic-danger pt-1">
+              {fieldErrors.sizes}
+            </p>
           )}
         </div>
 

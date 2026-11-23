@@ -537,6 +537,7 @@ export async function listLettersForSignature() {
       paraf_signers: signers,
       paraf_assigned: assigned,
       paraf_required: paraf?.required_count ?? requiredDefault,
+      paraf_gate_active: requiredDefault > 0,
     };
   });
 }

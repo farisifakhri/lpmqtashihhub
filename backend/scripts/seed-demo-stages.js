@@ -451,7 +451,9 @@ async function main() {
     title: "Mushaf Al-Qur'an Nusantara 30 Juz (Tahap 8: Sedang Ditashih Pentashih)",
     status: 'TASHIH_IN_PROGRESS',
   });
-  const pentashihLeader = pentashihGroup?.members[0]?.user;
+  const pentashihLeader =
+    pentashihGroup?.members.find((member) => member.user?.name?.includes('Anisa Resti Damayanti'))?.user
+    || pentashihGroup?.members[0]?.user;
   if (pentashihLeader) {
     await prisma.assignment.create({
       data: {
@@ -474,7 +476,20 @@ async function main() {
     regNo: 'REG-DEMO-09-REVISI',
     title: "Mushaf Al-Qur'an Tafsir Tematik (Tahap 9: Perlu Perbaikan oleh Penerbit)",
     status: 'REVISION_REQUIRED',
-    extraReg: { revision_source: 'TASHIH' },
+    extraReg: { revision_source: 'PHYSICAL_MASTER' },
+  });
+  await prisma.physicalMasterIntake.create({
+    data: {
+      registration_id: t9.reg.id,
+      format: 'A4',
+      volume_count: 30,
+      binding_method: 'JILID_LEPAS',
+      condition: 'BAIK',
+      receipt_no: 'TT-LPMQ-2026-DEMO-09',
+      received_at: now,
+      status: 'RETURNED',
+      notes: 'Naskah dikembalikan untuk revisi publikasi; siap diterima kembali di loket.',
+    },
   });
   console.log(`[9] PERLU REVISI PENERBIT     : ${t9.reg.registration_no} - Siap dicoba unduh rekap koreksi & upload revisi`);
 

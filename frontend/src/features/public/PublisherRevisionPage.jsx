@@ -168,7 +168,20 @@ export const PublisherRevisionPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
         setSubmitError("");
+
+        const requiredFields = [
+            ["nama_penerbit", "Nama penerbit"],
+            ["alamat_lengkap", "Alamat lengkap"],
+            ["nama_penanggung_jawab", "Nama penanggung jawab"],
+            ["telepon_penanggung_jawab", "Telepon penanggung jawab"],
+        ];
+        const missingField = requiredFields.find(([key]) => !String(editableFields[key] || "").trim());
+        if (missingField) {
+            setSubmitError(`${missingField[1]} wajib diisi.`);
+            return;
+        }
 
         const payload = new FormData();
         payload.append("nama_penerbit", editableFields.nama_penerbit.trim());

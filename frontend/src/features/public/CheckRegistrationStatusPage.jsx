@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
     Search,
@@ -31,10 +31,12 @@ export const CheckRegistrationStatusPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [statusResult, setStatusResult] = useState(null);
     const [error, setError] = useState("");
+    const searchSequenceRef = useRef(0);
 
     // Quick token input for revision form
     const [inputToken, setInputToken] = useState("");
     const [isDownloadingCert, setIsDownloadingCert] = useState(false);
+    const [downloadError, setDownloadError] = useState("");
 
     const performSearch = useCallback(async (codeToSearch) => {
         const cleanInput = (codeToSearch || "").trim();
@@ -44,18 +46,21 @@ export const CheckRegistrationStatusPage = () => {
             return;
         }
 
+        const sequence = ++searchSequenceRef.current;
         setError("");
         setIsLoading(true);
         setStatusResult(null);
 
         try {
             const res = await publisherRegistrationApi.checkStatus(cleanInput);
+            if (sequence !== searchSequenceRef.current) return;
             if (res?.success && res?.data) {
                 setStatusResult(res.data);
             } else {
                 throw new Error(res?.message || "Data status pendaftaran tidak ditemukan.");
             }
         } catch (err) {
+            if (sequence !== searchSequenceRef.current) return;
             const code = err.data?.code || err.code;
             if (code === "REGISTRATION_NOT_FOUND" || err.status === 404) {
                 setError(
@@ -72,7 +77,9 @@ export const CheckRegistrationStatusPage = () => {
                 );
             }
         } finally {
-            setIsLoading(false);
+            if (sequence === searchSequenceRef.current) {
+                setIsLoading(false);
+            }
         }
     }, []);
 
@@ -102,13 +109,14 @@ export const CheckRegistrationStatusPage = () => {
     const handleDownloadCertificate = async () => {
         if (!statusResult?.kode_pendaftaran) return;
         setIsDownloadingCert(true);
+        setDownloadError("");
         try {
             await publisherRegistrationApi.downloadPublicCertificate(
                 statusResult.kode_pendaftaran,
                 `Sertifikat-Penerbit-${statusResult.kode_pendaftaran}.pdf`
             );
         } catch (err) {
-            alert(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi Sekretariat LPMQ.");
+            setDownloadError(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi Sekretariat LPMQ.");
         } finally {
             setIsDownloadingCert(false);
         }
@@ -379,6 +387,11 @@ export const CheckRegistrationStatusPage = () => {
                                         )}
                                         <span>{isDownloadingCert ? "Mengunduh..." : "Unduh Sertifikat Penerbit Resmi (PDF)"}</span>
                                     </button>
+                                    {downloadError && (
+                                        <p className="text-xs font-semibold text-civic-danger" role="alert">
+                                            {downloadError}
+                                        </p>
+                                    )}
                                     <Link
                                         to="/login"
                                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"
