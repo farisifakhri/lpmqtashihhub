@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ShieldCheck,
   RefreshCw,
@@ -17,6 +17,7 @@ import {
   User,
   Calendar,
   X,
+  Search,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
@@ -251,6 +252,7 @@ export const ReviewProgressPanel = ({
   onStartAssignment,
 }) => {
   const [expandedMembers, setExpandedMembers] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toggleExpanded = (regId) => {
     setExpandedMembers((prev) => ({
@@ -258,6 +260,34 @@ export const ReviewProgressPanel = ({
       [regId]: !prev[regId],
     }));
   };
+
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase('id-ID');
+  const [filteredWaitingRegistrations, filteredInProgressRegistrations] = useMemo(() => {
+    const filterRegistrations = (registrations) => registrations.filter((reg) => {
+      if (!normalizedSearch) return true;
+      const { currentAssignments } = getReviewProgress(reg);
+      const searchableValues = [
+        reg.registration_no,
+        reg.title,
+        reg.publisher?.legal_name,
+        reg.service_type?.name,
+        reg.fee_sla_snapshot?.service_name,
+        ...currentAssignments.flatMap((assignment) => [
+          assignment.assignee?.name,
+          assignment.assignee?.nip,
+          assignment.assignee?.email,
+        ]),
+      ];
+      return searchableValues.some((value) =>
+        String(value || '').toLocaleLowerCase('id-ID').includes(normalizedSearch)
+      );
+    });
+
+    return [filterRegistrations(waitingDistRegistrations), filterRegistrations(inProgressRegistrations)];
+  }, [waitingDistRegistrations, inProgressRegistrations, normalizedSearch]);
+
+  const totalRegistrations = waitingDistRegistrations.length + inProgressRegistrations.length;
+  const visibleRegistrations = filteredWaitingRegistrations.length + filteredInProgressRegistrations.length;
 
   return (
     <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
@@ -271,15 +301,28 @@ export const ReviewProgressPanel = ({
             Mulai penugasan naskah yang siap, pantau progres telaah anggota sidang, lalu reviu hasil pentashihan untuk penetapan STT atau revisi naskah.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchDistributionData}
-          disabled={distLoading}
-          icon={<RefreshCw className={`w-3.5 h-3.5 ${distLoading ? 'animate-spin' : ''}`} />}
-        >
-          Segarkan
-        </Button>
+        <div className="flex w-full sm:w-auto items-center gap-2">
+          <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" aria-hidden="true" />
+            <input
+              type="search"
+              aria-label="Cari distribusi sidang pentashih"
+              placeholder="Cari nomor, judul, penerbit, atau pentashih..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="w-full rounded-xl border border-line bg-white py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-muted focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchDistributionData}
+            disabled={distLoading}
+            icon={<RefreshCw className={`w-3.5 h-3.5 ${distLoading ? 'animate-spin' : ''}`} />}
+          >
+            Segarkan
+          </Button>
+        </div>
       </div>
 
       {distLoading ? (
@@ -287,7 +330,7 @@ export const ReviewProgressPanel = ({
           <RefreshCw className="w-7 h-7 animate-spin mx-auto mb-2 text-brand-700" />
           <p className="text-xs font-semibold">Memuat progres sidang pentashihan...</p>
         </div>
-      ) : waitingDistRegistrations.length + inProgressRegistrations.length === 0 ? (
+      ) : totalRegistrations === 0 ? (
         <div className="py-16 text-center text-ink-muted max-w-sm mx-auto">
           <div className="w-12 h-12 rounded-full bg-surface-subtle text-ink-muted flex items-center justify-center mx-auto mb-2.5">
             <BookOpen className="w-6 h-6" />
@@ -297,9 +340,17 @@ export const ReviewProgressPanel = ({
             Naskah yang siap ditugaskan dan sidang yang sedang berjalan akan tampil di sini.
           </p>
         </div>
+      ) : visibleRegistrations === 0 ? (
+        <div className="py-16 text-center text-ink-muted max-w-sm mx-auto">
+          <div className="w-12 h-12 rounded-full bg-surface-subtle text-ink-muted flex items-center justify-center mx-auto mb-2.5">
+            <Search className="w-6 h-6" aria-hidden="true" />
+          </div>
+          <p className="text-sm font-bold text-ink">Tidak ada sidang yang cocok dengan pencarian</p>
+          <p className="text-xs text-ink-muted mt-1">Coba kata kunci nomor registrasi, judul, penerbit, atau nama pentashih lainnya.</p>
+        </div>
       ) : (
         <div className="p-4 sm:p-6 space-y-4 bg-slate-50/50">
-          {waitingDistRegistrations.map((reg) => {
+          {filteredWaitingRegistrations.map((reg) => {
             const publisherName = reg.publisher?.legal_name || reg.publisher?.brand_name || 'Penerbit';
             const serviceTypeName = reg.fee_sla_snapshot?.service_name || reg.service_type?.name || 'Mushaf Al-Qur\'an';
             const isExpanded = Boolean(expandedMembers[reg.id]);
@@ -375,7 +426,7 @@ export const ReviewProgressPanel = ({
             );
           })}
 
-          {inProgressRegistrations.map((reg) => {
+          {filteredInProgressRegistrations.map((reg) => {
             const { iteration: maxIter, currentAssignments, totalMembers, completedMembers, hasRevoked, isReadyToReview } = getReviewProgress(reg);
             const waitingParaf = Boolean(reg.distribution_paraf_pending);
             const isExpanded = Boolean(expandedMembers[reg.id]);
