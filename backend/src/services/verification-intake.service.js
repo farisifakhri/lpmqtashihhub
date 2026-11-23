@@ -435,7 +435,14 @@ export const listVerificationAssignments = async (query, user) => {
       include: {
         verifier: { select: { id: true, name: true } },
         assigned_by: { select: { id: true, name: true } },
-        registration: { select: { id: true, registration_no: true, title: true, status: true, core_team_number: true, stage_entered_at: true, created_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } }, service_type: { select: { name: true, category: { select: { name: true } } } } } },
+        registration: { select: {
+          id: true, registration_no: true, title: true, status: true, core_team_number: true, stage_entered_at: true, created_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } }, service_type: { select: { name: true, category: { select: { name: true } } } },
+          // Riwayat: jejak pembayaran PNBP & serah terima (BAST) ke distributor agar progres tidak hilang setelah diserahkan
+          ...(isHistory && {
+            payment_records: { orderBy: { created_at: 'desc' }, take: 1, select: { status: true, paid_at: true, verified_at: true } },
+            physical_handovers: { orderBy: { created_at: 'desc' }, take: 1, select: { receipt_no: true, status: true, handed_over_at: true, received_at: true, to_user: { select: { name: true } } } },
+          }),
+        } },
         documents: {
           orderBy: { version: 'desc' },
           select: {
