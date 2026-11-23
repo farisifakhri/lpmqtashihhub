@@ -47,6 +47,11 @@ export function PublisherRegistrationDetailPage() {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState("");
     const [submitError, setSubmitError] = useState("");
+    const [uploadError, setUploadError] = useState("");
+    const [physicalFormError, setPhysicalFormError] = useState("");
+    const [dispatchError, setDispatchError] = useState("");
+    const [deleteDraftError, setDeleteDraftError] = useState("");
+    const [cancelRegistrationError, setCancelRegistrationError] = useState("");
     const [success, setSuccess] = useState("");
     const [refresh, setRefresh] = useState(0);
 
@@ -197,6 +202,7 @@ export function PublisherRegistrationDetailPage() {
         setBusy(true);
         setError("");
         setSubmitError("");
+        if (reportError !== setError) reportError("");
         setSuccess("");
         try {
             await operation();
@@ -222,7 +228,7 @@ export function PublisherRegistrationDetailPage() {
             !file.size ||
             file.size > 10 * 1024 * 1024
         ) {
-            setError(
+            setUploadError(
                 "Pilih PDF, PNG, atau JPEG berisi data dengan ukuran maksimal 10 MB.",
             );
             return;
@@ -236,7 +242,7 @@ export function PublisherRegistrationDetailPage() {
             setFile(null);
             const inputEl = event.target.querySelector('input[type="file"]');
             if (inputEl) inputEl.value = "";
-        }, "Berkas berhasil ditambahkan sebagai versi baru.");
+        }, "Berkas berhasil ditambahkan sebagai versi baru.", setUploadError);
     };
 
     const savePhysical = (event) => {
@@ -262,6 +268,7 @@ export function PublisherRegistrationDetailPage() {
                 });
             },
             "Pernyataan master fisik berhasil disimpan.",
+            setPhysicalFormError,
         );
     };
 
@@ -281,18 +288,19 @@ export function PublisherRegistrationDetailPage() {
                 });
             },
             "Konfirmasi pengiriman berkas fisik ke LPMQ berhasil dicatat. Status diindikasikan sedang diverifikasi.",
+            setDispatchError,
         );
     };
 
     const handleDeleteDraft = async () => {
         setActionLoading(true);
-        setError("");
+        setDeleteDraftError("");
         try {
             await registrationApi.deleteRegistration(id);
             setShowDeleteModal(false);
             navigate("/publisher/registrations");
         } catch (err) {
-            setError(err.message || "Gagal menghapus draf permohonan.");
+            setDeleteDraftError(err.message || "Gagal menghapus draf permohonan.");
         } finally {
             setActionLoading(false);
         }
@@ -300,7 +308,7 @@ export function PublisherRegistrationDetailPage() {
 
     const handleCancelRegistration = async () => {
         setActionLoading(true);
-        setError("");
+        setCancelRegistrationError("");
         try {
             await registrationApi.transitionStatus(
                 id,
@@ -313,7 +321,7 @@ export function PublisherRegistrationDetailPage() {
             );
             setRefresh((value) => value + 1);
         } catch (err) {
-            setError(err.message || "Gagal membatalkan permohonan.");
+            setCancelRegistrationError(err.message || "Gagal membatalkan permohonan.");
         } finally {
             setActionLoading(false);
         }
@@ -396,8 +404,14 @@ export function PublisherRegistrationDetailPage() {
                             actionLoading={actionLoading}
                             setRefresh={setRefresh}
                             setShowReceipt={setShowReceipt}
-                            setShowDeleteModal={setShowDeleteModal}
-                            setShowCancelModal={setShowCancelModal}
+                            setShowDeleteModal={(open) => {
+                                setShowDeleteModal(open);
+                                if (open) setDeleteDraftError("");
+                            }}
+                            setShowCancelModal={(open) => {
+                                setShowCancelModal(open);
+                                if (open) setCancelRegistrationError("");
+                            }}
                             setShowShippingLabel={setShowShippingLabel}
                         />
 
@@ -608,10 +622,14 @@ export function PublisherRegistrationDetailPage() {
                                     revision={revision}
                                     requiredFiles={requiredFiles}
                                     submitError={submitError}
+                                    uploadError={uploadError}
                                     type={type}
                                     setType={setType}
                                     file={file}
-                                    setFile={setFile}
+                                    setFile={(selectedFile) => {
+                                        setFile(selectedFile);
+                                        setUploadError("");
+                                    }}
                                     busy={busy}
                                     upload={upload}
                                     onSubmitRegistration={() =>
@@ -642,6 +660,7 @@ export function PublisherRegistrationDetailPage() {
                                         setVolumeCount={setVolumeCount}
                                         busy={busy}
                                         savePhysical={savePhysical}
+                                        physicalFormError={physicalFormError}
                                         actionLoading={actionLoading}
                                         showPhysicalReceipt={
                                             showPhysicalReceipt
@@ -649,6 +668,7 @@ export function PublisherRegistrationDetailPage() {
                                         dispatchData={dispatchData}
                                         setDispatchData={setDispatchData}
                                         handleDispatch={handleDispatch}
+                                        dispatchError={dispatchError}
                                         setShowShippingLabel={
                                             setShowShippingLabel
                                         }
@@ -689,13 +709,21 @@ export function PublisherRegistrationDetailPage() {
                 previewFile={previewFile}
                 setPreviewFile={setPreviewFile}
                 showDeleteModal={showDeleteModal}
-                setShowDeleteModal={setShowDeleteModal}
+                setShowDeleteModal={(open) => {
+                    setShowDeleteModal(open);
+                    if (open) setDeleteDraftError("");
+                }}
                 handleDeleteDraft={handleDeleteDraft}
+                deleteDraftError={deleteDraftError}
                 showCancelModal={showCancelModal}
-                setShowCancelModal={setShowCancelModal}
+                setShowCancelModal={(open) => {
+                    setShowCancelModal(open);
+                    if (open) setCancelRegistrationError("");
+                }}
                 cancelReason={cancelReason}
                 setCancelReason={setCancelReason}
                 handleCancelRegistration={handleCancelRegistration}
+                cancelRegistrationError={cancelRegistrationError}
                 physicalReceiptUrl={physicalReceiptUrl}
                 setPhysicalReceiptUrl={setPhysicalReceiptUrl}
                 showReceipt={showReceipt}

@@ -34,13 +34,6 @@ export const HandoverDialogs = ({
               <p>No. BAST: {selectedHandover.receipt_no}</p>
             </div>
 
-            {receiveModalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl text-xs text-civic-danger flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-civic-danger flex-shrink-0" />
-                <span>{receiveModalError}</span>
-              </div>
-            )}
-
             <form onSubmit={handleReceiveSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -93,6 +86,12 @@ export const HandoverDialogs = ({
                 />
               </div>
 
+              {receiveModalError && (
+                <div role="alert" className="flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-civic-danger" />
+                  <span>{receiveModalError}</span>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <Button
                   type="button"
@@ -138,13 +137,6 @@ export const HandoverDialogs = ({
               <span className="font-bold text-civic-warning">Perlu Perbaikan Fisik (PHYSICAL_HANDOVER_CORRECTION_REQUIRED)</span>. Pembayaran PNBP yang telah diverifikasi tetap sah (tanpa tagihan ulang) dan penerbit hanya perlu memperbaiki master fisik.
             </p>
 
-            {returnModalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl text-xs text-civic-danger flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-civic-danger flex-shrink-0" />
-                <span>{returnModalError}</span>
-              </div>
-            )}
-
             <form onSubmit={handleReturnSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-ink mb-1">
@@ -162,6 +154,12 @@ export const HandoverDialogs = ({
                 <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
+              {returnModalError && (
+                <div role="alert" className="flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-civic-danger" />
+                  <span>{returnModalError}</span>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <Button
                   type="button"

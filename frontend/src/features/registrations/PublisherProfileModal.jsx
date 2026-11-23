@@ -120,13 +120,6 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
-          {error && (
-            <div className="p-3 rounded-lg bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-civic-danger" />
-              <span>{error}</span>
-            </div>
-          )}
-
           {success && (
             <div className="p-3 rounded-lg bg-brand-50 border border-brand-100 text-brand-800 text-xs font-semibold flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 text-brand-700" />
@@ -190,7 +183,14 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
                 />
               </div>
 
-              <div className="pt-2 flex justify-end gap-2 border-t border-line">
+              <div className="space-y-3 border-t border-line pt-2">
+                {error && (
+                  <div role="alert" className="flex items-center gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-semibold text-civic-danger">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-civic-danger" />
+                    <span>{error}</span>
+                  </div>
+                )}
+                <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" size="sm" onClick={onClose} className="text-xs">
                   Tutup
                 </Button>
@@ -200,6 +200,7 @@ export const PublisherProfileModal = ({ isOpen, onClose }) => {
                     {saving ? 'Menyimpan…' : 'Simpan Perubahan'}
                   </Button>
                 )}
+                </div>
               </div>
             </form>
           )}

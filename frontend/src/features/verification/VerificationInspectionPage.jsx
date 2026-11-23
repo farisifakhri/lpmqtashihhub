@@ -34,7 +34,6 @@ import {
   AlertTriangle,
   Clock,
   PackageCheck,
-  AlertCircle,
   Save,
   Send,
   Play,
@@ -126,6 +125,7 @@ export const VerificationInspectionPage = () => {
   // Modals state
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
+  const [returnModalError, setReturnModalError] = useState(null);
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false);
   const [pemarafIds, setPemarafIds] = useState([]);
   const [submitModalError, setSubmitModalError] = useState(null);
@@ -515,10 +515,11 @@ export const VerificationInspectionPage = () => {
     e?.preventDefault();
     if (!latestResultDoc?.id) return;
     if (returnReason.trim().length < 5 || returnReason.trim().length > 1000) {
-      setError('Alasan pengembalian draf minimal 5 karakter.');
+      setReturnModalError('Alasan pengembalian draf minimal 5 karakter.');
       return;
     }
     setActionLoading(true);
+    setReturnModalError(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -529,7 +530,7 @@ export const VerificationInspectionPage = () => {
       setReturnReason('');
       await fetchDetail();
     } catch (err) {
-      setError(err.message || 'Gagal mengembalikan draf hasil verifikasi.');
+      setReturnModalError(err.message || 'Gagal mengembalikan draf hasil verifikasi.');
     } finally {
       setActionLoading(false);
     }
@@ -878,21 +879,6 @@ export const VerificationInspectionPage = () => {
           <button
             onClick={() => setSuccessMessage(null)}
             className="text-xs text-brand-800 hover:underline font-bold px-2 py-0.5"
-          >
-            Tutup
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center justify-between text-civic-danger text-xs shadow-2xs animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
-            <span className="font-semibold">{error}</span>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="text-xs text-civic-danger hover:underline font-bold px-2 py-0.5"
           >
             Tutup
           </button>
@@ -1424,6 +1410,8 @@ export const VerificationInspectionPage = () => {
       </div>
 
       <InspectionActionPanel
+        actionError={error}
+        onDismissActionError={() => setError(null)}
         isInProgress={isInProgress}
         sesuaiCount={sesuaiCount}
         tidakBerlakuCount={tidakBerlakuCount}
@@ -1440,7 +1428,10 @@ export const VerificationInspectionPage = () => {
         canVerifierWork={canVerifierWork}
         handleSaveDraft={handleSaveDraft}
         actionLoading={actionLoading}
-        setReturnModalOpen={setReturnModalOpen}
+        setReturnModalOpen={(open) => {
+          if (open) setReturnModalError(null);
+          setReturnModalOpen(open);
+        }}
         handleOpenSubmitConfirm={handleOpenSubmitConfirm}
         setApproveConfirmOpen={setApproveConfirmOpen}
         canVerifierSend={canVerifierSend}
@@ -1478,6 +1469,8 @@ export const VerificationInspectionPage = () => {
         setReturnModalOpen={setReturnModalOpen}
         returnReason={returnReason}
         setReturnReason={setReturnReason}
+        returnModalError={returnModalError}
+        setReturnModalError={setReturnModalError}
         handleReturnDocument={handleReturnDocument}
         actionLoading={actionLoading}
         handoverModalOpen={handoverModalOpen}

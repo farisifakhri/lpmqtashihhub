@@ -54,12 +54,6 @@ export const ResetPasswordPage = () => {
         <h1 className="text-xl font-bold text-ink">Atur ulang kata sandi</h1>
         <p className="mt-2 text-sm text-ink-muted">Buat kata sandi baru untuk akun LPMQ Anda.</p>
 
-        {error && (
-          <div role="alert" className="mt-5 flex gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-sm text-civic-danger">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{error}</span>
-          </div>
-        )}
         {success && (
           <div role="status" className="mt-5 flex gap-2 rounded-xl border border-civic-successLine bg-civic-successSoft p-3 text-sm text-civic-success">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -100,6 +94,12 @@ export const ResetPasswordPage = () => {
                 className="w-full rounded-lg border border-line-strong bg-canvas px-3 py-2.5 text-sm text-ink outline-none focus:border-brand-700 focus:ring-2 focus:ring-brand-700/20"
               />
             </div>
+            {error && (
+              <div role="alert" className="flex gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-sm text-civic-danger">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{error}</span>
+              </div>
+            )}
             <Button type="submit" variant="primary" disabled={loading || Boolean(success)} className="w-full">
               {loading ? 'Menyimpan...' : 'Simpan kata sandi baru'}
             </Button>

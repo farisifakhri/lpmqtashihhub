@@ -255,13 +255,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
         {/* Body Modal */}
         <form onSubmit={handleSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
-          {error && (
-            <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
-              <div>{error}</div>
-            </div>
-          )}
-
           {loading ? (
             <div className="py-12 text-center text-ink-muted text-xs font-semibold">
               Memuat data telaah tim pentashih...
@@ -671,6 +664,13 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
           )}
 
           {/* Footer Actions */}
+          {error && (
+            <div role="alert" className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
+              <div>{error}</div>
+            </div>
+          )}
+
           <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
             <Button
               type="button"

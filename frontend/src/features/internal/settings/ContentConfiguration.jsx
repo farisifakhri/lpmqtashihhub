@@ -599,7 +599,7 @@ export const ContentConfiguration = () => {
           <span>{apiSuccess}</span>
         </div>
       )}
-      {apiError && (
+      {apiError && !isModalOpen && !deleteConfirm && (
         <div className="p-3.5 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg flex items-center gap-3 text-civic-danger text-sm animate-in fade-in">
           <AlertTriangle className="w-5 h-5 text-civic-danger flex-shrink-0" />
           <span>{apiError}</span>
@@ -1138,6 +1138,12 @@ export const ContentConfiguration = () => {
               </div>
             </div>
 
+            {apiError && isModalOpen && (
+              <p role="alert" className="mx-6 mb-3 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
+                {apiError}
+              </p>
+            )}
+
             {/* Modal Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-line bg-canvas rounded-b-xl">
               <Button variant="ghost" onClick={handleCloseModal}>
@@ -1179,7 +1185,7 @@ export const ContentConfiguration = () => {
                 </p>
               </div>
             </div>
-            {apiError && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">{apiError}</p>}
+            {apiError && deleteConfirm && <p role="alert" className="rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">{apiError}</p>}
             <div className="flex items-center justify-end gap-3 pt-2">
               <Button variant="ghost" onClick={() => setDeleteConfirm(null)} disabled={isSubmitting}>
                 Batal
