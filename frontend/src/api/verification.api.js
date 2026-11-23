@@ -22,6 +22,7 @@ export const verificationApi = {
     if (params.status) query.append('status', params.status);
     if (params.registration_status) query.append('registration_status', params.registration_status);
     if (params.handover_ready) query.append('handover_ready', 'true');
+    if (params.history) query.append('history', 'true');
     if (params.my_tasks !== undefined) query.append('my_tasks', params.my_tasks);
     if (params.search) query.append('search', params.search);
     if (params.page) query.append('page', params.page);

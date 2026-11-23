@@ -38,6 +38,8 @@ import {
 import { clsx } from 'clsx';
 import { invalidateQueueCounts } from '@/api/queue.api';
 import { approvalStageText } from './inspection-view-model';
+import { VerificationApprovalTable } from './components/VerificationApprovalTable';
+import { VerificationHistoryTable } from './components/VerificationHistoryTable';
 
 function formatWaitingTime(dateString) {
   if (!dateString) return null;
@@ -161,6 +163,9 @@ export const VerifikatorInboxPage = () => {
         params.handover_ready = true;
       } else if (activeTab === 'WAITING_APPROVAL' || activeTab === 'NEED_APPROVAL') {
         params.registration_status = 'WAITING_VERIFICATION_APPROVAL';
+      } else if (activeTab === 'COMPLETED' && (isHead || isAssignmentAdmin)) {
+        // Riwayat pimpinan: semua surat yang sudah disahkan (belum/sudah dikirim) untuk dilacak posisinya
+        params.history = true;
       } else if (activeTab !== 'ALL') {
         params.status = activeTab;
       }
@@ -834,6 +839,12 @@ export const VerifikatorInboxPage = () => {
                 )
               )}
             </div>
+          ) : activeTab === 'WAITING_APPROVAL' ? (
+            // Menunggu Persetujuan: tabel antrean + pilih & paraf sekaligus (Pemaraf)
+            <VerificationApprovalTable assignments={assignments} currentUser={currentUser} onRefresh={fetchAssignments} />
+          ) : activeTab === 'COMPLETED' && (isHead || isAssignmentAdmin) ? (
+            // Riwayat: lacak posisi berkas surat yang sudah disahkan
+            <VerificationHistoryTable assignments={assignments} />
           ) : (
             /* ============================================================== */
             /* 2. TAMPILAN FOKUS TUNGGAL: VERIFIKASI & PERSETUJUAN (CARD GRID) */
