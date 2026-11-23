@@ -12,6 +12,7 @@ import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
 import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
+import { computeRegistrationSla } from './sla.service.js';
 export {
   SLA_INITIAL_CAP_DAYS,
 } from '../utils/item-calculator.js';
@@ -1886,6 +1887,15 @@ export const listRegistrations = async ({
           include: { verifier: { select: { id: true, name: true } } },
         },
         physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
+        physical_handovers: {
+          where: { status: 'RECEIVED' },
+          orderBy: { received_at: 'desc' },
+          take: 3,
+          include: {
+            to_user: { select: { id: true, name: true, email: true } },
+            from_user: { select: { id: true, name: true, email: true } },
+          },
+        },
         assignments: {
           select: {
             id: true,
@@ -1928,11 +1938,25 @@ export const listRegistrations = async ({
       })).map(paraf => paraf.subject_id))
     : new Set();
 
-  const enrichedItems = items.map(item => {
+  const enrichedItems = await Promise.all(items.map(async item => {
     const assignedVerifier = item.verification_assignments?.[0]?.verifier || teamUserMap.get(item.core_verifier_id) || null;
     const coreDistributor = teamUserMap.get(item.core_distributor_id) || null;
     const coreVerifier = teamUserMap.get(item.core_verifier_id) || null;
     const coreDocumenter = teamUserMap.get(item.core_documenter_id) || null;
+
+    const handoverDistributor = item.physical_handovers?.find(
+      h => ['VERIFICATION_TO_DISTRIBUTION', 'ADMIN_TO_DISTRIBUTOR'].includes(h.stage) && h.to_user
+    )?.to_user || item.physical_handovers?.[0]?.to_user || null;
+
+    const resolvedDistributor = coreDistributor || handoverDistributor || null;
+    const assignedDistributor = {
+      id: resolvedDistributor?.id || null,
+      name: resolvedDistributor?.name || 'Belum ditentukan',
+      role: 'Distributor',
+      email: resolvedDistributor?.email || null,
+    };
+
+    const slaInfo = await computeRegistrationSla(prisma, item);
 
     return {
       ...item,
@@ -1941,6 +1965,14 @@ export const listRegistrations = async ({
       core_verifier: coreVerifier,
       core_distributor: coreDistributor,
       core_documenter: coreDocumenter,
+      assigned_distributor: assignedDistributor,
+      distributor: assignedDistributor,
+      sla: slaInfo,
+      elapsed_working_days: slaInfo.elapsed_working_days,
+      target_working_days: slaInfo.target_working_days,
+      due_at: slaInfo.due_at,
+      sla_status: slaInfo.sla_status,
+      sla_status_label: slaInfo.status_label,
       core_team: item.core_team_number ? {
         teamNumber: item.core_team_number,
         rotationVersion: item.core_team_version,
@@ -1949,7 +1981,7 @@ export const listRegistrations = async ({
         documenter: coreDocumenter,
       } : null,
     };
-  });
+  }));
 
   return {
     items: queueItems(
@@ -2075,6 +2107,25 @@ export const getDetail = async (id, user) => {
   }
   reg.assigned_verifier = reg.verification_assignments?.[0]?.verifier || reg.core_team?.verifier || null;
   reg.core_distributor = reg.core_team?.distributor || null;
+
+  const handoverDist = reg.physical_handovers?.find(
+    h => ['VERIFICATION_TO_DISTRIBUTION', 'ADMIN_TO_DISTRIBUTOR'].includes(h.stage) && h.to_user
+  )?.to_user || reg.physical_handovers?.[0]?.to_user || null;
+  const resolvedDist = reg.core_distributor || handoverDist || null;
+  reg.assigned_distributor = {
+    id: resolvedDist?.id || null,
+    name: resolvedDist?.name || 'Belum ditentukan',
+    role: 'Distributor',
+    email: resolvedDist?.email || null,
+  };
+  reg.distributor = reg.assigned_distributor;
+  const detailSla = await computeRegistrationSla(prisma, reg);
+  reg.sla = detailSla;
+  reg.elapsed_working_days = detailSla.elapsed_working_days;
+  reg.target_working_days = detailSla.target_working_days;
+  reg.due_at = detailSla.due_at;
+  reg.sla_status = detailSla.sla_status;
+  reg.sla_status_label = detailSla.status_label;
 
   try { await assertManuscriptAccess(reg, user); }
   catch (error) {
