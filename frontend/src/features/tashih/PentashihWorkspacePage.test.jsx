@@ -167,11 +167,11 @@ describe('PentashihWorkspacePage Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/Lembar Telaah Sidang Pentashihan/i)).toBeInTheDocument();
       expect(screen.getByText(/Lolos Tanpa Catatan \(Bersih\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Catatan Koreksi & Telaah/i)).toBeInTheDocument();
+      expect(screen.getByText(/Catatan Umum Pentashih/i)).toBeInTheDocument();
     });
 
-    // Masukkan catatan sidang
-    const textarea = screen.getByPlaceholderText(/Contoh format telaah/i);
+    // Masukkan catatan sidang (opsional)
+    const textarea = screen.getByPlaceholderText(/Ringkasan umum hasil telaah naskah/i);
     fireEvent.change(textarea, { target: { value: 'Seluruh rasm dan harakat telah ditashih dengan cermat.' } });
 
     // Submit dialog
@@ -206,6 +206,77 @@ describe('PentashihWorkspacePage Component', () => {
       expect(screen.getByText('REG-2026-002')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Tajwid Berwarna')).toBeInTheDocument();
       expect(screen.getByText(/Tanda waqaf dan harakat telah sesuai/i)).toBeInTheDocument();
+    });
+  });
+
+  it('menampilkan penugasan yang status COMPLETED namun belum ada review di tab aktif (Tugas Sidang Awal)', async () => {
+    const assignmentsWithTeamAutoCompleted = [
+      {
+        id: 'assign-team-auto',
+        status: 'COMPLETED',
+        stage: 'INITIAL',
+        iteration: 1,
+        created_at: new Date().toISOString(),
+        registration: {
+          id: 'reg-team',
+          registration_no: 'REG-TEAM-001',
+          title: 'Mushaf Al-Qur\'an Standar Team',
+          status: 'TASHIH_IN_PROGRESS',
+          publisher: { legal_name: 'Penerbit Team' },
+          service_type: { name: 'Mushaf' },
+          manuscript_files: [],
+        },
+        team: { id: 'team-1', name: 'Tim Pentashih' },
+        reviews: [], // Belum ada review
+        recap_file_id: 'recap-uuid-1',
+      },
+    ];
+
+    vi.spyOn(TashihApiModule.tashihApi, 'getMyAssignments').mockResolvedValueOnce({
+      success: true,
+      data: assignmentsWithTeamAutoCompleted,
+    });
+
+    render(
+      <MemoryRouter>
+        <PentashihWorkspacePage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      // Wajib muncul di tab aktif awal
+      expect(screen.getByText('REG-TEAM-001')).toBeInTheDocument();
+      expect(screen.getByText('Mushaf Al-Qur\'an Standar Team')).toBeInTheDocument();
+    });
+  });
+
+  it('menampilkan pesan error di modal saat simpan telaah gagal dan tidak memalsukan status berhasil', async () => {
+    vi.spyOn(TashihApiModule.tashihApi, 'recordReview').mockRejectedValueOnce(
+      new Error('Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa.')
+    );
+
+    render(
+      <MemoryRouter>
+        <PentashihWorkspacePage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Buka Lembar Telaah')[0]).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByText('Buka Lembar Telaah')[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Lembar Telaah Sidang Pentashihan/i)).toBeInTheDocument();
+    });
+
+    const submitBtn = screen.getByText('Kirim Hasil Telaah');
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Hasil sidang untuk penugasan ini sudah disimpan/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Hasil telaah untuk naskah .* sudah tercatat/i)).not.toBeInTheDocument();
     });
   });
 });

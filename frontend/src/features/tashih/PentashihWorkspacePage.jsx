@@ -36,9 +36,8 @@ export const PentashihWorkspacePage = () => {
     }
   }, [searchParams]);
 
-  // Request ACTIVE assignments from backend if tab is ACTIVE or REVISION, otherwise COMPLETED
-  const backendStatus = activeTab === 'COMPLETED' ? 'COMPLETED' : 'ACTIVE';
-  const { assignments, hasMore, loading, error, fetchAssignments } = useAssignments(backendStatus, page);
+  // Muat seluruh penugasan agar seluruh tab badge & statistik mencerminkan jumlah akurat secara bersamaan
+  const { assignments, hasMore, loading, error, fetchAssignments } = useAssignments(undefined, page);
   const [searchQuery, setSearchQuery] = useState('');
   const [successMessage, setSuccessMessage] = useState(null);
 
@@ -47,6 +46,7 @@ export const PentashihWorkspacePage = () => {
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [reviewResult, setReviewResult] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
   const [reviewNotes, setReviewNotes] = useState('');
+  const [juzItems, setJuzItems] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [modalError, setModalError] = useState(null);
   const [recapFileId, setRecapFileId] = useState(null);
@@ -67,22 +67,27 @@ export const PentashihWorkspacePage = () => {
     );
   };
 
+  const isAssignmentDone = (a) => (
+    a.status === 'COMPLETED' && (
+      (Array.isArray(a.reviews) && a.reviews.length > 0) ||
+      a.registration?.status !== 'TASHIH_IN_PROGRESS'
+    )
+  );
+
   const initialActiveAssignments = useMemo(() => {
     return assignments.filter((a) => {
-      const isDone = a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0);
-      return !isDone && !isRevisionItem(a);
+      return !isAssignmentDone(a) && !isRevisionItem(a);
     });
   }, [assignments]);
 
   const revisionAssignments = useMemo(() => {
     return assignments.filter((a) => {
-      const isDone = a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0);
-      return !isDone && isRevisionItem(a);
+      return !isAssignmentDone(a) && isRevisionItem(a);
     });
   }, [assignments]);
 
   const completedAssignments = useMemo(() => {
-    return assignments.filter((a) => a.status === 'COMPLETED' || (a.reviews && a.reviews.length > 0));
+    return assignments.filter((a) => isAssignmentDone(a));
   }, [assignments]);
 
   const filteredAssignments = useMemo(() => {
@@ -130,7 +135,25 @@ export const PentashihWorkspacePage = () => {
       setReviewNotes('');
       setRecapScope(assignment.team_id || assignment.team ? 'TEAM' : 'SELF');
     }
-    setRecapFileId(assignment.recap_file_id || null);
+    if (assignment.juz_items?.length) {
+      setJuzItems(
+        assignment.juz_items.map((j) => ({
+          id: j.id,
+          juz_number: j.juz_number,
+          result: j.result || existingReview?.result || 'PASSED',
+          notes: j.notes || '',
+        }))
+      );
+    } else {
+      setJuzItems([]);
+    }
+
+    const teamRecapFileId = assignment.registration?.assignments
+      ?.filter((a) => a.team_id && a.team_id === assignment.team_id && a.iteration === assignment.iteration)
+      ?.flatMap((a) => a.reviews || [])
+      ?.find((r) => r.recap_scope === 'TEAM' && r.recap_file_id)?.recap_file_id;
+
+    setRecapFileId(existingReview?.recap_file_id || assignment.recap_file_id || teamRecapFileId || null);
     setModalError(null);
     setReviewModalOpen(true);
   };
@@ -139,6 +162,7 @@ export const PentashihWorkspacePage = () => {
     if (submitting) return;
     setReviewModalOpen(false);
     setSelectedAssignment(null);
+    setJuzItems([]);
     setRecapFileId(null);
     setModalError(null);
   };
@@ -147,8 +171,8 @@ export const PentashihWorkspacePage = () => {
     e.preventDefault();
     if (!selectedAssignment) return;
 
-    if (!reviewNotes.trim() || reviewNotes.trim().length > 10000) {
-      setModalError('Catatan hasil telaah wajib diisi dan maksimal 10000 karakter.');
+    if (reviewNotes.trim().length > 10000) {
+      setModalError('Catatan hasil telaah maksimal 10000 karakter.');
       return;
     }
 
@@ -166,6 +190,14 @@ export const PentashihWorkspacePage = () => {
         notes: reviewNotes.trim(),
         recap_file_id: recapFileId || undefined,
         recap_scope: recapScope,
+        juz_items: juzItems?.length
+          ? juzItems.map((j) => ({
+              id: j.id,
+              juz_number: j.juz_number,
+              result: j.result,
+              notes: j.notes?.trim() || null,
+            }))
+          : undefined,
       });
       invalidateQueueCounts();
 
@@ -177,17 +209,7 @@ export const PentashihWorkspacePage = () => {
       setRecapFileId(null);
       fetchAssignments();
     } catch (err) {
-      if (err.status === 409 || err.message?.includes('sudah disimpan')) {
-        invalidateQueueCounts();
-        setSuccessMessage(
-          `Hasil telaah untuk naskah ${selectedAssignment.registration?.registration_no} sudah tercatat.`
-        );
-        setReviewModalOpen(false);
-        setSelectedAssignment(null);
-        fetchAssignments();
-      } else {
-        setModalError(err.message || 'Gagal menyimpan hasil telaah sidang.');
-      }
+      setModalError(err.message || 'Gagal menyimpan hasil telaah sidang.');
     } finally {
       setSubmitting(false);
     }
@@ -277,6 +299,8 @@ export const PentashihWorkspacePage = () => {
         setReviewResult={setReviewResult}
         reviewNotes={reviewNotes}
         setReviewNotes={setReviewNotes}
+        juzItems={juzItems}
+        setJuzItems={setJuzItems}
         recapFileId={recapFileId}
         setRecapFileId={setRecapFileId}
         recapScope={recapScope}

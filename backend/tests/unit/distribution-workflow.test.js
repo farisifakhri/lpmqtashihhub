@@ -226,14 +226,14 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
       (err) => err.statusCode === 409 && err.message.includes('masih ada penugasan yang belum selesai')
     );
 
-    // 3. Rejects PASSED decision if any pentashih flagged REVISION_REQUIRED (409)
+    // 3. Rejects PASSED decision on DUMMY stage if any pentashih flagged REVISION_REQUIRED (409)
     prisma.$transaction = async (cb) => {
       return cb(createMockTx({
         assignment: {
-          findFirst: async () => ({ iteration: 1 }),
+          findFirst: async () => ({ iteration: 1, stage: 'DUMMY' }),
           findMany: async () => [
             { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
-            { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'REVISION_REQUIRED' }] },
+            { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'REVISION_REQUIRED', recap_file_id: 'file-2' }] },
           ],
         },
       }));
@@ -243,6 +243,67 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
       approveDistribution('reg-1', { result: 'PASSED', notes: 'Lulus' }, { id: 'dist-1', roles: ['DISTRIBUTOR'] }),
       (err) => err.statusCode === 409 && err.message.includes('masih ada hasil sidang yang tidak lulus')
     );
+  } finally {
+    prisma.$transaction = originalTx;
+  }
+});
+
+test('approveDistribution allows PASSED decision on INITIAL stage even with REVISION_REQUIRED reviews (transition to NASKAH_DUMI)', async () => {
+  const originalTx = prisma.$transaction;
+  let statusHistory = null;
+  let updatedRegistration = null;
+
+  try {
+    prisma.$transaction = async (cb) => {
+      return cb(createMockTx({
+        assignment: {
+          findFirst: async () => ({ iteration: 1, stage: 'INITIAL' }),
+          findMany: async () => [
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
+            { id: 'a2', status: 'COMPLETED', reviews: [{ id: 'r2', result: 'REVISION_REQUIRED', recap_file_id: 'file-2' }] },
+          ],
+        },
+        registration: {
+          findUnique: async () => ({
+            id: 'reg-1',
+            status: 'TASHIH_IN_PROGRESS',
+            publisher_id: 'pub-1',
+            publisher: { legal_name: 'PT Mushaf Utama' },
+          }),
+          updateMany: async () => ({ count: 1 }),
+          update: async ({ data }) => {
+            updatedRegistration = data;
+            return { id: 'reg-1', ...data };
+          },
+        },
+        statusHistory: {
+          create: async ({ data }) => {
+            statusHistory = data;
+            return { id: 'hist-1', ...data };
+          },
+        },
+        officialDocument: {
+          count: async () => 0,
+          create: async ({ data }) => ({ id: 'doc-1', ...data }),
+        },
+        user: {
+          findMany: async () => [{ id: 'pub-user-1', name: 'Penerbit Admin', publisher_id: 'pub-1' }],
+        },
+        notification: {
+          create: async () => ({ id: 'notif-1' }),
+        },
+      }));
+    };
+
+    const res = await approveDistribution(
+      'reg-1',
+      { result: 'PASSED', notes: 'Loloskan ke tahap dumi fisik' },
+      { id: 'dist-1', roles: ['DISTRIBUTOR'] }
+    );
+
+    assert.equal(statusHistory.to_status, 'REVISION_REQUIRED');
+    assert.equal(updatedRegistration.revision_source, 'TASHIH_REVISION');
+    assert.ok(res);
   } finally {
     prisma.$transaction = originalTx;
   }

@@ -612,10 +612,29 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (assignment.status === 'REVOKED') {
     fail(409, 'Penugasan pentashih ini telah dicabut sehingga tidak dapat lagi menerima atau mengubah hasil sidang.');
   }
-  const isUpdatingMissingRecap = data.recap_file_id && assignment.reviews.length > 0 && assignment.reviews.some(r => !r.recap_file_id);
-  if ((assignment.status === 'COMPLETED' || assignment.reviews.length) && reg.status !== 'REVISION_REQUIRED') {
+  const hasExistingReview = assignment.reviews.length > 0;
+  const isUpdatingMissingRecap = data.recap_file_id && hasExistingReview && assignment.reviews.some(r => !r.recap_file_id);
+  if (hasExistingReview && assignment.status === 'COMPLETED' && reg.status !== 'REVISION_REQUIRED') {
     if (!isUpdatingMissingRecap) {
       fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
+    }
+  }
+
+  // Fallback: Jika penugasan tergabung dalam tim dan anggota lain telah mengunggah rekap TEAM, gunakan rekap tim jika pentashih belum mengunggah rekap mandiri
+  if (!data.recap_file_id && assignment.team_id) {
+    const teamReview = await tx.tashihReview.findFirst({
+      where: {
+        recap_scope: 'TEAM',
+        recap_file_id: { not: null },
+        assignment: {
+          registration_id: assignment.registration_id,
+          team_id: assignment.team_id,
+          iteration: assignment.iteration,
+        },
+      },
+    });
+    if (teamReview?.recap_file_id) {
+      data.recap_file_id = teamReview.recap_file_id;
     }
   }
 
@@ -631,7 +650,25 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
     fail(400, 'Berkas rekapan yang diunggah tidak boleh berupa berkas kosong (0 byte).');
   }
   if (!isSuperAdmin && recapFile.owner_id && recapFile.owner_id !== user.id) {
-    fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
+    let isTeamRecap = false;
+    if (assignment.team_id) {
+      const teamReview = await tx.tashihReview.findFirst({
+        where: {
+          recap_file_id: data.recap_file_id,
+          recap_scope: 'TEAM',
+          assignment: {
+            registration_id: assignment.registration_id,
+            team_id: assignment.team_id,
+          },
+        },
+      });
+      if (teamReview) {
+        isTeamRecap = true;
+      }
+    }
+    if (!isTeamRecap) {
+      fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
+    }
   }
   if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
     fail(400, 'Format berkas rekapan tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
@@ -641,15 +678,28 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   // Pentashih individu mandiri (tanpa team_id) terkunci mutlak ke SELF
   const recapScope = assignment.team_id ? (data.recap_scope === 'TEAM' ? 'TEAM' : 'SELF') : 'SELF';
 
-  if (assignment.juz_items?.length && tx.assignmentJuz?.updateMany) {
-    await tx.assignmentJuz.updateMany({
-      where: { assignment_id: id },
-      data: {
-        result: data.result,
-        notes: data.notes || (data.result === 'PASSED' ? 'Lolos telaah rentang juz' : 'Perlu perbaikan naskah'),
-        completed_at: new Date(),
-      },
-    });
+  if (assignment.juz_items?.length) {
+    if (data.juz_items && Array.isArray(data.juz_items) && data.juz_items.length && tx.assignmentJuz?.updateMany) {
+      for (const ji of data.juz_items) {
+        await tx.assignmentJuz.updateMany({
+          where: { assignment_id: id, juz_number: ji.juz_number },
+          data: {
+            result: ji.result || data.result,
+            notes: ji.notes !== undefined ? (ji.notes?.trim() || null) : null,
+            completed_at: new Date(),
+          },
+        });
+      }
+    } else if (tx.assignmentJuz?.updateMany) {
+      await tx.assignmentJuz.updateMany({
+        where: { assignment_id: id },
+        data: {
+          result: data.result,
+          notes: null,
+          completed_at: new Date(),
+        },
+      });
+    }
   }
 
   let finalReview = null;
@@ -726,6 +776,21 @@ export async function listMyAssignments(user, query = {}) {
           publisher_revision_recaps: {
             include: { recap_file: true },
             orderBy: { round_number: 'desc' },
+          },
+          assignments: {
+            where: { status: { not: 'REVOKED' } },
+            select: {
+              id: true,
+              team_id: true,
+              iteration: true,
+              reviews: {
+                select: {
+                  id: true,
+                  recap_scope: true,
+                  recap_file_id: true,
+                },
+              },
+            },
           },
         },
       },
@@ -873,22 +938,24 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true, juz_items: true } });
 
-  // Agregasi putusan sidang: jika ada minimal 1 putusan REVISION_REQUIRED / REJECTED, naskah wajib diperbaiki
-  const allReviews = assignments.flatMap(a => a.reviews || []);
-  const hasRevisionRequired = allReviews.some(r => r.result === 'REVISION_REQUIRED' || r.result === 'REJECTED');
-  if (hasRevisionRequired && data.result === 'PASSED') {
-    fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus (perlu perbaikan). Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
+  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
+
+  // Agregasi putusan sidang: jika tahap DUMMY dan mau ke STT, seluruh hasil sidang wajib PASSED
+  if (isEligibleForStt) {
+    const allReviews = assignments.flatMap(a => a.reviews || []);
+    const hasRevisionRequired = allReviews.some(r => r.result === 'REVISION_REQUIRED' || r.result === 'REJECTED');
+    if (hasRevisionRequired) {
+      fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus (perlu perbaikan). Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+    }
   }
 
   // B-17: Hukum dasar sidang - wajib nunggu seluruh pentashih/kelompok menyelesaikan rekapnya (baik PASSED maupun REVISION_REQUIRED)
-  assertDistributionReviewCompleteness(assignments, { requireAllPassed: data.result === 'PASSED' });
+  assertDistributionReviewCompleteness(assignments, { requireAllPassed: isEligibleForStt });
 
   const previousLetters = tx.officialDocument?.count
     ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
     : 0;
-
-  // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
-  const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
 
   if (isEligibleForStt) {
     await assertReadyForSttEligibility(tx, id);
@@ -910,7 +977,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   const isTransitionToDummy = data.result === 'PASSED' && last.stage !== 'DUMMY';
   const decisionNotes = isTransitionToDummy
     ? (data.notes || 'Telaah teks naskah dinyatakan lulus. Pengajuan dialihkan ke tahap dumi fisik; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.')
-    : data.notes;
+    : (data.notes || (data.result === 'PASSED' ? 'Disetujui untuk penetapan Surat Tanda Tashih (STT)' : 'Perlu perbaikan naskah oleh penerbit'));
 
   await move(tx, reg, status, user, decisionNotes);
 
@@ -967,7 +1034,7 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
             publisher: reg.publisher?.legal_name,
             revision_round: revisionRound,
             revision_kind: revisionKind,
-            notes: data.notes,
+            notes: data.notes || '',
             distributor_name: user.name,
             pemaraf_name: pemarafName,
             created_at: new Date().toISOString(),
