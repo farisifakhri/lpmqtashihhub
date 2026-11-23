@@ -13,6 +13,7 @@ export default function InternalDocumentVerification() {
   const { token } = useParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
+  const [fileError, setFileError] = useState('');
   const [checking, setChecking] = useState(false);
   useEffect(() => {
     fetch(`${base}/public/verify-internal/${encodeURIComponent(token)}`)
@@ -24,9 +25,9 @@ export default function InternalDocumentVerification() {
   const checkFile = async event => {
     const file = event.target.files?.[0];
     if (!file) return;
-    setError('');
+    setFileError('');
     if (file.type !== 'application/pdf' || file.size > 10 * 1024 * 1024) {
-      setError('Pilih PDF berukuran maksimal 10 MB.');
+      setFileError('Pilih PDF berukuran maksimal 10 MB.');
       return;
     }
     setChecking(true);
@@ -36,7 +37,7 @@ export default function InternalDocumentVerification() {
       });
       if (!response.ok) throw new Error('PDF belum dapat diperiksa.');
       setData((await response.json()).data);
-    } catch (reason) { setError(reason.message); }
+    } catch (reason) { setFileError(reason.message); }
     finally { setChecking(false); }
   };
 
@@ -66,6 +67,7 @@ export default function InternalDocumentVerification() {
           <span className="block font-semibold">Bandingkan PDF yang Anda pegang</span>
           <span className="block text-ink-muted mb-2">Berkas diperiksa sementara; sistem membandingkan checksum dengan arsip final.</span>
           <input type="file" accept="application/pdf,.pdf" onChange={checkFile} disabled={checking} className="block w-full text-sm" />
+          {fileError && <span role="alert" className="mt-2 block rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-2 text-sm text-civic-danger">{fileError}</span>}
         </label>
       </>}
     </article>

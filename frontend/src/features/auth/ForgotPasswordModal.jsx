@@ -97,13 +97,6 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
       size="md"
     >
       <div className="space-y-4">
-        {error && (
-          <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
         {success && (
           <div className="space-y-2 animate-fadeIn">
             <div className="p-3.5 rounded-xl bg-civic-successSoft border border-civic-successLine text-civic-success text-xs flex items-start gap-2.5">
@@ -147,6 +140,12 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
               </p>
             </div>
 
+            {error && (
+              <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3.5 text-xs text-civic-danger animate-fadeIn">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2 border-t border-line">
               <button
                 type="button"
@@ -221,6 +220,12 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
               />
             </div>
 
+            {error && (
+              <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3.5 text-xs text-civic-danger animate-fadeIn">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2 border-t border-line">
               <button
                 type="button"

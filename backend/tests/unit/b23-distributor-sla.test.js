@@ -38,6 +38,39 @@ function createMockTx(calendarDays = createMockCalendar()) {
   };
 }
 
+function jakartaToday() {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function addDays(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function addWorkingDays(dateString, days) {
+  let current = dateString;
+  let remaining = days;
+  while (remaining > 0) {
+    current = addDays(current, 1);
+    const dayOfWeek = new Date(`${current}T00:00:00Z`).getUTCDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) remaining--;
+  }
+  return current;
+}
+
+function previousWorkingDay(dateString) {
+  let current = addDays(dateString, -1);
+  while ([0, 6].includes(new Date(`${current}T00:00:00Z`).getUTCDay())) {
+    current = addDays(current, -1);
+  }
+  return current;
+}
+
+function atJakartaStartOfDay(dateString) {
+  return new Date(`${dateString}T08:00:00+07:00`);
+}
+
 test('B23-T1: Dasar tanggal ronde REVISION memakai waktu serah-terima/stage_entered_at, bukan tanggal bayar', async () => {
   const mockCalendar = createMockCalendar('2026-11-01', 60);
   const tx = createMockTx(mockCalendar);
@@ -67,37 +100,40 @@ test('B23-T1: Dasar tanggal ronde REVISION memakai waktu serah-terima/stage_ente
 });
 
 test('B23-T2: Distributor menetapkan due_at <= max_due', async () => {
-  const mockCalendar = createMockCalendar('2026-11-16', 60);
+  const today = jakartaToday();
+  const selectedDueDate = addWorkingDays(today, 1);
+  const mockCalendar = createMockCalendar(today, 60);
   const tx = createMockTx(mockCalendar);
 
   const reg = {
     id: 'reg-1',
     status: 'WAITING_DISTRIBUTION',
-    stage_entered_at: new Date('2026-11-16T08:00:00.000Z'),
+    stage_entered_at: atJakartaStartOfDay(today),
     fee_sla_snapshot: {
       sla_initial_days: 22,
     },
   };
 
   const user = { id: 'dist-1', roles: ['DISTRIBUTOR'] };
-  // 2026-11-20 adalah hari Jumat (hari kerja resmi) dan jauh sebelum max_due
-  const result = await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-11-20', user);
+  const result = await resolvePentashihDueAt(tx, reg, 'INITIAL', selectedDueDate, user);
 
   assert.equal(result.due_meta.sla_days, 22);
   assert.equal(result.due_meta.stage, 'INITIAL');
-  assert.ok(result.due_at.toISOString().startsWith('2026-11-20'));
+  assert.ok(result.due_at.toISOString().startsWith(selectedDueDate));
 });
 
 test('B23-T3: Distributor menetapkan due_at > max_due tanpa override ditolak 422', async () => {
-  const mockCalendar = createMockCalendar('2026-11-16', 60);
+  const today = jakartaToday();
+  const selectedDueDate = addWorkingDays(today, 8);
+  const mockCalendar = createMockCalendar(today, 60);
   const tx = createMockTx(mockCalendar);
 
   const reg = {
     id: 'reg-1',
     status: 'WAITING_DISTRIBUTION',
-    stage_entered_at: new Date('2026-11-16T08:00:00.000Z'),
+    stage_entered_at: atJakartaStartOfDay(today),
     fee_sla_snapshot: {
-      sla_initial_days: 5, // 5 hari kerja -> jatuh sekitar 23 Nov
+      sla_initial_days: 5,
     },
   };
 
@@ -105,8 +141,7 @@ test('B23-T3: Distributor menetapkan due_at > max_due tanpa override ditolak 422
 
   await assert.rejects(
     async () => {
-      // 2026-12-10 jauh melebihi 5 hari kerja
-      await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-12-10', user);
+      await resolvePentashihDueAt(tx, reg, 'INITIAL', selectedDueDate, user);
     },
     err => {
       assert.equal(err.statusCode, 422);
@@ -117,13 +152,15 @@ test('B23-T3: Distributor menetapkan due_at > max_due tanpa override ditolak 422
 });
 
 test('B23-T4: Superadmin menetapkan due_at > max_due dengan due_override_reason >= 10 karakter', async () => {
-  const mockCalendar = createMockCalendar('2026-11-16', 60);
+  const today = jakartaToday();
+  const selectedDueDate = addWorkingDays(today, 8);
+  const mockCalendar = createMockCalendar(today, 60);
   const tx = createMockTx(mockCalendar);
 
   const reg = {
     id: 'reg-1',
     status: 'WAITING_DISTRIBUTION',
-    stage_entered_at: new Date('2026-11-16T08:00:00.000Z'),
+    stage_entered_at: atJakartaStartOfDay(today),
     fee_sla_snapshot: {
       sla_initial_days: 5,
     },
@@ -134,7 +171,7 @@ test('B23-T4: Superadmin menetapkan due_at > max_due dengan due_override_reason 
   // 1. Alasan kurang dari 10 karakter ditolak 422
   await assert.rejects(
     async () => {
-      await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-12-10', superAdmin, 'Pendek');
+      await resolvePentashihDueAt(tx, reg, 'INITIAL', selectedDueDate, superAdmin, 'Pendek');
     },
     err => {
       assert.equal(err.statusCode, 422);
@@ -145,11 +182,11 @@ test('B23-T4: Superadmin menetapkan due_at > max_due dengan due_override_reason 
 
   // 2. Alasan valid (>= 10 karakter) diterima
   const validReason = 'Naskah mushaf kuno memerlukan telaah rasm utsmani ekstra hati-hati';
-  const result = await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-12-10', superAdmin, validReason);
+  const result = await resolvePentashihDueAt(tx, reg, 'INITIAL', selectedDueDate, superAdmin, validReason);
 
   assert.equal(result.due_meta.override_reason, validReason);
   assert.equal(result.due_meta.overridden_by, 'sa-1');
-  assert.ok(result.due_at.toISOString().startsWith('2026-12-10'));
+  assert.ok(result.due_at.toISOString().startsWith(selectedDueDate));
 });
 
 test('B23-T5: Pilihan due_at jatuh pada hari libur / akhir pekan ditolak 422', async () => {
@@ -255,23 +292,23 @@ test('B23-T8: Distributor tidak memilih tanggal (due_at kosong) menggunakan defa
 
 
 test('B23-T9: Pilihan due_at di masa lalu ditolak 422', async () => {
-  const mockCalendar = createMockCalendar('2026-11-01', 60);
+  const pastWorkingDay = previousWorkingDay(jakartaToday());
+  const mockCalendar = createMockCalendar(pastWorkingDay, 60);
   const tx = createMockTx(mockCalendar);
 
   const reg = {
     id: 'reg-past',
     status: 'WAITING_DISTRIBUTION',
-    stage_entered_at: new Date('2026-11-01T08:00:00.000Z'),
+    stage_entered_at: atJakartaStartOfDay(pastWorkingDay),
     fee_sla_snapshot: {
       sla_initial_days: 30,
     },
   };
 
   const user = { id: 'dist-1', roles: ['DISTRIBUTOR'] };
-  // Tanggal 5 November 2026 adalah hari kerja (Kamis), tetapi berada di masa lalu relatif terhadap hari ini
   await assert.rejects(
     async () => {
-      await resolvePentashihDueAt(tx, reg, 'INITIAL', '2026-11-05', user);
+      await resolvePentashihDueAt(tx, reg, 'INITIAL', pastWorkingDay, user);
     },
     err => {
       assert.equal(err.statusCode, 422);

@@ -66,7 +66,6 @@ export async function renderRegistrationReceiptPdf(reg) {
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
   const logo = await pdf.embedPng(await readFile(letterheadLogo));
 
   const pageWidth = 595.28;
@@ -77,7 +76,6 @@ export async function renderRegistrationReceiptPdf(reg) {
   const black = rgb(0.08, 0.08, 0.08);
   const darkGreen = rgb(0.05, 0.32, 0.22);
   const darkGray = rgb(0.25, 0.25, 0.25);
-  const tableBorder = rgb(0.2, 0.2, 0.2);
 
   const meta = reg.foreign_metadata || {};
   const publisherName = reg.publisher?.legal_name || reg.publisher?.name || 'PT. CORDOBA INTERNASIONAL INDONESIA';
@@ -284,19 +282,27 @@ export async function renderRegistrationReceiptPdf(reg) {
   y = drawColonRow(page1, y, 'Bukti Tashih Internal', `${baseUrl}/tashih-internal-${regNo.replace(/[^a-zA-Z0-9]/g, '') || 'dok'}.pdf`, 190);
 
   // ==========================================
-  // HALAMAN 2: Pernyataan Penerbit & Berita Acara Verifikasi
+  // HALAMAN 2: Pernyataan Penerbit
   // ==========================================
   const page2 = pdf.addPage([pageWidth, pageHeight]);
   y = pageHeight - 50;
 
-  // Pernyataan Penerbit
-  const pernyataan = `Dengan ini penerbit menyatakan bahwa data-data yang tertera pada BUKTI PENDAFTARAN ${categoryLabel} ini adalah benar. Jika data yang diisikan ternyata tidak benar, terbukti palsu, dan atau ternyata tidak memenuhi persyaratan maka LPMQ dapat membatalkan proses pentashihan dan atau mencabut Tanda Tashih mushaf yang didaftarkan ini.`;
-  
+  const declarationHeader = 'PERNYATAAN PENERBIT';
+  page2.drawText(declarationHeader, {
+    x: (pageWidth - bold.widthOfTextAtSize(declarationHeader, 11)) / 2,
+    y,
+    font: bold,
+    size: 11,
+    color: black,
+  });
+  y -= 30;
+
+  const pernyataan = 'Dengan ini penerbit menyatakan bahwa data-data yang tertera pada BUKTI PENDAFTARAN ' + categoryLabel + ' ini adalah benar. Jika data yang diisikan ternyata tidak benar, terbukti palsu, dan atau ternyata tidak memenuhi persyaratan maka LPMQ dapat membatalkan proses pentashihan dan atau mencabut Tanda Tashih mushaf yang didaftarkan ini.';
   const wordsPernyataan = pernyataan.split(' ');
   let pBuf = '';
   for (const w of wordsPernyataan) {
-    const candidate = pBuf ? `${pBuf} ${w}` : w;
-    if (font.widthOfTextAtSize(candidate, 8.5) > contentWidth) {
+    const candidate = pBuf ? pBuf + ' ' + w : w;
+    if (font.widthOfTextAtSize(safeText(candidate, font), 8.5) > contentWidth) {
       page2.drawText(safeText(pBuf, font), { x: margin, y, font, size: 8.5, color: black });
       y -= 12;
       pBuf = w;
@@ -306,7 +312,7 @@ export async function renderRegistrationReceiptPdf(reg) {
   }
   if (pBuf) {
     page2.drawText(safeText(pBuf, font), { x: margin, y, font, size: 8.5, color: black });
-    y -= 16;
+    y -= 20;
   }
 
   page2.drawText(dateIndo, { x: margin, y, font, size: 8.5, color: black });
@@ -314,236 +320,41 @@ export async function renderRegistrationReceiptPdf(reg) {
   page2.drawText('(..................................................................................)', { x: margin, y, font, size: 8.5, color: black });
   y -= 12;
   page2.drawText('Tandatangani, nama jelas dan stempel penerbit', { x: margin, y, font: bold, size: 8, color: black });
-  y -= 25;
 
-  // Garis Pembatas
-  page2.drawLine({
-    start: { x: margin, y },
-    end: { x: pageWidth - margin, y },
-    thickness: 1.2,
-    color: black,
-  });
-  y -= 20;
-
-  // Judul Berita Acara
-  const baHeader1 = 'BERITA ACARA VERIFIKASI NASKAH MASTER (DIISI OLEH PENTASHIH LPMQ)';
-  page2.drawText(baHeader1, {
-    x: (pageWidth - bold.widthOfTextAtSize(baHeader1, 9)) / 2,
-    y: y,
-    font: bold,
-    size: 9,
-    color: black,
-  });
-  y -= 22;
-
-  const baHeader2 = 'BERITA ACARA';
-  const baHeader3 = 'HASIL VERIFIKASI NASKAH MASTER';
-  page2.drawText(baHeader2, {
-    x: (pageWidth - bold.widthOfTextAtSize(baHeader2, 10)) / 2,
-    y: y,
-    font: bold,
-    size: 10,
-    color: black,
-  });
-  y -= 13;
-  page2.drawText(baHeader3, {
-    x: (pageWidth - bold.widthOfTextAtSize(baHeader3, 10)) / 2,
-    y: y,
-    font: bold,
-    size: 10,
-    color: black,
-  });
-  y -= 18;
-
-  const introBa = "Pada hari ini ……….………., tanggal……….bulan……….………. tahun………. telah dilaksanakan pemeriksaan dan telaah terhadap naskah master Mushaf Al-Qur'an sebagai berikut:";
-  page2.drawText(introBa, { x: margin, y, font, size: 8, color: black });
-  y -= 16;
-
-  y = drawColonRow(page2, y, 'Nama Penerbit', publisherName, 180);
-  y = drawColonRow(page2, y, 'ID Penerbit', publisherId, 180);
-  y = drawColonRow(page2, y, 'Nama Produk/Mushaf', title, 180);
-  y = drawColonRow(page2, y, 'Nomor pendaftaran mushaf', regNo, 180);
-  y = drawColonRow(page2, y, 'Jenis pendaftaran mushaf', categoryLabel, 180);
-  y -= 8;
-
-  page2.drawText('Dengan hasil pemeriksaan dan telaah sebagai berikut:', { x: margin, y, font, size: 8.5, color: black });
-  y -= 12;
-
-  // Tabel 8 Poin Pemeriksaan
-  const checklistRows = [
-    ['1.', 'Kelengkapan Juz'],
-    ['2.', 'Kelengkapan Surah'],
-    ['3.', 'Urutan Halaman'],
-    ['4.', 'Kesesuaian Dengan Kaidah Penulisan Mushaf Standar Indonesia'],
-    ['5.', 'Kesuaian dengan kaidah tajwid warna'],
-    ['6.', 'Kesesuaian dengan terjemah kemenag'],
-    ['7.', "Kesesuaian dengan pedoman penulisan Al-Qur'an Braille Kemenag."],
-    ['8.', 'Kesesuaian Dengan Pedoman Transliterasi'],
-  ];
-
-  const col1W = 28;
-  const col2W = 310;
-  const col3W = 55;
-  const col4W = contentWidth - col1W - col2W - col3W; // ~112
-  const thH = 18;
-
-  // Header Tabel
-  page2.drawRectangle({
+  // Petunjuk lampiran dan QR validasi tetap menjadi bagian dari bukti pendaftaran.
+  page2.drawText("* BUKTI PENDAFTARAN MUSHAF AL-QUR'AN INI WAJIB DILAMPIRKAN KETIKA MENGIRIM", {
     x: margin,
-    y: y - thH,
-    width: contentWidth,
-    height: thH,
-    borderColor: tableBorder,
-    borderWidth: 0.8,
-  });
-  page2.drawText('No', { x: margin + 6, y: y - 12, font: bold, size: 8, color: black });
-  page2.drawText('Jenis Pemeriksaan', { x: margin + col1W + 6, y: y - 12, font: bold, size: 8, color: black });
-  page2.drawText('Ceklis', { x: margin + col1W + col2W + 10, y: y - 12, font: bold, size: 8, color: black });
-  page2.drawText('Keterangan', { x: margin + col1W + col2W + col3W + 10, y: y - 12, font: bold, size: 8, color: black });
-  y -= thH;
-
-  for (const [no, label] of checklistRows) {
-    const rowH = 17;
-    page2.drawRectangle({
-      x: margin,
-      y: y - rowH,
-      width: contentWidth,
-      height: rowH,
-      borderColor: tableBorder,
-      borderWidth: 0.5,
-    });
-    // Garis vertikal
-    page2.drawLine({ start: { x: margin + col1W, y }, end: { x: margin + col1W, y: y - rowH }, thickness: 0.5, color: tableBorder });
-    page2.drawLine({ start: { x: margin + col1W + col2W, y }, end: { x: margin + col1W + col2W, y: y - rowH }, thickness: 0.5, color: tableBorder });
-    page2.drawLine({ start: { x: margin + col1W + col2W + col3W, y }, end: { x: margin + col1W + col2W + col3W, y: y - rowH }, thickness: 0.5, color: tableBorder });
-
-    page2.drawText(no, { x: margin + 6, y: y - 12, font, size: 8, color: black });
-    page2.drawText(safeText(label, font), { x: margin + col1W + 6, y: y - 12, font, size: 8, color: black });
-    y -= rowH;
-  }
-
-  y -= 14;
-  page2.drawText('Naskah tersebut dinyatakan', { x: margin, y, font: bold, size: 8.5, color: black });
-  y -= 14;
-  page2.drawText('[   ]  Lolos verifikasi           [   ]  Tidak lolos verifikasi', { x: margin, y, font, size: 8.5, color: black });
-
-  // ==========================================
-  // HALAMAN 3: Rencana Tindak Lanjut & PNBP
-  // ==========================================
-  const page3 = pdf.addPage([pageWidth, pageHeight]);
-  y = pageHeight - 50;
-
-  page3.drawText("Rencana tindak lanjut Pelayanan Pentashihan Mushaf Al-Qur'an sebagai berikut:", {
-    x: margin,
-    y: y,
-    font: bold,
-    size: 8.5,
-    color: black,
-  });
-  y -= 14;
-
-  page3.drawText('[   ] Dikembalikan ke penerbit', { x: margin, y, font, size: 8.5, color: black });
-  y -= 13;
-  page3.drawText('[   ] Dilakukan pentashihan dengan ketentuan sebagai berikut:', { x: margin, y, font, size: 8.5, color: black });
-  y -= 14;
-
-  page3.drawText('Waktu Layanan Pentashihan : ..... hari kerja', { x: margin + 20, y, font, size: 8, color: black });
-  y -= 12;
-  page3.drawText('Jumlah Surat Tanda Tashih : ..... Surat Tanda Tashih', { x: margin + 20, y, font, size: 8, color: black });
-  y -= 12;
-  page3.drawText('Ketentuan PNBP layanan pentashihan sebagai berikut:', { x: margin + 20, y, font, size: 8, color: black });
-  y -= 14;
-
-  for (let i = 0; i < 6; i++) {
-    page3.drawText('PNBP Konten .................................................................. : Rp .............................................................', {
-      x: margin + 20,
-      y,
-      font,
-      size: 8,
-      color: black,
-    });
-    y -= 12;
-  }
-
-  page3.drawLine({
-    start: { x: margin + 20, y },
-    end: { x: pageWidth - margin - 20, y },
-    thickness: 0.8,
-    color: tableBorder,
-  });
-  y -= 14;
-
-  page3.drawText('Total Biaya PNBP                                                   : Rp .......................................  per surat tanda tashih', {
-    x: margin + 20,
-    y,
+    y: 168,
     font: bold,
     size: 8,
     color: black,
   });
-  y -= 25;
-
-  page3.drawText('Demikian Berita Acara ini dibuat agar dapat dipergunakan sebagaimana mestinya.', {
+  page2.drawText("  NASKAH FISIK MUSHAF AL-QUR'AN YANG TELAH DIDAFTARKAN.", {
     x: margin,
-    y,
-    font,
-    size: 8.5,
-    color: black,
-  });
-  y -= 20;
-
-  page3.drawText('Jakarta, ……………………….,.................................', { x: margin, y, font, size: 8.5, color: black });
-  y -= 12;
-  page3.drawText('Mengetahui :', { x: margin, y, font: bold, size: 8.5, color: black });
-  y -= 12;
-  page3.drawText('Verifikator', { x: margin, y, font: bold, size: 8.5, color: black });
-  y -= 45;
-  page3.drawText('(                                                                          )', { x: margin, y, font, size: 8.5, color: black });
-  y -= 12;
-  page3.drawText('Nip. ', { x: margin, y, font, size: 8.5, color: black });
-  y -= 30;
-
-  // Peringatan Wajib Lampiran
-  page3.drawText("* BUKTI PENDAFTARAN MUSHAF AL-QUR'AN INI WAJIB DILAMPIRKAN KETIKA MENGIRIM", {
-    x: margin,
-    y,
-    font: bold,
-    size: 8,
-    color: black,
-  });
-  y -= 11;
-  page3.drawText("  NASKAH FISIK MUSHAF AL-QUR'AN YANG TELAH DIDAFTARKAN.", {
-    x: margin,
-    y,
+    y: 156,
     font: bold,
     size: 8,
     color: black,
   });
 
-  // QR Code TTE Verifikasi di kanan bawah
   const qrDataUrl = await QRCode.toDataURL(
-    `https://tashih.kemenag.go.id/verify/${reg.registration_no || ''}`,
+    'https://tashih.kemenag.go.id/verify/' + (reg.registration_no || ''),
     { errorCorrectionLevel: 'M', margin: 1, width: 160 }
   );
   const qrImage = await pdf.embedPng(Buffer.from(qrDataUrl.split(',')[1], 'base64'));
-
   const qrBoxX = pageWidth - margin - 150;
-  page3.drawImage(qrImage, {
-    x: qrBoxX + 45,
-    y: 80,
-    width: 60,
-    height: 60,
-  });
-  page3.drawText('Validasi Pendaftaran Resmi', {
+  page2.drawImage(qrImage, { x: qrBoxX + 45, y: 80, width: 60, height: 60 });
+  page2.drawText('Validasi Pendaftaran Resmi', {
     x: qrBoxX + 25,
     y: 70,
     font: bold,
     size: 7.5,
     color: darkGreen,
   });
-  page3.drawText('Kemenag RI — LPMQ Hub', {
+  page2.drawText('Kemenag RI - LPMQ Hub', {
     x: qrBoxX + 32,
     y: 60,
-    font: italic,
+    font,
     size: 7,
     color: darkGray,
   });

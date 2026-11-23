@@ -720,13 +720,6 @@ export const PublisherBillingPage = () => {
               </button>
             </div>
 
-            {modalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center gap-2 text-civic-danger text-xs">
-                <AlertCircle className="w-4 h-4 text-civic-danger flex-shrink-0" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
             {/* Tagihan Summary Card */}
             <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2 text-xs">
               <div className="flex justify-between items-center">
@@ -805,6 +798,13 @@ export const PublisherBillingPage = () => {
                     alt="Preview Bukti"
                     className="max-h-36 mx-auto rounded-lg border border-line object-contain shadow-2xs"
                   />
+                </div>
+              )}
+
+              {modalError && (
+                <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-center gap-2 text-civic-danger text-xs">
+                  <AlertCircle className="w-4 h-4 text-civic-danger flex-shrink-0" />
+                  <span>{modalError}</span>
                 </div>
               )}
 

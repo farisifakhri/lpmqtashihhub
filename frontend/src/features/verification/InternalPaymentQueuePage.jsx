@@ -696,13 +696,6 @@ export const InternalPaymentQueuePage = () => {
               </button>
             </div>
 
-            {modalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
             <p className="text-xs text-ink-muted leading-relaxed">
               Berikan alasan penolakan secara jelas kepada penerbit (misalnya: nominal transfer kurang, NTPN salah, atau bukti buram). Status tagihan akan dikembalikan ke <b>Menunggu Pembayaran (UNPAID)</b>.
             </p>
@@ -722,6 +715,13 @@ export const InternalPaymentQueuePage = () => {
                 />
                 <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
+
+              {modalError && (
+                <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button

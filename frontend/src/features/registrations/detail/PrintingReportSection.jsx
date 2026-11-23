@@ -350,13 +350,6 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
               </button>
             </div>
 
-            {formError && (
-              <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger rounded-lg text-xs flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-civic-danger shrink-0" />
-                <span>{formError}</span>
-              </div>
-            )}
-
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -481,6 +474,12 @@ export function PrintingReportSection({ registrationId, isPublisher = true }) {
                 />
               </div>
 
+              {formError && (
+                <div role="alert" className="flex items-center gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                  <AlertTriangle className="h-4 w-4 shrink-0 text-civic-danger" />
+                  <span>{formError}</span>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-line">
                 <Button
                   type="button"
