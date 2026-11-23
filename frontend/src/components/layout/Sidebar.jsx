@@ -375,6 +375,7 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                         ...(role === "PEMARAF" ? [{
                             label: "Antrean Paraf",
                             path: "/internal/paraf",
+                            badgeKey: "paraf_queue_mine",
                             icon: <Stamp className="w-4 h-4 shrink-0" />,
                             description: "Centang & paraf banyak dokumen sekaligus",
                         }] : []),
