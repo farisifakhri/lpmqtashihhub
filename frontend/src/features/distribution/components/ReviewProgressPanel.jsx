@@ -42,30 +42,30 @@ const renderSlaBadge = (slaStatus, slaStatusLabel) => {
   switch (slaStatus) {
     case 'WARNING':
       return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#fefce8] text-[#a16207] border border-[#fde047] shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#eab308] inline-block shrink-0" />
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-civic-warning inline-block shrink-0" />
           {slaStatusLabel || 'Mendekati Tenggat'}
         </span>
       );
     case 'OVERDUE':
       return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca] shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#dc2626] inline-block shrink-0" />
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-civic-danger inline-block shrink-0" />
           {slaStatusLabel || 'Terlambat'}
         </span>
       );
     case 'PAUSED':
       return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#f8fafc] text-[#475569] border border-[#cbd5e1] shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#64748b] inline-block shrink-0" />
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-surface-subtle text-ink-muted border border-line shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-ink-muted inline-block shrink-0" />
           {slaStatusLabel || 'Jeda SLA'}
         </span>
       );
     case 'ON_TIME':
     default:
       return (
-        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0] shrink-0">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#16a34a] inline-block shrink-0" />
+        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold bg-civic-successSoft text-civic-success border border-civic-successLine shrink-0">
+          <span className="w-2.5 h-2.5 rounded-full bg-civic-success inline-block shrink-0" />
           {slaStatusLabel || 'Tepat Waktu'}
         </span>
       );
@@ -76,21 +76,21 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
   if (!currentAssignments || currentAssignments.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-blue-100/80 bg-[#f8faff] p-3 sm:p-3.5 transition-all">
+    <div className="rounded-xl border border-line bg-surface-subtle/80 p-3 sm:p-3.5 transition-all">
       <button
         type="button"
         onClick={() => toggleExpanded(regId)}
         className="w-full flex items-center justify-between text-left cursor-pointer select-none group"
         aria-expanded={isExpanded}
       >
-        <div className="flex items-center gap-2.5 font-bold text-sm text-slate-800">
-          <Users className="w-5 h-5 text-slate-800" />
+        <div className="flex items-center gap-2.5 font-bold text-sm text-ink">
+          <Users className="w-5 h-5 text-ink" />
           <span>Anggota Sidang</span>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-slate-700 group-hover:text-slate-900 transition-colors" />
+          <ChevronUp className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-slate-700 group-hover:text-slate-900 transition-colors" />
+          <ChevronDown className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors" />
         )}
       </button>
 
@@ -105,9 +105,9 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
               return (
                 <span
                   key={a.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#fef2f2] text-[#991b1b] border border-[#fecaca] shadow-2xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine shadow-2xs"
                 >
-                  <X className="w-3.5 h-3.5 text-[#dc2626] shrink-0" />
+                  <X className="w-3.5 h-3.5 text-civic-danger shrink-0" />
                   <span>{a.assignee?.name || 'Pentashih'} (Dicabut)</span>
                 </span>
               );
@@ -118,9 +118,9 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
                 return (
                   <span
                     key={a.id}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0] shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-civic-successSoft text-civic-success border border-civic-successLine shadow-2xs"
                   >
-                    <span className="w-4 h-4 rounded-full bg-[#16a34a] flex items-center justify-center text-white shrink-0">
+                    <span className="w-4 h-4 rounded-full bg-civic-success flex items-center justify-center text-white shrink-0">
                       <Check className="w-2.5 h-2.5 stroke-[3]" />
                     </span>
                     <span>{a.assignee?.name || 'Pentashih'}</span>
@@ -131,9 +131,9 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
               return (
                 <span
                   key={a.id}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#fffbeb] text-[#92400e] border border-[#fde68a] shadow-2xs"
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-civic-warningSoft text-civic-warning border border-civic-warningLine shadow-2xs"
                 >
-                  <AlertTriangle className="w-3.5 h-3.5 text-[#d97706] shrink-0" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-civic-warning shrink-0" />
                   <span>{a.assignee?.name || 'Pentashih'}</span>
                 </span>
               );
@@ -143,9 +143,9 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
             return (
               <span
                 key={a.id}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-surface-strong text-ink border border-line shadow-2xs"
               >
-                <Clock className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                <Clock className="w-3.5 h-3.5 text-ink-muted shrink-0" />
                 <span>{a.assignee?.name || 'Pentashih'}</span>
                 {onRevokePentashih && (
                   <button
@@ -156,7 +156,7 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
                     }}
                     title={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
                     aria-label={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
-                    className="ml-0.5 p-0.5 rounded-full text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="ml-0.5 p-0.5 rounded-full text-ink-muted hover:text-civic-danger hover:bg-civic-dangerSoft transition-colors"
                   >
                     <UserX className="w-3 h-3" />
                   </button>
@@ -195,23 +195,23 @@ const renderCardFooter = (reg) => {
   );
 
   return (
-    <div className="border-t border-slate-100 pt-4 mt-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="border-t border-line pt-4 mt-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
         {/* Distributor Column */}
         <div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
-            <User className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-1.5 text-xs font-medium text-ink-muted">
+            <User className="w-3.5 h-3.5 text-ink-muted" />
             <span>Distributor</span>
           </div>
           <div className="flex items-center gap-3 mt-1.5">
-            <div className="w-9 h-9 rounded-full bg-slate-200/80 flex items-center justify-center text-slate-500 shrink-0">
-              <User className="w-5 h-5 text-slate-400" />
+            <div className="w-9 h-9 rounded-full bg-surface-strong flex items-center justify-center text-ink-muted shrink-0">
+              <User className="w-5 h-5 text-ink-muted" />
             </div>
             <div>
-              <div className="text-sm font-bold text-slate-900 leading-tight">
+              <div className="text-sm font-bold text-ink leading-tight">
                 {distributorName}
               </div>
-              <div className="text-xs text-slate-500 font-normal leading-tight mt-0.5">
+              <div className="text-xs text-ink-muted font-normal leading-tight mt-0.5">
                 {distributorRole}
               </div>
             </div>
@@ -219,15 +219,15 @@ const renderCardFooter = (reg) => {
         </div>
 
         {/* SLA Column */}
-        <div className="sm:border-l sm:border-slate-200 sm:pl-8">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
-            <Clock className="w-3.5 h-3.5 text-slate-700" />
+        <div className="sm:border-l sm:border-line sm:pl-8">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-ink">
+            <Clock className="w-3.5 h-3.5 text-ink-muted" />
             <span>SLA</span>
           </div>
           <div className="flex items-center gap-2 mt-1.5">
-            <Calendar className="w-4 h-4 text-slate-700 shrink-0" />
-            <span className="text-xs sm:text-sm font-medium text-slate-800">
-              {elapsedDays} dari {targetDays} hari <span className="text-slate-400 mx-1">•</span> Jatuh tempo: {formattedDueDate}
+            <Calendar className="w-4 h-4 text-ink-muted shrink-0" />
+            <span className="text-xs sm:text-sm font-medium text-ink">
+              {elapsedDays} dari {targetDays} hari <span className="text-ink-muted mx-1">•</span> Jatuh tempo: {formattedDueDate}
             </span>
           </div>
         </div>
@@ -349,7 +349,7 @@ export const ReviewProgressPanel = ({
           <p className="text-xs text-ink-muted mt-1">Coba kata kunci nomor registrasi, judul, penerbit, atau nama pentashih lainnya.</p>
         </div>
       ) : (
-        <div className="p-4 sm:p-6 space-y-4 bg-slate-50/50">
+        <div className="p-4 sm:p-6 space-y-4 bg-canvas">
           {filteredWaitingRegistrations.map((reg) => {
             const publisherName = reg.publisher?.legal_name || reg.publisher?.brand_name || 'Penerbit';
             const serviceTypeName = reg.fee_sla_snapshot?.service_name || reg.service_type?.name || 'Mushaf Al-Qur\'an';
@@ -359,20 +359,20 @@ export const ReviewProgressPanel = ({
             return (
               <div
                 key={`assign-${reg.id}`}
-                className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all space-y-4"
+                className="bg-white rounded-2xl border border-line p-5 sm:p-6 shadow-xs hover:border-line-strong transition-all space-y-4"
               >
                 {/* Top Row: Badges & Action Button */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Reg No Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]">
-                      <FileText className="w-3.5 h-3.5 text-[#16a34a]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-brand-50 text-brand-900 border border-brand-200">
+                      <FileText className="w-3.5 h-3.5 text-brand-700" />
                       {reg.registration_no}
                     </span>
 
                     {/* Status Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe]">
-                      <Clock className="w-3.5 h-3.5 text-[#2563eb]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                      <Clock className="w-3.5 h-3.5 text-civic-info" />
                       Menunggu Penugasan
                     </span>
                   </div>
@@ -383,14 +383,14 @@ export const ReviewProgressPanel = ({
                       <button
                         type="button"
                         onClick={() => onStartAssignment(reg)}
-                        className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-[#1b7a43] hover:bg-[#146034] text-white inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-brand-700 hover:bg-brand-800 text-white inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                       >
                         <Users className="w-4 h-4" />
                         <span>Mulai Penugasan</span>
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 font-medium bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                      <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted font-medium bg-surface-subtle px-3 py-1.5 rounded-lg border border-line">
                         <Clock className="w-3.5 h-3.5" /> Menunggu penetapan oleh Admin
                       </span>
                     )}
@@ -399,11 +399,11 @@ export const ReviewProgressPanel = ({
 
                 {/* Title & Subtitle */}
                 <div>
-                  <h4 className="text-xl font-bold text-slate-900 tracking-tight leading-snug">
+                  <h4 className="text-xl font-bold text-ink tracking-tight leading-snug">
                     {reg.title}
                   </h4>
-                  <p className="text-sm text-slate-500 mt-1 font-normal">
-                    <span className="font-semibold text-slate-700">{publisherName}</span>
+                  <p className="text-sm text-ink-muted mt-1 font-normal">
+                    <span className="font-semibold text-ink">{publisherName}</span>
                     {' • '}
                     <span>{serviceTypeName}</span>
                   </p>
@@ -436,44 +436,44 @@ export const ReviewProgressPanel = ({
             return (
               <div
                 key={reg.id}
-                className="bg-white rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs hover:border-slate-300 transition-all space-y-4"
+                className="bg-white rounded-2xl border border-line p-5 sm:p-6 shadow-xs hover:border-line-strong transition-all space-y-4"
               >
                 {/* Top Row: Badges & Action Button */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Reg No Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#f0fdf4] text-[#166534] border border-[#bbf7d0]">
-                      <FileText className="w-3.5 h-3.5 text-[#16a34a]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-brand-50 text-brand-900 border border-brand-200">
+                      <FileText className="w-3.5 h-3.5 text-brand-700" />
                       {reg.registration_no}
                     </span>
 
                     {/* Iteration Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe]">
-                      <RotateCcw className="w-3.5 h-3.5 text-[#2563eb]" />
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                      <RotateCcw className="w-3.5 h-3.5 text-civic-info" />
                       Iterasi #{maxIter}
                     </span>
 
                     {/* Status Badge */}
                     {waitingParaf ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#eff6ff] text-[#1e40af] border border-[#bfdbfe]">
-                        <Clock className="w-3.5 h-3.5 text-[#2563eb]" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-civic-infoSoft text-civic-info border border-civic-infoLine">
+                        <Clock className="w-3.5 h-3.5 text-civic-info" />
                         Menunggu Paraf Pemaraf
                       </span>
                     ) : isReadyToReview ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#10b981]" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-civic-successSoft text-civic-success border border-civic-successLine">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-civic-success" />
                         Seluruh Pentashih Selesai ({completedMembers}/{totalMembers})
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fffbeb] text-[#92400e] border border-[#fde68a]">
-                        <Clock className="w-3.5 h-3.5 text-[#d97706]" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                        <Clock className="w-3.5 h-3.5 text-civic-warning" />
                         Sidang Berjalan: {completedMembers} dari {totalMembers} Selesai
                       </span>
                     )}
 
                     {hasRevoked && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]">
-                        <UserX className="w-3.5 h-3.5 text-[#dc2626]" />
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+                        <UserX className="w-3.5 h-3.5 text-civic-danger" />
                         Penugasan Dicabut
                       </span>
                     )}
@@ -485,11 +485,11 @@ export const ReviewProgressPanel = ({
                       <button
                         type="button"
                         onClick={() => setReviewDialogRegId(reg.id)}
-                        className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
+                        className="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-white hover:bg-surface-subtle text-ink border border-line-strong inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
                       >
-                        <Clock className="w-4 h-4 text-slate-600" />
+                        <Clock className="w-4 h-4 text-ink-muted" />
                         <span>Menunggu Paraf · Lihat Keputusan</span>
-                        <ChevronRight className="w-4 h-4 text-slate-500" />
+                        <ChevronRight className="w-4 h-4 text-ink-muted" />
                       </button>
                     ) : (
                       <button
@@ -498,8 +498,8 @@ export const ReviewProgressPanel = ({
                         className={clsx(
                           'px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold inline-flex items-center gap-2 shadow-xs transition-colors cursor-pointer',
                           isReadyToReview
-                            ? 'bg-[#1b7a43] hover:bg-[#146034] text-white'
-                            : 'bg-slate-900 hover:bg-slate-800 text-white'
+                            ? 'bg-brand-700 hover:bg-brand-800 text-white'
+                            : 'bg-ink hover:bg-ink/90 text-white'
                         )}
                       >
                         <ShieldCheck className="w-4 h-4" />
@@ -512,11 +512,11 @@ export const ReviewProgressPanel = ({
 
                 {/* Title & Subtitle */}
                 <div>
-                  <h4 className="text-xl font-bold text-slate-900 tracking-tight leading-snug">
+                  <h4 className="text-xl font-bold text-ink tracking-tight leading-snug">
                     {reg.title}
                   </h4>
-                  <p className="text-sm text-slate-500 mt-1 font-normal">
-                    <span className="font-semibold text-slate-700">{publisherName}</span>
+                  <p className="text-sm text-ink-muted mt-1 font-normal">
+                    <span className="font-semibold text-ink">{publisherName}</span>
                     {' • '}
                     <span>{serviceTypeName}</span>
                   </p>
