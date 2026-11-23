@@ -74,6 +74,7 @@ export const ReviewForm = ({
                 type="button"
                 onClick={closeReviewModal}
                 disabled={submitting}
+                aria-label="Tutup modal"
                 className="p-1.5 rounded-lg text-ink-muted hover:text-ink hover:bg-surface-strong/60 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -82,13 +83,6 @@ export const ReviewForm = ({
 
             {/* Modal Body Form */}
             <form onSubmit={handleReviewSubmit} className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1">
-              {modalError && (
-                <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
-                  <div>{modalError}</div>
-                </div>
-              )}
-
               {/* Catatan Sidang Ronde Sebelumnya & Dokumen Rekap Revisi Penerbit (B-07 & B-16) */}
               {previousRevLetters.length > 0 && (
                 <div className="p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft space-y-2.5 text-xs">
@@ -388,6 +382,13 @@ export const ReviewForm = ({
               </div>
 
               {/* Modal Actions */}
+              {modalError && (
+                <div className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2" role="alert">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
+                  <div>{modalError}</div>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
                 <Button
                   type="button"
@@ -396,7 +397,7 @@ export const ReviewForm = ({
                   onClick={closeReviewModal}
                   disabled={submitting}
                 >
-                  Batal
+                  Tutup
                 </Button>
                 <Button
                   type="submit"

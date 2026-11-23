@@ -21,6 +21,7 @@ export const ConfirmationSummaryDialog = ({
     confirmVariant = "primary", // 'primary' | 'danger' | 'gold'
     loading = false,
     confirmDisabled = false,
+    errorMessage,
     icon,
     children,
 }) => {
@@ -154,6 +155,11 @@ export const ConfirmationSummaryDialog = ({
                 )}
 
                 {/* Action Buttons */}
+                {errorMessage && (
+                    <div role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-sm text-civic-danger">
+                        {errorMessage}
+                    </div>
+                )}
                 <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">
                     <Button
                         variant="outline"

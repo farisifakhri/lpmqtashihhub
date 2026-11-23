@@ -346,13 +346,6 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
       </div>
 
       <form onSubmit={submit} noValidate className="space-y-5 p-5 sm:p-6">
-        {error && (
-          <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            {error}
-          </p>
-        )}
-
         {loading ? (
           <p role="status" className="text-sm text-ink-muted">Memuat data kelompok dan kelayakan pengajuan…</p>
         ) : registration && (
@@ -1007,6 +1000,13 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
         <p className="text-xs text-ink-muted">
           Tindakan ini menetapkan penugasan pentashih pada tahap berjalan. Bukan persetujuan SOP, hasil sidang, atau pengesahan STT.
         </p>
+
+        {error && (
+          <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end gap-2 border-t border-line pt-4">
           <button

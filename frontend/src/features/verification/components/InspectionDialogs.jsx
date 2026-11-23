@@ -4,6 +4,7 @@ import { X, AlertCircle, AlertTriangle, PackageCheck, CheckCircle2, Building2, F
 
 export const InspectionDialogs = ({
   returnModalOpen, setReturnModalOpen, returnReason, setReturnReason,
+  returnModalError, setReturnModalError,
   handleReturnDocument, actionLoading, handoverModalOpen, setHandoverModalOpen,
   registration, publisher, handoverModalError, handleCreateHandover,
   handoverCondition, setHandoverCondition, handoverVolumeCount, setHandoverVolumeCount,
@@ -20,7 +21,10 @@ export const InspectionDialogs = ({
                 Kembalikan Draf Surat ke Verifikator (Revisi Internal)
               </div>
               <button
-                onClick={() => setReturnModalOpen(false)}
+                onClick={() => {
+                  setReturnModalOpen(false);
+                  setReturnModalError?.(null);
+                }}
                 className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -39,7 +43,10 @@ export const InspectionDialogs = ({
                 <textarea
                   value={returnReason}
                   maxLength={1000}
-                  onChange={(e) => setReturnReason(e.target.value)}
+                  onChange={(e) => {
+                    setReturnReason(e.target.value);
+                    setReturnModalError?.(null);
+                  }}
                   placeholder="Contoh: Format penulisan rasm pada draf surat perlu disesuaikan dengan ketentuan Surat Keputusan..."
                   rows={4}
                   className="w-full text-xs p-3 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-danger/20 focus:border-civic-danger"
@@ -48,11 +55,21 @@ export const InspectionDialogs = ({
                 <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
+              {returnModalError && (
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-2.5 text-xs text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{returnModalError}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setReturnModalOpen(false)}
+                  onClick={() => {
+                    setReturnModalOpen(false);
+                    setReturnModalError?.(null);
+                  }}
                   disabled={actionLoading}
                   className="text-xs"
                 >
@@ -93,13 +110,6 @@ export const InspectionDialogs = ({
               <p>Nomor Registrasi: {registration.registration_no}</p>
               <p>Penerbit: {publisher.legal_name}</p>
             </div>
-
-            {handoverModalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-xs text-civic-danger flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
-                <span>{handoverModalError}</span>
-              </div>
-            )}
 
             <form onSubmit={handleCreateHandover} className="space-y-4 text-xs">
               <div>
@@ -155,6 +165,13 @@ export const InspectionDialogs = ({
                   className="w-full p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                 />
               </div>
+
+              {handoverModalError && (
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-2.5 text-xs text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{handoverModalError}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <Button

@@ -177,14 +177,6 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           </button>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
-            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
         {/* Manuscript Context Summary */}
         <div className="p-3.5 bg-canvas border border-line rounded-xl text-xs space-y-2">
           <div className="flex items-center justify-between border-b border-line/60 pb-2">
@@ -386,6 +378,13 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               </span>
             </div>
           </div>
+
+          {error && (
+            <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
+              <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">

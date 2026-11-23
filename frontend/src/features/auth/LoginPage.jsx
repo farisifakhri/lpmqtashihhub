@@ -174,11 +174,6 @@ export const LoginPage = () => {
                     </a>
                   </div>
                 </div>
-              ) : (error || authError) ? (
-                <div className="p-3 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2 animate-fadeIn">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                  <span>{error || authError}</span>
-                </div>
               ) : null}
 
               {/* Form Input Clean Minimalis */}
@@ -235,6 +230,13 @@ export const LoginPage = () => {
                   </button>
                   <span className="text-xs text-ink-muted">Bantuan layanan</span>
                 </div>
+
+                {(error || authError) && (
+                  <div role="alert" className="p-3 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2 animate-fadeIn">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                    <span>{error || authError}</span>
+                  </div>
+                )}
 
                 {/* Tombol Masuk Hijau Muda Segar */}
                 <button
