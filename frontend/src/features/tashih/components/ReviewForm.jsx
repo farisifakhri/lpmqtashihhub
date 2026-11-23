@@ -315,6 +315,11 @@ export const ReviewForm = ({
                       <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
                       {recapFileName}
                     </span>
+                  ) : recapFileId ? (
+                    <span className="text-xs text-brand-800 font-medium inline-flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-700" />
+                      Berkas rekapan sidang kelompok telah tersedia
+                    </span>
                   ) : (
                     <span className="text-xs text-ink-muted italic">Belum ada berkas rekapan terpilih (wajib diunggah)</span>
                   )}
@@ -507,11 +512,15 @@ export const ReviewForm = ({
                   type="submit"
                   variant="primary"
                   size="sm"
-                  disabled={submitting || !recapFileId}
+                  disabled={submitting || !recapFileId || (selectedAssignment.status === 'COMPLETED' && selectedAssignment.reviews?.length > 0 && selectedAssignment.registration?.status !== 'REVISION_REQUIRED')}
                   className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                   icon={<Send className="w-3.5 h-3.5" />}
                 >
-                  {submitting ? 'Menyimpan...' : (selectedAssignment.status === 'COMPLETED' ? 'Simpan Pembaruan Telaah' : 'Kirim Hasil Telaah')}
+                  {submitting
+                    ? 'Menyimpan...'
+                    : (selectedAssignment.status === 'COMPLETED' && selectedAssignment.reviews?.length > 0 && selectedAssignment.registration?.status !== 'REVISION_REQUIRED')
+                    ? 'Hasil Sidang Telah Dikunci'
+                    : (selectedAssignment.reviews?.length > 0 ? 'Simpan Pembaruan Telaah' : 'Kirim Hasil Telaah')}
                 </Button>
               </div>
             </form>

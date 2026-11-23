@@ -612,10 +612,29 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
   if (assignment.status === 'REVOKED') {
     fail(409, 'Penugasan pentashih ini telah dicabut sehingga tidak dapat lagi menerima atau mengubah hasil sidang.');
   }
-  const isUpdatingMissingRecap = data.recap_file_id && assignment.reviews.length > 0 && assignment.reviews.some(r => !r.recap_file_id);
-  if ((assignment.status === 'COMPLETED' || assignment.reviews.length) && reg.status !== 'REVISION_REQUIRED') {
+  const hasExistingReview = assignment.reviews.length > 0;
+  const isUpdatingMissingRecap = data.recap_file_id && hasExistingReview && assignment.reviews.some(r => !r.recap_file_id);
+  if (hasExistingReview && assignment.status === 'COMPLETED' && reg.status !== 'REVISION_REQUIRED') {
     if (!isUpdatingMissingRecap) {
       fail(409, 'Hasil sidang untuk penugasan ini sudah disimpan dan tidak dapat ditimpa. Buka riwayat hasil; hubungi distributor jika diperlukan penugasan lanjutan.');
+    }
+  }
+
+  // Fallback: Jika penugasan tergabung dalam tim dan anggota lain telah mengunggah rekap TEAM, gunakan rekap tim jika pentashih belum mengunggah rekap mandiri
+  if (!data.recap_file_id && assignment.team_id) {
+    const teamReview = await tx.tashihReview.findFirst({
+      where: {
+        recap_scope: 'TEAM',
+        recap_file_id: { not: null },
+        assignment: {
+          registration_id: assignment.registration_id,
+          team_id: assignment.team_id,
+          iteration: assignment.iteration,
+        },
+      },
+    });
+    if (teamReview?.recap_file_id) {
+      data.recap_file_id = teamReview.recap_file_id;
     }
   }
 
@@ -631,7 +650,25 @@ export const recordReview = (id, data, user) => prisma.$transaction(async tx => 
     fail(400, 'Berkas rekapan yang diunggah tidak boleh berupa berkas kosong (0 byte).');
   }
   if (!isSuperAdmin && recapFile.owner_id && recapFile.owner_id !== user.id) {
-    fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
+    let isTeamRecap = false;
+    if (assignment.team_id) {
+      const teamReview = await tx.tashihReview.findFirst({
+        where: {
+          recap_file_id: data.recap_file_id,
+          recap_scope: 'TEAM',
+          assignment: {
+            registration_id: assignment.registration_id,
+            team_id: assignment.team_id,
+          },
+        },
+      });
+      if (teamReview) {
+        isTeamRecap = true;
+      }
+    }
+    if (!isTeamRecap) {
+      fail(403, 'Berkas rekapan bukan milik akun pentashih Anda.');
+    }
   }
   if (recapFile.mime_type && !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/zip'].some(m => recapFile.mime_type.includes(m) || recapFile.mime_type === m)) {
     fail(400, 'Format berkas rekapan tidak didukung. Unggah berkas dokumen PDF/Word/ZIP.');
@@ -739,6 +776,21 @@ export async function listMyAssignments(user, query = {}) {
           publisher_revision_recaps: {
             include: { recap_file: true },
             orderBy: { round_number: 'desc' },
+          },
+          assignments: {
+            where: { status: { not: 'REVOKED' } },
+            select: {
+              id: true,
+              team_id: true,
+              iteration: true,
+              reviews: {
+                select: {
+                  id: true,
+                  recap_scope: true,
+                  recap_file_id: true,
+                },
+              },
+            },
           },
         },
       },
