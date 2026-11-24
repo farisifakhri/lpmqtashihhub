@@ -18,6 +18,7 @@ import {
   Users,
   FileText,
   Clock,
+  Info,
   ShieldCheck,
   Check,
   Info,

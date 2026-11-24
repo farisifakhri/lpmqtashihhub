@@ -5,6 +5,7 @@ import { prisma } from '../config/database.js';
 import { ENV } from '../config/env.js';
 import { logAudit } from './audit.service.js';
 import { emailProvider, sendOutboxEmail } from './email-provider.service.js';
+import { sendWhatsAppOtp } from './whatsapp-provider.service.js';
 import { withPemaraf } from '../utils/pemaraf.js';
 
 export const login = async ({ email, password, req }) => {
@@ -194,7 +195,7 @@ export const registerPublisher = async (data, req) => {
   };
 };
 
-export const forgotPassword = async ({ email, req }) => {
+export const forgotPassword = async ({ email, phone, method = 'email', req }) => {
   if (ENV.ENABLE_PASSWORD_RESET === false) {
     const error = new Error('Fitur pemulihan kata sandi mandiri dinonaktifkan sementara. Silakan hubungi administrator LPMQ.');
     error.statusCode = 503;
@@ -202,20 +203,31 @@ export const forgotPassword = async ({ email, req }) => {
   }
 
   const GENERIC_RESPONSE = {
-    message: 'Jika email terdaftar, petunjuk telah dikirim.',
+    message: 'Jika akun terdaftar dan memiliki kontak untuk kanal yang dipilih, petunjuk pemulihan telah dikirim.',
+  };
+  const NOT_FOUND_RESPONSE = {
+    notFound: true,
+    message: method === 'whatsapp'
+      ? 'Nomor WhatsApp tersebut tidak ditemukan pada akun aktif.'
+      : 'Email tersebut tidak ditemukan pada akun aktif.',
   };
 
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  const user = normalizedEmail
-    ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
-    : null;
+  const normalizedPhone = normalizeResetPhone(phone);
+  const user = method === 'whatsapp'
+    ? (normalizedPhone
+      ? await prisma.user.findFirst({ where: { whatsapp_number: normalizedPhone } })
+      : null)
+    : (normalizedEmail
+      ? await prisma.user.findUnique({ where: { email: normalizedEmail } })
+      : null);
 
   // Dummy compare to avoid timing attack / account enumeration
   const DUMMY_HASH = '$2a$10$7EqJtq98hPqEX7fNZaFWoO.8/lI2/w16/K8L9.lZ63xV1L6o2y72e';
   if (!user || user.status !== 'ACTIVE') {
     await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
-    console.info('[PasswordReset] Email diabaikan: akun tidak ditemukan atau tidak aktif. Tidak ada email yang dikirim.');
-    return GENERIC_RESPONSE;
+    console.info('[PasswordReset] Permintaan pemulihan diabaikan: akun tidak ditemukan atau tidak aktif.');
+    return NOT_FOUND_RESPONSE;
   }
 
   // Consistent dummy compare so timing is identical for existing vs non-existing
@@ -224,7 +236,7 @@ export const forgotPassword = async ({ email, req }) => {
   // 8-digit recovery code; the reset endpoint is also rate limited by IP.
   const rawToken = crypto.randomInt(0, 100_000_000).toString().padStart(8, '0');
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 menit
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 menit
   const requestedIp = req?.ip || req?.headers?.['x-forwarded-for'] || null;
 
   // Hapus token lama yang belum digunakan saat permintaan baru dibuat
@@ -241,44 +253,38 @@ export const forgotPassword = async ({ email, req }) => {
     },
   });
 
-  const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
-  // Keep a URL for compatibility with existing internal callers/tests. SMTP
-  // sends the portable code so recovery does not depend on localhost links.
-  const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
-
-  const idempotencyKey = `pwd_reset_${user.id}_${Date.now()}`;
-
   try {
-    const result = await sendOutboxEmail(prisma, {
-      registrationId: null,
-      documentId: null,
-      idempotencyKey,
-      recipientEmail: user.email,
-      recipientName: user.name,
-      subject: 'Petunjuk Pemulihan Kata Sandi - Layanan Tashih LPMQ',
-      template: 'PASSWORD_RESET',
-      payload: {
-        resetCode: rawToken,
-        resetUrl,
-        expiresMinutes: 30,
-      },
-    });
-    console.info(`[PasswordReset] Email masuk outbox dan dikirim. Outbox ID: ${result?.outbox?.id || 'tersimpan'}`);
-  } catch (emailErr) {
-    // Jangan biarkan kegagalan email mengekspos token ke respons HTTP
-    console.error('[PasswordReset] Provider outbox gagal mengirim email reset sandi:', {
-      code: emailErr.code || 'UNKNOWN',
-      responseCode: emailErr.responseCode || null,
-      message: emailErr.message,
+    if (method === 'whatsapp') {
+      await sendWhatsAppOtp({ to: user.whatsapp_number, recipientName: user.name, code: rawToken });
+    } else {
+      const clientUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
+      const resetUrl = `${clientUrl}/reset-password?token=${rawToken}`;
+      const result = await sendOutboxEmail(prisma, {
+        registrationId: null,
+        documentId: null,
+        idempotencyKey: `pwd_reset_${user.id}_${Date.now()}`,
+        recipientEmail: user.email,
+        recipientName: user.name,
+        subject: 'Petunjuk Pemulihan Kata Sandi - Layanan Tashih LPMQ',
+        template: 'PASSWORD_RESET',
+        payload: { resetCode: rawToken, resetUrl, expiresMinutes: 10 },
+      });
+      console.info(`[PasswordReset] Email masuk outbox dan dikirim. Outbox ID: ${result?.outbox?.id || 'tersimpan'}`);
+    }
+  } catch (deliveryError) {
+    await prisma.passwordResetToken.deleteMany({ where: { user_id: user.id } });
+    console.error(`[PasswordReset] Provider ${method} gagal mengirim instruksi reset sandi:`, {
+      code: deliveryError.code || 'UNKNOWN',
+      responseCode: deliveryError.providerStatus || deliveryError.responseCode || null,
+      message: deliveryError.message,
     });
     await logAudit({
       actorId: user.id,
-      action: 'PASSWORD_RESET_EMAIL_FAILED',
+      action: `PASSWORD_RESET_${method.toUpperCase()}_FAILED`,
       subjectType: 'User',
       subjectId: user.id,
       details: {
-        error: (emailErr.message || '').slice(0, 255),
-        outbox_id: emailErr.outbox?.id || null,
+        error: (deliveryError.message || '').slice(0, 255),
       },
       req,
     });
@@ -286,7 +292,7 @@ export const forgotPassword = async ({ email, req }) => {
 
   await logAudit({
     actorId: user.id,
-    action: 'FORGOT_PASSWORD_REQUEST',
+    action: `FORGOT_PASSWORD_REQUEST_${method.toUpperCase()}`,
     subjectType: 'User',
     subjectId: user.id,
     req,
@@ -294,6 +300,14 @@ export const forgotPassword = async ({ email, req }) => {
 
   return GENERIC_RESPONSE;
 };
+
+function normalizeResetPhone(value) {
+  if (typeof value !== 'string') return '';
+  const digits = value.trim().replace(/\D/g, '');
+  if (digits.startsWith('0')) return `+62${digits.slice(1)}`;
+  if (digits.startsWith('62')) return `+${digits}`;
+  return value.trim().startsWith('+') ? `+${digits}` : '';
+}
 
 export const resetPassword = async ({ token, new_password, req }) => {
   if (!token || typeof token !== 'string') {
