@@ -53,11 +53,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
       const res = method === 'email'
         ? await authApi.forgotPassword(identifier)
         : await authApi.forgotPassword(identifier, method);
-      if (res.notFound) {
-        setError(res.message);
-      } else {
-        setSuccess(res.message || 'Petunjuk pemulihan telah dikirim melalui kanal yang dipilih.');
-      }
+      setSuccess(res.message || 'Jika akun terdaftar, petunjuk telah dikirim.');
     } catch (err) {
       setError(err.message || 'Gagal memproses permohonan pemulihan kata sandi.');
     } finally {

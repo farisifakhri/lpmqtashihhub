@@ -203,13 +203,7 @@ export const forgotPassword = async ({ email, phone, method = 'email', req }) =>
   }
 
   const GENERIC_RESPONSE = {
-    message: 'Jika akun terdaftar dan memiliki kontak untuk kanal yang dipilih, petunjuk pemulihan telah dikirim.',
-  };
-  const NOT_FOUND_RESPONSE = {
-    notFound: true,
-    message: method === 'whatsapp'
-      ? 'Nomor WhatsApp tersebut tidak ditemukan pada akun aktif.'
-      : 'Email tersebut tidak ditemukan pada akun aktif.',
+    message: 'Jika email terdaftar, petunjuk telah dikirim.',
   };
 
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
@@ -227,7 +221,7 @@ export const forgotPassword = async ({ email, phone, method = 'email', req }) =>
   if (!user || user.status !== 'ACTIVE') {
     await bcrypt.compare('dummyPasswordCompare123', DUMMY_HASH);
     console.info('[PasswordReset] Permintaan pemulihan diabaikan: akun tidak ditemukan atau tidak aktif.');
-    return NOT_FOUND_RESPONSE;
+    return GENERIC_RESPONSE;
   }
 
   // Consistent dummy compare so timing is identical for existing vs non-existing
