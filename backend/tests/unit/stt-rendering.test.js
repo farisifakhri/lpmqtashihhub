@@ -55,3 +55,20 @@ test('U-15: renderSttPdf throws 422 if unsupported Arabic characters are present
   );
 });
 
+
+const returnLetter = notes => ({
+  document_type: 'REVISION_RETURN_LETTER',
+  document_no: 'SPK/LPMQ/2026/0001',
+  version: 1,
+  status: 'DRAFT',
+  content_snapshot: { title: 'Mushaf', registration_no: 'REG-1', publisher: 'PT A', revision_round: 1, notes },
+});
+
+test('renderDraft surat pengembalian menerima catatan multi-baris dan titik tengah', async () => {
+  const bytes = await renderDraft(returnLetter('Hasil sidang:\n[Abdul Wahid, Lc · Juz 1]: mrf;g\r\n\tbaris tab'));
+  assert.equal(Buffer.from(bytes).subarray(0, 5).toString(), '%PDF-');
+});
+
+test('renderDraft surat pengembalian tetap menolak huruf Arab dengan 422', async () => {
+  await assert.rejects(renderDraft(returnLetter('Catatan:\nبسم')), error => error.statusCode === 422);
+});

@@ -7,9 +7,9 @@ import { sttTokenFromText } from './stt-token';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 
-// PDF unggahan tidak tepercaya, jadi eval font dimatikan. Di pdfjs v6 destroy() hanya ada pada loading task.
+// Di pdfjs v6 destroy() hanya ada pada loading task, bukan pada dokumen.
 const withPdf = async (bytes, use) => {
-  const task = pdfjs.getDocument({ data: bytes, isEvalSupported: false });
+  const task = pdfjs.getDocument({ data: bytes });
   try {
     return await use(await task.promise);
   } finally {

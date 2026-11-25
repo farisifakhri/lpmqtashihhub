@@ -29,7 +29,7 @@ export const QUICK_PRESETS = Object.freeze([
   { id: '26-30', label: 'Juz 26–30', from: 26, to: 30 },
 ]);
 
-export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
+export function ManualTeamAssignmentDialog({ id, stage: chosenStage, initialReason, onClose, onAssigned }) {
   const dialog = useRef(null);
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -39,7 +39,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState([]);
   const [juzByAssignee, setJuzByAssignee] = useState({});
-  const [reassignmentReason, setReassignmentReason] = useState('ROTASI_TUGAS');
+  const [reassignmentReason, setReassignmentReason] = useState(initialReason || 'ROTASI_TUGAS');
   const [reassignmentNotes, setReassignmentNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +55,8 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const periodMonths = MONTH_NAMES.map((name, index) => ({ key: `${periodYear}-${index + 1}`, name, label: `${name} ${periodYear}` }));
   const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
   const [confirmClosePeriod, setConfirmClosePeriod] = useState(false);
+  // Pilihan pentashih disimpan per pekan: pentashih pekan lain tidak ikut terbawa ke pekan yang dibuka.
+  const periodDrafts = useRef({});
 
   const auth = useOptionalAuth ? useOptionalAuth() : null;
   const currentUser = auth?.currentUser;
@@ -191,6 +193,23 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
       });
       return next;
     });
+  };
+
+  const switchPeriod = (nextPeriod) => {
+    if (openPeriod) {
+      periodDrafts.current[openPeriod] = { selected, juzByAssignee, rangeInputs, teamId, assignmentMode, groupRange, groupFrom, groupTo };
+    }
+    const draft = (nextPeriod && periodDrafts.current[nextPeriod]) || {};
+    setSelected(draft.selected || []);
+    setJuzByAssignee(draft.juzByAssignee || {});
+    setRangeInputs(draft.rangeInputs || {});
+    setTeamId(draft.teamId || '');
+    setAssignmentMode(draft.assignmentMode || 'TEAM');
+    setGroupRange(draft.groupRange || { from: 1, to: 30 });
+    setGroupFrom(draft.groupFrom ?? 1);
+    setGroupTo(draft.groupTo ?? 30);
+    setOpenPeriod(nextPeriod);
+    setConfirmClosePeriod(false);
   };
 
   // Pilih Tim -> Otomatis centang seluruh anggota tim aktif (Item 3)
@@ -472,7 +491,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                         aria-expanded={isOpen}
                         onClick={() => {
                           if (isOpen) setConfirmClosePeriod(true);
-                          else { setOpenPeriod(periodKey); setConfirmClosePeriod(false); }
+                          else switchPeriod(periodKey);
                         }}
                         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-bold text-ink cursor-pointer"
                       >
@@ -484,7 +503,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                           <span>Tutup Pekan {week}? Isian penugasan tidak hilang selama dialog ini masih terbuka.</span>
                           <span className="flex gap-2">
                             <button type="button" onClick={() => setConfirmClosePeriod(false)} className="rounded-lg border border-line-strong bg-white px-3 py-1.5 font-semibold cursor-pointer">Tetap buka</button>
-                            <button type="button" onClick={() => { setOpenPeriod(null); setConfirmClosePeriod(false); }} className="rounded-lg bg-brand-700 px-3 py-1.5 font-bold text-white hover:bg-brand-800 cursor-pointer">Ya, tutup</button>
+                            <button type="button" onClick={() => switchPeriod(null)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-bold text-white hover:bg-brand-800 cursor-pointer">Ya, tutup</button>
                           </span>
                         </div>
                       )}
@@ -735,6 +754,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                     <option value="BEBAN_KERJA">Penyesuaian Beban Kerja</option>
                     <option value="PENDELEGASIAN">Pendelegasian Tugas Tambahan</option>
                     <option value="PERMINTAAN_DISTRIBUTOR">Kebutuhan Penyesuaian oleh Distributor</option>
+                    <option value="TASHIH_ULANG">Tashih Ulang (Tambah Pekan Pentashihan)</option>
                     <option value="LAINNYA">Penyesuaian Administratif Lainnya</option>
                   </select>
                   <input

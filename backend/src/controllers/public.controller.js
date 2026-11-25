@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { prisma } from '../config/database.js';
 import { readStoredFile } from '../services/storage.service.js';
+import { pendingSurveysForRegistration } from '../services/survey.service.js';
 import { getPublicLandingStatistics } from '../services/landing-statistics.service.js';
 
 export const getLandingStatistics = async (req, res, next) => {
@@ -59,23 +60,37 @@ const toPublicData = (doc) => {
 const notFound = (res, message = 'Dokumen tanda tashih tidak ditemukan atau QR Token tidak valid.') =>
   res.status(404).json({ success: false, message });
 
+// STT terdaftar tetapi arsipnya tidak dapat dipakai: dibedakan dari 404 agar STT asli tidak dicap palsu.
+const unavailable = (res, message = 'STT ini terdaftar di LPMQ, tetapi berkas aslinya belum tersedia untuk dicocokkan. Hubungi LPMQ untuk konfirmasi.') =>
+  res.status(409).json({ success: false, code: 'STT_ORIGINAL_UNAVAILABLE', message });
+
+const isStt = (doc) => doc?.document_type === 'SURAT_TANDA_TASHIH';
+
 // Arsip PDF final STT (issue log #40); hanya STT yang dibuka ke publik, dokumen lain tetap metadata saja.
 const readOriginalStt = async (doc) => {
-  if (doc.document_type !== 'SURAT_TANDA_TASHIH' || !doc.file_id) return null;
+  if (!doc.file_id) return null;
   const file = await prisma.storedFile.findUnique({ where: { id: doc.file_id } });
   if (!file || file.mime_type !== 'application/pdf') return null;
   let bytes;
   try { bytes = await readStoredFile(file.id); }
-  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
-  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) return null;
+  catch (error) { if (error.statusCode === 404) return null; throw error; }
+  if (createHash('sha256').update(bytes).digest('hex') !== file.checksum) {
+    console.error(`[STT ${doc.document_no}] Checksum arsip ${file.id} tidak cocok: berkas arsip rusak atau diubah.`);
+    return null;
+  }
   return { bytes, checksum: file.checksum };
 };
 
 export const getOriginalSttFile = async (req, res, next) => {
   try {
     const doc = await findPublicDocument(req.params.token);
-    const original = doc && await readOriginalStt(doc);
-    if (!original) return notFound(res, 'Berkas asli Surat Tanda Tashih tidak tersedia untuk dokumen ini.');
+    if (!isStt(doc)) return notFound(res);
+    // Sama dengan documentPdf: salinan resmi belum boleh beredar sebelum survei wajib penerbit terisi.
+    if ((await pendingSurveysForRegistration(doc.registration_id)).length) {
+      return unavailable(res, 'Berkas asli STT ini belum dibuka untuk publik.');
+    }
+    const original = await readOriginalStt(doc);
+    if (!original) return unavailable(res);
     const filename = `${(doc.document_no || 'STT').replace(/[^a-zA-Z0-9._-]/g, '_')}.pdf`;
     res.set({
       'Content-Type': 'application/pdf',
@@ -95,9 +110,9 @@ export const checkSttFile = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Unggah berkas PDF untuk dibandingkan dengan arsip.' });
     }
     const doc = await findPublicDocument(req.params.token);
-    if (!doc) return notFound(res);
+    if (!isStt(doc)) return notFound(res);
     const original = await readOriginalStt(doc);
-    if (!original) return notFound(res, 'Berkas asli Surat Tanda Tashih tidak tersedia untuk dokumen ini.');
+    if (!original) return unavailable(res);
     const matches = createHash('sha256').update(req.body).digest('hex') === original.checksum;
     return res.json({ success: true, data: { ...toPublicData(doc), checked_file_integrity: matches ? 'MATCH' : 'MISMATCH' } });
   } catch (error) {

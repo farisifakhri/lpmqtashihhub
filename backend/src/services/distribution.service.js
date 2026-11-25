@@ -277,7 +277,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   if (reg.core_team_number) {
     requireRole(user, ['DISTRIBUTOR']);
     if (reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat membagikan tugas pentashih.');
-  } else {
+  } else if (!(reg.status === 'TASHIH_IN_PROGRESS' && user.roles?.includes('DISTRIBUTOR'))) {
+    // Penugasan awal naskah tanpa tim inti tetap oleh Admin; lanjutan sidang (Sidang Kembali/tambah pentashih)
+    // boleh oleh Distributor, sama dengan aturan keputusan distributor (applyDistributionDecision).
     requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   }
   requireStatus(reg, ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);
@@ -802,6 +804,18 @@ export async function listMyAssignments(user, query = {}) {
   });
 }
 
+// Rekap kelompok (TEAM) hanya menuntaskan anggota yang sudah ditugaskan saat rekap dibuat;
+// penugasan pekan tambahan sesudahnya wajib selesai sendiri sebelum keputusan distributor.
+const teamRecapCovers = (tAssignments) => {
+  const recap = tAssignments
+    .flatMap(a => a.reviews || [])
+    .filter(r => r.recap_scope === 'TEAM' && r.recap_file_id)
+    .sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0))[0];
+  if (!recap) return false;
+  if (!recap.completed_at) return true;
+  return tAssignments.every(a => a.status === 'COMPLETED' || !a.created_at || new Date(a.created_at) <= new Date(recap.completed_at));
+};
+
 export const assertDistributionReviewCompleteness = (assignments, { requireAllPassed = false, allowIncomplete = false } = {}) => {
   const allJuzInIteration = new Set(
     assignments.flatMap(a => (a.juz_items || []).map(j => j.juz_number))
@@ -834,9 +848,7 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
   // Tahap 1: Verifikasi kelengkapan status dan keberadaan review pada penugasan aktif
   const hasIncomplete = activeIndividual.some(item => item.status !== 'COMPLETED' || !item.reviews?.length) ||
     Array.from(activeTeamMap.values()).some(tAssignments => {
-      const allReviews = tAssignments.flatMap(a => a.reviews || []);
-      const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
-      if (teamScopeReview) return false;
+      if (teamRecapCovers(tAssignments)) return false;
       return tAssignments.some(item => item.status !== 'COMPLETED' || !item.reviews?.length);
     });
 
@@ -851,9 +863,7 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
 
   // Tahap 3: Verifikasi keberadaan berkas rekapan internal per unit pada penugasan aktif
   for (const [, tAssignments] of activeTeamMap.entries()) {
-    const allReviews = tAssignments.flatMap(a => a.reviews || []);
-    const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
-    if (!teamScopeReview) {
+    if (!teamRecapCovers(tAssignments)) {
       const missingRecap = tAssignments.some(a => !a.reviews?.some(r => r.recap_file_id));
       if (missingRecap) {
         fail(409, 'Keputusan distributor belum dapat disimpan karena dokumen rekap hasil telaah internal belum diunggah oleh pentashih. Minta pentashih melengkapi dokumen rekap.');
@@ -875,9 +885,7 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
   // Tahap 4: Validasi Integritas Cakupan Juz (Juz Coverage Gate)
   const coveredJuz = new Set();
   for (const [, tAssignments] of activeTeamMap.entries()) {
-    const allReviews = tAssignments.flatMap(a => a.reviews || []);
-    const teamScopeReview = allReviews.find(r => r.recap_scope === 'TEAM' && r.recap_file_id);
-    if (teamScopeReview) {
+    if (teamRecapCovers(tAssignments)) {
       for (const a of tAssignments) {
         for (const j of (a.juz_items || [])) {
           coveredJuz.add(j.juz_number);

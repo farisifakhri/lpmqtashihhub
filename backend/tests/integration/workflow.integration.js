@@ -230,7 +230,10 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/official-documents/${doc.id}/sign`, adminToken, 'POST', {}, 403);
     await expect(`/official-documents/${doc.id}/sign`, kepala, 'POST', {}, 409);
     assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}`)).status, 404);
-    assert.deepEqual((await expect(`/registrations/${reg.id}`, publisherToken)).official_documents, []);
+    // Penerbit hanya melihat surat pengembalian (draf sekalipun); draf BA/STT tetap tertutup.
+    const publisherDocs = (await expect(`/registrations/${reg.id}`, publisherToken)).official_documents;
+    assert.ok(publisherDocs.every(item => item.document_type === 'REVISION_RETURN_LETTER'));
+    assert.ok(!publisherDocs.some(item => item.id === doc.id));
 
     // Issue #40: STT terbit dapat dipratinjau publik dan PDF kiriman dicocokkan dengan arsip; BA tidak dibuka.
     const sttBytes = Buffer.from(await (await fetch(`${base}/official-documents/${doc.id}/pdf`, { headers: { Authorization: `Bearer ${dokumentatorToken}` } })).arrayBuffer());
@@ -239,22 +242,47 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await writeFile(sttPath, sttBytes);
     await prisma.storedFile.create({ data: { id: fileId, owner_id: reg.publisher_id, mime_type: 'application/pdf', file_size: sttBytes.length, checksum: createHash('sha256').update(sttBytes).digest('hex') } });
     const stt = await prisma.officialDocument.create({ data: { registration_id: reg.id, document_type: 'SURAT_TANDA_TASHIH', document_no: `STT-UJI-${fileId}`, status: 'ISSUED', file_id: fileId, issued_at: new Date() } });
-    const sttBase = `${base}/public/verify-document/${stt.qr_token}`;
-    const meta = await (await fetch(sttBase)).json();
-    assert.equal(meta.data.original_file_available, true);
-    const original = await fetch(`${sttBase}/file`);
-    assert.equal(original.status, 200);
-    assert.ok(Buffer.from(await original.arrayBuffer()).equals(sttBytes));
-    const check = async body => (await (await fetch(`${sttBase}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body })).json()).data?.checked_file_integrity;
-    assert.equal(await check(sttBytes), 'MATCH');
-    assert.equal(await check(Buffer.concat([sttBytes, Buffer.from('\n% diubah')])), 'MISMATCH');
-    assert.equal((await fetch(`${sttBase}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: 'bukan pdf' })).status, 400);
-    await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'ISSUED', file_id: fileId } });
-    assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}/file`)).status, 404);
-    await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'DRAFT', file_id: null } });
-    await prisma.officialDocument.delete({ where: { id: stt.id } });
-    await prisma.storedFile.delete({ where: { id: fileId } });
-    await unlink(sttPath);
+    try {
+      const sttBase = `${base}/public/verify-document/${stt.qr_token}`;
+      const meta = await (await fetch(sttBase)).json();
+      assert.equal(meta.data.original_file_available, true);
+      const original = await fetch(`${sttBase}/file`);
+      assert.equal(original.status, 200);
+      assert.ok(Buffer.from(await original.arrayBuffer()).equals(sttBytes));
+      const checkFile = body => fetch(`${sttBase}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body });
+      const check = async body => (await (await checkFile(body)).json()).data?.checked_file_integrity;
+      assert.equal(await check(sttBytes), 'MATCH');
+      assert.equal(await check(Buffer.concat([sttBytes, Buffer.from('\n% diubah')])), 'MISMATCH');
+      assert.equal((await checkFile('bukan pdf')).status, 400);
+      assert.equal((await fetch(`${base}/public/verify-document/${randomUUID()}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: sttBytes })).status, 404);
+      // Sebelum survei wajib terisi, salinan asli tidak dibuka ke publik; pencocokan tetap jalan.
+      const unsur = await prisma.surveyUnsur.create({ data: { name: 'Unsur uji #40' } });
+      const question = await prisma.surveyQuestion.create({ data: { text: 'Pertanyaan uji #40', unsur_id: unsur.id } });
+      const survey = await prisma.survey.create({ data: { name: 'Survei uji #40', status: 'AKTIF', items: { create: { unsur_id: unsur.id, question_id: question.id } } } });
+      try {
+        const gated = await fetch(`${sttBase}/file`);
+        assert.equal(gated.status, 409);
+        assert.equal((await gated.json()).code, 'STT_ORIGINAL_UNAVAILABLE');
+        assert.equal(await check(sttBytes), 'MATCH');
+      } finally {
+        await prisma.survey.delete({ where: { id: survey.id } });
+        await prisma.surveyQuestion.delete({ where: { id: question.id } });
+        await prisma.surveyUnsur.delete({ where: { id: unsur.id } });
+      }
+      // STT terdaftar tetapi arsip rusak: 409 bercode, bukan 404 yang membuat STT asli tampak palsu.
+      await writeFile(sttPath, Buffer.concat([sttBytes, Buffer.from('rusak')]));
+      const broken = await checkFile(sttBytes);
+      assert.equal(broken.status, 409);
+      assert.equal((await broken.json()).code, 'STT_ORIGINAL_UNAVAILABLE');
+      assert.equal((await fetch(`${sttBase}/file`)).status, 409);
+      await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'ISSUED', file_id: fileId } });
+      assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}/file`)).status, 404);
+    } finally {
+      await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'DRAFT', file_id: null } });
+      await prisma.officialDocument.delete({ where: { id: stt.id } });
+      await prisma.storedFile.delete({ where: { id: fileId } });
+      await unlink(sttPath).catch(() => {});
+    }
   });
 
   await test('Workflow: notifikasi hanya dapat dibaca oleh penerima', async () => {
