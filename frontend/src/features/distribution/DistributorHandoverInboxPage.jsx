@@ -463,6 +463,8 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
           canAssign={(reg) => (reg.core_team_number ? isDistributor && reg.core_distributor_id === currentUser?.id : isAdmin)}
           onStartAssignment={setStageChoiceReg}
           onRevokePentashih={(assignment, reg) => setRevokeTarget({ assignment, registration: reg })}
+          // Sama dengan distribution.revokeAssignment: Distributor (tim inti: hanya distributornya) atau Super Admin.
+          canRevoke={(reg) => isSuperAdmin || (isDistributor && (!reg.core_team_number || reg.core_distributor_id === currentUser?.id))}
         />
       )}
 

@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { Button } from '@/components/ui/Button';
 import { getReviewProgress } from '../distribution-view-model';
 
-export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = [], inProgressRegistrations, fetchDistributionData, setReviewDialogRegId, onRevokePentashih, canAssign = () => false, onStartAssignment }) => (
+export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = [], inProgressRegistrations, fetchDistributionData, setReviewDialogRegId, onRevokePentashih, canAssign = () => false, canRevoke = () => false, onStartAssignment }) => (
         <div className="bg-white rounded-2xl border border-line/90 shadow-xs overflow-hidden">
           <div className="p-5 sm:p-6 border-b border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -178,18 +178,19 @@ export const ReviewProgressPanel = ({ distLoading, waitingDistRegistrations = []
                                   (Dicabut)
                                 </span>
                               )}
-                              {!isDone && !isRevoked && onRevokePentashih && (
+                              {!isDone && !isRevoked && onRevokePentashih && canRevoke(reg) && (
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onRevokePentashih(a, reg);
                                   }}
-                                  title={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
-                                  aria-label={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
-                                  className="ml-0.5 p-0.5 rounded text-ink-muted hover:text-civic-danger hover:bg-surface-subtle transition-colors"
+                                  title={`Cabut penugasan ${a.assignee?.name || 'pentashih'}`}
+                                  aria-label={`Cabut penugasan ${a.assignee?.name || 'pentashih'}`}
+                                  className="ml-1 inline-flex items-center gap-0.5 rounded border border-civic-dangerLine bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-civic-danger hover:bg-civic-dangerSoft focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-danger transition-colors"
                                 >
-                                  <UserX className="w-3 h-3" />
+                                  <UserX className="w-3 h-3" aria-hidden="true" />
+                                  Cabut
                                 </button>
                               )}
                             </span>
