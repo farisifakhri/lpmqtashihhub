@@ -19,6 +19,7 @@ const labels = {
   BERITA_ACARA_VERIFIKASI: 'Berita Acara Verifikasi',
   BERITA_ACARA_TASHIH: 'Berita Acara Tashih',
   SURAT_TANDA_TASHIH: 'Surat Tanda Tashih',
+  REVISION_RETURN_LETTER: 'Surat Pengembalian dan Catatan Hasil Tashih',
 };
 
 const statusBadgeClasses = {

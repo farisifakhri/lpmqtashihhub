@@ -2083,7 +2083,7 @@ export const getDetail = async (id, user) => {
   }
   if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = (reg.official_documents || [])
-      .filter(document => document.status === 'ISSUED')
+      .filter(document => document.status === 'ISSUED' || document.document_type === 'REVISION_RETURN_LETTER')
       .map(doc => {
         if (!doc.content_snapshot) return doc;
         let snap = doc.content_snapshot;

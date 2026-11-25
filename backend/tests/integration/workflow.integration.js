@@ -220,7 +220,10 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/official-documents/${doc.id}/sign`, adminToken, 'POST', {}, 403);
     await expect(`/official-documents/${doc.id}/sign`, kepala, 'POST', {}, 409);
     assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}`)).status, 404);
-    assert.deepEqual((await expect(`/registrations/${reg.id}`, publisherToken)).official_documents, []);
+    // Penerbit hanya melihat surat pengembalian (draf sekalipun); draf BA/STT tetap tertutup.
+    const publisherDocs = (await expect(`/registrations/${reg.id}`, publisherToken)).official_documents;
+    assert.ok(publisherDocs.every(item => item.document_type === 'REVISION_RETURN_LETTER'));
+    assert.ok(!publisherDocs.some(item => item.id === doc.id));
 
     // Issue #40: STT terbit dapat dipratinjau publik dan PDF kiriman dicocokkan dengan arsip; BA tidak dibuka.
     const sttBytes = Buffer.from(await (await fetch(`${base}/official-documents/${doc.id}/pdf`, { headers: { Authorization: `Bearer ${dokumentatorToken}` } })).arrayBuffer());
