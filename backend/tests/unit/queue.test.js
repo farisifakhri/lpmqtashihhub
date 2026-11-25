@@ -84,7 +84,9 @@ test('queue list and count filters select the documented admin tabs', () => {
   assert.deepEqual(intakeWhere.OR.map(({ status, revision_source }) => [status, revision_source]), [
     ['READY_FOR_VERIFICATION', undefined],
     ['REVISION_REQUIRED', 'PHYSICAL_MASTER'],
+    ['REVISION_REQUIRED', 'TASHIH_REVISION'],
   ]);
+  assert.deepEqual(intakeWhere.OR[2].physical_master_intake, { status: 'PENDING' });
   assert.deepEqual(buildUnassignedVerificationWhere(), {
     status: 'READY_FOR_VERIFICATION',
     physical_master_intake: { status: 'RECEIVED', receipt_no: { not: null } },

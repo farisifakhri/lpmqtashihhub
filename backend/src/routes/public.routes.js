@@ -85,6 +85,9 @@ router.get('/statistics', mapLimit, publicController.getLandingStatistics);
 
 // Endpoint verifikasi publik tanpa otentikasi
 router.get('/verify-document/:token', qrLimit, publicController.verifyDocumentByQrToken);
+// Issue #40: pratinjau/unduh STT asli dan pembandingan PDF kiriman dengan arsip final.
+router.get('/verify-document/:token/file', qrLimit, publicController.getOriginalSttFile);
+router.post('/verify-document/:token/check-file', qrLimit, express.raw({ type: 'application/pdf', limit: '10mb' }), publicController.checkSttFile);
 router.get('/verify-internal/:token', qrLimit, async (req, res, next) => {
   try { res.json({ success: true, data: await publicVerification(req.params.token) }); }
   catch (error) { next(error); }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShieldCheck, CheckCircle2, Award, Calendar, Building2, ArrowLeft, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ShieldCheck, CheckCircle2, Award, Calendar, Building2, ArrowLeft, AlertTriangle, RefreshCw, FileText, FileSearch } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { publicApi } from '@/api/public.api';
 
@@ -9,19 +9,26 @@ export const PublicDocumentVerification = () => {
   const [loading, setLoading] = useState(true);
   const [doc, setDoc] = useState(null);
   const [error, setError] = useState(null);
+  const [opening, setOpening] = useState(false);
+  const [fileError, setFileError] = useState(null);
 
-  // Fallback demo document
-  const defaultDemoDoc = {
-    documentNumber: 'B-1422/LPMQ.01/TL.00/09/2026',
-    documentTitle: "SURAT TANDA TASHIH MUSHAF AL-QUR'AN",
-    mushafTitle: "Mushaf Al-Qur'an Al-Karim Rasm Usmani Terjemah Tajwid Warna",
-    publisherName: 'PT Penerbit Al-Huda Nusantara',
-    mushafCategory: 'Al-Qur’an dan Terjemah (30 Juz)',
-    beritaAcaraRef: 'BA-TSH/LPMQ/2026/08/0412',
-    signedBy: 'Dr. H. Abdul Aziz Sidqi, M.Ag',
-    signedTitle: 'Kepala Lajnah Pentashihan Mushaf Al-Qur’an',
-    signedDate: '2 September 2026',
-    status: 'VALID',
+  // Pratinjau/unduh STT asli dari arsip (issue log #40).
+  const openOriginal = async () => {
+    const preview = window.open('', '_blank');
+    setOpening(true);
+    setFileError(null);
+    try {
+      const blob = await publicApi.getOriginalSttFile(token);
+      const url = URL.createObjectURL(blob);
+      if (preview) preview.location.href = url;
+      else window.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      preview?.close();
+      setFileError(err.message);
+    } finally {
+      setOpening(false);
+    }
   };
 
   useEffect(() => {
@@ -29,39 +36,27 @@ export const PublicDocumentVerification = () => {
       setLoading(true);
       setError(null);
 
-      // Jika token khusus demo, tampilkan demo document langsung
-      if (token === 'DEMO-QR-TOKEN-2026') {
-        setDoc(defaultDemoDoc);
-        setLoading(false);
-        return;
-      }
-
       try {
         const res = await publicApi.verifyDocument(token);
-        if (res?.data) {
-          const d = res.data;
-          setDoc({
-            documentNumber: d.document_no || d.documentNumber,
-            documentTitle: d.title || "SURAT TANDA TASHIH MUSHAF AL-QUR'AN",
-            mushafTitle: d.registration?.title || d.mushafTitle,
-            publisherName: d.registration?.publisher?.legal_name || d.publisherName,
-            mushafCategory: d.registration?.service_type?.category?.name || d.mushafCategory,
-            beritaAcaraRef: d.ba_ref || 'BA-TSH/LPMQ/2026',
-            signedBy: d.signer_name || 'Kepala LPMQ Kemenag RI',
-            signedTitle: 'Kepala Lajnah Pentashihan Mushaf Al-Qur’an',
-            signedDate: d.issued_at ? new Date(d.issued_at).toLocaleDateString('id-ID') : 'Terbit',
-            status: d.status || 'VALID',
-          });
-        } else {
-          setDoc(defaultDemoDoc);
-        }
+        const d = res?.data;
+        // Tanpa data dari server dokumen tidak boleh ditampilkan sebagai sah.
+        if (!d) throw new Error('Dokumen resmi tidak ditemukan atau token tidak valid');
+        setDoc({
+          documentNumber: d.document_no,
+          documentTitle: d.document_type === 'BERITA_ACARA_TASHIH' ? 'BERITA ACARA TASHIH' : "SURAT TANDA TASHIH MUSHAF AL-QUR'AN",
+          mushafTitle: d.title,
+          publisherName: d.publisher_name,
+          mushafCategory: d.service_name,
+          signedBy: d.signatories?.[0]?.name_position_snapshot || 'Kepala LPMQ Kemenag RI',
+          signedTitle: 'Kepala Lajnah Pentashihan Mushaf Al-Qur’an',
+          signedDate: d.issued_at ? new Date(d.issued_at).toLocaleDateString('id-ID') : '—',
+          validUntil: d.valid_until ? new Date(d.valid_until).toLocaleDateString('id-ID') : null,
+          status: d.status,
+          isValid: d.is_valid,
+          originalAvailable: d.original_file_available,
+        });
       } catch (err) {
-        // Fallback untuk token simulasi jika belum ada STT di database
-        if (token?.includes('DEMO')) {
-          setDoc(defaultDemoDoc);
-        } else {
-          setError(err.message || 'Dokumen resmi tidak ditemukan atau token tidak valid.');
-        }
+        setError(err.message || 'Dokumen resmi tidak ditemukan atau token tidak valid.');
       } finally {
         setLoading(false);
       }
@@ -132,17 +127,50 @@ export const PublicDocumentVerification = () => {
             </div>
 
             {/* Status Keabsahan Banner */}
-            <div className="my-6 p-4 rounded-lg bg-brand-50 border border-brand-100 flex items-center gap-3">
-              <CheckCircle2 className="w-6 h-6 text-brand-700 flex-shrink-0" />
-              <div>
-                <h2 className="text-sm font-bold text-brand-900">
-                  DOKUMEN RESMI TERCATAT & TERVERIFIKASI
-                </h2>
-                <p className="text-xs text-brand-fg">
-                  Surat Tanda Tashih sah dan tercatat dalam pangkalan data Lajnah Pentashihan Mushaf Al-Qur'an Kemenag RI.
-                </p>
+            {doc?.isValid ? (
+              <div className="my-6 p-4 rounded-lg bg-brand-50 border border-brand-100 flex items-center gap-3">
+                <CheckCircle2 className="w-6 h-6 text-brand-700 flex-shrink-0" />
+                <div>
+                  <h2 className="text-sm font-bold text-brand-900">
+                    DOKUMEN RESMI TERCATAT & TERVERIFIKASI
+                  </h2>
+                  <p className="text-xs text-brand-fg">
+                    Dokumen sah dan tercatat dalam pangkalan data Lajnah Pentashihan Mushaf Al-Qur'an Kemenag RI.
+                  </p>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="my-6 p-4 rounded-lg bg-civic-dangerSoft border border-civic-dangerLine flex items-center gap-3">
+                <AlertTriangle className="w-6 h-6 text-civic-danger flex-shrink-0" />
+                <div>
+                  <h2 className="text-sm font-bold text-civic-danger">
+                    DOKUMEN TERCATAT TETAPI TIDAK BERLAKU ({doc?.status === 'REVOKED' ? 'DICABUT' : 'KEDALUWARSA'})
+                  </h2>
+                  <p className="text-xs text-ink-muted">
+                    Dokumen ini pernah diterbitkan LPMQ, tetapi saat ini tidak lagi berlaku.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {doc?.originalAvailable && (
+              <div className="mb-6 p-4 rounded-lg border border-line bg-canvas space-y-2 relative z-10">
+                <p className="text-xs text-ink-muted">
+                  Bandingkan surat yang Anda pegang dengan STT asli dari arsip LPMQ. Yang berlaku adalah isi STT asli.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="primary" size="sm" onClick={openOriginal} disabled={opening} icon={<FileText className="w-4 h-4" />}>
+                    {opening ? 'Membuka…' : 'Lihat / Unduh STT Asli'}
+                  </Button>
+                  <Link to="/cek-dokumen">
+                    <Button type="button" variant="outline" size="sm" icon={<FileSearch className="w-4 h-4" />}>
+                      Cocokkan PDF yang Anda miliki
+                    </Button>
+                  </Link>
+                </div>
+                {fileError && <p role="alert" className="text-xs text-civic-danger">{fileError}</p>}
+              </div>
+            )}
 
             {/* Detail Surat Tanda Tashih */}
             <div className="space-y-4 text-sm relative z-10">
@@ -172,15 +200,13 @@ export const PublicDocumentVerification = () => {
                 </div>
 
                 <div className="flex items-center justify-between border-b border-line pb-2.5">
-                  <span className="text-ink-muted text-xs">Kategori Mushaf:</span>
+                  <span className="text-ink-muted text-xs">Jenis Layanan:</span>
                   <span className="font-medium text-ink">{doc?.mushafCategory}</span>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-line pb-2.5">
-                  <span className="text-ink-muted text-xs">Dasar Berita Acara Tashih:</span>
-                  <span className="font-mono text-xs font-semibold text-brand-fg">
-                    {doc?.beritaAcaraRef}
-                  </span>
+                  <span className="text-ink-muted text-xs">Berlaku Sampai:</span>
+                  <span className="font-medium text-ink">{doc?.validUntil || '—'}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -201,12 +227,14 @@ export const PublicDocumentVerification = () => {
                 </div>
 
                 <div className="text-center sm:text-right">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-civicGold-100 border border-civicGold-700 text-civicGold-700 text-xs font-semibold">
-                    <Award className="w-4 h-4" />
-                    <span>Sertifikat Asli Bersertifikasi</span>
-                  </div>
+                  {doc?.isValid && (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded bg-civicGold-100 border border-civicGold-700 text-civicGold-700 text-xs font-semibold">
+                      <Award className="w-4 h-4" />
+                      <span>Dokumen Asli Terdaftar</span>
+                    </div>
+                  )}
                   <p className="text-xs font-mono text-ink-muted mt-1">
-                    Token: {token || 'DEMO-TOKEN'}
+                    Token: {token}
                   </p>
                 </div>
               </div>

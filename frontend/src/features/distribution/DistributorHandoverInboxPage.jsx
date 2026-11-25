@@ -60,6 +60,7 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
   const [assignmentModalId, setAssignmentModalId] = useState(null);
   const [stageChoiceReg, setStageChoiceReg] = useState(null); // pop-up "Mulai Penugasan"
   const [assignmentStage, setAssignmentStage] = useState(null); // jenis penugasan yang dipilih di pop-up
+  const [assignmentReason, setAssignmentReason] = useState(null); // TASHIH_ULANG saat menambah pekan dari dialog reviu
   // ?review=<id> (tautan notifikasi pemaraf) langsung membuka dialog reviu
   const [reviewDialogRegId, setReviewDialogRegId] = useState(searchParams.get('review'));
   const [revokeTarget, setRevokeTarget] = useState(null);
@@ -463,6 +464,8 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
           canAssign={(reg) => (reg.core_team_number ? isDistributor && reg.core_distributor_id === currentUser?.id : isAdmin)}
           onStartAssignment={setStageChoiceReg}
           onRevokePentashih={(assignment, reg) => setRevokeTarget({ assignment, registration: reg })}
+          // Sama dengan distribution.revokeAssignment: Distributor (tim inti: hanya distributornya) atau Super Admin.
+          canRevoke={(reg) => isSuperAdmin || (isDistributor && (!reg.core_team_number || reg.core_distributor_id === currentUser?.id))}
         />
       )}
 
@@ -481,6 +484,7 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
           onClose={() => setStageChoiceReg(null)}
           onChoose={(stage) => {
             setAssignmentStage(stage);
+            setAssignmentReason(null);
             setAssignmentModalId(stageChoiceReg.id);
             setStageChoiceReg(null);
           }}
@@ -491,6 +495,7 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
         <ManualTeamAssignmentDialog
           id={assignmentModalId}
           stage={assignmentStage}
+          initialReason={assignmentReason}
           onClose={() => setAssignmentModalId(null)}
           onAssigned={() => {
             setAssignmentModalId(null);
@@ -506,6 +511,16 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
           onSuccess={() => {
             setReviewDialogRegId(null);
             fetchDistributionData();
+          }}
+          // Sama dengan createAssignments: tim inti hanya distributornya; tanpa tim inti, Distributor atau Admin saat sidang berjalan.
+          canAddWeek={(reg) => (reg?.core_team_number ? isDistributor && reg.core_distributor_id === currentUser?.id : isDistributor || isAdmin)}
+          onAddWeek={(reg) => {
+            // Pekan tambahan memakai tahap sidang yang sedang berjalan (iterasi terakhir).
+            const latest = [...(reg.assignments || [])].sort((a, b) => (b.iteration || 1) - (a.iteration || 1))[0];
+            setAssignmentStage(latest?.stage || null);
+            setAssignmentReason('TASHIH_ULANG');
+            setReviewDialogRegId(null);
+            setAssignmentModalId(reg.id);
           }}
         />
       )}

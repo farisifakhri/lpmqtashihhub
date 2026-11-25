@@ -79,6 +79,7 @@ export const InternalPaymentQueuePage = () => {
 
   // Confirmation dialog for verifying payment
   const [verifyConfirmOpen, setVerifyConfirmOpen] = useState(false);
+  const [verifyError, setVerifyError] = useState(null);
 
   // Modal Penolakan / Pengembalian Bukti Bayar
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -174,7 +175,14 @@ export const InternalPaymentQueuePage = () => {
 
   const selectedPayment = useMemo(() => {
     if (paymentDetail && paymentDetail.id === selectedPaymentId) {
-      return { ...rawSelectedPayment, ...paymentDetail };
+      return {
+        ...paymentDetail,
+        ...rawSelectedPayment,
+        registration: {
+          ...(paymentDetail.registration || {}),
+          ...(rawSelectedPayment?.registration || {}),
+        },
+      };
     }
     return rawSelectedPayment;
   }, [rawSelectedPayment, paymentDetail, selectedPaymentId]);
@@ -183,24 +191,49 @@ export const InternalPaymentQueuePage = () => {
   const receiptExt = receiptMime.includes('pdf') ? 'pdf' : (receiptMime.includes('png') ? 'png' : (receiptMime.includes('jpeg') || receiptMime.includes('jpg') ? 'jpg' : ''));
   const receiptFileName = receiptExt ? `bukti_bayar_${selectedPayment?.billing_no}.${receiptExt}` : (selectedPayment ? `bukti_bayar_${selectedPayment.billing_no}` : 'bukti_bayar');
 
+  const completePaymentVerification = (paymentId, billingNo, paymentData = {}) => {
+    const verifiedPayment = { ...paymentData, id: paymentId, status: 'VERIFIED' };
+    setPayments((current) => current.map((payment) => (
+      payment.id === paymentId ? { ...payment, ...verifiedPayment } : payment
+    )));
+    setPaymentDetail((current) => (
+      current?.id === paymentId ? { ...current, ...verifiedPayment } : current
+    ));
+    invalidateQueueCounts();
+    setSuccessMessage(
+      `Pembayaran untuk nomor billing ${billingNo} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
+    );
+    setVerifyError(null);
+    setVerifyConfirmOpen(false);
+    setSelectedPaymentId(paymentId);
+    setActiveTab('VERIFIED');
+    setPagination((prev) => ({ ...prev, page: 1 }));
+  };
+
   const handleVerify = async () => {
     if (!selectedPayment) return;
 
+    const paymentId = selectedPayment.id;
+    const billingNo = selectedPayment.billing_no;
     setActionLoading(true);
     setError(null);
+    setVerifyError(null);
     setSuccessMessage(null);
     try {
-      await paymentApi.verifyPayment(selectedPayment.id);
-      invalidateQueueCounts();
-      setSuccessMessage(
-        `Pembayaran untuk nomor billing ${selectedPayment.billing_no} berhasil diverifikasi sah (LUNAS). Naskah siap diserahkan ke Distributor.`
-      );
-      setVerifyConfirmOpen(false);
-      setSelectedPaymentId(selectedPayment.id);
-      setActiveTab('VERIFIED');
-      setPagination(prev => ({ ...prev, page: 1 }));
+      const response = await paymentApi.verifyPayment(paymentId);
+      completePaymentVerification(paymentId, billingNo, response?.data);
     } catch (err) {
-      setError(err.message || 'Gagal memverifikasi pembayaran.');
+      let message = err.message || 'Gagal memverifikasi pembayaran.';
+      try {
+        const latest = await paymentApi.getPaymentDetail(paymentId);
+        if (latest?.data?.status === 'VERIFIED') {
+          completePaymentVerification(paymentId, billingNo, latest.data);
+          return;
+        }
+      } catch (refreshError) {
+        message = `${message} Status terbaru belum dapat dipastikan: ${refreshError.message || 'Gagal memuat ulang detail tagihan.'}`;
+      }
+      setVerifyError(message);
     } finally {
       setActionLoading(false);
     }
@@ -513,7 +546,10 @@ export const InternalPaymentQueuePage = () => {
 
             <Button
               variant="primary"
-              onClick={() => setVerifyConfirmOpen(true)}
+              onClick={() => {
+                setVerifyError(null);
+                setVerifyConfirmOpen(true);
+              }}
               disabled={actionLoading}
               className="text-xs"
             >
@@ -657,7 +693,10 @@ export const InternalPaymentQueuePage = () => {
       {selectedPayment && (
         <ConfirmationSummaryDialog
           isOpen={verifyConfirmOpen}
-          onClose={() => setVerifyConfirmOpen(false)}
+          onClose={() => {
+            setVerifyConfirmOpen(false);
+            setVerifyError(null);
+          }}
           onConfirm={handleVerify}
           title="Sahkan Pembayaran PNBP (Lunas)"
           description="Pastikan data NTPN dan bukti transfer bank telah cocok dengan catatan persepsi kas negara."
@@ -673,9 +712,10 @@ export const InternalPaymentQueuePage = () => {
             { label: 'Nominal Tarif', value: formatCurrency(selectedPayment.amount) },
           ]}
           impactMessage="Status pembayaran akan menjadi LUNAS (VERIFIED) dan naskah resmi siap diserahkan ke Distributor Pentashihan (Langkah 7 SOP)."
-          confirmLabel="Sahkan & Tetapkan Lunas"
+          confirmLabel={actionLoading ? 'Memproses...' : 'Sahkan & Tetapkan Lunas'}
           confirmVariant="primary"
           loading={actionLoading}
+          errorMessage={verifyError}
         />
       )}
 
@@ -696,13 +736,6 @@ export const InternalPaymentQueuePage = () => {
               </button>
             </div>
 
-            {modalError && (
-              <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
-                <span>{modalError}</span>
-              </div>
-            )}
-
             <p className="text-xs text-ink-muted leading-relaxed">
               Berikan alasan penolakan secara jelas kepada penerbit (misalnya: nominal transfer kurang, NTPN salah, atau bukti buram). Status tagihan akan dikembalikan ke <b>Menunggu Pembayaran (UNPAID)</b>.
             </p>
@@ -722,6 +755,13 @@ export const InternalPaymentQueuePage = () => {
                 />
                 <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
+
+              {modalError && (
+                <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-civic-danger shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
 
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button

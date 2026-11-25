@@ -33,6 +33,7 @@ export function PublisherDigitalFilesTab({
     revision,
     requiredFiles,
     submitError,
+    uploadError,
     type,
     setType,
     file,
@@ -364,6 +365,12 @@ export function PublisherDigitalFilesTab({
                                 />
                             </div>
 
+                            {uploadError && (
+                                <div role="alert" className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-semibold text-civic-danger">
+                                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                    <span>{uploadError}</span>
+                                </div>
+                            )}
                             <Button
                                 type="submit"
                                 disabled={busy || !file}

@@ -1,8 +1,34 @@
-import apiClient from './client';
+import apiClient, { ApiError } from './client';
+
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const sttUrl = (token, suffix) => `${API_BASE}/public/verify-document/${encodeURIComponent(token)}/${suffix}`;
+// Status ikut dibawa agar halaman dapat membedakan 404 (QR tidak terdaftar) dari gangguan lain.
+const failWith = async (response, fallback) => {
+  const body = await response.json().catch(() => ({}));
+  const message = response.status === 429 ? 'Terlalu banyak pemeriksaan dalam waktu singkat. Tunggu sebentar lalu coba lagi.' : body.message || fallback;
+  throw new ApiError(message, response.status, body);
+};
+// fetch langsung melempar TypeError berbahasa Inggris saat jaringan putus.
+const send = (url, init) => fetch(url, init).catch(() => {
+  throw new ApiError('Tidak dapat menghubungi server LPMQ. Periksa koneksi lalu coba lagi.', 0);
+});
 
 export const publicApi = {
   verifyDocument: async (token) => {
     return apiClient(`/public/verify-document/${encodeURIComponent(token)}`);
+  },
+  // PDF biner, jadi memakai fetch langsung (apiClient selalu mengirim JSON).
+  getOriginalSttFile: async (token) => {
+    const response = await send(sttUrl(token, 'file'));
+    if (!response.ok) await failWith(response, 'Berkas asli STT tidak tersedia.');
+    return response.blob();
+  },
+  checkSttFile: async (token, file) => {
+    const response = await send(sttUrl(token, 'check-file'), {
+      method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: file,
+    });
+    if (!response.ok) await failWith(response, 'PDF belum dapat diperiksa.');
+    return (await response.json()).data;
   },
   publisherMap: () => apiClient('/public/publisher-map'),
   // Mengambil angka statistik ringkasan agregat (STT Terbit, Penerbit, Pentashih) untuk Landing Page

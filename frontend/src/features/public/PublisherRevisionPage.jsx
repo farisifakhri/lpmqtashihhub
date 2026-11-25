@@ -168,7 +168,20 @@ export const PublisherRevisionPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isSubmitting) return;
         setSubmitError("");
+
+        const requiredFields = [
+            ["nama_penerbit", "Nama penerbit"],
+            ["alamat_lengkap", "Alamat lengkap"],
+            ["nama_penanggung_jawab", "Nama penanggung jawab"],
+            ["telepon_penanggung_jawab", "Telepon penanggung jawab"],
+        ];
+        const missingField = requiredFields.find(([key]) => !String(editableFields[key] || "").trim());
+        if (missingField) {
+            setSubmitError(`${missingField[1]} wajib diisi.`);
+            return;
+        }
 
         const payload = new FormData();
         payload.append("nama_penerbit", editableFields.nama_penerbit.trim());
@@ -389,17 +402,6 @@ export const PublisherRevisionPage = () => {
                 {/* Form Perbaikan Dokumen & Data */}
                 {!isLoading && !loadError && !submitSuccess && revisionData && (
                     <form onSubmit={handleSubmit} className="space-y-5">
-                        {/* Error Alert Submit */}
-                        {submitError && (
-                            <div
-                                role="alert"
-                                className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5 animate-fadeIn"
-                            >
-                                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                                <span className="leading-relaxed">{submitError}</span>
-                            </div>
-                        )}
-
                         {/* Catatan Kekurangan dari Petugas */}
                         <div className="p-4 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-ink space-y-2">
                             <div className="flex items-center gap-2 text-civic-warning font-bold text-xs uppercase tracking-wide">
@@ -589,6 +591,15 @@ export const PublisherRevisionPage = () => {
 
                         {/* Tombol Kirim Ulang Perbaikan */}
                         <div className="pt-3 border-t border-line">
+                            {submitError && (
+                                <div
+                                    role="alert"
+                                    className="mb-3 p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5 animate-fadeIn"
+                                >
+                                    <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                    <span className="leading-relaxed">{submitError}</span>
+                                </div>
+                            )}
                             <button
                                 type="submit"
                                 disabled={isSubmitting}

@@ -398,6 +398,8 @@ export async function renderDraft(document) {
     if (!obj) return;
     if (typeof obj === 'string') {
       for (const char of obj) {
+        // Pemisah baris/tab tidak digambar langsung: printLine mencetak per baris.
+        if (char === '\n' || char === '\r' || char === '\t') continue;
         try { font.encodeText(char); }
         catch {
           fail(422, 'PDF draf belum dapat dibuat karena ada karakter, misalnya huruf Arab, yang belum didukung. Data draf tetap tersimpan. Hubungi administrator untuk dukungan huruf pada dokumen; jangan mengubah isi naskah hanya untuk mengatasi kendala ini.');
@@ -453,9 +455,9 @@ export async function renderDraft(document) {
 
     printLine('CATATAN DAN ARAHAN KOREKSI RESMI', true, 10);
     const noteText = String(snap.notes || '-');
-    const noteLines = noteText.split('\n');
+    const noteLines = noteText.split(/\r\n|\r|\n/);
     for (const nl of noteLines) {
-      if (nl.trim()) printLine(nl.trim(), false, 8.5, 52);
+      if (nl.trim()) printLine(nl.replace(/\t/g, ' ').trim(), false, 8.5, 52);
     }
     y -= 8;
 

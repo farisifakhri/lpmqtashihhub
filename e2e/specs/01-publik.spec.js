@@ -70,8 +70,7 @@ test.describe('Halaman publik', () => {
   });
 
   test('URL yang tidak ada menampilkan halaman 404 yang ramah pengguna', async ({ page }) => {
-    test.fail(true, 'BUG DIKETAHUI: router belum punya halaman 404/errorElement, sehingga tampil pesan developer React Router.');
     await buka(page, '/halaman-yang-tidak-ada');
-    await expect(page.getByText('Hey developer')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Halaman yang Anda cari tidak tersedia' })).toBeVisible();
   });
 });

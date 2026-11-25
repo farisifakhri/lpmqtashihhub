@@ -22,7 +22,18 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   let notaNo;
 
   await test('PR-VER-02: deklarasi fisik dibatasi pemilik dan bukti pendaftaran aman', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Intake SOP Verifikasi', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Intake SOP Verifikasi',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherBToken, 'PUT', declaration, 403);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', { ...declaration, format: 'A5' }, 400);
     const intake = await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', declaration);
@@ -74,6 +85,8 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
 
     await expect(assignPath, adminToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
 
+    // Issue #21: verifikator tim inti hanya default; Admin Internal boleh memilih verifikator aktif lain.
+    await prisma.registration.update({ where: { id: reg.id }, data: { core_team_number: 1, core_verifier_id: otherRole.id } });
   });
 
   let createdNotaNo = null;
@@ -93,7 +106,10 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.ok([nota1, nota2].includes(created.nota_dinas.document_no));
     assert.equal(created.nota_dinas.status, 'ISSUED');
     assert.ok(new Date(created.assignment.due_at).getTime() > new Date(created.assignment.assigned_at).getTime());
-    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_ASSIGNED');
+    const assignedReg = await prisma.registration.findUnique({ where: { id: reg.id } });
+    assert.equal(assignedReg.status, 'VERIFICATION_ASSIGNED');
+    assert.equal(created.assignment.verifier_id, verifier.id);
+    assert.equal(assignedReg.core_verifier_id, verifier.id);
     assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.verificationDocument.count({ where: { registration_id: reg.id, document_type: 'NOTA_DINAS_VERIFIKASI' } }), 1);
     assert.equal(await prisma.statusHistory.count({ where: { registration_id: reg.id, to_status: 'VERIFICATION_ASSIGNED' } }), 1);
@@ -116,7 +132,18 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {
-    const another = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Master Dikembalikan', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    const another = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Master Dikembalikan',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });

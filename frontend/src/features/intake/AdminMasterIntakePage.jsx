@@ -47,6 +47,9 @@ export const AdminMasterIntakePage = () => {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [searchError, setSearchError] = useState(null);
+  const [receiveError, setReceiveError] = useState(null);
+  const [returnModalError, setReturnModalError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
   // Selected registration state
@@ -177,6 +180,7 @@ export const AdminMasterIntakePage = () => {
     if (!trimmed) return;
 
     setLoading(true);
+    setSearchError(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -188,7 +192,7 @@ export const AdminMasterIntakePage = () => {
       const items = Array.isArray(res?.data) ? res.data : (res?.data?.items || []);
       if (items.length === 0) {
         setSelectedReg(null);
-        setError(`Tidak ditemukan pendaftaran dengan nomor atau kata kunci '${trimmed}'.`);
+        setSearchError(`Tidak ditemukan pendaftaran dengan nomor atau kata kunci '${trimmed}'.`);
       } else {
         // Fetch detailed record of first match
         const detailRes = await registrationApi.getDetail(items[0].id);
@@ -203,7 +207,7 @@ export const AdminMasterIntakePage = () => {
         setNotes(declaration.notes || '');
       }
     } catch (err) {
-      setError(err.message || 'Gagal mencari pendaftaran.');
+      setSearchError(err.message || 'Gagal mencari pendaftaran.');
     } finally {
       setLoading(false);
     }
@@ -223,11 +227,12 @@ export const AdminMasterIntakePage = () => {
     if (!selectedReg?.id) return;
 
     if (!receiptNo.trim()) {
-      setError('Nomor tanda terima fisik wajib diisi.');
+      setReceiveError('Nomor tanda terima fisik wajib diisi.');
       return;
     }
 
     setActionLoading(true);
+    setReceiveError(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -250,7 +255,7 @@ export const AdminMasterIntakePage = () => {
       const detailRes = await registrationApi.getDetail(selectedReg.id);
       if (detailRes?.data) setSelectedReg(detailRes.data);
     } catch (err) {
-      setError(err.message || 'Gagal memproses penerimaan master fisik.');
+      setReceiveError(err.message || 'Gagal memproses penerimaan master fisik.');
     } finally {
       setActionLoading(false);
     }
@@ -261,11 +266,12 @@ export const AdminMasterIntakePage = () => {
     if (!selectedReg?.id) return;
 
     if (!returnReason.trim() || returnReason.trim().length < 5) {
-      setError('Alasan pengembalian master fisik minimal 5 karakter.');
+      setReturnModalError('Alasan pengembalian master fisik minimal 5 karakter.');
       return;
     }
 
     setActionLoading(true);
+    setReturnModalError(null);
     setError(null);
     setSuccessMessage(null);
     try {
@@ -288,7 +294,7 @@ export const AdminMasterIntakePage = () => {
       const detailRes = await registrationApi.getDetail(selectedReg.id);
       if (detailRes?.data) setSelectedReg(detailRes.data);
     } catch (err) {
-      setError(err.message || 'Gagal mengembalikan master fisik.');
+      setReturnModalError(err.message || 'Gagal mengembalikan master fisik.');
     } finally {
       setActionLoading(false);
     }
@@ -361,7 +367,10 @@ export const AdminMasterIntakePage = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setSearchError(null);
+              }}
               placeholder="Contoh: REG-2026-001 atau tempel kode QR..."
               className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-line-strong focus:outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 font-mono"
             />
@@ -376,6 +385,12 @@ export const AdminMasterIntakePage = () => {
             {loading ? 'Mencari...' : 'Periksa Naskah'}
           </Button>
         </form>
+        {searchError && (
+          <div role="alert" className="flex items-start gap-2 rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{searchError}</span>
+          </div>
+        )}
       </div>
 
       {/* Workspace Area: 2-Column Comparison Snapshot */}
@@ -887,7 +902,11 @@ export const AdminMasterIntakePage = () => {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setReturnModalOpen(true)}
+                      onClick={() => {
+                        setReturnModalError(null);
+                        setError(null);
+                        setReturnModalOpen(true);
+                      }}
                       disabled={actionLoading}
                       className="w-full sm:w-auto text-xs text-civic-danger border-civic-dangerLine hover:bg-civic-dangerSoft font-semibold"
                     >
@@ -898,7 +917,11 @@ export const AdminMasterIntakePage = () => {
                     <Button
                       type="button"
                       variant="primary"
-                      onClick={() => setConfirmReceiveOpen(true)}
+                      onClick={() => {
+                        setReceiveError(null);
+                        setError(null);
+                        setConfirmReceiveOpen(true);
+                      }}
                       disabled={actionLoading || isVolumeMismatch}
                       className="w-full sm:w-auto text-xs font-bold"
                     >
@@ -1097,8 +1120,12 @@ export const AdminMasterIntakePage = () => {
       {selectedReg && (
         <ConfirmationSummaryDialog
           isOpen={confirmReceiveOpen}
-          onClose={() => setConfirmReceiveOpen(false)}
+          onClose={() => {
+            setConfirmReceiveOpen(false);
+            setReceiveError(null);
+          }}
           onConfirm={handleConfirmReceive}
+          errorMessage={receiveError}
           title="Terima Master Fisik & Terbitkan Tanda Terima"
           description="Pastikan naskah fisik print-out A4 telah diperiksa lengkap 30 juz sebelum diterbitkan tanda terima resmi."
           summaryItems={[
@@ -1126,7 +1153,10 @@ export const AdminMasterIntakePage = () => {
                 Kembalikan Master Fisik ke Penerbit
               </div>
               <button
-                onClick={() => setReturnModalOpen(false)}
+                onClick={() => {
+                  setReturnModalOpen(false);
+                  setReturnModalError(null);
+                }}
                 className="text-ink-muted hover:text-ink-muted p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
@@ -1153,11 +1183,19 @@ export const AdminMasterIntakePage = () => {
                 <span className="text-xs text-ink-muted">Minimal 5 karakter.</span>
               </div>
 
+              {returnModalError && (
+                <div role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                  {returnModalError}
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2.5 pt-2">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setReturnModalOpen(false)}
+                  onClick={() => {
+                    setReturnModalOpen(false);
+                    setReturnModalError(null);
+                  }}
                   disabled={actionLoading}
                   className="text-xs"
                 >

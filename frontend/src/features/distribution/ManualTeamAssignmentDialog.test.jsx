@@ -1,7 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ManualTeamAssignmentDialog } from './ManualTeamAssignmentDialog';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { ManualTeamAssignmentDialog, QUICK_PRESETS } from './ManualTeamAssignmentDialog';
 import { registrationApi } from '@/api/registration.api';
 import * as QueueApiModule from '@/api/queue.api';
 import { masterApi } from '@/api/master.api';
@@ -130,6 +130,98 @@ describe('Manual team assignment (B-05)', () => {
     expect(assigned).toHaveBeenCalledOnce();
   });
 
+  it('only highlights exactly one group preset button when selected and correctly assigns Juz 16-30', async () => {
+    const assigned = vi.fn();
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
+    await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+
+    const btnFull = screen.getAllByRole('button', { name: 'Juz 1–30 (Penuh)' })[0];
+    const btn1630 = screen.getAllByRole('button', { name: 'Juz 16–30 (15 Juz)' })[0];
+
+    // Secara default / saat Juz 1-30 aktif, hanya tombol Juz 1-30 yang memiliki style aktif (bg-brand-700)
+    expect(btnFull).toHaveClass('bg-brand-700');
+    expect(btn1630).not.toHaveClass('bg-brand-700');
+
+    // Klik tombol Juz 16-30 (15 Juz)
+    fireEvent.click(btn1630);
+
+    // Sekarang hanya tombol Juz 16-30 yang aktif, tombol Juz 1-30 tidak boleh aktif
+    expect(btn1630).toHaveClass('bg-brand-700');
+    expect(btnFull).not.toHaveClass('bg-brand-700');
+
+    // Pastikan seluruh anggota tim mendapatkan juz 16 s.d. 30
+    fireEvent.click(screen.getByRole('button', { name: 'Tetapkan penugasan' }));
+    const expectedJuz1630 = Array.from({ length: 15 }, (_, i) => i + 16);
+    await waitFor(() => expect(registrationApi.createAssignments).toHaveBeenCalledWith('r1', {
+      team_id: 't1',
+      allow_overlap: true,
+      juz_assignments: [
+        { assignee_id: 'u1', juz_numbers: expectedJuz1630 },
+        { assignee_id: 'u2', juz_numbers: expectedJuz1630 },
+      ],
+      stage: 'INITIAL',
+    }));
+    expect(assigned).toHaveBeenCalledOnce();
+  });
+
+  it('verifies all 13 group presets activate exclusively one by one and populate inputs and badge accurately', async () => {
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+    await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Kelompok Kerja Pentashihan' }), { target: { value: 't1' } });
+
+    const container = screen.getByTestId('group-presets-container');
+    const badge = screen.getByTestId('group-range-badge');
+    const inputFrom = screen.getByLabelText('Dari Juz Kelompok');
+    const inputTo = screen.getByLabelText('Sampai Juz Kelompok');
+
+    expect(QUICK_PRESETS).toHaveLength(13);
+
+    for (const preset of QUICK_PRESETS) {
+      const targetButton = within(container).getByRole('button', { name: preset.label });
+      fireEvent.click(targetButton);
+
+      // Pastikan dari seluruh 13 tombol, HANYA 1 tombol yang memiliki class aktif (bg-brand-700)
+      const allButtons = within(container).getAllByRole('button');
+      const activeButtons = allButtons.filter(b => b.classList.contains('bg-brand-700'));
+      expect(activeButtons).toHaveLength(1);
+      expect(activeButtons[0]).toHaveTextContent(preset.label);
+      expect(targetButton).toHaveAttribute('aria-pressed', 'true');
+
+      // Pastikan badge di kanan atas menampilkan format range yang tepat
+      const expectedCount = preset.to - preset.from + 1;
+      expect(badge).toHaveTextContent(`Juz ${preset.from} s.d. ${preset.to} (${expectedCount} Juz)`);
+
+      // Pastikan input custom terisi angka yang tepat
+      expect(inputFrom).toHaveValue(preset.from);
+      expect(inputTo).toHaveValue(preset.to);
+    }
+
+    // Verifikasi rentang kustom yang tidak ada di preset (misal 2 s.d. 18): tidak boleh ada tombol preset yang aktif
+    fireEvent.change(inputFrom, { target: { value: '2' } });
+    fireEvent.change(inputTo, { target: { value: '18' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Terapkan ke Seluruh Anggota' }));
+
+    const activeAfterCustom = within(container).getAllByRole('button').filter(b => b.classList.contains('bg-brand-700'));
+    expect(activeAfterCustom).toHaveLength(0);
+    expect(badge).toHaveTextContent('Juz 2 s.d. 18 (17 Juz)');
+
+    // Verifikasi bila input kustom diisi 11 s.d. 20 lalu diterapkan: hanya tombol Juz 11–20 (10 Juz) yang aktif (bukan Juz 1–20)
+    fireEvent.change(inputFrom, { target: { value: '11' } });
+    fireEvent.change(inputTo, { target: { value: '20' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Terapkan ke Seluruh Anggota' }));
+
+    const active11to20 = within(container).getAllByRole('button').filter(b => b.classList.contains('bg-brand-700'));
+    expect(active11to20).toHaveLength(1);
+    expect(active11to20[0]).toHaveTextContent('Juz 11–20 (10 Juz)');
+    expect(badge).toHaveTextContent('Juz 11 s.d. 20 (10 Juz)');
+  });
+
   it('supports assigning individual pentashih without team', async () => {
     const assigned = vi.fn();
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={assigned} />);
@@ -229,6 +321,28 @@ describe('Manual team assignment (B-05)', () => {
         comparison_notes: 'Naskah revisi ronde 1 telah dibandingkan dengan catatan sidang sebelumnya.',
       }));
     });
+  });
+
+  it('pentashih yang dipilih di satu pekan tidak ikut ke pekan lain, dan pilihan pekan semula dipulihkan', async () => {
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+    await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+    fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih satu' }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).toBeChecked();
+
+    // Buka Pekan 2 langsung: mulai kosong, pentashih Pekan 1 tidak terbawa
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 2' }));
+    expect(screen.getByRole('button', { name: 'Pekan 2' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).not.toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih dua' }));
+
+    // Kembali ke Pekan 1: pilihannya sendiri dipulihkan
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pentashih dua' })).not.toBeChecked();
   });
 
   it('menyembunyikan form sampai card pekan dibuka, dan menutupnya hanya setelah konfirmasi', async () => {

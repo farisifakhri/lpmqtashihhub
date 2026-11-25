@@ -97,7 +97,7 @@ export class SmtpEmailProvider {
 
     if (template === 'PASSWORD_RESET' && (payload?.resetCode || payload?.resetUrl)) {
       const name = toName ? ` ${escapeHtml(toName)}` : '';
-      const expiresMinutes = Number(payload.expiresMinutes) || 30;
+      const expiresMinutes = Number(payload.expiresMinutes) || 10;
       if (payload.resetCode) {
         const instructions = 'Kembali ke halaman login, pilih “Lupa kata sandi?” lalu “Sudah memiliki token reset?” dan masukkan kode ini.';
         messageText = [

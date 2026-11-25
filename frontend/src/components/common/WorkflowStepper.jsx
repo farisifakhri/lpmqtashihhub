@@ -118,10 +118,11 @@ export const WorkflowStepper = ({
   compact = false,
 }) => {
   const activeStage = currentStageId || getActiveStageIndex(currentStatus, assignmentStatus);
-  const isRevision = currentStatus === 'REVISION_REQUIRED';
+  const isRevision = currentStatus === 'REVISION_REQUIRED' || currentStatus === 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED';
+  const isCancelled = currentStatus === 'CANCELLED' || currentStatus === 'REJECTED';
 
   return (
-    <div className={twMerge('bg-white rounded-2xl border border-line/90 shadow-xs p-5 sm:p-6 overflow-hidden', className)}>
+    <div className={twMerge('bg-surface rounded-2xl border border-line/90 shadow-xs p-5 sm:p-6 overflow-hidden', className)}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-4 border-b border-line">
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-2">
@@ -129,7 +130,7 @@ export const WorkflowStepper = ({
             <span>Alur Proses & Siklus Layanan Pentashihan (SOP LPMQ)</span>
           </h4>
           <p className="text-xs text-ink-muted mt-0.5">
-            Tahap <span className="font-bold text-brand-800">{activeStage}</span> dari 8 —{' '}
+            Tahap <span className="font-bold text-brand-fg">{activeStage}</span> dari 8 —{' '}
             <span className="font-semibold text-ink">
               {WORKFLOW_STAGES.find((s) => s.id === activeStage)?.name}
             </span>
@@ -138,8 +139,15 @@ export const WorkflowStepper = ({
 
         {isRevision && (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
-            <AlertTriangle className="w-3.5 h-3.5 text-civic-warning" />
+            <AlertTriangle className="w-3.5 h-3.5 text-civic-warning shrink-0" />
             Status: Perlu Revisi Penerbit
+          </span>
+        )}
+
+        {isCancelled && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
+            <AlertTriangle className="w-3.5 h-3.5 text-civic-danger shrink-0" />
+            Status: Dibatalkan
           </span>
         )}
       </div>
@@ -153,7 +161,10 @@ export const WorkflowStepper = ({
 
             {/* Progress line filled */}
             <div
-              className="absolute top-5 left-6 h-0.5 bg-brand-700 -z-0 transition-all duration-500"
+              className={clsx(
+                'absolute top-5 left-6 h-0.5 -z-0 transition-all duration-500',
+                isRevision ? 'bg-civic-warning' : isCancelled ? 'bg-civic-danger' : 'bg-brand-700'
+              )}
               style={{
                 width: `${Math.max(0, Math.min(100, ((activeStage - 1) / (WORKFLOW_STAGES.length - 1)) * 100))}%`,
               }}
@@ -177,16 +188,26 @@ export const WorkflowStepper = ({
                       'w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 select-none shadow-2xs',
                       isPast &&
                         'bg-brand-700 text-white shadow-brand-950/20 border-2 border-brand-700 hover:scale-105',
-                      isCurrent &&
-                        'bg-brand-800 text-white ring-4 ring-civicGold-700/30 border-2 border-civicGold-700 shadow-xs scale-105',
+                      isCurrent && !isRevision && !isCancelled &&
+                        'bg-brand-800 text-white ring-4 ring-civicGold-500/40 border-2 border-civicGold-500 shadow-xs scale-105',
+                      isCurrent && isRevision &&
+                        'bg-civic-warning text-white ring-4 ring-civic-warning/30 border-2 border-civic-warning shadow-xs scale-105',
+                      isCurrent && isCancelled &&
+                        'bg-civic-danger text-white ring-4 ring-civic-danger/30 border-2 border-civic-danger shadow-xs scale-105',
                       isFuture &&
-                        'bg-white text-ink-muted border-2 border-line-strong group-hover:border-line-strong group-hover:text-ink-muted'
+                        'bg-surface text-ink-muted border-2 border-line-strong group-hover:border-line group-hover:text-ink'
                     )}
                   >
                     {isPast ? (
                       <CheckCircle2 className="w-5 h-5 text-white" />
                     ) : isCurrent ? (
-                      <Icon className="w-5 h-5 text-civicGold-700 animate-pulse" />
+                      isRevision ? (
+                        <AlertTriangle className="w-5 h-5 text-white animate-pulse" />
+                      ) : isCancelled ? (
+                        <AlertTriangle className="w-5 h-5 text-white" />
+                      ) : (
+                        <Icon className="w-5 h-5 text-white animate-pulse" />
+                      )
                     ) : (
                       <span>{stage.id}</span>
                     )}
@@ -198,16 +219,26 @@ export const WorkflowStepper = ({
                       className={clsx(
                         'text-xs leading-tight font-semibold transition-colors',
                         isPast && 'text-ink',
-                        isCurrent && 'text-brand-900 font-bold',
+                        isCurrent && (isRevision ? 'text-civic-warning font-bold' : isCancelled ? 'text-civic-danger font-bold' : 'text-brand-fg font-bold'),
                         isFuture && 'text-ink-muted'
                       )}
                     >
                       {compact ? stage.shortName : stage.name}
                     </p>
                     {isCurrent && (
-                      <span className="inline-block text-xs font-bold text-civicGold-700 bg-civicGold-100 border border-civicGold-700/80 px-1.5 py-0.2 rounded-full uppercase tracking-tighter">
-                        Sedang Berjalan
-                      </span>
+                      isRevision ? (
+                        <span className="inline-block text-xs font-bold text-civic-warning bg-civic-warningSoft border border-civic-warningLine px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                          Perlu Revisi
+                        </span>
+                      ) : isCancelled ? (
+                        <span className="inline-block text-xs font-bold text-civic-danger bg-civic-dangerSoft border border-civic-dangerLine px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                          Dibatalkan
+                        </span>
+                      ) : (
+                        <span className="inline-block text-xs font-bold text-civicGold-700 bg-civicGold-100 border border-civicGold-700/80 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                          Sedang Berjalan
+                        </span>
+                      )
                     )}
                   </div>
                 </div>

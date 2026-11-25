@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Clock, CheckCircle2, ShieldCheck, Search, RefreshCw, AlertCircle, BookOpen, FileText, Calendar, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
+import { formatJuzCoverage } from '../utils/formatJuzCoverage';
 
 export const AssignmentListPanel = ({
   activeCount, completedCount, currentUser, page, activeTab, setActiveTab,
@@ -177,6 +178,11 @@ export const AssignmentListPanel = ({
               const reg = assignment.registration;
               const hasReview = assignment.reviews && assignment.reviews.length > 0;
               const review = hasReview ? assignment.reviews[0] : null;
+              const juzCoverage = formatJuzCoverage({
+                juzItems: assignment.juz_items,
+                juzFrom: assignment.juz_from,
+                juzTo: assignment.juz_to,
+              });
               const isOverdue =
                 assignment.status === 'OVERDUE' ||
                 (!hasReview && assignment.due_at && new Date(assignment.due_at) < new Date());
@@ -199,7 +205,11 @@ export const AssignmentListPanel = ({
                           {assignment.team.name}
                         </span>
                       )}
-                      {assignment.juz_items?.length > 0 && <span className="text-xs font-semibold text-brand-800">Juz {assignment.juz_items.map(item => item.juz_number).join(', ')}</span>}
+                      {juzCoverage && (
+                        <span className="max-w-full break-words rounded-md border border-brand-200 bg-brand-50 px-2 py-0.5 text-xs font-semibold leading-snug text-brand-900" title="Cakupan juz penugasan">
+                          {juzCoverage}
+                        </span>
+                      )}
                       {isOverdue && !hasReview && (
                         <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-md bg-civic-dangerSoft text-civic-danger border border-civic-dangerLine">
                           <AlertTriangle className="w-3 h-3" /> Overdue SLA

@@ -40,7 +40,18 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
   ];
 
   await test('PR-VER-03 Setup: Siapkan naskah dengan penerimaan fisik dan penugasan Admin Internal', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Uji Review Verifikator', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Uji Review Verifikator',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', {
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
     });
@@ -64,6 +75,19 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     await expect(startPath, otherVerifierToken, 'PATCH', undefined, 403);
     // Ditolak: Superadmin tidak boleh menggantikan aksi verifikator (authority boundary)
     await expect(startPath, adminToken, 'PATCH', undefined, 403);
+
+    // Master fisik harus sudah diterima dan bernomor tanda terima sebelum pemeriksaan dimulai.
+    await prisma.physicalMasterIntake.update({
+      where: { registration_id: reg.id },
+      data: { status: 'PENDING', receipt_no: null },
+    });
+    await expect(startPath, verifikatorToken, 'PATCH', undefined, 409);
+    assert.equal((await prisma.verificationAssignment.findUnique({ where: { id: assignment.id } })).status, 'ASSIGNED');
+    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_ASSIGNED');
+    await prisma.physicalMasterIntake.update({
+      where: { registration_id: reg.id },
+      data: { status: 'RECEIVED', receipt_no: receiptNo },
+    });
 
     // Sukses: Verifikator penugasan memulai pemeriksaan
     const started = await expect(startPath, verifikatorToken, 'PATCH');

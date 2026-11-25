@@ -48,6 +48,8 @@ export const forgotPassword = async (req, res, next) => {
   try {
     const result = await authService.forgotPassword({
       email: req.body.email,
+      phone: req.body.phone,
+      method: req.body.method,
       req,
     });
     res.status(200).json({

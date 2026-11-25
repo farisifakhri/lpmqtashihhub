@@ -904,13 +904,6 @@ export const LandingPageManagementPage = () => {
               </button>
             </div>
 
-            {createError && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{createError}</span>
-              </div>
-            )}
-
             <form onSubmit={handleCreateSubmit} className="space-y-4 text-xs">
               {/* Berkas PDF */}
               <div>
@@ -1031,6 +1024,12 @@ export const LandingPageManagementPage = () => {
               </div>
 
               {/* Tombol Aksi */}
+              {createError && (
+                <div role="alert" className="flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{createError}</span>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-line">
                 <button
                   type="button"
@@ -1085,13 +1084,6 @@ export const LandingPageManagementPage = () => {
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            {editError && (
-              <div className="mb-4 flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{editError}</span>
-              </div>
-            )}
 
             <form onSubmit={handleEditSubmit} className="space-y-4 text-xs">
               {/* Judul Dokumen */}
@@ -1200,6 +1192,12 @@ export const LandingPageManagementPage = () => {
               </div>
 
               {/* Tombol Aksi */}
+              {editError && (
+                <div role="alert" className="flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-line">
                 <button
                   type="button"

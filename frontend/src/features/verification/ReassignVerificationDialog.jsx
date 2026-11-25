@@ -133,14 +133,6 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
           </button>
         </div>
 
-        {/* Error Alert */}
-        {error && (
-          <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
-            <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
-            <span>{error}</span>
-          </div>
-        )}
-
         {/* Current Assignment Context Summary */}
         <div className="p-3.5 bg-canvas border border-line rounded-xl text-xs space-y-2">
           <div className="flex items-center justify-between border-b border-line/60 pb-2">
@@ -277,6 +269,13 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
               className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info"
             />
           </div>
+
+          {error && (
+            <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-xl flex items-start gap-2.5 text-xs text-civic-danger">
+              <AlertCircle className="w-4 h-4 text-civic-danger shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-line">

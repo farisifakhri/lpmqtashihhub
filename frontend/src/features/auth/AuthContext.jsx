@@ -105,6 +105,7 @@ export const AuthProvider = ({ children }) => {
             verificationStatus: u.publisher?.verification_status || null,
           };
           setCurrentUser(userObj);
+          localStorage.setItem('lpmq_active_role', effectiveRole);
         }
       } catch (err) {
         // Jika token tidak valid / kedaluwarsa (401 / 403), bersihkan sesi lokal
@@ -161,6 +162,9 @@ export const AuthProvider = ({ children }) => {
         };
 
         setCurrentUser(userObj);
+        // Header X-Active-Role harus sama dengan peran yang tampil; nilai sisa akun sebelumnya di browser ini
+        // (mis. DISTRIBUTOR) membuat backend menolak akses Pemaraf sehingga antrean paraf tampak kosong.
+        localStorage.setItem('lpmq_active_role', effectiveRole);
         localStorage.removeItem('lpmq_user');
         return { success: true, user: userObj };
       }

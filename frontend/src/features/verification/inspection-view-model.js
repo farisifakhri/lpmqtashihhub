@@ -58,7 +58,7 @@ export function getInspectionViewModel(detail, currentUser, selectedFileId, chec
   const activeRole = currentUser?.activeRole || currentUser?.role;
   const userRoles = accessRoles(Array.isArray(currentUser?.roles)
     ? currentUser.roles
-    : (currentUser?.role ? [currentUser.role] : []));
+    : (currentUser?.role ? [currentUser.role] : []), activeRole);
   const isPemaraf = checkIsPemaraf(currentUser);
   const isHead = activeRole === 'KEPALA_LPMQ' || (!isPemaraf && (userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ'));
   const isVerifier = activeRole === 'VERIFIKATOR' || userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';

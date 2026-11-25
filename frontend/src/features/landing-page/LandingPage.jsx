@@ -16,6 +16,7 @@ import {
   List,
   Quote,
   FileCheck,
+  FileSearch,
   FilePlus,
   Users,
 } from 'lucide-react';
@@ -111,6 +112,13 @@ const quickAccessItems = [
     href: '#informasi-pelayanan',
     isInternal: false,
     icon: ShieldCheck,
+  },
+  {
+    title: 'Cek Keaslian STT',
+    desc: 'Unggah PDF STT untuk dicocokkan dengan arsip resmi LPMQ',
+    href: '/cek-dokumen',
+    isInternal: true,
+    icon: FileSearch,
   },
 ];
 
@@ -585,7 +593,7 @@ export const LandingPage = ({ initialStatistics } = {}) => {
             </h2>
           </div>
 
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {quickAccessItems.map((item) => {
               const Icon = item.icon;
               const CardContent = (

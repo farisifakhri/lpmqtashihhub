@@ -109,6 +109,23 @@ describe('Komponen tata letak portal operasional', () => {
     expect(screen.getByText('Identitas dan Akses')).toBeDefined();
   });
 
+  it('Sidebar Pemaraf (peran aktif, multi-role) mendapat menu yang sama dengan Kepala LPMQ', () => {
+    vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
+      currentUser: { id: 'user-3', name: 'dr afdhal', role: 'PEMARAF', activeRole: 'PEMARAF', roles: ['PEMARAF', 'VERIFIKATOR'] },
+      logout: mockLogout,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/internal']}>
+        <Sidebar isOpen={true} onClose={vi.fn()} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByText('MANAJEMEN & PENGESAHAN')).toBeDefined();
+    expect(screen.getByText('Persetujuan Verifikasi')).toBeDefined();
+    expect(screen.getByText('Antrean Paraf')).toBeDefined();
+  });
+
   it('Sidebar merender alur pengajuan penerbit secara berurutan', () => {
     vi.spyOn(AuthContext, 'useAuth').mockReturnValue({
       currentUser: mockUserPublisher,

@@ -52,6 +52,8 @@ export const verificationInboxSchema = {
     ),
     registration_status: z.string().trim().max(191).optional(),
     handover_ready: z.enum(['true']).optional(),
+    // Riwayat lacak berkas: draf yang sudah disahkan Kepala (belum/sudah dikirim ke penerbit)
+    history: z.enum(['true']).optional(),
     my_tasks: z.enum(['true', 'false']).optional(),
     search: z.string().trim().max(191).optional(),
     page: z.coerce.number().int().min(1).default(1),

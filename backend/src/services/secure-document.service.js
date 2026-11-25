@@ -264,7 +264,9 @@ export async function scanPdfSecurity(bytes) {
     }
   } catch (avErr) {
     if (avErr.statusCode === 503) {
-      console.warn(`[ClamAV Warning]: ${avErr.message}. Unggahan diteruskan demi ketersediaan layanan.`);
+      const err = new Error('Pemindai antivirus tidak tersedia. Unggahan ditolak hingga pemindai dapat digunakan.');
+      err.statusCode = 503;
+      throw err;
     } else if (avErr.statusCode) {
       throw avErr;
     }

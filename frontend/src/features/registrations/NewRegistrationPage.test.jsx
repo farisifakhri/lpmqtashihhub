@@ -47,6 +47,217 @@ describe('Publisher new registration handoff', () => {
     expect(screen.queryByTitle('Hapus baris ini')).not.toBeInTheDocument();
   });
 
+  it('resets the dashboard scroll container after each successful step change without losing form data', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', category_id: 'cat1', name: 'Reguler', base_fee: 1000 }] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(
+      <MemoryRouter>
+        <main id="main-content"><NewRegistrationPage /></main>
+      </MemoryRouter>
+    );
+
+    const scrollContainer = document.getElementById('main-content');
+    const title = await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/);
+    const owner = screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf');
+    fireEvent.change(title, { target: { value: 'Naskah Penerbit' } });
+    fireEvent.change(owner, { target: { value: 'Penanggung Jawab' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), {
+      target: { value: '29 x 20' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
+
+    const changeStep = async (buttonName, stepNumber) => {
+      scrollContainer.scrollTop = 700;
+      fireEvent.click(screen.getByRole('button', { name: buttonName }));
+      await waitFor(() => {
+        const activeStep = document.querySelector('[aria-current="step"]');
+        expect(activeStep).toHaveTextContent(`Langkah ${stepNumber}`);
+        expect(activeStep).toHaveAttribute('aria-current', 'step');
+      });
+      expect(scrollContainer.scrollTop).toBe(0);
+    };
+
+    await changeStep('Lanjut: Langkah 2 (Jenis & Materi)', 2);
+    expect(title).toHaveValue('Naskah Penerbit');
+    await changeStep('Sebelumnya: Langkah 1', 1);
+    await changeStep('Lanjut: Langkah 2 (Jenis & Materi)', 2);
+    await changeStep('Lanjut: Langkah 3 (Berkas Persyaratan)', 3);
+
+    fireEvent.change(document.getElementById('file-surat-permohonan'), {
+      target: { files: [new File(['surat'], 'surat.pdf', { type: 'application/pdf' })] },
+    });
+    fireEvent.change(document.getElementById('file-cover'), {
+      target: { files: [new File(['cover'], 'cover.jpg', { type: 'image/jpeg' })] },
+    });
+    fireEvent.change(document.getElementById('file-contoh-halaman'), {
+      target: { files: [new File(['contoh'], 'contoh.pdf', { type: 'application/pdf' })] },
+    });
+    await changeStep('Lanjut: Langkah 4 (Tinjau & Kirim)', 4);
+    await changeStep('Kembali ke Berkas', 3);
+    await changeStep('Sebelumnya: Langkah 2', 2);
+    await changeStep('Sebelumnya: Langkah 1', 1);
+    expect(title).toHaveValue('Naskah Penerbit');
+    expect(owner).toHaveValue('Penanggung Jawab');
+  });
+
+  it('keeps the form on step 1 and focuses oplah when a filled size has no oplah', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(
+      <MemoryRouter>
+        <main id="main-content"><NewRegistrationPage /></main>
+      </MemoryRouter>
+    );
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), {
+      target: { value: '29 x 20' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 1');
+    expect(screen.getByText('Oplah pada entri 1 wajib diisi.')).toBeInTheDocument();
+    expect(document.getElementById('registration-size-0-oplah')).toHaveFocus();
+  });
+
+  it('requires ukuran and oplah before continuing, including whitespace-only values', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(
+      <MemoryRouter>
+        <main id="main-content"><NewRegistrationPage /></main>
+      </MemoryRouter>
+    );
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), {
+      target: { value: '   ' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 1');
+    expect(screen.getByText('Ukuran (cm) pada entri 1 wajib diisi.')).toBeInTheDocument();
+    expect(document.getElementById('registration-size-0-ukuran')).toHaveFocus();
+  });
+
+  it('validates ukuran and oplah on every added row', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getAllByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)')[0], {
+      target: { value: '29 x 20' },
+    });
+    fireEvent.change(screen.getAllByPlaceholderText('Tulis oplah')[0], { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Ukuran dan Oplah/i }));
+    fireEvent.change(screen.getAllByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)')[1], {
+      target: { value: 'A5' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 1');
+    expect(screen.getByText('Oplah pada entri 2 wajib diisi.')).toBeInTheDocument();
+    expect(document.getElementById('registration-size-1-oplah')).toHaveFocus();
+  });
+
+  it('keeps the form on step 1 and focuses ukuran when only oplah is provided', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 1');
+    expect(screen.getByText('Ukuran (cm) pada entri 1 wajib diisi.')).toBeInTheDocument();
+    expect(document.getElementById('registration-size-0-ukuran')).toHaveFocus();
+  });
+
+  it('blocks navigation when the required jenis naskah selection is cleared', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), {
+      target: { value: '29 x 20' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+    fireEvent.click(screen.getByRole('checkbox', { name: "1. Al-Qur'an 30 Juz" }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 3 (Berkas Persyaratan)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 2');
+    expect(screen.getByText('Pilih minimal satu jenis naskah mushaf yang didaftarkan.')).toBeInTheDocument();
+    expect(document.getElementById('registration-jenis-naskah')).toHaveFocus();
+  });
+
+  it('blocks submission navigation when required files are missing and focuses the first file', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    render(<MemoryRouter><NewRegistrationPage /></MemoryRouter>);
+
+    fireEvent.change(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/), {
+      target: { value: 'Naskah Penerbit' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), {
+      target: { value: 'Penanggung Jawab' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), {
+      target: { value: '29 x 20' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 2 (Jenis & Materi)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 3 (Berkas Persyaratan)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut: Langkah 4 (Tinjau & Kirim)' }));
+
+    expect(document.querySelector('[aria-current="step"]')).toHaveTextContent('Langkah 3');
+    expect(screen.getByText('Surat permohonan tanda tashih (PDF) wajib diunggah sebelum mengirim.')).toBeInTheDocument();
+    expect(document.getElementById('file-surat-permohonan')).toHaveFocus();
+  });
+
   it('mewajibkan nama penanggung jawab sejak simpan draf', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
@@ -182,6 +393,8 @@ describe('Publisher new registration handoff', () => {
     // Isi formulir
     fireEvent.change(screen.getByPlaceholderText(/Contoh: Mushaf Al-Qur/), { target: { value: 'Mushaf Al-Bayan Test' } });
     fireEvent.change(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf'), { target: { value: 'Ahmad Fauzi' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis ukuran (cth: 29,7 x 20)'), { target: { value: '29 x 20' } });
+    fireEvent.change(screen.getByPlaceholderText('Tulis oplah'), { target: { value: '1000' } });
 
     // Mock upload file untuk 3 file wajib
     const file1 = new File(['dummy surat'], 'surat_permohonan.pdf', { type: 'application/pdf' });

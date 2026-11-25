@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { calculateDueAt, jakartaDate } from '../../src/services/sla.service.js';
+import { calculateDueAt, jakartaDate, computeRegistrationSla } from '../../src/services/sla.service.js';
 
 test('SLA calculateDueAt: Monday 17:00 WIB with 2 business days lands on Wednesday (cutoff applied)', async () => {
   // Calendar covering Monday 2026-09-14 to Thursday 2026-09-17
@@ -102,4 +102,93 @@ test('SLA calculateDueAt: Monday 17:00 WIB with Tuesday Holiday lands on Thursda
 
   assert.equal(due.toISOString(), '2026-09-17T16:59:59.999Z');
   assert.equal(jakartaDate(due), '2026-09-17');
+});
+
+test('computeRegistrationSla: calculates target, elapsed, due_at, and ON_TIME status', async () => {
+  const calendarDays = [
+    { date: new Date('2026-09-14T00:00:00Z'), is_working_day: true }, // Senin
+    { date: new Date('2026-09-15T00:00:00Z'), is_working_day: true }, // Selasa
+    { date: new Date('2026-09-16T00:00:00Z'), is_working_day: true }, // Rabu
+    { date: new Date('2026-09-17T00:00:00Z'), is_working_day: true }, // Kamis
+    { date: new Date('2026-09-18T00:00:00Z'), is_working_day: true }, // Jumat
+  ];
+
+  const db = {
+    workingDay: {
+      findMany: async ({ where }) => {
+        const gteDate = where.date?.gte;
+        return calendarDays.filter(d => d.date >= gteDate);
+      },
+      count: async () => calendarDays.length,
+    },
+  };
+
+  const reg = {
+    id: 'reg-sla-1',
+    status: 'TASHIH_IN_PROGRESS',
+    stage_entered_at: new Date('2026-09-14T02:00:00Z'), // Senin 09:00 WIB
+    fee_sla_snapshot: {
+      sla_initial_days: 5,
+    },
+    physical_handovers: [
+      { status: 'RECEIVED', received_at: new Date('2026-09-14T02:00:00Z') },
+    ],
+    assignments: [
+      { stage: 'INITIAL', status: 'IN_PROGRESS', due_at: new Date('2026-09-18T16:59:59.999Z') },
+    ],
+  };
+
+  const now = new Date('2026-09-15T05:00:00Z'); // Selasa 12:00 WIB (hari ke-2)
+  const result = await computeRegistrationSla(db, reg, now);
+
+  assert.equal(result.target_working_days, 5);
+  assert.equal(result.sla_status, 'ON_TIME');
+  assert.equal(result.status_label, 'Tepat Waktu');
+  assert.equal(result.due_at, '2026-09-18T16:59:59.999Z');
+});
+
+test('computeRegistrationSla: status OVERDUE when now is past due_at', async () => {
+  const db = {
+    workingDay: {
+      findMany: async () => [],
+      count: async () => 0,
+    },
+  };
+
+  const reg = {
+    id: 'reg-sla-overdue',
+    status: 'TASHIH_IN_PROGRESS',
+    assignments: [
+      { stage: 'INITIAL', status: 'OVERDUE', due_at: new Date('2026-09-10T16:59:59.999Z') },
+    ],
+  };
+
+  const now = new Date('2026-09-15T05:00:00Z');
+  const result = await computeRegistrationSla(db, reg, now);
+
+  assert.equal(result.sla_status, 'OVERDUE');
+  assert.equal(result.status_label, 'Terlambat');
+});
+
+test('computeRegistrationSla: status PAUSED when registration is REVISION_REQUIRED (B-08)', async () => {
+  const db = {
+    workingDay: {
+      findMany: async () => [],
+      count: async () => 0,
+    },
+  };
+
+  const reg = {
+    id: 'reg-sla-paused',
+    status: 'REVISION_REQUIRED',
+    assignments: [
+      { stage: 'INITIAL', status: 'COMPLETED', due_at: new Date('2026-09-20T16:59:59.999Z') },
+    ],
+  };
+
+  const now = new Date('2026-09-15T05:00:00Z');
+  const result = await computeRegistrationSla(db, reg, now);
+
+  assert.equal(result.sla_status, 'PAUSED');
+  assert.equal(result.status_label, 'Jeda SLA');
 });

@@ -12,6 +12,13 @@ import {
   Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { fileApi } from '@/api/file.api';
+import { showToast } from '@/components/ui/toast';
+
+// Surat terbaru = versi tertinggi, tie-break created_at terbaru.
+const latestReturnLetter = (documents = []) => documents
+  .filter((d) => d.document_type === 'REVISION_RETURN_LETTER')
+  .sort((a, b) => (b.version || 0) - (a.version || 0) || new Date(b.created_at || 0) - new Date(a.created_at || 0))[0];
 
 export function PublisherStatusAlerts({
   data,
@@ -263,7 +270,12 @@ export function PublisherStatusAlerts({
             </div>
             <button
               type="button"
-              onClick={() => handleTabChange('dokumen')}
+              onClick={() => {
+                const letter = latestReturnLetter(data.official_documents);
+                if (!letter) { handleTabChange('dokumen'); return; }
+                fileApi.downloadDocument(letter.id, `${letter.document_no || 'Surat-Pengembalian'}.pdf`)
+                  .catch((err) => showToast(err.message || 'Surat tidak dapat diunduh.', 'danger'));
+              }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-civic-warning hover:bg-civic-warning/90 text-white text-xs font-bold transition-colors shadow-2xs cursor-pointer"
             >
               Unduh Surat Hasil Tashih

@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { randomUUID, createHash } from 'node:crypto';
+import { writeFile, unlink } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { markOverdue, jakartaDate } from '../../src/services/sla.service.js';
 
 export async function runWorkflowTests({ test, prisma, base, loginAs, publisherToken, publisherBToken, verifikatorToken, dokumentatorToken, adminToken, serviceId }) {
@@ -29,7 +32,18 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
   const team = await prisma.distributionTeam.findFirst({ where: { members: { some: { user_id: assignee.id } }, status: 'ACTIVE' } });
 
   await test('Workflow: unggahan server, isolasi berkas, dan pembatasan metadata naskah', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Pengujian Alur Pembayaran dan Sidang', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Pengujian Alur Pembayaran dan Sidang',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     file = await upload();
     assert.equal(file.checksum.length, 64);
     await expect(`/registrations/${reg.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: file.id }, 201);
@@ -119,7 +133,6 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const pentashihRecapFile = await uploadAs(pentashih);
     await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: pentashihRecapFile.id }, 201);
     await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: pentashihRecapFile.id }, 409);
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Hasil belum lulus' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaikan oleh penerbit' });
   });
 
@@ -167,9 +180,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
 
-    // Masih ada kesalahan: distributor tidak boleh meluluskan, naskah dikembalikan -> Perbaikan lagi (ronde #2)
+    // Masih ada kesalahan: distributor mengembalikan naskah -> Perbaikan lagi (ronde #2)
     await review(next[0].id, 'REVISION_REQUIRED', 'Masih ada kesalahan harakat');
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Coba luluskan' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki lagi' });
     assert.deepEqual(await openStages(), [], 'sebelum naskah perbaikan #2 dikirim, semua penugasan terkunci');
     await sendPhysicalRound('REVISE456');
@@ -189,8 +201,9 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await assign('REVISION', 409);
     const dummy = await assign('DUMMY');
 
-    // Dumi masih ada kesalahan: dikembalikan sebagai dumi lagi (bukan kembali ke Perbaikan)
+    // Dumi masih ada kesalahan: dikembalikan sebagai dumi lagi. Rekomendasi STT ditolak jika dumi belum lulus (409)
     await review(dummy[0].id, 'REVISION_REQUIRED', 'Dumi masih ada salah cetak');
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Coba luluskan STT padahal dumi ada perbaikan' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Cetak ulang dumi' });
     await sendPhysicalRound('DUMMY456');
     assert.deepEqual(await openStages(), ['DUMMY']);
@@ -217,7 +230,59 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await expect(`/official-documents/${doc.id}/sign`, adminToken, 'POST', {}, 403);
     await expect(`/official-documents/${doc.id}/sign`, kepala, 'POST', {}, 409);
     assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}`)).status, 404);
-    assert.deepEqual((await expect(`/registrations/${reg.id}`, publisherToken)).official_documents, []);
+    // Penerbit hanya melihat surat pengembalian (draf sekalipun); draf BA/STT tetap tertutup.
+    const publisherDocs = (await expect(`/registrations/${reg.id}`, publisherToken)).official_documents;
+    assert.ok(publisherDocs.every(item => item.document_type === 'REVISION_RETURN_LETTER'));
+    assert.ok(!publisherDocs.some(item => item.id === doc.id));
+
+    // Issue #40: STT terbit dapat dipratinjau publik dan PDF kiriman dicocokkan dengan arsip; BA tidak dibuka.
+    const sttBytes = Buffer.from(await (await fetch(`${base}/official-documents/${doc.id}/pdf`, { headers: { Authorization: `Bearer ${dokumentatorToken}` } })).arrayBuffer());
+    const fileId = randomUUID();
+    const sttPath = fileURLToPath(new URL(`../../storage/private/${fileId}`, import.meta.url));
+    await writeFile(sttPath, sttBytes);
+    await prisma.storedFile.create({ data: { id: fileId, owner_id: reg.publisher_id, mime_type: 'application/pdf', file_size: sttBytes.length, checksum: createHash('sha256').update(sttBytes).digest('hex') } });
+    const stt = await prisma.officialDocument.create({ data: { registration_id: reg.id, document_type: 'SURAT_TANDA_TASHIH', document_no: `STT-UJI-${fileId}`, status: 'ISSUED', file_id: fileId, issued_at: new Date() } });
+    try {
+      const sttBase = `${base}/public/verify-document/${stt.qr_token}`;
+      const meta = await (await fetch(sttBase)).json();
+      assert.equal(meta.data.original_file_available, true);
+      const original = await fetch(`${sttBase}/file`);
+      assert.equal(original.status, 200);
+      assert.ok(Buffer.from(await original.arrayBuffer()).equals(sttBytes));
+      const checkFile = body => fetch(`${sttBase}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body });
+      const check = async body => (await (await checkFile(body)).json()).data?.checked_file_integrity;
+      assert.equal(await check(sttBytes), 'MATCH');
+      assert.equal(await check(Buffer.concat([sttBytes, Buffer.from('\n% diubah')])), 'MISMATCH');
+      assert.equal((await checkFile('bukan pdf')).status, 400);
+      assert.equal((await fetch(`${base}/public/verify-document/${randomUUID()}/check-file`, { method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: sttBytes })).status, 404);
+      // Sebelum survei wajib terisi, salinan asli tidak dibuka ke publik; pencocokan tetap jalan.
+      const unsur = await prisma.surveyUnsur.create({ data: { name: 'Unsur uji #40' } });
+      const question = await prisma.surveyQuestion.create({ data: { text: 'Pertanyaan uji #40', unsur_id: unsur.id } });
+      const survey = await prisma.survey.create({ data: { name: 'Survei uji #40', status: 'AKTIF', items: { create: { unsur_id: unsur.id, question_id: question.id } } } });
+      try {
+        const gated = await fetch(`${sttBase}/file`);
+        assert.equal(gated.status, 409);
+        assert.equal((await gated.json()).code, 'STT_ORIGINAL_UNAVAILABLE');
+        assert.equal(await check(sttBytes), 'MATCH');
+      } finally {
+        await prisma.survey.delete({ where: { id: survey.id } });
+        await prisma.surveyQuestion.delete({ where: { id: question.id } });
+        await prisma.surveyUnsur.delete({ where: { id: unsur.id } });
+      }
+      // STT terdaftar tetapi arsip rusak: 409 bercode, bukan 404 yang membuat STT asli tampak palsu.
+      await writeFile(sttPath, Buffer.concat([sttBytes, Buffer.from('rusak')]));
+      const broken = await checkFile(sttBytes);
+      assert.equal(broken.status, 409);
+      assert.equal((await broken.json()).code, 'STT_ORIGINAL_UNAVAILABLE');
+      assert.equal((await fetch(`${sttBase}/file`)).status, 409);
+      await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'ISSUED', file_id: fileId } });
+      assert.equal((await fetch(`${base}/public/verify-document/${doc.qr_token}/file`)).status, 404);
+    } finally {
+      await prisma.officialDocument.update({ where: { id: doc.id }, data: { status: 'DRAFT', file_id: null } });
+      await prisma.officialDocument.delete({ where: { id: stt.id } });
+      await prisma.storedFile.delete({ where: { id: fileId } });
+      await unlink(sttPath).catch(() => {});
+    }
   });
 
   await test('Workflow: notifikasi hanya dapat dibaca oleh penerima', async () => {
@@ -246,6 +311,66 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const draftAdmin = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Mushaf Hapus Superadmin', mushaf_details: { penanggung_jawab_produk: 'PJ Admin' } }, 201);
     const delAdmin = await call(`/registrations/${draftAdmin.id}`, adminToken, 'DELETE');
     assert.equal(delAdmin.status, 200);
+  });
+
+  await test('Workflow: Distributor dapat meloloskan naskah ke tahap dumi meski ada catatan perbaikan pentashih', async () => {
+    const regOverride = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Mushaf Override Ke Dumi',
+      mushaf_details: {
+        penanggung_jawab_produk: 'PJ Override',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      }
+    }, 201);
+    const fileOverride = await upload();
+    await expect(`/registrations/${regOverride.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: fileOverride.id }, 201);
+    await expect(`/registrations/${regOverride.id}/submit`, publisherToken, 'POST');
+
+    // Fixture pembayaran lunas dan kalender kerja
+    await prisma.paymentRecord.create({
+      data: {
+        registration_id: regOverride.id,
+        billing_no: `BILL-${regOverride.id.substring(0, 8)}`,
+        amount: 1000000,
+        status: 'VERIFIED',
+      },
+    });
+    const startOverride = new Date(`${jakartaDate(new Date())}T00:00:00Z`);
+    const calOverride = Array.from({ length: 90 }, (_, index) => ({
+      date: new Date(startOverride.getTime() + (index + 1) * 86400000),
+      is_working_day: true,
+      source: `TEST-${regOverride.id}`,
+    }));
+    await prisma.workingDay.createMany({ data: calOverride, skipDuplicates: true });
+
+    await prisma.registration.update({
+      where: { id: regOverride.id },
+      data: { status: 'WAITING_DISTRIBUTION' },
+    });
+
+    const asgs = await expect(`/registrations/${regOverride.id}/assignments`, distributor, 'POST', {
+      team_id: team.id,
+      assignee_ids: [assignee.id],
+      stage: 'INITIAL'
+    }, 201);
+    const recapF = await uploadAs(pentashih);
+    await expect(`/assignments/${asgs[0].id}/review`, pentashih, 'POST', {
+      result: 'REVISION_REQUIRED',
+      notes: 'Catatan minor harakat',
+      recap_file_id: recapF.id
+    }, 201);
+    await expect(`/registrations/${regOverride.id}/distribution-review`, distributor, 'POST', {
+      result: 'PASSED',
+      notes: 'Catatan minor diabaikan; dialihkan ke tahap dumi fisik'
+    }, 200);
+    const updated = await prisma.registration.findUnique({ where: { id: regOverride.id } });
+    assert.equal(updated.status, 'REVISION_REQUIRED');
+    assert.equal(updated.revision_source, 'TASHIH_REVISION');
+    await prisma.workingDay.deleteMany({ where: { source: `TEST-${regOverride.id}` } });
   });
   if (reg) await prisma.workingDay.deleteMany({ where: { source: `TEST-${reg.id}` } });
 }

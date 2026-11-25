@@ -179,7 +179,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.suratPermohonan)}
             aria-describedby={fieldErrors.suratPermohonan ? 'file-surat-permohonan-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${suratPermohonanFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPermohonan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPermohonanFile ? ' hidden' : ''}`}
           />
 
           {suratPermohonanFile && (
@@ -248,7 +248,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.cover)}
             aria-describedby={fieldErrors.cover ? 'file-cover-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${coverFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.cover ? 'border-civic-danger' : 'border-line-strong'} bg-white${coverFile ? ' hidden' : ''}`}
           />
 
           {coverFile && (
@@ -317,7 +317,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.contohHalaman)}
             aria-describedby={fieldErrors.contohHalaman ? 'file-contoh-halaman-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${contohHalamanFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.contohHalaman ? 'border-civic-danger' : 'border-line-strong'} bg-white${contohHalamanFile ? ' hidden' : ''}`}
           />
 
           {contohHalamanFile && (
@@ -393,7 +393,9 @@ export const Step3Berkas = ({
                     'apk'
                   )
                 }
-                className={`w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border border-line-strong bg-white${apkFile ? ' hidden' : ''}`}
+                aria-invalid={Boolean(fieldErrors.apk)}
+                aria-describedby={fieldErrors.apk ? 'file-apk-error' : undefined}
+                className={`w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border ${fieldErrors.apk ? 'border-civic-danger' : 'border-line-strong'} bg-white${apkFile ? ' hidden' : ''}`}
               />
 
               {apkFile && (
@@ -432,8 +434,12 @@ export const Step3Berkas = ({
                   setApkUrl?.(e.target.value);
                   clearFieldError?.('apk');
                 }}
+                aria-invalid={Boolean(fieldErrors.apk)}
+                aria-describedby={fieldErrors.apk ? 'file-apk-error' : undefined}
                 placeholder="https://drive.google.com/... atau tautan installer aplikasi"
-                className="w-full text-xs px-3 py-2 rounded-lg border border-line-strong focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink"
+                className={`w-full text-xs px-3 py-2 rounded-lg border focus:outline-none focus:ring-1 focus:ring-brand-700 text-ink ${
+                  fieldErrors.apk ? 'border-civic-danger' : 'border-line-strong'
+                }`}
               />
               <p className="text-xs text-ink-muted">
                 Dapat digunakan jika berkas APK Anda berukuran besar atau dihosting secara khusus.
@@ -441,7 +447,7 @@ export const Step3Berkas = ({
             </div>
 
             {fieldErrors.apk && (
-              <p className="text-xs text-civic-danger flex items-center gap-1.5 font-semibold">
+              <p id="file-apk-error" className="text-xs text-civic-danger flex items-center gap-1.5 font-semibold">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{fieldErrors.apk}</span>
               </p>
@@ -487,7 +493,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.suratPernyataan)}
               aria-describedby={fieldErrors.suratPernyataan ? 'file-surat-pernyataan-error' : undefined}
-              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${suratPernyataanFile ? ' hidden' : ''}`}
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPernyataan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPernyataanFile ? ' hidden' : ''}`}
             />
 
             {suratPernyataanFile && (
@@ -555,7 +561,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.buktiTashih)}
               aria-describedby={fieldErrors.buktiTashih ? 'file-bukti-tashih-error' : undefined}
-              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border border-line-strong bg-white${buktiTashihFile ? ' hidden' : ''}`}
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.buktiTashih ? 'border-civic-danger' : 'border-line-strong'} bg-white${buktiTashihFile ? ' hidden' : ''}`}
             />
 
             {buktiTashihFile && (

@@ -20,6 +20,9 @@ import {
   validateWhatsApp,
   validateEmail,
   normalizeWhatsApp,
+  isValidOplah,
+  validateSizeRows,
+  validateHttpsUrl,
 } from './steps/registration-validation';
 import {
   BookOpen,
@@ -35,6 +38,8 @@ import {
 
 // AUTOSAVE_KEY is computed per-user inside the component to prevent cross-user data leaks
 const AUTOSAVE_KEY_PREFIX = 'lpmq_registration_autosave_v2';
+const REQUIRED_FIELDS_MESSAGE =
+  'Data belum lengkap. Silakan lengkapi seluruh bagian yang wajib diisi (*) sebelum melanjutkan.';
 
 export const resolveMatchedServiceAndAddons = ({
   kategoriPendaftaran = 'Mushaf Baru',
@@ -169,6 +174,23 @@ export const NewRegistrationPage = () => {
   // Navigation Steps
   const [currentStep, setCurrentStep] = useState(1);
   const [maxVisitedStep, setMaxVisitedStep] = useState(1);
+
+  const pendingValidationFocusRef = useRef(null);
+  const lastValidationErrorsRef = useRef({});
+
+  useEffect(() => {
+    if (pendingValidationFocusRef.current) {
+      const errors = pendingValidationFocusRef.current;
+      pendingValidationFocusRef.current = null;
+      focusFirstInvalidElement(errors);
+      return;
+    }
+
+    const scrollContainer = document.getElementById('main-content') || document.scrollingElement;
+    if (scrollContainer) {
+      scrollContainer.scrollTop = 0;
+    }
+  }, [currentStep]);
 
   // Master Data
   const [categories, setCategories] = useState([]);
@@ -565,7 +587,9 @@ export const NewRegistrationPage = () => {
   // Focus helper for the first invalid input element
   const focusFirstInvalidElement = (errors) => {
     const fieldMapping = {
+      kategoriPendaftaran: 'registration-category-select',
       namaMushaf: 'registration-mushaf-name',
+      jenisStandarMushaf: 'registration-standard-select',
       penanggungJawabProduk: 'registration-product-owner',
       penanggungJawabWa: 'registration-pj-wa',
       penanggungJawabEmail: 'registration-pj-email',
@@ -573,15 +597,30 @@ export const NewRegistrationPage = () => {
       negaraAsalMushaf: 'foreign-country-select',
       penerbitAsalMushaf: 'foreign-publisher',
       lembagaPentashihAsal: 'foreign-institution',
+      jenisNaskah: 'registration-jenis-naskah',
       suratPermohonan: 'file-surat-permohonan',
       cover: 'file-cover',
       contohHalaman: 'file-contoh-halaman',
-      apk: 'file-apk',
+      apk: isDigital && !apkFile && !apkFileId ? 'apk-download-url' : 'file-apk',
       suratPernyataan: 'file-surat-pernyataan',
       buktiTashih: 'file-bukti-tashih',
     };
 
     for (const key of Object.keys(errors)) {
+      if (key === 'sizes') {
+        const sizeError = validateSizeRows(sizes);
+        const invalidInput = sizeError
+          ? document.getElementById(`registration-size-${sizeError.index}-${sizeError.field}`)
+          : null;
+        if (invalidInput) {
+          if (typeof invalidInput.scrollIntoView === 'function') {
+            invalidInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          invalidInput.focus();
+          return;
+        }
+      }
+
       const id = fieldMapping[key];
       if (id) {
         const el = document.getElementById(id);
@@ -601,24 +640,8 @@ export const NewRegistrationPage = () => {
   // Validation for Step 1
   const validateStep1 = () => {
     const errors = {};
-    if (namaMushaf.trim().length < 3) {
-      errors.namaMushaf = 'Nama mushaf minimal 3 karakter.';
-      setNamaMushafError('Nama mushaf minimal 3 karakter.');
-    }
-    if (!penanggungJawabProduk.trim()) {
-      errors.penanggungJawabProduk = 'Nama penanggung jawab produk/mushaf wajib diisi.';
-      setPenanggungJawabError('Nama penanggung jawab produk/mushaf wajib diisi.');
-    }
-    if (penanggungJawabWa.trim()) {
-      const waError = validateWhatsApp(penanggungJawabWa);
-      if (waError) errors.penanggungJawabWa = waError;
-    }
-    if (penanggungJawabEmail.trim()) {
-      const emailError = validateEmail(penanggungJawabEmail.trim().toLowerCase());
-      if (emailError) errors.penanggungJawabEmail = emailError;
-    }
-    if (sizes.some((s) => s.ukuran.trim() && !s.oplah)) {
-      errors.sizes = 'Jika ukuran diisi, rencana oplah juga wajib diisi.';
+    if (!['Mushaf Baru', 'Perpanjangan Tanda Tashih', 'Mushaf Luar Negeri'].includes(kategoriPendaftaran)) {
+      errors.kategoriPendaftaran = 'Kategori pendaftaran wajib dipilih.';
     }
     if (isPerpanjangan && !noPendaftaranLama.trim()) {
       errors.noPendaftaranLama = 'Nomor pendaftaran mushaf lama wajib diisi.';
@@ -634,10 +657,31 @@ export const NewRegistrationPage = () => {
         errors.lembagaPentashihAsal = 'Lembaga pentashih asal mushaf wajib diisi.';
       }
     }
+    if (namaMushaf.trim().length < 3) {
+      errors.namaMushaf = 'Nama mushaf minimal 3 karakter.';
+      setNamaMushafError('Nama mushaf minimal 3 karakter.');
+    }
+    if (!['Mushaf Standar Usmani', 'Mushaf Standar Bahriyyah', 'Mushaf Standar Braille', 'Mushaf Standar Isyarat'].includes(jenisStandarMushaf)) {
+      errors.jenisStandarMushaf = 'Standar mushaf LPMQ wajib dipilih.';
+    }
+    if (!penanggungJawabProduk.trim()) {
+      errors.penanggungJawabProduk = 'Nama penanggung jawab produk/mushaf wajib diisi.';
+      setPenanggungJawabError('Nama penanggung jawab produk/mushaf wajib diisi.');
+    }
+    if (penanggungJawabWa.trim()) {
+      const waError = validateWhatsApp(penanggungJawabWa);
+      if (waError) errors.penanggungJawabWa = waError;
+    }
+    if (penanggungJawabEmail.trim()) {
+      const emailError = validateEmail(penanggungJawabEmail.trim().toLowerCase());
+      if (emailError) errors.penanggungJawabEmail = emailError;
+    }
+    const sizeError = validateSizeRows(sizes);
+    if (sizeError) errors.sizes = sizeError.message;
 
     setFieldErrors(errors);
+    lastValidationErrorsRef.current = errors;
     if (Object.keys(errors).length > 0) {
-      focusFirstInvalidElement(errors);
       return false;
     }
     return true;
@@ -650,6 +694,7 @@ export const NewRegistrationPage = () => {
       errors.jenisNaskah = 'Pilih minimal satu jenis naskah mushaf yang didaftarkan.';
     }
     setFieldErrors((prev) => ({ ...prev, ...errors }));
+    lastValidationErrorsRef.current = errors;
     if (Object.keys(errors).length > 0) {
       return false;
     }
@@ -670,6 +715,9 @@ export const NewRegistrationPage = () => {
     }
     if (isDigital && !apkFile && !apkFileId && !apkUrl.trim()) {
       errors.apk = 'File aplikasi mushaf digital (.apk) atau tautan unduhan cloud wajib disediakan.';
+    } else if (isDigital && !apkFile && !apkFileId) {
+      const urlError = validateHttpsUrl(apkUrl);
+      if (urlError) errors.apk = urlError;
     }
     if (isPerpanjangan && !suratPernyataanFile && !suratPernyataanFileId) {
       errors.suratPernyataan = 'Surat pernyataan tidak ada perubahan pada master naskah wajib diunggah.';
@@ -679,49 +727,75 @@ export const NewRegistrationPage = () => {
     }
 
     setFieldErrors((prev) => ({ ...prev, ...errors }));
+    lastValidationErrorsRef.current = errors;
     if (Object.keys(errors).length > 0) {
-      focusFirstInvalidElement(errors);
       return false;
     }
     return true;
   };
 
-  // Move forward to a step with validation
+  const reportValidationFailure = (step) => {
+    setError(REQUIRED_FIELDS_MESSAGE);
+    if (currentStep !== step) {
+      pendingValidationFocusRef.current = lastValidationErrorsRef.current;
+      setCurrentStep(step);
+    } else {
+      focusFirstInvalidElement(lastValidationErrorsRef.current);
+    }
+  };
+
+  // Move forward only after every preceding step passes validation.
   const handleGoToNextStep = (targetStep) => {
+    setError('');
     if (targetStep === 2) {
-      if (validateStep1()) {
-        setCurrentStep(2);
-        setMaxVisitedStep((prev) => Math.max(prev, 2));
+      if (!validateStep1()) {
+        reportValidationFailure(1);
+        return;
       }
+      setCurrentStep(2);
+      setMaxVisitedStep((prev) => Math.max(prev, 2));
     } else if (targetStep === 3) {
-      if (validateStep1() && validateStep2()) {
-        setCurrentStep(3);
-        setMaxVisitedStep((prev) => Math.max(prev, 3));
+      if (!validateStep1()) {
+        reportValidationFailure(1);
+        return;
       }
+      if (!validateStep2()) {
+        reportValidationFailure(2);
+        return;
+      }
+      setCurrentStep(3);
+      setMaxVisitedStep((prev) => Math.max(prev, 3));
     } else if (targetStep === 4) {
-      if (validateStep1() && validateStep2() && validateStep3()) {
-        setCurrentStep(4);
-        setMaxVisitedStep((prev) => Math.max(prev, 4));
+      if (!validateStep1()) {
+        reportValidationFailure(1);
+        return;
       }
+      if (!validateStep2()) {
+        reportValidationFailure(2);
+        return;
+      }
+      if (!validateStep3()) {
+        reportValidationFailure(3);
+        return;
+      }
+      setCurrentStep(4);
+      setMaxVisitedStep((prev) => Math.max(prev, 4));
     }
   };
 
   // Trigger modal confirmation
   const handleInitiateSubmit = () => {
     setError('');
-    const step1Ok = validateStep1();
-    if (!step1Ok) {
-      setCurrentStep(1);
+    if (!validateStep1()) {
+      reportValidationFailure(1);
       return;
     }
-    const step2Ok = validateStep2();
-    if (!step2Ok) {
-      setCurrentStep(2);
+    if (!validateStep2()) {
+      reportValidationFailure(2);
       return;
     }
-    const step3Ok = validateStep3();
-    if (!step3Ok) {
-      setCurrentStep(3);
+    if (!validateStep3()) {
+      reportValidationFailure(3);
       return;
     }
 
@@ -736,26 +810,47 @@ export const NewRegistrationPage = () => {
     setPenanggungJawabError('');
     setSuccessMsg('');
 
+    if (isDirectSubmit) {
+      if (!validateStep1()) {
+        reportValidationFailure(1);
+        return;
+      }
+      if (!validateStep2()) {
+        reportValidationFailure(2);
+        return;
+      }
+      if (!validateStep3()) {
+        reportValidationFailure(3);
+        return;
+      }
+    }
+
     // Minimal validation for draft
     if (namaMushaf.trim().length < 3) {
       setNamaMushafError('Nama mushaf minimal 3 karakter.');
-      setFieldErrors((prev) => ({ ...prev, namaMushaf: 'Nama mushaf minimal 3 karakter.' }));
-      setCurrentStep(1);
-      focusFirstInvalidElement({ namaMushaf: true });
+      lastValidationErrorsRef.current = { namaMushaf: 'Nama mushaf minimal 3 karakter.' };
+      setFieldErrors((prev) => ({ ...prev, ...lastValidationErrorsRef.current }));
+      reportValidationFailure(1);
       return;
     }
 
     if (!penanggungJawabProduk.trim()) {
       setPenanggungJawabError('Nama penanggung jawab produk/mushaf wajib diisi.');
-      setFieldErrors((prev) => ({ ...prev, penanggungJawabProduk: 'Nama penanggung jawab produk/mushaf wajib diisi.' }));
-      setCurrentStep(1);
-      focusFirstInvalidElement({ penanggungJawabProduk: true });
+      lastValidationErrorsRef.current = { penanggungJawabProduk: 'Nama penanggung jawab produk/mushaf wajib diisi.' };
+      setFieldErrors((prev) => ({ ...prev, ...lastValidationErrorsRef.current }));
+      reportValidationFailure(1);
       return;
     }
 
-    if (sizes.some((s) => s.ukuran.trim() && !s.oplah)) {
-      setError('Jika ukuran diisi, rencana oplah juga wajib diisi.');
-      setCurrentStep(1);
+    if (!isDirectSubmit && sizes.some((size) =>
+      (String(size.ukuran ?? '').trim() || String(size.oplah ?? '').trim()) &&
+      (!String(size.ukuran ?? '').trim() || !isValidOplah(size.oplah))
+    )) {
+      const sizeError = validateSizeRows(sizes);
+      const errors = { sizes: sizeError.message };
+      lastValidationErrorsRef.current = errors;
+      setFieldErrors((prev) => ({ ...prev, ...errors }));
+      reportValidationFailure(1);
       return;
     }
 
@@ -856,10 +951,10 @@ export const NewRegistrationPage = () => {
       });
 
       const validVariantsPrimary = sizes
-        .filter((s) => s.ukuran?.trim() || s.oplah)
+        .filter((s) => typeof s.ukuran === 'string' && s.ukuran.trim() && isValidOplah(s.oplah))
         .map((s) => ({
-          ukuran: s.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
-          oplah: Number(String(s.oplah || '').replace(/\D/g, '')) || 1000,
+          ukuran: s.ukuran.trim(),
+          oplah: Number(s.oplah),
         }));
 
       const allManuscripts = [
@@ -867,7 +962,7 @@ export const NewRegistrationPage = () => {
           seq_number: 1,
           title: namaMushaf.trim(),
           items: primaryItems.length > 0 ? primaryItems : ['JUZ30'],
-          variants: validVariantsPrimary.length > 0 ? validVariantsPrimary : [{ ukuran: 'A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+          variants: validVariantsPrimary,
           metadata: {
             ...(penanggungJawabProduk.trim() ? { penanggung_jawab_produk: penanggungJawabProduk.trim() } : {}),
             ...(penanggungJawabEmail.trim() ? { penanggung_jawab_email: penanggungJawabEmail.trim().toLowerCase() } : {}),
@@ -881,16 +976,16 @@ export const NewRegistrationPage = () => {
         ...additionalManuscripts.map((m, idx) => {
           const mItems = [m.itemDasar || 'JUZ30', ...(m.itemsTambahan || [])];
           const mVariants = (m.variants || [])
-            .filter((v) => v.ukuran?.trim() || v.oplah)
+            .filter((v) => typeof v.ukuran === 'string' && v.ukuran.trim() && isValidOplah(v.oplah))
             .map((v) => ({
-              ukuran: v.ukuran?.trim() || 'A4 (21,0 x 29,7 cm)',
-              oplah: Number(v.oplah) || 1000,
+              ukuran: v.ukuran.trim(),
+              oplah: Number(v.oplah),
             }));
           return {
             seq_number: idx + 2,
             title: (m.title || `Naskah ${idx + 2}`).trim(),
             items: mItems,
-            variants: mVariants.length > 0 ? mVariants : [{ ukuran: 'A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+            variants: mVariants,
             metadata: {},
             sample_file_id: null,
           };
@@ -914,13 +1009,19 @@ export const NewRegistrationPage = () => {
         surat_permohonan_file_id: uploadedPermohonanId,
         contoh_halaman_file_id: uploadedContohHalamanId,
         surat_pernyataan_perubahan_file_id: uploadedPernyataanId,
+        surat_pernyataan_file_id: uploadedPernyataanId,
         apk_file_id: uploadedApkId,
         apk_url: apkUrl.trim() || undefined,
         bukti_tashih_file_id: uploadedBuktiTashihId,
       };
 
-      const res = await registrationApi.createDraft(payload);
-      const created = res.data;
+      // Reuse existing draft if retrying submission without creating duplicate registration records
+      let created = createdReceipt;
+      if (!created?.id) {
+        const res = await registrationApi.createDraft(payload);
+        created = res.data;
+        setCreatedReceipt(created);
+      }
 
       // Attach manuscript records with explicit error reporting
       if (uploadedPermohonanId) {
@@ -951,6 +1052,27 @@ export const NewRegistrationPage = () => {
           if (!created.contoh_halaman_file_id && !created.foreign_metadata?.contoh_halaman_file_id) {
             setError('Peringatan: Berkas contoh halaman belum tersambung ke permohonan: ' + mErr.message);
           }
+        }
+      }
+      if (uploadedPernyataanId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'SURAT_PERNYATAAN', file_id: uploadedPernyataanId });
+        } catch (mErr) {
+          console.warn('Surat pernyataan attachment note:', mErr);
+        }
+      }
+      if (uploadedApkId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'APK', file_id: uploadedApkId });
+        } catch (mErr) {
+          console.warn('APK attachment note:', mErr);
+        }
+      }
+      if (uploadedBuktiTashihId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'FOREIGN_TASHIH_CERTIFICATE', file_id: uploadedBuktiTashihId });
+        } catch (mErr) {
+          console.warn('Bukti tashih attachment note:', mErr);
         }
       }
 
@@ -1074,16 +1196,6 @@ export const NewRegistrationPage = () => {
       />
 
       {/* Notices */}
-      {error && currentStep !== 4 && (
-        <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
-          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-bold">Terjadi Kesalahan: </span>
-            {error}
-          </div>
-        </div>
-      )}
-
       {successMsg && (
         <div role="status" className="p-4 rounded-xl bg-brand-50 border border-brand-100 text-brand-800 text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
           <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5 text-brand-700" />
@@ -1300,6 +1412,16 @@ export const NewRegistrationPage = () => {
           />
         </div>
       </div>
+
+      {error && currentStep !== 4 && (
+        <div role="alert" className="p-4 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs sm:text-sm flex items-start gap-3 shadow-2xs">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">Terjadi Kesalahan: </span>
+            {error}
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal Before Sending */}
       {showConfirmModal && (

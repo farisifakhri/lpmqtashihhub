@@ -166,7 +166,8 @@ export async function upload(bytes, mime, user) {
     }
   } catch (scanErr) {
     if (scanErr.statusCode === 503) {
-      console.warn(`[ClamAV Warning]: ${scanErr.message}. Unggahan diteruskan demi ketersediaan layanan.`);
+      await unlink(targetPath).catch(() => {});
+      fail(503, 'Pemindai antivirus tidak tersedia. Unggahan ditolak hingga pemindai dapat digunakan.');
     } else {
       await unlink(targetPath).catch(() => {});
       if (scanErr.statusCode) {

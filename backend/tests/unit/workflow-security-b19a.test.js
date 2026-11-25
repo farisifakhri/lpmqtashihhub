@@ -359,6 +359,20 @@ test('B19A-07: getDetail menyaring comparison_notes dari snapshot dokumen saat d
   assert.equal(docSnapshot.comparison_notes, undefined);
 });
 
+test('B19A-07b: penerbit melihat surat pengembalian berstatus DRAFT tetapi tidak melihat draf STT', async () => {
+  prisma.registration.findUnique = async () => ({
+    id: 'reg-b19a-07b',
+    publisher_id: 'pub-1',
+    status: 'REVISION_REQUIRED',
+    official_documents: [
+      { id: 'doc-rl', status: 'DRAFT', document_type: 'REVISION_RETURN_LETTER', content_snapshot: { notes: 'x' } },
+      { id: 'doc-stt', status: 'DRAFT', document_type: 'SURAT_TANDA_TASHIH', content_snapshot: {} },
+    ],
+  });
+  const detail = await getDetail('reg-b19a-07b', { id: 'usr-pub', publisherId: 'pub-1', roles: ['PENERBIT'] });
+  assert.deepEqual(detail.official_documents.map(d => d.id), ['doc-rl']);
+});
+
 test('B19A-08: dispatchPhysical tidak mewajibkan rekapitulasi pada revisi administrasi verifikator', async () => {
   const regId = 'reg-b19a-08';
   let physicalUpdated = false;

@@ -730,13 +730,6 @@ export const UserManagementPage = () => {
             </div>
 
             <form onSubmit={handleSaveCreate} className="p-6 space-y-4 text-xs">
-              {modalError && (
-                <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{modalError}</span>
-                </div>
-              )}
-
               <div className="space-y-1">
                 <label className="font-semibold text-ink">Nama Lengkap & Gelar *</label>
                 <input
@@ -866,6 +859,13 @@ export const UserManagementPage = () => {
                 </div>
               )}
 
+              {modalError && (
+                <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{modalError}</span>
+                </div>
+              )}
+
               <div className="pt-4 border-t border-line flex items-center justify-end gap-2">
                 <Button
                   type="button"
@@ -911,13 +911,6 @@ export const UserManagementPage = () => {
             </div>
 
             <form onSubmit={handleSaveEdit} className="p-6 space-y-4 text-xs">
-              {modalError && (
-                <div className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{modalError}</span>
-                </div>
-              )}
-
               <div className="space-y-1">
                 <label className="font-semibold text-ink">Nama Lengkap & Gelar *</label>
                 <input
@@ -1041,6 +1034,13 @@ export const UserManagementPage = () => {
                     placeholder="Contoh: PT Mushaf Nusantara Mandiri"
                     className="w-full px-3 py-1.5 rounded-lg border border-line-strong bg-white"
                   />
+                </div>
+              )}
+
+              {modalError && (
+                <div role="alert" className="p-3 bg-civic-dangerSoft border border-civic-dangerLine rounded-lg text-civic-danger flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{modalError}</span>
                 </div>
               )}
 

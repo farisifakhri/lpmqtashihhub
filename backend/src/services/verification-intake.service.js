@@ -221,15 +221,9 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       await tx.$queryRaw`SELECT id, status FROM registrations WHERE id = ${id} FOR UPDATE`;
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION']);
-      const isSuperAdmin = user.roles?.includes('SUPERADMIN') || user.role === 'SUPERADMIN';
-      const isOverriding = Boolean(data.override_core_team);
-      if (reg.core_team_number && data.verifier_id && data.verifier_id !== reg.core_verifier_id) {
-        if (!isSuperAdmin || !isOverriding) {
-          fail(400, 'Verifikator ditentukan oleh tim inti pengajuan dan tidak dapat diganti.');
-        }
-      }
       if (!reg.core_team_number && !data.verifier_id) fail(400, 'Pengajuan lama memerlukan pilihan verifikator.');
-      const targetVerifierId = (isSuperAdmin && isOverriding && data.verifier_id) ? data.verifier_id : (reg.core_verifier_id || data.verifier_id);
+      // Verifikator tim inti hanya default; Admin Internal/Super Admin boleh memilih verifikator aktif lain (issue log #21).
+      const targetVerifierId = data.verifier_id || reg.core_verifier_id;
       const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (intake?.status !== 'RECEIVED' || !intake.receipt_no) {
         fail(409, 'Master fisik belum diterima dan diberi nomor tanda terima. Selesaikan penerimaan sebelum menugaskan verifikator.');
@@ -388,6 +382,7 @@ export const buildVerificationAssignmentWhere = (query, user) => {
   if (!isHead && !isAdmin) where.verifier_id = user.id;
   if (query.my_tasks === 'true' && isHead) where.assigned_by_id = user.id;
   if (query.status) where.status = query.status;
+  if (query.history === 'true') where.status = { in: ['READY_TO_SEND', 'COMPLETED'] };
   if (query.registration_status) {
     where.registration = { ...(where.registration || {}), status: query.registration_status };
   }
@@ -420,7 +415,8 @@ export const listVerificationAssignments = async (query, user) => {
   requireRole(user, ['KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN']);
   const where = buildVerificationAssignmentWhere(query, user);
   const skip = (query.page - 1) * query.limit;
-  const byStage = Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS';
+  const isHistory = query.history === 'true';
+  const byStage = !isHistory && (Boolean(query.registration_status || query.handover_ready) || query.status === 'IN_PROGRESS');
   const [total, items] = await Promise.all([
     prisma.verificationAssignment.count({ where }),
     prisma.verificationAssignment.findMany({
@@ -429,11 +425,18 @@ export const listVerificationAssignments = async (query, user) => {
       take: query.limit,
       orderBy: byStage
         ? [{ registration: { stage_entered_at: 'asc' } }, { id: 'asc' }]
-        : [{ assigned_at: query.status === 'COMPLETED' ? 'desc' : 'asc' }, { id: 'asc' }],
+        : [{ assigned_at: query.status === 'COMPLETED' || isHistory ? 'desc' : 'asc' }, { id: 'asc' }],
       include: {
         verifier: { select: { id: true, name: true } },
         assigned_by: { select: { id: true, name: true } },
-        registration: { select: { id: true, registration_no: true, title: true, status: true, core_team_number: true, stage_entered_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } } } },
+        registration: { select: {
+          id: true, registration_no: true, title: true, status: true, core_team_number: true, stage_entered_at: true, created_at: true, physical_master_intake: { select: { status: true, receipt_no: true } }, publisher: { select: { legal_name: true } }, service_type: { select: { name: true, category: { select: { name: true } } } },
+          // Riwayat: jejak pembayaran PNBP & serah terima (BAST) ke distributor agar progres tidak hilang setelah diserahkan
+          ...(isHistory && {
+            payment_records: { orderBy: { created_at: 'desc' }, take: 1, select: { status: true, paid_at: true, verified_at: true } },
+            physical_handovers: { orderBy: { created_at: 'desc' }, take: 1, select: { receipt_no: true, status: true, handed_over_at: true, received_at: true, to_user: { select: { name: true } } } },
+          }),
+        } },
         documents: {
           orderBy: { version: 'desc' },
           select: {
@@ -444,6 +447,10 @@ export const listVerificationAssignments = async (query, user) => {
             status: true,
             signature_status: true,
             created_at: true,
+            // Jejak waktu untuk lacak berkas di Riwayat (disahkan, dikirim)
+            approved_at: true,
+            sent_at: true,
+            approved_by: { select: { id: true, name: true } },
             signatories: {
               orderBy: { sign_order: 'asc' },
               include: {
@@ -456,18 +463,28 @@ export const listVerificationAssignments = async (query, user) => {
     }),
   ]);
   // Progres paraf surat hasil untuk kartu antrean (Menunggu Pemaraf / Menunggu Kepala).
-  const waitingIds = items.filter(item => item.status === 'WAITING_APPROVAL').map(item => item.id);
+  // Riwayat ikut membawa paraf (siapa & kapan) agar jejak berkas lengkap.
+  const withParafStatus = (item) => item.status === 'WAITING_APPROVAL' || (isHistory && ['READY_TO_SEND', 'COMPLETED'].includes(item.status));
+  const waitingIds = items.filter(withParafStatus).map(item => item.id);
   const parafRows = waitingIds.length && prisma.approvalParaf?.findMany
     ? await prisma.approvalParaf.findMany({ where: { subject_type: 'VERIFICATION_RESULT', subject_id: { in: waitingIds } } })
     : [];
   const parafBy = new Map(parafRows.map(row => [row.subject_id, row]));
+  // Nama Pemaraf yang ditunjuk agar tabel menampilkan siapa yang berhak memaraf (bukan sekadar ID).
+  const assignedIds = [...new Set(parafRows.flatMap(row => (Array.isArray(row.assigned_ids) ? row.assigned_ids : [])))];
+  const assignedUsers = assignedIds.length && prisma.user?.findMany
+    ? await prisma.user.findMany({ where: { id: { in: assignedIds } }, select: { id: true, name: true } })
+    : [];
   const withParaf = items.map(item => {
-    if (item.status !== 'WAITING_APPROVAL') return item;
+    if (!withParafStatus(item)) return item;
     const row = parafBy.get(item.id);
     const { signers, assigned, complete } = parafProgress(row);
-    return { ...item, paraf: row ? { signers, assigned, complete, required: row.required_count ?? PEMARAF_REQUIRED } : null };
+    const pemaraf = (assigned || []).map(id => ({
+      id, name: assignedUsers.find(u => u.id === id)?.name || 'Pemaraf', signed: signers.some(s => s.id === id),
+    }));
+    return { ...item, paraf: row ? { signers, assigned, pemaraf, complete, required: row.required_count ?? PEMARAF_REQUIRED } : null };
   });
-  return { items: queueItems(withParaf, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, query.status !== 'COMPLETED' || Boolean(query.registration_status)), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
+  return { items: queueItems(withParaf, item => byStage ? item.registration.stage_entered_at : item.assigned_at, skip, !isHistory && (query.status !== 'COMPLETED' || Boolean(query.registration_status))), pagination: { total, page: query.page, limit: query.limit, totalPages: Math.ceil(total / query.limit) } };
 };
 
 export const listVerifiers = async (queryOrUser, maybeUser) => {

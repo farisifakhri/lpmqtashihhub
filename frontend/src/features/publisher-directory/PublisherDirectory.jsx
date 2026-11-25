@@ -87,24 +87,41 @@ export const PublisherDirectory = ({ fetchDirectory, showSensitive = false }) =>
 
       <section id="directory-panel" role="tabpanel" aria-labelledby={`directory-tab-${tab}`} className="space-y-4">
         {tab === 'letter' && (
-          <div className="flex flex-wrap gap-1.5" aria-label="Pilih huruf awal nama penerbit">
-            {LETTERS.map((item) => {
-              const count = summary?.letters?.[item] || 0;
-              return (
-                <button
-                  key={item}
-                  type="button"
-                  disabled={!count}
-                  aria-pressed={letter === item}
-                  aria-label={`Huruf ${item === '#' ? 'angka/simbol' : item}, ${count} penerbit`}
-                  onClick={() => { setLetter(item); setPage(1); }}
-                  className={`min-w-10 rounded-lg border px-2.5 py-1.5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-35 ${letter === item ? 'border-brand-700 bg-brand-700 text-white' : 'border-line bg-surface text-ink hover:bg-surface-subtle'}`}
-                >
-                  {item}
-                  {count > 0 && <span className={`ml-1 text-[10px] font-normal ${letter === item ? 'text-white/80' : 'text-ink-muted'}`}>{count}</span>}
-                </button>
-              );
-            })}
+          <div className="grid gap-4 rounded-3xl border border-line bg-gradient-to-br from-brand-50 via-surface to-surface p-4 sm:p-5 lg:grid-cols-[13rem_1fr]">
+            <div className="relative flex items-center gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-700 to-brand-900 p-5 text-white shadow-lg lg:flex-col lg:items-start lg:justify-between">
+              <span aria-hidden="true" className="pointer-events-none absolute -right-4 -bottom-10 select-none text-[9rem] font-black leading-none text-white/10">{letter}</span>
+              <span className="relative text-6xl font-black leading-none lg:text-7xl">{letter}</span>
+              <div className="relative" aria-live="polite">
+                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">{letter === '#' ? 'Angka / simbol' : `Huruf ${letter}`}</p>
+                <p className="mt-1 text-lg font-bold">{summary?.letters?.[letter] || 0} penerbit</p>
+                <p className="mt-0.5 text-xs text-white/70">
+                  {LETTERS.filter((item) => summary?.letters?.[item]).length} dari {LETTERS.length} huruf terisi
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-6 gap-2 self-center sm:grid-cols-9 xl:grid-cols-[repeat(14,minmax(0,1fr))]" aria-label="Pilih huruf awal nama penerbit">
+              {LETTERS.map((item) => {
+                const count = summary?.letters?.[item] || 0;
+                const active = letter === item;
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    disabled={!count}
+                    aria-pressed={active}
+                    aria-label={`Huruf ${item === '#' ? 'angka/simbol' : item}, ${count} penerbit`}
+                    onClick={() => { setLetter(item); setPage(1); }}
+                    className={`group relative flex aspect-square flex-col items-center justify-center rounded-xl border text-lg font-bold motion-safe:transition-all motion-safe:duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 disabled:cursor-not-allowed disabled:border-dashed disabled:bg-transparent disabled:text-ink-muted/40 ${active ? 'border-brand-700 bg-brand-700 text-white shadow-md ring-4 ring-brand-200 motion-safe:scale-105' : 'border-line bg-surface text-ink shadow-sm enabled:hover:-translate-y-0.5 enabled:hover:border-brand-500 enabled:hover:text-brand-700 enabled:hover:shadow-md'}`}
+                  >
+                    {item}
+                    {count > 0 && (
+                      <span className={`absolute -right-1.5 -top-1.5 min-w-5 rounded-full px-1.5 text-[10px] font-bold leading-5 ${active ? 'bg-white text-brand-800 shadow' : 'bg-brand-100 text-brand-800'}`}>{count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

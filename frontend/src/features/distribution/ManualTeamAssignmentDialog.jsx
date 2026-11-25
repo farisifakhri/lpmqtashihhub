@@ -13,7 +13,23 @@ const PERIOD_YEARS = Array.from({ length: 201 }, (_, index) => CURRENT_YEAR - 10
 const MONTH_NAMES = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleDateString('id-ID', { month: 'long' }));
 const PERIOD_WEEKS = [1, 2, 3, 4, 5];
 
-export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
+export const QUICK_PRESETS = Object.freeze([
+  { id: '1-30', label: 'Juz 1–30 (Penuh)', from: 1, to: 30 },
+  { id: '1-20', label: 'Juz 1–20 (20 Juz)', from: 1, to: 20 },
+  { id: '21-30', label: 'Juz 21–30 (10 Juz)', from: 21, to: 30 },
+  { id: '1-15', label: 'Juz 1–15 (15 Juz)', from: 1, to: 15 },
+  { id: '16-30', label: 'Juz 16–30 (15 Juz)', from: 16, to: 30 },
+  { id: '1-10', label: 'Juz 1–10 (10 Juz)', from: 1, to: 10 },
+  { id: '11-20', label: 'Juz 11–20 (10 Juz)', from: 11, to: 20 },
+  { id: '1-5', label: 'Juz 1–5', from: 1, to: 5 },
+  { id: '6-10', label: 'Juz 6–10', from: 6, to: 10 },
+  { id: '11-15', label: 'Juz 11–15', from: 11, to: 15 },
+  { id: '16-20', label: 'Juz 16–20', from: 16, to: 20 },
+  { id: '21-25', label: 'Juz 21–25', from: 21, to: 25 },
+  { id: '26-30', label: 'Juz 26–30', from: 26, to: 30 },
+]);
+
+export function ManualTeamAssignmentDialog({ id, stage: chosenStage, initialReason, onClose, onAssigned }) {
   const dialog = useRef(null);
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -23,7 +39,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState([]);
   const [juzByAssignee, setJuzByAssignee] = useState({});
-  const [reassignmentReason, setReassignmentReason] = useState('ROTASI_TUGAS');
+  const [reassignmentReason, setReassignmentReason] = useState(initialReason || 'ROTASI_TUGAS');
   const [reassignmentNotes, setReassignmentNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,6 +55,8 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const periodMonths = MONTH_NAMES.map((name, index) => ({ key: `${periodYear}-${index + 1}`, name, label: `${name} ${periodYear}` }));
   const [openPeriod, setOpenPeriod] = useState(null); // card pekan yang sedang terbuka
   const [confirmClosePeriod, setConfirmClosePeriod] = useState(false);
+  // Pilihan pentashih disimpan per pekan: pentashih pekan lain tidak ikut terbawa ke pekan yang dibuka.
+  const periodDrafts = useRef({});
 
   const auth = useOptionalAuth ? useOptionalAuth() : null;
   const currentUser = auth?.currentUser;
@@ -177,6 +195,23 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
     });
   };
 
+  const switchPeriod = (nextPeriod) => {
+    if (openPeriod) {
+      periodDrafts.current[openPeriod] = { selected, juzByAssignee, rangeInputs, teamId, assignmentMode, groupRange, groupFrom, groupTo };
+    }
+    const draft = (nextPeriod && periodDrafts.current[nextPeriod]) || {};
+    setSelected(draft.selected || []);
+    setJuzByAssignee(draft.juzByAssignee || {});
+    setRangeInputs(draft.rangeInputs || {});
+    setTeamId(draft.teamId || '');
+    setAssignmentMode(draft.assignmentMode || 'TEAM');
+    setGroupRange(draft.groupRange || { from: 1, to: 30 });
+    setGroupFrom(draft.groupFrom ?? 1);
+    setGroupTo(draft.groupTo ?? 30);
+    setOpenPeriod(nextPeriod);
+    setConfirmClosePeriod(false);
+  };
+
   // Pilih Tim -> Otomatis centang seluruh anggota tim aktif (Item 3)
   const handleTeamChange = (newTeamId) => {
     setTeamId(newTeamId);
@@ -306,21 +341,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
     }
   };
 
-  const quickPresets = [
-    { label: 'Juz 1–30 (Penuh)', from: 1, to: 30 },
-    { label: 'Juz 1–20 (20 Juz)', from: 1, to: 20 },
-    { label: 'Juz 21–30 (10 Juz)', from: 21, to: 30 },
-    { label: 'Juz 1–15 (15 Juz)', from: 1, to: 15 },
-    { label: 'Juz 16–30 (15 Juz)', from: 1, to: 30 },
-    { label: 'Juz 1–10 (10 Juz)', from: 1, to: 10 },
-    { label: 'Juz 11–20 (10 Juz)', from: 1, to: 20 },
-    { label: 'Juz 1–5', from: 1, to: 5 },
-    { label: 'Juz 6–10', from: 6, to: 10 },
-    { label: 'Juz 11–15', from: 11, to: 15 },
-    { label: 'Juz 16–20', from: 16, to: 20 },
-    { label: 'Juz 21–25', from: 21, to: 25 },
-    { label: 'Juz 26–30', from: 26, to: 30 },
-  ];
+  const quickPresets = QUICK_PRESETS;
 
   return (
     <dialog
@@ -346,13 +367,6 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
       </div>
 
       <form onSubmit={submit} noValidate className="space-y-5 p-5 sm:p-6">
-        {error && (
-          <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            {error}
-          </p>
-        )}
-
         {loading ? (
           <p role="status" className="text-sm text-ink-muted">Memuat data kelompok dan kelayakan pengajuan…</p>
         ) : registration && (
@@ -477,7 +491,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                         aria-expanded={isOpen}
                         onClick={() => {
                           if (isOpen) setConfirmClosePeriod(true);
-                          else { setOpenPeriod(periodKey); setConfirmClosePeriod(false); }
+                          else switchPeriod(periodKey);
                         }}
                         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm font-bold text-ink cursor-pointer"
                       >
@@ -489,7 +503,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                           <span>Tutup Pekan {week}? Isian penugasan tidak hilang selama dialog ini masih terbuka.</span>
                           <span className="flex gap-2">
                             <button type="button" onClick={() => setConfirmClosePeriod(false)} className="rounded-lg border border-line-strong bg-white px-3 py-1.5 font-semibold cursor-pointer">Tetap buka</button>
-                            <button type="button" onClick={() => { setOpenPeriod(null); setConfirmClosePeriod(false); }} className="rounded-lg bg-brand-700 px-3 py-1.5 font-bold text-white hover:bg-brand-800 cursor-pointer">Ya, tutup</button>
+                            <button type="button" onClick={() => switchPeriod(null)} className="rounded-lg bg-brand-700 px-3 py-1.5 font-bold text-white hover:bg-brand-800 cursor-pointer">Ya, tutup</button>
                           </span>
                         </div>
                       )}
@@ -654,7 +668,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                       Pilihan Rentang Juz Kelompok (Berlaku untuk Seluruh Anggota)
                     </span>
                   </div>
-                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-700 text-white shadow-2xs">
+                  <span data-testid="group-range-badge" className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-brand-700 text-white shadow-2xs">
                     {getRangeDescription(Array.from({ length: groupRange.to - groupRange.from + 1 }, (_, i) => groupRange.from + i))}
                   </span>
                 </div>
@@ -664,22 +678,26 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                   <span className="block text-[11px] font-semibold text-ink-muted mb-1.5">
                     Preset Rentang Kelompok:
                   </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {quickPresets.map(preset => (
-                      <button
-                        key={preset.label}
-                        type="button"
-                        onClick={() => applyRangeToAllMembers(preset.from, preset.to)}
-                        className={clsx(
-                          "px-2.5 py-1 text-xs rounded-lg border font-medium transition-all cursor-pointer shadow-2xs",
-                          groupRange.from === preset.from && groupRange.to === preset.to
-                            ? "bg-brand-700 text-white border-brand-700 font-bold"
-                            : "border-line bg-white hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300"
-                        )}
-                      >
-                        {preset.label}
-                      </button>
-                    ))}
+                  <div data-testid="group-presets-container" className="flex flex-wrap gap-1.5">
+                    {quickPresets.map(preset => {
+                      const isActive = Number(groupRange.from) === preset.from && Number(groupRange.to) === preset.to;
+                      return (
+                        <button
+                          key={preset.id || preset.label}
+                          type="button"
+                          onClick={() => applyRangeToAllMembers(preset.from, preset.to)}
+                          className={clsx(
+                            "px-2.5 py-1 text-xs rounded-lg border font-medium transition-all cursor-pointer shadow-2xs",
+                            isActive
+                              ? "bg-brand-700 text-white border-brand-700 font-bold"
+                              : "border-line bg-white hover:bg-brand-50 hover:text-brand-800 hover:border-brand-300"
+                          )}
+                          aria-pressed={isActive}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -695,6 +713,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                       value={groupFrom}
                       onChange={e => setGroupFrom(Number(e.target.value))}
                       className="w-14 px-2 py-1 border border-line-strong rounded text-center text-xs font-mono bg-white"
+                      aria-label="Dari Juz Kelompok"
                     />
                   </label>
                   <label className="flex items-center gap-1">
@@ -706,6 +725,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                       value={groupTo}
                       onChange={e => setGroupTo(Number(e.target.value))}
                       className="w-14 px-2 py-1 border border-line-strong rounded text-center text-xs font-mono bg-white"
+                      aria-label="Sampai Juz Kelompok"
                     />
                   </label>
                   <button
@@ -734,6 +754,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                     <option value="BEBAN_KERJA">Penyesuaian Beban Kerja</option>
                     <option value="PENDELEGASIAN">Pendelegasian Tugas Tambahan</option>
                     <option value="PERMINTAAN_DISTRIBUTOR">Kebutuhan Penyesuaian oleh Distributor</option>
+                    <option value="TASHIH_ULANG">Tashih Ulang (Tambah Pekan Pentashihan)</option>
                     <option value="LAINNYA">Penyesuaian Administratif Lainnya</option>
                   </select>
                   <input
@@ -1007,6 +1028,13 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
         <p className="text-xs text-ink-muted">
           Tindakan ini menetapkan penugasan pentashih pada tahap berjalan. Bukan persetujuan SOP, hasil sidang, atau pengesahan STT.
         </p>
+
+        {error && (
+          <p role="alert" className="flex items-start gap-2 rounded-lg bg-civic-dangerSoft p-3 text-sm text-civic-danger">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end gap-2 border-t border-line pt-4">
           <button

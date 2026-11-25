@@ -15,6 +15,7 @@ import {
 import { fileApi } from '@/api/file.api';
 import { registrationApi } from '@/api/registration.api';
 import { Button } from '@/components/ui/Button';
+import { formatRegistrationStatus } from '@/lib/glossary';
 
 export function PublisherPhysicalMasterTab({
   data,
@@ -23,11 +24,13 @@ export function PublisherPhysicalMasterTab({
   setVolumeCount,
   busy,
   savePhysical,
+  physicalFormError,
   actionLoading,
   showPhysicalReceipt,
   dispatchData,
   setDispatchData,
   handleDispatch,
+  dispatchError,
   setShowShippingLabel,
 }) {
   const [downloadedSession, setDownloadedSession] = useState(false);
@@ -69,6 +72,7 @@ export function PublisherPhysicalMasterTab({
   };
 
   const isRevisionRequired = ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION'].includes(data?.status);
+  const canDispatchPhysical = ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED'].includes(data?.status);
 
   return (
     <div className="space-y-6">
@@ -296,6 +300,11 @@ export function PublisherPhysicalMasterTab({
                     className="w-full rounded-lg border border-line-strong p-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-brand-700/20"
                   />
                 </div>
+                {physicalFormError && (
+                  <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                    {physicalFormError}
+                  </p>
+                )}
                 <Button type="submit" variant="outline" size="sm" disabled={busy} className="text-xs">
                   {busy ? 'Menyimpan...' : 'Simpan pernyataan fisik'}
                 </Button>
@@ -359,7 +368,7 @@ export function PublisherPhysicalMasterTab({
                   </Button>
                 </div>
               </div>
-            ) : (
+            ) : canDispatchPhysical ? (
               <form onSubmit={handleDispatch} className="space-y-3">
                 {/* Notice U-09: Syarat Unduh Label Sebelum Kirim */}
                 {!isLabelDownloaded ? (
@@ -458,6 +467,11 @@ export function PublisherPhysicalMasterTab({
                     <p className="mt-1 text-xs text-ink-muted">Nomor resi menjadi bukti pengiriman; LPMQ baru dapat menjadwalkan sidang setelah naskah tercatat terkirim.</p>
                   )}
                 </div>
+                {dispatchError && (
+                  <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                    {dispatchError}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-2.5 pt-2">
                   <Button
                     type="button"
@@ -488,6 +502,10 @@ export function PublisherPhysicalMasterTab({
                   </Button>
                 </div>
               </form>
+            ) : (
+              <div role="status" className="rounded-lg border border-civic-warningLine bg-civic-warningSoft p-3 text-xs text-civic-warning">
+                Konfirmasi pengiriman resi tidak tersedia pada tahap ini. Formulir pengiriman hanya dapat digunakan saat pengajuan menunggu penugasan verifikator atau memerlukan perbaikan. Status saat ini: <strong>{formatRegistrationStatus(data?.status)}</strong>. Jika ini pengajuan baru dan master fisik belum dikirim, hubungi Admin Internal untuk memeriksa riwayat status sebelum proses dilanjutkan.
+              </div>
             )}
           </div>
         </section>

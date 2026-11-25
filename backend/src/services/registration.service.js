@@ -12,6 +12,7 @@ import { allocateCoreTeam } from './core-team.service.js';
 import { sendOutboxEmail } from './email-provider.service.js';
 import { sendWhatsAppNotification } from './whatsapp-provider.service.js';
 import { renderRegistrationReceiptPdf, renderShippingLabelPdf } from './registration-receipt-pdf.service.js';
+import { computeRegistrationSla } from './sla.service.js';
 export {
   SLA_INITIAL_CAP_DAYS,
 } from '../utils/item-calculator.js';
@@ -377,8 +378,14 @@ export const ALLOWED_METADATA_KEYS = new Set([
   'penanggung_jawab_email',
   'nomor_pendaftaran_lama',
   'nomor_kode_ukuran_lama',
+  'surat_permohonan_file_id',
+  'cover_file_id',
+  'contoh_halaman_file_id',
   'surat_pernyataan_file_id',
+  'surat_pernyataan_perubahan_file_id',
   'bukti_tashih_file_id',
+  'apk_file_id',
+  'surat_rekomendasi_file_id',
   'nama_percetakan',
   'jenis_mushaf',
   'kategori_pendaftaran',
@@ -544,27 +551,154 @@ export const resolveLegacyItemsForManuscript = async (manuscriptTitle, data, ser
   });
 };
 
-export const resolveLegacyVariantsForManuscript = (data, isCetak) => {
+export const resolveLegacyVariantsForManuscript = (data) => {
   const meta = { ...(data.foreign_metadata || {}), ...(data.mushaf_details || {}) };
-  if (Array.isArray(meta.sizes) && meta.sizes.length > 0) {
-    return meta.sizes.map((s) => ({
-      ukuran: s.ukuran || 'Standar',
-      oplah: Number(s.oplah || 1000),
+  const rows = Array.isArray(meta.sizes)
+    ? meta.sizes
+    : meta.ukuran || meta.oplah
+      ? [{ ukuran: meta.ukuran, oplah: meta.oplah }]
+      : [];
+
+  return rows
+    .filter((row) => {
+      const ukuran = typeof row?.ukuran === 'string' ? row.ukuran.trim() : '';
+      const oplah = Number(String(row?.oplah ?? '').trim());
+      return ukuran.length > 0 && Number.isInteger(oplah) && oplah >= 1 && oplah <= 10_000_000;
+    })
+    .map((row) => ({
+      ukuran: stripHtmlAndScripts(row.ukuran),
+      oplah: Number(row.oplah),
     }));
+};
+
+export const validateRegistrationRequiredFieldsForSubmit = (registration) => {
+  const metadata =
+    registration.foreign_metadata &&
+    typeof registration.foreign_metadata === 'object' &&
+    !Array.isArray(registration.foreign_metadata)
+      ? registration.foreign_metadata
+      : {};
+  const manuscripts = Array.isArray(registration.manuscripts) ? registration.manuscripts : [];
+  const failValidation = (message) => fail(400, message);
+  const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+  const hasMetadataOrLinkedFile = (metadataKey, fileTypes) =>
+    hasText(metadata[metadataKey]) ||
+    (registration.manuscript_files || []).some(
+      (file) => fileTypes.includes(file.type) && hasText(file.file_id)
+    );
+  const hasValidSize = (variant) => {
+    const amount = Number(variant?.oplah);
+    return (
+      hasText(variant?.ukuran) &&
+      Number.isInteger(amount) &&
+      amount >= 1 &&
+      amount <= 10_000_000
+    );
+  };
+
+  if (!hasText(registration.title) || registration.title.trim().length < 3) {
+    failValidation('Nama mushaf wajib diisi minimal 3 karakter.');
   }
-  if (meta.ukuran) {
-    return [{
-      ukuran: meta.ukuran,
-      oplah: Number(meta.oplah || 1000),
-    }];
+  if (!hasText(metadata.penanggung_jawab_produk)) {
+    failValidation('Nama penanggung jawab produk/mushaf wajib diisi.');
   }
-  if (isCetak) {
-    return [{
-      ukuran: 'Standar A4 (21,0 x 29,7 cm)',
-      oplah: 1000,
-    }];
+  if (!['Mushaf Standar Usmani', 'Mushaf Standar Bahriyyah', 'Mushaf Standar Braille', 'Mushaf Standar Isyarat'].includes(metadata.jenis_mushaf)) {
+    failValidation('Standar mushaf LPMQ wajib dipilih.');
   }
-  return [];
+  if (!['NEW', 'EXTENSION', 'FOREIGN_MANUSCRIPT'].includes(registration.registration_category)) {
+    failValidation('Kategori pendaftaran wajib dipilih.');
+  }
+  if (
+    manuscripts.length === 0 &&
+    (!Array.isArray(metadata.jenis_naskah) || metadata.jenis_naskah.length === 0)
+  ) {
+    failValidation('Pilih minimal satu jenis naskah mushaf yang didaftarkan.');
+  }
+  if (
+    manuscripts.some(
+      (manuscript) => !Array.isArray(manuscript.items) || manuscript.items.length === 0
+    )
+  ) {
+    failValidation('Setiap naskah harus memiliki minimal satu jenis naskah.');
+  }
+
+  if (manuscripts.length > 0) {
+    if (manuscripts.some((manuscript) =>
+      !Array.isArray(manuscript.variants) ||
+      manuscript.variants.length === 0 ||
+      manuscript.variants.some((variant) => !hasValidSize(variant))
+    )) {
+      failValidation('Setiap naskah wajib memiliki ukuran dan oplah yang valid.');
+    }
+  } else {
+    const variants = resolveLegacyVariantsForManuscript({
+      mushaf_details: metadata,
+    });
+    const rawSizes = Array.isArray(metadata.sizes) ? metadata.sizes : [];
+    if (variants.length === 0 || variants.length !== rawSizes.length) {
+      failValidation('Ukuran dan oplah wajib diisi lengkap pada setiap entri.');
+    }
+  }
+
+  if (!hasMetadataOrLinkedFile('surat_permohonan_file_id', ['SURAT_PERMOHONAN'])) {
+    failValidation('Surat permohonan tanda tashih wajib diunggah.');
+  }
+  if (!hasMetadataOrLinkedFile('cover_file_id', ['COVER'])) {
+    failValidation('Gambar cover/sampul mushaf wajib diunggah.');
+  }
+  if (!hasMetadataOrLinkedFile('contoh_halaman_file_id', ['SAMPLE_PAGE_1_5', 'SAMPLE_PAGE'])) {
+    failValidation('Contoh halaman mushaf wajib diunggah.');
+  }
+
+  const itemRecords = manuscripts.flatMap((manuscript) =>
+    (manuscript.items || []).map((manuscriptItem) => manuscriptItem.item || manuscriptItem)
+  );
+  const selectedTypes = Array.isArray(metadata.jenis_naskah) ? metadata.jenis_naskah : [];
+  const isDigital =
+    registration.service_type?.service_kind === 'DIGITAL' ||
+    itemRecords.some((item) => item.service_kind === 'DIGITAL') ||
+    selectedTypes.some((type) => typeof type === 'string' && type.toLowerCase().includes('digital'));
+  if (isDigital) {
+    const apkUrl = registration.apk_url || metadata.apk_url;
+    let hasHttpsUrl = false;
+    if (hasText(apkUrl)) {
+      try {
+        hasHttpsUrl = new URL(apkUrl.trim()).protocol === 'https:';
+      } catch {
+        hasHttpsUrl = false;
+      }
+    }
+    if (!hasMetadataOrLinkedFile('apk_file_id', ['APK']) && !hasHttpsUrl) {
+      failValidation('Berkas APK atau tautan unduhan HTTPS aplikasi mushaf digital wajib disediakan.');
+    }
+  }
+
+  if (registration.registration_type === 'EXTENSION' || registration.registration_category === 'EXTENSION') {
+    if (!registration.previous_registration_id && !hasText(metadata.nomor_pendaftaran_lama)) {
+      failValidation('Nomor pendaftaran lama wajib diisi untuk pengajuan perpanjangan.');
+    }
+    if (!hasMetadataOrLinkedFile('surat_pernyataan_file_id', ['SURAT_PERNYATAAN'])) {
+      failValidation('Surat pernyataan tidak ada perubahan wajib diunggah.');
+    }
+  }
+
+  if (
+    registration.registration_category === 'FOREIGN_MANUSCRIPT' ||
+    registration.registration_type === 'FOREIGN_MANUSCRIPT'
+  ) {
+    if (!hasText(metadata.country_of_origin || metadata.negara_asal_mushaf)) {
+      failValidation('Negara asal mushaf wajib diisi.');
+    }
+    if (!hasText(metadata.foreign_publisher_name || metadata.penerbit_asal_mushaf)) {
+      failValidation('Penerbit asal mushaf wajib diisi.');
+    }
+    if (!hasText(metadata.foreign_tashih_institution || metadata.lembaga_pentashih_asal_mushaf)) {
+      failValidation('Lembaga pentashih asal mushaf wajib diisi.');
+    }
+    if (!hasMetadataOrLinkedFile('bukti_tashih_file_id', ['FOREIGN_TASHIH_CERTIFICATE'])) {
+      failValidation('Bukti tanda tashih dari lembaga asal wajib diunggah.');
+    }
+  }
 };
 
 export const createDraft = async (data, user, req) => {
@@ -765,18 +899,11 @@ export const createDraft = async (data, user, req) => {
         throw error;
       }
 
-      // Validasi varian untuk media CETAK (B-01: tanpa fallback default untuk pengajuan baru)
-      const isCetak = itemRecords.some((it) => it.service_kind === 'CETAK');
       const rawVariants = Array.isArray(m.variants) ? m.variants : [];
       const variants = rawVariants.map((v) => ({
         ukuran: stripHtmlAndScripts(v.ukuran),
         oplah: Number(v.oplah),
       }));
-      if (isCetak && variants.length === 0) {
-        const error = new Error(`Naskah cetak "${mTitle}" wajib memiliki minimal satu varian ukuran dan oplah.`);
-        error.statusCode = 400;
-        throw error;
-      }
 
       if (variants.length > 10) {
         const error = new Error(`Maksimal 10 varian per naskah ("${mTitle}").`);
@@ -813,8 +940,7 @@ export const createDraft = async (data, user, req) => {
       throw error;
     }
 
-    const isCetak = itemRecords.some((it) => it.service_kind === 'CETAK');
-    const variants = resolveLegacyVariantsForManuscript(data, isCetak);
+    const variants = resolveLegacyVariantsForManuscript(data);
     const mCalc = calculateManuscriptTarifAndSla(itemRecords);
 
     validatedManuscripts.push({
@@ -907,7 +1033,10 @@ export const createDraft = async (data, user, req) => {
           ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
           ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
           ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
-          ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
+          ...((data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id) ? {
+            surat_pernyataan_file_id: data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id,
+            surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id || data.surat_pernyataan_file_id,
+          } : {}),
           ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
           ...(data.apk_url ? { apk_url: data.apk_url } : {}),
           ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
@@ -1033,6 +1162,19 @@ export const createDraft = async (data, user, req) => {
         }
 
         // Tautkan berkas lampiran tingkat registrasi
+        if (data.surat_permohonan_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'SURAT_PERMOHONAN',
+                file_id: data.surat_permohonan_file_id,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
         if (data.cover_file_id) {
           try {
             await tx.manuscriptFile.create({
@@ -1055,6 +1197,33 @@ export const createDraft = async (data, user, req) => {
                 manuscript_id: createdManuscripts[0]?.id || null,
                 type: 'SAMPLE_PAGE_1_5',
                 file_id: samplePageFileId,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        const pernyataanFileId = data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id;
+        if (pernyataanFileId) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'SURAT_PERNYATAAN',
+                file_id: pernyataanFileId,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        if (data.apk_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'APK',
+                file_id: data.apk_file_id,
                 version: 1,
               },
             });
@@ -1425,6 +1594,8 @@ export const submitRegistration = async (id, user, req) => {
         variants: (m.variants || []).map((v) => ({ ukuran: v.ukuran, oplah: v.oplah })),
       });
     }
+
+    validateRegistrationRequiredFieldsForSubmit(reg);
   } else {
     // Fallback pengajuan lama yang belum memiliki relasi manuscript
     const jenisNaskahList = [
@@ -1886,6 +2057,15 @@ export const listRegistrations = async ({
           include: { verifier: { select: { id: true, name: true } } },
         },
         physical_master_intake: { select: { status: true, format: true, binding_method: true, volume_count: true, sent_at: true, delivery_method: true, receipt_no: true, received_at: true } },
+        physical_handovers: {
+          where: { status: 'RECEIVED' },
+          orderBy: { received_at: 'desc' },
+          take: 3,
+          include: {
+            to_user: { select: { id: true, name: true, email: true } },
+            from_user: { select: { id: true, name: true, email: true } },
+          },
+        },
         assignments: {
           select: {
             id: true,
@@ -1928,11 +2108,25 @@ export const listRegistrations = async ({
       })).map(paraf => paraf.subject_id))
     : new Set();
 
-  const enrichedItems = items.map(item => {
+  const enrichedItems = await Promise.all(items.map(async item => {
     const assignedVerifier = item.verification_assignments?.[0]?.verifier || teamUserMap.get(item.core_verifier_id) || null;
     const coreDistributor = teamUserMap.get(item.core_distributor_id) || null;
     const coreVerifier = teamUserMap.get(item.core_verifier_id) || null;
     const coreDocumenter = teamUserMap.get(item.core_documenter_id) || null;
+
+    const handoverDistributor = item.physical_handovers?.find(
+      h => ['VERIFICATION_TO_DISTRIBUTION', 'ADMIN_TO_DISTRIBUTOR'].includes(h.stage) && h.to_user
+    )?.to_user || item.physical_handovers?.[0]?.to_user || null;
+
+    const resolvedDistributor = coreDistributor || handoverDistributor || null;
+    const assignedDistributor = {
+      id: resolvedDistributor?.id || null,
+      name: resolvedDistributor?.name || 'Belum ditentukan',
+      role: 'Distributor',
+      email: resolvedDistributor?.email || null,
+    };
+
+    const slaInfo = await computeRegistrationSla(prisma, item);
 
     return {
       ...item,
@@ -1941,6 +2135,14 @@ export const listRegistrations = async ({
       core_verifier: coreVerifier,
       core_distributor: coreDistributor,
       core_documenter: coreDocumenter,
+      assigned_distributor: assignedDistributor,
+      distributor: assignedDistributor,
+      sla: slaInfo,
+      elapsed_working_days: slaInfo.elapsed_working_days,
+      target_working_days: slaInfo.target_working_days,
+      due_at: slaInfo.due_at,
+      sla_status: slaInfo.sla_status,
+      sla_status_label: slaInfo.status_label,
       core_team: item.core_team_number ? {
         teamNumber: item.core_team_number,
         rotationVersion: item.core_team_version,
@@ -1949,7 +2151,7 @@ export const listRegistrations = async ({
         documenter: coreDocumenter,
       } : null,
     };
-  });
+  }));
 
   return {
     items: queueItems(
@@ -2052,10 +2254,11 @@ export const getDetail = async (id, user) => {
     throw error;
   }
 
-  if (reg.core_team_number && !user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
+  if (!user.roles.some(role => ['ADMIN_INTERNAL', 'DOKUMENTATOR', 'SUPERADMIN', 'KEPALA_LPMQ'].includes(role))
       && reg.publisher_id !== user.publisherId
       && ![reg.core_verifier_id, reg.core_distributor_id, reg.core_documenter_id].includes(user.id)
-      && !reg.assignments.some(item => item.assignee_id === user.id)) {
+      && !reg.assignments.some(item => item.assignee_id === user.id)
+      && !reg.verification_assignments.some(item => item.verifier_id === user.id)) {
     fail(403, 'Pengajuan ini bukan tugas Anda.');
   }
 
@@ -2076,6 +2279,25 @@ export const getDetail = async (id, user) => {
   reg.assigned_verifier = reg.verification_assignments?.[0]?.verifier || reg.core_team?.verifier || null;
   reg.core_distributor = reg.core_team?.distributor || null;
 
+  const handoverDist = reg.physical_handovers?.find(
+    h => ['VERIFICATION_TO_DISTRIBUTION', 'ADMIN_TO_DISTRIBUTOR'].includes(h.stage) && h.to_user
+  )?.to_user || reg.physical_handovers?.[0]?.to_user || null;
+  const resolvedDist = reg.core_distributor || handoverDist || null;
+  reg.assigned_distributor = {
+    id: resolvedDist?.id || null,
+    name: resolvedDist?.name || 'Belum ditentukan',
+    role: 'Distributor',
+    email: resolvedDist?.email || null,
+  };
+  reg.distributor = reg.assigned_distributor;
+  const detailSla = await computeRegistrationSla(prisma, reg);
+  reg.sla = detailSla;
+  reg.elapsed_working_days = detailSla.elapsed_working_days;
+  reg.target_working_days = detailSla.target_working_days;
+  reg.due_at = detailSla.due_at;
+  reg.sla_status = detailSla.sla_status;
+  reg.sla_status_label = detailSla.status_label;
+
   try { await assertManuscriptAccess(reg, user); }
   catch (error) {
     if (error.statusCode !== 403) throw error;
@@ -2083,7 +2305,7 @@ export const getDetail = async (id, user) => {
   }
   if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
     reg.official_documents = (reg.official_documents || [])
-      .filter(document => document.status === 'ISSUED')
+      .filter(document => document.status === 'ISSUED' || document.document_type === 'REVISION_RETURN_LETTER')
       .map(doc => {
         if (!doc.content_snapshot) return doc;
         let snap = doc.content_snapshot;

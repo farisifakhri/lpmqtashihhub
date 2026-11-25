@@ -6,13 +6,17 @@ import {
   createRegistrationSchema,
   manuscriptMetadataSchema,
   manuscriptVariantSchema,
+  createManuscriptFileSchema,
 } from '../../src/validators/registration.validator.js';
 import {
   SLA_INITIAL_CAP_DAYS,
   calculateManuscriptTarifAndSla,
   calculateRegistrationTarifAndSla,
   sanitizeManuscriptMetadata,
+  resolveLegacyVariantsForManuscript,
   createDraft,
+  submitRegistration,
+  validateRegistrationRequiredFieldsForSubmit,
 } from '../../src/services/registration.service.js';
 import { renderRegistrationReceiptPdf } from '../../src/services/registration-receipt-pdf.service.js';
 import { listJenisNaskahItems } from '../../src/services/master.service.js';
@@ -255,6 +259,14 @@ test('B-01 T3: Sanitasi metadata naskah dan penolakan properti di luar whitelist
     penanggung_jawab_materi_tambahan: 'Yanto',
   };
   assert.equal(manuscriptMetadataSchema.safeParse(registrationFormMeta).success, true);
+  assert.equal(manuscriptMetadataSchema.safeParse({
+    ...registrationFormMeta,
+    sizes: [{ ukuran: 'A4' }],
+  }).success, true, 'Draf boleh menyimpan baris ukuran yang belum lengkap');
+  assert.equal(manuscriptMetadataSchema.safeParse({
+    ...registrationFormMeta,
+    sizes: [{ ukuran: 'A4', oplah: 1000, unexpected: true }],
+  }).success, false, 'Metadata ukuran hanya menerima ukuran dan oplah');
   const registrationPayload = createRegistrationSchema.body.safeParse({
     title: registrationFormMeta.nama_mushaf,
     registration_type: 'NEW',
@@ -283,6 +295,20 @@ test('B-01 T3: Sanitasi metadata naskah dan penolakan properti di luar whitelist
     bukti_tashih_file_id: null,
   });
   assert.equal(registrationPayload.success, true, JSON.stringify(registrationPayload.error?.issues));
+
+  const partialDraftPayload = createRegistrationSchema.body.safeParse({
+    title: 'Draf Mushaf Parsial',
+    mushaf_details: {
+      penanggung_jawab_produk: 'Penanggung Jawab',
+      sizes: [{ ukuran: 'A4' }],
+    },
+    manuscripts: [{
+      title: 'Draf Mushaf Parsial',
+      items: ['JUZ30'],
+      variants: [],
+    }],
+  });
+  assert.equal(partialDraftPayload.success, true, JSON.stringify(partialDraftPayload.error?.issues));
 
   const sanitizedFormMeta = sanitizeManuscriptMetadata(registrationFormMeta);
   assert.deepEqual(sanitizedFormMeta.sizes, registrationFormMeta.sizes);
@@ -461,11 +487,12 @@ test('B-01 T7: renderRegistrationReceiptPdf menghasilkan buffer PDF valid dengan
 });
 
 // ==========================================
-// T8: Validasi Service Logic: Peran DASAR & Varian CETAK
+// T8: Validasi Service Logic: Peran DASAR dan draf parsial
 // ==========================================
-test('B-01 T8: Penolakan naskah tanpa item DASAR dan naskah CETAK tanpa varian', async () => {
+test('B-01 T8: Penolakan item tanpa peran DASAR dan penerimaan draf cetak tanpa varian', async () => {
   const originalServiceFind = prisma.serviceType.findUnique;
   const originalItemsFind = prisma.jenisNaskahItem.findMany;
+  const originalTx = prisma.$transaction;
 
   try {
     prisma.serviceType.findUnique = async () => ({ id: 'srv-1', status: 'ACTIVE', category: {} });
@@ -493,8 +520,13 @@ test('B-01 T8: Penolakan naskah tanpa item DASAR dan naskah CETAK tanpa varian',
       }
     );
 
-    // 2. Uji Penolakan jika item CETAK tidak memiliki varian ukuran & oplah
+    // 2. Draf dapat disimpan parsial tanpa membuat ukuran/oplah sintetis.
     prisma.jenisNaskahItem.findMany = async () => [MOCK_ITEMS.JUZ30]; // JUZ30 is CETAK
+    let txReached = false;
+    prisma.$transaction = async () => {
+      txReached = true;
+      throw new Error('DRAFT_TRANSACTION_REACHED');
+    };
     await assert.rejects(
       createDraft(
         {
@@ -509,18 +541,13 @@ test('B-01 T8: Penolakan naskah tanpa item DASAR dan naskah CETAK tanpa varian',
         },
         { id: 'usr-1', publisherId: 'pub-1', roles: ['PENERBIT'] }
       ),
-      (err) => {
-        assert.equal(err.statusCode, 400);
-        assert.ok(err.message.includes('varian ukuran dan oplah'), `Pesan harus menyebut varian: ${err.message}`);
-        return true;
-      }
+      (err) => err.message === 'DRAFT_TRANSACTION_REACHED'
     );
+    assert.equal(txReached, true, 'Draf cetak tanpa varian harus dapat disimpan');
 
     // 3. Uji Penerimaan jika naskah DIGITAL tidak memiliki varian (varian opsional untuk non-CETAK)
     prisma.jenisNaskahItem.findMany = async () => [MOCK_ITEMS.DIGITAL]; // DIGITAL is non-CETAK
-    // Mock prisma.$transaction to verify it reaches transaction successfully
-    let txReached = false;
-    const originalTx = prisma.$transaction;
+    txReached = false;
     prisma.$transaction = async (fn) => {
       txReached = true;
       throw new Error('TX_SUCCESSFULLY_REACHED');
@@ -550,7 +577,101 @@ test('B-01 T8: Penolakan naskah tanpa item DASAR dan naskah CETAK tanpa varian',
   } finally {
     prisma.serviceType.findUnique = originalServiceFind;
     prisma.jenisNaskahItem.findMany = originalItemsFind;
+    prisma.$transaction = originalTx;
   }
+});
+
+test('submitRegistration menolak data wajib yang tidak lengkap sebelum transaksi database', async () => {
+  const originalFindUnique = prisma.registration.findUnique;
+  const originalTx = prisma.$transaction;
+  let transactionStarted = false;
+  prisma.registration.findUnique = async () => ({
+    id: 'registration-incomplete',
+    title: 'Mushaf Penerbit',
+    status: 'DRAFT',
+    publisher_id: 'publisher-1',
+    publisher: { verification_status: 'VERIFIED' },
+    registration_type: 'NEW',
+    registration_category: 'NEW',
+    service_type: { service_kind: 'CETAK' },
+    foreign_metadata: {
+      penanggung_jawab_produk: 'Penanggung Jawab',
+      jenis_mushaf: 'Mushaf Standar Usmani',
+      sizes: [{ ukuran: 'A4', oplah: '' }],
+      surat_permohonan_file_id: 'surat-id',
+      cover_file_id: 'cover-id',
+      contoh_halaman_file_id: 'contoh-id',
+      jenis_naskah: ["1. Al-Qur'an 30 Juz"],
+    },
+    manuscript_files: [],
+    manuscripts: [{
+      items: [{ item: MOCK_ITEMS.JUZ30 }],
+      variants: [],
+    }],
+    addons: [],
+  });
+  prisma.$transaction = async () => {
+    transactionStarted = true;
+    throw new Error('Invalid registration reached transaction');
+  };
+
+  try {
+    await assert.rejects(
+      submitRegistration(
+        'registration-incomplete',
+        { id: 'user-1', publisherId: 'publisher-1', roles: ['PENERBIT'] }
+      ),
+      (error) => error.statusCode === 400 && error.message.includes('ukuran dan oplah')
+    );
+    assert.equal(transactionStarted, false);
+  } finally {
+    prisma.registration.findUnique = originalFindUnique;
+    prisma.$transaction = originalTx;
+  }
+});
+
+test('validator submit menerima berkas, data kategori, ukuran, dan oplah yang lengkap', () => {
+  const validRegistration = {
+    title: 'Mushaf Penerbit',
+    registration_type: 'NEW',
+    registration_category: 'NEW',
+    service_type: { service_kind: 'CETAK' },
+    foreign_metadata: {
+      penanggung_jawab_produk: 'Penanggung Jawab',
+      jenis_mushaf: 'Mushaf Standar Usmani',
+      jenis_naskah: ["1. Al-Qur'an 30 Juz"],
+      surat_permohonan_file_id: 'surat-id',
+      cover_file_id: 'cover-id',
+      contoh_halaman_file_id: 'contoh-id',
+    },
+    manuscript_files: [],
+    manuscripts: [{
+      items: [{ item: MOCK_ITEMS.JUZ30 }],
+      variants: [{ ukuran: 'A4', oplah: 1000 }],
+    }],
+  };
+  assert.doesNotThrow(() => validateRegistrationRequiredFieldsForSubmit(validRegistration));
+  for (const variants of [
+    [],
+    [{ ukuran: 'A4', oplah: '' }],
+    [{ ukuran: '   ', oplah: 1000 }],
+    [{ ukuran: 'A4', oplah: 1.5 }],
+  ]) {
+    assert.throws(
+      () => validateRegistrationRequiredFieldsForSubmit({
+        ...validRegistration,
+        manuscripts: [{ ...validRegistration.manuscripts[0], variants }],
+      }),
+      (error) => error.statusCode === 400 && error.message.includes('ukuran dan oplah')
+    );
+  }
+  assert.deepEqual(
+    resolveLegacyVariantsForManuscript({
+      mushaf_details: { sizes: [{ ukuran: 'A4', oplah: '' }] },
+    }),
+    [],
+    'Baris ukuran/oplah parsial tidak boleh menghasilkan varian sintetis'
+  );
 });
 
 // ==========================================
@@ -629,4 +750,39 @@ test('B-01 T11: Edge cases kalkulasi tarif dan SLA jika items kosong atau null',
   const regEmpty = calculateRegistrationTarifAndSla([]);
   assert.equal(regEmpty.totalFee, 0);
   assert.equal(regEmpty.slaInitial, 0);
+});
+
+// ==========================================
+// T12: Validasi createManuscriptFileSchema untuk jenis berkas lampiran
+// ==========================================
+test('B-01 T12: createManuscriptFileSchema menerima jenis berkas valid dan menolak yang tidak valid', () => {
+  const validTypes = [
+    'SURAT_PERMOHONAN',
+    'COVER',
+    'SAMPLE_PAGE_1_5',
+    'SAMPLE_PAGE',
+    'DUMMY',
+    'MASTER_COMPLETED',
+    'SURAT_PERNYATAAN',
+    'APK',
+    'FOREIGN_TASHIH_CERTIFICATE',
+  ];
+  const sampleUuid = '123e4567-e89b-12d3-a456-426614174000';
+
+  for (const type of validTypes) {
+    const result = createManuscriptFileSchema.body.safeParse({
+      type,
+      file_id: sampleUuid,
+    });
+    assert.ok(result.success, `Jenis berkas ${type} harus valid`);
+    if (type === 'SAMPLE_PAGE') {
+      assert.equal(result.data.type, 'SAMPLE_PAGE_1_5');
+    }
+  }
+
+  const invalid = createManuscriptFileSchema.body.safeParse({
+    type: 'JENIS_TIDAK_DIKENAL',
+    file_id: sampleUuid,
+  });
+  assert.strictEqual(invalid.success, false, 'Jenis berkas fiktif harus ditolak');
 });

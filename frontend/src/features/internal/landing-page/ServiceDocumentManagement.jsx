@@ -377,7 +377,6 @@ export const ServiceDocumentManagement = () => {
               </button>
             </div>
 
-            {formError && <div role="alert" className="mb-4 flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger"><AlertCircle className="h-4 w-4 shrink-0" />{formError}</div>}
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
               <div>
                 <label htmlFor="service-document-file" className="mb-1 block font-semibold text-ink">
@@ -410,6 +409,7 @@ export const ServiceDocumentManagement = () => {
                 </label>
                 <p className="pl-6 pt-1 text-[11px] text-ink-muted">Jika tidak dicentang, dokumen tersimpan sebagai draf dan tidak terlihat oleh publik.</p>
               </div>
+              {formError && <div role="alert" className="flex items-center gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs font-medium text-civic-danger"><AlertCircle className="h-4 w-4 shrink-0" />{formError}</div>}
               <div className="flex justify-end gap-2 border-t border-line pt-4">
                 <button type="button" onClick={() => setFormOpen(false)} className="rounded-xl border border-line px-4 py-2 font-semibold text-ink hover:bg-surface-subtle">Batal</button>
                 <button type="submit" disabled={submitting} className="inline-flex items-center gap-1.5 rounded-xl bg-brand-700 px-4 py-2 font-semibold text-white hover:bg-brand-800 disabled:opacity-50">

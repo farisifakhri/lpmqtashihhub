@@ -32,6 +32,7 @@ const VerifikatorInboxPage = withSuspense(lazy(() => import('@/features/verifica
 const VerificationInspectionPage = withSuspense(lazy(() => import('@/features/verification/VerificationInspectionPage').then(m => ({ default: m.VerificationInspectionPage }))));
 const InternalPaymentQueuePage = withSuspense(lazy(() => import('@/features/verification/InternalPaymentQueuePage').then(m => ({ default: m.InternalPaymentQueuePage }))));
 const DistributorHandoverInboxPage = withSuspense(lazy(() => import('@/features/distribution/DistributorHandoverInboxPage').then(m => ({ default: m.DistributorHandoverInboxPage }))));
+const ParafQueuePage = withSuspense(lazy(() => import('@/features/paraf/ParafQueuePage').then(m => ({ default: m.ParafQueuePage }))));
 const SignatureCenterPage = withSuspense(lazy(() => import('@/features/signatures/SignatureCenterPage').then(m => ({ default: m.SignatureCenterPage }))));
 const AdminMasterIntakePage = withSuspense(lazy(() => import('@/features/intake/AdminMasterIntakePage').then(m => ({ default: m.AdminMasterIntakePage }))));
 const DocumentArchivePage = withSuspense(lazy(() => import('@/features/internal/DocumentArchivePage').then(m => ({ default: m.DocumentArchivePage }))));
@@ -42,8 +43,10 @@ const CoreTeamPage = withSuspense(lazy(() => import('@/features/internal/setting
 const PentashihWorkspacePage = withSuspense(lazy(() => import('@/features/tashih/PentashihWorkspacePage').then(m => ({ default: m.PentashihWorkspacePage }))));
 const DokumentatorArchivePage = withSuspense(lazy(() => import('@/features/internal/DokumentatorArchivePage').then(m => ({ default: m.DokumentatorArchivePage }))));
 const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/verification/PublicDocumentVerification').then(m => ({ default: m.PublicDocumentVerification }))));
+const SttAuthenticityCheck = withSuspense(lazy(() => import('@/features/verification/SttAuthenticityCheck').then(m => ({ default: m.SttAuthenticityCheck }))));
 const PublicCertificateVerification = withSuspense(lazy(() => import('@/features/verification/PublicCertificateVerification').then(m => ({ default: m.PublicCertificateVerification }))));
 const ForbiddenPage = withSuspense(lazy(() => import('@/features/errors/ForbiddenPage').then(m => ({ default: m.ForbiddenPage }))));
+const NotFoundPage = withSuspense(lazy(() => import('@/features/errors/NotFoundPage').then(m => ({ default: m.NotFoundPage }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/public/CheckRegistrationStatusPage').then(m => ({ default: m.CheckRegistrationStatusPage }))));
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
@@ -272,6 +275,15 @@ const router = createBrowserRouter([
         ),
       },
       {
+        // Antrean Paraf Pemaraf (akses Pemaraf dipetakan ke KEPALA_LPMQ; data hanya untuk peran Pemaraf)
+        path: 'internal/paraf',
+        element: (
+          <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ']}>
+            <ParafQueuePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'internal/signatures',
         element: (
           <ProtectedRoute portalType="internal" allowedRoles={['KEPALA_LPMQ', 'ADMIN_INTERNAL', 'VERIFIKATOR', 'SUPERADMIN']}>
@@ -419,6 +431,10 @@ const router = createBrowserRouter([
     element: <PublicDocumentVerification />,
   },
   {
+    path: '/cek-dokumen',
+    element: <SttAuthenticityCheck />,
+  },
+  {
     path: '/verifikasi/sertifikat',
     element: <PublicCertificateVerification />,
   },
@@ -431,8 +447,16 @@ const router = createBrowserRouter([
     element: <ForbiddenPage />,
   },
   {
+    path: '/404',
+    element: <NotFoundPage />,
+  },
+  {
     path: '/verify-internal/:token',
     element: <InternalDocumentVerification />,
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
   },
 ], {
   future: {

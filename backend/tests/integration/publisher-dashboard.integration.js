@@ -50,7 +50,8 @@ try {
   assert.equal(actions.data[0].id, payment.id, 'Publisher actions use newest-first order, not internal FIFO');
   assert.equal(Object.values(actions.summary.by_status).reduce((a, b) => a + b, 0), 5);
   const filtered = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_PROCESSING`, token);
-  assert.equal(filtered.pagination.total, 1);
+  assert.equal(filtered.pagination.total, 2);
+  assert.ok(filtered.data.some(item => item.id === payment.id), 'Menunggu pembayaran tetap tampil di Lacak Status');
   const documents = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_DOCUMENTS`, token);
   assert.equal(documents.pagination.total, 2);
   assert.deepEqual(documents.data[0].official_documents.map(item => item.id), [issued.id]);

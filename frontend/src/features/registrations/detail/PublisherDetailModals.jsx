@@ -18,11 +18,13 @@ export function PublisherDetailModals({
   showDeleteModal,
   setShowDeleteModal,
   handleDeleteDraft,
+  deleteDraftError,
   showCancelModal,
   setShowCancelModal,
   cancelReason,
   setCancelReason,
   handleCancelRegistration,
+  cancelRegistrationError,
   physicalReceiptUrl,
   setPhysicalReceiptUrl,
   showReceipt,
@@ -70,6 +72,11 @@ export function PublisherDetailModals({
                 Seluruh berkas naskah yang telah diunggah akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
               </p>
             </div>
+            {deleteDraftError && (
+              <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                {deleteDraftError}
+              </p>
+            )}
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button
                 variant="outline"
@@ -117,6 +124,11 @@ export function PublisherDetailModals({
                 className="w-full rounded-xl border border-line p-2.5 text-xs focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700"
               />
             </div>
+            {cancelRegistrationError && (
+              <p role="alert" className="rounded-lg border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger">
+                {cancelRegistrationError}
+              </p>
+            )}
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button
                 variant="outline"

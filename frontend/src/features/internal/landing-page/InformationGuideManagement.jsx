@@ -540,16 +540,6 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
               </button>
             </div>
 
-            {formError && (
-              <p
-                className="mb-4 flex items-start gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger"
-                role="alert"
-              >
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                {formError}
-              </p>
-            )}
-
             <form onSubmit={submitGuide} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
@@ -625,6 +615,16 @@ export function InformationGuideManagement({ section = 'GUIDE' }) {
                 />
                 Publikasikan {itemNameLower}
               </label>
+
+              {formError && (
+                <p
+                  className="flex items-start gap-2 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3 text-xs text-civic-danger"
+                  role="alert"
+                >
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {formError}
+                </p>
+              )}
 
               <div className="flex flex-col-reverse justify-end gap-2 border-t border-line pt-4 sm:flex-row">
                 <button

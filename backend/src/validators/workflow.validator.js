@@ -16,7 +16,7 @@ export const assignmentSchema = { params, body: z.object({
   stage: z.enum(['INITIAL', 'REVISION', 'DUMMY']),
   allow_overlap: z.boolean().optional(),
   enforce_full_coverage: z.boolean().optional(),
-  reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
+  reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'TASHIH_ULANG', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
   comparison_notes: z.string().trim().max(5000).optional(),
@@ -118,14 +118,20 @@ export const juzChecklistSchema = {
   params: z.object({ id: z.string().uuid(), juzNumber: z.coerce.number().int().min(1).max(30) }),
   body: z.object({
     result: z.enum(['PASSED', 'REVISION_REQUIRED']),
-    notes: z.string().trim().max(2000).default(''),
-  }).strict().refine(data => data.result === 'PASSED' || data.notes.length > 0, 'Catatan koreksi wajib diisi bila juz perlu perbaikan.'),
+    notes: z.preprocess(v => (v === null || v === undefined ? '' : String(v).trim()), z.string().max(2000)).default(''),
+  }).strict(),
 };
 export const reviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
-  notes: z.string().trim().min(1, 'Catatan hasil telaah wajib diisi.').max(10000),
+  notes: z.preprocess(v => (v === null || v === undefined ? '' : String(v).trim()), z.string().max(10000)).default(''),
   recap_file_id: z.string().uuid('ID berkas rekap wajib berupa UUID valid.'),
   recap_scope: z.enum(['TEAM', 'SELF']).default('SELF'),
+  juz_items: z.array(z.object({
+    id: z.string().uuid().optional(),
+    juz_number: z.number().int().min(1).max(30),
+    result: z.enum(['PASSED', 'REVISION_REQUIRED']).optional(),
+    notes: z.string().trim().max(2000).optional().nullable(),
+  })).optional(),
 }).strict() };
 
 export const revokePentashihAssignmentSchema = {
@@ -137,14 +143,16 @@ export const revokePentashihAssignmentSchema = {
 
 export const distributorReviewSchema = { params, body: z.object({
   result: z.enum(['PASSED', 'REVISION_REQUIRED', 'REJECTED']),
-  notes: z.string().trim().min(1, 'Catatan keputusan distributor wajib diisi.').max(10000),
+  notes: z.preprocess(v => (v === null || v === undefined ? '' : String(v).trim()), z.string().max(10000)).default(''),
   revision_kind: z.enum(['NASKAH_PERBAIKAN', 'NASKAH_DUMI']).optional(),
   outgoing_courier: z.string().trim().max(100).optional(),
   outgoing_tracking_no: z.string().trim().max(100).optional(),
   outgoing_dispatch_date: z.string().datetime().optional().or(z.string().trim().optional()),
   outgoing_notes: z.string().trim().max(1000).optional(),
   pemaraf_id: z.string().uuid('Pemaraf tidak valid.').optional(),
-  pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).min(1, 'Pilih minimal 1 Pemaraf aktif.').optional(),
+  pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
+  forceOverride: z.boolean().optional(),
+  allowIncompleteAssignments: z.boolean().optional(),
 }).strict() };
 
 export const outgoingDispatchSchema = { params, body: z.object({

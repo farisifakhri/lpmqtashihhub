@@ -73,6 +73,7 @@ export const verifyPayment = (id, user, req) => prisma.$transaction(async tx => 
   requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const initial = await tx.paymentRecord.findUnique({ where: { id } });
   if (!initial) fail(404, 'Tagihan tidak ditemukan.');
+  await assertVerifierPaymentAccess(initial, user, tx, true);
   const reg = await registration(tx, initial.registration_id);
   requireStatus(reg, ['PAYMENT_VERIFICATION']);
   const payment = await tx.paymentRecord.findUnique({ where: { id } });
@@ -107,6 +108,7 @@ export const returnPayment = (id, data, user, req) => prisma.$transaction(async 
   requireRole(user, ['VERIFIKATOR', 'SUPERADMIN']);
   const initial = await tx.paymentRecord.findUnique({ where: { id } });
   if (!initial) fail(404, 'Tagihan tidak ditemukan.');
+  await assertVerifierPaymentAccess(initial, user, tx, true);
   const reg = await registration(tx, initial.registration_id);
   requireStatus(reg, ['PAYMENT_VERIFICATION']);
   const payment = await tx.paymentRecord.findUnique({ where: { id } });
@@ -259,9 +261,22 @@ export const buildPaymentWhere = (query, user) => {
   const isOwnerPublisher = user.roles.includes('PENERBIT');
 
   const where = {};
-  if (isOwnerPublisher && !isAdmin) {
+  if (isAdmin) {
+    // Superadmin dapat melihat seluruh antrean.
+  } else if (isOwnerPublisher && isVerifier) {
+    where.registration = {
+      OR: [
+        { publisher_id: user.publisherId },
+        { verification_assignments: { some: { verifier_id: user.id } } },
+      ],
+    };
+  } else if (isOwnerPublisher) {
     where.registration = { publisher_id: user.publisherId };
-  } else if (!isHead && !isAdmin && !isVerifier) {
+  } else if (isVerifier) {
+    where.registration = {
+      verification_assignments: { some: { verifier_id: user.id } },
+    };
+  } else if (!isHead) {
     fail(403, 'Akses antrean pembayaran ditolak.');
   }
 
