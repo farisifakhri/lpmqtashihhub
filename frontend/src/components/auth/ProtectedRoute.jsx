@@ -15,7 +15,11 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRoles = accessRoles(currentUser.roles || (currentUser.role ? [currentUser.role] : []));
+  const activeRole = currentUser.activeRole || currentUser.role;
+  const userRoles = accessRoles(
+    currentUser.roles || (activeRole ? [activeRole] : []),
+    activeRole
+  );
   const isPublisher = userRoles.includes('PENERBIT') || currentUser.role === 'PENERBIT';
   const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
 

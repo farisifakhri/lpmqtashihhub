@@ -378,8 +378,14 @@ export const ALLOWED_METADATA_KEYS = new Set([
   'penanggung_jawab_email',
   'nomor_pendaftaran_lama',
   'nomor_kode_ukuran_lama',
+  'surat_permohonan_file_id',
+  'cover_file_id',
+  'contoh_halaman_file_id',
   'surat_pernyataan_file_id',
+  'surat_pernyataan_perubahan_file_id',
   'bukti_tashih_file_id',
+  'apk_file_id',
+  'surat_rekomendasi_file_id',
   'nama_percetakan',
   'jenis_mushaf',
   'kategori_pendaftaran',
@@ -2417,9 +2423,6 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     }
     const manuscriptType = data.type === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : data.type;
     const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: manuscriptType }, orderBy: { version: 'desc' } });
-    if (last && last.file_id === data.file_id && (!data.manuscript_id || last.manuscript_id === data.manuscript_id)) {
-      return last;
-    }
     const created = await tx.manuscriptFile.create({
       data: {
         registration_id: registrationId,
