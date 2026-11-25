@@ -164,12 +164,14 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     render(<DistributorReviewDialog registrationId="reg-revoked" onClose={vi.fn()} onSuccess={vi.fn()} />);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
-    });
+    const selesai = await screen.findByRole('button', { name: 'Selesai' });
     expect(screen.getByText('Dilepas')).toBeInTheDocument();
     expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
+    expect(selesai).not.toBeDisabled();
+    fireEvent.click(selesai);
+    fireEvent.click(screen.getByRole('button', { name: SEND }));
+    expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
   });
   it('Selesai membuka tampilan tindak lanjut: Sidang Kembali membuka pemilihan pekan tanpa mengirim keputusan', async () => {
     const reg = {
@@ -182,8 +184,9 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     render(<DistributorReviewDialog registrationId="reg-week" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={onAddWeek} />);
 
-    // Langkah 1: hanya keputusan + catatan, tanpa tombol kirim
+    // Langkah 1: tinjau hasil sidang saja, tanpa keputusan dan tanpa tombol kirim
     const selesai = await screen.findByRole('button', { name: 'Selesai' });
+    expect(screen.queryByText(/Keputusan Tindak Lanjut Distributor/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: SEND })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
 
@@ -191,6 +194,8 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     fireEvent.click(selesai);
     expect(screen.getByText(/Tindak Lanjut Sidang/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: SEND })).toHaveAttribute('aria-pressed', 'false');
+    // Keputusan & catatan hanya ada di jalur Kirim ke Pemaraf
+    expect(screen.queryByText(/Keputusan Tindak Lanjut Distributor/i)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Sidang Kembali/i }));
     expect(onAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-week' }));
     expect(approveSpy).not.toHaveBeenCalled();
