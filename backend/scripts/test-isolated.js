@@ -11,7 +11,15 @@ const target = new URL(source);
 target.pathname = `/${database}`;
 const db = new PrismaClient();
 let created = false;
-const env = { ...process.env, DATABASE_URL: target.toString(), NODE_ENV: 'test', SEED_DEFAULT_PASSWORD: 'password123', UPLOAD_DIR: `./storage/test-runs/${database}/uploads` };
+const env = {
+  ...process.env,
+  DATABASE_URL: target.toString(),
+  NODE_ENV: 'test',
+  MAIL_DRIVER: 'internal',
+  WHATSAPP_DRIVER: 'mock',
+  SEED_DEFAULT_PASSWORD: 'password123',
+  UPLOAD_DIR: `./storage/test-runs/${database}/uploads`,
+};
 const run = (command, args) => new Promise((resolve, reject) => {
   const child = spawn(command, args, { env, stdio: 'inherit', shell: false, windowsHide: true });
   child.on('error', reject);

@@ -21,10 +21,10 @@ export const authApi = {
     });
   },
 
-  forgotPassword: async (email) => {
+  forgotPassword: async (identifier, method = 'email') => {
     return apiClient('/auth/forgot-password', {
       method: 'POST',
-      body: { email },
+      body: method === 'whatsapp' ? { phone: identifier, method } : { email: identifier, method },
     });
   },
 
