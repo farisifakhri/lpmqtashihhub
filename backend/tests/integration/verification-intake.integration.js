@@ -74,6 +74,8 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
 
     await expect(assignPath, adminToken, 'POST', { verifier_id: otherRole.id, nota_no: notaNo }, 400);
 
+    // Issue #21: verifikator tim inti hanya default; Admin Internal boleh memilih verifikator aktif lain.
+    await prisma.registration.update({ where: { id: reg.id }, data: { core_team_number: 1, core_verifier_id: otherRole.id } });
   });
 
   let createdNotaNo = null;
@@ -93,7 +95,10 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.ok([nota1, nota2].includes(created.nota_dinas.document_no));
     assert.equal(created.nota_dinas.status, 'ISSUED');
     assert.ok(new Date(created.assignment.due_at).getTime() > new Date(created.assignment.assigned_at).getTime());
-    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_ASSIGNED');
+    const assignedReg = await prisma.registration.findUnique({ where: { id: reg.id } });
+    assert.equal(assignedReg.status, 'VERIFICATION_ASSIGNED');
+    assert.equal(created.assignment.verifier_id, verifier.id);
+    assert.equal(assignedReg.core_verifier_id, verifier.id);
     assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.verificationDocument.count({ where: { registration_id: reg.id, document_type: 'NOTA_DINAS_VERIFIKASI' } }), 1);
     assert.equal(await prisma.statusHistory.count({ where: { registration_id: reg.id, to_status: 'VERIFICATION_ASSIGNED' } }), 1);

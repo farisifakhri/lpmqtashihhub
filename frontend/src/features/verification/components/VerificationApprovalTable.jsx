@@ -67,7 +67,7 @@ export const canHeadApproveItem = (item, user) => {
 };
 
 const isHeadUser = (user) => !checkIsPemaraf(user)
-  && (user?.role === 'KEPALA_LPMQ' || accessRoles(user?.roles || []).includes('KEPALA_LPMQ'));
+  && (user?.role === 'KEPALA_LPMQ' || accessRoles(user?.roles || [], user?.activeRole || user?.role).includes('KEPALA_LPMQ'));
 
 /**
  * Tab "Menunggu Persetujuan" bergaya tabel antrean dashboard. Pemaraf (paraf) dan Kepala LPMQ (pengesahan)

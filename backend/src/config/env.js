@@ -61,6 +61,15 @@ export const ENV = {
   SMTP_TIMEOUT_MS: parseInt(process.env.SMTP_TIMEOUT_MS || '15000', 10),
   LPMQ_QURAN_USERNAME: process.env.LPMQ_QURAN_USERNAME || null,
   LPMQ_QURAN_TOKEN: process.env.LPMQ_QURAN_TOKEN || null,
+  WHATSAPP_DRIVER: (process.env.WHATSAPP_DRIVER || 'mock').toLowerCase(),
+  QONTAK_CLIENT_ID: process.env.QONTAK_CLIENT_ID || null,
+  QONTAK_CLIENT_SECRET: process.env.QONTAK_CLIENT_SECRET || null,
+  QONTAK_API_BASE_URL: (process.env.QONTAK_API_BASE_URL || 'https://api.mekari.com/qontak/chat/v1').replace(/\/$/, ''),
+  QONTAK_CHANNEL_INTEGRATION_ID: process.env.QONTAK_CHANNEL_INTEGRATION_ID || null,
+  QONTAK_WHATSAPP_BUSINESS_USER_ID: process.env.QONTAK_WHATSAPP_BUSINESS_USER_ID || null,
+  QONTAK_TEMPLATE_NAME: process.env.QONTAK_TEMPLATE_NAME || null,
+  QONTAK_TEMPLATE_UUID: process.env.QONTAK_TEMPLATE_UUID || null,
+  QONTAK_TIMEOUT_MS: parseInt(process.env.QONTAK_TIMEOUT_MS || '15000', 10),
 };
 
 if (!['internal', 'smtp'].includes(ENV.MAIL_DRIVER)) {
@@ -69,6 +78,14 @@ if (!['internal', 'smtp'].includes(ENV.MAIL_DRIVER)) {
 
 if (ENV.MAIL_DRIVER === 'smtp' && (!ENV.SMTP_HOST || !ENV.SMTP_USER || !ENV.SMTP_PASS)) {
   throw new Error('MAIL_DRIVER=smtp memerlukan SMTP_HOST, SMTP_USER, dan SMTP_PASS.');
+}
+
+if (!['mock', 'qontak'].includes(ENV.WHATSAPP_DRIVER)) {
+  throw new Error('WHATSAPP_DRIVER harus bernilai "mock" atau "qontak".');
+}
+
+if (ENV.WHATSAPP_DRIVER === 'qontak' && (!ENV.QONTAK_CLIENT_ID || !ENV.QONTAK_CLIENT_SECRET || !ENV.QONTAK_CHANNEL_INTEGRATION_ID || !ENV.QONTAK_TEMPLATE_UUID)) {
+  console.warn('⚠️  Qontak OTP belum siap: isi QONTAK_CLIENT_ID, QONTAK_CLIENT_SECRET, QONTAK_CHANNEL_INTEGRATION_ID, dan QONTAK_TEMPLATE_UUID.');
 }
 
 if (

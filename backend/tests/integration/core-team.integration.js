@@ -69,13 +69,20 @@ try {
     registration_id: drafts[0].id, status: 'RECEIVED', receipt_no: `CORE-RECEIPT-${randomUUID()}`,
   } });
   const firstTeam = firstTwo[0].core_team_number;
-  await assert.rejects(createVerificationAssignment(drafts[0].id, {
-    nota_no: `CORE-NOTA-${randomUUID()}`, verifier_id: teams[firstTeam % 9].verifier_id,
-  }, adminActor), error => error.statusCode === 400);
   const assigned = await createVerificationAssignment(drafts[0].id, {
     nota_no: `CORE-NOTA-${randomUUID()}`,
   }, adminActor);
   assert.equal(assigned.assignment.verifier_id, teams[firstTeam - 1].verifier_id);
+  // Issue #21: Admin Internal boleh memilih verifikator aktif selain verifikator tim inti.
+  await prisma.physicalMasterIntake.create({ data: {
+    registration_id: drafts[1].id, status: 'RECEIVED', receipt_no: `CORE-RECEIPT-${randomUUID()}`,
+  } });
+  const otherVerifierId = teams[firstTwo[1].core_team_number % 9].verifier_id;
+  const overridden = await createVerificationAssignment(drafts[1].id, {
+    nota_no: `CORE-NOTA-${randomUUID()}`, verifier_id: otherVerifierId,
+  }, adminActor);
+  assert.equal(overridden.assignment.verifier_id, otherVerifierId);
+  assert.equal((await prisma.registration.findUnique({ where: { id: drafts[1].id } })).core_verifier_id, otherVerifierId);
   console.log('Core team rotation: concurrent 4/5, wrap 9/1, and retry passed.');
 } finally {
   await prisma.$disconnect();

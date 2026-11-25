@@ -43,7 +43,7 @@ export const SignatureCenterPage = () => {
   const { currentUser } = useAuth();
 
   const isPemaraf = checkIsPemaraf(currentUser);
-  const isHead = !isPemaraf && (accessRoles(currentUser?.roles).includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ');
+  const isHead = !isPemaraf && (accessRoles(currentUser?.roles, currentUser?.activeRole || currentUser?.role).includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ');
   const isVerifier = currentUser?.roles?.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isSuperadmin = currentUser?.roles?.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
 

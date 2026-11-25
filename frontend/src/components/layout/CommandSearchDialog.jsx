@@ -26,7 +26,7 @@ export const CommandSearchDialog = ({ isOpen, onClose }) => {
   const listRef = useRef(null);
 
   const role = currentUser?.role || '';
-  const roles = accessRoles(currentUser?.roles || []);
+  const roles = accessRoles(currentUser?.roles || [], currentUser?.activeRole || currentUser?.role);
   const isPublisher = role === 'PENERBIT' || roles.includes('PENERBIT');
   const isHead = role === 'KEPALA_LPMQ' || roles.includes('KEPALA_LPMQ');
   const isSuperAdmin = role === 'SUPERADMIN' || roles.includes('SUPERADMIN');

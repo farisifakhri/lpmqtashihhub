@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Mail, KeyRound, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Mail, KeyRound, AlertCircle, CheckCircle2, ArrowRight, MessageCircle } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { authApi } from '@/api/auth.api';
 
 export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
   const [step, setStep] = useState(initialToken ? 'RESET' : 'REQUEST'); // 'REQUEST' | 'RESET'
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
+  const [method, setMethod] = useState('email');
   const [token, setToken] = useState(initialToken);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -24,7 +25,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
 
   const handleResetState = () => {
     setStep('REQUEST');
-    setEmail('');
+    setIdentifier('');
     setToken('');
     setNewPassword('');
     setConfirmPassword('');
@@ -38,15 +39,21 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
     setError('');
     setSuccess('');
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (method === 'email' && (!identifier || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier))) {
       setError('Masukkan alamat email yang valid.');
+      return;
+    }
+    if (method === 'whatsapp' && identifier.replace(/\D/g, '').length < 9) {
+      setError('Masukkan nomor WhatsApp yang valid.');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await authApi.forgotPassword(email);
-      setSuccess(res.message || 'Jika email terdaftar, petunjuk telah dikirim.');
+      const res = method === 'email'
+        ? await authApi.forgotPassword(identifier)
+        : await authApi.forgotPassword(identifier, method);
+      setSuccess(res.message || 'Jika akun terdaftar, petunjuk telah dikirim.');
     } catch (err) {
       setError(err.message || 'Gagal memproses permohonan pemulihan kata sandi.');
     } finally {
@@ -104,7 +111,8 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
               <span>{success}</span>
             </div>
             <p className="text-[11px] text-ink-muted leading-relaxed">
-              Periksa kotak masuk (inbox) atau folder spam email Anda. Jika dalam 10 menit belum menerima petunjuk, silakan{' '}
+              {method === 'email' ? 'Periksa kotak masuk (inbox) atau folder spam email Anda. ' : 'Periksa WhatsApp pada nomor yang tersimpan di akun Anda. '}
+              Jika dalam 10 menit belum menerima petunjuk, silakan{' '}
               <a
                 href="https://wa.me/628111997125"
                 target="_blank"
@@ -120,25 +128,42 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
         {step === 'REQUEST' ? (
           <form onSubmit={handleRequestToken} className="space-y-4">
             <div className="space-y-1.5">
-              <label htmlFor="forgot-email" className="block text-xs font-bold text-ink">
-                Alamat Email Terdaftar <span className="text-civic-danger">*</span>
+              <label htmlFor="forgot-contact" className="block text-xs font-bold text-ink">
+                {method === 'email' ? 'Alamat Email Terdaftar' : 'Nomor WhatsApp Terdaftar'} <span className="text-civic-danger">*</span>
               </label>
               <div className="relative">
                 <input
-                  id="forgot-email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="nama@instansi.go.id atau email penerbit"
+                  id="forgot-contact"
+                  type={method === 'email' ? 'email' : 'tel'}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder={method === 'email' ? 'nama@instansi.go.id atau email penerbit' : '+6281234567890'}
                   required
                   className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-canvas focus:bg-white border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all text-ink placeholder:text-ink-muted"
                 />
-                <Mail className="w-4 h-4 text-ink-muted absolute left-3 top-3 pointer-events-none" />
+                {method === 'email' ? <Mail className="w-4 h-4 text-ink-muted absolute left-3 top-3 pointer-events-none" /> : <MessageCircle className="w-4 h-4 text-ink-muted absolute left-3 top-3 pointer-events-none" />}
               </div>
               <p className="text-xs text-ink-muted">
-                Masukkan email yang digunakan saat pendaftaran. Sistem akan memverifikasi dan menyiapkan akses pembaruan sandi.
+                {method === 'email'
+                  ? 'Masukkan email yang terdaftar pada akun Anda.'
+                  : 'Masukkan nomor WhatsApp yang tersimpan pada akun Anda, misalnya +6281234567890.'}
               </p>
             </div>
+
+            <fieldset className="space-y-2">
+              <legend className="block text-xs font-bold text-ink">Kirim kode melalui</legend>
+              <div className="grid grid-cols-2 gap-2">
+                <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${method === 'email' ? 'border-brand-700 bg-brand-50 text-brand-fg' : 'border-line text-ink-muted'}`}>
+                  <input type="radio" name="reset-method" value="email" checked={method === 'email'} onChange={() => setMethod('email')} />
+                  <Mail className="h-4 w-4" /> Email
+                </label>
+                <label className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-xs ${method === 'whatsapp' ? 'border-brand-700 bg-brand-50 text-brand-fg' : 'border-line text-ink-muted'}`}>
+                  <input type="radio" name="reset-method" value="whatsapp" checked={method === 'whatsapp'} onChange={() => setMethod('whatsapp')} />
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                </label>
+              </div>
+              <p className="text-xs text-ink-muted">Kode hanya dikirim melalui satu kanal. WhatsApp dikirim ke nomor yang tersimpan pada akun.</p>
+            </fieldset>
 
             {error && (
               <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-civic-dangerLine bg-civic-dangerSoft p-3.5 text-xs text-civic-danger animate-fadeIn">
@@ -184,7 +209,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose, initialToken = '' }) => {
                 required
                 className="w-full px-3 py-2 text-xs font-mono bg-canvas border border-line-strong rounded-xl outline-none focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 text-ink"
               />
-              <p className="mt-1 text-xs text-ink-muted">Kode berisi 8 digit dan berlaku selama 30 menit.</p>
+              <p className="mt-1 text-xs text-ink-muted">Kode berisi 8 digit dan berlaku selama 10 menit.</p>
             </div>
 
             <div className="space-y-1">

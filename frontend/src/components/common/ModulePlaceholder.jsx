@@ -143,7 +143,7 @@ export const ModulePlaceholder = ({
   businessRules = [],
 }) => {
   const { currentUser } = useAuth();
-  const currentRoles = accessRoles(currentUser?.roles || [currentUser?.role].filter(Boolean));
+  const currentRoles = accessRoles(currentUser?.roles || [currentUser?.role].filter(Boolean), currentUser?.activeRole || currentUser?.role);
 
   // Mode Tampilan: 'business' (Bahasa Bisnis Layanan, Default) atau 'technical' (Inspeksi Teknis BE & DB)
   const [viewMode, setViewMode] = useState('business');
