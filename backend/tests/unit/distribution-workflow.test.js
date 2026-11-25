@@ -226,6 +226,28 @@ test('approveDistribution enforces DISTRIBUTOR role and completeness of all pent
       (err) => err.statusCode === 409 && err.message.includes('masih ada penugasan yang belum selesai')
     );
 
+    // 2b. Allows decision when forceOverride is true even if assignments are incomplete
+    let updatedAssignments = [];
+    prisma.$transaction = async (cb) => {
+      return cb(createMockTx({
+        assignment: {
+          findFirst: async () => ({ iteration: 1, stage: 'INITIAL' }),
+          findMany: async () => [
+            { id: 'a1', status: 'COMPLETED', reviews: [{ id: 'r1', result: 'PASSED', recap_file_id: 'file-1' }] },
+            { id: 'a2', status: 'ASSIGNED', reviews: [] },
+          ],
+          update: async ({ where, data }) => {
+            updatedAssignments.push({ where, data });
+            return { id: where.id, ...data };
+          },
+        },
+      }));
+    };
+
+    const overrideRes = await approveDistribution('reg-1', { result: 'PASSED', notes: 'Lulus dengan override', forceOverride: true }, { id: 'dist-1', roles: ['DISTRIBUTOR'] });
+    assert.ok(overrideRes);
+    assert.ok(updatedAssignments.some(u => u.where.id === 'a2' && u.data.status === 'COMPLETED'), 'Penugasan yang belum selesai harus diselesaikan otomatis saat override');
+
     // 3. Rejects PASSED decision on DUMMY stage if any pentashih flagged REVISION_REQUIRED (409)
     prisma.$transaction = async (cb) => {
       return cb(createMockTx({

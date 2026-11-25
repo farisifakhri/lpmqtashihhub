@@ -802,7 +802,7 @@ export async function listMyAssignments(user, query = {}) {
   });
 }
 
-export const assertDistributionReviewCompleteness = (assignments, { requireAllPassed = false } = {}) => {
+export const assertDistributionReviewCompleteness = (assignments, { requireAllPassed = false, allowIncomplete = false } = {}) => {
   const allJuzInIteration = new Set(
     assignments.flatMap(a => (a.juz_items || []).map(j => j.juz_number))
   );
@@ -810,6 +810,13 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
   const activeAssignments = assignments.filter(a => a.status !== 'REVOKED');
   if (activeAssignments.length === 0) {
     fail(409, 'Seluruh penugasan pada iterasi ini telah dicabut. Tugaskan pentashih pengganti sebelum mengambil keputusan.');
+  }
+
+  if (allowIncomplete) {
+    if (requireAllPassed && activeAssignments.some(item => item.reviews?.some(review => review.result !== 'PASSED'))) {
+      fail(409, 'Pengajuan belum dapat direkomendasikan untuk STT karena masih ada hasil sidang yang tidak lulus. Periksa catatan pentashih dan tindak lanjuti perbaikan naskah.');
+    }
+    return;
   }
 
   const activeTeamMap = new Map();
@@ -906,7 +913,7 @@ export const assertDistributionReviewCompleteness = (assignments, { requireAllPa
   }
 };
 
-export const assertReadyForSttEligibility = async (tx, registrationId) => {
+export const assertReadyForSttEligibility = async (tx, registrationId, { allowIncomplete = false } = {}) => {
   const last = await tx.assignment.findFirst({ where: { registration_id: registrationId }, orderBy: { iteration: 'desc' } });
   if (!last) fail(409, 'Penugasan belum tersedia.');
 
@@ -920,7 +927,7 @@ export const assertReadyForSttEligibility = async (tx, registrationId) => {
   });
 
   if (!assignments.length) fail(409, 'Penugasan belum tersedia.');
-  assertDistributionReviewCompleteness(assignments, { requireAllPassed: true });
+  assertDistributionReviewCompleteness(assignments, { requireAllPassed: true, allowIncomplete });
 
   return { lastIteration: last.iteration, assignments };
 };
@@ -938,6 +945,8 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   if (!last) fail(409, 'Penugasan belum tersedia.');
   const assignments = await tx.assignment.findMany({ where: { registration_id: id, iteration: last.iteration }, include: { reviews: true, juz_items: true } });
 
+  const allowIncomplete = Boolean(data.forceOverride || data.allowIncompleteAssignments);
+
   // B-16: Naskah hanya berhak langsung ke READY_FOR_STT jika telah berada pada tahap DUMMY
   const isEligibleForStt = data.result === 'PASSED' && last.stage === 'DUMMY';
 
@@ -951,14 +960,15 @@ const applyDistributionDecision = async (tx, id, data, user, { dryRun = false, p
   }
 
   // B-17: Hukum dasar sidang - wajib nunggu seluruh pentashih/kelompok menyelesaikan rekapnya (baik PASSED maupun REVISION_REQUIRED)
-  assertDistributionReviewCompleteness(assignments, { requireAllPassed: isEligibleForStt });
+  // Kecuali Distributor memberikan forceOverride / allowIncompleteAssignments
+  assertDistributionReviewCompleteness(assignments, { requireAllPassed: isEligibleForStt, allowIncomplete });
 
   const previousLetters = tx.officialDocument?.count
     ? await tx.officialDocument.count({ where: { registration_id: id, document_type: 'REVISION_RETURN_LETTER' } })
     : 0;
 
   if (isEligibleForStt) {
-    await assertReadyForSttEligibility(tx, id);
+    await assertReadyForSttEligibility(tx, id, { allowIncomplete });
   }
   if (data.result === 'REJECTED') fail(409, 'Penolakan akhir setelah pembayaran menunggu kebijakan resmi; gunakan perbaikan.');
   if (dryRun) return reg;

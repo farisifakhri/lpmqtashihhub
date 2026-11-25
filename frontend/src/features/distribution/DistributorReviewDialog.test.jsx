@@ -302,5 +302,147 @@ describe('DistributorReviewDialog Component (B-17)', () => {
       }));
     });
   });
+
+  it('menampilkan form keputusan tindak lanjut sejak awal saat masih ada pentashih berstatus Belum Selesai', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-incomplete',
+        title: 'Mushaf Belum Selesai',
+        status: 'TASHIH_IN_PROGRESS',
+        assignments: [
+          {
+            id: 'asg-1',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'ASSIGNED',
+            assignee: { name: 'Pentashih Belum Review' },
+            reviews: [],
+            juz_items: [{ id: 'j-1', juz_number: 1, result: null }],
+          },
+        ],
+      },
+    });
+
+    render(<DistributorReviewDialog registrationId="reg-incomplete" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+
+    // 1. Teks pengingat kuning tidak lagi mengunci keputusan
+    expect(screen.getByText(/Masih ada anggota tim pentashih yang belum menginputkan hasil telaah\. Pilih keputusan tindak lanjut di bawah jika Distributor ingin tetap memproses naskah\./i)).toBeInTheDocument();
+
+    // 2. Form keputusan langsung tampil sejak awal dan aktif
+    expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
+    const passRadio = screen.getByRole('radio', { name: /Loloskan Telaah & Alihkan ke Tahap Dumi/i });
+    const revRadio = screen.getByRole('radio', { name: /Kembalikan ke Penerbit \(Perbaikan\)/i });
+    expect(passRadio).toBeInTheDocument();
+    expect(passRadio).not.toBeDisabled();
+    expect(revRadio).toBeInTheDocument();
+    expect(revRadio).not.toBeDisabled();
+
+    // 3. Catatan keputusan distributor berlabel Opsional dan textarea dapat diisi
+    expect(screen.getByText('Opsional')).toBeInTheDocument();
+    const textarea = screen.getByPlaceholderText(/Tambahkan catatan keputusan atau arahan dari Distributor \(opsional\)\.\.\./i);
+    expect(textarea).toBeInTheDocument();
+  });
+
+  it('menerapkan alur konfirmasi dua langkah (Simpan Keputusan -> Lanjutkan Menyimpan) saat ada pentashih belum selesai', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-two-step',
+        title: 'Mushaf Two Step Override',
+        status: 'TASHIH_IN_PROGRESS',
+        assignments: [
+          {
+            id: 'asg-1',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'ASSIGNED',
+            assignee: { name: 'Pentashih Pending' },
+            reviews: [],
+          },
+        ],
+      },
+    });
+
+    const approveSpy = vi.spyOn(tashihApi, 'approveDistribution').mockResolvedValue({ success: true });
+    const onSuccess = vi.fn();
+
+    render(<DistributorReviewDialog registrationId="reg-two-step" onClose={vi.fn()} onSuccess={onSuccess} />);
+
+    await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+
+    // Tombol awal bertuliskan "Simpan Keputusan Distributor"
+    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
+    expect(submitBtn).toBeInTheDocument();
+
+    // Kotak merah belum tampil
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // Klik pertama
+    fireEvent.click(submitBtn);
+
+    // API belum dipanggil
+    expect(approveSpy).not.toHaveBeenCalled();
+
+    // Kotak peringatan merah muncul
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).toBeInTheDocument();
+    expect(screen.getByText(/Masih ada penugasan pentashih yang belum selesai atau belum memiliki hasil sidang/i)).toBeInTheDocument();
+
+    // Label tombol berubah menjadi "Lanjutkan Menyimpan"
+    expect(screen.getByRole('button', { name: /Lanjutkan Menyimpan/i })).toBeInTheDocument();
+
+    // Klik kedua
+    fireEvent.click(screen.getByRole('button', { name: /Lanjutkan Menyimpan/i }));
+
+    // API dipanggil dengan flag forceOverride dan allowIncompleteAssignments
+    await waitFor(() => {
+      expect(approveSpy).toHaveBeenCalledWith('reg-two-step', expect.objectContaining({
+        result: 'PASSED',
+        forceOverride: true,
+        allowIncompleteAssignments: true,
+      }));
+      expect(onSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('mereset kotak merah konfirmasi dan tombol saat distributor mengubah pilihan keputusan', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-reset-test',
+        title: 'Mushaf Reset Test',
+        status: 'TASHIH_IN_PROGRESS',
+        assignments: [
+          {
+            id: 'asg-1',
+            iteration: 1,
+            stage: 'INITIAL',
+            status: 'ASSIGNED',
+            reviews: [],
+          },
+        ],
+      },
+    });
+
+    render(<DistributorReviewDialog registrationId="reg-reset-test" onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+
+    // Klik pertama memicu state konfirmasi override
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i }));
+    expect(screen.getByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Lanjutkan Menyimpan/i })).toBeInTheDocument();
+
+    // Ubah pilihan ke "Kembalikan ke Penerbit (Perbaikan)"
+    const revRadio = screen.getByRole('radio', { name: /Kembalikan ke Penerbit \(Perbaikan\)/i });
+    fireEvent.click(revRadio);
+
+    // Kotak merah hilang dan tombol kembali menjadi "Simpan Keputusan Distributor"
+    expect(screen.queryByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
+  });
 });
 
