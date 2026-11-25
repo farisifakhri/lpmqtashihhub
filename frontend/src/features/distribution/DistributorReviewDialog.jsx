@@ -479,16 +479,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 </div>
               </div>
 
-              {/* Peringatan jika belum semua selesai */}
-              {!allCompleted && (
-                <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
-                  <div>
-                    <strong>Sidang Belum Selesai Seluruhnya:</strong> Masih ada anggota tim pentashih yang belum menginputkan hasil telaah. Pilih keputusan tindak lanjut di bawah jika Distributor ingin tetap memproses naskah.
-                  </div>
-                </div>
-              )}
-
               {/* Peringatan jika belum ada dokumen rekap internal (B-06) */}
               {allCompleted && !hasTeamRecap && (
                 <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
@@ -763,8 +753,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
           {/* Peringatan Konfirmasi Override Dua Langkah */}
           {confirmOverride && !allCompleted && (
-            <div role="alert" className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-civic-danger" />
+            <div role="alert" className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
               <div>
                 <strong>Konfirmasi Penyimpanan Sidang Belum Selesai:</strong> Masih ada penugasan pentashih yang belum selesai atau belum memiliki hasil sidang. Klik <strong>&quot;Lanjutkan Menyimpan&quot;</strong> untuk tetap melanjutkan penyimpanan keputusan.
               </div>

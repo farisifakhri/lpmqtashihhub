@@ -328,8 +328,8 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
 
-    // 1. Teks pengingat kuning tidak lagi mengunci keputusan
-    expect(screen.getByText(/Masih ada anggota tim pentashih yang belum menginputkan hasil telaah\. Pilih keputusan tindak lanjut di bawah jika Distributor ingin tetap memproses naskah\./i)).toBeInTheDocument();
+    // 1. Banner kuning "Sidang Belum Selesai Seluruhnya" telah dihapus dari atas form
+    expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
 
     // 2. Form keputusan langsung tampil sejak awal dan aktif
     expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
@@ -377,7 +377,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
     expect(submitBtn).toBeInTheDocument();
 
-    // Kotak merah belum tampil
+    // Kotak peringatan belum tampil
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     // Klik pertama
@@ -386,8 +386,10 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     // API belum dipanggil
     expect(approveSpy).not.toHaveBeenCalled();
 
-    // Kotak peringatan merah muncul
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    // Kotak peringatan konfirmasi kuning muncul dengan token civic-warning
+    const alertBox = screen.getByRole('alert');
+    expect(alertBox).toBeInTheDocument();
+    expect(alertBox).toHaveClass('bg-civic-warningSoft', 'border-civic-warningLine', 'text-civic-warning');
     expect(screen.getByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).toBeInTheDocument();
     expect(screen.getByText(/Masih ada penugasan pentashih yang belum selesai atau belum memiliki hasil sidang/i)).toBeInTheDocument();
 
@@ -408,7 +410,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     });
   });
 
-  it('mereset kotak merah konfirmasi dan tombol saat distributor mengubah pilihan keputusan', async () => {
+  it('mereset kotak konfirmasi dan tombol saat distributor mengubah pilihan keputusan', async () => {
     vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({
       success: true,
       data: {
@@ -440,7 +442,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     const revRadio = screen.getByRole('radio', { name: /Kembalikan ke Penerbit \(Perbaikan\)/i });
     fireEvent.click(revRadio);
 
-    // Kotak merah hilang dan tombol kembali menjadi "Simpan Keputusan Distributor"
+    // Kotak konfirmasi hilang dan tombol kembali menjadi "Simpan Keputusan Distributor"
     expect(screen.queryByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
   });
