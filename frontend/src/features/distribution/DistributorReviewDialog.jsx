@@ -43,8 +43,10 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
   const [error, setError] = useState(null);
 
   // Form decision state
-  // CONTINUE = lanjutkan sidang dengan pekan pentashihan tambahan; tidak dikirim ke Pemaraf.
-  const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED' | 'CONTINUE'
+  const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
+  // Dua langkah: keputusan + catatan ("Selesai"), lalu tindak lanjut: kirim ke Pemaraf atau sidang kembali.
+  const [step, setStep] = useState('DECISION'); // 'DECISION' | 'NEXT'
+  const [nextRoute, setNextRoute] = useState(null); // 'PEMARAF' bila memilih kirim
   const [distributorNotes, setDistributorNotes] = useState('');
   // Pemaraf: keputusan distributor ditahan sampai diparaf (hanya bila sudah ada akun Pemaraf aktif)
   const [parafState, setParafState] = useState({ gate_active: false, pending: null });
@@ -191,12 +193,16 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
   );
 
   const canPassSTT = allCompleted && !hasRevisionRequested;
-  const canContinue = canDecide && allCompleted && !pendingParaf && Boolean(onAddWeek);
-  const sendingToPemaraf = decision !== 'CONTINUE';
+  const canContinue = Boolean(onAddWeek);
+  const sendLabel = parafState.gate_active ? 'Kirim ke Pemaraf' : 'Simpan Keputusan Distributor';
+  const decisionLabel = decision === 'REVISION_REQUIRED'
+    ? 'Kembalikan ke Penerbit (Perbaikan)'
+    : currentAssignments[0]?.stage === 'DUMMY' ? 'Rekomendasikan Penetapan STT' : 'Loloskan Telaah & Alihkan ke Tahap Dumi';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!registration) return;
+    // Enter di kolom isian langkah pertama tidak boleh langsung mengirim keputusan.
+    if (!registration || step !== 'NEXT' || nextRoute !== 'PEMARAF') return;
 
     if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
       setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
@@ -262,6 +268,56 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
           {loading ? (
             <div className="py-12 text-center text-ink-muted text-xs font-semibold">
               Memuat data telaah tim pentashih...
+            </div>
+          ) : registration && step === 'NEXT' ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-canvas border border-line text-xs space-y-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Keputusan Distributor</p>
+                <p className="font-bold text-ink">{decisionLabel}</p>
+                <p className="text-ink-muted whitespace-pre-line line-clamp-4">{distributorNotes}</p>
+              </div>
+
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-ink mb-2">Tindak Lanjut Sidang</p>
+                <div className={clsx('grid grid-cols-1 gap-3', canContinue && 'sm:grid-cols-2')}>
+                  <button
+                    type="button"
+                    aria-pressed={nextRoute === 'PEMARAF'}
+                    onClick={() => setNextRoute('PEMARAF')}
+                    className={clsx(
+                      'text-left rounded-xl border-2 p-4 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-700',
+                      nextRoute === 'PEMARAF' ? 'border-brand-700 bg-brand-50' : 'border-line bg-white hover:border-brand-200'
+                    )}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                      <Send className="w-4 h-4 text-brand-700 shrink-0" aria-hidden="true" />
+                      {sendLabel}
+                    </span>
+                    <span className="block text-xs text-ink-muted mt-1">
+                      {parafState.gate_active ? 'Sidang diakhiri. Pilih Pemaraf, lalu laporan diteruskan ke Kepala LPMQ.' : 'Sidang diakhiri dan keputusan disimpan.'}
+                    </span>
+                  </button>
+                  {canContinue && (
+                    <button
+                      type="button"
+                      onClick={() => onAddWeek(registration)}
+                      className="text-left rounded-xl border-2 border-line bg-white p-4 transition-colors hover:border-civic-infoLine hover:bg-civic-infoSoft/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-700"
+                    >
+                      <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                        <CalendarPlus className="w-4 h-4 text-civic-info shrink-0" aria-hidden="true" />
+                        Sidang Kembali
+                      </span>
+                      <span className="block text-xs text-ink-muted mt-1">
+                        Tashih ulang: pilih bulan, pekan, dan pentashih seperti biasa. Keputusan ini belum dikirim; catatan perbaikan sebelumnya tetap berlaku.
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {nextRoute === 'PEMARAF' && parafState.gate_active && (
+                <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
+              )}
             </div>
           ) : registration ? (
             <>
@@ -513,7 +569,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                       <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
                         Keputusan Tindak Lanjut Distributor
                       </label>
-                      <div className={clsx('grid grid-cols-1 gap-3', canContinue ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {/* Opsi Lulus (STT jika DUMMY, atau Alihkan ke Tahap DUMMY jika INITIAL/REVISION) - B-16 */}
                         <label
                           className={clsx(
@@ -575,46 +631,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                           </div>
                         </label>
 
-                        {/* Opsi Lanjutkan Sidang: pekan pentashihan tambahan sebelum keputusan dikirim */}
-                        {canContinue && (
-                          <label
-                            className={clsx(
-                              'p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3',
-                              decision === 'CONTINUE'
-                                ? 'border-civic-info bg-civic-infoSoft/50'
-                                : 'border-line hover:border-line-strong'
-                            )}
-                          >
-                            <input
-                              type="radio"
-                              name="distributorDecision"
-                              value="CONTINUE"
-                              checked={decision === 'CONTINUE'}
-                              onChange={(e) => setDecision(e.target.value)}
-                              className="mt-0.5 text-civic-info focus:ring-civic-info"
-                            />
-                            <div>
-                              <div className="font-bold text-xs text-ink">
-                                Lanjutkan Sidang (Pilih Pekan Lagi)
-                              </div>
-                              <div className="text-xs text-ink-muted mt-0.5">
-                                Sidang belum diakhiri: tambah pekan dan pentashih untuk tashih ulang sebelum keputusan dikirim ke Pemaraf.
-                              </div>
-                            </div>
-                          </label>
-                        )}
                       </div>
 
-                      {decision === 'CONTINUE' && (
-                        <div className="mt-3.5 p-3.5 rounded-xl border border-civic-infoLine bg-civic-infoSoft/30 space-y-2.5 text-xs text-ink">
-                          <p>
-                            Penugasan pekan tambahan masuk ke sidang yang sama. Keputusan baru dapat dikirim ke Pemaraf setelah pentashih pekan tambahan menyelesaikan telaahnya; catatan perbaikan dari pekan sebelumnya tetap berlaku.
-                          </p>
-                          <Button type="button" size="sm" onClick={() => onAddWeek(registration)} icon={<CalendarPlus className="w-3.5 h-3.5" />}>
-                            Pilih Pekan & Pentashih
-                          </Button>
-                        </div>
-                      )}
 
                       {decision === 'REVISION_REQUIRED' && (
                         <div className="mt-3.5 p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft/30 space-y-3">
@@ -673,7 +691,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                     </div>
 
                     {/* Catatan Keputusan / Surat Revisi */}
-                    {sendingToPemaraf && (
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <label className="block text-xs font-bold text-ink uppercase tracking-wider">
@@ -693,7 +710,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                         Catatan ini dicantumkan langsung pada Surat Pengembalian dan Catatan Hasil Tashih resmi LPMQ untuk penerbit.
                       </p>
                     </div>
-                    )}
                   </div>
                 ) : (
                   <div className="p-3.5 rounded-xl bg-canvas border border-line text-ink text-xs flex items-center gap-2 mt-2">
@@ -705,10 +721,6 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
             </>
           ) : null}
 
-          {canDecide && allCompleted && sendingToPemaraf && parafState.gate_active && (
-            <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
-          )}
-
           {/* Footer Actions */}
           {error && (
             <div role="alert" className="p-3.5 rounded-xl bg-civic-dangerSoft border border-civic-dangerLine text-civic-danger text-xs flex items-start gap-2">
@@ -718,26 +730,50 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
           )}
 
           <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onClose}
-              disabled={submitting}
-            >
-              {canDecide ? 'Batal' : 'Tutup'}
-            </Button>
-            {canDecide && sendingToPemaraf && (
-              <Button
-                type="submit"
-                variant="primary"
-                size="sm"
-                disabled={submitting || !distributorNotes.trim() || (parafState.gate_active && !pemarafSelectionValid(pemarafAvailable, pemarafIds))}
-                className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
-                icon={<Send className="w-3.5 h-3.5" />}
-              >
-                {submitting ? 'Menyimpan...' : parafState.gate_active ? 'Kirim ke Pemaraf' : 'Simpan Keputusan Distributor'}
-              </Button>
+            {step === 'NEXT' ? (
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setStep('DECISION'); setNextRoute(null); }} disabled={submitting}>
+                  Kembali
+                </Button>
+                {nextRoute === 'PEMARAF' && (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    size="sm"
+                    disabled={submitting || (parafState.gate_active && !pemarafSelectionValid(pemarafAvailable, pemarafIds))}
+                    className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                    icon={<Send className="w-3.5 h-3.5" />}
+                  >
+                    {submitting ? 'Menyimpan...' : sendLabel}
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Button type="button" variant="outline" size="sm" onClick={onClose} disabled={submitting}>
+                  {canDecide ? 'Batal' : 'Tutup'}
+                </Button>
+                {canDecide && (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
+                        setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
+                        return;
+                      }
+                      setError(null);
+                      setStep('NEXT');
+                    }}
+                    disabled={!allCompleted || Boolean(pendingParaf) || !distributorNotes.trim()}
+                    className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
+                    icon={<Check className="w-3.5 h-3.5" />}
+                  >
+                    Selesai
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </form>

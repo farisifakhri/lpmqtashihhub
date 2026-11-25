@@ -6,6 +6,16 @@ import * as AuthContextModule from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
 import { tashihApi } from '@/api/tashih.api';
 
+// Langkah 1 "Selesai" -> langkah 2 pilih kartu kirim -> tombol submit.
+const SEND = /Simpan Keputusan Distributor|Kirim ke Pemaraf/i;
+const finishAndSend = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Selesai' }));
+  fireEvent.click(screen.getAllByRole('button', { name: SEND }).find((b) => b.hasAttribute('aria-pressed')));
+  const submit = screen.getAllByRole('button', { name: SEND }).find((b) => b.getAttribute('type') === 'submit');
+  expect(submit).not.toBeDisabled();
+  fireEvent.click(submit);
+};
+
 describe('DistributorReviewDialog Component (B-17)', () => {
   beforeEach(() => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
@@ -51,8 +61,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     // Pada ronde awal, textarea catatan pembanding tidak ditampilkan
     expect(screen.queryByText(/Catatan Telaah Pembanding Distributor/i)).not.toBeInTheDocument();
 
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
-    fireEvent.click(submitBtn);
+    finishAndSend();
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-initial', expect.objectContaining({
@@ -112,9 +121,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     // Catatan pembanding tidak ada di dialog ini (dipindah ke penugasan masuk naskah B-19a)
     expect(screen.queryByPlaceholderText(/Tuliskan analisis perbandingan/i)).not.toBeInTheDocument();
 
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
-    expect(submitBtn).not.toBeDisabled();
-    fireEvent.click(submitBtn);
+    finishAndSend();
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-rev-2', expect.objectContaining({
@@ -164,7 +171,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
   });
-  it('memberi pilihan kirim ke Pemaraf atau tambah pekan pentashihan sebelum laporan dikirim', async () => {
+  it('Selesai membuka tampilan tindak lanjut: Sidang Kembali membuka pemilihan pekan tanpa mengirim keputusan', async () => {
     const reg = {
       id: 'reg-week', title: 'Mushaf Pekan', status: 'TASHIH_IN_PROGRESS', official_documents: [],
       assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
@@ -175,28 +182,33 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     render(<DistributorReviewDialog registrationId="reg-week" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={onAddWeek} />);
 
-    const lanjutkan = await screen.findByRole('radio', { name: /Lanjutkan Sidang/i });
-    expect(screen.getByRole('radio', { name: /Loloskan Telaah/i })).toBeChecked();
-    expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
+    // Langkah 1: hanya keputusan + catatan, tanpa tombol kirim
+    const selesai = await screen.findByRole('button', { name: 'Selesai' });
+    expect(screen.queryByRole('button', { name: SEND })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
 
-    fireEvent.click(lanjutkan);
-    expect(lanjutkan).toBeChecked();
-    expect(screen.queryByRole('button', { name: /Simpan Keputusan Distributor/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/Catatan Keputusan Reviu Distributor/i)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /Pilih Pekan & Pentashih/i }));
+    // Langkah 2: dua kartu tindak lanjut
+    fireEvent.click(selesai);
+    expect(screen.getByText(/Tindak Lanjut Sidang/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SEND })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /Sidang Kembali/i }));
     expect(onAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-week' }));
     expect(approveSpy).not.toHaveBeenCalled();
+
+    // Kembali ke langkah 1 tetap mungkin
+    fireEvent.click(screen.getByRole('button', { name: 'Kembali' }));
+    expect(screen.getByRole('button', { name: 'Selesai' })).toBeInTheDocument();
   });
 
-  it('tidak menampilkan pilihan tambah pekan bila halaman tidak menyediakannya', async () => {
+  it('tanpa onAddWeek, langkah tindak lanjut hanya menawarkan kirim keputusan', async () => {
     vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: {
       id: 'reg-x', title: 'Mushaf X', status: 'TASHIH_IN_PROGRESS', official_documents: [],
       assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
     } });
     render(<DistributorReviewDialog registrationId="reg-x" onClose={vi.fn()} onSuccess={vi.fn()} />);
-    expect(await screen.findByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
-    expect(screen.queryByRole('radio', { name: /Lanjutkan Sidang/i })).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesai' }));
+    expect(screen.getByRole('button', { name: SEND })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
   });
 });
 
