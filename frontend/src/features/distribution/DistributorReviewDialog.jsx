@@ -511,8 +511,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                   <p className="text-xs font-bold text-ink uppercase tracking-wider">Langkah Selanjutnya</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {[
-                      ['PEMARAF', Send, parafState.gate_active ? 'Kirim Laporan ke Pemaraf & Kepala' : 'Tetapkan Keputusan Distributor', 'Hasil sidang sudah cukup; susun keputusan dan kirim untuk paraf dan persetujuan.'],
-                      ['PEKAN', CalendarPlus, 'Tambah Pekan Pentashihan', 'Tashih ulang dulu: pilih pekan berikutnya dan pentashihnya sebelum laporan dikirim.'],
+                      ['PEMARAF', Send, 'Selesaikan Sidang', parafState.gate_active ? 'Sidang cukup sampai di sini: susun keputusan lalu kirim laporan ke Pemaraf & Kepala.' : 'Sidang cukup sampai di sini: susun lalu tetapkan keputusan Anda.'],
+                      ['PEKAN', CalendarPlus, 'Pilih Pekan Lagi', 'Tashih ulang dulu: pilih pekan berikutnya dan pentashihnya sebelum laporan dikirim.'],
                     ].map(([key, Icon, title, desc]) => (
                       <button
                         key={key}
