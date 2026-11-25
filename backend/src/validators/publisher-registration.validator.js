@@ -98,6 +98,7 @@ export const decisionPublisherRegistrationSchema = {
       errorMap: () => ({ message: 'Keputusan harus salah satu dari: SETUJUI, PERLU_PERBAIKAN, TOLAK' }),
     }),
     alasan: z.string().trim().max(1000, 'Alasan maksimal 1000 karakter').optional().nullable(),
+    dokumen_perlu_diperbaiki: z.array(publisherRegistrationDocumentTypeSchema).max(6).optional(),
     versi: z.number().int().positive('Parameter versi harus bilangan bulat positif'),
   }).refine(data => {
     if (data.keputusan !== 'SETUJUI' && (!data.alasan || data.alasan.trim() === '')) {

@@ -29,16 +29,18 @@ export const CheckRegistrationStatusPage = () => {
 
     const [kodePendaftaran, setKodePendaftaran] = useState(urlKode);
     const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [statusResult, setStatusResult] = useState(null);
     const [error, setError] = useState("");
     const searchSequenceRef = useRef(0);
+    const [lastSearchQuery, setLastSearchQuery] = useState(urlKode);
 
     // Quick token input for revision form
     const [inputToken, setInputToken] = useState("");
     const [isDownloadingCert, setIsDownloadingCert] = useState(false);
     const [downloadError, setDownloadError] = useState("");
 
-    const performSearch = useCallback(async (codeToSearch) => {
+    const performSearch = useCallback(async (codeToSearch, { keepPreviousResult = false } = {}) => {
         const cleanInput = (codeToSearch || "").trim();
 
         if (!cleanInput) {
@@ -48,8 +50,10 @@ export const CheckRegistrationStatusPage = () => {
 
         const sequence = ++searchSequenceRef.current;
         setError("");
+        setLastSearchQuery(cleanInput);
         setIsLoading(true);
-        setStatusResult(null);
+        setIsRefreshing(keepPreviousResult);
+        if (!keepPreviousResult) setStatusResult(null);
 
         try {
             const res = await publisherRegistrationApi.checkStatus(cleanInput);
@@ -79,6 +83,7 @@ export const CheckRegistrationStatusPage = () => {
         } finally {
             if (sequence === searchSequenceRef.current) {
                 setIsLoading(false);
+                setIsRefreshing(false);
             }
         }
     }, []);
@@ -94,6 +99,11 @@ export const CheckRegistrationStatusPage = () => {
     const handleSearch = (e) => {
         e.preventDefault();
         performSearch(kodePendaftaran);
+    };
+
+    const handleRefresh = () => {
+        const query = lastSearchQuery || statusResult?.kode_pendaftaran || kodePendaftaran;
+        performSearch(query, { keepPreviousResult: true });
     };
 
     const handleGoToRevision = (e) => {
@@ -250,6 +260,21 @@ export const CheckRegistrationStatusPage = () => {
                         data-testid="status-result-card"
                         className="p-5 rounded-2xl border bg-surface-subtle/50 space-y-4 animate-fadeIn"
                     >
+                        {!statusResult.is_email_search && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleRefresh}
+                                    disabled={isLoading}
+                                    aria-label="Segarkan status pendaftaran"
+                                    aria-busy={isRefreshing}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-surface text-brand-800 text-xs font-semibold hover:bg-brand-50 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                                >
+                                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                                    <span>{isRefreshing ? "Memperbarui..." : "Segarkan Status"}</span>
+                                </button>
+                            </div>
+                        )}
                         {statusResult.is_email_search ? (
                             <div className="p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200 text-ink space-y-3">
                                 <div className="flex items-center gap-2.5 text-brand-900 font-bold text-sm">
