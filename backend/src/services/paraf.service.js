@@ -31,14 +31,17 @@ export const parafProgress = (paraf) => {
   };
 };
 
-// Pengaju wajib menunjuk tepat 2 Pemaraf aktif yang berbeda. Tanpa akun Pemaraf aktif (gerbang mati) -> null.
-export const PEMARAF_REQUIRED = 2;
+// Pengaju wajib menunjuk minimal 1 Pemaraf aktif. Tanpa akun Pemaraf aktif (gerbang mati) -> null.
+export const PEMARAF_REQUIRED = 1;
+export const PEMARAF_MIN_REQUIRED = 1;
 export async function resolveDesignatedPemaraf(tx, ids) {
   if (!(await pemarafGateActive(tx))) return null;
-  const unique = [...new Set(Array.isArray(ids) ? ids : [])];
-  if (unique.length !== PEMARAF_REQUIRED) fail(422, `Pilih tepat ${PEMARAF_REQUIRED} Pemaraf aktif yang berbeda sebelum mengajukan.`);
+  const rawIds = Array.isArray(ids) ? ids : [];
+  const unique = [...new Set(rawIds)];
+  if (unique.length < PEMARAF_MIN_REQUIRED) fail(422, `Pilih minimal ${PEMARAF_MIN_REQUIRED} Pemaraf aktif sebelum mengajukan.`);
+  if (rawIds.length !== unique.length) fail(422, 'Pemaraf yang dipilih tidak boleh duplikat.');
   const found = await tx.user.findMany({ where: { id: { in: unique }, ...ACTIVE_PEMARAF }, select: { id: true, name: true } });
-  if (found.length !== PEMARAF_REQUIRED) fail(422, 'Pemaraf yang dipilih harus akun aktif dengan peran Pemaraf.');
+  if (found.length !== unique.length) fail(422, 'Seluruh Pemaraf yang dipilih harus berupa akun aktif dengan peran Pemaraf.');
   return found;
 }
 
@@ -69,7 +72,10 @@ export async function requireParaf(tx, type, id, signingUser = null) {
   if (!(await pemarafGateActive(tx))) return;
   const paraf = await findParaf(tx, type, id);
   const activePemarafCount = await tx.user.count({ where: ACTIVE_PEMARAF });
-  const targetRequired = Math.max(activePemarafCount, 1);
+  const currentActiveRequired = Math.max(activePemarafCount, 1);
+  const targetRequired = paraf?.required_count
+    ? Math.min(paraf.required_count, currentActiveRequired)
+    : currentActiveRequired;
   const signers = parafSigners(paraf);
   const isComplete = Boolean(paraf?.signed_at) || signers.length >= targetRequired;
 

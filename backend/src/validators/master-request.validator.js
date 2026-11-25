@@ -78,6 +78,6 @@ export const masterLetterSchema = {
     perihal: z.string().trim().max(255, 'Perihal maksimal 255 karakter.').optional().nullable()
       .transform((value) => value || DEFAULT_LETTER_SUBJECT),
     isi: text('Isi surat', 20, 5000),
-    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).min(1, 'Pilih minimal 1 Pemaraf aktif.').optional(),
   }),
 };

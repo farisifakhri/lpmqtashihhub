@@ -17,6 +17,11 @@ describe('sttParafProgress', () => {
     expect(sttParafProgress({ paraf_1: {}, paraf_2: {} })).toMatchObject({ done: 2, complete: true });
   });
 
+  it('draf dengan penunjukan 1 pemaraf lengkap setelah 1 paraf', () => {
+    const single = sttParafProgress({ submitted_at: 'x', paraf_required: 1, parafs: [{ signed_by: { id: 'a' } }] });
+    expect(single).toMatchObject({ done: 1, required: 1, complete: true });
+  });
+
   it('belum diserahkan = belum lengkap', () => {
     expect(sttParafProgress(undefined)).toMatchObject({ done: 0, required: 2, complete: false });
   });
