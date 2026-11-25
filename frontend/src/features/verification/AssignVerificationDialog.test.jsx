@@ -296,7 +296,7 @@ describe('AssignVerificationDialog Component', () => {
     expect(select).toHaveValue('v-2');
   });
 
-  it('menampilkan badge hak override super admin dan peringatan pengalihan petugas saat mengganti verifikator tim inti', async () => {
+  it('menampilkan peringatan pengalihan dan mengirim verifikator pilihan saat mengganti verifikator tim inti (issue #21)', async () => {
     const registrationWithCore = {
       ...mockRegistration,
       core_verifier_id: 'v-1',
@@ -310,14 +310,11 @@ describe('AssignVerificationDialog Component', () => {
       />
     );
 
-    await waitFor(() => {
-      expect(screen.getByText(/Hak Override Super Admin Aktif/i)).toBeInTheDocument();
-    });
-
-    const select = screen.getByRole('combobox');
+    const select = await screen.findByRole('combobox');
+    expect(select).not.toBeDisabled();
     fireEvent.change(select, { target: { value: 'v-2' } });
 
-    expect(screen.getByText(/Dispensasi \/ Intervensi Super Admin/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pengalihan Verifikator Tim Inti/i)).toBeInTheDocument();
 
     const notaInput = screen.getByRole('textbox', { name: /Nomor Disposisi Penugasan/i });
     fireEvent.change(notaInput, { target: { value: 'ND-OVERRIDE-01' } });
@@ -330,7 +327,6 @@ describe('AssignVerificationDialog Component', () => {
         'reg-test-123',
         expect.objectContaining({
           verifier_id: 'v-2',
-          override_core_team: true,
         })
       );
     });
