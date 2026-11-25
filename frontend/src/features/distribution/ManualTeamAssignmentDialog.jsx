@@ -29,7 +29,7 @@ export const QUICK_PRESETS = Object.freeze([
   { id: '26-30', label: 'Juz 26–30', from: 26, to: 30 },
 ]);
 
-export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, onAssigned }) {
+export function ManualTeamAssignmentDialog({ id, stage: chosenStage, initialReason, onClose, onAssigned }) {
   const dialog = useRef(null);
   const [registration, setRegistration] = useState(null);
   const [teams, setTeams] = useState([]);
@@ -39,7 +39,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState([]);
   const [juzByAssignee, setJuzByAssignee] = useState({});
-  const [reassignmentReason, setReassignmentReason] = useState('ROTASI_TUGAS');
+  const [reassignmentReason, setReassignmentReason] = useState(initialReason || 'ROTASI_TUGAS');
   const [reassignmentNotes, setReassignmentNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -735,6 +735,7 @@ export function ManualTeamAssignmentDialog({ id, stage: chosenStage, onClose, on
                     <option value="BEBAN_KERJA">Penyesuaian Beban Kerja</option>
                     <option value="PENDELEGASIAN">Pendelegasian Tugas Tambahan</option>
                     <option value="PERMINTAAN_DISTRIBUTOR">Kebutuhan Penyesuaian oleh Distributor</option>
+                    <option value="TASHIH_ULANG">Tashih Ulang (Tambah Pekan Pentashihan)</option>
                     <option value="LAINNYA">Penyesuaian Administratif Lainnya</option>
                   </select>
                   <input

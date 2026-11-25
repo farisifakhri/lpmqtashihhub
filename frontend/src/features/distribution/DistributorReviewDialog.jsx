@@ -21,13 +21,14 @@ import {
   ShieldCheck,
   Check,
   Info,
+  CalendarPlus,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
 import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { checkIsPemaraf } from '@/lib/roles';
 
-export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) => {
+export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, onAddWeek }) => {
   const { currentUser } = useAuth();
   const userRoles = Array.isArray(currentUser?.roles)
     ? currentUser.roles
@@ -43,6 +44,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
 
   // Form decision state
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
+  // Tindak lanjut setelah sidang selesai: kirim laporan ke Pemaraf/Kepala, atau tambah pekan pentashihan dulu.
+  const [route, setRoute] = useState('PEMARAF'); // 'PEMARAF' | 'PEKAN'
   const [distributorNotes, setDistributorNotes] = useState('');
   // Pemaraf: keputusan distributor ditahan sampai diparaf (hanya bila sudah ada akun Pemaraf aktif)
   const [parafState, setParafState] = useState({ gate_active: false, pending: null });
@@ -189,6 +192,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
   );
 
   const canPassSTT = allCompleted && !hasRevisionRequested;
+  const showRoutes = canDecide && allCompleted && !pendingParaf && Boolean(onAddWeek);
+  const sendingToPemaraf = !showRoutes || route === 'PEMARAF';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -501,8 +506,47 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
                 </div>
               )}
 
+              {showRoutes && (
+                <div className="space-y-3 pt-2 border-t border-line">
+                  <p className="text-xs font-bold text-ink uppercase tracking-wider">Langkah Selanjutnya</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      ['PEMARAF', Send, parafState.gate_active ? 'Kirim Laporan ke Pemaraf & Kepala' : 'Tetapkan Keputusan Distributor', 'Hasil sidang sudah cukup; susun keputusan dan kirim untuk paraf dan persetujuan.'],
+                      ['PEKAN', CalendarPlus, 'Tambah Pekan Pentashihan', 'Tashih ulang dulu: pilih pekan berikutnya dan pentashihnya sebelum laporan dikirim.'],
+                    ].map(([key, Icon, title, desc]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={route === key}
+                        onClick={() => setRoute(key)}
+                        className={clsx(
+                          'text-left rounded-xl border-2 p-3.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-700',
+                          route === key ? 'border-brand-700 bg-brand-50' : 'border-line bg-white hover:border-brand-200'
+                        )}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-bold text-ink">
+                          <Icon className="w-4 h-4 text-brand-700 shrink-0" aria-hidden="true" />
+                          {title}
+                        </span>
+                        <span className="block text-xs text-ink-muted mt-1">{desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                  {route === 'PEKAN' && (
+                    <div className="p-3.5 rounded-xl bg-canvas border border-line space-y-2.5 text-xs text-ink">
+                      <p>
+                        Penugasan pekan tambahan masuk ke sidang yang sama. Laporan baru dapat dikirim ke Pemaraf setelah pentashih pekan tambahan menyelesaikan telaahnya; catatan perbaikan dari pekan sebelumnya tetap berlaku.
+                      </p>
+                      <Button type="button" size="sm" onClick={() => onAddWeek(registration)} icon={<CalendarPlus className="w-3.5 h-3.5" />}>
+                        Pilih Pekan & Pentashih
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Keputusan Distributor */}
-              {allCompleted && (
+              {allCompleted && sendingToPemaraf && (
                 canDecide ? (
                   <div className="space-y-4 pt-2 border-t border-line">
                     <div>
@@ -659,7 +703,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
             </>
           ) : null}
 
-          {canDecide && allCompleted && parafState.gate_active && (
+          {canDecide && allCompleted && sendingToPemaraf && parafState.gate_active && (
             <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
           )}
 
@@ -681,7 +725,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess }) 
             >
               {canDecide ? 'Batal' : 'Tutup'}
             </Button>
-            {canDecide && (
+            {canDecide && sendingToPemaraf && (
               <Button
                 type="submit"
                 variant="primary"

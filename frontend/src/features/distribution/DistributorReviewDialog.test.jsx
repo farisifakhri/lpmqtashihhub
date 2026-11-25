@@ -164,5 +164,38 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
   });
+  it('memberi pilihan kirim ke Pemaraf atau tambah pekan pentashihan sebelum laporan dikirim', async () => {
+    const reg = {
+      id: 'reg-week', title: 'Mushaf Pekan', status: 'TASHIH_IN_PROGRESS', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    };
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: reg });
+    const approveSpy = vi.spyOn(tashihApi, 'approveDistribution').mockResolvedValue({ success: true });
+    const onAddWeek = vi.fn();
+
+    render(<DistributorReviewDialog registrationId="reg-week" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={onAddWeek} />);
+
+    const pekanCard = await screen.findByRole('button', { name: /Tambah Pekan Pentashihan/i });
+    expect(screen.getByRole('button', { name: /Tetapkan Keputusan Distributor/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
+
+    fireEvent.click(pekanCard);
+    expect(pekanCard).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: /Simpan Keputusan Distributor/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Pilih Pekan & Pentashih/i }));
+    expect(onAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-week' }));
+    expect(approveSpy).not.toHaveBeenCalled();
+  });
+
+  it('tidak menampilkan pilihan tambah pekan bila halaman tidak menyediakannya', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: {
+      id: 'reg-x', title: 'Mushaf X', status: 'TASHIH_IN_PROGRESS', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    } });
+    render(<DistributorReviewDialog registrationId="reg-x" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    expect(await screen.findByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Tambah Pekan Pentashihan/i })).not.toBeInTheDocument();
+  });
 });
 

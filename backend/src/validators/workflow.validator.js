@@ -16,7 +16,7 @@ export const assignmentSchema = { params, body: z.object({
   stage: z.enum(['INITIAL', 'REVISION', 'DUMMY']),
   allow_overlap: z.boolean().optional(),
   enforce_full_coverage: z.boolean().optional(),
-  reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'LAINNYA']).optional(),
+  reassignment_reason: z.enum(['BEBAN_KERJA', 'ROTASI_TUGAS', 'PENDELEGASIAN', 'PERMINTAAN_DISTRIBUTOR', 'TASHIH_ULANG', 'LAINNYA']).optional(),
   reassignment_notes: z.string().trim().max(500).optional(),
   is_individual: z.boolean().optional(),
   comparison_notes: z.string().trim().max(5000).optional(),
