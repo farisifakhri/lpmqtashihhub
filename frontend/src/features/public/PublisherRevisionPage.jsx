@@ -183,6 +183,14 @@ export const PublisherRevisionPage = () => {
             return;
         }
 
+        const requiredDocumentLabels = (revisionData?.dokumen_terunggah || [])
+            .filter((doc) => doc.status === "PERLU_DIGANTI" && !replacementFiles[doc.tipe])
+            .map((doc) => DOC_LABEL_MAP[doc.tipe] || doc.tipe);
+        if (requiredDocumentLabels.length > 0) {
+            setSubmitError(`Unggah dokumen yang ditandai perlu revisi: ${requiredDocumentLabels.join(", ")}.`);
+            return;
+        }
+
         const payload = new FormData();
         payload.append("nama_penerbit", editableFields.nama_penerbit.trim());
         payload.append("alamat_lengkap", editableFields.alamat_lengkap.trim());
@@ -412,7 +420,9 @@ export const PublisherRevisionPage = () => {
                                 "{revisionData.alasan_perbaikan || "Harap lengkapi dan perbaiki berkas pendaftaran Anda."}"
                             </div>
                             <p className="text-[11px] text-ink-muted leading-tight">
-                                Anda hanya perlu mengunggah ulang dokumen yang ditandai perlu diganti atau diperbaiki. Dokumen yang sudah sah tidak perlu diunggah kembali.
+                                {Array.isArray(revisionData.dokumen_perlu_diperbaiki)
+                                    ? "Unggah ulang hanya dokumen bertanda Perlu Revisi. Dokumen lain tidak perlu dikirim kembali."
+                                    : "Untuk permintaan revisi lama, ikuti catatan verifikator. Unggah ulang hanya dokumen yang disebut dalam catatan tersebut."}
                             </p>
                         </div>
 
@@ -447,13 +457,17 @@ export const PublisherRevisionPage = () => {
                         {/* DAFTAR DOKUMEN & PERGANTIAN BERKAS */}
                         <div className="space-y-3">
                             <p className="text-xs font-bold uppercase tracking-wider text-brand-fg">
-                                Periksa & Ganti Berkas yang Belum Sesuai (PDF Saja)
+                                Dokumen dan Status Revisi
                             </p>
 
                             <div className="space-y-3">
                                 {revisionData.dokumen_terunggah?.map((doc) => {
                                     const label = DOC_LABEL_MAP[doc.tipe] || doc.tipe;
                                     const needsReplacement = doc.status === "PERLU_DIGANTI";
+                                    const markedAsUnchanged = doc.status === "TIDAK_PERLU_DIGANTI";
+                                    const needsManualReview = doc.status === "CEK_CATATAN";
+                                    const isLegacyScope = !Array.isArray(revisionData.dokumen_perlu_diperbaiki);
+                                    const canReplace = needsReplacement || (isLegacyScope && !markedAsUnchanged);
                                     const isAkta = doc.tipe === "AKTA_NOTARIS";
                                     const maxLabel = isAkta ? "Maks 2 MB" : "Maks 500 KB";
 
@@ -463,6 +477,8 @@ export const PublisherRevisionPage = () => {
                                             className={`p-3.5 rounded-xl border transition-all ${
                                                 needsReplacement
                                                     ? "bg-civic-warningSoft/30 border-civic-warningLine"
+                                                    : needsManualReview
+                                                    ? "bg-civic-warningSoft/20 border-civic-warningLine/70"
                                                     : "bg-surface border-line"
                                             }`}
                                         >
@@ -483,6 +499,16 @@ export const PublisherRevisionPage = () => {
                                                             <AlertTriangle className="w-3 h-3" />
                                                             Perlu Diganti
                                                         </span>
+                                                    ) : markedAsUnchanged ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-subtle text-ink-muted border border-line">
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            Tidak Perlu Revisi
+                                                        </span>
+                                                    ) : needsManualReview ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-civic-warningSoft text-civic-warning border border-civic-warningLine">
+                                                            <AlertTriangle className="w-3 h-3" />
+                                                            Cek Catatan
+                                                        </span>
                                                     ) : (
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-800 border border-brand-100">
                                                             <CheckCircle2 className="w-3 h-3" />
@@ -494,17 +520,26 @@ export const PublisherRevisionPage = () => {
 
                                             {/* File Input */}
                                             <div className="pt-1.5 border-t border-line/60">
-                                                <label className="block text-[11px] text-ink-muted mb-1">
-                                                    {needsReplacement
-                                                        ? "Pilih berkas baru untuk menggantikan dokumen ini:"
-                                                        : "Pilih berkas baru (opsional, jika ingin mengganti):"}
-                                                </label>
-                                                <input
-                                                    type="file"
-                                                    accept=".pdf,application/pdf"
-                                                    onChange={(e) => handleFileChange(doc.tipe, e)}
-                                                    className="text-xs text-ink file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-line cursor-pointer"
-                                                />
+                                                {canReplace ? (
+                                                    <>
+                                                        <label className="block text-[11px] text-ink-muted mb-1">
+                                                            {needsReplacement
+                                                                ? "Pilih berkas baru untuk menggantikan dokumen ini (wajib):"
+                                                                : "Jika catatan verifikator menyebut dokumen ini, pilih berkas pengganti:"}
+                                                        </label>
+                                                        <input
+                                                            type="file"
+                                                            accept=".pdf,application/pdf"
+                                                            required={needsReplacement}
+                                                            onChange={(e) => handleFileChange(doc.tipe, e)}
+                                                            className="text-xs text-ink file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-line cursor-pointer"
+                                                        />
+                                                    </>
+                                                ) : (
+                                                    <p className="text-[11px] text-ink-muted">
+                                                        Dokumen ini tidak ditandai untuk revisi dan tidak perlu diunggah kembali.
+                                                    </p>
+                                                )}
                                                 {fileErrors[doc.tipe] && (
                                                     <p className="text-[11px] text-civic-danger mt-1">
                                                         {fileErrors[doc.tipe]}

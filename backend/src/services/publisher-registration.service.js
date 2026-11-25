@@ -163,12 +163,12 @@ export async function registerPublisher(body, files = {}) {
   // 5. Simpan dan periksa keamanan seluruh dokumen yang diunggah
   const processedDocs = [];
   const docMapping = [
-    { field: 'dokumen_surat_pendaftaran', type: 'SURAT_PENDAFTARAN' },
-    { field: 'dokumen_akta_notaris', type: 'AKTA_NOTARIS' },
-    { field: 'dokumen_profil', type: 'PROFIL' },
-    { field: 'dokumen_npwp', type: 'NPWP' },
-    { field: 'dokumen_nib', type: 'NIB' },
-    { field: 'dokumen_ktp', type: 'KTP_PENANGGUNG_JAWAB' },
+    { field: 'dokumen_surat_pendaftaran', type: 'SURAT_PENDAFTARAN', label: 'Surat Permohonan Pendaftaran' },
+    { field: 'dokumen_akta_notaris', type: 'AKTA_NOTARIS', label: 'Akta Notaris & SK Kemenkumham' },
+    { field: 'dokumen_profil', type: 'PROFIL', label: 'Profil Instansi / Lembaga' },
+    { field: 'dokumen_npwp', type: 'NPWP', label: 'NPWP Badan Hukum' },
+    { field: 'dokumen_nib', type: 'NIB', label: 'Nomor Induk Berusaha (NIB)' },
+    { field: 'dokumen_ktp', type: 'KTP_PENANGGUNG_JAWAB', label: 'KTP Pimpinan / Penanggung Jawab' },
   ];
 
   for (const item of docMapping) {
@@ -495,12 +495,15 @@ export async function getPublisherRegistrationRevision(rawToken) {
     npwp: reg.npwp,
     nib: reg.nib,
     alasan_perbaikan: reg.reason,
+    dokumen_perlu_diperbaiki: Array.isArray(reg.documents_to_revise) ? reg.documents_to_revise : null,
     dokumen_terunggah: reg.documents.map(d => ({
       id: d.id,
       tipe: d.document_type,
       nama_file: d.original_filename,
       ukuran_bytes: d.file_size,
-      status: 'VALID',
+      status: Array.isArray(reg.documents_to_revise)
+        ? (reg.documents_to_revise.includes(d.document_type) ? 'PERLU_DIGANTI' : 'TIDAK_PERLU_DIGANTI')
+        : 'CEK_CATATAN',
     })),
   };
 }
@@ -566,9 +569,41 @@ export async function submitPublisherRegistrationRevision(rawToken, body = {}, f
     { field: 'dokumen_ktp', type: 'KTP_PENANGGUNG_JAWAB' },
   ];
 
+  const documentTypesToRevise = Array.isArray(reg.documents_to_revise)
+    ? reg.documents_to_revise
+    : null;
+  const getUploadedFile = (field) => {
+    const raw = files[field];
+    return Array.isArray(raw) ? raw[0] : raw;
+  };
+
+  if (documentTypesToRevise) {
+    const missingTypes = documentTypesToRevise.filter((type) => {
+      const mapping = docMapping.find((item) => item.type === type);
+      const file = mapping ? getUploadedFile(mapping.field) : null;
+      return !file?.buffer;
+    });
+    if (missingTypes.length) {
+      const missingLabels = missingTypes.map((type) => docMapping.find((item) => item.type === type)?.label || type);
+      const err = new Error(`Unggah semua dokumen yang ditandai perlu revisi: ${missingLabels.join(', ')}.`);
+      err.statusCode = 400;
+      err.code = 'REVISION_DOCUMENT_REQUIRED';
+      throw err;
+    }
+
+    const unexpectedTypes = docMapping
+      .filter((item) => getUploadedFile(item.field)?.buffer && !documentTypesToRevise.includes(item.type))
+      .map((item) => item.label);
+    if (unexpectedTypes.length) {
+      const err = new Error(`Berkas ${unexpectedTypes.join(', ')} tidak ditandai untuk direvisi.`);
+      err.statusCode = 400;
+      err.code = 'REVISION_DOCUMENT_NOT_REQUESTED';
+      throw err;
+    }
+  }
+
   for (const item of docMapping) {
-    const raw = files[item.field];
-    const file = Array.isArray(raw) ? raw[0] : raw;
+    const file = getUploadedFile(item.field);
     if (file && file.buffer) {
       const savedDoc = await saveSecurePublisherDocument(
         file.buffer,
@@ -628,6 +663,7 @@ export async function submitPublisherRegistrationRevision(rawToken, body = {}, f
     const updateData = {
       status: 'DIAJUKAN',
       version: { increment: 1 },
+      documents_to_revise: [],
     };
     if (body.alamat_lengkap) updateData.address = body.alamat_lengkap.trim();
     if (coordinates.latitude !== undefined) Object.assign(updateData, coordinates);
@@ -734,6 +770,9 @@ export async function getAdminPublisherRegistrationDetail(id) {
     nib: reg.nib,
     status: reg.status,
     alasan: reg.reason,
+    dokumen_perlu_diperbaiki: Array.isArray(reg.documents_to_revise)
+      ? reg.documents_to_revise
+      : null,
     versi: reg.version,
     revision_token_info: latestRevisionToken
       ? {
@@ -791,9 +830,20 @@ export async function getAdminPublisherRegistrationDocument(id, documentId, curr
   };
 }
 
-export async function decidePublisherRegistration(id, { keputusan, alasan, versi }, currentUser, req) {
+export async function decidePublisherRegistration(id, {
+  keputusan,
+  alasan,
+  dokumen_perlu_diperbaiki = [],
+  versi,
+}, currentUser, req) {
   const reg = await prisma.publisherRegistration.findUnique({
     where: { id },
+    include: {
+      documents: {
+        where: { is_replaced: false },
+        select: { document_type: true },
+      },
+    },
   });
 
   if (!reg) {
@@ -822,6 +872,7 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
       newStatus = 'DISETUJUI';
       updateData.status = newStatus;
       updateData.reason = null;
+      updateData.documents_to_revise = [];
 
       // 1. Aktifkan akun User
       if (reg.user_id) {
@@ -855,9 +906,20 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
         updateData.publisher_id = pub.id;
       }
     } else if (keputusan === 'PERLU_PERBAIKAN') {
+      const availableTypes = new Set(reg.documents.map((doc) => doc.document_type));
+      const selectedTypes = [...new Set(dokumen_perlu_diperbaiki)];
+      const invalidTypes = selectedTypes.filter((type) => !availableTypes.has(type));
+      if (invalidTypes.length) {
+        const err = new Error('Dokumen yang dipilih untuk revisi tidak ditemukan pada pendaftaran ini.');
+        err.statusCode = 400;
+        err.code = 'REVISION_DOCUMENT_NOT_FOUND';
+        throw err;
+      }
+
       newStatus = 'PERLU_PERBAIKAN';
       updateData.status = newStatus;
       updateData.reason = alasan;
+      updateData.documents_to_revise = selectedTypes;
 
       // Buat token perbaikan sekali pakai (14 hari masa berlaku)
       revisionTokenRaw = crypto.randomBytes(32).toString('hex');
@@ -875,6 +937,7 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
       newStatus = 'DITOLAK';
       updateData.status = newStatus;
       updateData.reason = alasan;
+      updateData.documents_to_revise = [];
       // Bebaskan kolom pembantu NPWP & NIB agar dapat didaftarkan kembali di masa depan
       updateData.active_npwp = null;
       updateData.active_nib = null;
@@ -891,7 +954,13 @@ export async function decidePublisherRegistration(id, { keputusan, alasan, versi
       'DECIDE_PUBLISHER_REGISTRATION',
       'PublisherRegistration',
       id,
-      { keputusan, alasan, previous_status: reg.status, new_status: newStatus },
+      {
+        keputusan,
+        alasan,
+        dokumen_perlu_diperbaiki: keputusan === 'PERLU_PERBAIKAN' ? updateData.documents_to_revise : [],
+        previous_status: reg.status,
+        new_status: newStatus,
+      },
       req
     );
 

@@ -75,12 +75,13 @@ export const publisherRegistrationApi = {
    * Mengambil keputusan verifikasi (SETUJUI, PERLU_PERBAIKAN, TOLAK) dengan konkurensi versi
    * POST /api/v1/admin/publisher-registrations/:id/decision
    */
-  decideAdmin: async (id, { keputusan, alasan, versi }) => {
+  decideAdmin: async (id, { keputusan, alasan, dokumen_perlu_diperbaiki, versi }) => {
     return apiClient(`/admin/publisher-registrations/${encodeURIComponent(id)}/decision`, {
       method: 'POST',
       body: {
         keputusan,
         alasan: alasan || null,
+        dokumen_perlu_diperbaiki,
         versi,
       },
     });

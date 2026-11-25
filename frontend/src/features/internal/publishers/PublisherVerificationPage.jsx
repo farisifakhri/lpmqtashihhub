@@ -103,6 +103,7 @@ export const PublisherVerificationPage = () => {
     // Decision Form State
     const [decisionType, setDecisionType] = useState("SETUJUI");
     const [decisionReason, setDecisionReason] = useState("");
+    const [revisionDocumentTypes, setRevisionDocumentTypes] = useState([]);
     const [isSubmittingDecision, setIsSubmittingDecision] = useState(false);
     const [decisionError, setDecisionError] = useState("");
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -213,6 +214,7 @@ export const PublisherVerificationPage = () => {
         setDetailError("");
         setDecisionType("SETUJUI");
         setDecisionReason("");
+        setRevisionDocumentTypes([]);
         setDecisionError("");
         setDetailLoading(true);
 
@@ -220,6 +222,11 @@ export const PublisherVerificationPage = () => {
             const res = await publisherRegistrationApi.getAdminDetail(id);
             if (res?.success && res?.data) {
                 setDetailData(res.data);
+                setRevisionDocumentTypes(
+                    Array.isArray(res.data.dokumen_perlu_diperbaiki)
+                        ? res.data.dokumen_perlu_diperbaiki
+                        : []
+                );
             } else {
                 throw new Error(res?.message || "Gagal memuat detail pendaftaran.");
             }
@@ -234,6 +241,7 @@ export const PublisherVerificationPage = () => {
         setSelectedId(null);
         setDetailData(null);
         setPreviewDoc(null);
+        setRevisionDocumentTypes([]);
         setDecisionError("");
     };
 
@@ -258,6 +266,8 @@ export const PublisherVerificationPage = () => {
             const res = await publisherRegistrationApi.decideAdmin(detailData.id, {
                 keputusan: decisionType,
                 alasan: decisionReason.trim() || null,
+                dokumen_perlu_diperbaiki:
+                    decisionType === "PERLU_PERBAIKAN" ? revisionDocumentTypes : [],
                 versi: detailData.versi,
             });
             invalidateQueueCounts();
@@ -1033,7 +1043,7 @@ export const PublisherVerificationPage = () => {
                                                     <span>Perlu Perbaikan</span>
                                                 </div>
                                                 <span className="text-[11px] text-ink-muted leading-tight">
-                                                    Kirim tautan revisi 14 hari ke email untuk mengganti dokumen.
+                                                    Tandai dokumen yang perlu direvisi sebelum mengirim tautan perbaikan.
                                                 </span>
                                             </button>
 
@@ -1055,6 +1065,64 @@ export const PublisherVerificationPage = () => {
                                                 </span>
                                             </button>
                                         </div>
+
+                                        {decisionType === "PERLU_PERBAIKAN" && (
+                                            <div className="space-y-3 rounded-xl border border-civic-warningLine bg-civic-warningSoft/30 p-3.5">
+                                                <div>
+                                                    <p className="text-xs font-bold text-ink">
+                                                        Dokumen yang perlu direvisi
+                                                    </p>
+                                                    <p className="mt-0.5 text-[11px] leading-relaxed text-ink-muted">
+                                                        Tandai hanya dokumen yang harus diperbaiki. Penerbit akan diminta mengganti dokumen yang dipilih saja.
+                                                    </p>
+                                                </div>
+                                                {detailData.dokumen?.length > 0 ? (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {detailData.dokumen.map((doc) => {
+                                                            const label = DOC_TYPE_LABELS[doc.tipe] || doc.tipe;
+                                                            const checked = revisionDocumentTypes.includes(doc.tipe);
+
+                                                            return (
+                                                                <label
+                                                                    key={doc.id}
+                                                                    className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-colors ${
+                                                                        checked
+                                                                            ? "border-civic-warningLine bg-civic-warningSoft/70"
+                                                                            : "border-line bg-surface hover:bg-surface-subtle"
+                                                                    }`}
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={checked}
+                                                                        onChange={(event) => {
+                                                                            setRevisionDocumentTypes((current) =>
+                                                                                event.target.checked
+                                                                                    ? [...new Set([...current, doc.tipe])]
+                                                                                    : current.filter((type) => type !== doc.tipe)
+                                                                            );
+                                                                        }}
+                                                                        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-700"
+                                                                    />
+                                                                    <span className="min-w-0">
+                                                                        <span className="block font-semibold text-ink">{label}</span>
+                                                                        <span className="mt-0.5 block truncate text-[10px] text-ink-muted">
+                                                                            {doc.nama_asli}
+                                                                        </span>
+                                                                    </span>
+                                                                </label>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <p className="rounded-lg border border-line bg-surface p-2.5 text-[11px] text-ink-muted">
+                                                        Tidak ada berkas terunggah. Gunakan catatan keputusan untuk menjelaskan data yang perlu diperbaiki.
+                                                    </p>
+                                                )}
+                                                <p className="text-[10px] text-ink-muted">
+                                                    Jika perbaikan hanya menyangkut data identitas atau kontak, biarkan semua dokumen tidak terpilih dan jelaskan pada catatan.
+                                                </p>
+                                            </div>
+                                        )}
 
                                         {/* Input Alasan (Wajib jika bukan SETUJUI) */}
                                         <div>
@@ -1160,7 +1228,9 @@ export const PublisherVerificationPage = () => {
                     decisionType === "SETUJUI"
                         ? "Akun penerbit akan segera aktif dan dapat login untuk mengajukan permohonan pentashihan mushaf."
                         : decisionType === "PERLU_PERBAIKAN"
-                        ? "Email berisi alasan perbaikan dan tautan formulir sekali pakai (14 hari) akan otomatis dikirimkan ke email penerbit."
+                        ? revisionDocumentTypes.length > 0
+                            ? `Email berisi alasan perbaikan dan tautan formulir sekali pakai (14 hari) akan dikirim. Penerbit hanya diminta mengganti: ${revisionDocumentTypes.map((type) => DOC_TYPE_LABELS[type] || type).join(", ")}.`
+                            : "Email berisi alasan perbaikan dan tautan formulir sekali pakai (14 hari) akan dikirim. Penerbit diminta memperbaiki data sesuai catatan tanpa wajib mengganti berkas."
                         : "Permohonan akan ditolak permanen, namun identitas hukum (NPWP/NIB) akan dibebaskan sehingga penerbit dapat mendaftar baru."
                 }
                 confirmLabel={`Ya, ${
