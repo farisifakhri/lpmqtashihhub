@@ -512,6 +512,8 @@ export const DistributorHandoverInboxPage = ({ initialStage }) => {
             setReviewDialogRegId(null);
             fetchDistributionData();
           }}
+          // Sama dengan createAssignments: tim inti hanya distributornya; tanpa tim inti, Distributor atau Admin saat sidang berjalan.
+          canAddWeek={(reg) => (reg?.core_team_number ? isDistributor && reg.core_distributor_id === currentUser?.id : isDistributor || isAdmin)}
           onAddWeek={(reg) => {
             // Pekan tambahan memakai tahap sidang yang sedang berjalan (iterasi terakhir).
             const latest = [...(reg.assignments || [])].sort((a, b) => (b.iteration || 1) - (a.iteration || 1))[0];

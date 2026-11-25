@@ -28,7 +28,7 @@ import { useAuth } from '@/features/auth/AuthContext';
 import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { checkIsPemaraf } from '@/lib/roles';
 
-export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, onAddWeek }) => {
+export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, onAddWeek, canAddWeek }) => {
   const { currentUser } = useAuth();
   const userRoles = Array.isArray(currentUser?.roles)
     ? currentUser.roles
@@ -193,7 +193,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
   );
 
   const canPassSTT = allCompleted && !hasRevisionRequested;
-  const canContinue = Boolean(onAddWeek);
+  const canContinue = Boolean(onAddWeek && registration) && (!canAddWeek || canAddWeek(registration));
   const sendLabel = parafState.gate_active ? 'Kirim ke Pemaraf' : 'Simpan Keputusan Distributor';
 
   const handleSubmit = async (e) => {

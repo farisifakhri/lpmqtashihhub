@@ -277,7 +277,9 @@ export const createAssignments = (id, data, user) => prisma.$transaction(async t
   if (reg.core_team_number) {
     requireRole(user, ['DISTRIBUTOR']);
     if (reg.core_distributor_id !== user.id) fail(403, 'Hanya distributor tim inti pengajuan ini yang dapat membagikan tugas pentashih.');
-  } else {
+  } else if (!(reg.status === 'TASHIH_IN_PROGRESS' && user.roles?.includes('DISTRIBUTOR'))) {
+    // Penugasan awal naskah tanpa tim inti tetap oleh Admin; lanjutan sidang (Sidang Kembali/tambah pentashih)
+    // boleh oleh Distributor, sama dengan aturan keputusan distributor (applyDistributionDecision).
     requireRole(user, MANUAL_TEAM_ASSIGNMENT_ROLES);
   }
   requireStatus(reg, ['WAITING_DISTRIBUTION', 'TASHIH_IN_PROGRESS']);

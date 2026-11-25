@@ -215,5 +215,16 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(screen.getByRole('button', { name: SEND })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
   });
+  it('menyembunyikan Sidang Kembali bila pengguna tidak berwenang menugaskan ulang naskah ini', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: {
+      id: 'reg-core', title: 'Mushaf Tim Inti', status: 'TASHIH_IN_PROGRESS', core_team_number: 2, core_distributor_id: 'dist-lain', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    } });
+    const canAddWeek = vi.fn((reg) => reg.core_distributor_id === 'dist-1');
+    render(<DistributorReviewDialog registrationId="reg-core" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={vi.fn()} canAddWeek={canAddWeek} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesai' }));
+    expect(canAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-core' }));
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
+  });
 });
 
