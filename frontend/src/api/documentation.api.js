@@ -36,7 +36,7 @@ export const documentationApi = {
   createOfficialDocument: async (registrationId, data) => {
     return apiClient(`/registrations/${encodeURIComponent(registrationId)}/official-documents`, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data,
     });
   },
 
