@@ -13,6 +13,10 @@ import {
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { publisherAction, dateLabel } from './publisher-status';
 import { SlaBreakdown } from '@/components/ui/SlaBreakdown';
+import { SlaIndicator } from '@/components/ui/SlaIndicator';
+
+// Tahap yang dihitung SLA verifikasi (2 HK sejak verifikator ditugaskan).
+const VERIFICATION_SLA_STATUSES = ['VERIFICATION_ASSIGNED', 'IN_VERIFICATION', 'WAITING_VERIFICATION_APPROVAL'];
 
 export function PublisherRegistrationCard({ registration }) {
   const action = publisherAction(registration);
@@ -54,6 +58,9 @@ export function PublisherRegistrationCard({ registration }) {
     'READY_FOR_STT',
   ].includes(status);
 
+  const verificationDueAt = registration.verification_assignments?.[0]?.due_at;
+  const showVerificationSla = status === 'REVISION_REQUIRED' || (VERIFICATION_SLA_STATUSES.includes(status) && verificationDueAt);
+
   return (
     <article className="rounded-2xl border border-line bg-surface p-5 shadow-2xs hover:border-brand-700/40 hover:shadow-xs transition-all flex flex-col justify-between space-y-4">
       {/* Top Header: Reg No & Status Badge */}
@@ -81,7 +88,7 @@ export function PublisherRegistrationCard({ registration }) {
                 {registration.foreign_metadata.nama_mushaf}
               </span>
             )}
-            {isPhase2Active && (
+            {isPhase2Active && !showVerificationSla && (
               <SlaBreakdown
                 snapshot={registration.fee_sla_snapshot}
                 status={registration.status}
@@ -90,6 +97,19 @@ export function PublisherRegistrationCard({ registration }) {
             )}
           </div>
         </div>
+
+        {showVerificationSla && (
+          <div className="space-y-1">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-ink-muted">SLA Verifikasi</span>
+            <SlaIndicator
+              dueAt={verificationDueAt}
+              targetDuration="2 hari kerja"
+              totalTargetHours={48}
+              showProgress={false}
+              isPaused={status === 'REVISION_REQUIRED'}
+            />
+          </div>
+        )}
       </div>
 
       {/* 3-Phase Stepper Tracker */}
