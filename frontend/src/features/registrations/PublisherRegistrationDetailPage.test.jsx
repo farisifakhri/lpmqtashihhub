@@ -76,6 +76,8 @@ describe('Publisher detail and revision', () => {
     show(); await screen.findByRole('heading', { name: 'Naskah perbaikan' });
     expect(screen.queryByLabelText('Pilih berkas naskah')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Kirim (permohonan|pengajuan)|Ajukan ulang/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Konfirmasi pengiriman resi tidak tersedia pada tahap ini/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Konfirmasi Pengiriman ke LPMQ' })).not.toBeInTheDocument();
   });
   it('shows intake as the next step after the publisher dispatches physical files', async () => {
     registrationApi.getDetail.mockResolvedValue({ data: {

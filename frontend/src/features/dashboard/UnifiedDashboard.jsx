@@ -41,7 +41,7 @@ import { AssignVerificationDialog } from '@/features/verification/AssignVerifica
 
 export const UnifiedDashboard = () => {
   const { currentUser } = useAuth();
-  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []), currentUser?.activeRole || currentUser?.role);
   const isPublisher = userRoles.includes('PENERBIT') || currentUser?.role === 'PENERBIT';
   const isSuperAdmin = userRoles.includes('SUPERADMIN') || currentUser?.role === 'SUPERADMIN';
   const isAdmin = userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'ADMIN_INTERNAL' || isSuperAdmin;

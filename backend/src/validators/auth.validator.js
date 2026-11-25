@@ -26,7 +26,16 @@ export const registerPublisherSchema = {
 
 export const forgotPasswordSchema = {
   body: z.object({
-    email: z.string().trim().toLowerCase().email('Format email tidak valid'),
+    email: z.string().trim().toLowerCase().email('Format email tidak valid').optional(),
+    phone: z.string().trim().min(8, 'Nomor WhatsApp tidak valid').max(30).optional(),
+    method: z.enum(['email', 'whatsapp']).default('email'),
+  }).superRefine((data, ctx) => {
+    if (data.method === 'email' && !data.email) {
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email wajib diisi.' });
+    }
+    if (data.method === 'whatsapp' && !data.phone) {
+      ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Nomor WhatsApp wajib diisi.' });
+    }
   }),
 };
 

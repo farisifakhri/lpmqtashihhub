@@ -18,9 +18,9 @@ import {
   Users,
   FileText,
   Clock,
+  Info,
   ShieldCheck,
   Check,
-  Info,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';

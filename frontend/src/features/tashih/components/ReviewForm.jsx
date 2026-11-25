@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { fileApi } from '@/api/file.api';
 import { showToast } from '@/components/ui/toast';
 import { formatFileType } from '@/lib/glossary';
+import { formatJuzCoverage } from '../utils/formatJuzCoverage';
 
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
@@ -68,11 +69,11 @@ export const ReviewForm = ({
     .filter((doc) => doc.document_type === 'REVISION_RETURN_LETTER')
     .sort((a, b) => (b.version || 0) - (a.version || 0));
 
-  const juzRangeText = selectedAssignment?.juz_from && selectedAssignment?.juz_to
-    ? `Juz ${selectedAssignment.juz_from} s.d. ${selectedAssignment.juz_to}`
-    : (selectedAssignment?.juz_items?.length
-        ? `Juz ${selectedAssignment.juz_items.map((j) => j.juz_number).join(', ')}`
-        : null);
+  const juzRangeText = formatJuzCoverage({
+    juzItems: selectedAssignment?.juz_items,
+    juzFrom: selectedAssignment?.juz_from,
+    juzTo: selectedAssignment?.juz_to,
+  });
 
   return (
 <>
@@ -158,12 +159,12 @@ export const ReviewForm = ({
 
               {/* Rincian Naskah */}
               <div className="p-4 rounded-xl bg-canvas border border-line space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="font-bold text-sm text-ink">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                  <div className="min-w-0 font-bold text-sm text-ink">
                     {selectedAssignment.registration?.title}
                   </div>
                   {juzRangeText && (
-                    <span className="px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 font-bold text-xs shrink-0">
+                    <span className="max-w-full sm:max-w-[55%] px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 font-bold text-xs whitespace-normal break-words leading-snug sm:text-right sm:shrink-0">
                       {juzRangeText}
                     </span>
                   )}
@@ -442,7 +443,7 @@ export const ReviewForm = ({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto overscroll-contain pr-1">
                     {juzItems.map((item, index) => (
                       <div
                         key={item.juz_number}

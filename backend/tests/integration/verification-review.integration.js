@@ -65,6 +65,19 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     // Ditolak: Superadmin tidak boleh menggantikan aksi verifikator (authority boundary)
     await expect(startPath, adminToken, 'PATCH', undefined, 403);
 
+    // Master fisik harus sudah diterima dan bernomor tanda terima sebelum pemeriksaan dimulai.
+    await prisma.physicalMasterIntake.update({
+      where: { registration_id: reg.id },
+      data: { status: 'PENDING', receipt_no: null },
+    });
+    await expect(startPath, verifikatorToken, 'PATCH', undefined, 409);
+    assert.equal((await prisma.verificationAssignment.findUnique({ where: { id: assignment.id } })).status, 'ASSIGNED');
+    assert.equal((await prisma.registration.findUnique({ where: { id: reg.id } })).status, 'VERIFICATION_ASSIGNED');
+    await prisma.physicalMasterIntake.update({
+      where: { registration_id: reg.id },
+      data: { status: 'RECEIVED', receipt_no: receiptNo },
+    });
+
     // Sukses: Verifikator penugasan memulai pemeriksaan
     const started = await expect(startPath, verifikatorToken, 'PATCH');
     assert.equal(started.status, 'IN_PROGRESS');
