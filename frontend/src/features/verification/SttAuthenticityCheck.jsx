@@ -17,8 +17,8 @@ const STEPS = [
 ];
 const TONES = {
   success: { box: 'bg-brand-50 border-brand-100', icon: 'bg-brand-100 text-brand-700', title: 'text-brand-900' },
-  warning: { box: 'bg-civic-warningSoft border-civic-warningLine', icon: 'bg-white text-civic-warning', title: 'text-civic-warning' },
-  danger: { box: 'bg-civic-dangerSoft border-civic-dangerLine', icon: 'bg-white text-civic-danger', title: 'text-civic-danger' },
+  warning: { box: 'bg-civic-warningSoft border-civic-warningLine', icon: 'bg-surface text-civic-warning', title: 'text-civic-warning' },
+  danger: { box: 'bg-civic-dangerSoft border-civic-dangerLine', icon: 'bg-surface text-civic-danger', title: 'text-civic-danger' },
 };
 
 const isPdf = (file) => file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
@@ -31,7 +31,9 @@ const verdictOf = ({ checked_file_integrity: integrity, is_valid: isValid, statu
   if (integrity !== 'MATCH') {
     return {
       tone: 'danger', Icon: ShieldX, title: 'Berkas BERBEDA dari STT asli di arsip LPMQ',
-      text: 'Isi berkas tidak sama dengan arsip resmi: berkas telah diubah, disimpan ulang dengan aplikasi lain, atau tidak berasal dari sistem LPMQ. Yang berlaku adalah STT asli di bawah.',
+      text: `Isi berkas tidak sama dengan arsip resmi: berkas telah diubah, disimpan ulang dengan aplikasi lain, atau tidak berasal dari sistem LPMQ. ${isValid
+        ? 'Yang berlaku adalah STT asli di bawah.'
+        : `STT dengan nomor ini juga sudah ${status === 'REVOKED' ? 'dicabut' : 'kedaluwarsa'}, sehingga tidak berlaku lagi.`}`,
     };
   }
   if (!isValid) {
@@ -58,8 +60,8 @@ const useObjectUrl = (blob) => {
   return url;
 };
 
-const PreviewPanel = ({ title, pages, action }) => (
-  <figure className="space-y-3 rounded-2xl border border-line bg-white p-3 sm:p-4">
+const PreviewPanel = ({ title, pages, action, emptyText = 'Pratinjau tidak dapat ditampilkan pada peramban ini.' }) => (
+  <figure className="space-y-3 rounded-2xl border border-line bg-surface p-3 sm:p-4">
     <figcaption className="flex items-center justify-between gap-2 text-sm font-semibold">
       <span>{title}</span>
       {action}
@@ -71,7 +73,7 @@ const PreviewPanel = ({ title, pages, action }) => (
         ))}
       </div>
     ) : (
-      <p className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-ink-muted">Pratinjau tidak dapat ditampilkan pada peramban ini.</p>
+      <p className="rounded-xl border border-dashed border-line p-6 text-center text-xs text-ink-muted">{emptyText}</p>
     )}
   </figure>
 );
@@ -114,16 +116,23 @@ export const SttAuthenticityCheck = () => {
     setPhase('checking');
     setError('');
     try {
-      const [data, blob] = await Promise.all([publicApi.checkSttFile(token, file), publicApi.getOriginalSttFile(token)]);
-      let pages = NO_PREVIEW;
-      try {
-        const { renderPdfPreview } = await import('@/lib/pdf-qr');
-        const [uploaded, original] = await Promise.all([renderPdfPreview(await bytesOf(file)), renderPdfPreview(await bytesOf(blob))]);
-        pages = { uploaded, original };
-      } catch { /* pratinjau gagal tidak membatalkan hasil pencocokan */ }
+      // Berkas asli diambil paralel, tetapi kegagalannya (mis. belum dibuka untuk publik) tidak membatalkan vonis.
+      const originalRequest = publicApi.getOriginalSttFile(token).catch(() => null);
+      const data = await publicApi.checkSttFile(token, file);
+      const blob = await originalRequest;
+      const renderer = await import('@/lib/pdf-qr').then((lib) => lib.renderPdfPreview).catch(() => null);
+      const preview = async (pdf) => {
+        if (!pdf || !renderer) return [];
+        try {
+          return await renderer(await bytesOf(pdf));
+        } catch {
+          return []; // pratinjau gagal tidak membatalkan vonis
+        }
+      };
+      const [uploaded, original] = await Promise.all([preview(file), preview(blob)]);
       setResult(data);
       setOriginalBlob(blob);
-      setPreviews(pages);
+      setPreviews({ uploaded, original });
       setPhase('done');
     } catch (reason) {
       setError(reason.status === 404 && source === 'qr'
@@ -210,9 +219,9 @@ export const SttAuthenticityCheck = () => {
       </section>
 
       <div className="mx-auto -mt-16 max-w-5xl space-y-6 px-4 pb-12 sm:-mt-20 sm:px-6 lg:px-8">
-        <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-xl shadow-brand-950/10">
+        <section className="overflow-hidden rounded-2xl border border-line bg-surface shadow-xl shadow-brand-950/10">
           <div className="flex border-b border-line bg-canvas">
-            <h2 className="-mb-px inline-flex items-center gap-2 border-b-2 border-brand-700 bg-white px-5 py-3 text-sm font-semibold text-brand-fg">
+            <h2 className="-mb-px inline-flex items-center gap-2 border-b-2 border-brand-700 bg-surface px-5 py-3 text-sm font-semibold text-brand-fg">
               <FileCheck2 className="h-4 w-4" /> Keaslian Dokumen
             </h2>
           </div>
@@ -233,7 +242,7 @@ export const SttAuthenticityCheck = () => {
                   <p className="text-xs text-ink-muted">atau pilih lewat tombol Cari File · format PDF, maksimal 10 MB</p>
                 </div>
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <div className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-white px-3 text-sm">
+                  <div className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm">
                     <FileText className={`h-4 w-4 shrink-0 ${file ? 'text-brand-700' : 'text-ink-muted'}`} />
                     {file ? (
                       <>
@@ -283,7 +292,7 @@ export const SttAuthenticityCheck = () => {
                   value={manualToken}
                   onChange={(event) => setManualToken(event.target.value)}
                   placeholder="https://…/verify-documents/xxxxxxxx-xxxx-… atau token"
-                  className="min-h-[44px] flex-1 rounded-lg border border-line-strong bg-white px-3 py-2 font-mono text-sm placeholder:font-sans placeholder:text-ink-muted focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
+                  className="min-h-[44px] flex-1 rounded-lg border border-line-strong bg-surface px-3 py-2 font-mono text-sm placeholder:font-sans placeholder:text-ink-muted focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
                 />
                 <Button type="submit" variant="secondary" icon={<QrCode className="h-4 w-4" />}>Periksa</Button>
               </form>
@@ -303,7 +312,7 @@ export const SttAuthenticityCheck = () => {
               </div>
             </div>
 
-            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-2xl border border-line bg-white p-5 text-sm sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-4 rounded-2xl border border-line bg-surface p-5 text-sm sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
               {[
                 ['Nomor STT', result.document_no],
                 ['Judul naskah', result.title],
@@ -328,6 +337,7 @@ export const SttAuthenticityCheck = () => {
               <PreviewPanel
                 title="STT asli dari arsip LPMQ"
                 pages={previews.original}
+                emptyText={originalBlob ? undefined : 'Berkas asli STT ini belum dapat ditampilkan untuk publik.'}
                 action={originalUrl && (
                   <a
                     href={originalUrl}

@@ -6,6 +6,25 @@ import * as AuthContextModule from '@/features/auth/AuthContext';
 import { registrationApi } from '@/api/registration.api';
 import { tashihApi } from '@/api/tashih.api';
 
+// Langkah 1 "Selesai" -> langkah 2 pilih kartu kirim -> tombol submit.
+const SEND = /Simpan Keputusan Distributor|Kirim ke Pemaraf/i;
+const finishAndSend = () => {
+  fireEvent.click(screen.getByRole('button', { name: 'Selesai' }));
+  fireEvent.click(screen.getAllByRole('button', { name: SEND }).find((b) => b.hasAttribute('aria-pressed')));
+  const submit = screen.getAllByRole('button', { name: SEND }).find((b) => b.getAttribute('type') === 'submit');
+  expect(submit).not.toBeDisabled();
+  fireEvent.click(submit);
+};
+
+// Buka jalur Kirim ke Pemaraf: Selesai -> kartu kirim (formulir keputusan tampil di sini).
+const openSendPath = () => {
+  const selesai = screen.getByRole('button', { name: 'Selesai' });
+  expect(selesai).not.toBeDisabled();
+  fireEvent.click(selesai);
+  fireEvent.click(screen.getAllByRole('button', { name: SEND }).find((b) => b.hasAttribute('aria-pressed')));
+};
+const submitButton = () => screen.getAllByRole('button', { name: SEND }).find((b) => b.getAttribute('type') === 'submit');
+
 describe('DistributorReviewDialog Component (B-17)', () => {
   beforeEach(() => {
     vi.spyOn(AuthContextModule, 'useAuth').mockReturnValue({
@@ -51,8 +70,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     // Pada ronde awal, textarea catatan pembanding tidak ditampilkan
     expect(screen.queryByText(/Catatan Telaah Pembanding Distributor/i)).not.toBeInTheDocument();
 
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
-    fireEvent.click(submitBtn);
+    finishAndSend();
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-initial', expect.objectContaining({
@@ -112,9 +130,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     // Catatan pembanding tidak ada di dialog ini (dipindah ke penugasan masuk naskah B-19a)
     expect(screen.queryByPlaceholderText(/Tuliskan analisis perbandingan/i)).not.toBeInTheDocument();
 
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
-    expect(submitBtn).not.toBeDisabled();
-    fireEvent.click(submitBtn);
+    finishAndSend();
 
     await waitFor(() => {
       expect(approveSpy).toHaveBeenCalledWith('reg-rev-2', expect.objectContaining({
@@ -157,12 +173,67 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     render(<DistributorReviewDialog registrationId="reg-revoked" onClose={vi.fn()} onSuccess={vi.fn()} />);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
-    });
+    const selesai = await screen.findByRole('button', { name: 'Selesai' });
     expect(screen.getByText('Dilepas')).toBeInTheDocument();
     expect(screen.getByText(/Pentashih cuti dinas/)).toBeInTheDocument();
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
+    expect(selesai).not.toBeDisabled();
+    fireEvent.click(selesai);
+    fireEvent.click(screen.getByRole('button', { name: SEND }));
+    expect(screen.getByText(/Keputusan Tindak Lanjut Distributor/i)).toBeInTheDocument();
+  });
+  it('Selesai membuka tampilan tindak lanjut: Sidang Kembali membuka pemilihan pekan tanpa mengirim keputusan', async () => {
+    const reg = {
+      id: 'reg-week', title: 'Mushaf Pekan', status: 'TASHIH_IN_PROGRESS', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    };
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: reg });
+    const approveSpy = vi.spyOn(tashihApi, 'approveDistribution').mockResolvedValue({ success: true });
+    const onAddWeek = vi.fn();
+
+    render(<DistributorReviewDialog registrationId="reg-week" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={onAddWeek} />);
+
+    // Langkah 1: tinjau hasil sidang saja, tanpa keputusan dan tanpa tombol kirim
+    const selesai = await screen.findByRole('button', { name: 'Selesai' });
+    expect(screen.queryByText(/Keputusan Tindak Lanjut Distributor/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: SEND })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
+
+    // Langkah 2: dua kartu tindak lanjut
+    fireEvent.click(selesai);
+    expect(screen.getByText(/Tindak Lanjut Sidang/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: SEND })).toHaveAttribute('aria-pressed', 'false');
+    // Keputusan & catatan hanya ada di jalur Kirim ke Pemaraf
+    expect(screen.queryByText(/Keputusan Tindak Lanjut Distributor/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Sidang Kembali/i }));
+    expect(onAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-week' }));
+    expect(approveSpy).not.toHaveBeenCalled();
+
+    // Kembali ke langkah 1 tetap mungkin
+    fireEvent.click(screen.getByRole('button', { name: 'Kembali' }));
+    expect(screen.getByRole('button', { name: 'Selesai' })).toBeInTheDocument();
+  });
+
+  it('tanpa onAddWeek, langkah tindak lanjut hanya menawarkan kirim keputusan', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: {
+      id: 'reg-x', title: 'Mushaf X', status: 'TASHIH_IN_PROGRESS', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    } });
+    render(<DistributorReviewDialog registrationId="reg-x" onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesai' }));
+    expect(screen.getByRole('button', { name: SEND })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
+  });
+  it('menyembunyikan Sidang Kembali bila pengguna tidak berwenang menugaskan ulang naskah ini', async () => {
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ success: true, data: {
+      id: 'reg-core', title: 'Mushaf Tim Inti', status: 'TASHIH_IN_PROGRESS', core_team_number: 2, core_distributor_id: 'dist-lain', official_documents: [],
+      assignments: [{ id: 'asg-1', iteration: 1, stage: 'INITIAL', status: 'COMPLETED', reviews: [{ id: 'rev-1', result: 'PASSED', recap_file_id: 'file-1' }] }],
+    } });
+    const canAddWeek = vi.fn((reg) => reg.core_distributor_id === 'dist-1');
+    render(<DistributorReviewDialog registrationId="reg-core" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={vi.fn()} canAddWeek={canAddWeek} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Selesai' }));
+    expect(canAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-core' }));
+    expect(screen.queryByRole('button', { name: /Sidang Kembali/i })).not.toBeInTheDocument();
   });
 
   it('memungkinkan distributor meloloskan naskah ke tahap dumi meski terdapat catatan perbaikan dari pentashih', async () => {
@@ -203,6 +274,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     await waitFor(() => {
       expect(screen.getByText(/Reviu Hasil Sidang Pentashihan/i)).toBeInTheDocument();
     });
+    openSendPath();
 
     // 1. Secara default terpilih "Kembalikan ke Penerbit (Perbaikan)"
     const revisionRadio = screen.getByRole('radio', { name: /Kembalikan ke Penerbit \(Perbaikan\)/i });
@@ -221,7 +293,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(passRadio).toBeChecked();
 
     // 5. Submit keputusan dan pastikan payload result adalah PASSED
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
+    const submitBtn = submitButton();
     expect(submitBtn).not.toBeDisabled();
     fireEvent.click(submitBtn);
 
@@ -279,6 +351,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     render(<DistributorReviewDialog registrationId="reg-empty-notes" onClose={vi.fn()} onSuccess={vi.fn()} />);
 
     await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+    openSendPath();
 
     // Label harus Opsional
     expect(screen.getByText('Opsional')).toBeInTheDocument();
@@ -289,7 +362,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     expect(textarea.value).toBe('');
 
     // Tombol simpan keputusan TIDAK disabled meskipun catatan kosong
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
+    const submitBtn = submitButton();
     expect(submitBtn).not.toBeDisabled();
 
     // Klik simpan keputusan
@@ -327,6 +400,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     render(<DistributorReviewDialog registrationId="reg-incomplete" onClose={vi.fn()} onSuccess={vi.fn()} />);
 
     await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+    openSendPath();
 
     // 1. Banner kuning "Sidang Belum Selesai Seluruhnya" telah dihapus dari atas form
     expect(screen.queryByText(/Sidang Belum Selesai Seluruhnya/i)).not.toBeInTheDocument();
@@ -372,9 +446,10 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     render(<DistributorReviewDialog registrationId="reg-two-step" onClose={vi.fn()} onSuccess={onSuccess} />);
 
     await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+    openSendPath();
 
     // Tombol awal bertuliskan "Simpan Keputusan Distributor"
-    const submitBtn = screen.getByRole('button', { name: /Simpan Keputusan Distributor/i });
+    const submitBtn = submitButton();
     expect(submitBtn).toBeInTheDocument();
 
     // Kotak peringatan belum tampil
@@ -432,9 +507,10 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     render(<DistributorReviewDialog registrationId="reg-reset-test" onClose={vi.fn()} onSuccess={vi.fn()} />);
 
     await screen.findByText(/Reviu Hasil Sidang Pentashihan/i);
+    openSendPath();
 
     // Klik pertama memicu state konfirmasi override
-    fireEvent.click(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i }));
+    fireEvent.click(submitButton());
     expect(screen.getByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Lanjutkan Menyimpan/i })).toBeInTheDocument();
 
@@ -444,7 +520,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     // Kotak konfirmasi hilang dan tombol kembali menjadi "Simpan Keputusan Distributor"
     expect(screen.queryByText(/Konfirmasi Penyimpanan Sidang Belum Selesai/i)).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
+    expect(submitButton()).toBeInTheDocument();
   });
 });
 

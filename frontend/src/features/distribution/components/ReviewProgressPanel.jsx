@@ -154,11 +154,12 @@ const renderAnggotaSidangAccordion = (regId, currentAssignments, isExpanded, tog
                       e.stopPropagation();
                       onRevokePentashih(a, reg);
                     }}
-                    title={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
-                    aria-label={`Lepas tugas ${a.assignee?.name || 'pentashih'}`}
-                    className="ml-0.5 p-0.5 rounded-full text-ink-muted hover:text-civic-danger hover:bg-civic-dangerSoft transition-colors"
+                    title={`Cabut penugasan ${a.assignee?.name || 'pentashih'}`}
+                    aria-label={`Cabut penugasan ${a.assignee?.name || 'pentashih'}`}
+                    className="ml-1 inline-flex items-center gap-0.5 rounded-full border border-civic-dangerLine bg-surface px-1.5 py-0.5 text-[11px] font-semibold text-civic-danger hover:bg-civic-dangerSoft focus:outline-none focus-visible:ring-2 focus-visible:ring-civic-danger transition-colors"
                   >
-                    <UserX className="w-3 h-3" />
+                    <UserX className="w-3 h-3" aria-hidden="true" />
+                    Cabut
                   </button>
                 )}
               </span>
@@ -249,6 +250,7 @@ export const ReviewProgressPanel = ({
   setReviewDialogRegId,
   onRevokePentashih,
   canAssign = () => false,
+  canRevoke = () => false,
   onStartAssignment,
 }) => {
   const [expandedMembers, setExpandedMembers] = useState({});
@@ -416,7 +418,7 @@ export const ReviewProgressPanel = ({
                     currentAssignments,
                     isExpanded,
                     toggleExpanded,
-                    onRevokePentashih,
+                    canRevoke(reg) ? onRevokePentashih : null,
                     reg
                   )}
 
@@ -528,7 +530,7 @@ export const ReviewProgressPanel = ({
                   currentAssignments,
                   isExpanded,
                   toggleExpanded,
-                  onRevokePentashih,
+                  canRevoke(reg) ? onRevokePentashih : null,
                   reg
                 )}
 

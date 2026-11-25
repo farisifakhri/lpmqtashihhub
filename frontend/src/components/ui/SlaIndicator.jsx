@@ -43,8 +43,9 @@ export const SlaIndicator = ({
 
   if (isOverdue) {
     statusType = 'overdue';
-    const hoursOverdue = Math.abs(Math.floor(diffMs / (1000 * 60 * 60)));
-    labelText = `Terlambat ${hoursOverdue} jam (SLA ${targetDuration} terlewati)`;
+    const hoursOverdue = Math.floor(-diffMs / (1000 * 60 * 60)); // floor dari angka negatif melebihkan 1 jam
+    const overdueText = hoursOverdue >= 24 ? `${Math.floor(hoursOverdue / 24)} hari ${hoursOverdue % 24} jam` : `${hoursOverdue} jam`;
+    labelText = `Terlambat ${overdueText} (SLA ${targetDuration} terlewati)`;
   } else if (hoursRemaining < 12) {
     statusType = 'warning';
     labelText = `Mendekati batas: Sisa ${hoursRemaining} jam (${dayTypeLabel})`;

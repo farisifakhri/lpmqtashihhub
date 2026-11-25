@@ -88,6 +88,30 @@ describe('SttAuthenticityCheck', () => {
     expect(screen.queryByLabelText(/Link atau token QR STT/i)).not.toBeInTheDocument();
   });
 
+  it('tidak mencap palsu STT terdaftar yang arsip aslinya tidak tersedia', async () => {
+    findSttTokenInPdf.mockResolvedValue(TOKEN);
+    const message = 'STT ini terdaftar di LPMQ, tetapi berkas aslinya belum tersedia untuk dicocokkan.';
+    vi.spyOn(publicApi, 'checkSttFile').mockRejectedValue(new ApiError(message, 409, { code: 'STT_ORIGINAL_UNAVAILABLE' }));
+    renderPage();
+    upload(pdfFile());
+    send();
+    expect(await screen.findByText(message)).toBeInTheDocument();
+    expect(screen.queryByText(/patut diduga/i)).not.toBeInTheDocument();
+  });
+
+  it('tetap menampilkan vonis bila berkas asli belum dibuka untuk publik', async () => {
+    findSttTokenInPdf.mockResolvedValue(TOKEN);
+    vi.spyOn(publicApi, 'checkSttFile').mockResolvedValue(result('MISMATCH', { status: 'REVOKED', is_valid: false }));
+    publicApi.getOriginalSttFile.mockRejectedValue(new ApiError('Berkas asli STT ini belum dibuka untuk publik.', 409));
+    renderPage();
+    upload(pdfFile());
+    send();
+    expect(await screen.findByText(/Berkas BERBEDA dari STT asli/i)).toBeInTheDocument();
+    expect(screen.getByText(/juga sudah dicabut/i)).toBeInTheDocument();
+    expect(screen.getByText(/belum dapat ditampilkan untuk publik/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Unduh STT asli/i })).not.toBeInTheDocument();
+  });
+
   it('meminta link/token manual bila QR tidak terbaca', async () => {
     findSttTokenInPdf.mockResolvedValue(null);
     vi.spyOn(publicApi, 'checkSttFile').mockResolvedValue(result('MISMATCH'));

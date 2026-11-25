@@ -316,3 +316,18 @@ test('B19B-09: Naskah non-30 juz (misal 5 juz: Juz 26-30): validasi cakupan juz 
     assertDistributionReviewCompleteness(assignmentsComplete, { requireAllPassed: true });
   });
 });
+
+test('B19B-10: Pekan pentashihan tambahan setelah rekap kelompok wajib selesai sebelum keputusan distributor', () => {
+  const juz = Array.from({ length: 30 }, (_, i) => ({ juz_number: i + 1 }));
+  const recapAt = '2026-11-10T08:00:00Z';
+  const pekan1 = {
+    id: 'asg-pekan-1', team_id: 'team-1', status: 'COMPLETED', created_at: '2026-11-03T08:00:00Z', juz_items: juz,
+    reviews: [{ id: 'rev-1', result: 'PASSED', recap_scope: 'TEAM', recap_file_id: 'recap-1', completed_at: recapAt }],
+  };
+  const pekan2 = { id: 'asg-pekan-2', team_id: 'team-1', status: 'ASSIGNED', created_at: '2026-11-11T08:00:00Z', juz_items: juz.slice(0, 5), reviews: [] };
+
+  assert.throws(() => assertDistributionReviewCompleteness([pekan1, pekan2]), /belum selesai/);
+
+  const pekan2Selesai = { ...pekan2, status: 'COMPLETED', reviews: [{ id: 'rev-2', result: 'PASSED', recap_scope: 'SELF', recap_file_id: 'recap-2', completed_at: '2026-11-17T08:00:00Z' }] };
+  assert.doesNotThrow(() => assertDistributionReviewCompleteness([pekan1, pekan2Selesai], { requireAllPassed: true }));
+});

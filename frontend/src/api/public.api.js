@@ -8,6 +8,10 @@ const failWith = async (response, fallback) => {
   const message = response.status === 429 ? 'Terlalu banyak pemeriksaan dalam waktu singkat. Tunggu sebentar lalu coba lagi.' : body.message || fallback;
   throw new ApiError(message, response.status, body);
 };
+// fetch langsung melempar TypeError berbahasa Inggris saat jaringan putus.
+const send = (url, init) => fetch(url, init).catch(() => {
+  throw new ApiError('Tidak dapat menghubungi server LPMQ. Periksa koneksi lalu coba lagi.', 0);
+});
 
 export const publicApi = {
   verifyDocument: async (token) => {
@@ -15,12 +19,12 @@ export const publicApi = {
   },
   // PDF biner, jadi memakai fetch langsung (apiClient selalu mengirim JSON).
   getOriginalSttFile: async (token) => {
-    const response = await fetch(sttUrl(token, 'file'));
+    const response = await send(sttUrl(token, 'file'));
     if (!response.ok) await failWith(response, 'Berkas asli STT tidak tersedia.');
     return response.blob();
   },
   checkSttFile: async (token, file) => {
-    const response = await fetch(sttUrl(token, 'check-file'), {
+    const response = await send(sttUrl(token, 'check-file'), {
       method: 'POST', headers: { 'Content-Type': 'application/pdf' }, body: file,
     });
     if (!response.ok) await failWith(response, 'PDF belum dapat diperiksa.');

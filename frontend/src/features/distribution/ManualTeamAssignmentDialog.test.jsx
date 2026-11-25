@@ -323,6 +323,28 @@ describe('Manual team assignment (B-05)', () => {
     });
   });
 
+  it('pentashih yang dipilih di satu pekan tidak ikut ke pekan lain, dan pilihan pekan semula dipulihkan', async () => {
+    render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
+    await screen.findByText('Naskah siap distribusi');
+    fireEvent.click(screen.getByRole('button', { name: /^Januari/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+    fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih satu' }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).toBeChecked();
+
+    // Buka Pekan 2 langsung: mulai kosong, pentashih Pekan 1 tidak terbawa
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 2' }));
+    expect(screen.getByRole('button', { name: 'Pekan 2' })).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /Pentashih Pribadi/i }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).not.toBeChecked();
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pentashih dua' }));
+
+    // Kembali ke Pekan 1: pilihannya sendiri dipulihkan
+    fireEvent.click(screen.getByRole('button', { name: 'Pekan 1' }));
+    expect(screen.getByRole('checkbox', { name: 'Pentashih satu' })).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Pentashih dua' })).not.toBeChecked();
+  });
+
   it('menyembunyikan form sampai card pekan dibuka, dan menutupnya hanya setelah konfirmasi', async () => {
     render(<ManualTeamAssignmentDialog id="r1" onClose={vi.fn()} onAssigned={vi.fn()} />);
     await screen.findByText('Naskah siap distribusi');
