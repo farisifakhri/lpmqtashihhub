@@ -58,7 +58,18 @@ export async function runVerificationApprovalPaymentTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: 'Mushaf Standar Indonesia Uji Persetujuan & Pembayaran', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
+      {
+        service_type_id: serviceId,
+        title: 'Mushaf Standar Indonesia Uji Persetujuan & Pembayaran',
+        mushaf_details: {
+          penanggung_jawab_produk: 'Penanggung Jawab Uji',
+          jenis_mushaf: 'Mushaf Standar Usmani',
+          sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+          surat_permohonan_file_id: 'mock-file-permohonan',
+          cover_file_id: 'mock-file-cover',
+          contoh_halaman_file_id: 'mock-file-contoh',
+        },
+      },
       201
     );
 
@@ -368,7 +379,18 @@ export async function runVerificationApprovalPaymentTests({
       '/registrations',
       publisherToken,
       'POST',
-      { service_type_id: serviceId, title: "Mushaf Al-Qur'an Uji Loket Langsung & Konkurensi", mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } },
+      {
+        service_type_id: serviceId,
+        title: "Mushaf Al-Qur'an Uji Loket Langsung & Konkurensi",
+        mushaf_details: {
+          penanggung_jawab_produk: 'Penanggung Jawab Uji',
+          jenis_mushaf: 'Mushaf Standar Usmani',
+          sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+          surat_permohonan_file_id: 'mock-file-permohonan',
+          cover_file_id: 'mock-file-cover',
+          contoh_halaman_file_id: 'mock-file-contoh',
+        },
+      },
       201
     );
     await expect(`/registrations/${directReg.id}/submit`, publisherToken, 'POST');

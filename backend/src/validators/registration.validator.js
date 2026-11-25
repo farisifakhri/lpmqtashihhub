@@ -1,5 +1,13 @@
 import { z } from 'zod';
 
+const draftSizeRowSchema = z.object({
+  ukuran: z.string().max(50).optional().nullable(),
+  oplah: z.union([
+    z.number().int().min(0).max(10_000_000),
+    z.string().max(20),
+  ]).optional().nullable(),
+}).strict();
+
 export const manuscriptMetadataSchema = z
   .object({
     penulis_nama: z.string().trim().max(255).optional().nullable(),
@@ -22,7 +30,7 @@ export const manuscriptMetadataSchema = z
     nama_percetakan: z.string().trim().max(255).optional().nullable(),
     jenis_mushaf: z.string().trim().max(100).optional().nullable(),
     kategori_pendaftaran: z.string().trim().max(100).optional().nullable(),
-    sizes: z.array(z.any()).max(10).optional().nullable(),
+    sizes: z.array(draftSizeRowSchema).max(10).optional().nullable(),
     jenis_naskah: z.array(z.string().trim().max(255)).max(50).optional().nullable(),
     deskripsi_mushaf: z.string().trim().max(2000).optional().nullable(),
     materi_tambahan: z.array(z.string().trim().max(255)).max(50).optional().nullable(),
@@ -64,6 +72,11 @@ export const safeRecordSchema = z
         if (typeof k !== 'string' || k.length > 100) return false;
         if (typeof v === 'string' && v.length > 5000) return false;
       }
+      if (obj.sizes != null && (
+        !Array.isArray(obj.sizes) ||
+        obj.sizes.length > 10 ||
+        obj.sizes.some((row) => !draftSizeRowSchema.safeParse(row).success)
+      )) return false;
       return true;
     },
     { message: 'Ukuran properti atau nilai metadata melebihi batas aman.' }
@@ -203,7 +216,17 @@ export const transitionStatusSchema = {
 
 export const createManuscriptFileSchema = {
   body: z.object({
-    type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'SAMPLE_PAGE', 'DUMMY', 'MASTER_COMPLETED']).transform((val) => val === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : val),
+    type: z.enum([
+      'COVER',
+      'SAMPLE_PAGE_1_5',
+      'SAMPLE_PAGE',
+      'DUMMY',
+      'MASTER_COMPLETED',
+      'SURAT_PERMOHONAN',
+      'SURAT_PERNYATAAN',
+      'APK',
+      'FOREIGN_TASHIH_CERTIFICATE',
+    ]).transform((val) => val === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : val),
     file_id: z.string().uuid('Gunakan ID hasil endpoint unggah berkas.'),
     manuscript_id: z.string().uuid('ID naskah tidak valid.').optional().nullable(),
   }).strict(),

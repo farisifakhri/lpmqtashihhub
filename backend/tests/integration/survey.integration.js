@@ -321,7 +321,7 @@ export async function runSurveyTests({ test, prisma, base, loginAs, adminToken, 
   });
 
   await test('Survei: penerbit mengisi survei aktif untuk pengajuannya, sekali saja', async () => {
-    const reg = await ok('/registrations', publisherToken, 'POST', { title: 'Naskah uji survei penerbit', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    const reg = await ok('/registrations', publisherToken, 'POST', { title: 'Naskah uji survei penerbit', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji', jenis_mushaf: 'Mushaf Standar Usmani' } }, 201);
     // Survei milik suite ini sudah berisi pertanyaan; aktifkan agar tampil untuk penerbit.
     await ok(`/admin/surveys/${survey.id}/activate`, adminToken, 'POST');
 

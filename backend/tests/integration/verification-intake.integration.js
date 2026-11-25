@@ -22,7 +22,18 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   let notaNo;
 
   await test('PR-VER-02: deklarasi fisik dibatasi pemilik dan bukti pendaftaran aman', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Intake SOP Verifikasi', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Intake SOP Verifikasi',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherBToken, 'PUT', declaration, 403);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', { ...declaration, format: 'A5' }, 400);
     const intake = await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', declaration);
@@ -121,7 +132,18 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   });
 
   await test('PR-VER-02: master yang dikembalikan tidak dapat ditugaskan sebelum deklarasi ulang', async () => {
-    const another = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Master Dikembalikan', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    const another = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Master Dikembalikan',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });

@@ -21,17 +21,49 @@ test.describe('Penerbit — formulir permohonan', () => {
     await page.getByRole('button', { name: /Lanjut: Langkah 2/i }).click();
     await expect(page.getByText('Nama mushaf minimal 3 karakter.')).toBeVisible();
     await expect(page.getByText('Nama penanggung jawab produk/mushaf wajib diisi.')).toBeVisible();
+    await expect(page.getByText('Ukuran (cm) pada entri 1 wajib diisi.')).toBeVisible();
+    await expect(page.locator('[aria-current="step"]')).toContainText('Langkah 1');
+  });
+
+  test('langkah 1 menolak ukuran tanpa oplah', async ({ page }) => {
+    await buka(page, '/publisher/new-registration');
+    await page.getByPlaceholder(/Contoh: Mushaf Al-Qur/i).fill("Mushaf Al-Qur'an Uji E2E");
+    await page.getByPlaceholder(/Tulis nama penanggung jawab Produk\/Mushaf/i).fill('Penanggung Jawab E2E');
+    await page.getByPlaceholder(/Tulis ukuran/i).fill('29 x 20');
+    await page.getByRole('button', { name: /Lanjut: Langkah 2/i }).click();
+    await expect(page.getByText('Oplah pada entri 1 wajib diisi.')).toBeVisible();
+    await expect(page.locator('[aria-current="step"]')).toContainText('Langkah 1');
   });
 
   test('langkah 1 lolos validasi bila data wajib terisi', async ({ page }) => {
     await buka(page, '/publisher/new-registration');
     await page.getByPlaceholder(/Contoh: Mushaf Al-Qur/i).fill("Mushaf Al-Qur'an Uji E2E");
     await page.getByPlaceholder(/Tulis nama penanggung jawab Produk\/Mushaf/i).fill('Penanggung Jawab E2E');
+    await page.getByPlaceholder(/Tulis ukuran/i).fill('29 x 20');
+    await page.getByPlaceholder(/Tulis oplah/i).fill('1000');
     await page.getByPlaceholder(/Tulis nomor WhatsApp/i).fill('081234567890');
     await page.getByPlaceholder(/Tulis email penanggung jawab/i).fill('pj.e2e@example.com');
+    const scrollContainer = page.locator('#main-content');
+    await scrollContainer.evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await page.getByRole('button', { name: /Lanjut: Langkah 2/i }).click();
+    await expect(page.locator('[aria-current="step"]')).toContainText('Langkah 2');
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(0);
     await expect(page.getByText('Nama mushaf minimal 3 karakter.')).toHaveCount(0);
     await expect(page.getByText(/Format alamat email tidak valid/i)).toHaveCount(0);
+  });
+
+  test('mobile: berpindah langkah kembali ke atas setelah data wajib lengkap', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await buka(page, '/publisher/new-registration');
+    await page.getByPlaceholder(/Contoh: Mushaf Al-Qur/i).fill("Mushaf Al-Qur'an Mobile");
+    await page.getByPlaceholder(/Tulis nama penanggung jawab Produk\/Mushaf/i).fill('Penanggung Jawab Mobile');
+    await page.getByPlaceholder(/Tulis ukuran/i).fill('29 x 20');
+    await page.getByPlaceholder(/Tulis oplah/i).fill('1000');
+    const scrollContainer = page.locator('#main-content');
+    await scrollContainer.evaluate((element) => { element.scrollTop = element.scrollHeight; });
+    await page.getByRole('button', { name: /Lanjut: Langkah 2/i }).click();
+    await expect(page.locator('[aria-current="step"]')).toContainText('Langkah 2');
+    await expect.poll(() => scrollContainer.evaluate((element) => element.scrollTop)).toBe(0);
   });
 });
 

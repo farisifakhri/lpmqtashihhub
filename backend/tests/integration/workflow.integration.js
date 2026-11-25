@@ -32,7 +32,18 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
   const team = await prisma.distributionTeam.findFirst({ where: { members: { some: { user_id: assignee.id } }, status: 'ACTIVE' } });
 
   await test('Workflow: unggahan server, isolasi berkas, dan pembatasan metadata naskah', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Pengujian Alur Pembayaran dan Sidang', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Pengujian Alur Pembayaran dan Sidang',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     file = await upload();
     assert.equal(file.checksum.length, 64);
     await expect(`/registrations/${reg.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: file.id }, 201);
@@ -278,7 +289,14 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const regOverride = await expect('/registrations', publisherToken, 'POST', {
       service_type_id: serviceId,
       title: 'Mushaf Override Ke Dumi',
-      mushaf_details: { penanggung_jawab_produk: 'PJ Override' }
+      mushaf_details: {
+        penanggung_jawab_produk: 'PJ Override',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      }
     }, 201);
     const fileOverride = await upload();
     await expect(`/registrations/${regOverride.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: fileOverride.id }, 201);

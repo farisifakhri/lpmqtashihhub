@@ -15,7 +15,11 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const userRoles = accessRoles(currentUser.roles || (currentUser.role ? [currentUser.role] : []), currentUser.activeRole || currentUser.role);
+  const activeRole = currentUser.activeRole || currentUser.role;
+  const userRoles = accessRoles(
+    currentUser.roles || (activeRole ? [activeRole] : []),
+    activeRole
+  );
   const isPublisher = userRoles.includes('PENERBIT') || currentUser.role === 'PENERBIT';
   const isAdmin = userRoles.includes('SUPERADMIN') || currentUser.role === 'SUPERADMIN';
 
@@ -36,7 +40,7 @@ export const ProtectedRoute = ({ children, allowedRoles = [], portalType = null 
 
   // Proteksi role spesifik (misal hanya SUPERADMIN untuk master settings)
   if (allowedRoles.length > 0) {
-    const hasRole = isAdmin || allowedRoles.some((r) => userRoles.includes(r) || currentUser.role === r);
+    const hasRole = isAdmin || allowedRoles.some((r) => r === activeRole);
     if (!hasRole) {
       return <Navigate to="/403" replace />;
     }

@@ -20,7 +20,7 @@ test.describe('Alur utama per tahapan', () => {
     const page = await bukaSebagai('ADMIN_INTERNAL');
     await buka(page, '/internal/verifications');
     await harusTampil(page, DEMO.SIAP_DITUGASKAN);
-    await expect(page.getByRole('button', { name: 'Tugaskan Verifikator' }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Tugaskan Tim' }).first()).toBeVisible();
   });
 
   test('Tahap 4 — Verifikasi berkas: verifikator melihat tugas yang sedang diperiksa', async ({ bukaSebagai }) => {
