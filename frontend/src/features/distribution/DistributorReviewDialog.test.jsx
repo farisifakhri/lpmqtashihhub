@@ -175,13 +175,14 @@ describe('DistributorReviewDialog Component (B-17)', () => {
 
     render(<DistributorReviewDialog registrationId="reg-week" onClose={vi.fn()} onSuccess={vi.fn()} onAddWeek={onAddWeek} />);
 
-    const pekanCard = await screen.findByRole('button', { name: /Pilih Pekan Lagi/i });
-    expect(screen.getByRole('button', { name: /Selesaikan Sidang/i })).toHaveAttribute('aria-pressed', 'true');
+    const lanjutkan = await screen.findByRole('radio', { name: /Lanjutkan Sidang/i });
+    expect(screen.getByRole('radio', { name: /Loloskan Telaah/i })).toBeChecked();
     expect(screen.getByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
 
-    fireEvent.click(pekanCard);
-    expect(pekanCard).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(lanjutkan);
+    expect(lanjutkan).toBeChecked();
     expect(screen.queryByRole('button', { name: /Simpan Keputusan Distributor/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Catatan Keputusan Reviu Distributor/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Pilih Pekan & Pentashih/i }));
     expect(onAddWeek).toHaveBeenCalledWith(expect.objectContaining({ id: 'reg-week' }));
@@ -195,7 +196,7 @@ describe('DistributorReviewDialog Component (B-17)', () => {
     } });
     render(<DistributorReviewDialog registrationId="reg-x" onClose={vi.fn()} onSuccess={vi.fn()} />);
     expect(await screen.findByRole('button', { name: /Simpan Keputusan Distributor/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Pilih Pekan Lagi/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /Lanjutkan Sidang/i })).not.toBeInTheDocument();
   });
 });
 
