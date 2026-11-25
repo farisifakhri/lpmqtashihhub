@@ -9,7 +9,7 @@
     "dev:backend": "nodemon src/server.js",
     "build": "echo Backend is ready (Node.js ES Modules - no build step required)",
     "start": "node src/server.js",
-    "test": "node scripts/test-isolated.js",
+    "test": "npm run prisma:generate && node scripts/test-isolated.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",

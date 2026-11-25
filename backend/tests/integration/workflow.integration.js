@@ -122,7 +122,6 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const pentashihRecapFile = await uploadAs(pentashih);
     await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki naskah', recap_file_id: pentashihRecapFile.id }, 201);
     await expect(`/assignments/${assignments[0].id}/review`, pentashih, 'POST', { result: 'PASSED', notes: 'Duplikat', recap_file_id: pentashihRecapFile.id }, 409);
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Hasil belum lulus' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaikan oleh penerbit' });
   });
 
@@ -170,9 +169,8 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     assert.equal(await prisma.paymentRecord.count({ where: { registration_id: reg.id } }), 1);
     assert.equal(await prisma.tashihReview.count({ where: { assignment_id: assignments[0].id } }), 1);
 
-    // Masih ada kesalahan: distributor tidak boleh meluluskan, naskah dikembalikan -> Perbaikan lagi (ronde #2)
+    // Masih ada kesalahan: distributor mengembalikan naskah -> Perbaikan lagi (ronde #2)
     await review(next[0].id, 'REVISION_REQUIRED', 'Masih ada kesalahan harakat');
-    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Coba luluskan' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Perbaiki lagi' });
     assert.deepEqual(await openStages(), [], 'sebelum naskah perbaikan #2 dikirim, semua penugasan terkunci');
     await sendPhysicalRound('REVISE456');
@@ -192,8 +190,9 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     await assign('REVISION', 409);
     const dummy = await assign('DUMMY');
 
-    // Dumi masih ada kesalahan: dikembalikan sebagai dumi lagi (bukan kembali ke Perbaikan)
+    // Dumi masih ada kesalahan: dikembalikan sebagai dumi lagi. Rekomendasi STT ditolak jika dumi belum lulus (409)
     await review(dummy[0].id, 'REVISION_REQUIRED', 'Dumi masih ada salah cetak');
+    await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'PASSED', notes: 'Coba luluskan STT padahal dumi ada perbaikan' }, 409);
     await expect(`/registrations/${reg.id}/distribution-review`, distributor, 'POST', { result: 'REVISION_REQUIRED', notes: 'Cetak ulang dumi' });
     await sendPhysicalRound('DUMMY456');
     assert.deepEqual(await openStages(), ['DUMMY']);
@@ -301,6 +300,59 @@ export async function runWorkflowTests({ test, prisma, base, loginAs, publisherT
     const draftAdmin = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Mushaf Hapus Superadmin', mushaf_details: { penanggung_jawab_produk: 'PJ Admin' } }, 201);
     const delAdmin = await call(`/registrations/${draftAdmin.id}`, adminToken, 'DELETE');
     assert.equal(delAdmin.status, 200);
+  });
+
+  await test('Workflow: Distributor dapat meloloskan naskah ke tahap dumi meski ada catatan perbaikan pentashih', async () => {
+    const regOverride = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Mushaf Override Ke Dumi',
+      mushaf_details: { penanggung_jawab_produk: 'PJ Override' }
+    }, 201);
+    const fileOverride = await upload();
+    await expect(`/registrations/${regOverride.id}/manuscripts`, publisherToken, 'POST', { type: 'COVER', file_id: fileOverride.id }, 201);
+    await expect(`/registrations/${regOverride.id}/submit`, publisherToken, 'POST');
+
+    // Fixture pembayaran lunas dan kalender kerja
+    await prisma.paymentRecord.create({
+      data: {
+        registration_id: regOverride.id,
+        billing_no: `BILL-${regOverride.id.substring(0, 8)}`,
+        amount: 1000000,
+        status: 'VERIFIED',
+      },
+    });
+    const startOverride = new Date(`${jakartaDate(new Date())}T00:00:00Z`);
+    const calOverride = Array.from({ length: 90 }, (_, index) => ({
+      date: new Date(startOverride.getTime() + (index + 1) * 86400000),
+      is_working_day: true,
+      source: `TEST-${regOverride.id}`,
+    }));
+    await prisma.workingDay.createMany({ data: calOverride, skipDuplicates: true });
+
+    await prisma.registration.update({
+      where: { id: regOverride.id },
+      data: { status: 'WAITING_DISTRIBUTION' },
+    });
+
+    const asgs = await expect(`/registrations/${regOverride.id}/assignments`, distributor, 'POST', {
+      team_id: team.id,
+      assignee_ids: [assignee.id],
+      stage: 'INITIAL'
+    }, 201);
+    const recapF = await uploadAs(pentashih);
+    await expect(`/assignments/${asgs[0].id}/review`, pentashih, 'POST', {
+      result: 'REVISION_REQUIRED',
+      notes: 'Catatan minor harakat',
+      recap_file_id: recapF.id
+    }, 201);
+    await expect(`/registrations/${regOverride.id}/distribution-review`, distributor, 'POST', {
+      result: 'PASSED',
+      notes: 'Catatan minor diabaikan; dialihkan ke tahap dumi fisik'
+    }, 200);
+    const updated = await prisma.registration.findUnique({ where: { id: regOverride.id } });
+    assert.equal(updated.status, 'REVISION_REQUIRED');
+    assert.equal(updated.revision_source, 'TASHIH_REVISION');
+    await prisma.workingDay.deleteMany({ where: { source: `TEST-${regOverride.id}` } });
   });
   if (reg) await prisma.workingDay.deleteMany({ where: { source: `TEST-${reg.id}` } });
 }

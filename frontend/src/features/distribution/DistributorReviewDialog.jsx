@@ -18,15 +18,71 @@ import {
   Users,
   FileText,
   Clock,
+  Info,
   ShieldCheck,
   Check,
-  Info,
   CalendarPlus,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '@/features/auth/AuthContext';
 import { PemarafPicker, pemarafSelectionValid } from '@/components/common/PemarafPicker';
 import { checkIsPemaraf } from '@/lib/roles';
+
+export function groupJuzItems(items = [], generalNote = '') {
+  if (!items || items.length === 0) return [];
+
+  const cleanGen = (generalNote || '').trim();
+  const sorted = [...items].sort((a, b) => a.juz_number - b.juz_number);
+
+  const groups = [];
+  let currentGroup = null;
+
+  for (const item of sorted) {
+    const rawNote = (item.notes || '').trim();
+    const hasUniqueNote = rawNote.length > 0 && rawNote !== cleanGen;
+    const noteText = hasUniqueNote ? rawNote : '';
+
+    if (hasUniqueNote) {
+      if (currentGroup) {
+        groups.push(currentGroup);
+        currentGroup = null;
+      }
+      groups.push({
+        from: item.juz_number,
+        to: item.juz_number,
+        result: item.result,
+        note: noteText,
+        isRange: false,
+      });
+    } else {
+      if (
+        currentGroup &&
+        currentGroup.result === item.result &&
+        item.juz_number === currentGroup.to + 1
+      ) {
+        currentGroup.to = item.juz_number;
+        currentGroup.isRange = true;
+      } else {
+        if (currentGroup) {
+          groups.push(currentGroup);
+        }
+        currentGroup = {
+          from: item.juz_number,
+          to: item.juz_number,
+          result: item.result,
+          note: '',
+          isRange: false,
+        };
+      }
+    }
+  }
+
+  if (currentGroup) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+}
 
 export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, onAddWeek, canAddWeek }) => {
   const { currentUser } = useAuth();
@@ -44,6 +100,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
 
   // Form decision state
   const [decision, setDecision] = useState('PASSED'); // 'PASSED' | 'REVISION_REQUIRED'
+  const [confirmOverride, setConfirmOverride] = useState(false);
   // Dua langkah: tinjau hasil sidang ("Selesai"), lalu tindak lanjut: Kirim ke Pemaraf (keputusan + catatan + Pemaraf) atau Sidang Kembali.
   const [step, setStep] = useState('DECISION'); // 'DECISION' | 'NEXT'
   const [nextRoute, setNextRoute] = useState(null); // 'PEMARAF' bila memilih kirim
@@ -55,6 +112,12 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
   const [outgoingCourier, setOutgoingCourier] = useState('');
   const [outgoingTrackingNo, setOutgoingTrackingNo] = useState('');
   const [outgoingNotes, setOutgoingNotes] = useState('');
+
+  const handleDecisionChange = (val) => {
+    setDecision(val);
+    setConfirmOverride(false);
+    setError(null);
+  };
 
   useEffect(() => {
     let active = true;
@@ -78,31 +141,12 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
 
         if (hasRevision) {
           setDecision('REVISION_REQUIRED');
-          // Kompilasi catatan otomatis dari pentashih (bersihkan tag internal recap)
-          const compiled = currentAssignments
-            .filter((a) => a.reviews?.some((r) => r.result === 'REVISION_REQUIRED'))
-            .map((a) => {
-              const corrections = a.juz_items?.filter(item => item.result === 'REVISION_REQUIRED') || [];
-              const rawNote = a.reviews?.[0]?.notes || '';
-              const cleanNote = rawNote.replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim();
-              return corrections.length
-                ? corrections.map(item => `[${a.assignee?.name || 'Pentashih'} · Juz ${item.juz_number}]: ${item.notes}`).join('\n')
-                : `[${a.assignee?.name || 'Pentashih'}]: ${cleanNote}`;
-            })
-            .join('\n\n');
-          setDistributorNotes(
-            compiled
-              ? `Hasil sidang pentashihan memerlukan perbaikan naskah sebagai berikut:\n${compiled}`.slice(0, 10000)
-              : 'Hasil sidang pentashihan memerlukan perbaikan naskah oleh penerbit.'
-          );
         } else {
           setDecision('PASSED');
-          // B-16: hanya tahap Dumi yang lulus berujung STT; tahap awal/perbaikan yang lulus beralih ke tahap Dumi.
-          setDistributorNotes(currentAssignments[0]?.stage === 'DUMMY'
-            ? 'Seluruh anggota tim pentashih telah menelaah naskah dumi dan menyatakan lulus tanpa catatan koreksi. Direkomendasikan untuk penetapan Surat Tanda Tashih (STT).'
-            : 'Seluruh anggota tim pentashih telah menelaah naskah dan menyatakan lulus tanpa catatan koreksi. Pengajuan dialihkan ke tahap dumi; penerbit wajib mengirimkan master dumi cetak beserta rekapitulasi.'
-          );
         }
+        setConfirmOverride(false);
+        // Jangan auto-fill catatan reviu dari pentashih agar distributor leluasa mengisi catatan sendiri (opsional)
+        setDistributorNotes('');
       })
       .catch((err) => {
         if (active) setError(err.message || 'Gagal memuat rincian naskah sidang.');
@@ -192,17 +236,22 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
     (a) => Boolean(a.recap_file_id || a.reviews?.[0]?.recap_file_id || a.reviews?.[0]?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i))
   );
 
-  const canPassSTT = allCompleted && !hasRevisionRequested;
   const canContinue = Boolean(onAddWeek && registration) && (!canAddWeek || canAddWeek(registration));
   const sendLabel = parafState.gate_active ? 'Kirim ke Pemaraf' : 'Simpan Keputusan Distributor';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Enter di kolom isian langkah pertama tidak boleh langsung mengirim keputusan.
+    // Enter di kolom isian tidak boleh mengirim keputusan sebelum jalur Kirim ke Pemaraf dipilih.
     if (!registration || step !== 'NEXT' || nextRoute !== 'PEMARAF') return;
 
-    if (!distributorNotes.trim() || distributorNotes.trim().length > 10000) {
-      setError('Catatan keputusan distributor wajib diisi dan maksimal 10000 karakter.');
+    if (distributorNotes.trim().length > 10000) {
+      setError('Catatan keputusan distributor maksimal 10000 karakter.');
+      return;
+    }
+
+    // Alur konfirmasi dua langkah bila masih ada pentashih yang belum selesai
+    if (!allCompleted && !confirmOverride) {
+      setConfirmOverride(true);
       return;
     }
 
@@ -217,6 +266,8 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
         outgoing_tracking_no: decision === 'REVISION_REQUIRED' && outgoingTrackingNo.trim() ? outgoingTrackingNo.trim() : undefined,
         outgoing_notes: decision === 'REVISION_REQUIRED' && outgoingNotes.trim() ? outgoingNotes.trim() : undefined,
         pemaraf_ids: pemarafAvailable ? pemarafIds : undefined,
+        forceOverride: !allCompleted ? true : undefined,
+        allowIncompleteAssignments: !allCompleted ? true : undefined,
       });
 
       onSuccess?.();
@@ -307,157 +358,150 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
               </div>
 
               {nextRoute === 'PEMARAF' && (
-                  <div className="space-y-4 pt-2 border-t border-line">
-                    <div>
-                      <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
-                        Keputusan Tindak Lanjut Distributor
+                <div className="space-y-4 pt-2 border-t border-line">
+                  <div>
+                    <label className="block text-xs font-bold text-ink uppercase tracking-wider mb-2">
+                      Keputusan Tindak Lanjut Distributor
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Opsi Lulus (STT jika DUMMY, atau Alihkan ke Tahap DUMMY jika INITIAL/REVISION) - B-16 */}
+                      <label
+                        className={clsx(
+                          'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3 cursor-pointer',
+                          decision === 'PASSED'
+                            ? 'border-brand-700 bg-brand-50/50'
+                            : 'border-line hover:border-line-strong'
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="distributorDecision"
+                          value="PASSED"
+                          checked={decision === 'PASSED'}
+                          onChange={(e) => handleDecisionChange(e.target.value)}
+                          className="mt-0.5 text-brand-700 focus:ring-brand-700"
+                        />
+                        <div>
+                          <div className="font-bold text-xs text-ink">
+                            {currentAssignments[0]?.stage === 'DUMMY'
+                              ? 'Rekomendasikan Penetapan STT'
+                              : 'Loloskan Telaah & Alihkan ke Tahap Dumi'}
+                          </div>
+                          <div className="text-xs text-ink-muted mt-0.5 leading-snug">
+                            {currentAssignments[0]?.stage === 'DUMMY'
+                              ? <span>Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.</span>
+                              : <span>Status beralih ke <code>REVISION_REQUIRED (NASKAH_DUMI)</code> agar penerbit mencetak & mengirimkan master dumi fisik.</span>}
+                          </div>
+                        </div>
                       </label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {/* Opsi Lulus (STT jika DUMMY, atau Alihkan ke Tahap DUMMY jika INITIAL/REVISION) - B-16 */}
-                        <label
-                          className={clsx(
-                            'p-3.5 rounded-xl border-2 transition-all flex items-start gap-3',
-                            !canPassSTT
-                              ? 'opacity-50 border-line bg-canvas cursor-not-allowed'
-                              : decision === 'PASSED'
-                              ? 'border-brand-700 bg-brand-50/50 cursor-pointer'
-                              : 'border-line hover:border-line-strong cursor-pointer'
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name="distributorDecision"
-                            value="PASSED"
-                            disabled={!canPassSTT}
-                            checked={decision === 'PASSED'}
-                            onChange={(e) => setDecision(e.target.value)}
-                            className="mt-0.5 text-brand-700 focus:ring-brand-700"
-                          />
-                          <div>
-                            <div className="font-bold text-xs text-ink">
-                              {currentAssignments[0]?.stage === 'DUMMY'
-                                ? 'Rekomendasikan Penetapan STT'
-                                : 'Loloskan Telaah & Alihkan ke Tahap Dumi'}
-                            </div>
-                            <div className="text-xs text-ink-muted mt-0.5 leading-snug">
-                              {currentAssignments[0]?.stage === 'DUMMY'
-                                ? <span>Status beralih ke <code>READY_FOR_STT</code> untuk diterbitkan oleh Kepala LPMQ.</span>
-                                : <span>Status beralih ke <code>REVISION_REQUIRED (NASKAH_DUMI)</code> agar penerbit mencetak & mengirimkan master dumi fisik.</span>}
-                            </div>
+
+                      {/* Opsi Perbaikan Penerbit */}
+                      <label
+                        className={clsx(
+                          'p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3',
+                          decision === 'REVISION_REQUIRED'
+                            ? 'border-civic-warning bg-civic-warningSoft/50'
+                            : 'border-line hover:border-line-strong'
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="distributorDecision"
+                          value="REVISION_REQUIRED"
+                          checked={decision === 'REVISION_REQUIRED'}
+                          onChange={(e) => handleDecisionChange(e.target.value)}
+                          className="mt-0.5 text-civic-warning focus:ring-civic-warning"
+                        />
+                        <div>
+                          <div className="font-bold text-xs text-ink">
+                            Kembalikan ke Penerbit (Perbaikan)
                           </div>
-                        </label>
-
-                        {/* Opsi Perbaikan Penerbit */}
-                        <label
-                          className={clsx(
-                            'p-3.5 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-3',
-                            decision === 'REVISION_REQUIRED'
-                              ? 'border-civic-warning bg-civic-warningSoft/50'
-                              : 'border-line hover:border-line-strong'
-                          )}
-                        >
-                          <input
-                            type="radio"
-                            name="distributorDecision"
-                            value="REVISION_REQUIRED"
-                            checked={decision === 'REVISION_REQUIRED'}
-                            onChange={(e) => setDecision(e.target.value)}
-                            className="mt-0.5 text-civic-warning focus:ring-civic-warning"
-                          />
-                          <div>
-                            <div className="font-bold text-xs text-ink">
-                              Kembalikan ke Penerbit (Perbaikan)
-                            </div>
-                            <div className="text-xs text-ink-muted mt-0.5">
-                              Status beralih ke <code>REVISION_REQUIRED</code>. Penerbit memperbaiki master dan kirim ulang.
-                            </div>
+                          <div className="text-xs text-ink-muted mt-0.5">
+                            Status beralih ke <code>REVISION_REQUIRED</code>. Penerbit memperbaiki master dan kirim ulang.
                           </div>
-                        </label>
+                        </div>
+                      </label>
+                    </div>
 
-                      </div>
+                    {decision === 'REVISION_REQUIRED' && (
+                      <div className="mt-3.5 p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft/30 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-ink">
+                            Ronde Pengembalian: <strong className="font-mono text-civic-warning">Perbaikan Ke-{(registration?.revision_round || 0) + 1}</strong>
+                          </span>
+                          <span className="text-xs text-brand-800 font-semibold px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
+                            Surat Hasil Tashih Otomatis Terbit
+                          </span>
+                        </div>
 
-
-                      {decision === 'REVISION_REQUIRED' && (
-                        <div className="mt-3.5 p-3.5 rounded-xl border border-civic-warningLine bg-civic-warningSoft/30 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-ink">
-                              Ronde Pengembalian: <strong className="font-mono text-civic-warning">Perbaikan Ke-{(registration?.revision_round || 0) + 1}</strong>
-                            </span>
-                            <span className="text-xs text-brand-800 font-semibold px-2 py-0.5 rounded bg-brand-50 border border-brand-200">
-                              Surat Hasil Tashih Otomatis Terbit
-                            </span>
+                        {/* Resi Keluar Pengembalian Naskah ke Penerbit (B-07) */}
+                        <div className="p-3.5 rounded-lg bg-white border border-civic-warningLine/70 space-y-2.5">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-ink">
+                            <Truck className="w-3.5 h-3.5 text-brand-800" />
+                            <span>Pencatatan Resi Keluar ke Penerbit (Opsional)</span>
                           </div>
-
-                          {/* Resi Keluar Pengembalian Naskah ke Penerbit (B-07) */}
-                          <div className="p-3.5 rounded-lg bg-white border border-civic-warningLine/70 space-y-2.5">
-                            <div className="flex items-center gap-1.5 font-bold text-xs text-ink">
-                              <Truck className="w-3.5 h-3.5 text-brand-800" />
-                              <span>Pencatatan Resi Keluar ke Penerbit (Opsional)</span>
+                          <p className="text-[11px] text-ink-muted">
+                            Catat kurir dan nomor resi pengiriman naskah fisik kembali ke penerbit.
+                          </p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <label className="block text-[11px] font-semibold text-ink mb-1">Kurir / Ekspedisi</label>
+                              <input
+                                type="text"
+                                value={outgoingCourier}
+                                onChange={(e) => setOutgoingCourier(e.target.value)}
+                                placeholder="Contoh: POS Indonesia, JNE, TIKI, Antar Langsung"
+                                className="w-full rounded-lg border border-line p-2 text-xs bg-canvas"
+                              />
                             </div>
-                            <p className="text-[11px] text-ink-muted">
-                              Catat kurir dan nomor resi pengiriman naskah fisik kembali ke penerbit.
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                              <div>
-                                <label className="block text-[11px] font-semibold text-ink mb-1">Kurir / Ekspedisi</label>
-                                <input
-                                  type="text"
-                                  value={outgoingCourier}
-                                  onChange={(e) => setOutgoingCourier(e.target.value)}
-                                  placeholder="Contoh: POS Indonesia, JNE, TIKI, Antar Langsung"
-                                  className="w-full rounded-lg border border-line p-2 text-xs bg-canvas"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[11px] font-semibold text-ink mb-1">Nomor Resi Keluar</label>
-                                <input
-                                  type="text"
-                                  value={outgoingTrackingNo}
-                                  onChange={(e) => setOutgoingTrackingNo(e.target.value)}
-                                  placeholder="Nomor resi bukti kirim"
-                                  className="w-full rounded-lg border border-line p-2 text-xs bg-canvas font-mono"
-                                />
-                              </div>
+                            <div>
+                              <label className="block text-[11px] font-semibold text-ink mb-1">Nomor Resi Keluar</label>
+                              <input
+                                type="text"
+                                value={outgoingTrackingNo}
+                                onChange={(e) => setOutgoingTrackingNo(e.target.value)}
+                                placeholder="Nomor resi bukti kirim"
+                                className="w-full rounded-lg border border-line p-2 text-xs bg-canvas font-mono"
+                              />
                             </div>
                           </div>
                         </div>
-                      )}
-
-                      {!canPassSTT && (
-                        <p className="text-xs text-civic-warning mt-1.5 flex items-center gap-1">
-                          <Info className="w-3.5 h-3.5 shrink-0" />
-                          <span>
-                            Rekomendasi STT terkunci karena ada pentashih yang memberikan catatan perbaikan.
-                          </span>
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Catatan Keputusan / Surat Revisi */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="block text-xs font-bold text-ink uppercase tracking-wider">
-                          Catatan Keputusan Reviu Distributor
-                        </label>
-                        <span className="text-xs text-ink-muted">Wajib diisi</span>
                       </div>
-                      <textarea
-                        rows={4}
-                        value={distributorNotes}
-                        maxLength={10000}
-                        onChange={(e) => setDistributorNotes(e.target.value)}
-                        placeholder="Tuliskan arahan perbaikan resmi yang akan dicantumkan pada Surat Pengembalian dan Catatan Hasil Tashih..."
-                        className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
-                      />
-                      <p className="text-xs text-ink-muted mt-1">
-                        Catatan ini dicantumkan langsung pada Surat Pengembalian dan Catatan Hasil Tashih resmi LPMQ untuk penerbit.
-                      </p>
-                    </div>
-                  </div>
-              )}
+                    )}
 
-              {nextRoute === 'PEMARAF' && parafState.gate_active && (
-                <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
+                    {hasRevisionRequested && (
+                      <p className="text-xs text-civic-warning mt-1.5 flex items-center gap-1">
+                        <Info className="w-3.5 h-3.5 shrink-0" />
+                        <span>
+                          {currentAssignments[0]?.stage === 'DUMMY'
+                            ? 'Terdapat catatan perbaikan dari pentashih; Koordinator Distribusi/Distributor tetap dapat merekomendasikan penetapan STT jika catatan bersifat minor.'
+                            : 'Terdapat catatan perbaikan dari pentashih; Koordinator Distribusi/Distributor tetap dapat meloloskan telaah ke tahap dumi jika catatan bersifat minor.'}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Catatan Keputusan / Surat Revisi */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-ink uppercase tracking-wider">
+                        Catatan Keputusan Reviu Distributor
+                      </label>
+                      <span className="text-xs text-ink-muted">Opsional</span>
+                    </div>
+                    <textarea
+                      rows={4}
+                      value={distributorNotes}
+                      maxLength={10000}
+                      onChange={(e) => setDistributorNotes(e.target.value)}
+                      placeholder="Tambahkan catatan keputusan atau arahan dari Distributor (opsional)..."
+                      className="w-full p-3 text-xs bg-canvas/70 border border-line-strong rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-brand-700/20 focus:border-brand-700 transition-all font-mono leading-relaxed"
+                    />
+                    <p className="text-xs text-ink-muted mt-1">
+                      Catatan ini dicantumkan langsung pada Surat Pengembalian dan Catatan Hasil Tashih resmi LPMQ untuk penerbit.
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           ) : registration ? (
@@ -500,6 +544,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                   {currentAssignments.map((a) => {
                     const rev = a.reviews?.[0];
                     const isDone = a.status === 'COMPLETED' && rev;
+                    const cleanNote = (rev?.notes || '').replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim();
 
                     return (
                       <div
@@ -550,44 +595,84 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                           <div className="text-xs text-ink-muted">
                             Penugasan dilepas{a.revocation_reason ? `: ${a.revocation_reason}` : '.'} Tidak dihitung dalam kelengkapan sidang.
                           </div>
-                        ) : rev?.notes ? (
-                          <div className="p-2 rounded-lg bg-white border border-line/80 text-xs text-ink italic font-mono whitespace-pre-line">
-                            "{((rev?.notes || '').replace(/\[RECAP_FILE:[a-f0-9\-]+\]/gi, '').trim()) || 'Lolos tanpa catatan.'}"
-                          </div>
                         ) : (
-                          <div className="text-xs text-ink-muted">
-                            Menunggu input hasil sidang dari pentashih bersangkutan.
-                          </div>
+                          <>
+                            {cleanNote ? (
+                              <div className="space-y-1">
+                                <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">
+                                  Catatan Umum Pentashih:
+                                </span>
+                                <div className="p-2.5 rounded-lg bg-white border border-line/80 text-xs text-ink font-mono whitespace-pre-line leading-relaxed">
+                                  "{cleanNote}"
+                                </div>
+                              </div>
+                            ) : isDone && (!a.juz_items || a.juz_items.length === 0) ? (
+                              <div className="text-xs text-ink-muted italic">
+                                Lolos tanpa catatan umum.
+                              </div>
+                            ) : !isDone ? (
+                              <div className="text-xs text-ink-muted">
+                                Menunggu input hasil sidang dari pentashih bersangkutan.
+                              </div>
+                            ) : null}
+
+                            {Boolean(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)) && (
+                              <div className="pt-1.5 flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => downloadFile(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1], `Rekap-Internal-${a.assignee?.name || 'Pentashih'}.pdf`)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-brand-700" />
+                                  <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
+                                </button>
+                                <span className="text-xs text-ink-muted">Kerahasiaan Internal</span>
+                              </div>
+                            )}
+
+                            {a.juz_items?.length > 0 && (
+                              <div className="space-y-1.5 pt-2 border-t border-line">
+                                <span className="text-[11px] font-bold text-ink-muted uppercase tracking-wider block">
+                                  Rincian per Juz:
+                                </span>
+                                <div className="space-y-1">
+                                  {groupJuzItems(a.juz_items, cleanNote).map((group, idx) => {
+                                    const rangeLabel = group.from === group.to ? `Juz ${group.from}` : `Juz ${group.from}–${group.to}`;
+                                    const statusLabel = group.result === 'PASSED'
+                                      ? 'Selesai'
+                                      : group.result === 'REVISION_REQUIRED'
+                                        ? 'Perlu Perbaikan'
+                                        : 'Menunggu Checklist';
+                                    return (
+                                      <div
+                                        key={idx}
+                                        className="text-xs text-ink flex flex-wrap items-baseline gap-1.5 bg-canvas/60 px-2 py-1 rounded border border-line/60"
+                                      >
+                                        <strong className="text-ink font-semibold">{rangeLabel}:</strong>
+                                        <span className={clsx(
+                                          'font-medium',
+                                          group.result === 'PASSED' ? 'text-brand-800' : group.result === 'REVISION_REQUIRED' ? 'text-civic-warning' : 'text-ink-muted'
+                                        )}>
+                                          {statusLabel}
+                                        </span>
+                                        {group.note && (
+                                          <span className="text-ink font-mono text-[11px] break-words">
+                                            — {group.note}
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         )}
-                        {Boolean(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)) && (
-                          <div className="pt-1.5 flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => downloadFile(a.recap_file_id || rev?.notes?.match(/\[RECAP_FILE:([a-f0-9\-]+)\]/i)?.[1], `Rekap-Internal-${a.assignee?.name || 'Pentashih'}.pdf`)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-brand-50 border border-brand-200 text-brand-900 text-xs font-semibold hover:bg-brand-100 transition-colors shadow-2xs cursor-pointer"
-                            >
-                              <FileText className="w-3.5 h-3.5 text-brand-700" />
-                              <span>Unduh Berkas Rekapan Internal ({a.assignee?.name || 'Pentashih'})</span>
-                            </button>
-                            <span className="text-xs text-ink-muted">Kerahasiaan Internal</span>
-                          </div>
-                        )}
-                        {a.juz_items?.length > 0 && <div className="space-y-1.5 pt-2 border-t border-line">{a.juz_items.map(item => <div key={item.id} className="text-xs text-ink"><strong>Juz {item.juz_number}:</strong> {item.result === 'PASSED' ? 'Selesai' : item.result === 'REVISION_REQUIRED' ? 'Perlu perbaikan' : 'Menunggu checklist'}{item.notes ? ` — ${item.notes}` : ''}</div>)}</div>}
                       </div>
                     );
                   })}
                 </div>
               </div>
-
-              {/* Peringatan jika belum semua selesai */}
-              {!allCompleted && (
-                <div className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
-                  <div>
-                    <strong>Sidang Belum Selesai Seluruhnya:</strong> Masih ada anggota tim pentashih yang belum menginputkan hasil telaah. Keputusan distributor baru dapat disimpan setelah semua anggota menyelesaikan telaah.
-                  </div>
-                </div>
-              )}
 
               {/* Peringatan jika belum ada dokumen rekap internal (B-06) */}
               {allCompleted && !hasTeamRecap && (
@@ -702,14 +787,28 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                 </div>
               )}
 
-              {allCompleted && !canDecide && (
-                  <div className="p-3.5 rounded-xl bg-canvas border border-line text-ink text-xs flex items-center gap-2 mt-2">
-                    <ShieldCheck className="w-4 h-4 text-brand-700 shrink-0" />
-                    <span>Mode Pratinjau: Seluruh anggota tim pentashih telah menyelesaikan sidang. Pengambilan keputusan reviu merupakan wewenang Koordinator Distributor.</span>
-                  </div>
+              {!canDecide && (
+                <div className="p-3.5 rounded-xl bg-canvas border border-line text-ink text-xs flex items-center gap-2 mt-2">
+                  <ShieldCheck className="w-4 h-4 text-brand-700 shrink-0" />
+                  <span>Mode Pratinjau: Pengambilan keputusan reviu merupakan wewenang Koordinator Distributor.</span>
+                </div>
               )}
             </>
           ) : null}
+
+          {canDecide && step === 'NEXT' && nextRoute === 'PEMARAF' && parafState.gate_active && (
+            <PemarafPicker value={pemarafIds} onChange={setPemarafIds} onAvailability={setPemarafAvailable} disabled={submitting} />
+          )}
+
+          {/* Peringatan Konfirmasi Override Dua Langkah */}
+          {confirmOverride && !allCompleted && (
+            <div role="alert" className="p-3.5 rounded-xl bg-civic-warningSoft border border-civic-warningLine text-civic-warning text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-civic-warning" />
+              <div>
+                <strong>Konfirmasi Penyimpanan Sidang Belum Selesai:</strong> Masih ada penugasan pentashih yang belum selesai atau belum memiliki hasil sidang. Klik <strong>&quot;Lanjutkan Menyimpan&quot;</strong> untuk tetap melanjutkan penyimpanan keputusan.
+              </div>
+            </div>
+          )}
 
           {/* Footer Actions */}
           {error && (
@@ -722,7 +821,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
           <div className="pt-4 border-t border-line flex items-center justify-end gap-2.5">
             {step === 'NEXT' ? (
               <>
-                <Button type="button" variant="outline" size="sm" onClick={() => { setStep('DECISION'); setNextRoute(null); }} disabled={submitting}>
+                <Button type="button" variant="outline" size="sm" onClick={() => { setStep('DECISION'); setNextRoute(null); setConfirmOverride(false); }} disabled={submitting}>
                   Kembali
                 </Button>
                 {nextRoute === 'PEMARAF' && (
@@ -730,11 +829,11 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                     type="submit"
                     variant="primary"
                     size="sm"
-                    disabled={submitting || !distributorNotes.trim() || (parafState.gate_active && !pemarafSelectionValid(pemarafAvailable, pemarafIds))}
+                    disabled={submitting || (parafState.gate_active && !pemarafSelectionValid(pemarafAvailable, pemarafIds))}
                     className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                     icon={<Send className="w-3.5 h-3.5" />}
                   >
-                    {submitting ? 'Menyimpan...' : sendLabel}
+                    {submitting ? 'Menyimpan...' : confirmOverride && !allCompleted ? 'Lanjutkan Menyimpan' : sendLabel}
                   </Button>
                 )}
               </>
@@ -749,7 +848,7 @@ export const DistributorReviewDialog = ({ registrationId, onClose, onSuccess, on
                     variant="primary"
                     size="sm"
                     onClick={() => { setError(null); setStep('NEXT'); }}
-                    disabled={!allCompleted || Boolean(pendingParaf)}
+                    disabled={Boolean(pendingParaf)}
                     className="bg-brand-700 hover:bg-brand-800 text-white font-bold"
                     icon={<Check className="w-3.5 h-3.5" />}
                   >

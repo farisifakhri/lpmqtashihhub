@@ -318,23 +318,11 @@ export const Sidebar = ({ isOpen = true, onClose }) => {
                     title: "SIDANG PENTASHIHAN",
                     items: [
                         {
-                            label: "Kendali Operasional",
-                            path: "/internal",
-                            icon: <LayoutDashboard className="w-4 h-4 shrink-0" />,
-                            end: true,
-                        },
-                        {
                             label: "Sidang Pentashihan",
                             path: "/internal/tashih",
                             icon: <BookOpen className="w-4 h-4 shrink-0" />,
                             description: "Koreksi lafazh, harakat & tanda baca",
                             countKey: "tashih_active",
-                        },
-                        {
-                            label: "Arsip Dokumen",
-                            path: "/internal/archive",
-                            icon: <FolderCheck className="w-4 h-4 shrink-0" />,
-                            description: "Semua versi untuk Posdok-Q",
                         },
                     ],
                 },
