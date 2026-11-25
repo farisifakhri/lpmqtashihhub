@@ -284,7 +284,7 @@ export function getWorkflowViewModel(registration, currentUser) {
   const isOverdue = dueAt ? new Date(dueAt).getTime() < Date.now() : false;
 
   // Evaluasi apakah user yang sedang login berhak mengambil tindakan aktif
-  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []), currentUser?.activeRole || currentUser?.role);
   const effectiveOwnerRole = operationalOwnerRole || def.ownerRole;
   let canUserAct = false;
 
