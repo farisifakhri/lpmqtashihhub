@@ -200,7 +200,7 @@ export const submitToTuSchema = {
   params,
   body: z.object({
     notes: z.string().trim().max(1000).optional(),
-    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).min(1, 'Pilih minimal 1 Pemaraf aktif.').optional(),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).max(2).optional(),
   }).strict(),
 };
 
@@ -221,7 +221,7 @@ export const overrideParafSchema = {
 export const reassignPemarafSchema = {
   params,
   body: z.object({
-    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).min(1, 'Pilih minimal 1 Pemaraf aktif.'),
+    pemaraf_ids: z.array(z.string().uuid('Pemaraf tidak valid.')).length(2, 'Pilih tepat 2 Pemaraf aktif.'),
     reason: z.string().trim().min(10, 'Alasan penunjukan ulang Pemaraf minimal 10 karakter').max(1000),
   }).strict(),
 };

@@ -95,19 +95,13 @@ test('submitToTu: ditolak bila belum ada Pemaraf aktif, belum ada Kepala, atau s
   });
 });
 
-test('submitToTu: wajib menunjuk minimal 1 Pemaraf aktif dan tanpa duplikat', async () => {
+test('submitToTu: wajib menunjuk tepat 2 Pemaraf aktif yang berbeda', async () => {
   const PEMARAF_C = { id: 'u-pemaraf-c', name: 'Pemaraf C', isPemaraf: true };
-  for (const data of [{}, { pemaraf_ids: [] }, { pemaraf_ids: [PEMARAF_A.id, PEMARAF_A.id] }, { pemaraf_ids: [PEMARAF_A.id, 'u-bukan-pemaraf'] }]) {
+  for (const data of [{}, { pemaraf_ids: [PEMARAF_A.id] }, { pemaraf_ids: [PEMARAF_A.id, PEMARAF_A.id] }, { pemaraf_ids: [PEMARAF_A.id, 'u-bukan-pemaraf'] }]) {
     await withTx(fakeTx({ pemaraf: [PEMARAF_A, PEMARAF_B, PEMARAF_C] }), async () => {
       await assert.rejects(submitToTu('doc-1', data, DOKUMENTATOR), (e) => e.statusCode === 422, JSON.stringify(data));
     });
   }
-  // Menunjuk 1 Pemaraf sah
-  await withTx(fakeTx({ pemaraf: [PEMARAF_A, PEMARAF_B, PEMARAF_C] }), async (state) => {
-    await submitToTu('doc-1', { pemaraf_ids: [PEMARAF_A.id] }, DOKUMENTATOR);
-    assert.deepEqual(state.snapshot.tu_workflow.pemaraf_ids, [PEMARAF_A.id]);
-    assert.equal(state.snapshot.tu_workflow.paraf_required, 1);
-  });
 });
 
 test('parafDocument: Pemaraf yang tidak ditunjuk ditolak', async () => {

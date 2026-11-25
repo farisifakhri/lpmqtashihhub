@@ -138,9 +138,9 @@ export function approvalStageText(paraf, currentUser) {
     };
   }
   const signers = paraf.signers || [];
-  const count = `${signers.length}/${paraf.required || 1}`;
+  const count = `${signers.length}/${paraf.required || 2}`;
   if (paraf.complete) {
-    return { title: 'Menunggu Pengesahan Kepala LPMQ', body: `Seluruh Pemaraf yang ditunjuk sudah memaraf (${count}). Draf menunggu pengesahan Kepala LPMQ.` };
+    return { title: 'Menunggu Pengesahan Kepala LPMQ', body: `Kedua Pemaraf sudah memaraf (${count}). Draf menunggu pengesahan Kepala LPMQ.` };
   }
   if (currentUser?.isPemaraf) {
     if (Array.isArray(paraf.assigned) && !paraf.assigned.includes(currentUser.id)) {
@@ -151,5 +151,5 @@ export function approvalStageText(paraf, currentUser) {
     }
     return { title: `Menunggu Paraf Anda (${count})`, body: 'Buka detail draf untuk memeriksa dan membubuhkan paraf.' };
   }
-  return { title: `Menunggu Paraf Pemaraf (${count})`, body: 'Draf diteruskan ke Kepala LPMQ setelah seluruh Pemaraf yang ditunjuk membubuhkan paraf.' };
+  return { title: `Menunggu Paraf Pemaraf (${count})`, body: 'Draf diteruskan ke Kepala LPMQ setelah kedua Pemaraf yang ditunjuk membubuhkan paraf.' };
 }

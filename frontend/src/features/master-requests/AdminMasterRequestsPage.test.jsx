@@ -87,13 +87,12 @@ describe('AdminMasterRequestsPage', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Susun Surat Persetujuan' }));
     fireEvent.change(within(dialog).getByLabelText(/Isi tambahan surat/), { target: { value: 'Master dikirim melalui surel resmi LPMQ.' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Ajukan ke Kepala untuk TTE' }));
-    // Wajib menunjuk minimal 1 Pemaraf sebelum surat bisa diajukan
+    // Wajib menunjuk tepat 2 Pemaraf sebelum surat bisa diajukan
     const ajukan = await screen.findByRole('button', { name: 'Ajukan ke Pemaraf' });
-    expect(ajukan).toBeDisabled();
     fireEvent.click(await screen.findByLabelText(/Pemaraf Satu/));
-    expect(ajukan).not.toBeDisabled();
+    expect(ajukan).toBeDisabled();
     fireEvent.click(screen.getByLabelText(/Pemaraf Tiga/));
-    expect(ajukan).not.toBeDisabled();
+    expect(screen.getByLabelText(/Pemaraf Dua/)).toBeDisabled();
     fireEvent.click(ajukan);
     await waitFor(() => expect(masterRequestApi.submitLetter).toHaveBeenCalledWith('req-1', {
       perihal: "Persetujuan Permohonan Master Mushaf Al-Qur'an",

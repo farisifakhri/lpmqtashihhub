@@ -90,7 +90,7 @@ test('forbidPemaraf menolak user dengan isPemaraf: true dan meloloskan user lain
   assert.doesNotThrow(() => forbidPemaraf({ id: 's1', roles: ['SUPERADMIN'] }, 'mengembalikan draf surat'));
 });
 
-test('Penunjukan: hanya Pemaraf yang ditunjuk boleh memaraf, paraf lengkap setelah kuorum', async () => {
+test('Penunjukan: hanya 2 Pemaraf yang ditunjuk boleh memaraf, paraf lengkap setelah keduanya', async () => {
   const tx = fakeTx(3);
   tx.approvalParaf.upsert = async ({ create }) => tx.approvalParaf.create({ data: create });
   await openParafRequest(tx, 'VERIFICATION_RESULT', 'a1', [PEMARAF_A, PEMARAF_B]);
@@ -101,15 +101,6 @@ test('Penunjukan: hanya Pemaraf yang ditunjuk boleh memaraf, paraf lengkap setel
   const last = await recordParaf(tx, 'VERIFICATION_RESULT', 'a1', PEMARAF_A);
   assert.ok(last.signed_at);
   await requireParaf(tx, 'VERIFICATION_RESULT', 'a1');
-});
-
-test('Penunjukan: menunjuk 1 Pemaraf langsung lengkap setelah satu paraf', async () => {
-  const tx = fakeTx(3);
-  tx.approvalParaf.upsert = async ({ create }) => tx.approvalParaf.create({ data: create });
-  await openParafRequest(tx, 'VERIFICATION_RESULT', 'a-single', [PEMARAF_A]);
-  const result = await recordParaf(tx, 'VERIFICATION_RESULT', 'a-single', PEMARAF_A);
-  assert.ok(result.signed_at);
-  await requireParaf(tx, 'VERIFICATION_RESULT', 'a-single');
 });
 
 test('Pemaraf aktif berkurang (misal cuti/dinonaktifkan): kuorum dinamis menyesuaikan tanpa membuat alur macet', async () => {

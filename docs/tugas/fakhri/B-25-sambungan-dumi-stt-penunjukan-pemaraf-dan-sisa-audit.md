@@ -20,14 +20,13 @@
 
 ## 2. Keputusan yang Berlaku dan Asumsi
 
-**Terkunci (dinyatakan 19 November 2026, diperbarui 20 November 2026):**
+**Terkunci (dinyatakan 19 November 2026):**
 - Pemaraf membubuhkan paraf **sebelum** Kepala.
 - Kepala LPMQ dihitung sebagai **pengesah akhir** (TTE final); Kepala tidak membubuhkan paraf terpisah.
-- **Klarifikasi Pak Zamroni (20 November 2026):** Penunjukan Pemaraf **bukan wajib tepat 2**, melainkan **wajib dipilih, minimal 1** (pengaju dapat menunjuk 1, 2, atau lebih akun Pemaraf aktif sesuai kebutuhan operasional). Alur dokumen berlanjut ke Kepala LPMQ setelah seluruh Pemaraf yang ditunjuk membubuhkan paraf.
 
-**Berlaku di kode (PR #112 & `feat-penunjukan-pemaraf-min-1`):**
-- Pengaju (verifikator, distributor, admin surat master, pengaju draf STT) menunjuk **minimal 1 Pemaraf aktif**; hanya mereka yang boleh memaraf.
-- Keputusan sidang distributor baru berlaku setelah seluruh paraf yang ditunjuk selesai lalu **pengesahan Kepala** (`POST /registrations/:id/distribution-review/approve`).
+**Berlaku di kode (`a01ae1b`):**
+- Pengaju (verifikator, distributor, admin surat master, pengaju draf STT) menunjuk **tepat 2 Pemaraf aktif**; hanya mereka yang boleh memaraf.
+- Keputusan sidang distributor baru berlaku setelah 2 paraf lalu **pengesahan Kepala** (`POST /registrations/:id/distribution-review/approve`).
 
 **Keputusan Desain B-25:**
 - **T1: Dokumentator** menyiapkan draf STT setelah dumi lulus (selaras dengan B-18 dan halaman `/internal/documents`). Panel distributor berstatus pantauan baca-saja.

@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { tashihApi } from '@/api/tashih.api';
 import { ConfirmationSummaryDialog } from '@/components/common/ConfirmationSummaryDialog';
 
-export const PEMARAF_REQUIRED = 1;
-export const PEMARAF_MIN_REQUIRED = 1;
+export const PEMARAF_REQUIRED = 2;
 
-// Pilih minimal 1 Pemaraf aktif yang memaraf sebelum Kepala LPMQ mengesahkan.
+// Pilih tepat 2 Pemaraf aktif yang memaraf sebelum Kepala LPMQ mengesahkan.
 // onAvailability(false) dipanggil bila belum ada akun Pemaraf aktif (gerbang paraf mati; tidak wajib memilih).
 export const PemarafPicker = ({ value = [], onChange, onAvailability, disabled = false }) => {
   const [pemarafs, setPemarafs] = useState(null);
@@ -25,11 +24,8 @@ export const PemarafPicker = ({ value = [], onChange, onAvailability, disabled =
   }, []);
 
   const toggle = (id) => {
-    if (value.includes(id)) {
-      onChange(value.filter((item) => item !== id));
-    } else {
-      onChange([...value, id]);
-    }
+    if (value.includes(id)) onChange(value.filter((item) => item !== id));
+    else if (value.length < PEMARAF_REQUIRED) onChange([...value, id]);
   };
 
   if (error) return <p role="alert" className="text-xs text-civic-danger">{error}</p>;
@@ -39,11 +35,11 @@ export const PemarafPicker = ({ value = [], onChange, onAvailability, disabled =
   return (
     <fieldset className="space-y-2 text-xs" disabled={disabled}>
       <legend className="font-bold text-ink mb-1">
-        Tunjuk Pemaraf <span className="font-normal text-ink-muted">(wajib dipilih, minimal 1, dipilih {value.length})</span>
+        Tunjuk Pemaraf <span className="font-normal text-ink-muted">(wajib {PEMARAF_REQUIRED}, dipilih {value.length})</span>
       </legend>
-      {pemarafs.length < PEMARAF_MIN_REQUIRED && (
+      {pemarafs.length < PEMARAF_REQUIRED && (
         <p role="alert" className="text-civic-danger">
-          Belum ada akun Pemaraf aktif. Aktifkan minimal 1 akun Pemaraf sebelum mengajukan.
+          Baru ada {pemarafs.length} akun Pemaraf aktif. Aktifkan minimal {PEMARAF_REQUIRED} akun Pemaraf sebelum mengajukan.
         </p>
       )}
       <div className="grid gap-1.5">
@@ -57,7 +53,7 @@ export const PemarafPicker = ({ value = [], onChange, onAvailability, disabled =
               <input
                 type="checkbox"
                 checked={checked}
-                disabled={disabled}
+                disabled={!checked && value.length >= PEMARAF_REQUIRED}
                 onChange={() => toggle(pemaraf.id)}
               />
               <span className="font-semibold text-ink">{pemaraf.name}</span>
@@ -70,12 +66,12 @@ export const PemarafPicker = ({ value = [], onChange, onAvailability, disabled =
   );
 };
 
-// true bila pilihan sudah sah: gerbang paraf mati (tidak ada Pemaraf aktif) atau minimal 1 terpilih.
-export const pemarafSelectionValid = (available, ids) => available === false || (Array.isArray(ids) && ids.length >= PEMARAF_MIN_REQUIRED);
+// true bila pilihan sudah sah: gerbang paraf mati (tidak ada Pemaraf aktif) atau tepat 2 terpilih.
+export const pemarafSelectionValid = (available, ids) => available === false || ids.length === PEMARAF_REQUIRED;
 
 export default PemarafPicker;
 
-// Dialog konfirmasi pengajuan yang wajib menunjuk minimal 1 Pemaraf; onConfirm menerima array id (kosong bila gerbang mati).
+// Dialog konfirmasi pengajuan yang wajib menunjuk 2 Pemaraf; onConfirm menerima array id (kosong bila gerbang mati).
 export const PemarafSubmitDialog = ({ isOpen, onClose, onConfirm, title, description, objectName, confirmLabel = 'Ajukan ke Pemaraf', loading = false }) => {
   const [ids, setIds] = useState([]);
   const [available, setAvailable] = useState(null);
@@ -88,7 +84,7 @@ export const PemarafSubmitDialog = ({ isOpen, onClose, onConfirm, title, descrip
       title={title}
       description={description}
       objectName={objectName}
-      nextActor="Pemaraf yang ditunjuk, lalu Kepala LPMQ"
+      nextActor="2 Pemaraf yang ditunjuk, lalu Kepala LPMQ"
       confirmLabel={confirmLabel}
       loading={loading}
       confirmDisabled={!pemarafSelectionValid(available, ids)}
