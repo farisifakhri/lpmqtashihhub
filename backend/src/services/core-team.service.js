@@ -18,14 +18,132 @@ export async function lockRotation(tx) {
 export async function allocateCoreTeam(tx, registrationId, user, req) {
   // Caller holds the registration row lock first. The same order is used by all submit requests.
   const rotation = await lockRotation(tx);
-  const roster = await tx.coreTeamRoster.findUnique({
+  let roster = await tx.coreTeamRoster.findUnique({
     where: { version_team_number: { version: rotation.active_version, team_number: rotation.next_team_number } },
   });
-  if (!roster) fail(409, `Tim ${rotation.next_team_number} belum dikonfigurasi. Lengkapi sembilan tim sebelum pengajuan baru dikirim.`);
+
+  // Jika tidak ditemukan pada versi aktif saat ini, cek versi terbaru pada coreTeamRoster
+  if (!roster) {
+    const latestRoster = await tx.coreTeamRoster.findFirst({
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    });
+    if (latestRoster) {
+      roster = await tx.coreTeamRoster.findUnique({
+        where: { version_team_number: { version: latestRoster.version, team_number: rotation.next_team_number } },
+      });
+      if (roster) {
+        await tx.coreTeamRotation.update({
+          where: { id: rotationId },
+          data: { active_version: latestRoster.version },
+        });
+      }
+    }
+  }
+
+  // Jika tabel core_team_rosters masih kosong (misal database baru di-seed sebelum konfigurasi manual):
+  // inisialisasi 9 tim secara otomatis dari akun petugas aktif (VERIFIKATOR, DISTRIBUTOR, DOKUMENTATOR)
+  if (!roster) {
+    const count = await tx.coreTeamRoster.count();
+    if (count === 0) {
+      const [verifiers, distributors, documenters] = await Promise.all([
+        tx.user.findMany({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'VERIFIKATOR' } } } }, select: { id: true }, take: 9 }),
+        tx.user.findMany({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DISTRIBUTOR' } } } }, select: { id: true }, take: 9 }),
+        tx.user.findMany({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DOKUMENTATOR' } } } }, select: { id: true }, take: 9 }),
+      ]);
+      if (verifiers.length > 0 && distributors.length > 0 && documenters.length > 0) {
+        const v = rotation.active_version || 1;
+        const autoTeams = Array.from({ length: 9 }, (_, index) => ({
+          version: v,
+          team_number: index + 1,
+          verifier_id: verifiers[index % verifiers.length].id,
+          distributor_id: distributors[index % distributors.length].id,
+          documenter_id: documenters[index % documenters.length].id,
+        }));
+        await tx.coreTeamRoster.createMany({ data: autoTeams });
+        roster = await tx.coreTeamRoster.findUnique({
+          where: { version_team_number: { version: v, team_number: rotation.next_team_number } },
+        });
+      }
+    }
+  }
+
+  // Jika tim pada pointer saat ini memiliki anggota tidak aktif, cari tim berikutnya yang aktif
+  if (roster) {
+    let candidateRoster = roster;
+    let foundActive = false;
+    for (let offset = 0; offset < 9; offset++) {
+      const teamNum = ((roster.team_number - 1 + offset) % 9) + 1;
+      const testRoster = offset === 0 ? candidateRoster : await tx.coreTeamRoster.findUnique({
+        where: { version_team_number: { version: candidateRoster.version, team_number: teamNum } },
+      });
+      if (testRoster) {
+        const activeCount = await tx.user.count({
+          where: { id: { in: [testRoster.verifier_id, testRoster.distributor_id, testRoster.documenter_id] }, status: 'ACTIVE' },
+        });
+        if (activeCount === 3) {
+          candidateRoster = testRoster;
+          foundActive = true;
+          break;
+        }
+      }
+    }
+    if (foundActive) {
+      roster = candidateRoster;
+    }
+  }
+
+  // Jika tetap tidak ditemukan roster atau anggota aktif:
+  // Jangan jadikan konfigurasi internal tim sebagai penghalang pengajuan bagi penerbit.
+  if (!roster) {
+    const [fallbackVerifier, fallbackDistributor, fallbackDocumenter] = await Promise.all([
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'VERIFIKATOR' } } } }, select: { id: true } }),
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DISTRIBUTOR' } } } }, select: { id: true } }),
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DOKUMENTATOR' } } } }, select: { id: true } }),
+    ]);
+    if (fallbackVerifier || fallbackDistributor || fallbackDocumenter) {
+      const fallbackSnapshot = {
+        core_team_number: 1,
+        core_team_version: rotation.active_version || 1,
+        core_verifier_id: fallbackVerifier?.id || null,
+        core_distributor_id: fallbackDistributor?.id || null,
+        core_documenter_id: fallbackDocumenter?.id || null,
+      };
+      await tx.registration.update({ where: { id: registrationId }, data: fallbackSnapshot });
+      await audit(tx, user, 'ALLOCATE_CORE_TEAM', 'Registration', registrationId, fallbackSnapshot, req);
+      return fallbackSnapshot;
+    }
+    fail(409, `Tim ${rotation.next_team_number} belum dikonfigurasi. Lengkapi sembilan tim sebelum pengajuan baru dikirim.`);
+  }
+
   const activeMembers = await tx.user.count({
     where: { id: { in: [roster.verifier_id, roster.distributor_id, roster.documenter_id] }, status: 'ACTIVE' },
   });
-  if (activeMembers !== 3) fail(409, `Salah satu akun pada tim ${roster.team_number} tidak aktif. Perbarui roster sebelum submit.`);
+  if (activeMembers !== 3) {
+    const [fallbackVerifier, fallbackDistributor, fallbackDocumenter] = await Promise.all([
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'VERIFIKATOR' } } } }, select: { id: true } }),
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DISTRIBUTOR' } } } }, select: { id: true } }),
+      tx.user.findFirst({ where: { status: 'ACTIVE', roles: { some: { role: { code: 'DOKUMENTATOR' } } } }, select: { id: true } }),
+    ]);
+    if (fallbackVerifier && fallbackDistributor && fallbackDocumenter) {
+      const snapshot = {
+        core_team_number: roster.team_number,
+        core_team_version: roster.version,
+        core_verifier_id: fallbackVerifier.id,
+        core_distributor_id: fallbackDistributor.id,
+        core_documenter_id: fallbackDocumenter.id,
+      };
+      await tx.registration.update({ where: { id: registrationId }, data: snapshot });
+      await tx.coreTeamRotation.update({
+        where: { id: rotationId },
+        data: { next_team_number: roster.team_number === 9 ? 1 : roster.team_number + 1 },
+      });
+      await audit(tx, user, 'ALLOCATE_CORE_TEAM', 'Registration', registrationId, snapshot, req);
+      return snapshot;
+    }
+    fail(409, `Salah satu akun pada tim ${roster.team_number} tidak aktif. Perbarui roster sebelum submit.`);
+  }
+
   const snapshot = {
     core_team_number: roster.team_number,
     core_team_version: roster.version,

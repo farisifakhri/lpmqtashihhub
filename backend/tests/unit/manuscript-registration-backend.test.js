@@ -6,6 +6,7 @@ import {
   createRegistrationSchema,
   manuscriptMetadataSchema,
   manuscriptVariantSchema,
+  createManuscriptFileSchema,
 } from '../../src/validators/registration.validator.js';
 import {
   SLA_INITIAL_CAP_DAYS,
@@ -749,4 +750,39 @@ test('B-01 T11: Edge cases kalkulasi tarif dan SLA jika items kosong atau null',
   const regEmpty = calculateRegistrationTarifAndSla([]);
   assert.equal(regEmpty.totalFee, 0);
   assert.equal(regEmpty.slaInitial, 0);
+});
+
+// ==========================================
+// T12: Validasi createManuscriptFileSchema untuk jenis berkas lampiran
+// ==========================================
+test('B-01 T12: createManuscriptFileSchema menerima jenis berkas valid dan menolak yang tidak valid', () => {
+  const validTypes = [
+    'SURAT_PERMOHONAN',
+    'COVER',
+    'SAMPLE_PAGE_1_5',
+    'SAMPLE_PAGE',
+    'DUMMY',
+    'MASTER_COMPLETED',
+    'SURAT_PERNYATAAN',
+    'APK',
+    'FOREIGN_TASHIH_CERTIFICATE',
+  ];
+  const sampleUuid = '123e4567-e89b-12d3-a456-426614174000';
+
+  for (const type of validTypes) {
+    const result = createManuscriptFileSchema.body.safeParse({
+      type,
+      file_id: sampleUuid,
+    });
+    assert.ok(result.success, `Jenis berkas ${type} harus valid`);
+    if (type === 'SAMPLE_PAGE') {
+      assert.equal(result.data.type, 'SAMPLE_PAGE_1_5');
+    }
+  }
+
+  const invalid = createManuscriptFileSchema.body.safeParse({
+    type: 'JENIS_TIDAK_DIKENAL',
+    file_id: sampleUuid,
+  });
+  assert.strictEqual(invalid.success, false, 'Jenis berkas fiktif harus ditolak');
 });

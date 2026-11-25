@@ -1009,13 +1009,19 @@ export const NewRegistrationPage = () => {
         surat_permohonan_file_id: uploadedPermohonanId,
         contoh_halaman_file_id: uploadedContohHalamanId,
         surat_pernyataan_perubahan_file_id: uploadedPernyataanId,
+        surat_pernyataan_file_id: uploadedPernyataanId,
         apk_file_id: uploadedApkId,
         apk_url: apkUrl.trim() || undefined,
         bukti_tashih_file_id: uploadedBuktiTashihId,
       };
 
-      const res = await registrationApi.createDraft(payload);
-      const created = res.data;
+      // Reuse existing draft if retrying submission without creating duplicate registration records
+      let created = createdReceipt;
+      if (!created?.id) {
+        const res = await registrationApi.createDraft(payload);
+        created = res.data;
+        setCreatedReceipt(created);
+      }
 
       // Attach manuscript records with explicit error reporting
       if (uploadedPermohonanId) {
@@ -1046,6 +1052,27 @@ export const NewRegistrationPage = () => {
           if (!created.contoh_halaman_file_id && !created.foreign_metadata?.contoh_halaman_file_id) {
             setError('Peringatan: Berkas contoh halaman belum tersambung ke permohonan: ' + mErr.message);
           }
+        }
+      }
+      if (uploadedPernyataanId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'SURAT_PERNYATAAN', file_id: uploadedPernyataanId });
+        } catch (mErr) {
+          console.warn('Surat pernyataan attachment note:', mErr);
+        }
+      }
+      if (uploadedApkId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'APK', file_id: uploadedApkId });
+        } catch (mErr) {
+          console.warn('APK attachment note:', mErr);
+        }
+      }
+      if (uploadedBuktiTashihId) {
+        try {
+          await registrationApi.addManuscript(created.id, { type: 'FOREIGN_TASHIH_CERTIFICATE', file_id: uploadedBuktiTashihId });
+        } catch (mErr) {
+          console.warn('Bukti tashih attachment note:', mErr);
         }
       }
 

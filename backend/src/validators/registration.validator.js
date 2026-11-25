@@ -216,7 +216,17 @@ export const transitionStatusSchema = {
 
 export const createManuscriptFileSchema = {
   body: z.object({
-    type: z.enum(['COVER', 'SAMPLE_PAGE_1_5', 'SAMPLE_PAGE', 'DUMMY', 'MASTER_COMPLETED']).transform((val) => val === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : val),
+    type: z.enum([
+      'COVER',
+      'SAMPLE_PAGE_1_5',
+      'SAMPLE_PAGE',
+      'DUMMY',
+      'MASTER_COMPLETED',
+      'SURAT_PERMOHONAN',
+      'SURAT_PERNYATAAN',
+      'APK',
+      'FOREIGN_TASHIH_CERTIFICATE',
+    ]).transform((val) => val === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : val),
     file_id: z.string().uuid('Gunakan ID hasil endpoint unggah berkas.'),
     manuscript_id: z.string().uuid('ID naskah tidak valid.').optional().nullable(),
   }).strict(),

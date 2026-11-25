@@ -1027,7 +1027,10 @@ export const createDraft = async (data, user, req) => {
           ...(data.cover_file_id ? { cover_file_id: data.cover_file_id } : {}),
           ...(data.surat_permohonan_file_id ? { surat_permohonan_file_id: data.surat_permohonan_file_id } : {}),
           ...(data.contoh_halaman_file_id ? { contoh_halaman_file_id: data.contoh_halaman_file_id } : {}),
-          ...(data.surat_pernyataan_perubahan_file_id ? { surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id } : {}),
+          ...((data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id) ? {
+            surat_pernyataan_file_id: data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id,
+            surat_pernyataan_perubahan_file_id: data.surat_pernyataan_perubahan_file_id || data.surat_pernyataan_file_id,
+          } : {}),
           ...(data.apk_file_id ? { apk_file_id: data.apk_file_id } : {}),
           ...(data.apk_url ? { apk_url: data.apk_url } : {}),
           ...(data.bukti_tashih_file_id ? { bukti_tashih_file_id: data.bukti_tashih_file_id } : {}),
@@ -1153,6 +1156,19 @@ export const createDraft = async (data, user, req) => {
         }
 
         // Tautkan berkas lampiran tingkat registrasi
+        if (data.surat_permohonan_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'SURAT_PERMOHONAN',
+                file_id: data.surat_permohonan_file_id,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
         if (data.cover_file_id) {
           try {
             await tx.manuscriptFile.create({
@@ -1175,6 +1191,33 @@ export const createDraft = async (data, user, req) => {
                 manuscript_id: createdManuscripts[0]?.id || null,
                 type: 'SAMPLE_PAGE_1_5',
                 file_id: samplePageFileId,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        const pernyataanFileId = data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id;
+        if (pernyataanFileId) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'SURAT_PERNYATAAN',
+                file_id: pernyataanFileId,
+                version: 1,
+              },
+            });
+          } catch {}
+        }
+
+        if (data.apk_file_id) {
+          try {
+            await tx.manuscriptFile.create({
+              data: {
+                registration_id: createdReg.id,
+                type: 'APK',
+                file_id: data.apk_file_id,
                 version: 1,
               },
             });
@@ -2374,6 +2417,9 @@ export const addManuscriptFile = async (registrationId, data, user, req) => {
     }
     const manuscriptType = data.type === 'SAMPLE_PAGE' ? 'SAMPLE_PAGE_1_5' : data.type;
     const last = await tx.manuscriptFile.findFirst({ where: { registration_id: registrationId, type: manuscriptType }, orderBy: { version: 'desc' } });
+    if (last && last.file_id === data.file_id && (!data.manuscript_id || last.manuscript_id === data.manuscript_id)) {
+      return last;
+    }
     const created = await tx.manuscriptFile.create({
       data: {
         registration_id: registrationId,

@@ -175,7 +175,14 @@ async function runTests() {
           body: JSON.stringify({
             service_type_id: selectedService.id,
             title: 'Mushaf Al-Qur\'an Standar Indonesia Uji Coba Sprint 0',
-            mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji Coba' },
+            mushaf_details: {
+              penanggung_jawab_produk: 'Penanggung Jawab Uji Coba',
+              jenis_mushaf: 'Mushaf Standar Usmani',
+              sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+              surat_permohonan_file_id: 'mock-file-permohonan',
+              cover_file_id: 'mock-file-cover',
+              contoh_halaman_file_id: 'mock-file-contoh',
+            },
             registration_type: 'NEW',
           }),
         });

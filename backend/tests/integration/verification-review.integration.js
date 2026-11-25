@@ -40,7 +40,18 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
   ];
 
   await test('PR-VER-03 Setup: Siapkan naskah dengan penerimaan fisik dan penugasan Admin Internal', async () => {
-    reg = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Uji Review Verifikator', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    reg = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Uji Review Verifikator',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${reg.id}/physical-master`, publisherToken, 'PUT', {
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
     });
