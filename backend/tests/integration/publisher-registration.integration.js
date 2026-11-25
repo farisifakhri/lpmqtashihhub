@@ -259,6 +259,7 @@ try {
   const needRevisionRes = await callJson(`/admin/publisher-registrations/${regId}/decision`, adminToken, 'POST', {
     keputusan: 'PERLU_PERBAIKAN',
     alasan: revisionReason,
+    dokumen_perlu_diperbaiki: ['AKTA_NOTARIS'],
     versi: regDetail.data.versi,
   }, 200);
 

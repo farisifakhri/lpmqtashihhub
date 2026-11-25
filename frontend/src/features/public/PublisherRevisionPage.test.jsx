@@ -79,6 +79,7 @@ describe('PublisherRevisionPage (T-S02 Halaman Perbaikan Pendaftaran)', () => {
         telepon_penanggung_jawab: '081234567890',
         email: 'info@pustaka.co.id',
         alasan_perbaikan: 'Akta Notaris buram.',
+        dokumen_perlu_diperbaiki: ['AKTA_NOTARIS'],
         dokumen_terunggah: [
           { tipe: 'AKTA_NOTARIS', nama_file: 'akta.pdf', status: 'PERLU_DIGANTI' },
         ],
@@ -109,7 +110,7 @@ describe('PublisherRevisionPage (T-S02 Halaman Perbaikan Pendaftaran)', () => {
     const fileInput = document.querySelector('input[type="file"]');
     fireEvent.change(fileInput, { target: { files: [dummyFile] } });
 
-    fireEvent.click(screen.getByRole('button', { name: /Kirimkan Perbaikan Dokumen Pendaftaran/i }));
+    fireEvent.submit(fileInput.closest('form'));
 
     await waitFor(() => {
       expect(submitSpy).toHaveBeenCalled();
