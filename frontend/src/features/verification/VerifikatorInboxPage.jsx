@@ -57,7 +57,7 @@ export const VerifikatorInboxPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { currentUser } = useAuth();
-  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []));
+  const userRoles = accessRoles(currentUser?.roles || (currentUser?.role ? [currentUser.role] : []), currentUser?.activeRole || currentUser?.role);
   const isHead = userRoles.includes('KEPALA_LPMQ') || currentUser?.role === 'KEPALA_LPMQ';
   const isVerifier = userRoles.includes('VERIFIKATOR') || currentUser?.role === 'VERIFIKATOR';
   const isAdmin = userRoles.includes('SUPERADMIN') || userRoles.includes('ADMIN_INTERNAL') || currentUser?.role === 'SUPERADMIN' || currentUser?.role === 'ADMIN_INTERNAL';

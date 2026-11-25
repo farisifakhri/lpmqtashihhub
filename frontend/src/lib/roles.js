@@ -1,6 +1,11 @@
 // Pemaraf adalah role tersendiri (label & identitas), tetapi mendapat akses layar Kepala LPMQ.
 // Pakai helper ini untuk pemeriksaan hak akses, bukan untuk menampilkan nama role.
-export const accessRoles = (roles = []) => (roles.includes('PEMARAF') && !roles.includes('KEPALA_LPMQ') ? [...roles, 'KEPALA_LPMQ'] : roles);
+// Sama dengan backend (withPemaraf): hak Kepala hanya saat peran aktif PEMARAF. Akun Pemaraf+Pentashih yang sedang
+// aktif sebagai Pentashih tidak boleh memanggil endpoint Kepala (403 "Tindakan ini hanya tersedia untuk ...").
+export const accessRoles = (roles = [], activeRole) => {
+  const actingPemaraf = activeRole ? activeRole === 'PEMARAF' : !roles.includes('KEPALA_LPMQ');
+  return roles.includes('PEMARAF') && actingPemaraf && !roles.includes('KEPALA_LPMQ') ? [...roles, 'KEPALA_LPMQ'] : roles;
+};
 
 // Dipakai Sidebar: Pemaraf mendapat menu yang sama dengan Kepala LPMQ (tanpa ini sidebar Pemaraf kosong).
 export const isHeadRole = (role) => role === 'KEPALA_LPMQ' || role === 'HEAD_OF_LPMQ' || role === 'PEMARAF';
