@@ -33,6 +33,7 @@ import { PublisherPhysicalMasterTab } from "./detail/PublisherPhysicalMasterTab"
 import { PublisherTimelineTab } from "./detail/PublisherTimelineTab";
 import { PublisherOfficialDocsTab } from "./detail/PublisherOfficialDocsTab";
 import { PublisherDetailModals } from "./detail/PublisherDetailModals";
+import { latestManuscriptFiles } from "@/lib/manuscript-files";
 
 export function PublisherRegistrationDetailPage() {
     const { id } = useParams();
@@ -276,11 +277,17 @@ export function PublisherRegistrationDetailPage() {
         event.preventDefault();
         run(
             async () => {
-                const res = await registrationApi.dispatchPhysical(id, dispatchData);
+                // Jumlah jilid di form ikut terkirim walau penerbit belum menekan "Simpan pernyataan fisik".
+                const res = await registrationApi.dispatchPhysical(id, { ...dispatchData, volume_count: Number(volumeCount) });
                 // Tampilan langsung berganti ke "Pengiriman Tercatat" tanpa menunggu muat ulang detail & timeline.
                 const saved = res?.data || {};
                 setData((prev) => prev && {
                     ...prev,
+                    physical_master_intake: {
+                        status: "PENDING",
+                        ...(prev.physical_master_intake || {}),
+                        volume_count: Number(volumeCount),
+                    },
                     physical_dispatch_status: saved.physical_dispatch_status || "DISPATCHED",
                     dispatch_courier: saved.dispatch_courier ?? dispatchData.courier,
                     dispatch_tracking_no: saved.dispatch_tracking_no ?? (dispatchData.tracking_no || null),
@@ -446,7 +453,7 @@ export function PublisherRegistrationDetailPage() {
                                     <FileText className="w-4 h-4" />
                                     <span>Dokumen & Berkas</span>
                                     <span className="font-mono text-xs px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
-                                        {(data.manuscript_files?.length || 0) +
+                                        {latestManuscriptFiles(data.manuscript_files).length +
                                             (data.official_documents?.length ||
                                                 0) +
                                             (data.foreign_metadata
@@ -536,7 +543,7 @@ export function PublisherRegistrationDetailPage() {
                                                     : "bg-brand-100 text-brand-800"
                                             }`}
                                         >
-                                            {data.manuscript_files?.length || 0}
+                                            {latestManuscriptFiles(data.manuscript_files).length}
                                         </span>
                                     </button>
                                     <button
@@ -655,7 +662,6 @@ export function PublisherRegistrationDetailPage() {
                                 <div id="section-physical-master">
                                     <PublisherPhysicalMasterTab
                                         data={data}
-                                        editable={editable}
                                         volumeCount={volumeCount}
                                         setVolumeCount={setVolumeCount}
                                         busy={busy}

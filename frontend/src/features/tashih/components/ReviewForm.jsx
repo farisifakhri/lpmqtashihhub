@@ -6,6 +6,7 @@ import { fileApi } from '@/api/file.api';
 import { showToast } from '@/components/ui/toast';
 import { formatFileType } from '@/lib/glossary';
 import { formatJuzCoverage } from '../utils/formatJuzCoverage';
+import { latestManuscriptFiles } from '@/lib/manuscript-files';
 
 export const ReviewForm = ({
   selectedAssignment, reviewResult, setReviewResult, reviewNotes, setReviewNotes,
@@ -184,14 +185,7 @@ export const ReviewForm = ({
                 {(() => {
                   // Satu kartu per jenis berkas (COVER, SAMPLE_PAGE_1_5, ...), versi terbaru saja —
                   // data mentah bisa punya duplikat yang mengaburkan daftar.
-                  const files = selectedAssignment.registration?.manuscript_files || [];
-                  const terbaru = new Map();
-                  for (const f of files) {
-                    const key = f.type || f.id;
-                    const sekarang = terbaru.get(key);
-                    if (!sekarang || (f.version || 1) > (sekarang.version || 1)) terbaru.set(key, f);
-                  }
-                  const daftar = [...terbaru.values()];
+                  const daftar = latestManuscriptFiles(selectedAssignment.registration?.manuscript_files);
                   return daftar.length ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {daftar.map((file) => (

@@ -48,6 +48,26 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(JSON.stringify(receipt).includes('file_id'), false);
   });
 
+  await test('Jumlah jilid dari form penerbit tersimpan saat konfirmasi pengiriman (bukan angka tetap 30)', async () => {
+    const draft = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Jilid Dikirim Tanpa Deklarasi',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
+    await expect(`/registrations/${draft.id}/submit`, publisherToken, 'POST');
+    assert.equal((await expect(`/registrations/${draft.id}`, publisherToken)).physical_master_intake, null);
+    await expect(`/registrations/${draft.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ', volume_count: 25 });
+    assert.equal((await expect(`/registrations/${draft.id}`, publisherToken)).physical_master_intake.volume_count, 25);
+    await expect(`/registrations/${draft.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ', volume_count: 0 }, 400);
+  });
+
   await test('PR-VER-02: Admin Internal atau Superadmin dapat menugaskan verifikator aktif', async () => {
     notaNo = `ND-VER-${reg.registration_no}`;
     const assignPath = `/registrations/${reg.id}/verification-assignments`;
@@ -56,6 +76,11 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${reg.id}/physical-master/receive`, verifikatorToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
     // KB-01: Kepala LPMQ dilarang menerima master fisik
     await expect(`/registrations/${reg.id}/physical-master/receive`, kepalaToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 403);
+    // Penerbit belum mengonfirmasi pengiriman: tidak tampil di antrean Intake dan tidak dapat diterima Admin.
+    assert.equal((await expect('/registrations?segment=MASTER_INTAKE&limit=100', adminToken)).some(item => item.id === reg.id), false);
+    await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
+    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
+    assert.equal((await expect('/registrations?segment=MASTER_INTAKE&limit=100', adminToken)).some(item => item.id === reg.id), true);
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 29 }, 409);
     const received = await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 });
     assert.equal(received.status, 'RECEIVED');
@@ -146,6 +171,7 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     }, 201);
     await expect(`/registrations/${another.id}/physical-master`, publisherToken, 'PUT', declaration);
     await expect(`/registrations/${another.id}/submit`, publisherToken, 'POST');
+    await expect(`/registrations/${another.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RETURNED', condition: 'Jilid rusak', volume_count: 30, notes: 'Perbaiki jilid per juz' });
     const path = `/registrations/${another.id}/verification-assignments`;
     await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: notaNo }, 409);

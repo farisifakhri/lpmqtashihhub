@@ -19,7 +19,6 @@ import { formatRegistrationStatus } from '@/lib/glossary';
 
 export function PublisherPhysicalMasterTab({
   data,
-  editable,
   volumeCount,
   setVolumeCount,
   busy,
@@ -72,6 +71,9 @@ export function PublisherPhysicalMasterTab({
   };
 
   const isRevisionRequired = ['REVISION_REQUIRED', 'WAITING_DISTRIBUTOR_RECEIPT', 'WAITING_DISTRIBUTION'].includes(data?.status);
+  // Sama dengan status yang diizinkan backend declarePhysicalMaster; tetap terbuka setelah pengajuan dikirim.
+  const canDeclareVolume = ['DRAFT', 'READY_FOR_VERIFICATION', 'REVISION_REQUIRED'].includes(data?.status)
+    && data.physical_master_intake?.status !== 'RECEIVED';
   const canDispatchPhysical = ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED'].includes(data?.status);
 
   return (
@@ -273,8 +275,13 @@ export function PublisherPhysicalMasterTab({
                         ? 'Telah Diterima LPMQ'
                         : 'Menunggu Verifikasi LPMQ'
                     }`
-                  : 'Belum dideklarasikan (standar 30 jilid)'}</strong>
+                  : 'Belum disimpan'}</strong>
               </p>
+              {!data.physical_master_intake && canDeclareVolume && (
+                <p className="text-xs text-ink-muted">
+                  Isi jumlah jilid di bawah lalu simpan. Jumlah ini juga otomatis tercatat saat Anda mengonfirmasi pengiriman.
+                </p>
+              )}
               {data.physical_master_intake?.received_at && (
                 <p className="text-xs text-ink-muted">
                   Diterima LPMQ pada: {new Date(data.physical_master_intake.received_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB
@@ -282,7 +289,7 @@ export function PublisherPhysicalMasterTab({
               )}
             </div>
 
-            {editable && data.physical_master_intake?.status !== 'RECEIVED' ? (
+            {canDeclareVolume ? (
               <form onSubmit={savePhysical} className="space-y-3">
                 <div>
                   <label htmlFor="publisher-master-count" className="block text-xs font-bold text-ink mb-1">

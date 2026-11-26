@@ -36,6 +36,7 @@ import { showToast } from '@/components/ui/toast';
 import { TashihLoader } from '@/components/ui/TashihLoader';
 import { formatDocumentType, formatDocumentStatus } from '@/lib/glossary';
 import { PemarafSubmitDialog } from '@/components/common/PemarafPicker';
+import { latestManuscriptFiles } from '@/lib/manuscript-files';
 
 const QUALITY_OPTIONS = [
   { value: 'SANGAT_BAIK', label: 'Sangat Baik' },
@@ -706,7 +707,7 @@ export const DokumentatorArchivePage = () => {
                     </h3>
                   </div>
                   <span className="text-xs text-ink-muted font-medium">
-                    Total Berkas: {(detail.manuscript_files?.length || 0) + (detail.official_documents?.length || 0)}
+                    Total Berkas: {latestManuscriptFiles(detail.manuscript_files).length + (detail.official_documents?.length || 0)}
                   </span>
                 </div>
 
@@ -772,9 +773,9 @@ export const DokumentatorArchivePage = () => {
                     <h4 className="text-xs font-semibold text-ink uppercase tracking-wider mb-2">
                       Berkas Naskah Digital Pemohon
                     </h4>
-                    {detail.manuscript_files && detail.manuscript_files.length > 0 ? (
+                    {latestManuscriptFiles(detail.manuscript_files).length > 0 ? (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {detail.manuscript_files.map((file) => (
+                        {latestManuscriptFiles(detail.manuscript_files).map((file) => (
                           <div key={file.id} className="p-2.5 border border-line rounded-lg flex items-center justify-between hover:bg-surface-subtle text-xs">
                             <div className="truncate pr-2">
                               <div className="font-medium text-ink truncate">

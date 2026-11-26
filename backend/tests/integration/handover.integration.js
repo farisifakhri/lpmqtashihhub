@@ -87,6 +87,7 @@ export async function runHandoverTests({
     });
 
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
+    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
 
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
@@ -317,6 +318,7 @@ export async function runHandoverTests({
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG',
     });
     await expect(`/registrations/${reg2.id}/submit`, publisherToken, 'POST');
+    await expect(`/registrations/${reg2.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
     await expect(`/registrations/${reg2.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',
       receipt_no: `TT-M2-${Date.now()}`,

@@ -40,11 +40,13 @@ export function buildAdminPublisherRegistrationWhere({ status, search } = {}) {
   return where;
 }
 
+// Hanya master yang sudah dikirim penerbit (dispatch-physical: kurir+resi atau loket) yang tampil di Intake Admin.
 export function buildMasterIntakeQueueWhere() {
   return {
     OR: [
       {
         status: 'READY_FOR_VERIFICATION',
+        physical_dispatch_status: 'DISPATCHED',
         OR: [
           { physical_master_intake: { is: null } },
           { physical_master_intake: { isNot: { status: 'RECEIVED' } } },
@@ -62,6 +64,7 @@ export function buildMasterIntakeQueueWhere() {
       {
         status: 'REVISION_REQUIRED',
         revision_source: 'TASHIH_REVISION',
+        physical_dispatch_status: 'DISPATCHED',
         physical_master_intake: {
           status: 'PENDING',
         },

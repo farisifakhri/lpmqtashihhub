@@ -171,6 +171,7 @@ export const dispatchPhysicalSchema = {
     dispatch_date: z.string().optional(),
     notes: z.string().optional(),
     recap_file_id: z.string().uuid().optional().nullable(),
+    volume_count: z.number().int().min(1).max(100).optional(),
   }).refine(
     // Dikirim lewat kurir/ekspedisi: nomor resi wajib sebagai bukti pengiriman. Antar langsung ke loket tidak.
     (body) => !body.courier || body.courier === 'LOKET_LPMQ' || Boolean(body.tracking_no?.trim()),

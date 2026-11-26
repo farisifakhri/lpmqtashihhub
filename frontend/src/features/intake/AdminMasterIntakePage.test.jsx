@@ -27,6 +27,9 @@ describe('AdminMasterIntakePage Component', () => {
             registration_no: 'REG-2026-001',
             title: 'Mushaf Al-Qur\'an Standar Kemenag',
             status: 'READY_FOR_VERIFICATION',
+            physical_dispatch_status: 'DISPATCHED',
+            dispatch_courier: 'JNE',
+            dispatch_tracking_no: 'JNE123',
             publisher: {
               legal_name: 'PT Mushaf Nusantara',
               address: 'Jl. Percetakan No. 1, Jakarta',
@@ -53,6 +56,9 @@ describe('AdminMasterIntakePage Component', () => {
         registration_no: 'REG-2026-001',
         title: 'Mushaf Al-Qur\'an Standar Kemenag',
         status: 'READY_FOR_VERIFICATION',
+            physical_dispatch_status: 'DISPATCHED',
+            dispatch_courier: 'JNE',
+            dispatch_tracking_no: 'JNE123',
         publisher: {
           legal_name: 'PT Mushaf Nusantara',
           address: 'Jl. Percetakan No. 1, Jakarta',
@@ -87,8 +93,8 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(searchBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('1. Deklarasi Dokumen Penerbit')).toBeInTheDocument();
-      expect(screen.getByText('2. Verifikasi Fisik Aktual Admin Internal')).toBeInTheDocument();
+      expect(screen.getByText('Paket dari Penerbit')).toBeInTheDocument();
+      expect(screen.getByText('Pemeriksaan Fisik di Loket')).toBeInTheDocument();
       expect(screen.getByText('Terima Master Fisik & Terbitkan Tanda Terima')).toBeInTheDocument();
       expect(screen.getByText('Kembalikan ke Penerbit')).toBeInTheDocument();
     });
@@ -106,7 +112,7 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(screen.getByText('Periksa Naskah'));
 
     await waitFor(() => {
-      expect(screen.getByText('2. Verifikasi Fisik Aktual Admin Internal')).toBeInTheDocument();
+      expect(screen.getByText('Pemeriksaan Fisik di Loket')).toBeInTheDocument();
     });
 
     const volumeInput = screen.getByDisplayValue('30');
@@ -136,6 +142,9 @@ describe('AdminMasterIntakePage Component', () => {
         registration_no: 'REG-2026-001',
         title: 'Mushaf Al-Qur\'an Standar Kemenag',
         status: 'READY_FOR_VERIFICATION',
+            physical_dispatch_status: 'DISPATCHED',
+            dispatch_courier: 'JNE',
+            dispatch_tracking_no: 'JNE123',
         publisher: { legal_name: 'PT Mushaf Nusantara' },
         service_type: { name: 'Mushaf Standar' },
         physical_master_intake: {
@@ -181,7 +190,7 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(screen.getAllByText('Proses Penerimaan Fisik')[0]);
 
     await waitFor(() => {
-      expect(screen.getByText('1. Deklarasi Dokumen Penerbit')).toBeInTheDocument();
+      expect(screen.getByText('Paket dari Penerbit')).toBeInTheDocument();
       expect(screen.getByText('Kembali ke Antrean Penerimaan Fisik')).toBeInTheDocument();
     });
 
@@ -204,6 +213,9 @@ describe('AdminMasterIntakePage Component', () => {
               registration_no: 'REG-202609-0355',
               title: 'Mushaf Al-Qur\'an Standar Kemenag RI',
               status: 'READY_FOR_VERIFICATION',
+            physical_dispatch_status: 'DISPATCHED',
+            dispatch_courier: 'JNE',
+            dispatch_tracking_no: 'JNE123',
             },
           ],
         };
@@ -218,6 +230,9 @@ describe('AdminMasterIntakePage Component', () => {
         registration_no: 'REG-202609-0355',
         title: 'Mushaf Al-Qur\'an Standar Kemenag RI',
         status: 'READY_FOR_VERIFICATION',
+            physical_dispatch_status: 'DISPATCHED',
+            dispatch_courier: 'JNE',
+            dispatch_tracking_no: 'JNE123',
         publisher: { legal_name: 'PT Percetakan Al-Qur\'an' },
         physical_master_intake: {
           format: 'A4',
@@ -241,9 +256,38 @@ describe('AdminMasterIntakePage Component', () => {
     fireEvent.click(searchBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('1. Deklarasi Dokumen Penerbit')).toBeInTheDocument();
+      expect(screen.getByText('Paket dari Penerbit')).toBeInTheDocument();
       expect(screen.getByText('Mushaf Al-Qur\'an Standar Kemenag RI')).toBeInTheDocument();
     });
   });
-});
 
+  it('tidak menampilkan formulir penerimaan bila penerbit belum mengirim master fisik', async () => {
+    vi.spyOn(RegistrationApiModule.registrationApi, 'getDetail').mockResolvedValue({
+      success: true,
+      data: {
+        id: 'reg-9',
+        registration_no: 'REG-2026-009',
+        title: 'Naskah Belum Dikirim',
+        status: 'READY_FOR_VERIFICATION',
+        physical_dispatch_status: 'PENDING',
+        publisher: { legal_name: 'PT Mushaf Nusantara' },
+        physical_master_intake: null,
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <AdminMasterIntakePage />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByPlaceholderText(/Contoh: REG-2026-001/i), { target: { value: 'REG-2026-009' } });
+    fireEvent.click(screen.getByRole('button', { name: /Periksa Naskah/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Menunggu penerbit mengirim master fisik')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Terima Master Fisik & Terbitkan Tanda Terima')).not.toBeInTheDocument();
+    expect(screen.queryByText('Kembalikan ke Penerbit')).not.toBeInTheDocument();
+  });
+});
