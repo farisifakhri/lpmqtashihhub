@@ -70,6 +70,7 @@ export async function runVerificationDispatchTests({
     });
 
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
+    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
 
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED',

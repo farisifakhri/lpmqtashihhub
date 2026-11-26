@@ -50,6 +50,8 @@ try {
   // Under KB-01: Admin is authorized to receive physical master; Kepala LPMQ and Verifikator are denied 403
   await call(`/registrations/${ready.id}/physical-master/receive`, tokens.KEPALA_LPMQ, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
   await call(`/registrations/${ready.id}/physical-master/receive`, tokens.VERIFIKATOR, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 403);
+  await call(`/registrations/${ready.id}/physical-master/receive`, tokens.ADMIN_INTERNAL, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 409);
+  await prisma.registration.update({ where: { id: ready.id }, data: { physical_dispatch_status: 'DISPATCHED', dispatch_courier: 'LOKET_LPMQ' } });
   await call(`/registrations/${ready.id}/physical-master/receive`, tokens.ADMIN_INTERNAL, 'POST', { decision: 'RECEIVED', receipt_no: 'FORBIDDEN-TR', condition: 'Baik', volume_count: 30 }, 200);
   await deny('/registrations', 'POST', { service_type_id: service.id, title: 'Forbidden publisher action' });
   await deny(`/registrations/${draft.id}/submit`);

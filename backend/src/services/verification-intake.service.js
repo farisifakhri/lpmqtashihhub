@@ -44,9 +44,13 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
       requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
       const reg = await registration(tx, id);
       requireStatus(reg, ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED']);
+      // Penerbit wajib mengonfirmasi pengiriman dulu (kurir + resi, atau LOKET_LPMQ untuk antar langsung).
+      if (reg.physical_dispatch_status !== 'DISPATCHED') {
+        fail(409, 'Penerbit belum mengonfirmasi pengiriman master fisik. Minta penerbit mengisi kurir dan nomor resi (atau pilih Antar ke Loket LPMQ) di portal sebelum diterima.');
+      }
       let previous = await tx.physicalMasterIntake.findUnique({ where: { registration_id: id } });
       if (!previous) {
-        // Mendukung intake langsung di loket LPMQ (walk-in) maupun melalui kurir
+        // Data lama: dispatch tercatat tetapi baris intake belum ada.
         previous = await tx.physicalMasterIntake.create({
           data: {
             registration_id: id,
@@ -58,16 +62,6 @@ export const receivePhysicalMaster = async (id, data, user, req) => {
             delivery_method: reg.dispatch_courier || 'LOKET_LPMQ',
           },
         });
-        if (reg.physical_dispatch_status !== 'DISPATCHED') {
-          await tx.registration.update({
-            where: { id },
-            data: {
-              physical_dispatch_status: 'DISPATCHED',
-              dispatch_courier: reg.dispatch_courier || 'LOKET_LPMQ',
-              dispatch_date: reg.dispatch_date || new Date(),
-            },
-          });
-        }
       }
       if (previous.status !== 'PENDING' && previous.status !== 'RETURNED') {
         fail(409, 'Penerimaan master ini sudah diputuskan. Muat ulang status sebelum mencoba lagi.');

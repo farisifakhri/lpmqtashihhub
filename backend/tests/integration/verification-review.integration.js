@@ -45,6 +45,7 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
       format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'LANGSUNG', notes: 'Diserahkan langsung ke loket',
     });
     await expect(`/registrations/${reg.id}/submit`, publisherToken, 'POST');
+    await expect(`/registrations/${reg.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ' });
     await expect(`/registrations/${reg.id}/physical-master/receive`, adminToken, 'POST', {
       decision: 'RECEIVED', receipt_no: receiptNo, condition: 'Lengkap dan baik', volume_count: 30,
     });

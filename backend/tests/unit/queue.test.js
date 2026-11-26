@@ -87,6 +87,9 @@ test('queue list and count filters select the documented admin tabs', () => {
     ['REVISION_REQUIRED', 'TASHIH_REVISION'],
   ]);
   assert.deepEqual(intakeWhere.OR[2].physical_master_intake, { status: 'PENDING' });
+  // Belum dikirim penerbit (belum dispatch/resi) tidak boleh tampil di antrean Intake Admin.
+  assert.equal(intakeWhere.OR[0].physical_dispatch_status, 'DISPATCHED');
+  assert.equal(intakeWhere.OR[2].physical_dispatch_status, 'DISPATCHED');
   assert.deepEqual(buildUnassignedVerificationWhere(), {
     status: 'READY_FOR_VERIFICATION',
     physical_master_intake: { status: 'RECEIVED', receipt_no: { not: null } },

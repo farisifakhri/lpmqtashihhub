@@ -1,7 +1,7 @@
 import { prisma } from '../config/database.js';
 import { REGISTRATION_SEGMENTS } from './queue-utils.js';
 import { buildVerificationAssignmentWhere } from './verification-intake.service.js';
-import { buildUnassignedVerificationWhere } from './queue-filters.js';
+import { buildMasterIntakeQueueWhere, buildUnassignedVerificationWhere } from './queue-filters.js';
 import { buildPaymentWhere } from './payment.service.js';
 import { buildHandoverWhere } from './handover.service.js';
 import { buildRegistrationScopeWhere } from './registration.service.js';
@@ -89,10 +89,7 @@ export const SIDEBAR_BADGES = [
   {
     key: 'master_intake',
     roles: ['ADMIN_INTERNAL', 'SUPERADMIN'],
-    count: user => registrationCount(user, {
-      status: { in: ['READY_FOR_VERIFICATION', 'REVISION_REQUIRED'] },
-      OR: [{ physical_master_intake: { is: null } }, { physical_master_intake: { is: { status: { not: 'RECEIVED' } } } }],
-    }),
+    count: user => registrationCount(user, { AND: [buildMasterIntakeQueueWhere()] }),
   },
 
   // Verifikasi berkas
