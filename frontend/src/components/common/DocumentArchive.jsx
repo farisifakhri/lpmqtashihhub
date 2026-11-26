@@ -22,6 +22,15 @@ const labels = {
   REVISION_RETURN_LETTER: 'Surat Pengembalian dan Catatan Hasil Tashih',
 };
 
+const statusBadgeClasses = {
+  DRAFT: 'bg-surface-subtle text-ink border-line-strong',
+  SUBMITTED: 'bg-civic-warningSoft text-civic-warning border-civic-warningLine',
+  APPROVED: 'bg-brand-50 text-brand-800 border-brand-100',
+  SIGNING: 'bg-civic-infoSoft text-civic-info border-civic-infoLine',
+  SIGNED: 'bg-brand-100 text-brand-900 border-brand-100',
+  ISSUED: 'bg-civic-successSoft text-civic-success border-civic-successLine',
+};
+
 export function DocumentArchive({ registrationId }) {
   const [allDocuments, setDocuments] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -176,6 +185,22 @@ export function DocumentArchive({ registrationId }) {
   // Tanpa pilihan manual, buka langsung STT bila sudah terbit: itu dokumen yang dicari penerbit.
   const issuedStt = documents.find((item) => item.document_type === 'SURAT_TANDA_TASHIH' && item.status === 'ISSUED');
   const selected = documents.find((item) => item.id === selectedId) || issuedStt || documents[0];
+  const snapshot = selected?.content_snapshot || {};
+  const text = snapshot.letter_text || snapshot.notes || (selected?.document_type === 'NOTA_DINAS_VERIFIKASI'
+    ? `Penugasan verifikasi naskah ${snapshot.title || '-'} kepada ${snapshot.verifier_name || 'verifikator'}. Batas penyelesaian: ${snapshot.due_at ? new Date(snapshot.due_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' }) : '-'}.`
+    : 'Ringkasan isi tersedia pada dokumen PDF resmi.');
+
+  const metadata = selected ? [
+    ['Jenis dokumen', labels[selected.document_type] || selected.document_type],
+    ['Nomor surat', selected.document_no || 'Belum diberi nomor'],
+    ['Status', selected.status],
+    ['Versi', selected.version],
+    ['Dibuat', selected.created_at ? new Date(selected.created_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-'],
+    ['Penyusun', selected.created_by?.name || snapshot.verifier_name || snapshot.assigned_by_name || '-'],
+    ...(snapshot.billing_no ? [['Kode billing PNBP', snapshot.billing_no]] : []),
+    ...(snapshot.billing_file_id ? [['Lampiran', 'Dokumen billing PNBP']] : []),
+  ] : [];
+
   return (
     <section className="space-y-4 font-sans" aria-label="Arsip dokumen">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-2.5">
@@ -248,6 +273,109 @@ export function DocumentArchive({ registrationId }) {
         </div>
       )}
 
+      {selected && (
+        <section className="rounded-xl border border-line bg-white p-5 space-y-5 shadow-2xs" aria-label="Tinjau dokumen arsip">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-ink text-sm">Tinjau dokumen</h4>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded border uppercase ${statusBadgeClasses[selected.status] || 'bg-surface-subtle text-ink border-line'}`}>
+                  {formatDocumentStatus(selected.status)}
+                </span>
+                <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-brand-50 text-brand-800 border border-brand-100">
+                  Versi {selected.version}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted">
+                {labels[selected.document_type] || selected.document_type} — {selected.document_no || 'Belum ada nomor surat'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={guarded(selected, () => openDocumentPreview(selected))}
+                disabled={pdfLoading}
+                className="text-xs font-bold"
+              >
+                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                {pdfLoading ? 'Membuka PDF…' : 'Lihat Dokumen PDF'}
+              </Button>
+              {selected.source === 'APPLICATION' && selected.file_id && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileApi.downloadPrivateFile(selected.file_id, `${selected.document_no || 'Surat-Permohonan'}.pdf`)}
+                  className="text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Unduh Surat Permohonan
+                </Button>
+              )}
+              {selected.source === 'VERIFICATION' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileApi.downloadVerificationDocument(selected.id, `${selected.document_no || selected.document_type}.pdf`)}
+                  className="text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Unduh Dokumen
+                </Button>
+              )}
+              {selected.source === 'OFFICIAL' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={guarded(selected, downloadOfficial(selected))}
+                  className="text-xs font-semibold"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  {needsSurvey(selected) ? 'Isi Survei untuk Unduh' : 'Unduh Dokumen'}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-xs bg-canvas/50 p-4 rounded-xl border border-line">
+            {metadata.map(([label, value]) => (
+              <div key={label} className="border-b border-line/60 sm:border-0 pb-1.5 sm:pb-0">
+                <dt className="text-xs text-ink-muted font-medium">{label}</dt>
+                <dd className="mt-0.5 font-semibold text-ink break-words">{value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          {snapshot.billing_file_id && selected.source === 'VERIFICATION' && (
+            <div className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-brand-900">Lampiran Kode Billing & Bukti SIMPONI</p>
+                <p className="text-xs text-ink-muted mt-1">Buka bukti dokumen pada jendela pratinjau.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => openAttachmentPreview(selected)} className="text-xs font-semibold">
+                <Eye className="w-3.5 h-3.5 mr-1.5" /> Tinjau Bukti
+              </Button>
+            </div>
+          )}
+
+          <div className="p-4 bg-white rounded-xl border border-line space-y-2">
+            <div className="flex items-center justify-between border-b border-line pb-2">
+              <h5 className="font-bold text-xs text-ink flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5 text-brand-700" />
+                Ringkasan Isi Dokumen Resmi
+              </h5>
+              <span className="text-xs text-ink-muted">Format Standar Tata Naskah Dinas LPMQ</span>
+            </div>
+            <p className="text-xs text-ink whitespace-pre-wrap leading-relaxed">{text}</p>
+          </div>
+        </section>
+      )}
+
       {/* Modal Dialog Penampil PDF Resmi */}
       {previewDocument && (
         <div
@@ -291,7 +419,7 @@ export function DocumentArchive({ registrationId }) {
                     <Download className="w-3.5 h-3.5 text-brand-700" />
                     Unduh Salinan PDF
                   </a>
-                )}
+                ) : null}
                 <button
                   type="button"
                   onClick={() => {
