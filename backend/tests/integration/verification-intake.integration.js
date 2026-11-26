@@ -49,7 +49,18 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   });
 
   await test('Jumlah jilid dari form penerbit tersimpan saat konfirmasi pengiriman (bukan angka tetap 30)', async () => {
-    const draft = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Jilid Dikirim Tanpa Deklarasi', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    const draft = await expect('/registrations', publisherToken, 'POST', {
+      service_type_id: serviceId,
+      title: 'Naskah Jilid Dikirim Tanpa Deklarasi',
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
+    }, 201);
     await expect(`/registrations/${draft.id}/submit`, publisherToken, 'POST');
     assert.equal((await expect(`/registrations/${draft.id}`, publisherToken)).physical_master_intake, null);
     await expect(`/registrations/${draft.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ', volume_count: 25 });
