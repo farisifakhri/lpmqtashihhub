@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { FileText, Printer, Download, Eye, Clock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FileText, Download, Eye, ShieldCheck } from 'lucide-react';
 import { registrationApi } from '@/api/registration.api';
 import { fileApi } from '@/api/file.api';
 import { getAuthToken } from '@/api/client';
@@ -38,6 +38,10 @@ export function DocumentArchive({ registrationId }) {
   const [error, setError] = useState('');
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState(null);
+  const [previewError, setPreviewError] = useState('');
+  const [attachmentPreview, setAttachmentPreview] = useState(null);
+  const previewRequestId = useRef(0);
   // Penerbit mengisi survei kepuasan dulu sebelum STT dapat dibuka atau diunduh.
   const auth = useOptionalAuth();
   const roles = auth?.currentUser?.roles || (auth?.currentUser?.role ? [auth.currentUser.role] : []);
@@ -84,12 +88,26 @@ export function DocumentArchive({ registrationId }) {
       .catch((reason) => setError(reason.message || 'Dokumen tidak dapat diunduh.'));
   };
 
+  const openAttachmentPreview = (document) => {
+    const fileId = document.content_snapshot?.billing_file_id;
+    if (!fileId) return;
+    setAttachmentPreview({
+      fileId,
+      fileName: 'billing-pnbp.pdf',
+      endpoint: `/verification-documents/${document.id}/attachments/${fileId}`,
+    });
+  };
+
   useEffect(() => () => {
     if (pdfUrl) URL.revokeObjectURL(pdfUrl);
   }, [pdfUrl]);
 
-  const printPdf = async (document) => {
-    setError('');
+  const openDocumentPreview = async (document) => {
+    const requestId = ++previewRequestId.current;
+    setSelectedId(document.id);
+    setPreviewDocument(document);
+    setPreviewError('');
+    setPdfUrl(null);
     setPdfLoading(true);
     try {
       const base = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '/api/v1';
@@ -125,11 +143,12 @@ export function DocumentArchive({ registrationId }) {
         }
         throw new Error(msg);
       }
-      setPdfUrl(URL.createObjectURL(await response.blob()));
+      const blob = await response.blob();
+      if (requestId === previewRequestId.current) setPdfUrl(URL.createObjectURL(blob));
     } catch (reason) {
-      setError(reason.message || 'PDF dokumen belum dapat dibuka.');
+      if (requestId === previewRequestId.current) setPreviewError(reason.message || 'PDF dokumen belum dapat dibuka.');
     } finally {
-      setPdfLoading(false);
+      if (requestId === previewRequestId.current) setPdfLoading(false);
     }
   };
 
@@ -217,7 +236,7 @@ export function DocumentArchive({ registrationId }) {
             variant="primary"
             size="sm"
             className="text-xs font-bold"
-            onClick={() => { setSelectedId(lockedStt.id); setSurveyAction(() => () => printPdf(lockedStt)); }}
+            onClick={() => { setSelectedId(lockedStt.id); setSurveyAction(() => () => openDocumentPreview(lockedStt)); }}
           >
             Isi Survei untuk Membuka Surat Tanda Tashih
           </Button>
@@ -247,17 +266,15 @@ export function DocumentArchive({ registrationId }) {
                   file_name: `${formatDocumentType(item.document_type)} · ${formatDocumentStatus(item.status)}`,
                 }))}
                 currentVersionId={selected?.id}
-                onSelectVersion={(item) => setSelectedId(item.id)}
+                onSelectVersion={(item) => guarded(item, () => openDocumentPreview(item))()}
               />
             </div>
           ))}
         </div>
       )}
 
-      {/* Tinjau Dokumen Card */}
       {selected && (
         <section className="rounded-xl border border-line bg-white p-5 space-y-5 shadow-2xs" aria-label="Tinjau dokumen arsip">
-          {/* Header Card */}
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -279,7 +296,7 @@ export function DocumentArchive({ registrationId }) {
                 type="button"
                 variant="primary"
                 size="sm"
-                onClick={() => printPdf(selected)}
+                onClick={guarded(selected, () => openDocumentPreview(selected))}
                 disabled={pdfLoading}
                 className="text-xs font-bold"
               >
@@ -325,7 +342,6 @@ export function DocumentArchive({ registrationId }) {
             </div>
           </div>
 
-          {/* Metadata Grid */}
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-xs bg-canvas/50 p-4 rounded-xl border border-line">
             {metadata.map(([label, value]) => (
               <div key={label} className="border-b border-line/60 sm:border-0 pb-1.5 sm:pb-0">
@@ -335,26 +351,18 @@ export function DocumentArchive({ registrationId }) {
             ))}
           </dl>
 
-          {/* Lampiran Billing PNBP (jika ada) */}
           {snapshot.billing_file_id && selected.source === 'VERIFICATION' && (
-            <details className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 space-y-3">
-              <summary className="cursor-pointer text-xs font-bold text-brand-900 flex items-center justify-between">
-                <span>Lampiran Kode Billing & Bukti SIMPONI</span>
-                <span className="text-xs text-brand-fg underline font-normal">Klik untuk pratinjau</span>
-              </summary>
-              <div className="pt-2">
-                <PrivateFileViewer
-                  fileId={snapshot.billing_file_id}
-                  fileName="billing-pnbp.pdf"
-                  mimeType="application/pdf"
-                  height="450px"
-                  endpoint={`/verification-documents/${selected.id}/attachments/${snapshot.billing_file_id}`}
-                />
+            <div className="rounded-xl border border-brand-200 bg-brand-50/30 p-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold text-brand-900">Lampiran Kode Billing & Bukti SIMPONI</p>
+                <p className="text-xs text-ink-muted mt-1">Buka bukti dokumen pada jendela pratinjau.</p>
               </div>
-            </details>
+              <Button type="button" variant="outline" size="sm" onClick={() => openAttachmentPreview(selected)} className="text-xs font-semibold">
+                <Eye className="w-3.5 h-3.5 mr-1.5" /> Tinjau Bukti
+              </Button>
+            </div>
           )}
 
-          {/* Ringkasan Isi Surat Resmi */}
           <div className="p-4 bg-white rounded-xl border border-line space-y-2">
             <div className="flex items-center justify-between border-b border-line pb-2">
               <h5 className="font-bold text-xs text-ink flex items-center gap-1.5">
@@ -363,66 +371,114 @@ export function DocumentArchive({ registrationId }) {
               </h5>
               <span className="text-xs text-ink-muted">Format Standar Tata Naskah Dinas LPMQ</span>
             </div>
-            <p className="text-xs text-ink whitespace-pre-wrap leading-relaxed">
-              {text}
-            </p>
+            <p className="text-xs text-ink whitespace-pre-wrap leading-relaxed">{text}</p>
           </div>
         </section>
       )}
 
       {/* Modal Dialog Penampil PDF Resmi */}
-      {pdfUrl && (
+      {previewDocument && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="PDF arsip dokumen"
+          aria-label="Pratinjau arsip dokumen"
           className="fixed inset-0 z-50 bg-ink/75 backdrop-blur-xs p-3 sm:p-6 flex items-center justify-center animate-fadeIn"
         >
           <div className="w-full max-w-5xl h-[92vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden border border-line">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3.5 bg-surface-subtle">
               <div>
                 <h2 className="text-sm font-bold text-ink">
-                  Dokumen Resmi: {formatDocumentType(selected?.document_type)}
+                  Pratinjau Dokumen: {formatDocumentType(previewDocument.document_type)}
                 </h2>
                 <p className="text-xs text-ink-muted">
-                  Nomor: {selected?.document_no || 'DRAF'} · Status: {formatDocumentStatus(selected?.status)}
+                  Nomor: {previewDocument.document_no || 'DRAF'} · Status: {formatDocumentStatus(previewDocument.status)}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {/* Menyimpan salinan tetap melewati gerbang survei, meski pratinjaunya sudah terbuka. */}
-                {needsSurvey(selected) ? (
+                {previewDocument.source === 'VERIFICATION' && previewDocument.content_snapshot?.billing_file_id && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => openAttachmentPreview(previewDocument)}>
+                    <Eye className="w-3.5 h-3.5 mr-1.5" /> Tinjau Bukti
+                  </Button>
+                )}
+                {needsSurvey(previewDocument) ? (
                   <button
                     type="button"
-                    onClick={guarded(selected, downloadOfficial(selected))}
+                    onClick={guarded(previewDocument, downloadOfficial(previewDocument))}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 transition-colors hover:bg-brand-100 cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5 text-brand-700" />
                     Isi Survei untuk Unduh
                   </button>
-                ) : (
+                ) : pdfUrl ? (
                   <a
                     href={pdfUrl}
-                    download={`${selected?.document_no || selected?.document_type || 'dokumen'}.pdf`}
+                    download={`${previewDocument.document_no || previewDocument.document_type || 'dokumen'}.pdf`}
                     className="rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-900 hover:bg-brand-100 transition-colors inline-flex items-center gap-1.5"
                   >
                     <Download className="w-3.5 h-3.5 text-brand-700" />
                     Unduh Salinan PDF
                   </a>
-                )}
+                ) : null}
                 <button
                   type="button"
-                  onClick={() => setPdfUrl(null)}
+                  onClick={() => {
+                    previewRequestId.current += 1;
+                    setPdfLoading(false);
+                    setPdfUrl(null);
+                    setPreviewDocument(null);
+                    setPreviewError('');
+                  }}
                   className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold text-ink hover:bg-canvas transition-colors cursor-pointer"
                 >
                   Tutup
                 </button>
               </div>
             </div>
-            <iframe
-              title="Penampil PDF arsip dokumen"
-              src={pdfUrl}
-              className="flex-1 w-full border-0 bg-surface-subtle"
-            />
+            {pdfLoading ? (
+              <div role="status" className="flex flex-1 items-center justify-center bg-surface-subtle text-sm text-ink-muted">
+                Memuat dokumen…
+              </div>
+            ) : previewError ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-surface-subtle p-6 text-center">
+                <p role="alert" className="max-w-lg text-sm font-medium text-civic-danger">{previewError}</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => openDocumentPreview(previewDocument)}>
+                  Coba Lagi
+                </Button>
+              </div>
+            ) : pdfUrl ? (
+              <iframe
+                title="Penampil PDF arsip dokumen"
+                src={pdfUrl}
+                className="flex-1 w-full border-0 bg-surface-subtle"
+              />
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {attachmentPreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pratinjau bukti dokumen"
+          className="fixed inset-0 z-[60] bg-ink/75 backdrop-blur-xs p-3 sm:p-6 flex items-center justify-center animate-fadeIn"
+        >
+          <div className="w-full max-w-5xl h-[92vh] rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden border border-line">
+            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5 bg-surface-subtle">
+              <h2 className="text-sm font-bold text-ink">Bukti Dokumen: {attachmentPreview.fileName}</h2>
+              <Button type="button" variant="outline" size="sm" onClick={() => setAttachmentPreview(null)}>Tutup</Button>
+            </div>
+            <div className="flex-1 min-h-0 p-3 sm:p-5">
+              <PrivateFileViewer
+                fileId={attachmentPreview.fileId}
+                fileName={attachmentPreview.fileName}
+                mimeType="application/pdf"
+                height="100%"
+                className="h-full"
+                endpoint={attachmentPreview.endpoint}
+              />
+            </div>
           </div>
         </div>
       )}

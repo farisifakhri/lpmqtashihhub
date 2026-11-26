@@ -46,6 +46,7 @@ const PublicDocumentVerification = withSuspense(lazy(() => import('@/features/ve
 const SttAuthenticityCheck = withSuspense(lazy(() => import('@/features/verification/SttAuthenticityCheck').then(m => ({ default: m.SttAuthenticityCheck }))));
 const PublicCertificateVerification = withSuspense(lazy(() => import('@/features/verification/PublicCertificateVerification').then(m => ({ default: m.PublicCertificateVerification }))));
 const ForbiddenPage = withSuspense(lazy(() => import('@/features/errors/ForbiddenPage').then(m => ({ default: m.ForbiddenPage }))));
+const NotFoundPage = withSuspense(lazy(() => import('@/features/errors/NotFoundPage').then(m => ({ default: m.NotFoundPage }))));
 const InternalDocumentVerification = withSuspense(lazy(() => import('@/features/verification/InternalDocumentVerification')));
 const CheckRegistrationStatusPage = withSuspense(lazy(() => import('@/features/public/CheckRegistrationStatusPage').then(m => ({ default: m.CheckRegistrationStatusPage }))));
 const PublisherRevisionPage = withSuspense(lazy(() => import('@/features/public/PublisherRevisionPage').then(m => ({ default: m.PublisherRevisionPage }))));
@@ -446,8 +447,16 @@ const router = createBrowserRouter([
     element: <ForbiddenPage />,
   },
   {
+    path: '/404',
+    element: <NotFoundPage />,
+  },
+  {
     path: '/verify-internal/:token',
     element: <InternalDocumentVerification />,
+  },
+  {
+    path: '*',
+    element: <NotFoundPage />,
   },
 ], {
   future: {

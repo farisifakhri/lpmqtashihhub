@@ -358,7 +358,11 @@ test("B-01 Sesi 1: Migrasi Skema, Master Item, dan Varian pada Database Sementar
         ];
 
         for (const item of masterItemsData) {
-            await testClient.jenisNaskahItem.create({ data: item });
+            await testClient.jenisNaskahItem.upsert({
+                where: { code: item.code },
+                create: item,
+                update: item,
+            });
         }
 
         // 4. Masukkan registrasi lama untuk ke-17 jenis layanan

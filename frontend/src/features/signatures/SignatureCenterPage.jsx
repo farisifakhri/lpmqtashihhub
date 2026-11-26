@@ -295,7 +295,7 @@ export const SignatureCenterPage = () => {
       // Kedua Pemaraf memaraf (urutan bebas, masing-masing sekali), baru TTE Kepala LPMQ.
       const parafSigners = letter.paraf_signers || [];
       const parafRequired = letter.paraf_required || 2;
-      const parafComplete = Boolean(letter.paraf_signed_at);
+      const parafComplete = letter.paraf_gate_active === false || Boolean(letter.paraf_signed_at);
       const waitingTte = letter.status === 'MENUNGGU_TTE' && !draftedByMe;
       const letterAssignedToMe = !Array.isArray(letter.paraf_assigned) || letter.paraf_assigned.includes(currentUser?.id);
       const canParafLetter = isPemaraf && letterAssignedToMe && waitingTte && !parafComplete && !parafSigners.some((s) => s.id === currentUser?.id);

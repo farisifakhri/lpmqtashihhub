@@ -121,7 +121,7 @@ export async function runVerificationPerformanceRbacTests({
     const regPayload = {
       service_type_id: serviceId,
       title: 'Mushaf Al-Qur\'an Uji RBAC Hardening PR-VER-07',
-      mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
+      mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji', jenis_mushaf: 'Mushaf Standar Usmani' },
       estimated_juz: 30,
       notes: 'Pengujian batas akses Super Admin vs Admin Internal',
     };
@@ -156,7 +156,14 @@ export async function runVerificationPerformanceRbacTests({
     timelineReg = await expect('/registrations', publisherToken, 'POST', {
       service_type_id: serviceId,
       title: 'Mushaf Pengujian Timeline Lintas Peran Sanitasi',
-      mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
+      mushaf_details: {
+        penanggung_jawab_produk: 'Penanggung Jawab Uji',
+        jenis_mushaf: 'Mushaf Standar Usmani',
+        sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+        surat_permohonan_file_id: 'mock-file-permohonan',
+        cover_file_id: 'mock-file-cover',
+        contoh_halaman_file_id: 'mock-file-contoh',
+      },
       estimated_juz: 30,
     }, 201);
 

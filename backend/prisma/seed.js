@@ -821,6 +821,32 @@ async function main() {
   });
   console.log('✅ Working Days seeded (termasuk Libur Nasional & Cuti Bersama SKB 3 Menteri 2026)');
 
+  // 12. Seed Core Team Rosters (9 Tim Resmi LPMQ) jika belum ada
+  const existingRosters = await prisma.coreTeamRoster.count();
+  if (existingRosters === 0) {
+    const [demoVerifier, demoDistributor, demoDocumenter] = await Promise.all([
+      prisma.user.findUnique({ where: { email: 'verifikator@lpmq.kemenag.go.id' }, select: { id: true } }),
+      prisma.user.findUnique({ where: { email: 'distributor@lpmq.kemenag.go.id' }, select: { id: true } }),
+      prisma.user.findUnique({ where: { email: 'dokumentator@lpmq.kemenag.go.id' }, select: { id: true } }),
+    ]);
+    if (demoVerifier && demoDistributor && demoDocumenter) {
+      const rosterEntries = Array.from({ length: 9 }, (_, index) => ({
+        version: 1,
+        team_number: index + 1,
+        verifier_id: demoVerifier.id,
+        distributor_id: demoDistributor.id,
+        documenter_id: demoDocumenter.id,
+      }));
+      await prisma.coreTeamRoster.createMany({ data: rosterEntries });
+      await prisma.coreTeamRotation.upsert({
+        where: { id: 1 },
+        update: { active_version: 1, next_team_number: 1 },
+        create: { id: 1, active_version: 1, next_team_number: 1, updated_at: new Date() },
+      });
+      console.log('✅ Core Team Rosters (9 Tim) seeded');
+    }
+  }
+
   console.log('--- Seeding Selesai Sukses! ---');
 }
 

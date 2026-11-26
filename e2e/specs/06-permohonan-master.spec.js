@@ -28,9 +28,8 @@ const kartu = (page, text, tombol) => page.locator('div, li, tr')
   .last();
 
 test.describe('Permohonan Master — akses', () => {
-  test('menu publik "Permohonan Master" mengarahkan tamu ke halaman masuk', async ({ page }) => {
-    await buka(page, '/');
-    await page.getByRole('navigation', { name: 'Navigasi utama' }).getByRole('link', { name: 'Permohonan Master' }).click();
+  test('rute portal penerbit "Permohonan Master" mengarahkan tamu ke halaman masuk', async ({ page }) => {
+    await buka(page, '/publisher/master-requests');
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -107,6 +106,17 @@ test.describe.serial('Permohonan Master — dari penerbit, TTE Kepala, sampai su
     await dialog.getByRole('button', { name: 'Susun Surat Persetujuan' }).click();
     await dialog.getByLabel(/Isi tambahan surat/).fill('Berkas master dikirim melalui surel resmi LPMQ (uji E2E).');
     await dialog.getByRole('button', { name: 'Ajukan ke Kepala untuk TTE' }).click();
+
+    const pemarafDialog = page.getByRole('dialog', { name: 'Ajukan Surat Persetujuan Master' });
+    await expect(pemarafDialog).toBeVisible();
+    const pemarafCheckboxes = pemarafDialog.getByRole('checkbox');
+    const pemarafCount = await pemarafCheckboxes.count();
+    if (pemarafCount >= 2) {
+      await pemarafCheckboxes.nth(0).check();
+      await pemarafCheckboxes.nth(1).check();
+    }
+    await pemarafDialog.getByRole('button', { name: 'Ajukan ke Pemaraf' }).click();
+
     await expect(dialog.getByText(/menunggu tanda tangan elektronik Kepala LPMQ/)).toBeVisible();
 
     const res = await api('ADMIN_INTERNAL', 'GET', `/admin/master-requests?search=${kode}`);

@@ -233,6 +233,7 @@ model PublisherRegistration {
   nomor_induk_penerbit String?                     @db.VarChar(50)
   status               PublisherRegistrationStatus @default(DIAJUKAN)
   reason               String?                     @db.Text
+  documents_to_revise  Json?
   version              Int                         @default(1)
   decided_at           DateTime?
   decided_by_id        String?

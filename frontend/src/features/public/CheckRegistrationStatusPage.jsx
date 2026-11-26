@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import {
     Search,
@@ -29,14 +29,18 @@ export const CheckRegistrationStatusPage = () => {
 
     const [kodePendaftaran, setKodePendaftaran] = useState(urlKode);
     const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [statusResult, setStatusResult] = useState(null);
     const [error, setError] = useState("");
+    const searchSequenceRef = useRef(0);
+    const [lastSearchQuery, setLastSearchQuery] = useState(urlKode);
 
     // Quick token input for revision form
     const [inputToken, setInputToken] = useState("");
     const [isDownloadingCert, setIsDownloadingCert] = useState(false);
+    const [downloadError, setDownloadError] = useState("");
 
-    const performSearch = useCallback(async (codeToSearch) => {
+    const performSearch = useCallback(async (codeToSearch, { keepPreviousResult = false } = {}) => {
         const cleanInput = (codeToSearch || "").trim();
 
         if (!cleanInput) {
@@ -44,18 +48,23 @@ export const CheckRegistrationStatusPage = () => {
             return;
         }
 
+        const sequence = ++searchSequenceRef.current;
         setError("");
+        setLastSearchQuery(cleanInput);
         setIsLoading(true);
-        setStatusResult(null);
+        setIsRefreshing(keepPreviousResult);
+        if (!keepPreviousResult) setStatusResult(null);
 
         try {
             const res = await publisherRegistrationApi.checkStatus(cleanInput);
+            if (sequence !== searchSequenceRef.current) return;
             if (res?.success && res?.data) {
                 setStatusResult(res.data);
             } else {
                 throw new Error(res?.message || "Data status pendaftaran tidak ditemukan.");
             }
         } catch (err) {
+            if (sequence !== searchSequenceRef.current) return;
             const code = err.data?.code || err.code;
             if (code === "REGISTRATION_NOT_FOUND" || err.status === 404) {
                 setError(
@@ -72,7 +81,10 @@ export const CheckRegistrationStatusPage = () => {
                 );
             }
         } finally {
-            setIsLoading(false);
+            if (sequence === searchSequenceRef.current) {
+                setIsLoading(false);
+                setIsRefreshing(false);
+            }
         }
     }, []);
 
@@ -89,6 +101,11 @@ export const CheckRegistrationStatusPage = () => {
         performSearch(kodePendaftaran);
     };
 
+    const handleRefresh = () => {
+        const query = lastSearchQuery || statusResult?.kode_pendaftaran || kodePendaftaran;
+        performSearch(query, { keepPreviousResult: true });
+    };
+
     const handleGoToRevision = (e) => {
         e.preventDefault();
         const cleanToken = inputToken.trim();
@@ -102,13 +119,14 @@ export const CheckRegistrationStatusPage = () => {
     const handleDownloadCertificate = async () => {
         if (!statusResult?.kode_pendaftaran) return;
         setIsDownloadingCert(true);
+        setDownloadError("");
         try {
             await publisherRegistrationApi.downloadPublicCertificate(
                 statusResult.kode_pendaftaran,
                 `Sertifikat-Penerbit-${statusResult.kode_pendaftaran}.pdf`
             );
         } catch (err) {
-            alert(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi Sekretariat LPMQ.");
+            setDownloadError(err.message || "Gagal mengunduh sertifikat penerbit. Silakan hubungi Sekretariat LPMQ.");
         } finally {
             setIsDownloadingCert(false);
         }
@@ -242,6 +260,21 @@ export const CheckRegistrationStatusPage = () => {
                         data-testid="status-result-card"
                         className="p-5 rounded-2xl border bg-surface-subtle/50 space-y-4 animate-fadeIn"
                     >
+                        {!statusResult.is_email_search && (
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    onClick={handleRefresh}
+                                    disabled={isLoading}
+                                    aria-label="Segarkan status pendaftaran"
+                                    aria-busy={isRefreshing}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-surface text-brand-800 text-xs font-semibold hover:bg-brand-50 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-wait"
+                                >
+                                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                                    <span>{isRefreshing ? "Memperbarui..." : "Segarkan Status"}</span>
+                                </button>
+                            </div>
+                        )}
                         {statusResult.is_email_search ? (
                             <div className="p-4 sm:p-5 rounded-xl bg-brand-50 border border-brand-200 text-ink space-y-3">
                                 <div className="flex items-center gap-2.5 text-brand-900 font-bold text-sm">
@@ -379,6 +412,11 @@ export const CheckRegistrationStatusPage = () => {
                                         )}
                                         <span>{isDownloadingCert ? "Mengunduh..." : "Unduh Sertifikat Penerbit Resmi (PDF)"}</span>
                                     </button>
+                                    {downloadError && (
+                                        <p className="text-xs font-semibold text-civic-danger" role="alert">
+                                            {downloadError}
+                                        </p>
+                                    )}
                                     <Link
                                         to="/login"
                                         className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-fill hover:bg-brand-fill-hover transition-colors shadow-2xs"

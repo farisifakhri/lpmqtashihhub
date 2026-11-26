@@ -34,6 +34,68 @@ export const validateEmail = (value) => {
   return null;
 };
 
+export const isValidOplah = (value) => {
+  const normalized = String(value ?? '').trim();
+  const amount = Number(normalized);
+  return normalized !== '' && Number.isInteger(amount) && amount >= 1 && amount <= 10_000_000;
+};
+
+export const validateSizeRows = (rows) => {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { index: 0, field: 'ukuran', message: 'Ukuran (cm) wajib diisi.' };
+  }
+
+  for (const [index, row] of rows.entries()) {
+    if (typeof row?.ukuran !== 'string' || !row.ukuran.trim()) {
+      return {
+        index,
+        field: 'ukuran',
+        message: `Ukuran (cm) pada entri ${index + 1} wajib diisi.`,
+      };
+    }
+
+    if (!String(row.oplah ?? '').trim()) {
+      return {
+        index,
+        field: 'oplah',
+        message: `Oplah pada entri ${index + 1} wajib diisi.`,
+      };
+    }
+
+    const amount = Number(row.oplah);
+    if (!Number.isInteger(amount) || amount < 1) {
+      return {
+        index,
+        field: 'oplah',
+        message: `Oplah pada entri ${index + 1} harus berupa bilangan bulat minimal 1.`,
+      };
+    }
+
+    if (amount > 10_000_000) {
+      return {
+        index,
+        field: 'oplah',
+        message: `Oplah pada entri ${index + 1} maksimal 10.000.000 eksemplar.`,
+      };
+    }
+  }
+
+  return null;
+};
+
+export const validateHttpsUrl = (value) => {
+  if (!value || !value.trim()) return null;
+
+  try {
+    const parsedUrl = new URL(value.trim());
+    if (parsedUrl.protocol === 'https:') return null;
+  } catch {
+    return 'Tautan aplikasi harus berupa URL HTTPS yang valid.';
+  }
+
+  return 'Tautan aplikasi harus menggunakan protokol HTTPS.';
+};
+
 export const formatFileSize = (bytes) => {
   if (!bytes || bytes === 0) return '0 B';
   const k = 1024;

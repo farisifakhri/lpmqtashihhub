@@ -46,6 +46,7 @@ export const Step2JenisMateri = ({
 }) => {
   const rawJenis = JENIS_NASKAH_OPTIONS || DEFAULT_JENIS_NASKAH_OPTIONS;
   const flatJenisOptions = Array.isArray(rawJenis) ? rawJenis.flat() : DEFAULT_JENIS_NASKAH_OPTIONS;
+  const firstJenisOption = flatJenisOptions.find((option) => option.startsWith('1.'));
   const materiOptions = MATERI_TAMBAHAN_OPTIONS || DEFAULT_MATERI_TAMBAHAN_OPTIONS;
 
   const onJenisChange = handleJenisNaskahChange || toggleJenisNaskah;
@@ -70,7 +71,7 @@ export const Step2JenisMateri = ({
         </div>
 
         {fieldErrors.jenisNaskah && (
-          <p className="text-xs text-civic-danger font-semibold bg-civic-dangerSoft p-2.5 rounded-xl border border-civic-dangerLine">
+          <p id="registration-jenis-naskah-error" className="text-xs text-civic-danger font-semibold bg-civic-dangerSoft p-2.5 rounded-xl border border-civic-dangerLine">
             {fieldErrors.jenisNaskah}
           </p>
         )}
@@ -93,8 +94,11 @@ export const Step2JenisMateri = ({
                 >
                   <input
                     type="checkbox"
+                    id={opt === firstJenisOption ? 'registration-jenis-naskah' : undefined}
                     checked={selectedJenisNaskah.includes(opt)}
                     onChange={() => onJenisChange?.(opt)}
+                    aria-invalid={Boolean(fieldErrors.jenisNaskah)}
+                    aria-describedby={fieldErrors.jenisNaskah ? 'registration-jenis-naskah-error' : undefined}
                     className="mt-0.5 rounded border-line text-brand-700 focus:ring-brand-700"
                   />
                   <span>{opt}</span>

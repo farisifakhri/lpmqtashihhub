@@ -15,7 +15,10 @@ export const login = async ({ email, password, req }) => {
     include: {
       roles: { include: { role: true } },
       publisher: true,
-      publisher_registration: true,
+      // Login only needs the review status. Selecting the full relation couples
+      // authentication to every registration column and can block all roles
+      // while an additive registration migration is still being applied.
+      publisher_registration: { select: { status: true } },
     },
   });
 

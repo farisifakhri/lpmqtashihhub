@@ -204,6 +204,7 @@ describe('PublisherVerificationPage (T-S03 Verifikasi Penerbit Admin)', () => {
       expect(decideSpy).toHaveBeenCalledWith('reg-01', {
         keputusan: 'SETUJUI',
         alasan: null,
+        dokumen_perlu_diperbaiki: [],
         versi: 1,
       });
     });

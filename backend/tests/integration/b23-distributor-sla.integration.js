@@ -51,7 +51,14 @@ export async function runDistributorSlaTests({
       {
         service_type_id: serviceId,
         title: 'Mushaf B-23 Penentuan SLA Distributor',
-        mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab B-23' },
+        mushaf_details: {
+          penanggung_jawab_produk: 'Penanggung Jawab B-23',
+          jenis_mushaf: 'Mushaf Standar Usmani',
+          sizes: [{ ukuran: 'Standar A4 (21,0 x 29,7 cm)', oplah: 1000 }],
+          surat_permohonan_file_id: 'mock-file-permohonan',
+          cover_file_id: 'mock-file-cover',
+          contoh_halaman_file_id: 'mock-file-contoh',
+        },
       },
       201
     );

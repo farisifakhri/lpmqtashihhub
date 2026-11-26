@@ -44,7 +44,7 @@ test.describe('Hak akses halaman', () => {
     test(`${akun} dapat membuka ${url}`, async ({ bukaSebagai }) => {
       const page = await bukaSebagai(akun);
       await buka(page, url);
-      await expect(page).toHaveURL(new RegExp(`${url}$`));
+      await expect(page).toHaveURL(new RegExp(`${url}(?:\\?.*)?$`));
       await expect(page.getByRole('heading', { name: judul }).first()).toBeVisible();
     });
   }
