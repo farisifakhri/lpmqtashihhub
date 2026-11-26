@@ -37,6 +37,15 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     assert.equal(JSON.stringify(receipt).includes('file_id'), false);
   });
 
+  await test('Jumlah jilid dari form penerbit tersimpan saat konfirmasi pengiriman (bukan angka tetap 30)', async () => {
+    const draft = await expect('/registrations', publisherToken, 'POST', { service_type_id: serviceId, title: 'Naskah Jilid Dikirim Tanpa Deklarasi', mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' } }, 201);
+    await expect(`/registrations/${draft.id}/submit`, publisherToken, 'POST');
+    assert.equal((await expect(`/registrations/${draft.id}`, publisherToken)).physical_master_intake, null);
+    await expect(`/registrations/${draft.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ', volume_count: 25 });
+    assert.equal((await expect(`/registrations/${draft.id}`, publisherToken)).physical_master_intake.volume_count, 25);
+    await expect(`/registrations/${draft.id}/dispatch-physical`, publisherToken, 'POST', { courier: 'LOKET_LPMQ', volume_count: 0 }, 400);
+  });
+
   await test('PR-VER-02: Admin Internal atau Superadmin dapat menugaskan verifikator aktif', async () => {
     notaNo = `ND-VER-${reg.registration_no}`;
     const assignPath = `/registrations/${reg.id}/verification-assignments`;

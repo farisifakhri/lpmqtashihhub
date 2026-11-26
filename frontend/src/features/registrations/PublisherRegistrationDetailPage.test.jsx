@@ -117,6 +117,20 @@ describe('Publisher detail and revision', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan pernyataan fisik' }));
     await waitFor(() => expect(registrationApi.declarePhysicalMaster).toHaveBeenCalledWith('r1', { format: 'A4', binding_method: 'PER_JUZ', volume_count: 32, sent_at: intake.sent_at, delivery_method: intake.delivery_method, notes: intake.notes }));
   });
+  it('keeps the volume form after submission and sends the typed volume with the dispatch confirmation', async () => {
+    vi.spyOn(registrationApi, 'dispatchPhysical').mockResolvedValue({ data: { physical_dispatch_status: 'DISPATCHED' } });
+    registrationApi.getDetail.mockResolvedValue({ data: {
+      ...data,
+      status: 'READY_FOR_VERIFICATION',
+      physical_master_intake: null,
+      foreign_metadata: { shipping_label_downloaded_at: '2026-11-26T00:00:00Z' },
+    } });
+    show(); await screen.findByRole('heading', { name: 'Naskah perbaikan' });
+    expect(screen.queryByText(/Belum dideklarasikan/)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Jumlah jilid master fisik'), { target: { value: '26' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Konfirmasi Pengiriman ke LPMQ' }));
+    await waitFor(() => expect(registrationApi.dispatchPhysical).toHaveBeenCalledWith('r1', expect.objectContaining({ courier: 'LOKET_LPMQ', volume_count: 26 })));
+  });
   it('renders only 2 consolidated tabs and removes legacy individual tab buttons', async () => {
     show();
     await screen.findByRole('heading', { name: 'Naskah perbaikan' });

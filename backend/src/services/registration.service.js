@@ -1242,13 +1242,15 @@ export const dispatchPhysical = async (id, data, user, req) => {
         registration_id: id,
         format: 'A4',
         binding_method: 'PER_JUZ',
-        volume_count: 30,
+        // Jumlah jilid dari form penerbit; 30 (standar per juz) hanya bila tidak dikirim.
+        volume_count: data.volume_count || 30,
         sent_at: dispatchDate,
         delivery_method: courier,
         notes,
         status: 'PENDING',
       },
       update: {
+        ...(data.volume_count ? { volume_count: data.volume_count } : {}),
         sent_at: dispatchDate,
         delivery_method: courier,
         notes: notes || undefined,

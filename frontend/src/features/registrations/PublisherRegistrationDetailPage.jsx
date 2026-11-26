@@ -277,11 +277,17 @@ export function PublisherRegistrationDetailPage() {
         event.preventDefault();
         run(
             async () => {
-                const res = await registrationApi.dispatchPhysical(id, dispatchData);
+                // Jumlah jilid di form ikut terkirim walau penerbit belum menekan "Simpan pernyataan fisik".
+                const res = await registrationApi.dispatchPhysical(id, { ...dispatchData, volume_count: Number(volumeCount) });
                 // Tampilan langsung berganti ke "Pengiriman Tercatat" tanpa menunggu muat ulang detail & timeline.
                 const saved = res?.data || {};
                 setData((prev) => prev && {
                     ...prev,
+                    physical_master_intake: {
+                        status: "PENDING",
+                        ...(prev.physical_master_intake || {}),
+                        volume_count: Number(volumeCount),
+                    },
                     physical_dispatch_status: saved.physical_dispatch_status || "DISPATCHED",
                     dispatch_courier: saved.dispatch_courier ?? dispatchData.courier,
                     dispatch_tracking_no: saved.dispatch_tracking_no ?? (dispatchData.tracking_no || null),
@@ -656,7 +662,6 @@ export function PublisherRegistrationDetailPage() {
                                 <div id="section-physical-master">
                                     <PublisherPhysicalMasterTab
                                         data={data}
-                                        editable={editable}
                                         volumeCount={volumeCount}
                                         setVolumeCount={setVolumeCount}
                                         busy={busy}
