@@ -279,8 +279,15 @@ export const PublisherVerificationPage = () => {
                     ? "diminta perbaikan berkas"
                     : "ditolak";
 
+            const emailNotice = decisionType === "PERLU_PERBAIKAN"
+                ? res?.data?.email_status === "SENT"
+                    ? ` Email revisi berhasil dikirim ke ${res.data.email_recipient || detailData.email}.`
+                    : res?.data?.email_status === "SIMULATED"
+                        ? " Email revisi masih dalam mode simulasi dan belum dikirim ke penerbit."
+                        : " Putusan tersimpan, tetapi email revisi gagal dikirim. Terbitkan ulang tautan setelah memeriksa konfigurasi email."
+                : "";
             setSuccessMessage(
-                `Pendaftaran ${detailData.nama_penerbit} (${detailData.kode_pendaftaran}) berhasil ${decisionLabel}.`
+                `Pendaftaran ${detailData.nama_penerbit} (${detailData.kode_pendaftaran}) berhasil ${decisionLabel}.${emailNotice}`
             );
 
             // Simpan info token perbaikan jika ada
@@ -318,6 +325,8 @@ export const PublisherVerificationPage = () => {
         }
     };
 
+    const decisionRequirementsMet = decisionType === "SETUJUI" || Boolean(decisionReason.trim());
+
     const handleCopyRevisionUrl = async (url) => {
         if (!url) return;
         try {
@@ -341,7 +350,12 @@ export const PublisherVerificationPage = () => {
                     publisherName: detailData.nama_penerbit,
                     code: detailData.kode_pendaftaran,
                 });
-                setSuccessMessage(`Token perbaikan baru untuk ${detailData.nama_penerbit} berhasil diterbitkan.`);
+                const emailNotice = res.data.email_status === "SENT"
+                    ? ` Email revisi dikirim ke ${res.data.email_recipient || detailData.email}.`
+                    : res.data.email_status === "SIMULATED"
+                        ? " Email masih dalam mode simulasi dan belum dikirim ke penerbit."
+                        : " Email gagal dikirim. Tautan dapat dibagikan manual setelah konfigurasi email diperiksa.";
+                setSuccessMessage(`Token perbaikan baru untuk ${detailData.nama_penerbit} berhasil diterbitkan.${emailNotice}`);
                 openDetailModal(detailData.id);
             }
         } catch (err) {
@@ -1087,7 +1101,7 @@ export const PublisherVerificationPage = () => {
                                                                     key={doc.id}
                                                                     className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-colors ${
                                                                         checked
-                                                                            ? "border-civic-warningLine bg-civic-warningSoft/70"
+                                                                            ? "border-amber-600 bg-amber-50 ring-2 ring-amber-500/30 shadow-sm"
                                                                             : "border-line bg-surface hover:bg-surface-subtle"
                                                                     }`}
                                                                 >
@@ -1101,10 +1115,18 @@ export const PublisherVerificationPage = () => {
                                                                                     : current.filter((type) => type !== doc.tipe)
                                                                             );
                                                                         }}
-                                                                        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-700"
+                                                                        className="mt-0.5 h-4 w-4 shrink-0 accent-amber-700"
                                                                     />
                                                                     <span className="min-w-0">
-                                                                        <span className="block font-semibold text-ink">{label}</span>
+                                                                        <span className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
+                                                                            {label}
+                                                                            {checked && (
+                                                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold text-amber-950">
+                                                                                    <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                                                                                    Dipilih
+                                                                                </span>
+                                                                            )}
+                                                                        </span>
                                                                         <span className="mt-0.5 block truncate text-[10px] text-ink-muted">
                                                                             {doc.nama_asli}
                                                                         </span>
@@ -1165,16 +1187,16 @@ export const PublisherVerificationPage = () => {
                                             </Button>
 
                                             <Button
-                                                variant={
-                                                    decisionType === "TOLAK"
-                                                        ? "destructive"
+                                                variant={!decisionRequirementsMet
+                                                    ? "outline"
+                                                    : decisionType === "TOLAK"
+                                                        ? "danger"
                                                         : decisionType === "PERLU_PERBAIKAN"
-                                                        ? "warning"
-                                                        : "primary"
-                                                }
+                                                            ? "warning"
+                                                            : "primary"}
                                                 size="sm"
-                                                disabled={isSubmittingDecision}
-                                                onClick={() => setShowConfirmDialog(true)}
+                                                disabled={isSubmittingDecision || !decisionRequirementsMet}
+                                                onClick={() => decisionRequirementsMet && setShowConfirmDialog(true)}
                                                 className="cursor-pointer"
                                             >
                                                 {isSubmittingDecision ? (
@@ -1182,6 +1204,8 @@ export const PublisherVerificationPage = () => {
                                                         <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                                                         Memproses...
                                                     </span>
+                                                ) : !decisionRequirementsMet ? (
+                                                    <span>Isi alasan untuk mengaktifkan</span>
                                                 ) : (
                                                     <span>
                                                         Terapkan Keputusan:{" "}
@@ -1240,7 +1264,7 @@ export const PublisherVerificationPage = () => {
                         ? "Kirim Permintaan Perbaikan"
                         : "Tolak Pendaftaran"
                 }`}
-                confirmVariant={decisionType === "TOLAK" ? "destructive" : "primary"}
+                confirmVariant={decisionType === "TOLAK" ? "danger" : "primary"}
             />
 
             {/* Modal Edit Data Super Admin */}
