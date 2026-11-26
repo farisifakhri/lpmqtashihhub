@@ -727,7 +727,7 @@ export const RegisterPublisherPage = () => {
                                 {/* 1. PEMILIHAN JENIS BADAN HUKUM (PT/CV, Yayasan, Lembaga Pemerintah) */}
                                 <div className="space-y-2.5">
                                     <label className="block text-xs font-bold text-ink uppercase tracking-wider">
-                                        Jenis Penerbit *
+                                        Jenis Penerbit <span className="text-civic-danger">*</span>
                                     </label>
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                                         {ENTITY_OPTIONS.map((opt) => {
@@ -776,7 +776,7 @@ export const RegisterPublisherPage = () => {
                                     {/* Nama Penerbit */}
                                     <div>
                                         <label htmlFor="nama-penerbit-input" className="block text-xs font-semibold text-ink mb-1">
-                                            Nama Resmi Lembaga / Penerbit *
+                                            Nama Resmi Lembaga / Penerbit <span className="text-civic-danger">*</span>
                                         </label>
                                         <input
                                             id="nama-penerbit-input"
@@ -799,7 +799,7 @@ export const RegisterPublisherPage = () => {
                                     {/* Alamat Kantor Lengkap */}
                                     <div>
                                         <label htmlFor="alamat-lengkap-input" className="block text-xs font-semibold text-ink mb-1">
-                                            Alamat Kantor Resmi (Alamat Pengiriman Fisik) *
+                                            Alamat Kantor Resmi (Alamat Pengiriman Fisik) <span className="text-civic-danger">*</span>
                                         </label>
                                         <AddressAutocomplete
                                             id="alamat-lengkap-input"
@@ -821,7 +821,7 @@ export const RegisterPublisherPage = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                         <div>
                                             <label htmlFor="npwp-input" className="block text-xs font-semibold text-ink mb-1">
-                                                NPWP Badan Usaha / Instansi *
+                                                NPWP Badan Usaha / Instansi <span className="text-civic-danger">*</span>
                                             </label>
                                             <input
                                                 id="npwp-input"
@@ -838,7 +838,7 @@ export const RegisterPublisherPage = () => {
                                         {jenisPenerbit === "PERUSAHAAN" ? (
                                             <div>
                                                 <label htmlFor="nib-input" className="block text-xs font-semibold text-ink mb-1">
-                                                    Nomor Induk Berusaha (NIB) *
+                                                    Nomor Induk Berusaha (NIB) <span className="text-civic-danger">*</span>
                                                 </label>
                                                 <input
                                                     id="nib-input"
@@ -871,7 +871,7 @@ export const RegisterPublisherPage = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                         <div>
                                             <label htmlFor="nama-pj-input" className="block text-xs font-semibold text-ink mb-1">
-                                                Nama Pimpinan / Penanggung Jawab *
+                                                Nama Pimpinan / Penanggung Jawab <span className="text-civic-danger">*</span>
                                             </label>
                                             <input
                                                 id="nama-pj-input"
@@ -887,7 +887,7 @@ export const RegisterPublisherPage = () => {
 
                                         <div>
                                             <label htmlFor="telepon-pj-input" className="block text-xs font-semibold text-ink mb-1">
-                                                Nomor WhatsApp / HP Aktif *
+                                                Nomor WhatsApp / HP Aktif <span className="text-civic-danger">*</span>
                                             </label>
                                             <input
                                                 id="telepon-pj-input"
@@ -905,7 +905,7 @@ export const RegisterPublisherPage = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                                         <div>
                                             <label htmlFor="email-input" className="block text-xs font-semibold text-ink mb-1">
-                                                Alamat Email Resmi (Untuk Login) *
+                                                Alamat Email Resmi (Untuk Login) <span className="text-civic-danger">*</span>
                                             </label>
                                             <input
                                                 id="email-input"
@@ -921,7 +921,7 @@ export const RegisterPublisherPage = () => {
 
                                         <div className="relative">
                                             <label htmlFor="password-input" className="block text-xs font-semibold text-ink mb-1">
-                                                Kata Sandi Akun (Min. 8 Karakter) *
+                                                Kata Sandi Akun (Min. 8 Karakter) <span className="text-civic-danger">*</span>
                                             </label>
                                             <input
                                                 id="password-input"
@@ -986,7 +986,7 @@ export const RegisterPublisherPage = () => {
                                             <div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-ink">
-                                                        Surat Permohonan *
+                                                        Surat Permohonan <span className="text-civic-danger">*</span>
                                                     </span>
                                                     <span className="text-[10px] text-ink-muted font-mono">
                                                         Maks 500 KB
@@ -1030,7 +1030,7 @@ export const RegisterPublisherPage = () => {
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-ink">
-                                                            Akta Notaris & SK Kemenkumham *
+                                                            Akta Notaris & SK Kemenkumham <span className="text-civic-danger">*</span>
                                                         </span>
                                                         <span className="text-[10px] text-ink-muted font-mono">
                                                             Maks 2 MB
@@ -1074,7 +1074,7 @@ export const RegisterPublisherPage = () => {
                                             <div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-ink">
-                                                        Profil Lembaga / Instansi *
+                                                        Profil Lembaga / Instansi <span className="text-civic-danger">*</span>
                                                     </span>
                                                     <span className="text-[10px] text-ink-muted font-mono">
                                                         Maks 500 KB
@@ -1117,7 +1117,7 @@ export const RegisterPublisherPage = () => {
                                             <div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-ink">
-                                                        Salinan NPWP *
+                                                        Salinan NPWP <span className="text-civic-danger">*</span>
                                                     </span>
                                                     <span className="text-[10px] text-ink-muted font-mono">
                                                         Maks 500 KB
@@ -1161,7 +1161,7 @@ export const RegisterPublisherPage = () => {
                                                 <div>
                                                     <div className="flex items-center justify-between">
                                                         <span className="text-xs font-bold text-ink">
-                                                            Salinan NIB (OSS) *
+                                                            Salinan NIB (OSS) <span className="text-civic-danger">*</span>
                                                         </span>
                                                         <span className="text-[10px] text-ink-muted font-mono">
                                                             Maks 500 KB
@@ -1205,7 +1205,7 @@ export const RegisterPublisherPage = () => {
                                             <div>
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-ink">
-                                                        KTP Pimpinan / Penanggung Jawab *
+                                                        KTP Pimpinan / Penanggung Jawab <span className="text-civic-danger">*</span>
                                                     </span>
                                                     <span className="text-[10px] text-ink-muted font-mono">
                                                         Maks 500 KB

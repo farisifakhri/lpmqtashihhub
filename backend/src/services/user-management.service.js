@@ -32,15 +32,24 @@ export const getAvailableRoles = async () => {
 export const listUsers = async (query, currentUser) => {
   requireRole(currentUser, ['SUPERADMIN', 'ADMIN_INTERNAL']);
 
-  const where = {};
+  // Akun dari formulir pendaftaran penerbit dikelola lewat menu Pendaftaran
+  // Penerbit sampai disetujui. Jangan tampilkan akun sementara di Identitas & Akses.
+  const where = {
+    AND: [{
+      OR: [
+        { publisher_registration: { is: null } },
+        { publisher_registration: { is: { status: 'DISETUJUI' } } },
+      ],
+    }],
+  };
 
   if (query.search) {
     const s = query.search.trim();
-    where.OR = [
+    where.AND.push({ OR: [
       { name: { contains: s } },
       { email: { contains: s } },
       { nip: { contains: s } },
-    ];
+    ] });
   }
 
   if (query.status) {
@@ -246,10 +255,17 @@ export const updateUser = async (id, data, currentUser, req) => {
 
   const user = await prisma.user.findUnique({
     where: { id },
-    include: { roles: { include: { role: true } } },
+    include: {
+      roles: { include: { role: true } },
+      publisher_registration: { select: { status: true } },
+    },
   });
   if (!user) {
     fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
+    fail(409, 'Akun ini berasal dari pendaftaran penerbit yang belum disetujui. Ubah datanya melalui menu Pendaftaran Penerbit.');
   }
 
   if (!currentUser.roles.includes('SUPERADMIN')) {
@@ -396,6 +412,7 @@ export const deleteUser = async (id, currentUser, req) => {
     where: { id },
     include: {
       roles: { select: { role: { select: { code: true } } } },
+      publisher_registration: { select: { status: true } },
       verification_assignments: { select: { id: true }, take: 1 },
       verification_assignments_made: { select: { id: true }, take: 1 },
       verification_assignments_revoked: { select: { id: true }, take: 1 },
@@ -426,6 +443,10 @@ export const deleteUser = async (id, currentUser, req) => {
 
   if (!user) {
     fail(404, 'Pengguna tidak ditemukan.');
+  }
+
+  if (user.publisher_registration && user.publisher_registration.status !== 'DISETUJUI') {
+    fail(409, 'Akun ini berasal dari pendaftaran penerbit yang belum disetujui. Kelola pendaftarannya melalui menu Pendaftaran Penerbit.');
   }
 
   if (!currentUser.roles.includes('SUPERADMIN')) {

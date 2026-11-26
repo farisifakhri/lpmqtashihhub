@@ -24,6 +24,15 @@ const STATUS_LABELS = {
   DITOLAK: 'Ditolak',
 };
 
+const REVISION_DOCUMENT_LABELS = {
+  SURAT_PENDAFTARAN: 'Surat Permohonan Pendaftaran',
+  AKTA_NOTARIS: 'Akta Notaris & SK Kemenkumham',
+  PROFIL: 'Profil Instansi / Perusahaan',
+  NPWP: 'NPWP Badan Usaha',
+  NIB: 'Nomor Induk Berusaha (NIB)',
+  KTP_PENANGGUNG_JAWAB: 'KTP Pimpinan / Penanggung Jawab',
+};
+
 /**
  * Menghasilkan kode pendaftaran acak berentropi tinggi (REG-PUB-XXXXXXXX)
  */
@@ -66,8 +75,8 @@ export function validateRequiredDocuments(jenisPenerbit, files = {}) {
 /**
  * Kirim email notifikasi untuk 4 peristiwa pendaftaran penerbit
  */
-export async function sendPublisherRegistrationEmail(event, { email, name, code, reason, revisionToken }) {
-  const frontendUrl = ENV.PUBLIC_APP_URL || 'http://localhost:3000';
+export async function sendPublisherRegistrationEmail(event, { email, name, code, reason, revisionToken, documentsToRevise = [] }) {
+  const frontendUrl = (ENV.PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
   let subject = '';
   let template = event;
   let payload = { email, name, code };
@@ -82,7 +91,22 @@ export async function sendPublisherRegistrationEmail(event, { email, name, code,
       subject = `[LPMQ] Permintaan Perbaikan Dokumen Pendaftaran - ${code}`;
       payload.reason = reason;
       payload.revision_url = `${frontendUrl}/pendaftaran-penerbit/perbaikan?token=${revisionToken}`;
-      payload.message = `Permohonan pendaftaran ${name} memerlukan perbaikan dokumen dengan catatan: ${reason}. Silakan akses tautan berikut dalam 14 hari kalender: ${payload.revision_url}`;
+      payload.revision_documents = documentsToRevise.map(type => REVISION_DOCUMENT_LABELS[type] || type);
+      payload.message = [
+        `Halo ${name},`,
+        '',
+        'Pendaftaran akun penerbit Anda memerlukan perbaikan.',
+        `Nomor pendaftaran: ${code}`,
+        `Catatan petugas: ${reason || 'Silakan periksa kembali data pendaftaran.'}`,
+        payload.revision_documents.length
+          ? `Berkas yang perlu diperbaiki:\n- ${payload.revision_documents.join('\n- ')}`
+          : 'Berkas tertentu tidak ditandai. Perbaiki data identitas atau kontak sesuai catatan petugas.',
+        '',
+        `Buka tautan aman ini untuk memperbaiki pendaftaran: ${payload.revision_url}`,
+        'Tautan berlaku selama 14 hari dan hanya dapat digunakan satu kali.',
+        '',
+        'Simpan nomor pendaftaran ini untuk mengecek status permohonan Anda.',
+      ].join('\n');
       break;
 
     case 'PUBLISHER_REGISTRATION_APPROVED':
@@ -98,20 +122,24 @@ export async function sendPublisherRegistrationEmail(event, { email, name, code,
       break;
 
     default:
-      return;
+      return { email_status: 'SKIPPED' };
   }
 
   try {
     console.log(`[NOTIFIKASI LOKAL/DEV] ${event}: Penerbit=${name}, Email=${email}, Kode=${code}${revisionToken ? `, Token=${revisionToken}, Tautan=${payload.revision_url}` : ''}`);
-    await emailProvider.sendEmail({
+    const result = await emailProvider.sendEmail({
       to: email,
       toName: name,
       subject,
       template,
       payload,
     });
+    return {
+      email_status: ENV.MAIL_DRIVER === 'smtp' && result?.success ? 'SENT' : 'SIMULATED',
+    };
   } catch (err) {
     console.error(`Peringatan: Gagal mengirim email ${event} ke ${email}:`, err.message);
+    return { email_status: 'FAILED' };
   }
 }
 
@@ -885,22 +913,26 @@ export async function decidePublisherRegistration(id, {
         const nipNumber = reg.nomor_induk_penerbit || await getNextDocumentNumber(tx, 'SERTIFIKAT_PENERBIT', new Date());
         updateData.nomor_induk_penerbit = nipNumber;
 
-        // 3. Buat profil Publisher
+        // 3. Buat atau sinkronkan profil Publisher dari data pendaftaran yang disetujui.
+        // Upsert juga memulihkan kasus lama ketika profil terlanjur dibuat lewat
+        // Identitas & Akses sebelum permohonan ini disetujui.
         const entityType = reg.publisher_type === 'PERUSAHAAN' ? 'PT' : (reg.publisher_type === 'YAYASAN' ? 'YAYASAN' : 'LEMBAGA_PEMERINTAH');
-        const pub = await tx.publisher.create({
-          data: {
-            user_id: reg.user_id,
-            legal_name: reg.name,
-            entity_type: entityType,
-            verification_status: 'VERIFIED',
-            address: reg.address,
-            latitude: reg.latitude,
-            longitude: reg.longitude,
-            phone: reg.pic_phone,
-            nomor_induk_penerbit: nipNumber,
-            npwp: reg.npwp,
-            nib: reg.nib,
-          },
+        const publisherData = {
+          legal_name: reg.name,
+          entity_type: entityType,
+          verification_status: 'VERIFIED',
+          address: reg.address,
+          latitude: reg.latitude,
+          longitude: reg.longitude,
+          phone: reg.pic_phone,
+          nomor_induk_penerbit: nipNumber,
+          npwp: reg.npwp,
+          nib: reg.nib,
+        };
+        const pub = await tx.publisher.upsert({
+          where: { user_id: reg.user_id },
+          update: publisherData,
+          create: { user_id: reg.user_id, ...publisherData },
         });
 
         updateData.publisher_id = pub.id;
@@ -974,12 +1006,13 @@ export async function decidePublisherRegistration(id, {
     TOLAK: 'PUBLISHER_REGISTRATION_REJECTED',
   };
 
-  await sendPublisherRegistrationEmail(emailEventMap[keputusan], {
+  const emailDelivery = await sendPublisherRegistrationEmail(emailEventMap[keputusan], {
     email: reg.email,
     name: reg.name,
     code: reg.registration_code,
     reason: alasan,
     revisionToken: revisionTokenRaw,
+    documentsToRevise: keputusan === 'PERLU_PERBAIKAN' ? dokumen_perlu_diperbaiki : [],
   });
 
   const frontendUrl = (ENV.PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '');
@@ -992,6 +1025,8 @@ export async function decidePublisherRegistration(id, {
     decided_at: result.decided_at,
     revision_token: revisionTokenRaw,
     revision_url: revisionTokenRaw ? `${frontendUrl}/pendaftaran-penerbit/perbaikan?token=${revisionTokenRaw}` : null,
+    email_status: emailDelivery.email_status,
+    email_recipient: reg.email,
   };
 }
 
@@ -1054,12 +1089,13 @@ export async function resendPublisherRegistrationRevisionToken(id, currentUser, 
   });
 
   // Kirim email notifikasi perbaikan dengan token baru
-  await sendPublisherRegistrationEmail('PUBLISHER_REGISTRATION_NEEDS_REVISION', {
+  const emailDelivery = await sendPublisherRegistrationEmail('PUBLISHER_REGISTRATION_NEEDS_REVISION', {
     email: reg.email,
     name: reg.name,
     code: reg.registration_code,
     reason: reg.reason,
     revisionToken: revisionTokenRaw,
+    documentsToRevise: Array.isArray(reg.documents_to_revise) ? reg.documents_to_revise : [],
   });
 
   return {
@@ -1068,6 +1104,8 @@ export async function resendPublisherRegistrationRevisionToken(id, currentUser, 
     revision_token: revisionTokenRaw,
     revision_url: `${frontendUrl}/pendaftaran-penerbit/perbaikan?token=${revisionTokenRaw}`,
     expires_at: expiresAt,
+    email_status: emailDelivery.email_status,
+    email_recipient: reg.email,
   };
 }
 
