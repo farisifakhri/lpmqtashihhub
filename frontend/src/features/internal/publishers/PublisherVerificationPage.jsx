@@ -1101,7 +1101,7 @@ export const PublisherVerificationPage = () => {
                                                                     key={doc.id}
                                                                     className={`flex items-start gap-2.5 rounded-lg border p-2.5 text-xs cursor-pointer transition-colors ${
                                                                         checked
-                                                                            ? "border-amber-600 bg-amber-50 ring-2 ring-amber-500/30 shadow-sm"
+                                                                            ? "border-civic-warning bg-civic-warningSoft ring-2 ring-civic-warning/30 shadow-sm"
                                                                             : "border-line bg-surface hover:bg-surface-subtle"
                                                                     }`}
                                                                 >
@@ -1115,13 +1115,13 @@ export const PublisherVerificationPage = () => {
                                                                                     : current.filter((type) => type !== doc.tipe)
                                                                             );
                                                                         }}
-                                                                        className="mt-0.5 h-4 w-4 shrink-0 accent-amber-700"
+                                                                        className="mt-0.5 h-4 w-4 shrink-0 accent-civic-warning"
                                                                     />
                                                                     <span className="min-w-0">
                                                                         <span className="flex flex-wrap items-center gap-1.5 font-semibold text-ink">
                                                                             {label}
                                                                             {checked && (
-                                                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-200 px-1.5 py-0.5 text-[9px] font-bold text-amber-950">
+                                                                                <span className="inline-flex items-center gap-0.5 rounded-full border border-civic-warningLine bg-civic-warningSoft px-1.5 py-0.5 text-[9px] font-bold text-civic-warning">
                                                                                     <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
                                                                                     Dipilih
                                                                                 </span>
