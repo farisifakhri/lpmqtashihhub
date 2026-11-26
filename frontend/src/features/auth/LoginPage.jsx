@@ -93,7 +93,7 @@ export const LoginPage = () => {
                   {BRAND.SYSTEM_NAME}
                 </p>
                 <h3 className="text-xs font-semibold text-white/90 leading-snug">
-                  Lajnah Pentashihan Mushaf Quran RI
+                  Lajnah Pentashihan Mushaf Al-Quran
                 </h3>
               </div>
             </div>
