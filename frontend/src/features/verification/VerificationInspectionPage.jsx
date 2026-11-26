@@ -18,6 +18,7 @@ import { InspectionDialogs } from './components/InspectionDialogs';
 import { InspectionActionPanel } from './components/InspectionActionPanel';
 import { MushafContentReviewTable } from './components/MushafContentReviewTable';
 import { InspectionDocumentStudio } from './components/InspectionDocumentStudio';
+import { latestManuscriptFiles } from '@/lib/manuscript-files';
 import { VerificationCalculatorTab } from './components/VerificationCalculatorTab';
 import { useInspection } from './hooks/useInspection';
 import { getInspectionDraft, getInspectionViewModel } from './inspection-view-model';
@@ -205,13 +206,7 @@ export const VerificationInspectionPage = () => {
   const allFiles = useMemo(() => {
     const files = detail?.registration?.manuscript_files || [];
     // Satu tab per jenis berkas, versi terbaru saja (issue log #4: v1 dan v2 tampil bersamaan).
-    const latestByType = new Map();
-    for (const f of files) {
-      const key = f.type || f.file_type || f.id;
-      const current = latestByType.get(key);
-      if (!current || (f.version || 1) > (current.version || 1)) latestByType.set(key, f);
-    }
-    const list = [...latestByType.values()];
+    const list = latestManuscriptFiles(files);
     const meta = detail?.registration?.foreign_metadata || {};
     const knownFileIds = new Set(files.map((f) => f.file_id || f.id));
 

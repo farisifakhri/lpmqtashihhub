@@ -33,6 +33,7 @@ import { PublisherPhysicalMasterTab } from "./detail/PublisherPhysicalMasterTab"
 import { PublisherTimelineTab } from "./detail/PublisherTimelineTab";
 import { PublisherOfficialDocsTab } from "./detail/PublisherOfficialDocsTab";
 import { PublisherDetailModals } from "./detail/PublisherDetailModals";
+import { latestManuscriptFiles } from "@/lib/manuscript-files";
 
 export function PublisherRegistrationDetailPage() {
     const { id } = useParams();
@@ -446,7 +447,7 @@ export function PublisherRegistrationDetailPage() {
                                     <FileText className="w-4 h-4" />
                                     <span>Dokumen & Berkas</span>
                                     <span className="font-mono text-xs px-1.5 py-0.2 rounded-full bg-brand-100 border border-brand-200 text-brand-800">
-                                        {(data.manuscript_files?.length || 0) +
+                                        {latestManuscriptFiles(data.manuscript_files).length +
                                             (data.official_documents?.length ||
                                                 0) +
                                             (data.foreign_metadata
@@ -536,7 +537,7 @@ export function PublisherRegistrationDetailPage() {
                                                     : "bg-brand-100 text-brand-800"
                                             }`}
                                         >
-                                            {data.manuscript_files?.length || 0}
+                                            {latestManuscriptFiles(data.manuscript_files).length}
                                         </span>
                                     </button>
                                     <button
