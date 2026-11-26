@@ -8,6 +8,7 @@ import {
   buildUnassignedVerificationWhere
 } from './queue-filters.js';
 import { calculateDueAt } from './sla.service.js';
+import { getNextDispositionNumber, getNextDispositionNumberPreview } from './document-number.service.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
 
@@ -242,11 +243,8 @@ export const createVerificationAssignment = async (id, data, user, req) => {
           data: { core_verifier_id: targetVerifierId },
         });
       }
-      if (await tx.verificationDocument.findUnique({ where: { document_no: data.nota_no } })) {
-        fail(409, 'Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
-      }
-
       const assignedAt = new Date();
+      const notaNo = await getNextDispositionNumber(tx, assignedAt);
       const dueAt = await calculateDueAt(tx, assignedAt, 2, { applyCutoff: true });
       const previousNota = await tx.verificationDocument.findFirst({
         where: { registration_id: id, document_type: 'NOTA_DINAS_VERIFIKASI' },
@@ -266,7 +264,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         registration_id: id,
         assignment_id: assignment.id,
         document_type: 'NOTA_DINAS_VERIFIKASI',
-        document_no: data.nota_no,
+        document_no: notaNo,
         version: (previousNota?.version || 0) + 1,
         status: 'ISSUED',
         created_by_id: user.id,
@@ -288,7 +286,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
       } });
       const fileId = await archiveVerificationPdf(tx, document, user, assignedAt, createdFiles);
       const issuedDocument = await tx.verificationDocument.update({ where: { id: document.id }, data: { file_id: fileId } });
-      await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Nota Dinas ${data.nota_no} diterbitkan untuk ${verifier.name}`, req);
+      await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Nota Dinas ${notaNo} diterbitkan untuk ${verifier.name}`, req);
       await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', assignment.id, assignment, req);
       await audit(tx, user, 'APPROVE_INTERNAL_VERIFICATION_MEMO', 'VerificationDocument', document.id, { file_id: fileId, approved_at: assignedAt }, req);
       await tx.notification.create({ data: {
@@ -299,7 +297,7 @@ export const createVerificationAssignment = async (id, data, user, req) => {
         payload: {
           assignment_id: assignment.id,
           link: `/internal/verifications/${assignment.id}`,
-          nota_no: data.nota_no,
+          nota_no: notaNo,
           assigned_at: assignedAt.toISOString(),
           due_at: dueAt.toISOString(),
         },
@@ -308,9 +306,19 @@ export const createVerificationAssignment = async (id, data, user, req) => {
     }, transactionOptions);
   } catch (error) {
     await cleanupGeneratedFiles(createdFiles);
-    if (error.code === 'P2002') fail(409, 'Nomor Nota Dinas atau versi dokumen sudah digunakan. Muat ulang data dan coba lagi.');
+    if (error.code === 'P2002') fail(409, 'Penerbitan disposisi berbenturan dengan transaksi lain. Muat ulang data dan coba lagi.');
     throw error;
   }
+};
+
+export const getDispositionNumberPreview = async user => {
+  requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
+  const issuedAt = new Date();
+  return {
+    document_no: await getNextDispositionNumberPreview(prisma, issuedAt),
+    issued_at: issuedAt.toISOString(),
+    is_preview: true,
+  };
 };
 
 export const getRegistrationReceipt = async (id, user) => {

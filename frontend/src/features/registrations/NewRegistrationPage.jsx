@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { masterApi } from '@/api/master.api';
 import { registrationApi } from '@/api/registration.api';
 import { invalidateQueueCounts } from '@/api/queue.api';
@@ -168,6 +168,8 @@ export const resolveMatchedServiceAndAddons = ({
 
 export const NewRegistrationPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const draftId = searchParams.get('draftId');
   const { currentUser } = useAuth();
   const AUTOSAVE_KEY = `${AUTOSAVE_KEY_PREFIX}_${currentUser?.id || 'guest'}`;
 
@@ -241,6 +243,7 @@ export const NewRegistrationPage = () => {
   const [suratPernyataanFileId, setSuratPernyataanFileId] = useState(null);
   const [buktiTashihFile, setBuktiTashihFile] = useState(null);
   const [buktiTashihFileId, setBuktiTashihFileId] = useState(null);
+  const [storedFiles, setStoredFiles] = useState({});
 
   // Validation & Feedback States
   const [fieldErrors, setFieldErrors] = useState({});
@@ -251,6 +254,7 @@ export const NewRegistrationPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [createdReceipt, setCreatedReceipt] = useState(null);
+  const [loadingDraft, setLoadingDraft] = useState(Boolean(draftId));
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -258,6 +262,73 @@ export const NewRegistrationPage = () => {
   const [hasAutosaveDraft, setHasAutosaveDraft] = useState(false);
   const isDirtyRef = useRef(false);
   const isSubmittingRef = useRef(false);
+
+  useEffect(() => {
+    if (!draftId) { setLoadingDraft(false); return; }
+    let active = true;
+    setLoadingDraft(true);
+    registrationApi.getDetail(draftId).then((response) => {
+      if (!active) return;
+      const reg = response?.data;
+      if (!reg || reg.status !== 'DRAFT') throw new Error('Permohonan ini bukan Draft yang dapat dilanjutkan.');
+      const meta = reg.foreign_metadata || {};
+      const attachmentRecords = [...(reg.manuscript_files || [])].sort((a, b) => (a.version || 0) - (b.version || 0));
+      const attached = {};
+      const attachedInfo = {};
+      for (const file of attachmentRecords) {
+        attached[file.type] = file.file_id;
+        attachedInfo[file.type] = file.uploaded_file || reg.uploaded_files?.[file.file_id] || { id: file.file_id };
+      }
+      const infoFor = (type, key) => attachedInfo[type] || reg.uploaded_files?.[meta[key]] || null;
+      const manus = [...(reg.manuscripts || [])].sort((a, b) => a.seq_number - b.seq_number);
+      const primary = manus[0];
+      setNamaMushaf(meta.nama_mushaf || primary?.title || reg.title || '');
+      setNamaPercetakan(meta.nama_percetakan || '');
+      setPenanggungJawabProduk(meta.penanggung_jawab_produk || '');
+      setPenanggungJawabWa(meta.penanggung_jawab_wa || '');
+      setPenanggungJawabEmail(meta.penanggung_jawab_email || '');
+      const restoredSizes = meta.sizes?.length
+        ? meta.sizes
+        : (primary?.variants || []).map(({ ukuran, oplah }) => ({ ukuran, oplah: String(oplah) }));
+      setSizes(restoredSizes.length ? restoredSizes : [{ ukuran: '', oplah: '' }]);
+      setJenisStandarMushaf(meta.jenis_mushaf || 'Mushaf Standar Usmani');
+      setDeskripsiMushaf(meta.deskripsi_mushaf || '');
+      setKategoriPendaftaran(meta.kategori_pendaftaran || (reg.registration_category === 'FOREIGN_MANUSCRIPT' ? 'Mushaf Luar Negeri' : reg.registration_category === 'EXTENSION' ? 'Perpanjangan' : 'Mushaf Baru'));
+      setNoPendaftaranLama(meta.nomor_pendaftaran_lama || '');
+      setNomorKodeUkuranLama(meta.nomor_kode_ukuran_lama || '');
+      setSelectedPreviousRegId(reg.previous_registration_id || '');
+      setNegaraAsalMushaf(meta.negara_asal_mushaf || meta.country_of_origin || '');
+      setPenerbitAsalMushaf(meta.penerbit_asal_mushaf || meta.foreign_publisher_name || '');
+      setLembagaPentashihAsal(meta.lembaga_pentashih_asal_mushaf || meta.foreign_tashih_institution || '');
+      setSelectedJenisNaskah(meta.jenis_naskah?.length ? meta.jenis_naskah : (primary?.items?.map(item => item.item?.name).filter(Boolean) || ["1. Al-Qur'an 30 Juz"]));
+      setSelectedMateriTambahan(meta.materi_tambahan || []);
+      setPenanggungJawabMateri(meta.penanggung_jawab_materi || meta.penanggung_jawab_materi_tambahan || '');
+      setAdditionalManuscripts(manus.slice(1).map(m => {
+        const itemCodes = m.items?.map(item => item.item?.code).filter(Boolean) || [];
+        const dasar = m.items?.find(item => item.role === 'DASAR')?.item?.code || itemCodes[0] || 'JUZ30';
+        return { id: m.id, title: m.title, itemDasar: dasar, itemsTambahan: itemCodes.filter(code => code !== dasar), variants: (m.variants || []).map(({ ukuran, oplah }) => ({ ukuran, oplah: String(oplah) })) };
+      }));
+      setSuratPermohonanFileId(attached.SURAT_PERMOHONAN || meta.surat_permohonan_file_id || null);
+      setCoverFileId(attached.COVER || meta.cover_file_id || null);
+      setContohHalamanFileId(attached.SAMPLE_PAGE_1_5 || primary?.files?.find(file => file.type === 'SAMPLE_PAGE_1_5')?.file_id || meta.contoh_halaman_file_id || null);
+      setApkFileId(attached.APK || meta.apk_file_id || null);
+      setApkUrl(reg.apk_url || meta.apk_url || '');
+      setSuratPernyataanFileId(attached.SURAT_PERNYATAAN || meta.surat_pernyataan_file_id || meta.surat_pernyataan_perubahan_file_id || null);
+      setBuktiTashihFileId(attached.FOREIGN_TASHIH_CERTIFICATE || meta.bukti_tashih_file_id || null);
+      setStoredFiles({
+        ...attachedInfo,
+        SURAT_PERMOHONAN: infoFor('SURAT_PERMOHONAN', 'surat_permohonan_file_id'),
+        COVER: infoFor('COVER', 'cover_file_id'),
+        SAMPLE_PAGE_1_5: infoFor('SAMPLE_PAGE_1_5', 'contoh_halaman_file_id'),
+        APK: infoFor('APK', 'apk_file_id'),
+        SURAT_PERNYATAAN: infoFor('SURAT_PERNYATAAN', 'surat_pernyataan_file_id') || reg.uploaded_files?.[meta.surat_pernyataan_perubahan_file_id],
+        FOREIGN_TASHIH_CERTIFICATE: infoFor('FOREIGN_TASHIH_CERTIFICATE', 'bukti_tashih_file_id'),
+      });
+      setCreatedReceipt({ id: reg.id, registration_no: reg.registration_no });
+    }).catch(err => { if (active) setError(err.message || 'Draft gagal dimuat.'); })
+      .finally(() => { if (active) setLoadingDraft(false); });
+    return () => { active = false; };
+  }, [draftId]);
 
   // Helper to clear a field error
   const clearFieldError = useCallback((fieldName) => {
@@ -1015,67 +1086,14 @@ export const NewRegistrationPage = () => {
         bukti_tashih_file_id: uploadedBuktiTashihId,
       };
 
-      // Reuse existing draft if retrying submission without creating duplicate registration records
       let created = createdReceipt;
-      if (!created?.id) {
+      if (created?.id) {
+        const res = await registrationApi.updateDraft(created.id, payload);
+        created = res.data || created;
+      } else {
         const res = await registrationApi.createDraft(payload);
         created = res.data;
-        setCreatedReceipt(created);
       }
-
-      // Attach manuscript records with explicit error reporting
-      if (uploadedPermohonanId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'SURAT_PERMOHONAN', file_id: uploadedPermohonanId });
-        } catch (mErr) {
-          console.warn('Surat permohonan attachment note:', mErr);
-          if (!created.surat_permohonan_file_id && !created.foreign_metadata?.surat_permohonan_file_id) {
-            setError('Peringatan: Berkas surat permohonan belum tersambung ke permohonan: ' + mErr.message);
-          }
-        }
-      }
-      if (uploadedCoverId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'COVER', file_id: uploadedCoverId });
-        } catch (mErr) {
-          console.warn('Cover attachment note:', mErr);
-          if (!created.cover_file_id && !created.foreign_metadata?.cover_file_id) {
-            setError('Peringatan: Berkas sampul belum tersambung ke permohonan: ' + mErr.message);
-          }
-        }
-      }
-      if (uploadedContohHalamanId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'SAMPLE_PAGE_1_5', file_id: uploadedContohHalamanId });
-        } catch (mErr) {
-          console.warn('Sample page attachment note:', mErr);
-          if (!created.contoh_halaman_file_id && !created.foreign_metadata?.contoh_halaman_file_id) {
-            setError('Peringatan: Berkas contoh halaman belum tersambung ke permohonan: ' + mErr.message);
-          }
-        }
-      }
-      if (uploadedPernyataanId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'SURAT_PERNYATAAN', file_id: uploadedPernyataanId });
-        } catch (mErr) {
-          console.warn('Surat pernyataan attachment note:', mErr);
-        }
-      }
-      if (uploadedApkId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'APK', file_id: uploadedApkId });
-        } catch (mErr) {
-          console.warn('APK attachment note:', mErr);
-        }
-      }
-      if (uploadedBuktiTashihId) {
-        try {
-          await registrationApi.addManuscript(created.id, { type: 'FOREIGN_TASHIH_CERTIFICATE', file_id: uploadedBuktiTashihId });
-        } catch (mErr) {
-          console.warn('Bukti tashih attachment note:', mErr);
-        }
-      }
-
       setCreatedReceipt(created);
       isDirtyRef.current = false;
 
@@ -1090,7 +1108,9 @@ export const NewRegistrationPage = () => {
         setSuccessMsg(`Permohonan "${namaMushaf}" (${created.registration_no}) berhasil dikirim ke LPMQ.`);
         navigate(`/publisher/registrations/${created.id}`, { state: { showReceipt: true } });
       } else {
-        setSuccessMsg(`Draf permohonan (${created.registration_no}) berhasil disimpan.`);
+        setSuccessMsg(draftId
+          ? `Draf permohonan (${created.registration_no}) berhasil diperbarui.`
+          : `Draf permohonan (${created.registration_no}) berhasil disimpan.`);
         setShowReceiptDialog(true);
       }
     } catch (err) {
@@ -1102,6 +1122,8 @@ export const NewRegistrationPage = () => {
       setUploadingFiles(false);
     }
   };
+
+  if (loadingDraft) return <div role="status" className="py-16 text-center text-sm text-ink-muted">Memuat data draft permohonan…</div>;
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-28 lg:pb-12 animate-fadeIn">
@@ -1310,6 +1332,7 @@ export const NewRegistrationPage = () => {
         <div className={currentStep === 3 ? 'block space-y-4' : 'hidden'}>
           <Step3Berkas
             kategoriPendaftaran={kategoriPendaftaran}
+            storedFiles={storedFiles}
             suratPermohonanFile={suratPermohonanFile}
             setSuratPermohonanFile={setSuratPermohonanFile}
             suratPermohonanFileId={suratPermohonanFileId}

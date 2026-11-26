@@ -95,6 +95,7 @@ export const createRegistrationSchema = {
       mushaf_details: safeRecordSchema.optional().nullable(),
       cover_file_id: z.string().uuid().optional().nullable(),
       surat_permohonan_file_id: z.string().uuid().optional().nullable(),
+      surat_pernyataan_file_id: z.string().uuid().optional().nullable(),
       contoh_halaman_file_id: z.string().uuid().optional().nullable(),
       surat_pernyataan_perubahan_file_id: z.string().uuid().optional().nullable(),
       apk_file_id: z.string().uuid().optional().nullable(),

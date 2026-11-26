@@ -13,11 +13,12 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState(suggestedVerifierId);
   const [notaNo, setNotaNo] = useState('');
+  const [previewIssuedAt, setPreviewIssuedAt] = useState(null);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [notaError, setNotaError] = useState(false);
 
   const loadVerifiers = () => {
     setLoading(true);
@@ -63,6 +64,16 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
         if (isMounted) setLoading(false);
       });
 
+    verificationApi.getDispositionNumberPreview()
+      .then((res) => {
+        if (!isMounted) return;
+        setNotaNo(res?.data?.document_no || res?.document_no || '');
+        setPreviewIssuedAt(res?.data?.issued_at || res?.issued_at || null);
+      })
+      .catch(() => {
+        if (isMounted) setPreviewUnavailable(true);
+      });
+
     return () => {
       isMounted = false;
     };
@@ -88,19 +99,12 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
       return;
     }
 
-    if (!notaNo.trim() || notaNo.trim().length < 3) {
-      setError('Nomor Disposisi wajib diisi (minimal 3 karakter).');
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
-    setNotaError(false);
 
     try {
       const payload = {
         verifier_id: selectedVerifierId,
-        nota_no: notaNo.trim(),
         notes: notes.trim() || undefined,
       };
 
@@ -110,12 +114,8 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
       }
     } catch (err) {
       const message = err.message || 'Gagal menerbitkan Disposisi dan membuat penugasan verifikasi.';
-      const isDuplicateNota = (err.status === 409 || err.statusCode === 409) && /nomor (?:nota dinas|disposisi)/i.test(message);
       const isAssignmentConflict = (err.status === 409 || err.statusCode === 409) && /pengajuan sudah ditugaskan|sudah memiliki verifikator aktif|status pengajuan telah berubah/i.test(message);
-      if (isDuplicateNota) {
-        setNotaError(true);
-        setError(message);
-      } else if (isAssignmentConflict) {
+      if (isAssignmentConflict) {
         setError('Pengajuan sudah ditugaskan oleh pengguna lain. Muat ulang antrean untuk melihat penugasan terbaru.');
         if (onConflict) {
           onConflict();
@@ -134,6 +134,10 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+    timeZone: 'Asia/Jakarta',
+  });
+  const issuedDateFormatted = new Date(previewIssuedAt || Date.now()).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta',
   });
 
   return (
@@ -289,22 +293,22 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
           {/* Nota Dinas Number */}
           <div className="space-y-1.5">
             <label htmlFor="nota-no-input" className="block font-bold text-ink">
-              Nomor Disposisi Penugasan <span className="text-civic-danger">*</span>
+              Nomor Disposisi Penugasan
             </label>
             <input
               id="nota-no-input"
               type="text"
+              readOnly
               value={notaNo}
-              onChange={(e) => { setNotaNo(e.target.value); if (notaError) { setNotaError(false); setError(null); } }}
               disabled={submitting}
-              aria-invalid={notaError}
-              aria-describedby={notaError ? 'nota-no-error' : undefined}
-              placeholder="Contoh: ND.01/LPMQ.01/TL.00/09/2026"
-              className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 font-mono ${notaError ? 'border-civic-danger focus:ring-civic-danger/20 focus:border-civic-danger' : 'border-line-strong focus:ring-brand-700/20 focus:border-brand-700'}`}
+              placeholder="Nomor ditetapkan saat diterbitkan"
+              aria-describedby="nota-no-help"
+              className="w-full px-3 py-2 text-xs rounded-xl border border-line-strong bg-canvas text-ink font-mono"
             />
-            {notaError && <p id="nota-no-error" className="text-xs font-semibold text-civic-danger">Nomor ini sudah digunakan. Masukkan nomor Disposisi yang berbeda.</p>}
-            <p className="text-xs text-ink-muted">
-              Masukkan nomor Disposisi resmi sebagai dasar penugasan verifikator oleh Helper Admin.
+            <p id="nota-no-help" className="text-xs text-ink-muted">
+              {previewUnavailable
+                ? 'Pratinjau nomor tidak tersedia. Sistem tetap menentukan nomor resmi saat diterbitkan.'
+                : `Pratinjau untuk ${previewIssuedAt ? issuedDateFormatted : todayFormatted}. Nomor final ditetapkan sistem saat diterbitkan.`}
             </p>
           </div>
 
@@ -345,7 +349,7 @@ export const AssignVerificationDialog = ({ registration, onClose, onSuccess, onC
               </div>
               <div>
                 <span className="text-ink-muted text-xs block">Nomor Disposisi:</span>
-                <span className="font-mono font-semibold text-ink">{notaNo.trim() || '(Belum diisi)'}</span>
+                <span className="font-mono font-semibold text-ink">{notaNo || 'Ditentukan saat diterbitkan'}</span>
               </div>
             </div>
             <div className="pt-2 border-t border-line/60 flex items-center justify-between text-xs text-brand-900">

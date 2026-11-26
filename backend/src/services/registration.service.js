@@ -586,6 +586,19 @@ export const validateRegistrationRequiredFieldsForSubmit = (registration) => {
     (registration.manuscript_files || []).some(
       (file) => fileTypes.includes(file.type) && hasText(file.file_id)
     );
+  const assertLinkedFileMime = (metadataKey, fileTypes, allowedMimes, label) => {
+    const linked = (registration.manuscript_files || []).find(file => fileTypes.includes(file.type));
+    const fileId = metadata[metadataKey] || linked?.file_id;
+    if (!fileId) return;
+    const stored = registration.uploaded_files_by_id?.[fileId] || linked?.uploaded_file;
+    if (registration.uploaded_files_by_id && !stored) {
+      failValidation(`${label} tidak ditemukan di penyimpanan. Unggah kembali dokumen tersebut.`);
+    }
+    const mime = stored?.mime_type || linked?.mime_type;
+    if (mime && !allowedMimes.includes(mime)) {
+      failValidation(`${label} memiliki format berkas yang tidak sesuai. Unggah berkas dengan format ${allowedMimes.join(' atau ')}.`);
+    }
+  };
   const hasValidSize = (variant) => {
     const amount = Number(variant?.oplah);
     return (
@@ -649,6 +662,15 @@ export const validateRegistrationRequiredFieldsForSubmit = (registration) => {
   if (!hasMetadataOrLinkedFile('contoh_halaman_file_id', ['SAMPLE_PAGE_1_5', 'SAMPLE_PAGE'])) {
     failValidation('Contoh halaman mushaf wajib diunggah.');
   }
+  assertLinkedFileMime('surat_permohonan_file_id', ['SURAT_PERMOHONAN'], ['application/pdf'], 'Surat permohonan');
+  assertLinkedFileMime('cover_file_id', ['COVER'], ['image/png', 'image/jpeg'], 'Cover mushaf');
+  assertLinkedFileMime('contoh_halaman_file_id', ['SAMPLE_PAGE_1_5', 'SAMPLE_PAGE'], ['application/pdf'], 'Contoh halaman');
+  if (registration.registration_type === 'EXTENSION' || registration.registration_category === 'EXTENSION') {
+    assertLinkedFileMime('surat_pernyataan_file_id', ['SURAT_PERNYATAAN'], ['application/pdf'], 'Surat pernyataan');
+  }
+  if (registration.registration_type === 'FOREIGN_MANUSCRIPT' || registration.registration_category === 'FOREIGN_MANUSCRIPT') {
+    assertLinkedFileMime('bukti_tashih_file_id', ['FOREIGN_TASHIH_CERTIFICATE'], ['application/pdf'], 'Bukti tanda tashih asal');
+  }
 
   const itemRecords = manuscripts.flatMap((manuscript) =>
     (manuscript.items || []).map((manuscriptItem) => manuscriptItem.item || manuscriptItem)
@@ -671,6 +693,7 @@ export const validateRegistrationRequiredFieldsForSubmit = (registration) => {
     if (!hasMetadataOrLinkedFile('apk_file_id', ['APK']) && !hasHttpsUrl) {
       failValidation('Berkas APK atau tautan unduhan HTTPS aplikasi mushaf digital wajib disediakan.');
     }
+    assertLinkedFileMime('apk_file_id', ['APK'], ['application/vnd.android.package-archive'], 'Berkas APK');
   }
 
   if (registration.registration_type === 'EXTENSION' || registration.registration_category === 'EXTENSION') {
@@ -701,7 +724,58 @@ export const validateRegistrationRequiredFieldsForSubmit = (registration) => {
   }
 };
 
-export const createDraft = async (data, user, req) => {
+export const createDraft = async (data, user, req, registrationId = null) => {
+  let existingDraft = null;
+  if (registrationId) {
+    existingDraft = await prisma.registration.findUnique({
+      where: { id: registrationId },
+      include: {
+        manuscripts: { include: { items: { include: { item: true } }, variants: true, files: true }, orderBy: { seq_number: 'asc' } },
+        manuscript_files: true,
+        addons: true,
+      },
+    });
+    if (!existingDraft) fail(404, 'Draft permohonan tidak ditemukan.');
+    if (!user.roles.includes('SUPERADMIN') && existingDraft.publisher_id !== user.publisherId) fail(403, 'Akses ditolak. Draft ini bukan milik penerbit Anda.');
+    if (existingDraft.status !== 'DRAFT') fail(409, 'Hanya permohonan berstatus Draft yang dapat diperbarui.');
+    const oldMetadata = existingDraft.foreign_metadata || {};
+    const fileIdFor = (type, metadataKey) => {
+      if (Object.prototype.hasOwnProperty.call(data, metadataKey)) return data[metadataKey];
+      if (data.foreign_metadata?.[metadataKey] !== undefined) return data.foreign_metadata[metadataKey];
+      if (data.mushaf_details?.[metadataKey] !== undefined) return data.mushaf_details[metadataKey];
+      return oldMetadata[metadataKey] || existingDraft.manuscript_files.find(file => file.type === type)?.file_id;
+    };
+    const metadata = { ...oldMetadata, ...(data.foreign_metadata || {}), ...(data.mushaf_details || {}) };
+    for (const key of ['cover_file_id', 'surat_permohonan_file_id', 'contoh_halaman_file_id', 'surat_pernyataan_file_id', 'surat_pernyataan_perubahan_file_id', 'apk_file_id', 'bukti_tashih_file_id']) {
+      if ((Object.prototype.hasOwnProperty.call(data, key) && data[key] === null) ||
+          data.foreign_metadata?.[key] === null || data.mushaf_details?.[key] === null) delete metadata[key];
+    }
+    data = {
+      ...data,
+      title: data.title || existingDraft.title,
+      registration_type: data.registration_type || existingDraft.registration_type,
+      registration_category: data.registration_category || existingDraft.registration_category,
+      service_type_id: data.service_type_id || existingDraft.service_type_id,
+      statement_accepted: data.statement_accepted ?? existingDraft.statement_accepted,
+      previous_registration_id: data.previous_registration_id ?? existingDraft.previous_registration_id,
+      apk_url: data.apk_url ?? existingDraft.apk_url,
+      cover_file_id: fileIdFor('COVER', 'cover_file_id'),
+      surat_permohonan_file_id: fileIdFor('SURAT_PERMOHONAN', 'surat_permohonan_file_id'),
+      contoh_halaman_file_id: fileIdFor('SAMPLE_PAGE_1_5', 'contoh_halaman_file_id'),
+      surat_pernyataan_file_id: fileIdFor('SURAT_PERNYATAAN', 'surat_pernyataan_file_id'),
+      apk_file_id: fileIdFor('APK', 'apk_file_id'),
+      bukti_tashih_file_id: fileIdFor('FOREIGN_TASHIH_CERTIFICATE', 'bukti_tashih_file_id'),
+      foreign_metadata: metadata,
+      mushaf_details: metadata,
+      manuscripts: data.manuscripts || existingDraft.manuscripts.map(m => ({
+        seq_number: m.seq_number, title: m.title,
+        items: m.items.map(item => item.item.code),
+        variants: m.variants.map(({ ukuran, oplah }) => ({ ukuran, oplah })),
+        sample_file_id: m.files.find(file => file.type === 'SAMPLE_PAGE_1_5')?.file_id || null,
+      })),
+      addon_ids: data.addon_ids || data.addons || existingDraft.addons.map(addon => addon.addon_id),
+    };
+  }
   let publisherId = user.publisherId;
   let submissionSource = 'PUBLISHER_PORTAL';
 
@@ -969,6 +1043,7 @@ export const createDraft = async (data, user, req) => {
     data.cover_file_id,
     data.surat_permohonan_file_id,
     data.contoh_halaman_file_id,
+    data.surat_pernyataan_file_id,
     data.surat_pernyataan_perubahan_file_id,
     data.apk_file_id,
     data.bukti_tashih_file_id,
@@ -976,12 +1051,13 @@ export const createDraft = async (data, user, req) => {
     ...validatedManuscripts.map((m) => m.sample_file_id).filter(Boolean),
   ].filter(Boolean);
 
-  if (fileIdsToCheck.length > 0 && !user.roles.includes('SUPERADMIN')) {
+  if (fileIdsToCheck.length > 0) {
     const files = await prisma.storedFile.findMany({
       where: { id: { in: fileIdsToCheck } },
-      select: { id: true, owner_id: true },
+      select: { id: true, owner_id: true, mime_type: true },
     });
     const foundIds = new Set(files.map((f) => f.id));
+    const filesById = new Map(files.map(file => [file.id, file]));
     for (const fId of fileIdsToCheck) {
       if (!foundIds.has(fId)) {
         const error = new Error(`Berkas lampiran dengan ID ${fId} tidak ditemukan di sistem.`);
@@ -990,11 +1066,25 @@ export const createDraft = async (data, user, req) => {
       }
     }
     for (const f of files) {
-      if (f.owner_id !== user.id) {
+      if (!user.roles.includes('SUPERADMIN') && f.owner_id !== user.id) {
         const error = new Error('Akses ditolak: Satu atau lebih berkas lampiran bukan milik akun Anda.');
         error.statusCode = 403;
         throw error;
       }
+    }
+    const typedFiles = [
+      [data.surat_permohonan_file_id, ['application/pdf'], 'Surat permohonan'],
+      [data.cover_file_id, ['image/png', 'image/jpeg'], 'Cover mushaf'],
+      [data.contoh_halaman_file_id, ['application/pdf'], 'Contoh halaman mushaf'],
+      [data.surat_pernyataan_file_id || data.surat_pernyataan_perubahan_file_id, ['application/pdf'], 'Surat pernyataan'],
+      [data.apk_file_id, ['application/vnd.android.package-archive'], 'Berkas APK'],
+      [data.bukti_tashih_file_id, ['application/pdf'], 'Bukti tanda tashih asal'],
+      ...validatedManuscripts.map(manuscript => [manuscript.sample_file_id, ['application/pdf'], 'Contoh halaman mushaf']),
+    ];
+    for (const [fileId, allowedMimes, label] of typedFiles) {
+      if (!fileId) continue;
+      const file = filesById.get(fileId);
+      if (file && !allowedMimes.includes(file.mime_type)) fail(400, `${label} harus berformat ${allowedMimes.join(' atau ')}.`);
     }
   }
 
@@ -1025,7 +1115,13 @@ export const createDraft = async (data, user, req) => {
           throw error;
         }
 
-        const regNo = await generateRegistrationNo(tx);
+        if (existingDraft) {
+          const lockedDraft = await lockRegistration(tx, existingDraft.id);
+          if (lockedDraft.status !== 'DRAFT') fail(409, 'Hanya permohonan berstatus Draft yang dapat diperbarui.');
+          if (!user.roles.includes('SUPERADMIN') && lockedDraft.publisher_id !== user.publisherId) fail(403, 'Akses ditolak. Draft ini bukan milik penerbit Anda.');
+        }
+
+        const regNo = existingDraft?.registration_no || await generateRegistrationNo(tx);
 
         const combinedMetadata = {
           ...sanitizeManuscriptMetadata(data.foreign_metadata || {}),
@@ -1078,8 +1174,7 @@ export const createDraft = async (data, user, req) => {
           })),
         };
 
-        const createdReg = await tx.registration.create({
-          data: {
+        const registrationData = {
             registration_no: regNo,
             publisher_id: publisherId,
             service_type_id: serviceTypeId,
@@ -1093,8 +1188,15 @@ export const createDraft = async (data, user, req) => {
             status: 'DRAFT',
             apk_url: data.apk_url || null,
             fee_sla_snapshot: initialFeeSlaSnapshot,
-          },
-        });
+          };
+        if (existingDraft) {
+          await tx.manuscriptFile.deleteMany({ where: { registration_id: existingDraft.id } });
+          await tx.manuscript.deleteMany({ where: { registration_id: existingDraft.id } });
+          await tx.registrationAddon.deleteMany({ where: { registration_id: existingDraft.id } });
+        }
+        const createdReg = existingDraft
+          ? await tx.registration.update({ where: { id: existingDraft.id }, data: registrationData })
+          : await tx.registration.create({ data: registrationData });
 
         const createdManuscripts = [];
 
@@ -1255,7 +1357,7 @@ export const createDraft = async (data, user, req) => {
           });
         }
 
-        await tx.statusHistory.create({
+        if (!existingDraft) await tx.statusHistory.create({
           data: {
             registration_id: createdReg.id,
             from_status: 'NONE',
@@ -1289,7 +1391,7 @@ export const createDraft = async (data, user, req) => {
 
       await logAudit({
         actorId: user.id,
-        action: 'CREATE_REGISTRATION_DRAFT',
+        action: existingDraft ? 'UPDATE_REGISTRATION_DRAFT' : 'CREATE_REGISTRATION_DRAFT',
         subjectType: 'Registration',
         subjectId: createdResult.registration.id,
         afterJson: primaryRegistration,
@@ -1568,6 +1670,19 @@ export const submitRegistration = async (id, user, req) => {
   }
 
   // Hitung snapshot tarif dan SLA (B-01 §4.3 & BR-04/05)
+  const metadataFileKeys = ['cover_file_id', 'surat_permohonan_file_id', 'contoh_halaman_file_id', 'surat_pernyataan_file_id', 'surat_pernyataan_perubahan_file_id', 'apk_file_id', 'bukti_tashih_file_id'];
+  const metadataFileIds = metadataFileKeys.map(key => reg.foreign_metadata?.[key]).filter(value => typeof value === 'string' && value.length > 0);
+  const linkedFileIds = [...new Set([...(reg.manuscript_files || []).map(file => file.file_id), ...metadataFileIds].filter(Boolean))];
+  const storedFiles = linkedFileIds.length
+    ? await prisma.storedFile.findMany({
+        where: { id: { in: linkedFileIds } },
+        select: { id: true, file_name: true, mime_type: true, file_size: true, checksum: true },
+      })
+    : [];
+  const filesById = new Map(storedFiles.map(file => [file.id, file]));
+  reg.uploaded_files_by_id = Object.fromEntries(filesById);
+  reg.manuscript_files = (reg.manuscript_files || []).map(file => ({ ...file, uploaded_file: filesById.get(file.file_id) || null }));
+
   const manuscripts = Array.isArray(reg.manuscripts) ? reg.manuscripts : [];
   let totalBaseFee = 0;
   let maxInitial = 0;
@@ -2300,9 +2415,11 @@ export const getDetail = async (id, user) => {
   reg.sla_status = detailSla.sla_status;
   reg.sla_status_label = detailSla.status_label;
 
+  let canReadManuscriptFiles = true;
   try { await assertManuscriptAccess(reg, user); }
   catch (error) {
     if (error.statusCode !== 403) throw error;
+    canReadManuscriptFiles = false;
     reg.manuscript_files = [];
   }
   if (user.roles.includes('PENERBIT') && !user.roles.includes('SUPERADMIN')) {
@@ -2373,6 +2490,26 @@ export const getDetail = async (id, user) => {
     operational_state = 'VERIFICATION_ASSIGNED';
   }
   reg.operational_state = operational_state;
+
+  const metadataFileKeys = ['cover_file_id', 'surat_permohonan_file_id', 'contoh_halaman_file_id', 'surat_pernyataan_file_id', 'surat_pernyataan_perubahan_file_id', 'apk_file_id', 'bukti_tashih_file_id'];
+  const metadataFileIds = canReadManuscriptFiles
+    ? metadataFileKeys.map(key => reg.foreign_metadata?.[key]).filter(value => typeof value === 'string' && value.length > 0)
+    : [];
+  const linkedFileIds = canReadManuscriptFiles
+    ? [...new Set([...(reg.manuscript_files || []).map(file => file.file_id), ...metadataFileIds].filter(Boolean))]
+    : [];
+  const storedFileRecords = linkedFileIds.length
+    ? await prisma.storedFile.findMany({
+        where: { id: { in: linkedFileIds } },
+        select: { id: true, file_name: true, mime_type: true, file_size: true, created_at: true },
+      })
+    : [];
+  const storedFileById = new Map(storedFileRecords.map(file => [file.id, file]));
+  reg.manuscript_files = (reg.manuscript_files || []).map(file => ({ ...file, uploaded_file: storedFileById.get(file.file_id) || null }));
+  reg.uploaded_files = Object.fromEntries(storedFileRecords.map(file => [file.id, file]));
+  for (const manuscript of reg.manuscripts || []) {
+    manuscript.files = (manuscript.files || []).map(file => ({ ...file, uploaded_file: storedFileById.get(file.file_id) || null }));
+  }
 
   const displayLayanan =
     reg.fee_sla_snapshot?.layanan_display ||

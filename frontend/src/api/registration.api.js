@@ -28,6 +28,8 @@ export const registrationApi = {
     });
   },
 
+  updateDraft: async (id, payload) => apiClient(`/registrations/${id}/draft`, { method: 'PUT', body: payload }),
+
   submitRegistration: async (id) => {
     return apiClient(`/registrations/${id}/submit`, {
       method: 'POST',

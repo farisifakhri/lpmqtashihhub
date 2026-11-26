@@ -14,6 +14,13 @@ const card = (overrides) => render(
 const inHours = (hours) => new Date(Date.now() + hours * 3600_000).toISOString();
 
 describe('PublisherRegistrationCard SLA verifikasi', () => {
+  it('shows draft action without official workflow progress', () => {
+    card({ status: 'DRAFT', updated_at: '2026-11-25T00:00:00Z' });
+    expect(screen.getByRole('link', { name: /Lanjutkan Draft/ })).toHaveAttribute('href', '/publisher/new-registration?draftId=r1');
+    expect(screen.getByText(/Diperbarui/)).toBeInTheDocument();
+    expect(screen.queryByText('2. Verifikasi Fisik')).not.toBeInTheDocument();
+    expect(screen.queryByText('3. STT')).not.toBeInTheDocument();
+  });
   it('menampilkan sisa waktu SLA saat verifikator sudah ditugaskan', () => {
     card({ verification_assignments: [{ due_at: inHours(30) }] });
     expect(screen.getByText('SLA Verifikasi')).toBeInTheDocument();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { authorize } from '../../src/middlewares/rbac.middleware.js';
-import { createVerificationAssignmentSchema } from '../../src/validators/verification.validator.js';
+import { createVerificationAssignmentSchema, reassignAssignmentSchema } from '../../src/validators/verification.validator.js';
 
 function checkGuard(guard, user) {
   let next = false;
@@ -80,12 +80,19 @@ test('Validator: createVerificationAssignmentSchema accepts roster assignment an
   });
   assert.equal(missingVerifier.success, true);
 
-  // Short nota_no (< 3 chars)
-  const shortNota = createVerificationAssignmentSchema.body.safeParse({
+  // The manual number is optional for legacy clients and is ignored by the service.
+  const generatedByBackend = createVerificationAssignmentSchema.body.safeParse({
     verifier_id: validUuid,
-    nota_no: 'ND',
   });
-  assert.equal(shortNota.success, false);
+  assert.equal(generatedByBackend.success, true);
+});
+
+test('Validator: reassignAssignmentSchema accepts backend-generated disposition numbers', () => {
+  const valid = reassignAssignmentSchema.body.safeParse({
+    verifier_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    reason: 'Pemerataan beban kerja verifikator.',
+  });
+  assert.equal(valid.success, true);
 });
 
 test('Verification Assignment: verifies notification type and state transitions', () => {

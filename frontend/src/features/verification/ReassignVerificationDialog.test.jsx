@@ -44,6 +44,10 @@ describe('ReassignVerificationDialog Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(VerificationApiModule.verificationApi, 'getDispositionNumberPreview').mockResolvedValue({
+      success: true,
+      data: { document_no: 'ND.002/LPMQ.01/TP.26/11/2026', issued_at: '2026-11-26T05:00:00.000Z', is_preview: true },
+    });
     vi.spyOn(VerificationApiModule.verificationApi, 'listActiveVerifiers').mockResolvedValue({
       success: true,
       data: mockVerifiers,
@@ -77,7 +81,7 @@ describe('ReassignVerificationDialog Component', () => {
     });
   });
 
-  it('memvalidasi pemilihan verifikator, nomor nota baru, dan alasan pengalihan', async () => {
+  it('memvalidasi pemilihan verifikator dan alasan, lalu mengirim permintaan tanpa nomor manual', async () => {
     const onSuccessMock = vi.fn();
     render(
       <ReassignVerificationDialog
@@ -94,9 +98,9 @@ describe('ReassignVerificationDialog Component', () => {
     // Select new verifier
     fireEvent.click(screen.getByText('Hj. Siti Verifikator, S.Th.I'));
 
-    // Input new Nota Dinas
-    const notaInput = screen.getByLabelText(/Nomor Disposisi Baru/i);
-    fireEvent.change(notaInput, { target: { value: 'ND.02/LPMQ/REV/2026' } });
+    const notaInput = await screen.findByDisplayValue('ND.002/LPMQ.01/TP.26/11/2026');
+    expect(notaInput).toHaveValue('ND.002/LPMQ.01/TP.26/11/2026');
+    expect(notaInput).toHaveAttribute('readonly');
 
     // Input reason
     const reasonInput = screen.getByLabelText(/Alasan Pengalihan Tugas/i);
@@ -109,7 +113,6 @@ describe('ReassignVerificationDialog Component', () => {
     await waitFor(() => {
       expect(VerificationApiModule.verificationApi.reassignAssignment).toHaveBeenCalledWith('assign-test-123', {
         verifier_id: 'v-2',
-        nota_no: 'ND.02/LPMQ/REV/2026',
         reason: 'Pemerataan beban kerja pentashihan mushaf.',
       });
       expect(onSuccessMock).toHaveBeenCalled();

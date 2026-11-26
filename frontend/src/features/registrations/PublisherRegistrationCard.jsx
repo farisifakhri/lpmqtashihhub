@@ -22,6 +22,36 @@ export function PublisherRegistrationCard({ registration }) {
   const action = publisherAction(registration);
   const status = registration.status;
 
+  if (status === 'DRAFT') {
+    return (
+      <article className="rounded-2xl border border-line bg-surface p-5 shadow-2xs flex flex-col justify-between gap-4">
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="font-mono text-xs font-bold text-brand-900 bg-brand-50 border border-brand-200/80 px-2.5 py-0.5 rounded-lg">
+              {registration.registration_no}
+            </span>
+            <StatusBadge registration={registration} status="DRAFT" />
+          </div>
+          <div>
+            <h3 className="font-bold text-ink text-base line-clamp-2">
+              <Link to={`/publisher/registrations/${registration.id}`}>{registration.title}</Link>
+            </h3>
+            <p className="text-xs text-ink-muted mt-1">{registration.foreign_metadata?.nama_mushaf || registration.service_type?.name || 'Permohonan Tanda Tashih'}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line/60 pt-3">
+          <span className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <Calendar className="h-3.5 w-3.5" />
+            Diperbarui {dateLabel(registration.updated_at || registration.created_at)}
+          </span>
+          <Link to={`/publisher/new-registration?draftId=${registration.id}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-900 font-bold text-xs border border-brand-200 transition-colors">
+            Lanjutkan Draft <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </article>
+    );
+  }
+
   // 3-Phase Tracking Computation
   // Phase 1: Permohonan (DRAFT or SUBMITTED)
   const isPhase1Done = status !== 'DRAFT';

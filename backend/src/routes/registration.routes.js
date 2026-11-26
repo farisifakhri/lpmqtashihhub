@@ -24,6 +24,7 @@ router.use(authorize('ADMIN_INTERNAL', 'PENERBIT', 'VERIFIKATOR', 'DISTRIBUTOR',
 // Daftar & Pembuatan Pengajuan
 router.get('/', registrationController.listRegistrations);
 router.post('/', authorize('PENERBIT'), registrationRateLimiter, validate(createRegistrationSchema), registrationController.createDraft);
+router.put('/:id/draft', authorize('PENERBIT', 'SUPERADMIN'), validate({ params: registrationIdParamSchema.params, body: createRegistrationSchema.body }), registrationController.updateDraft);
 router.get('/:id', registrationController.getDetail);
 router.get(
   '/:id/receipt-pdf',

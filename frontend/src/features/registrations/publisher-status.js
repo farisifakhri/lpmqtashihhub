@@ -1,4 +1,4 @@
-export const ACTION_STATUSES = ['DRAFT', 'REVISION_REQUIRED', 'AWAITING_PAYMENT', 'VERIFICATION_APPROVED'];
+export const ACTION_STATUSES = ['REVISION_REQUIRED', 'AWAITING_PAYMENT', 'VERIFICATION_APPROVED'];
 export const publisherAction = registration => {
   if (registration.status === 'DRAFT') return { label: 'Lengkapi berkas', description: 'Periksa sampel naskah dan kelengkapan sebelum mengirim permohonan.', path: `/publisher/registrations/${registration.id}` };
   if (registration.status === 'REVISION_REQUIRED') {

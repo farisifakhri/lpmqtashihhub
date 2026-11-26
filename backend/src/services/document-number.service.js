@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 /**
  * Layanan Generator Penomoran Dokumen Resmi Otomatis (B-03 / U-04)
  * Menghasilkan nomor dinas resmi Kemenag LPMQ secara atomik, unik, dan berurutan.
@@ -6,6 +8,115 @@
 export const ROMAN_MONTHS = [
   'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'
 ];
+
+const DISPOSITION_SEQUENCE_TYPE = 'VERIFICATION_DISPOSITION_GLOBAL';
+const DISPOSITION_DOCUMENT_TYPE = 'NOTA_DINAS_VERIFIKASI';
+const JAKARTA_TIME_ZONE = 'Asia/Jakarta';
+
+export function getJakartaDateParts(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: JAKARTA_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return { year: Number(values.year), month: values.month, day: values.day };
+}
+
+export function formatDispositionNumber(sequence, date = new Date()) {
+  const { year, month, day } = getJakartaDateParts(date);
+  return `ND.${String(sequence).padStart(3, '0')}/LPMQ.01/TP.${day}/${month}/${year}`;
+}
+
+const getHighestIssuedDispositionNumber = async (db, year) => {
+  const documents = await db.verificationDocument.findMany({
+    where: {
+      document_type: DISPOSITION_DOCUMENT_TYPE,
+      document_no: { startsWith: 'ND.', endsWith: `/${year}` },
+    },
+    select: { document_no: true },
+  });
+  const pattern = new RegExp(`^ND\\.(\\d+)/LPMQ\\.01/TP\\.\\d{2}/\\d{2}/${year}$`);
+  return documents.reduce((highest, document) => {
+    const match = pattern.exec(document.document_no || '');
+    return match ? Math.max(highest, Number(match[1])) : highest;
+  }, 0);
+};
+
+/**
+ * Menghasilkan nomor pratinjau tanpa mencadangkan atau mengubah counter.
+ * Nomor resmi tetap dihitung kembali di dalam transaksi penerbitan.
+ */
+export async function getNextDispositionNumberPreview(db, date = new Date()) {
+  const { year } = getJakartaDateParts(date);
+  const sequenceKey = `${DISPOSITION_SEQUENCE_TYPE}_${year}`;
+  const [counter, highestIssued] = await Promise.all([
+    db.documentNumberSequence.findUnique({ where: { sequence_key: sequenceKey } }),
+    getHighestIssuedDispositionNumber(db, year),
+  ]);
+  let sequence = Math.max(counter?.last_number || 0, highestIssued) + 1;
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const candidate = formatDispositionNumber(sequence, date);
+    const collision = await db.verificationDocument.findUnique({
+      where: { document_no: candidate },
+      select: { id: true },
+    });
+    if (!collision) return candidate;
+    sequence += 1;
+  }
+  throw new Error('Tidak dapat menentukan nomor pratinjau disposisi unik.');
+}
+
+/**
+ * Reserves the next yearly global disposition number in the caller's transaction.
+ * MySQL's unique-key upsert serializes concurrent increments; transaction rollback
+ * also rolls the counter back when issuance fails.
+ */
+export async function getNextDispositionNumber(tx, date = new Date()) {
+  const { year } = getJakartaDateParts(date);
+  const sequenceKey = `${DISPOSITION_SEQUENCE_TYPE}_${year}`;
+  const highestIssued = await getHighestIssuedDispositionNumber(tx, year);
+  const firstAvailable = highestIssued + 1;
+  await tx.$executeRaw`
+    INSERT INTO \`document_number_sequences\`
+      (\`id\`, \`sequence_key\`, \`document_type\`, \`year\`, \`last_number\`, \`created_at\`, \`updated_at\`)
+    VALUES (${randomUUID()}, ${sequenceKey}, ${DISPOSITION_SEQUENCE_TYPE}, ${year}, ${firstAvailable}, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))
+    ON DUPLICATE KEY UPDATE
+      \`last_number\` = \`last_number\` + 1,
+      \`updated_at\` = CURRENT_TIMESTAMP(3)
+  `;
+  const record = await tx.documentNumberSequence.findUnique({ where: { sequence_key: sequenceKey } });
+  if (!record) throw new Error('Counter nomor disposisi gagal disimpan.');
+
+  let sequence = record.last_number;
+  if (sequence < firstAvailable) {
+    const updated = await tx.documentNumberSequence.update({
+      where: { sequence_key: sequenceKey },
+      data: { last_number: firstAvailable },
+    });
+    sequence = updated.last_number;
+  }
+
+  // The sequence row protects concurrent requests; this check also protects
+  // against previously imported or manually issued matching numbers.
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const candidate = formatDispositionNumber(sequence, date);
+    const collision = await tx.verificationDocument.findUnique({
+      where: { document_no: candidate },
+      select: { id: true },
+    });
+    if (!collision) return candidate;
+
+    const updated = await tx.documentNumberSequence.update({
+      where: { sequence_key: sequenceKey },
+      data: { last_number: { increment: 1 } },
+    });
+    sequence = updated.last_number;
+  }
+
+  throw new Error('Tidak dapat menentukan nomor disposisi unik.');
+}
 
 /**
  * Mengubah index bulan (1-12) ke angka Romawi
