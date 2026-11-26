@@ -95,7 +95,29 @@ export class SmtpEmailProvider {
     let html = `<div style="font-family:Arial,sans-serif;white-space:pre-wrap">${escapeHtml(text)}</div>`;
     let messageText = text;
 
-    if (template === 'PASSWORD_RESET' && (payload?.resetCode || payload?.resetUrl)) {
+    if (template === 'PUBLISHER_REGISTRATION_NEEDS_REVISION' && payload?.revision_url) {
+      const name = toName ? ` ${escapeHtml(toName)}` : '';
+      const documents = Array.isArray(payload.revision_documents) ? payload.revision_documents : [];
+      const documentsHtml = documents.length
+        ? `<ul style="margin:8px 0;padding-left:22px">${documents.map(doc => `<li>${escapeHtml(doc)}</li>`).join('')}</ul>`
+        : '<p>Tidak ada berkas tertentu yang ditandai. Perbaiki data identitas atau kontak sesuai catatan petugas.</p>';
+      messageText = typeof payload.message === 'string' ? payload.message : text;
+      html = `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1f2937;max-width:640px">
+        <p>Halo${name},</p>
+        <p>Pendaftaran akun penerbit Anda memerlukan perbaikan.</p>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;padding:16px;border-radius:10px;margin:16px 0">
+          <p style="margin:0 0 4px;color:#4b5563;font-size:13px">Nomor pendaftaran</p>
+          <p style="margin:0;font-family:monospace;font-size:18px;font-weight:bold;color:#14532d">${escapeHtml(payload.code || '-')}</p>
+        </div>
+        <p><strong>Catatan petugas:</strong><br>${escapeHtml(payload.reason || 'Silakan periksa kembali data pendaftaran.')}</p>
+        <p><strong>Berkas yang perlu diperbaiki:</strong></p>
+        ${documentsHtml}
+        <p>Gunakan tautan aman berikut untuk memperbarui pendaftaran. Tautan berlaku 14 hari dan hanya dapat digunakan satu kali.</p>
+        <p><a href="${escapeHtml(payload.revision_url)}" style="display:inline-block;background:#166534;color:#fff;padding:11px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Perbaiki Pendaftaran</a></p>
+        <p style="font-size:12px;color:#6b7280">Jika tombol tidak dapat dibuka, salin tautan berikut ke browser:<br>${escapeHtml(payload.revision_url)}</p>
+        <p>Simpan nomor pendaftaran Anda untuk mengecek status permohonan.</p>
+      </div>`;
+    } else if (template === 'PASSWORD_RESET' && (payload?.resetCode || payload?.resetUrl)) {
       const name = toName ? ` ${escapeHtml(toName)}` : '';
       const expiresMinutes = Number(payload.expiresMinutes) || 10;
       if (payload.resetCode) {

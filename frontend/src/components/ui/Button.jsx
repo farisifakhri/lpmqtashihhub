@@ -39,6 +39,8 @@ export const Button = ({
       'bg-white hover:bg-canvas border border-line-strong hover:border-line-strong text-ink shadow-2xs focus:ring-brand-700 font-semibold',
     danger:
       'bg-civic-danger hover:bg-civic-danger/90 text-white shadow-2xs border border-civic-danger focus:ring-civic-danger',
+    warning:
+      'bg-civic-warning hover:bg-civic-warning/90 text-white shadow-2xs border border-civic-warning focus:ring-civic-warning',
     gold:
       'bg-civicGold-500 hover:bg-civicGold-100 text-ink shadow-2xs border border-civicGold-700 focus:ring-civicGold-700 font-bold',
     ghost:
