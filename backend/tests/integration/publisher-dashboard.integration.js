@@ -62,6 +62,7 @@ try {
   const draftUpdate = {
     title: `${prefix} draft updated`, service_type_id: service.id, registration_type: 'NEW',
     statement_accepted: true,
+    mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
     foreign_metadata: { nama_mushaf: `${prefix} draft updated`, jenis_naskah: [baseItem.name], jenis_mushaf: 'Mushaf Standar Usmani' },
     manuscripts: [{ seq_number: 1, title: `${prefix} draft updated`, items: [baseItem.code], variants: [{ ukuran: '21 x 29', oplah: 100 }] }],
   };

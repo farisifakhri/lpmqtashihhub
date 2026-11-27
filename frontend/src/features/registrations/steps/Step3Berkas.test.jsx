@@ -24,9 +24,9 @@ describe('Step3Berkas saved attachments', () => {
       }}
     />);
 
-    expect(screen.getByText('surat.pdf')).toBeInTheDocument();
-    expect(screen.getByText('cover.png')).toBeInTheDocument();
-    expect(screen.getByText('sampel.pdf')).toBeInTheDocument();
+    expect(screen.getByText(/surat\.pdf/)).toBeInTheDocument();
+    expect(screen.getByText(/cover\.png/)).toBeInTheDocument();
+    expect(screen.getByText(/sampel\.pdf/)).toBeInTheDocument();
     expect(screen.getAllByText(/^Dokumen sudah tersimpan/)).toHaveLength(3);
     fireEvent.click(screen.getAllByRole('button', { name: 'Lihat' })[0]);
     expect(fileApi.viewPrivateFile).toHaveBeenCalledWith('file-surat');

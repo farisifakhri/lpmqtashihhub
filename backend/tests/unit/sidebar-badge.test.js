@@ -32,7 +32,7 @@ test('Penerbit hanya menerima badge portal penerbit yang dicakup ke penerbitnya 
     assert.deepEqual(Object.keys(badges).sort(), ['publisher_actions', 'publisher_billing']);
     const regCall = calls.find(c => c.model === 'registration');
     assert.equal(regCall.where.publisher_id, 'pub-1');
-    assert.deepEqual(regCall.where.status.in, ['DRAFT', 'REVISION_REQUIRED', 'AWAITING_PAYMENT', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED']);
+    assert.deepEqual(regCall.where.status.in, ['REVISION_REQUIRED', 'AWAITING_PAYMENT', 'PHYSICAL_HANDOVER_CORRECTION_REQUIRED']);
     const payCall = calls.find(c => c.model === 'paymentRecord');
     assert.equal(payCall.where.status, 'UNPAID');
     assert.equal(payCall.where.registration.publisher_id, 'pub-1');

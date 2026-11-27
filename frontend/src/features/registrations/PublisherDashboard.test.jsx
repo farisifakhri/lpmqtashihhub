@@ -10,7 +10,7 @@ const fixture = { id: 'rev-1', title: 'Naskah revisi', registration_no: 'REG-01'
 describe('Publisher dashboard', () => {
   beforeEach(() => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['PENERBIT'], publisherName: 'Penerbit Nusantara' } });
-    vi.spyOn(registrationApi, 'listRegistrations').mockImplementation(async params => params.segment ? { data: [fixture], pagination: { total: 9 } } : { data: [fixture], pagination: { total: 28 }, summary: { by_status: { DRAFT: 3, REVISION_REQUIRED: 4, AWAITING_PAYMENT: 2, IN_VERIFICATION: 10, COMPLETED: 9 }, issued_stt: 7 } });
+    vi.spyOn(registrationApi, 'listRegistrations').mockImplementation(async params => params.segment ? { data: [fixture], pagination: { total: 9 } } : { data: [fixture], pagination: { total: 28 }, summary: { by_status: { DRAFT: 3, REVISION_REQUIRED: 4, AWAITING_PAYMENT: 2, VERIFICATION_APPROVED: 3, IN_VERIFICATION: 10, COMPLETED: 6 }, issued_stt: 6 } });
   });
   const show = () => render(<MemoryRouter><PublisherDashboard /></MemoryRouter>);
   it('uses global scoped counts, not the six most recent rows', async () => {
@@ -19,7 +19,7 @@ describe('Publisher dashboard', () => {
     await waitFor(() => expect(total).toHaveTextContent('28'));
     expect(screen.getByRole('link', { name: /Perlu tindakan/ })).toHaveTextContent('9');
     expect(screen.getByRole('link', { name: /Sedang diproses/ })).toHaveTextContent('10');
-    expect(screen.getByRole('link', { name: /(STT [Tt]erbit|Naskah dengan STT terbit)/ })).toHaveTextContent('7');
+    expect(screen.getByRole('link', { name: /(STT [Tt]erbit|Naskah dengan STT terbit)/ })).toHaveTextContent('6');
     expect(registrationApi.listRegistrations).toHaveBeenCalledWith({ page: 1, limit: 5, segment: 'PUBLISHER_ACTIONS' });
     expect(screen.queryByText('Tetapkan Tim')).not.toBeInTheDocument();
   });

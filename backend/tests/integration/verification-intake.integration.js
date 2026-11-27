@@ -196,8 +196,10 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
     assert.equal((await prisma.physicalMasterIntake.findUnique({ where: { registration_id: another.id } })).status, 'PENDING');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
-    await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 409);
-    assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 0);
-    assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'READY_FOR_VERIFICATION');
+    const reassignment = await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 201);
+    assert.equal(reassignment.assignment.status, 'ASSIGNED');
+    assert.notEqual(reassignment.nota_dinas.document_no, createdNotaNo);
+    assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 1);
+    assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'VERIFICATION_ASSIGNED');
   });
 }

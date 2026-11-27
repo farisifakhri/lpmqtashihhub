@@ -1,6 +1,7 @@
 process.env.NODE_ENV = 'test';
 import assert from 'node:assert/strict';
 import { test as nodeTest } from 'node:test';
+import { createHash } from 'node:crypto';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/database.js';
 import bcrypt from 'bcryptjs';
@@ -129,6 +130,32 @@ async function runTests() {
         publisherToken = token;
         publisherUser = json.data.user;
       });
+
+      // Legacy workflow fixtures reference these IDs. Keep them as real, owned
+      // StoredFile records so current submit validation can check MIME and ownership.
+      const mockRegistrationFiles = [
+        { id: 'mock-file-permohonan', file_name: 'surat-permohonan.pdf', mime_type: 'application/pdf' },
+        { id: 'mock-file-cover', file_name: 'cover.png', mime_type: 'image/png' },
+        { id: 'mock-file-contoh', file_name: 'contoh-halaman.pdf', mime_type: 'application/pdf' },
+      ];
+      for (const file of mockRegistrationFiles) {
+        await prisma.storedFile.upsert({
+          where: { id: file.id },
+          update: {
+            owner_id: publisherUser.id,
+            file_name: file.file_name,
+            mime_type: file.mime_type,
+            file_size: 1,
+            checksum: createHash('sha256').update(file.id).digest('hex'),
+          },
+          create: {
+            ...file,
+            owner_id: publisherUser.id,
+            file_size: 1,
+            checksum: createHash('sha256').update(file.id).digest('hex'),
+          },
+        });
+      }
 
       await test('Negative: Login dengan password salah ditolak (401)', async () => {
         const { status, json } = await loginAs('admin@lpmq.kemenag.go.id', 'passwordSalahTotal');

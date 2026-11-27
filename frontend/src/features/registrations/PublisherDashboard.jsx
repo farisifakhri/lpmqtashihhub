@@ -65,7 +65,7 @@ export const PublisherDashboard = () => {
   const processing = counts
     ? Object.entries(counts).reduce(
         (sum, [status, count]) =>
-          sum + (!ACTION_STATUSES.includes(status) && !['COMPLETED', 'CANCELLED'].includes(status) ? count : 0),
+          sum + (!ACTION_STATUSES.includes(status) && !['DRAFT', 'COMPLETED', 'CANCELLED'].includes(status) ? count : 0),
         0
       )
     : null;
