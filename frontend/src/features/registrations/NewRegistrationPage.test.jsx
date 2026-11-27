@@ -32,6 +32,26 @@ describe('Publisher new registration handoff', () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
+  it('restores an existing draft by ID into the form and keeps its saved attachment IDs', async () => {
+    vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { id: 'publisher', roles: ['PENERBIT'] } });
+    vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [] });
+    vi.spyOn(masterApi, 'getServiceTypes').mockResolvedValue({ data: [{ id: 'svc1', name: 'Reguler', status: 'ACTIVE' }] });
+    vi.spyOn(masterApi, 'getAddons').mockResolvedValue({ data: [] });
+    vi.spyOn(registrationApi, 'getDetail').mockResolvedValue({ data: {
+      id: 'draft-1', registration_no: 'REG-1', status: 'DRAFT', title: 'Mushaf Draft',
+      registration_type: 'NEW', registration_category: 'NEW',
+      foreign_metadata: { nama_mushaf: 'Mushaf Draft', nama_percetakan: 'Percetakan Uji', penanggung_jawab_produk: 'PJ Uji', penanggung_jawab_wa: '08123456789', penanggung_jawab_email: 'pj@example.com', jenis_naskah: ["1. Al-Qur'an 30 Juz"], jenis_mushaf: 'Mushaf Standar Usmani', kategori_pendaftaran: 'Mushaf Baru', sizes: [{ ukuran: '21 x 29', oplah: 100 }], surat_permohonan_file_id: 'file-surat' },
+      service_type: { id: 'svc1' }, manuscripts: [{ id: 'm-1', seq_number: 1, title: 'Mushaf Draft', items: [{ role: 'DASAR', item: { code: 'JUZ30', name: "1. Al-Qur'an 30 Juz" } }], variants: [{ ukuran: '21 x 29', oplah: 100 }], files: [] }], manuscript_files: [{ type: 'SURAT_PERMOHONAN', file_id: 'file-surat' }],
+    } });
+    const createDraft = vi.spyOn(registrationApi, 'createDraft');
+    render(<MemoryRouter initialEntries={['/publisher/new-registration?draftId=draft-1']}><Routes><Route path="/publisher/new-registration" element={<NewRegistrationPage />} /></Routes></MemoryRouter>);
+
+    expect(await screen.findByPlaceholderText(/Contoh: Mushaf Al-Qur/)).toHaveValue('Mushaf Draft');
+    expect(screen.getByPlaceholderText('Tulis nama penanggung jawab Produk/Mushaf')).toHaveValue('PJ Uji');
+    expect(registrationApi.getDetail).toHaveBeenCalledWith('draft-1');
+    expect(createDraft).not.toHaveBeenCalled();
+  });
+
   it('removes an added ukuran dan oplah row while keeping the required first row', async () => {
     vi.spyOn(Auth, 'useAuth').mockReturnValue({ currentUser: { roles: ['PENERBIT'] } });
     vi.spyOn(masterApi, 'getCategories').mockResolvedValue({ data: [{ id: 'cat1', name: 'Mushaf' }] });

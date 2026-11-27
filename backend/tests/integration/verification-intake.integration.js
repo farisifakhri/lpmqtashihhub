@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { getNextDispositionNumber, getNextDispositionNumberPreview } from '../../src/services/document-number.service.js';
 
 export async function runVerificationIntakeTests({ test, prisma, base, loginAs, publisherToken, publisherBToken, verifikatorToken, adminToken, serviceId }) {
   const kepalaToken = (await loginAs('kepala@lpmq.kemenag.go.id')).token;
@@ -20,6 +21,20 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
   const declaration = { format: 'A4', binding_method: 'PER_JUZ', volume_count: 30, delivery_method: 'KURIR', notes: 'Master dijilid per juz' };
   let reg;
   let notaNo;
+
+  await test('nomor disposisi yang dibuat dalam transaksi gagal tidak menghabiskan counter', async () => {
+    const issuedAt = new Date();
+    const before = await getNextDispositionNumberPreview(prisma, issuedAt);
+    const apiPreview = await expect('/verification-disposition-number-preview', adminToken);
+    assert.equal(apiPreview.is_preview, true);
+    assert.match(apiPreview.document_no, /^ND\.\d{3,}\/LPMQ\.01\/TP\.\d{2}\/\d{2}\/\d{4}$/);
+    await assert.rejects(prisma.$transaction(async tx => {
+      await getNextDispositionNumber(tx, issuedAt);
+      throw new Error('rollback disposition counter');
+    }, { isolationLevel: 'ReadCommitted' }), /rollback disposition counter/);
+    const after = await getNextDispositionNumberPreview(prisma, issuedAt);
+    assert.equal(after, before);
+  });
 
   await test('PR-VER-02: deklarasi fisik dibatasi pemilik dan bukti pendaftaran aman', async () => {
     reg = await expect('/registrations', publisherToken, 'POST', {
@@ -128,7 +143,8 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     const created = results.find(item => item.status === 201).json.data;
     createdNotaNo = created.nota_dinas.document_no;
     assert.equal(created.assignment.status, 'ASSIGNED');
-    assert.ok([nota1, nota2].includes(created.nota_dinas.document_no));
+    assert.match(created.nota_dinas.document_no, /^ND\.\d{3,}\/LPMQ\.01\/TP\.\d{2}\/\d{2}\/\d{4}$/);
+    assert.ok(![nota1, nota2].includes(created.nota_dinas.document_no), 'The backend must not trust a client-supplied disposition number');
     assert.equal(created.nota_dinas.status, 'ISSUED');
     assert.ok(new Date(created.assignment.due_at).getTime() > new Date(created.assignment.assigned_at).getTime());
     const assignedReg = await prisma.registration.findUnique({ where: { id: reg.id } });
@@ -180,8 +196,10 @@ export async function runVerificationIntakeTests({ test, prisma, base, loginAs, 
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${reg.registration_no}`, condition: 'Baik', volume_count: 30 }, 409);
     assert.equal((await prisma.physicalMasterIntake.findUnique({ where: { registration_id: another.id } })).status, 'PENDING');
     await expect(`/registrations/${another.id}/physical-master/receive`, adminToken, 'POST', { decision: 'RECEIVED', receipt_no: `TR-${another.registration_no}`, condition: 'Baik', volume_count: 30 });
-    await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 409);
-    assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 0);
-    assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'READY_FOR_VERIFICATION');
+    const reassignment = await expect(path, adminToken, 'POST', { verifier_id: verifier.id, nota_no: createdNotaNo }, 201);
+    assert.equal(reassignment.assignment.status, 'ASSIGNED');
+    assert.notEqual(reassignment.nota_dinas.document_no, createdNotaNo);
+    assert.equal(await prisma.verificationAssignment.count({ where: { registration_id: another.id } }), 1);
+    assert.equal((await prisma.registration.findUnique({ where: { id: another.id } })).status, 'VERIFICATION_ASSIGNED');
   });
 }

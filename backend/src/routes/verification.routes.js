@@ -51,6 +51,7 @@ router.post('/registrations/:id/verification-assignments', authenticate, authori
 router.get('/verification-assignments', authenticate, authorize('KEPALA_LPMQ', 'VERIFIKATOR', 'ADMIN_INTERNAL', 'SUPERADMIN'), validate(verificationInboxSchema), action(req => intake.listVerificationAssignments(req.query, req.user)));
 router.get('/verification/verifiers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
 router.get('/verification-verifiers', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listVerifiers(req.query, req.user)));
+router.get('/verification-disposition-number-preview', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.getDispositionNumberPreview(req.user)));
 router.get('/verification/unassigned-registrations', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
 router.get('/verification-assignment-candidates', authenticate, authorize('ADMIN_INTERNAL', 'SUPERADMIN'), action(req => intake.listUnassignedRegistrations(req.query, req.user)));
 

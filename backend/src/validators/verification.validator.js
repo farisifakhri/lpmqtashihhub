@@ -38,7 +38,8 @@ export const createVerificationAssignmentSchema = {
   params: idParams,
   body: z.object({
     verifier_id: z.string().uuid('ID verifikator tidak valid.').optional(),
-    nota_no: z.string().trim().min(3).max(191),
+    // Legacy clients may still send this field; the backend always generates the official number.
+    nota_no: z.string().trim().max(191).optional(),
     notes: z.string().trim().max(191).optional(),
     override_core_team: z.boolean().optional(),
   }).strict(),
@@ -174,7 +175,8 @@ export const reassignAssignmentSchema = {
   params: z.object({ id: z.string().uuid('ID penugasan tidak valid.') }),
   body: z.object({
     verifier_id: z.string().uuid('ID verifikator pengganti tidak valid.'),
-    nota_no: z.string().trim().min(3, 'Nomor Nota Dinas baru minimal 3 karakter.').max(191),
+    // Legacy clients may still send this field; the backend always generates the official number.
+    nota_no: z.string().trim().max(191).optional(),
     notes: z.string().trim().max(191).optional(),
     reason: z.string().trim().min(5, 'Alasan penggantian verifikator minimal 5 karakter.').max(500),
   }).strict(),

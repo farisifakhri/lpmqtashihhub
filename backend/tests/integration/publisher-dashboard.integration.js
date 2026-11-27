@@ -46,7 +46,8 @@ try {
   assert.equal(list.summary.issued_stt, 1);
   assert.equal(list.data[0].queue_position, null);
   const actions = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_ACTIONS&limit=1`, token);
-  assert.equal(actions.pagination.total, 3);
+  assert.equal(actions.pagination.total, 2);
+  assert.equal(actions.data.some(item => item.id === draft.id), false, 'Drafts are excluded from publisher actions');
   assert.equal(actions.data[0].id, payment.id, 'Publisher actions use newest-first order, not internal FIFO');
   assert.equal(Object.values(actions.summary.by_status).reduce((a, b) => a + b, 0), 5);
   const filtered = await call(`/registrations?search=${encodeURIComponent(prefix)}&segment=PUBLISHER_PROCESSING`, token);
@@ -57,6 +58,22 @@ try {
   assert.deepEqual(documents.data[0].official_documents.map(item => item.id), [issued.id]);
   const drafts = await call(`/registrations?search=${encodeURIComponent(prefix)}&status=DRAFT`, token);
   assert.deepEqual(drafts.data[0].official_documents, []);
+  const baseItem = await prisma.jenisNaskahItem.findFirst({ where: { role: 'DASAR', service_kind: 'CETAK', status: 'ACTIVE' } });
+  const draftUpdate = {
+    title: `${prefix} draft updated`, service_type_id: service.id, registration_type: 'NEW',
+    statement_accepted: true,
+    mushaf_details: { penanggung_jawab_produk: 'Penanggung Jawab Uji' },
+    foreign_metadata: { nama_mushaf: `${prefix} draft updated`, jenis_naskah: [baseItem.name], jenis_mushaf: 'Mushaf Standar Usmani' },
+    manuscripts: [{ seq_number: 1, title: `${prefix} draft updated`, items: [baseItem.code], variants: [{ ukuran: '21 x 29', oplah: 100 }] }],
+  };
+  const updatedDraft = await call(`/registrations/${draft.id}/draft`, token, 'PUT', draftUpdate);
+  assert.equal(updatedDraft.data.id, draft.id);
+  assert.equal(updatedDraft.data.registration_no, draft.registration_no);
+  assert.equal(await prisma.manuscript.count({ where: { registration_id: draft.id } }), 1);
+  const secondUpdate = await call(`/registrations/${draft.id}/draft`, token, 'PUT', { ...draftUpdate, title: `${prefix} edited again` });
+  assert.equal(secondUpdate.data.id, draft.id);
+  assert.equal(await prisma.manuscript.count({ where: { registration_id: draft.id } }), 1, 'Updating a draft replaces, rather than duplicates, its manuscripts');
+  await call(`/registrations/${foreignReg.id}/draft`, token, 'PUT', draftUpdate, 403);
   await call(`/registrations/${foreignReg.id}`, token, 'GET', undefined, 403);
   await call(`/registrations/${foreignReg.id}/timeline`, token, 'GET', undefined, 403);
   await call(`/registrations/${foreignReg.id}/payment`, token, 'GET', undefined, 403);
@@ -69,10 +86,17 @@ try {
 
   const pdf = await PDFDocument.create(); pdf.addPage();
   const bytes = Buffer.from(await pdf.save());
-  const uploadResponse = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': 'application/pdf', Authorization: `Bearer ${token}` }, body: bytes });
+  const uploadResponse = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': 'application/pdf', 'X-File-Name': encodeURIComponent('dokumen-uji.pdf'), Authorization: `Bearer ${token}` }, body: bytes });
   assert.equal(uploadResponse.status, 201);
   const file = (await uploadResponse.json()).data;
   uploads.push(file.id);
+  assert.equal(file.file_name, 'dokumen-uji.pdf');
+  await call(`/registrations/${draft.id}/draft`, token, 'PUT', { ...draftUpdate, cover_file_id: file.id }, 400);
+  const coverBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/gWQAAAAASUVORK5CYII=', 'base64');
+  const coverUploadResponse = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': 'image/png', 'X-File-Name': encodeURIComponent('cover-uji.png'), Authorization: `Bearer ${token}` }, body: coverBytes });
+  assert.equal(coverUploadResponse.status, 201);
+  const coverFile = (await coverUploadResponse.json()).data;
+  uploads.push(coverFile.id);
   const uploadPayload = { type: 'COVER', file_id: file.id };
   await call(`/registrations/${draft.id}/manuscripts`, token, 'POST', uploadPayload, 201);
   await call(`/registrations/${draft.id}/manuscripts`, token, 'POST', uploadPayload, 201);
@@ -81,6 +105,36 @@ try {
   await call(`/registrations/${revision.id}/manuscripts`, token, 'POST', { ...uploadPayload, type: 'DUMMY' }, 201);
   const processing = filtered.data[0];
   await call(`/registrations/${processing.id}/manuscripts`, token, 'POST', uploadPayload, 409);
+
+  const submissionPayload = {
+    ...draftUpdate,
+    foreign_metadata: {
+      ...draftUpdate.foreign_metadata,
+      penanggung_jawab_produk: 'Penanggung Jawab Uji',
+      jenis_mushaf: 'Mushaf Standar Usmani',
+      surat_permohonan_file_id: file.id,
+      cover_file_id: coverFile.id,
+      contoh_halaman_file_id: file.id,
+    },
+    surat_permohonan_file_id: file.id,
+    cover_file_id: coverFile.id,
+    contoh_halaman_file_id: file.id,
+  };
+  await call(`/registrations/${draft.id}/draft`, token, 'PUT', submissionPayload);
+  const submitted = await call(`/registrations/${draft.id}/submit`, token, 'POST', {});
+  assert.equal(submitted.data.status, 'READY_FOR_VERIFICATION');
+  assert.equal(submitted.data.id, draft.id);
+  assert.equal(submitted.data.registration_no, draft.registration_no);
+  assert.equal(await prisma.registration.count({ where: { registration_no: draft.registration_no } }), 1);
+  assert.equal(await prisma.manuscript.count({ where: { registration_id: draft.id } }), 1);
+  for (const type of ['SURAT_PERMOHONAN', 'COVER', 'SAMPLE_PAGE_1_5']) {
+    assert.equal(await prisma.manuscriptFile.count({ where: { registration_id: draft.id, type } }), 1, `${type} attachment is not duplicated`);
+  }
+  const resumedDetail = await call(`/registrations/${draft.id}`, token);
+  assert.equal(resumedDetail.data.manuscript_files.find(item => item.type === 'SURAT_PERMOHONAN')?.uploaded_file?.file_name, 'dokumen-uji.pdf');
+  assert.equal(resumedDetail.data.manuscript_files.find(item => item.type === 'COVER')?.uploaded_file?.file_size, coverBytes.length);
+  const draftsAfterSubmit = await call(`/registrations?search=${encodeURIComponent(prefix)}&status=DRAFT`, token);
+  assert.equal(draftsAfterSubmit.data.some(item => item.id === draft.id), false);
 
   const archive = await call(`/registrations/${draft.id}/document-archive`, token);
   // Draf STT belum diparaf TU / disahkan Kepala: tidak tampil di arsip penerbit.

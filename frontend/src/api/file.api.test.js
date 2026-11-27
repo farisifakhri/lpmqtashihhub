@@ -8,7 +8,7 @@ describe('Publisher private file API', () => {
     vi.stubGlobal('fetch', fetch);
     const file = new File(['pdf'], 'sample.pdf', { type: 'application/pdf' });
     expect(await fileApi.upload(file)).toEqual({ id: 'file1' });
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/uploads'), expect.objectContaining({ headers: { 'Content-Type': 'application/pdf', Authorization: 'Bearer session-token' }, body: file }));
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/uploads'), expect.objectContaining({ headers: { 'Content-Type': 'application/pdf', 'X-File-Name': 'sample.pdf', Authorization: 'Bearer session-token' }, body: file }));
   });
   it('preserves a permission error without initiating a download', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'Akses ditolak' }), { status: 403 })));

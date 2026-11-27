@@ -14,6 +14,15 @@ export const createDraft = async (req, res, next) => {
   }
 };
 
+export const updateDraft = async (req, res, next) => {
+  try {
+    const result = await registrationService.createDraft(req.body, req.user, req, req.params.id);
+    res.json({ success: true, message: 'Draf permohonan berhasil diperbarui.', data: result });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const submitRegistration = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -198,6 +207,7 @@ export const uploadPublisherRevisionRecap = async (req, res, next) => {
 
 export default {
   createDraft,
+  updateDraft,
   submitRegistration,
   dispatchPhysical,
   uploadPublisherRevisionRecap,

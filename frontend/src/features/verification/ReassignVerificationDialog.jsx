@@ -8,6 +8,8 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
   const [verifierSearch, setVerifierSearch] = useState('');
   const [selectedVerifierId, setSelectedVerifierId] = useState('');
   const [notaNo, setNotaNo] = useState('');
+  const [previewIssuedAt, setPreviewIssuedAt] = useState(null);
+  const [previewUnavailable, setPreviewUnavailable] = useState(false);
   const [reason, setReason] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
@@ -42,6 +44,16 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
         if (isMounted) setLoading(false);
       });
 
+    verificationApi.getDispositionNumberPreview()
+      .then((res) => {
+        if (!isMounted) return;
+        setNotaNo(res?.data?.document_no || res?.document_no || '');
+        setPreviewIssuedAt(res?.data?.issued_at || res?.issued_at || null);
+      })
+      .catch(() => {
+        if (isMounted) setPreviewUnavailable(true);
+      });
+
     return () => {
       isMounted = false;
     };
@@ -67,11 +79,6 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
       return;
     }
 
-    if (!notaNo.trim() || notaNo.trim().length < 3) {
-      setError('Nomor Disposisi baru wajib diisi (minimal 3 karakter).');
-      return;
-    }
-
     if (!reason.trim() || reason.trim().length < 5) {
       setError('Alasan pengalihan penugasan wajib diisi (minimal 5 karakter).');
       return;
@@ -83,7 +90,6 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
     try {
       const payload = {
         verifier_id: selectedVerifierId,
-        nota_no: notaNo.trim(),
         reason: reason.trim(),
         notes: notes.trim() || undefined,
       };
@@ -226,17 +232,21 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
           {/* New Nota Dinas Number */}
           <div>
             <label htmlFor="new-nota-no" className="block text-xs font-bold text-ink mb-1.5">
-              Nomor Disposisi Baru <span className="text-civic-danger">*</span>
+              Nomor Disposisi Baru
             </label>
             <input
               id="new-nota-no"
               type="text"
-              required
+              readOnly
               value={notaNo}
-              onChange={(e) => setNotaNo(e.target.value)}
-              placeholder="Contoh: ND-2026/09/001"
-              className="w-full text-xs p-2.5 rounded-lg border border-line-strong focus:outline-none focus:ring-2 focus:ring-civic-info/20 focus:border-civic-info font-mono"
+              placeholder="Nomor ditetapkan saat diterbitkan"
+              className="w-full text-xs p-2.5 rounded-lg border border-line-strong bg-canvas text-ink font-mono"
             />
+            <p className="mt-1.5 text-xs text-ink-muted">
+              {previewUnavailable
+                ? 'Pratinjau nomor tidak tersedia. Sistem tetap menentukan nomor resmi saat diterbitkan.'
+                : `Pratinjau${previewIssuedAt ? ` per ${new Date(previewIssuedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}` : ''}; nomor final ditetapkan sistem saat diterbitkan.`}
+            </p>
           </div>
 
           {/* Reassignment Reason */}
@@ -291,7 +301,7 @@ export const ReassignVerificationDialog = ({ assignment, onClose, onSuccess }) =
             <Button
               type="submit"
               size="sm"
-              disabled={submitting || !selectedVerifierId || !notaNo.trim() || reason.trim().length < 5}
+              disabled={submitting || !selectedVerifierId || reason.trim().length < 5}
               className="bg-civic-info hover:bg-civic-info text-white"
             >
               {submitting ? 'Mengalihkan...' : 'Terbitkan & Tugaskan Ulang'}

@@ -6,6 +6,7 @@ import {
   Search,
   RefreshCw,
   Plus,
+  Save,
   BookOpen,
   AlertCircle,
   Clock,
@@ -114,6 +115,7 @@ export function PublisherRegistrationsPage({
   // Quick filter tab definition
   const quickTabs = [
     { key: 'ALL', label: 'Semua', icon: BookOpen },
+    { key: 'DRAFT', label: 'Draft', icon: Save },
     { key: 'actions', label: 'Perlu Tindakan', icon: AlertCircle },
     { key: 'processing', label: 'Sedang Diproses', icon: Clock },
     { key: 'COMPLETED', label: 'Selesai', icon: CheckCircle2 },

@@ -118,7 +118,8 @@ export async function runVerificationReviewTests({ test, prisma, base, loginAs, 
     assert.equal(detail.registration.id, reg.id);
     assert.equal(detail.registration.status, 'IN_VERIFICATION');
     assert.ok(detail.nota_dinas);
-    assert.equal(detail.nota_dinas.document_no, notaNo);
+    assert.match(detail.nota_dinas.document_no, /^ND\.\d{3,}\/LPMQ\.01\/TP\.\d{2}\/\d{2}\/\d{4}$/);
+    assert.notEqual(detail.nota_dinas.document_no, notaNo);
     assert.equal(detail.assignment.sla.duration_target, '2 hari kerja');
     assert.equal(detail.assignment.sla.is_overdue, false);
     assert.ok(detail.assignment.sla.remaining_ms > 0);

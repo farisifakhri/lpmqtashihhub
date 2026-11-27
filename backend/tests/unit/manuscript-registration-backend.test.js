@@ -583,6 +583,7 @@ test('B-01 T8: Penolakan item tanpa peran DASAR dan penerimaan draf cetak tanpa 
 
 test('submitRegistration menolak data wajib yang tidak lengkap sebelum transaksi database', async () => {
   const originalFindUnique = prisma.registration.findUnique;
+  const originalStoredFileFindMany = prisma.storedFile.findMany;
   const originalTx = prisma.$transaction;
   let transactionStarted = false;
   prisma.registration.findUnique = async () => ({
@@ -610,6 +611,7 @@ test('submitRegistration menolak data wajib yang tidak lengkap sebelum transaksi
     }],
     addons: [],
   });
+  prisma.storedFile.findMany = async () => [];
   prisma.$transaction = async () => {
     transactionStarted = true;
     throw new Error('Invalid registration reached transaction');
@@ -626,6 +628,7 @@ test('submitRegistration menolak data wajib yang tidak lengkap sebelum transaksi
     assert.equal(transactionStarted, false);
   } finally {
     prisma.registration.findUnique = originalFindUnique;
+    prisma.storedFile.findMany = originalStoredFileFindMany;
     prisma.$transaction = originalTx;
   }
 });
@@ -651,6 +654,17 @@ test('validator submit menerima berkas, data kategori, ukuran, dan oplah yang le
     }],
   };
   assert.doesNotThrow(() => validateRegistrationRequiredFieldsForSubmit(validRegistration));
+  assert.throws(
+    () => validateRegistrationRequiredFieldsForSubmit({
+      ...validRegistration,
+      uploaded_files_by_id: {
+        'surat-id': { mime_type: 'image/png' },
+        'cover-id': { mime_type: 'image/png' },
+        'contoh-id': { mime_type: 'application/pdf' },
+      },
+    }),
+    error => error.statusCode === 400 && /Surat permohonan.*format/i.test(error.message)
+  );
   for (const variants of [
     [],
     [{ ukuran: 'A4', oplah: '' }],

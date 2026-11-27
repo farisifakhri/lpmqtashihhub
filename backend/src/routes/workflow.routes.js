@@ -122,7 +122,7 @@ router.post('/uploads', uploadRateLimiter, authenticate, authorize('PENERBIT', '
     ],
     limit: MAX_UPLOAD_BYTES,
   }),
-  action(req => upload(req.body, req.get('content-type')?.split(';')[0], req.user), 201));
+  action(req => upload(req.body, req.get('content-type')?.split(';')[0], req.user, req.get('x-file-name')), 201));
 
 router.get('/uploads/:id', authenticate, authorize('PENERBIT', 'VERIFIKATOR', 'PENTASHIH', 'DISTRIBUTOR', 'DOKUMENTATOR', 'ADMIN_INTERNAL', 'KEPALA_LPMQ', 'SUPERADMIN'), async (req, res, next) => {
   try {

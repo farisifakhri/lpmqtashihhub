@@ -129,7 +129,7 @@ export async function validateApkArchive(bytes) {
   });
 }
 
-export async function upload(bytes, mime, user) {
+export async function upload(bytes, mime, user, originalName = null) {
   const detected = detectMime(bytes);
   const isApkCompatible = detected === 'application/vnd.android.package-archive' &&
     ['application/vnd.android.package-archive', 'application/octet-stream', 'application/zip', 'application/x-zip-compressed'].includes(mime);
@@ -179,8 +179,15 @@ export async function upload(bytes, mime, user) {
 
   try {
     return await prisma.$transaction(async tx => {
+      let decodedName = originalName;
+      if (typeof originalName === 'string') {
+        try { decodedName = decodeURIComponent(originalName); } catch { decodedName = originalName; }
+      }
+      const safeFileName = typeof decodedName === 'string'
+        ? path.basename(decodedName.replace(/[\\/]/g, '/')).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 255) || null
+        : null;
       const file = await tx.storedFile.create({ data: {
-        id, owner_id: user.id, mime_type: detected, file_size: bytes.length,
+        id, owner_id: user.id, file_name: safeFileName, mime_type: detected, file_size: bytes.length,
         checksum: createHash('sha256').update(bytes).digest('hex'),
       } });
       await audit(tx, user, 'UPLOAD', 'StoredFile', id, file);

@@ -8,7 +8,7 @@ import { sendOutboxEmail } from './email-provider.service.js';
 import { calculateDueAt, countWorkingDays, determineVerificationSlaOutcome } from './sla.service.js';
 import { calculateItemTarifAndSla, calculateRegistrationSummary } from '../utils/item-calculator.js';
 import { archiveVerificationPdf, cleanupGeneratedFiles, readVerifiedPdf, renderVerificationPdf } from './verification-document-pdf.service.js';
-import { getNextDocumentNumber } from './document-number.service.js';
+import { getNextDispositionNumber, getNextDocumentNumber } from './document-number.service.js';
 import { forbidPemaraf } from '../utils/pemaraf.js';
 
 const transactionOptions = { isolationLevel: 'ReadCommitted' };
@@ -28,12 +28,24 @@ const resolveAssignment = async (db, idOrRegId, options = {}) => {
   return assignment;
 };
 
-export const startVerification = (assignmentId, user, req) => prisma.$transaction(async tx => {
-  requireRole(user, ['VERIFIKATOR']);
+const lockVerificationAssignment = async (tx, assignmentId) => {
+  const reference = await tx.verificationAssignment.findUnique({
+    where: { id: assignmentId },
+    select: { registration_id: true },
+  });
+  if (!reference) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+  await tx.$queryRaw`SELECT id FROM verification_assignments WHERE id = ${assignmentId} FOR UPDATE`;
   const assignment = await tx.verificationAssignment.findUnique({
     where: { id: assignmentId },
+    include: { verifier: true },
   });
   if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+  return assignment;
+};
+
+export const startVerification = (assignmentId, user, req) => prisma.$transaction(async tx => {
+  requireRole(user, ['VERIFIKATOR']);
+  const assignment = await lockVerificationAssignment(tx, assignmentId);
   if (assignment.verifier_id !== user.id) {
     fail(403, 'Anda bukan verifikator yang ditugaskan untuk naskah ini.');
   }
@@ -683,11 +695,7 @@ export const getLatestVerificationAssignment = async (registrationId, user) => {
 
 export const revokeVerificationAssignment = (assignmentId, data, user, req) => prisma.$transaction(async tx => {
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
-  const assignment = await tx.verificationAssignment.findUnique({
-    where: { id: assignmentId },
-    include: { verifier: true },
-  });
-  if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+  const assignment = await lockVerificationAssignment(tx, assignmentId);
 
   if (assignment.status === 'COMPLETED') {
     fail(409, 'Penugasan verifikasi sudah selesai dan tidak dapat dicabut.');
@@ -746,11 +754,7 @@ export const reassignVerificationAssignment = async (assignmentId, data, user, r
 const createdFiles = [];
 try { return await prisma.$transaction(async tx => {
   requireRole(user, ['ADMIN_INTERNAL', 'SUPERADMIN']);
-  const assignment = await tx.verificationAssignment.findUnique({
-    where: { id: assignmentId },
-    include: { verifier: true },
-  });
-  if (!assignment) fail(404, 'Penugasan verifikasi tidak ditemukan.');
+  const assignment = await lockVerificationAssignment(tx, assignmentId);
   const coreTeamRegistration = await registration(tx, assignment.registration_id);
   if (coreTeamRegistration.core_team_number) fail(409, 'Anggota tim inti pengajuan tidak dapat diganti melalui alur ini.');
 
@@ -779,13 +783,11 @@ try { return await prisma.$transaction(async tx => {
     fail(400, 'Pilih pengguna aktif dengan peran Verifikator.');
   }
 
-  if (await tx.verificationDocument.findUnique({ where: { document_no: data.nota_no } })) {
-    fail(409, 'Nomor Nota Dinas sudah digunakan. Masukkan nomor resmi yang berbeda.');
-  }
-
   const reg = await registration(tx, assignment.registration_id);
   const intake = await tx.physicalMasterIntake.findUnique({ where: { registration_id: reg.id } });
-  const now = new Date();
+  const assignedAt = new Date();
+  const notaNo = await getNextDispositionNumber(tx, assignedAt);
+  const now = assignedAt;
 
   const revokedAssignment = await tx.verificationAssignment.update({
     where: { id: assignment.id },
@@ -802,7 +804,6 @@ try { return await prisma.$transaction(async tx => {
   });
   await audit(tx, user, 'REVOKE_FOR_REASSIGNMENT', 'VerificationAssignment', assignment.id, revokedAssignment, req);
 
-  const assignedAt = new Date();
   const dueAt = await calculateDueAt(tx, assignedAt, 2, { applyCutoff: true });
 
   const previousNota = await tx.verificationDocument.findFirst({
@@ -828,7 +829,7 @@ try { return await prisma.$transaction(async tx => {
       registration_id: reg.id,
       assignment_id: newAssignment.id,
       document_type: 'NOTA_DINAS_VERIFIKASI',
-      document_no: data.nota_no,
+      document_no: notaNo,
       version: (previousNota?.version || 0) + 1,
       status: 'ISSUED',
       created_by_id: user.id,
@@ -855,9 +856,9 @@ try { return await prisma.$transaction(async tx => {
   const issuedNota = await tx.verificationDocument.update({ where: { id: newNota.id }, data: { file_id: fileId } });
 
   if (reg.status !== 'VERIFICATION_ASSIGNED') {
-    await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Penugasan dialihkan kepada ${newVerifier.name} via Nota Dinas ${data.nota_no}: ${data.reason}`, req);
+    await move(tx, reg, 'VERIFICATION_ASSIGNED', user, `Penugasan dialihkan kepada ${newVerifier.name} via Nota Dinas ${notaNo}: ${data.reason}`, req);
   } else {
-    await audit(tx, user, 'REASSIGN_VERIFICATION', 'Registration', reg.id, { nota_no: data.nota_no, new_verifier_id: newVerifier.id, reason: data.reason }, req);
+    await audit(tx, user, 'REASSIGN_VERIFICATION', 'Registration', reg.id, { nota_no: notaNo, new_verifier_id: newVerifier.id, reason: data.reason }, req);
   }
 
   await audit(tx, user, 'CREATE_VERIFICATION_ASSIGNMENT', 'VerificationAssignment', newAssignment.id, newAssignment, req);
@@ -888,7 +889,7 @@ try { return await prisma.$transaction(async tx => {
       payload: {
         assignment_id: newAssignment.id,
         link: `/internal/verifications/${newAssignment.id}`,
-        nota_no: data.nota_no,
+        nota_no: notaNo,
         assigned_at: assignedAt.toISOString(),
         due_at: dueAt.toISOString(),
       },
@@ -897,7 +898,11 @@ try { return await prisma.$transaction(async tx => {
 
   return { assignment: newAssignment, nota_dinas: issuedNota, old_assignment: revokedAssignment };
 }, transactionOptions); }
-catch (error) { await cleanupGeneratedFiles(createdFiles); throw error; }
+catch (error) {
+  await cleanupGeneratedFiles(createdFiles);
+  if (error.code === 'P2002') fail(409, 'Penerbitan disposisi berbenturan dengan transaksi lain. Muat ulang data dan coba lagi.');
+  throw error;
+}
 };
 
 export const getVerificationAttachment = async (documentId, fileId, user) => {

@@ -172,12 +172,12 @@ export const verificationApi = {
   /**
    * Menugaskan Verifikator dan menerbitkan Nota Dinas oleh Kepala LPMQ
    * @param {string} registrationId
-   * @param {Object} payload - { verifier_id, nota_no, notes }
+   * @param {Object} payload - { verifier_id, notes }
    */
   /**
    * Menugaskan Verifikator dan menerbitkan Nota Dinas oleh Kepala LPMQ (P0-06)
    * @param {string} registrationId
-   * @param {Object} payload - { verifier_id, nota_no, notes }
+   * @param {Object} payload - { verifier_id, notes }
    */
   createAssignment: async (registrationId, payload) => {
     return apiClient(`/registrations/${registrationId}/verification-assignments`, {
@@ -236,6 +236,11 @@ export const verificationApi = {
     return apiClient(`/registrations/${registrationId}/latest-verification-assignment`);
   },
 
+  /** Nomor disposisi berikutnya untuk pratinjau; tidak mencadangkan nomor resmi. */
+  getDispositionNumberPreview: async () => {
+    return apiClient('/verification-disposition-number-preview');
+  },
+
   /**
    * Mencabut penugasan verifikasi aktif (Kepala LPMQ / Superadmin)
    * @param {string} assignmentId
@@ -251,7 +256,7 @@ export const verificationApi = {
   /**
    * Mengalihkan penugasan verifikasi ke verifikator baru dan menerbitkan Nota Dinas baru
    * @param {string} assignmentId
-   * @param {Object} payload - { verifier_id, nota_no, reason, notes }
+   * @param {Object} payload - { verifier_id, reason, notes }
    */
   reassignAssignment: async (assignmentId, payload) => {
     return apiClient(`/verification-assignments/${assignmentId}/reassign`, {

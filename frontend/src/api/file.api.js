@@ -16,12 +16,12 @@ const errorMessage = async response => {
 
 export const fileApi = {
   upload: async file => {
-    const response = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': file.type, Authorization: `Bearer ${getAuthToken()}` }, body: file });
+    const response = await fetch(`${base}/uploads`, { method: 'POST', headers: { 'Content-Type': file.type, 'X-File-Name': encodeURIComponent(file.name), Authorization: `Bearer ${getAuthToken()}` }, body: file });
     if (!response.ok) throw new ApiError(await errorMessage(response), response.status);
     return (await response.json()).data;
   },
   viewPrivateFile: async (id) => {
-    const response = await fetch(`${base}/uploads/${encodeURIComponent(id)}`, {
+    const response = await fetch(`${base}/uploads/${encodeURIComponent(id)}?inline=true`, {
       headers: { Authorization: `Bearer ${getAuthToken()}` },
     });
     if (!response.ok) throw new ApiError(await errorMessage(response), response.status);

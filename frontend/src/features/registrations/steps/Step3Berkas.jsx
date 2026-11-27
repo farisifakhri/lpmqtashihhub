@@ -1,7 +1,43 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, Image, Smartphone, CheckCircle2, Trash2, AlertCircle, Link as LinkIcon, Eye, Download } from 'lucide-react';
 import { formatFileSize, validateSelectedFile } from './registration-validation';
+import { fileApi } from '@/api/file.api';
 import { SuratPermohonanTemplateModal, buildSuratPermohonanText, buildSuratPermohonanDocHtml, downloadWordDoc } from '../components/SuratPermohonanTemplateModal';
+
+function StoredAttachment({ fileId, info, inputId, label, onRemove }) {
+  const [error, setError] = useState('');
+  if (!fileId) return null;
+  const mime = info?.mime_type || '';
+  const canPreview = mime === 'application/pdf' || mime.startsWith('image/');
+  const fileName = info?.file_name || `${label} (${mime || 'berkas tersimpan'})`;
+  const open = async () => {
+    setError('');
+    try { await fileApi.viewPrivateFile(fileId); }
+    catch (err) { setError(err.message || 'Berkas tidak dapat dibuka.'); }
+  };
+  const download = async () => {
+    setError('');
+    try { await fileApi.downloadPrivateFile(fileId, fileName); }
+    catch (err) { setError(err.message || 'Berkas tidak dapat diunduh.'); }
+  };
+  return (
+    <div className="p-3 rounded-lg bg-white border border-brand-200 space-y-2" data-testid={`stored-${inputId}`}>
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink">
+        <div className="min-w-0">
+          <p className="font-semibold truncate">📄 {fileName}</p>
+          <p className="text-civic-success font-semibold flex items-center gap-1 mt-1"><CheckCircle2 className="w-3.5 h-3.5" /> Dokumen sudah tersimpan{info?.file_size ? ` · ${formatFileSize(info.file_size)}` : ''}</p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {canPreview && <button type="button" onClick={open} className="text-brand-800 font-bold hover:underline">Lihat</button>}
+          <button type="button" onClick={download} className="text-brand-800 font-bold hover:underline">Unduh</button>
+          <label htmlFor={inputId} className="text-brand-800 font-bold hover:underline cursor-pointer">Ganti Dokumen</label>
+          <button type="button" onClick={onRemove} className="text-civic-danger font-bold hover:underline">Hapus</button>
+        </div>
+      </div>
+      {error && <p role="alert" className="text-xs text-civic-danger">{error}</p>}
+    </div>
+  );
+}
 
 export const Step3Berkas = ({
   suratPermohonanFile,
@@ -30,6 +66,7 @@ export const Step3Berkas = ({
   setBuktiTashihFile,
   buktiTashihFileId,
   setBuktiTashihFileId,
+  storedFiles = {},
   kategoriPendaftaran,
   isDigital,
   fieldErrors = {},
@@ -179,7 +216,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.suratPermohonan)}
             aria-describedby={fieldErrors.suratPermohonan ? 'file-surat-permohonan-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPermohonan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPermohonanFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPermohonan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPermohonanFile || suratPermohonanFileId ? ' hidden' : ''}`}
           />
 
           {suratPermohonanFile && (
@@ -202,6 +239,7 @@ export const Step3Berkas = ({
               </button>
             </div>
           )}
+          {!suratPermohonanFile && <StoredAttachment fileId={suratPermohonanFileId} info={storedFiles.SURAT_PERMOHONAN} inputId="file-surat-permohonan" label="Surat Permohonan Tanda Tashih" onRemove={() => handleRemoveFile(setSuratPermohonanFile, setSuratPermohonanFileId, 'suratPermohonan')} />}
 
           {fieldErrors.suratPermohonan && (
             <p id="file-surat-permohonan-error" className="text-xs text-civic-danger flex items-center gap-1.5 mt-1 font-semibold">
@@ -248,7 +286,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.cover)}
             aria-describedby={fieldErrors.cover ? 'file-cover-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.cover ? 'border-civic-danger' : 'border-line-strong'} bg-white${coverFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.cover ? 'border-civic-danger' : 'border-line-strong'} bg-white${coverFile || coverFileId ? ' hidden' : ''}`}
           />
 
           {coverFile && (
@@ -271,6 +309,7 @@ export const Step3Berkas = ({
               </button>
             </div>
           )}
+          {!coverFile && <StoredAttachment fileId={coverFileId} info={storedFiles.COVER} inputId="file-cover" label="Cover / Sampul Mushaf" onRemove={() => handleRemoveFile(setCoverFile, setCoverFileId, 'cover')} />}
 
           {fieldErrors.cover && (
             <p id="file-cover-error" className="text-xs text-civic-danger flex items-center gap-1.5 mt-1 font-semibold">
@@ -317,7 +356,7 @@ export const Step3Berkas = ({
             }
             aria-invalid={Boolean(fieldErrors.contohHalaman)}
             aria-describedby={fieldErrors.contohHalaman ? 'file-contoh-halaman-error' : undefined}
-            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.contohHalaman ? 'border-civic-danger' : 'border-line-strong'} bg-white${contohHalamanFile ? ' hidden' : ''}`}
+            className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.contohHalaman ? 'border-civic-danger' : 'border-line-strong'} bg-white${contohHalamanFile || contohHalamanFileId ? ' hidden' : ''}`}
           />
 
           {contohHalamanFile && (
@@ -340,6 +379,7 @@ export const Step3Berkas = ({
               </button>
             </div>
           )}
+          {!contohHalamanFile && <StoredAttachment fileId={contohHalamanFileId} info={storedFiles.SAMPLE_PAGE_1_5} inputId="file-contoh-halaman" label="Contoh Halaman Mushaf" onRemove={() => handleRemoveFile(setContohHalamanFile, setContohHalamanFileId, 'contohHalaman')} />}
 
           {fieldErrors.contohHalaman && (
             <p id="file-contoh-halaman-error" className="text-xs text-civic-danger flex items-center gap-1.5 mt-1 font-semibold">
@@ -395,7 +435,7 @@ export const Step3Berkas = ({
                 }
                 aria-invalid={Boolean(fieldErrors.apk)}
                 aria-describedby={fieldErrors.apk ? 'file-apk-error' : undefined}
-                className={`w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border ${fieldErrors.apk ? 'border-civic-danger' : 'border-line-strong'} bg-white${apkFile ? ' hidden' : ''}`}
+                className={`w-full text-xs text-ink-muted file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink cursor-pointer p-1 rounded-lg border ${fieldErrors.apk ? 'border-civic-danger' : 'border-line-strong'} bg-white${apkFile || apkFileId ? ' hidden' : ''}`}
               />
 
               {apkFile && (
@@ -418,6 +458,7 @@ export const Step3Berkas = ({
                   </button>
                 </div>
               )}
+              {!apkFile && <StoredAttachment fileId={apkFileId} info={storedFiles.APK} inputId="file-apk" label="Installer APK" onRemove={() => handleRemoveFile(setApkFile, setApkFileId, 'apk')} />}
             </div>
 
             {/* Opsi B: Tautan Unduhan Cloud */}
@@ -493,7 +534,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.suratPernyataan)}
               aria-describedby={fieldErrors.suratPernyataan ? 'file-surat-pernyataan-error' : undefined}
-              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPernyataan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPernyataanFile ? ' hidden' : ''}`}
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.suratPernyataan ? 'border-civic-danger' : 'border-line-strong'} bg-white${suratPernyataanFile || suratPernyataanFileId ? ' hidden' : ''}`}
             />
 
             {suratPernyataanFile && (
@@ -513,6 +554,7 @@ export const Step3Berkas = ({
                 </button>
               </div>
             )}
+            {!suratPernyataanFile && <StoredAttachment fileId={suratPernyataanFileId} info={storedFiles.SURAT_PERNYATAAN} inputId="file-surat-pernyataan" label="Surat Pernyataan" onRemove={() => handleRemoveFile(setSuratPernyataanFile, setSuratPernyataanFileId, 'suratPernyataan')} />}
 
             {fieldErrors.suratPernyataan && (
               <p id="file-surat-pernyataan-error" className="text-xs text-civic-danger flex items-center gap-1.5 mt-1 font-semibold">
@@ -561,7 +603,7 @@ export const Step3Berkas = ({
               }
               aria-invalid={Boolean(fieldErrors.buktiTashih)}
               aria-describedby={fieldErrors.buktiTashih ? 'file-bukti-tashih-error' : undefined}
-              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.buktiTashih ? 'border-civic-danger' : 'border-line-strong'} bg-white${buktiTashihFile ? ' hidden' : ''}`}
+              className={`w-full text-xs text-ink-muted file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface-subtle file:text-ink hover:file:bg-surface-strong cursor-pointer p-1 rounded-xl border ${fieldErrors.buktiTashih ? 'border-civic-danger' : 'border-line-strong'} bg-white${buktiTashihFile || buktiTashihFileId ? ' hidden' : ''}`}
             />
 
             {buktiTashihFile && (
@@ -581,6 +623,7 @@ export const Step3Berkas = ({
                 </button>
               </div>
             )}
+            {!buktiTashihFile && <StoredAttachment fileId={buktiTashihFileId} info={storedFiles.FOREIGN_TASHIH_CERTIFICATE} inputId="file-bukti-tashih" label="Bukti Tanda Tashih Asal" onRemove={() => handleRemoveFile(setBuktiTashihFile, setBuktiTashihFileId, 'buktiTashih')} />}
 
             {fieldErrors.buktiTashih && (
               <p id="file-bukti-tashih-error" className="text-xs text-civic-danger flex items-center gap-1.5 mt-1 font-semibold">

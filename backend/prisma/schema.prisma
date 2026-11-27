@@ -1217,6 +1217,7 @@ model Notification {
 model StoredFile {
   id         String   @id @default(uuid())
   owner_id   String
+  file_name  String?  @db.VarChar(255)
   mime_type  String
   file_size  Int
   checksum   String

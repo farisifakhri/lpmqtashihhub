@@ -19,6 +19,12 @@ describe('Publisher registration history', () => {
     fireEvent.change(screen.getByLabelText(/Filter (permohonan|pengajuan)/), { target: { value: 'REVISION_REQUIRED' } });
     await waitFor(() => expect(registrationApi.listRegistrations).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'REVISION_REQUIRED', page: 1 })));
   });
+  it('loads the dedicated draft tab by status', async () => {
+    render(<MemoryRouter initialEntries={['/publisher/registrations?view=DRAFT']}><PublisherRegistrationsPage /></MemoryRouter>);
+    await screen.findByText('Naskah pertama');
+    expect(registrationApi.listRegistrations).toHaveBeenCalledWith(expect.objectContaining({ status: 'DRAFT' }));
+    expect(registrationApi.listRegistrations).not.toHaveBeenCalledWith(expect.objectContaining({ segment: 'PUBLISHER_ACTIONS' }));
+  });
   it('debounces server search and resets to page one', async () => {
     render(<MemoryRouter initialEntries={['/publisher/registrations?page=2']}><PublisherRegistrationsPage /></MemoryRouter>);
     await screen.findByText('Naskah pertama');

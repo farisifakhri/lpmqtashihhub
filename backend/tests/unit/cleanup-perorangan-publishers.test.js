@@ -10,12 +10,16 @@ const backendDir = fileURLToPath(new URL('../..', import.meta.url));
 const scriptPath = path.resolve(backendDir, 'scripts/cleanup-perorangan-publishers.js');
 
 test('cleanup-perorangan-publishers: preview mode outputs valid JSON and exits with 0', async () => {
-  const { stdout, stderr } = await execFileAsync('node', [scriptPath], {
+  const { stdout, stderr } = await execFileAsync(process.execPath, [scriptPath], {
     cwd: backendDir,
     env: process.env,
   });
 
-  assert.ok(!stderr || stderr.trim() === '');
+  const unexpectedStderr = stderr
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .filter(line => !/^\[\d+\/[\d.]+:ERROR:third_party\\crashpad\\crashpad\\util\\win\\registration_protocol_win\.cc:108\] CreateFile: Access is denied\. \(0x5\)$/.test(line));
+  assert.deepEqual(unexpectedStderr, []);
   assert.ok(stdout.includes('[PRATINJAU SAJA]'));
   
   // Extract JSON payload
@@ -34,7 +38,7 @@ test('cleanup-perorangan-publishers: preview mode outputs valid JSON and exits w
 test('cleanup-perorangan-publishers: execution rejects when --expected count does not match or backup is missing', async () => {
   await assert.rejects(
     async () => {
-      await execFileAsync('node', [scriptPath, '--execute', '--expected=999'], {
+      await execFileAsync(process.execPath, [scriptPath, '--execute', '--expected=999'], {
         cwd: backendDir,
         env: process.env,
       });
@@ -46,7 +50,7 @@ test('cleanup-perorangan-publishers: execution rejects when --expected count doe
 test('cleanup-perorangan-publishers: execution rejects when --backup file does not exist', async () => {
   await assert.rejects(
     async () => {
-      await execFileAsync('node', [scriptPath, '--execute', '--expected=10', '--backup=non_existent_file.sql'], {
+      await execFileAsync(process.execPath, [scriptPath, '--execute', '--expected=10', '--backup=non_existent_file.sql'], {
         cwd: backendDir,
         env: process.env,
       });
